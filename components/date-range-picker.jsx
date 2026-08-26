@@ -305,11 +305,11 @@ export function DateRangePicker({ dark, t, value, onChange, presets, defaultPres
           {/* Calendar */}
           <div style={{ padding: "12px 14px", flex: 1, minWidth: 260 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: 6, color: t.textSoft, fontSize: 16 }} onMouseEnter={e => e.currentTarget.style.background = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.05)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+              <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: 6, color: t.textSoft, fontSize: 15 }} onMouseEnter={e => e.currentTarget.style.background = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.05)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
               </button>
-              <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>{MONTHS[viewMonth]} {viewYear}</span>
-              <button onClick={nextMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: 6, color: t.textSoft, fontSize: 16 }} onMouseEnter={e => e.currentTarget.style.background = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.05)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{MONTHS[viewMonth]} {viewYear}</span>
+              <button onClick={nextMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: 6, color: t.textSoft, fontSize: 15 }} onMouseEnter={e => e.currentTarget.style.background = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.05)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 6 15 12 9 18" /></svg>
               </button>
             </div>
@@ -416,10 +416,10 @@ export function FilterDropdown({ dark, t, value, onChange, options, icon, alert,
               placeholder="Type to filter..."
               autoFocus
               onClick={(e) => e.stopPropagation()}
-              style={{ width: "100%", padding: "8px 12px", fontSize: 12.5, outline: "none", border: "none", borderBottom: `1px solid ${dropdownBorder}`, background: dropdownBg, color: dark ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.8)", fontFamily: "inherit", position: "sticky", top: 0 }}
+              style={{ width: "100%", padding: "8px 12px", fontSize: 13, outline: "none", border: "none", borderBottom: `1px solid ${dropdownBorder}`, background: dropdownBg, color: dark ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.8)", fontFamily: "inherit", position: "sticky", top: 0 }}
             />
           )}
-          {shown.length === 0 && <div style={{ padding: "10px 12px", fontSize: 12, color: dark ? "rgba(255,255,255,.45)" : "rgba(0,0,0,.4)", textAlign: "center" }}>No match</div>}
+          {shown.length === 0 && <div style={{ padding: "10px 12px", fontSize: 11, color: dark ? "rgba(255,255,255,.45)" : "rgba(0,0,0,.4)", textAlign: "center" }}>No match</div>}
           {shown.map((o) => {
             const active = o.value === value;
             return (

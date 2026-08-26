@@ -38,18 +38,18 @@ function QualityInner({ serviceCount, platformCount }) {
             <h2 className="text-lg font-semibold mb-3" style={{ color: t.text }}>Why most panels have high drop rates</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div>
-                <p className="text-[14px] leading-[1.75] mb-4" style={{ color: t.textSoft }}>
+                <p className="text-[13px] leading-[1.75] mb-4" style={{ color: t.textSoft }}>
                   "Drops" happen when followers, likes, or views disappear after delivery. On most SMM panels, this is common because they list services from dozens of providers without testing them. You place an order, the numbers go up, and a week later half of it is gone.
                 </p>
-                <p className="text-[14px] leading-[1.75]" style={{ color: t.textSoft }}>
+                <p className="text-[13px] leading-[1.75]" style={{ color: t.textSoft }}>
                   The result? You spend hours testing services yourself, wasting money on bad ones, and still never knowing which provider is reliable this week. It's a guessing game.
                 </p>
               </div>
               <div>
-                <p className="text-[14px] leading-[1.75] mb-4" style={{ color: t.textSoft }}>
+                <p className="text-[13px] leading-[1.75] mb-4" style={{ color: t.textSoft }}>
                   The root cause is simple: most panels are resellers with no quality control. They connect to a provider API, list everything available, and let customers sort through the mess. When a service starts dropping, they don't notice — you do.
                 </p>
-                <p className="text-[14px] leading-[1.75]" style={{ color: t.textSoft }}>
+                <p className="text-[13px] leading-[1.75]" style={{ color: t.textSoft }}>
                   Nigerian creators and businesses waste real money on this cycle. At Nitro, we decided to solve it at the source instead of passing the problem to you.
                 </p>
               </div>
@@ -69,7 +69,7 @@ function QualityInner({ serviceCount, platformCount }) {
                 ['We respond when things go wrong', "If you notice unusual drops, our WhatsApp support team investigates and resolves it. You talk to a real person, not a ticket system."],
               ].map(([title, desc]) => (
                 <div key={title} className="rounded-xl p-5" style={{ background: softBg, border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}` }}>
-                  <div className="text-[14px] font-semibold mb-1.5" style={{ color: t.text }}>{title}</div>
+                  <div className="text-[13px] font-semibold mb-1.5" style={{ color: t.text }}>{title}</div>
                   <div className="text-[13px] leading-[1.6]" style={{ color: t.textMuted }}>{desc}</div>
                 </div>
               ))}
@@ -119,14 +119,14 @@ function QualityInner({ serviceCount, platformCount }) {
             <h2 className="text-lg font-semibold mb-3" style={{ color: t.text }}>What this means for you</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div>
-                <h3 className="text-[14px] font-semibold mb-2" style={{ color: t.text }}>Stop wasting money on trial and error</h3>
-                <p className="text-[14px] leading-[1.75]" style={{ color: t.textSoft }}>
+                <h3 className="text-[13px] font-semibold mb-2" style={{ color: t.text }}>Stop wasting money on trial and error</h3>
+                <p className="text-[13px] leading-[1.75]" style={{ color: t.textSoft }}>
                   On other panels, you have to test 5 different follower services before you find one that sticks. That's 4 wasted orders. On Nitro, every service you see has already been tested — the bad ones were filtered out before they reached you.
                 </p>
               </div>
               <div>
-                <h3 className="text-[14px] font-semibold mb-2" style={{ color: t.text }}>Your growth actually sticks</h3>
-                <p className="text-[14px] leading-[1.75]" style={{ color: t.textSoft }}>
+                <h3 className="text-[13px] font-semibold mb-2" style={{ color: t.text }}>Your growth actually sticks</h3>
+                <p className="text-[13px] leading-[1.75]" style={{ color: t.textSoft }}>
                   Growing from 1,000 to 10,000 followers doesn't help if half of them drop the next week. With curated services and refill protection, the numbers you build on Nitro are numbers you keep. Your social proof stays consistent.
                 </p>
               </div>
@@ -145,7 +145,7 @@ function QualityInner({ serviceCount, platformCount }) {
                 ['What platforms does Nitro support?', `Instagram, TikTok, YouTube, X (Twitter), Facebook, Telegram, Spotify, Snapchat, LinkedIn, Twitch, Discord, and more — ${serviceCount || '35'}+ service categories across ${platformCount || '10'}+ platforms.`],
               ].map(([q, a]) => (
                 <div key={q} className="rounded-xl p-5" style={{ background: cardBg, border: `1px solid ${border}` }}>
-                  <div className="text-[14px] font-semibold mb-1.5" style={{ color: t.text }}>{q}</div>
+                  <div className="text-[13px] font-semibold mb-1.5" style={{ color: t.text }}>{q}</div>
                   <div className="text-[13px] leading-[1.65]" style={{ color: t.textMuted }}>{a}</div>
                 </div>
               ))}

@@ -108,7 +108,7 @@ export default function LeaderboardPage({ dark, t }) {
   const periodLabel = period === "month" ? new Date().toLocaleDateString("en-US", { month: "long" }) : "All time";
   const rewardAnnouncement = data?.rewardAnnouncement;
 
-  const pillCls = "py-[6px] px-4 max-md:px-3 rounded-[20px] text-[13px] max-md:text-[12px] font-medium cursor-pointer border font-[inherit] transition-all duration-200";
+  const pillCls = "py-[6px] px-4 max-md:px-3 rounded-[20px] text-[13px] max-md:text-[11px] font-medium cursor-pointer border font-[inherit] transition-all duration-200";
   const pill = (on) => ({ borderColor: on ? (dark ? "#c47d8e" : "#a3586b") : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.12)"), color: on ? (dark ? "#c47d8e" : "#a3586b") : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.45)"), background: on ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)") : "transparent" });
   const ddStyle = { padding: "7px 28px 7px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500, background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`, color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)", appearance: "none", cursor: "pointer", fontFamily: "inherit", backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 8px center" };
 
@@ -186,7 +186,7 @@ export default function LeaderboardPage({ dark, t }) {
         {/* Your rank — desktop only */}
         {yourRank && (
           <div className="lb-you-desktop rounded-xl py-3.5 px-5 max-md:py-3 max-md:px-3.5 flex items-center gap-4 mb-5 border" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderColor: dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.16)" }}>
-            <div className="text-[26px] max-md:text-xl font-bold" style={{ color: dark ? "#c47d8e" : "#a3586b" }}>#{yourRank}</div>
+            <div className="text-[28px] max-md:text-xl font-bold" style={{ color: dark ? "#c47d8e" : "#a3586b" }}>#{yourRank}</div>
             <div className="flex-1">
               <div className="text-sm font-semibold flex items-center gap-1.5 text-t-text">Your Rank {yourBadge && <><ShieldBadge color={yourBadge.color} size={14} tier={yourBadge.name} /><span style={{ color: yourBadge.color }}>{yourBadge.name}</span></>}</div>
               <div className="text-xs text-t-text-muted">

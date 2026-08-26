@@ -440,7 +440,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           </div>
           <div>
             <div className="text-[13px] font-semibold text-accent">Welcome bonus</div>
-            <div className="text-[12.5px] mt-0.5 text-t-text-soft leading-[1.45]">Your first deposit earns up to ₦3,000 free. The more you add, the bigger the bonus.</div>
+            <div className="text-[13px] mt-0.5 text-t-text-soft leading-[1.45]">Your first deposit earns up to ₦3,000 free. The more you add, the bigger the bonus.</div>
           </div>
         </div>
       )}
@@ -452,25 +452,25 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               const total = p.amount + p.bonus;
               return (
                 <button key={p.amount} onClick={() => setAmount(String(p.amount))} className="m relative pt-[18px] pb-3 max-md:pt-4 max-md:pb-2.5 rounded-[12px] text-center cursor-pointer transition-[border-color,background-color,box-shadow,transform] duration-150 hover:translate-y-[-1px]" style={{ border: `1.5px solid ${sel ? t.accent : (p.tag ? (dark ? 'rgba(196,125,142,.25)' : 'rgba(196,125,142,.18)') : t.cardBorder)}`, background: sel ? (dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.08)') : 'transparent', boxShadow: sel ? '0 0 14px rgba(196,125,142,.12)' : 'none' }}>
-                  {p.tag && <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] font-bold py-0.5 px-2.5 rounded-full text-white whitespace-nowrap" style={{ background: 'linear-gradient(135deg,#c47d8e,#a3586b)', boxShadow: '0 2px 8px rgba(196,125,142,.3)', letterSpacing: .3 }}>{p.tag}</span>}
+                  {p.tag && <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[11px] font-bold py-0.5 px-2.5 rounded-full text-white whitespace-nowrap" style={{ background: 'linear-gradient(135deg,#c47d8e,#a3586b)', boxShadow: '0 2px 8px rgba(196,125,142,.3)', letterSpacing: .3 }}>{p.tag}</span>}
                   <div className="text-lg max-md:text-base font-extrabold" style={{ color: sel ? t.accent : t.text, letterSpacing: -.3 }}>₦{p.amount.toLocaleString()}</div>
-                  <div className="inline-flex items-center gap-1 mt-1 py-0.5 px-2 rounded-md text-[11px] max-md:text-[10px] font-bold" style={{ background: sel ? (dark ? 'rgba(110,231,183,.15)' : 'rgba(5,150,105,.1)') : (dark ? 'rgba(110,231,183,.07)' : 'rgba(5,150,105,.05)'), color: sel ? (dark ? '#6ee7b7' : '#059669') : (dark ? 'rgba(110,231,183,.6)' : 'rgba(5,150,105,.5)') }}>+₦{p.bonus.toLocaleString()} free</div>
-                  <div className="text-[10px] max-md:text-[9px] mt-1 text-t-text-muted">₦{total.toLocaleString()} to spend</div>
+                  <div className="inline-flex items-center gap-1 mt-1 py-0.5 px-2 rounded-md text-[11px] max-md:text-[11px] font-bold" style={{ background: sel ? (dark ? 'rgba(110,231,183,.15)' : 'rgba(5,150,105,.1)') : (dark ? 'rgba(110,231,183,.07)' : 'rgba(5,150,105,.05)'), color: sel ? (dark ? '#6ee7b7' : '#059669') : (dark ? 'rgba(110,231,183,.6)' : 'rgba(5,150,105,.5)') }}>+₦{p.bonus.toLocaleString()} free</div>
+                  <div className="text-[11px] max-md:text-[11px] mt-1 text-t-text-muted">₦{total.toLocaleString()} to spend</div>
                 </button>
               );
             })}
           </div>
           <div className="flex items-center gap-3 mb-3 max-md:mb-2.5">
             <div className="flex-1 h-px bg-t-card-border" />
-            <span className="text-[10px] font-semibold uppercase tracking-[1.2px] text-t-text-muted">or enter amount</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-t-text-muted">or enter amount</span>
             <div className="flex-1 h-px bg-t-card-border" />
           </div>
         </>
       )}
       {!welcomeEligible && <div className="text-sm font-semibold uppercase tracking-[1px] mb-2.5 text-t-text-soft">Amount to deposit</div>}
       <div className="flex items-center gap-1 py-3.5 px-[18px] max-desktop:py-3 max-desktop:px-4 max-md:py-3 max-md:px-3.5 rounded-xl mb-4 max-md:mb-3" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${amount ? t.accent : t.cardBorder}` }}>
-        <span className="m text-[26px] max-desktop:text-[22px] max-md:text-xl font-semibold" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.4)" }}>₦</span>
-        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="m border-none text-[30px] max-desktop:text-[26px] max-md:text-2xl font-semibold w-full outline-none bg-transparent placeholder:opacity-[.12] text-t-text" />
+        <span className="m text-[28px] max-desktop:text-[22px] max-md:text-xl font-semibold" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.4)" }}>₦</span>
+        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="m border-none text-[28px] max-desktop:text-[28px] max-md:text-2xl font-semibold w-full outline-none bg-transparent placeholder:opacity-[.12] text-t-text" />
       </div>
       {!welcomeEligible && (
         <div className="grid grid-cols-3 gap-2 max-md:gap-1.5 mb-3">
@@ -488,7 +488,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.08)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? '#6ee7b7' : '#059669'} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
             </div>
-            <span className="text-[12.5px] font-semibold" style={{ color: dark ? '#6ee7b7' : '#059669' }}>+₦{wb.toLocaleString()} welcome bonus will be added</span>
+            <span className="text-[13px] font-semibold" style={{ color: dark ? '#6ee7b7' : '#059669' }}>+₦{wb.toLocaleString()} welcome bonus will be added</span>
           </div>
         );
       })()}
@@ -502,7 +502,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.08)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             </div>
-            <span className="text-[12.5px] font-medium text-t-text-soft">
+            <span className="text-[13px] font-medium text-t-text-soft">
               {cur > 0
                 ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add ₦{diff.toLocaleString()} more</button> and get <strong className="text-accent">₦{nt.bonus.toLocaleString()} free</strong> instead of ₦{cur.toLocaleString()}.</>
                 : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add ₦{diff.toLocaleString()} more</button> to unlock your <strong className="text-accent">₦{nt.bonus.toLocaleString()} welcome bonus</strong>.</>
@@ -518,7 +518,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             Minimum deposit is ₦1,000
           </div>
         ) : !valid && (
-          <div className="text-[12px] text-t-text-muted">Minimum deposit is ₦1,000</div>
+          <div className="text-[11px] text-t-text-muted">Minimum deposit is ₦1,000</div>
         )}
       </div>
     </>
@@ -618,7 +618,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             {paymentNoticeTone.symbol}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[12px] font-semibold" style={{ color: paymentNoticeTone.color }}>{paymentNoticeTone.title} <span className="font-normal opacity-75">— {paymentNotice.message}</span></div>
+            <div className="text-[11px] font-semibold" style={{ color: paymentNoticeTone.color }}>{paymentNoticeTone.title} <span className="font-normal opacity-75">— {paymentNotice.message}</span></div>
           </div>
           <button onClick={() => setPaymentStatus(null)} className="bg-transparent border-none cursor-pointer p-1 rounded-md shrink-0" style={{ color: paymentNoticeTone.color, opacity: .45 }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -649,7 +649,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             {user?.bonusCredit?.amount > 0 && (() => {
               const daysLeft = Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000));
               return (
-                <div className="flex items-center gap-1.5 mt-2 py-2 px-2.5 rounded-lg text-[12px]" style={{ background: dark ? "rgba(240,171,252,.06)" : "rgba(168,85,247,.04)", border: `1px solid ${dark ? "rgba(240,171,252,.14)" : "rgba(168,85,247,.1)"}`, color: dark ? "#f0abfc" : "#a855f7" }}>
+                <div className="flex items-center gap-1.5 mt-2 py-2 px-2.5 rounded-lg text-[11px]" style={{ background: dark ? "rgba(240,171,252,.06)" : "rgba(168,85,247,.04)", border: `1px solid ${dark ? "rgba(240,171,252,.14)" : "rgba(168,85,247,.1)"}`, color: dark ? "#f0abfc" : "#a855f7" }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>
                   <span>{fN(user.bonusCredit.amount / 100)} bonus credit — expires in {daysLeft}d</span>
                 </div>
@@ -658,7 +658,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             {pendingDeposits.length > 0 && (() => {
               const awaitingTx = pendingDeposits.find(tx => tx.awaitingConfirmation);
               return (
-                <div className="flex items-center gap-1.5 mt-2 py-2.5 px-2.5 rounded-lg text-[12px]" style={{ background: dark ? "rgba(252,211,77,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(252,211,77,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fcd34d" : "#d97706" }}>
+                <div className="flex items-center gap-1.5 mt-2 py-2.5 px-2.5 rounded-lg text-[11px]" style={{ background: dark ? "rgba(252,211,77,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(252,211,77,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fcd34d" : "#d97706" }}>
                   <div className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
                   <span className="flex-1">{pendingSummaryText}</span>
                   {awaitingTx && <>
@@ -728,10 +728,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                         {g.id === "flutterwave" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> : g.id === "crypto" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-6.083-1.072m6.083 1.072.347-1.969M7.116 16.676l-2.576-.454M9.21 4.835l-.347 1.97m0 0-2.576-.455"/></svg> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[12px] font-semibold leading-tight" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
-                        {meta.desc && <div className="text-[10px] leading-tight text-t-text-muted">{meta.desc}</div>}
+                        <div className="text-[11px] font-semibold leading-tight" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
+                        {meta.desc && <div className="text-[11px] leading-tight text-t-text-muted">{meta.desc}</div>}
                       </div>
-                      {sel ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> : meta.speed ? <span className="text-[9px] font-medium py-px px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>{meta.speed}</span> : null}
+                      {sel ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> : meta.speed ? <span className="text-[11px] font-medium py-px px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>{meta.speed}</span> : null}
                     </button>
                   ); })}
                 </div>
@@ -739,7 +739,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
                 <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2 text-t-text-muted">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  <span className="text-[10px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold text-accent bg-transparent border-none p-0 font-[inherit] text-[inherit]">Manual Transfer</button> as a backup.</span>
+                  <span className="text-[11px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold text-accent bg-transparent border-none p-0 font-[inherit] text-[inherit]">Manual Transfer</button> as a backup.</span>
                 </div>
               )}
 
@@ -842,10 +842,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                         {g.id === "flutterwave" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> : g.id === "crypto" ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-6.083-1.072m6.083 1.072.347-1.969M7.116 16.676l-2.576-.454M9.21 4.835l-.347 1.97m0 0-2.576-.455"/></svg> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sel ? (dark ? "#e8b4c0" : "#a05468") : t.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[12px] font-semibold leading-tight" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
-                        {meta.desc && <div className="text-[10px] leading-tight text-t-text-muted">{meta.desc}</div>}
+                        <div className="text-[11px] font-semibold leading-tight" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
+                        {meta.desc && <div className="text-[11px] leading-tight text-t-text-muted">{meta.desc}</div>}
                       </div>
-                      {sel ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> : meta.speed ? <span className="text-[9px] font-medium py-px px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>{meta.speed}</span> : null}
+                      {sel ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> : meta.speed ? <span className="text-[11px] font-medium py-px px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>{meta.speed}</span> : null}
                     </button>
                   ); })}
                 </div>
@@ -855,7 +855,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
                 <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2 text-t-text-muted">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  <span className="text-[10px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold text-accent bg-transparent border-none p-0 font-[inherit] text-[inherit]">Manual Transfer</button> as a backup.</span>
+                  <span className="text-[11px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold text-accent bg-transparent border-none p-0 font-[inherit] text-[inherit]">Manual Transfer</button> as a backup.</span>
                 </div>
               )}
               <PayButton onClick={handlePay} disabled={loading} loading={loading} text={loading ? "Processing..." : `Pay ${fN(numAmount)} Now`} className="mt-3" />
@@ -1041,7 +1041,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <div className="p-5">
               <div className="text-base font-semibold mb-1 text-t-text">Confirm Payment</div>
               <div className="text-[13px] mb-4 text-t-text-muted">You're confirming a deposit of <span className="font-semibold text-t-text">{fN(confirmModal.amount)}</span></div>
-              <label className="text-[12px] font-medium mb-1.5 block text-t-text-muted">Account name you sent from</label>
+              <label className="text-[11px] font-medium mb-1.5 block text-t-text-muted">Account name you sent from</label>
               <input value={senderName} onChange={e => setSenderName(e.target.value)} placeholder="e.g. John Doe" autoFocus className="w-full py-2.5 px-3 rounded-lg text-sm outline-none text-t-text font-[inherit]" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} />
               <button onClick={async () => {
                 if (!senderName.trim()) return;
@@ -1161,13 +1161,13 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm desktop:text-[15px] font-medium overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{txLabel(tx.type)}</span>
-                  {statusMeta && <span className="text-[10px] font-semibold py-px px-1.5 rounded" style={{ background: statusMeta.bg, color: statusMeta.color }}>{statusMeta.label}</span>}
-                  {tx.orderStatus && !["Completed", "Cancelled"].includes(tx.orderStatus) && <span className="text-[10px] font-semibold py-px px-1.5 rounded" style={{ background: tx.orderStatus === "Processing" ? (dark ? "rgba(165,180,252,.12)" : "rgba(99,102,241,.08)") : (dark ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)"), color: tx.orderStatus === "Processing" ? (dark ? "#a5b4fc" : "#6366f1") : (dark ? "#fcd34d" : "#d97706") }}>{tx.orderStatus}</span>}
+                  {statusMeta && <span className="text-[11px] font-semibold py-px px-1.5 rounded" style={{ background: statusMeta.bg, color: statusMeta.color }}>{statusMeta.label}</span>}
+                  {tx.orderStatus && !["Completed", "Cancelled"].includes(tx.orderStatus) && <span className="text-[11px] font-semibold py-px px-1.5 rounded" style={{ background: tx.orderStatus === "Processing" ? (dark ? "rgba(165,180,252,.12)" : "rgba(99,102,241,.08)") : (dark ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)"), color: tx.orderStatus === "Processing" ? (dark ? "#a5b4fc" : "#6366f1") : (dark ? "#fcd34d" : "#d97706") }}>{tx.orderStatus}</span>}
                 </div>
-                <div className="text-[12px] desktop:text-[13px] mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-t-text-muted">{txDesc(tx)}</div>
+                <div className="text-[11px] desktop:text-[13px] mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-t-text-muted">{txDesc(tx)}</div>
               </div>
               <div className="text-right shrink-0">
-                <div className="m text-[14px] desktop:text-[15px] font-bold" style={{ color: rowColor }}>
+                <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: rowColor }}>
                   {txAmountPrefix(tx)}{fN(tx.amount)}
                 </div>
                 <div className="text-[11px] mt-0.5 text-t-text-muted">{tx.date ? fD(tx.date, true) : ""}</div>

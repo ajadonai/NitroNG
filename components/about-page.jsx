@@ -52,20 +52,20 @@ function AboutInner() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-14">
             <section>
               <h2 className="text-lg font-semibold mb-3" style={{ color: t.text }}>What we do</h2>
-              <p className="text-[14px] leading-[1.75] mb-4" style={{ color: t.textSoft }}>
+              <p className="text-[13px] leading-[1.75] mb-4" style={{ color: t.textSoft }}>
                 We make social media growth simple. Whether you're a creator trying to hit your first 10,000 followers, a business building credibility online, or a marketer managing multiple brands — Nitro handles the numbers so you can focus on your content.
               </p>
-              <p className="text-[14px] leading-[1.75]" style={{ color: t.textSoft }}>
+              <p className="text-[13px] leading-[1.75]" style={{ color: t.textSoft }}>
                 We offer 140+ service types across 28 platforms including Instagram, TikTok, YouTube, X, Facebook, Telegram, and Spotify. Every service is priced in Naira with no dollar conversion, no hidden fees, and no password required — just your public profile link.
               </p>
             </section>
 
             <section>
               <h2 className="text-lg font-semibold mb-3" style={{ color: t.text }}>Why Nitro exists</h2>
-              <p className="text-[14px] leading-[1.75] mb-4" style={{ color: t.textSoft }}>
+              <p className="text-[13px] leading-[1.75] mb-4" style={{ color: t.textSoft }}>
                 Most SMM panels are built for a global audience — dollar pricing, international payment gateways that reject Nigerian cards, and support teams in different time zones. We built Nitro because Nigerian creators and businesses deserve a growth tool that works for them.
               </p>
-              <p className="text-[14px] leading-[1.75]" style={{ color: t.textSoft }}>
+              <p className="text-[13px] leading-[1.75]" style={{ color: t.textSoft }}>
                 That means Naira pricing from day one. Bank transfers, Flutterwave, and crypto for payments. Support that responds in minutes, not days. And a clean, modern dashboard that doesn't feel like it was built in 2015.
               </p>
             </section>
@@ -89,7 +89,7 @@ function AboutInner() {
                 ['Registered business', 'RC 9514845. We\'re a real company, not a WhatsApp-only operation.'],
               ].map(([title, desc]) => (
                 <div key={title} className="rounded-xl p-5" style={{ background: softBg, border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}` }}>
-                  <div className="text-[14px] font-semibold mb-1.5" style={{ color: t.text }}>{title}</div>
+                  <div className="text-[13px] font-semibold mb-1.5" style={{ color: t.text }}>{title}</div>
                   <div className="text-[13px] leading-[1.6]" style={{ color: t.textMuted }}>{desc}</div>
                 </div>
               ))}
@@ -109,7 +109,7 @@ function AboutInner() {
               ].map(([label, value], i, arr) => (
                 <div key={label} className="flex items-center justify-between py-3.5 px-5" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)"}` : undefined }}>
                   <span className="text-[13px] font-medium" style={{ color: t.textMuted }}>{label}</span>
-                  <span className="text-[14px] font-semibold" style={{ color: t.text }}>{value}</span>
+                  <span className="text-[13px] font-semibold" style={{ color: t.text }}>{value}</span>
                 </div>
               ))}
             </div>

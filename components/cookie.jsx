@@ -40,7 +40,7 @@ function LegalLayout({label,title,titleAccent,date,sections,emailField,relatedLi
               <div className="flex items-start gap-4">
                 <span className="text-[13px] font-semibold shrink-0 mt-0.5 w-6" style={{color:t.accent}}>{String(i+1).padStart(2,"0")}</span>
                 <div className="flex-1">
-                  <h2 className="text-[17px] font-semibold mb-2.5 -tracking-[.2px]" style={{color:t.text}}>{sTitle}</h2>
+                  <h2 className="text-[18px] font-semibold mb-2.5 -tracking-[.2px]" style={{color:t.text}}>{sTitle}</h2>
                   <p className="text-[15px] leading-[1.85]" style={{color:t.soft,fontWeight:500}}>
                     {emailField&&content.includes(emailField)?<>{content.split(emailField)[0]}<a href={`mailto:${emailField}`} style={{color:t.accent}}>{emailField}</a>{content.split(emailField)[1]||""}</>:content}
                   </p>

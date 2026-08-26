@@ -42,7 +42,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
           <div className="grid grid-cols-[1fr_1.2fr] max-desktop:!grid-cols-1 gap-[60px] max-desktop:!gap-8 max-md:!gap-6 py-20 px-12 max-desktop:!py-14 max-desktop:!px-10 max-md:!py-12 max-md:!px-5 items-center">
             <div>
               <div data-reveal className="text-xs font-medium tracking-[2px] uppercase mb-4" style={{color:t.accent}}>Why Nitro</div>
-              <h2 data-reveal="1" className="text-[48px] max-desktop:!text-4xl max-md:!text-[28px] font-bold leading-[1.05] -tracking-[1.5px] mb-4" style={{color:t.text}}>Grow your brand.<br/>Keep your audience.<br/><span className="serif max-desktop:!text-[40px] max-md:!text-[32px] italic font-normal text-[54px] block" style={{color:t.accent}}>Built for Nigeria.</span></h2>
+              <h2 data-reveal="1" className="text-[48px] max-desktop:!text-4xl max-md:!text-[28px] font-bold leading-[1.05] -tracking-[1.5px] mb-4" style={{color:t.text}}>Grow your brand.<br/>Keep your audience.<br/><span className="serif max-desktop:!text-[40px] max-md:!text-[28px] italic font-normal text-[54px] block" style={{color:t.accent}}>Built for Nigeria.</span></h2>
               <p data-reveal="2" className="text-base leading-[1.7] max-w-[400px] mb-7" style={{color:t.textSoft}}>The growth tools Nigerian creators and businesses actually deserve — Naira pricing, fast delivery, and a team that actually picks up when you call.</p>
             </div>
             <div data-reveal="2" className="s2-feat-list flex flex-col gap-2">
@@ -64,7 +64,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
           {/* HOW IT WORKS — horizontal timeline */}
           <div className="s2-how pt-[60px] px-12 pb-20 max-desktop:!px-10 max-md:!px-5" style={{backgroundColor:dark?"rgba(0,0,0,.24)":"rgba(0,0,0,.06)",backgroundImage:`linear-gradient(to right,${dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.04)"} 1px,transparent 1px),linear-gradient(to bottom,${dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.04)"} 1px,transparent 1px)`,backgroundSize:"40px 40px",borderTop:`1px solid ${dark?"rgba(255,255,255,.12)":"rgba(0,0,0,.08)"}`,borderBottom:`1px solid ${dark?"rgba(255,255,255,.12)":"rgba(0,0,0,.08)"}`}}>
             <div className="flex items-baseline gap-4 mb-10">
-              <h3 data-reveal className="text-[28px] font-semibold -tracking-[0.5px]" style={{color:t.text}}>How it <span className="serif italic font-medium text-[32px]" style={{color:t.accent}}>works</span></h3>
+              <h3 data-reveal className="text-[28px] font-semibold -tracking-[0.5px]" style={{color:t.text}}>How it <span className="serif italic font-medium text-[28px]" style={{color:t.accent}}>works</span></h3>
               <div className="flex-1 h-px" style={{background:dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.06)"}}/>
             </div>
             <div className="grid grid-cols-4 max-md:!grid-cols-2 gap-0 max-md:!gap-2.5">
@@ -91,7 +91,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
           <div className="flex flex-col text-left max-md:text-center">
             <div data-reveal className="mb-3 max-md:mb-2.5"><span className="m text-[13px] max-md:text-xs font-semibold tracking-[3px] uppercase" style={{color:t.accent}}>Pricing</span></div>
             <div className="w-full">
-              <h2 data-reveal="1" className="text-4xl max-desktop:text-[32px] max-md:text-[26px] font-semibold mb-2 max-md:mb-1" style={{color:t.text}}>Pay per service, <span className="serif italic font-normal text-[40px] max-desktop:text-4xl max-md:text-[30px]" style={{color:t.accent}}>no subscriptions.</span></h2>
+              <h2 data-reveal="1" className="text-4xl max-desktop:text-[28px] max-md:text-[28px] font-semibold mb-2 max-md:mb-1" style={{color:t.text}}>Pay per service, <span className="serif italic font-normal text-[40px] max-desktop:text-4xl max-md:text-[28px]" style={{color:t.accent}}>no subscriptions.</span></h2>
               <p data-reveal="2" className="text-base max-md:text-[15px] mb-10 max-desktop:mb-8 max-md:mb-6 max-w-[520px] max-desktop:max-w-[440px] max-md:max-w-[300px] max-md:mx-auto leading-[1.6] max-md:leading-[1.5]" style={{color:t.textSoft}}>No hidden fees. No monthly plans. Just fund your wallet and order.</p>
 
               {pricingData?.length > 0 && <div data-reveal="3" className="grid grid-cols-3 max-desktop:grid-cols-2 max-md:grid-cols-1 gap-4 max-desktop:gap-3 max-md:gap-3 mb-10 max-desktop:mb-8 max-md:mb-6 items-stretch [&>div]:flex [&>div]:flex-col">
@@ -101,7 +101,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
                   const fromPrice = `₦${(p.minPrice / 100).toLocaleString()}`;
                   return (
                   <div key={p.platform} className="s3-card relative rounded-2xl overflow-hidden flex flex-col" style={{background:dark?"rgba(255,255,255,.09)":"rgba(255,255,255,.85)",border:`${isPopular?"1.5":"1"}px solid ${isPopular?t.accent:(dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.18)")}`}}>
-                    {isPopular&&<div className="absolute top-3 right-3 py-[3px] px-2.5 rounded-md text-[10px] font-semibold tracking-[0.5px] uppercase" style={{background:dark?"rgba(196,125,142,.19)":"rgba(196,125,142,.14)",color:t.accent,border:`0.5px solid ${dark?"rgba(196,125,142,.28)":"rgba(196,125,142,.24)"}`}}>Most popular</div>}
+                    {isPopular&&<div className="absolute top-3 right-3 py-[3px] px-2.5 rounded-md text-[11px] font-semibold tracking-[0.5px] uppercase" style={{background:dark?"rgba(196,125,142,.19)":"rgba(196,125,142,.14)",color:t.accent,border:`0.5px solid ${dark?"rgba(196,125,142,.28)":"rgba(196,125,142,.24)"}`}}>Most popular</div>}
                     <div className="pt-5 px-5 pb-4 flex items-center gap-2.5">
                       <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{background:pi.bg}}>{pi.icon}</div>
                       <span className="text-base font-semibold" style={{color:t.text}}>{p.platform}</span>
@@ -149,11 +149,11 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
           <div className="flex justify-between items-end max-md:flex-col max-md:items-start max-md:gap-4 mb-10 max-desktop:mb-8 max-md:mb-6 max-md:px-5">
             <div className="flex-1">
               <div data-reveal className="m text-[13px] max-md:text-xs font-semibold tracking-[3px] uppercase mb-3 max-md:mb-2.5" style={{color:t.accent}}>Testimonials</div>
-              <h2 data-reveal="1" className="text-4xl max-desktop:text-[32px] max-md:text-[26px] font-semibold mb-1.5 max-md:mb-1" style={{color:t.text}}>Creators who <span className="serif italic font-normal text-[40px] max-desktop:text-4xl max-md:text-[30px]" style={{color:t.accent}}>trust us.</span></h2>
+              <h2 data-reveal="1" className="text-4xl max-desktop:text-[28px] max-md:text-[28px] font-semibold mb-1.5 max-md:mb-1" style={{color:t.text}}>Creators who <span className="serif italic font-normal text-[40px] max-desktop:text-4xl max-md:text-[28px]" style={{color:t.accent}}>trust us.</span></h2>
               <p data-reveal="2" className="text-[15px] max-md:text-sm max-w-[440px] max-desktop:max-w-[400px] max-md:max-w-[300px] leading-[1.6]" style={{color:t.textSoft}}>Real reviews from Nigerian creators and businesses growing with Nitro.</p>
             </div>
             {siteStats.deliveryRate!=null&&<div data-reveal="3" className="flex items-center gap-3 py-4 px-6 rounded-[14px] shrink-0 max-md:hidden" style={{background:dark?"rgba(255,255,255,.09)":"rgba(255,255,255,.7)",border:`1px solid ${dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.14)"}`}}>
-              <span className="m text-[32px] max-md:text-2xl font-semibold leading-none" style={{color:t.accent}}>{siteStats.deliveryRate}%</span>
+              <span className="m text-[28px] max-md:text-2xl font-semibold leading-none" style={{color:t.accent}}>{siteStats.deliveryRate}%</span>
               <div>
                 <div className="text-sm font-semibold" style={{color:t.text}}>Delivery rate</div>
                 <span className="text-xs" style={{color:t.textMuted}}>{siteStats.orders||"0"} orders placed</span>
@@ -211,9 +211,9 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
             <div className="absolute inset-0 pointer-events-none opacity-[.03]" style={{backgroundImage:"url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",backgroundSize:"128px"}}/>
 
             <div className="relative z-[2] max-w-[640px] mx-auto pt-20 px-[60px] pb-16 max-desktop:!pt-16 max-desktop:!px-10 max-desktop:!pb-12 max-md:!pt-14 max-md:!px-6 max-md:!pb-12">
-              <h2 data-reveal className="text-[60px] max-desktop:!text-[42px] max-md:!text-[34px] font-bold text-white leading-[1.02] -tracking-[2.5px] mb-1">Your Audience</h2>
+              <h2 data-reveal className="text-[60px] max-desktop:!text-[42px] max-md:!text-[36px] font-bold text-white leading-[1.02] -tracking-[2.5px] mb-1">Your Audience</h2>
               <h2 data-reveal="1" className="serif italic font-normal text-[68px] max-desktop:!text-[48px] max-md:!text-[40px] leading-[1.02] mb-5 max-desktop:!mb-5 max-md:!mb-4" style={{color:dark?"#c47d8e":"#fff",textShadow:dark?"none":"0 4px 32px rgba(0,0,0,.15)"}}>Won't Grow Itself.</h2>
-              <p data-reveal="2" className="text-[17px] leading-[1.7] max-w-[440px] mx-auto mb-9 max-md:!mb-7" style={{color:dark?"rgba(255,255,255,.5)":"rgba(255,255,255,.8)"}}>Every minute you wait, your competitors are getting ahead. Join a community with {siteStats.users||"0"} Nitro accounts created.</p>
+              <p data-reveal="2" className="text-[18px] leading-[1.7] max-w-[440px] mx-auto mb-9 max-md:!mb-7" style={{color:dark?"rgba(255,255,255,.5)":"rgba(255,255,255,.8)"}}>Every minute you wait, your competitors are getting ahead. Join a community with {siteStats.users||"0"} Nitro accounts created.</p>
 
               <div data-reveal="3" className="s6-buttons flex gap-3.5 justify-center flex-wrap mb-8 max-md:!mb-6">
                 <a href="/signup" className="s6-btn-primary py-[18px] px-14 rounded-[14px] text-base font-semibold border-none cursor-pointer relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg no-underline text-center" onClick={e=>{e.preventDefault();setModal("signup")}} style={{background:"#fff",color:"#1a1a1a",boxShadow:"0 8px 32px rgba(255,255,255,.2), 0 2px 8px rgba(255,255,255,.14)"}}>Start Growing Now {"→"}</a>
@@ -223,7 +223,7 @@ export default function LandingBelowFold({ t, dark, setModal, siteStats, socialL
               {/* Trust strip */}
               <div data-reveal="4" className="flex justify-center gap-3 flex-wrap">
                 {[["M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z","Trusted by creators"],["M12 12m-10 0a10 10 0 1020 0 10 10 0 10-20 0M12 6v6l4 2","Fast delivery"],["M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z","Human support"]].map(([path,label])=>(
-                  <div key={label} className="flex items-center gap-1.5 text-[12px] font-medium py-1.5 px-3.5 rounded-full" style={{color:dark?"rgba(255,255,255,.6)":"rgba(255,255,255,.85)",background:dark?"rgba(255,255,255,.09)":"rgba(255,255,255,.16)",border:`0.5px solid ${dark?"rgba(255,255,255,.12)":"rgba(255,255,255,.18)"}`}}>
+                  <div key={label} className="flex items-center gap-1.5 text-[11px] font-medium py-1.5 px-3.5 rounded-full" style={{color:dark?"rgba(255,255,255,.6)":"rgba(255,255,255,.85)",background:dark?"rgba(255,255,255,.09)":"rgba(255,255,255,.16)",border:`0.5px solid ${dark?"rgba(255,255,255,.12)":"rgba(255,255,255,.18)"}`}}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d={path}/></svg>
                     {label}
                   </div>

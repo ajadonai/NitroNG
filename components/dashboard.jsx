@@ -1136,7 +1136,7 @@ function DashboardInner({ initialData }) {
           {/* Balance pill — desktop only */}
           <button onClick={() => setActive("add-funds")} className="max-desktop:hidden flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] cursor-pointer bg-transparent" style={{ border: `0.5px solid ${dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.12)"}`, background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", transition: "background .2s ease" }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            <span className="m text-[12px] font-semibold text-t-green">₦{Math.round(user?.balance || 0).toLocaleString()}</span>
+            <span className="m text-[11px] font-semibold text-t-green">₦{Math.round(user?.balance || 0).toLocaleString()}</span>
           </button>
           {/* Theme toggle — desktop only */}
           <button onClick={toggleTheme} className="dash-theme-toggle max-desktop:hidden" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} style={{ background: dark ? "rgba(99,102,241,.28)" : "rgba(0,0,0,.12)", border: `0.5px solid ${dark ? "rgba(99,102,241,.24)" : "rgba(0,0,0,.14)"}` }}>
@@ -1150,7 +1150,7 @@ function DashboardInner({ initialData }) {
           {/* Support — mobile/tablet only (replaces theme toggle) */}
           <button onClick={() => { if (socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); } }} className="hidden max-desktop:flex items-center gap-1 h-[30px] px-2.5 rounded-[8px] cursor-pointer border-none relative" aria-label="Support" style={{ background: "#25d366", color: "#fff" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg>
-            <span className="text-[11.5px] font-bold">Help</span>
+            <span className="text-[11px] font-bold">Help</span>
           </button>
           {/* Notification bell */}
           <div ref={notifRef} className="relative">
@@ -1189,7 +1189,7 @@ function DashboardInner({ initialData }) {
                     <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setLeftOpen(false); return; } setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: isActive ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : specialClr ? (dark ? `${specialClr}1e` : `${specialClr}14`) : "transparent", color: item.soon ? t.textMuted : (isActive ? t.accent : specialClr || t.textSoft), fontWeight: isActive || specialClr ? 600 : 450, opacity: item.soon ? 0.5 : 1, cursor: item.soon ? "default" : "pointer" }}>
                       <span className="shrink-0" style={{ opacity: isActive || specialClr ? 1 : .55, color: isActive ? (specialClr || t.accent) : specialClr || t.textMuted }}>{I[item.id]}</span>
                       {item.label}
-                      {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
+                      {item.soon && <span className="text-[11px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
                       {processingCount > 0 && <span className="m dash-nav-badge">{processingCount > 99 ? "99+" : processingCount}</span>}
                     </button>
                   </Fragment>
@@ -1232,7 +1232,7 @@ function DashboardInner({ initialData }) {
             <div className="mb-3 rounded-xl px-4 py-2.5 flex items-center gap-2.5" style={{ background: activePromotion.bannerColor ? `${activePromotion.bannerColor}22` : (dark ? 'rgba(16,185,129,.12)' : 'rgba(16,185,129,.08)'), border: `1px solid ${activePromotion.bannerColor || '#10b981'}44` }}>
               <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: activePromotion.bannerColor || '#10b981' }} />
               <span className="text-sm font-medium flex-1 text-t-text">{activePromotion.bannerCopy}</span>
-              <span className="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 m text-center" style={{ background: activePromotion.bannerColor || '#10b981', color: '#fff' }}>{activePromotion.discountPercent}% OFF{activePromotion.maxDiscountPerOrder ? <><br /><span className="font-medium opacity-90" style={{ fontSize: 10 }}>up to ₦{(activePromotion.maxDiscountPerOrder / 100).toLocaleString()}</span></> : ''}</span>
+              <span className="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 m text-center" style={{ background: activePromotion.bannerColor || '#10b981', color: '#fff' }}>{activePromotion.discountPercent}% OFF{activePromotion.maxDiscountPerOrder ? <><br /><span className="font-medium opacity-90" style={{ fontSize: 11 }}>up to ₦{(activePromotion.maxDiscountPerOrder / 100).toLocaleString()}</span></> : ''}</span>
             </div>
           )}
           {!isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && !isLab && !isTasks && active !== "catalogue" && <div className="pb-6 max-md:pb-4">
@@ -1242,9 +1242,9 @@ function DashboardInner({ initialData }) {
                 <div className="text-sm text-t-text-muted">{orderSummary.total === 0 ? "Place your first order in under a minute." : "Here's your dashboard at a glance."}</div>
               </div>
               <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-                <div className="text-[10px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">Balance</div>
+                <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">Balance</div>
                 <div className="m text-lg max-md:text-base font-semibold text-t-green">{fN(user?.balance || 0)}</div>
-                {user?.bonusCredit && <div className="text-[9px] mt-0.5 text-accent">₦{(user.bonusCredit.amount / 100).toLocaleString()} bonus — expires in {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}
+                {user?.bonusCredit && <div className="text-[11px] mt-0.5 text-accent">₦{(user.bonusCredit.amount / 100).toLocaleString()} bonus — expires in {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}
               </div>
             </div>
             <div className="page-divider bg-t-card-border" />
@@ -1344,7 +1344,7 @@ function DashboardInner({ initialData }) {
               <button key={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (item.id === "support" && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setMoreOpen(false); return; } setActive(item.id); setMoreOpen(false); }} className="dash-more-item" style={{ background: item.id === "support" ? (dark ? "rgba(37,211,102,.15)" : "rgba(37,211,102,.1)") : item.id === "tasks" ? (dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)") : (active === item.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)")), color: item.soon ? (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)") : (item.id === "support" ? "#25d366" : item.id === "tasks" ? (dark ? "#fbbf24" : "#d97706") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)"))), fontWeight: active === item.id || item.id === "tasks" ? 600 : 500, cursor: item.soon ? "default" : "pointer", borderColor: item.soon ? "transparent" : undefined }}>
                 <div className="dash-more-item-icon" style={{ background: item.soon ? (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)") : (item.id === "support" ? (dark ? "rgba(37,211,102,.12)" : "rgba(37,211,102,.08)") : item.id === "tasks" ? (dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)") : (active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"))), color: item.soon ? (dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.3)") : (item.id === "support" ? "#25d366" : item.id === "tasks" ? (dark ? "#fbbf24" : "#d97706") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)"))) }}>{I[item.id]}</div>
                 {item.label}
-                {item.soon && <span className="text-[9px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
+                {item.soon && <span className="text-[11px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
               </button>
             );
           })}

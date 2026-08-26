@@ -160,7 +160,7 @@ export function ConfirmProvider({ children, dark }) {
             </div>
 
             {/* Title + Message */}
-            <h2 id={titleId} className="text-[17px] font-semibold mb-1.5" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>{dialog.title}</h2>
+            <h2 id={titleId} className="text-[18px] font-semibold mb-1.5" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>{dialog.title}</h2>
             <div id={descriptionId}>
               {dialog.body || <div className="text-sm leading-[1.65] mb-5" style={{ color: dark ? "#a09b95" : "#555250" }}>{dialog.message}</div>}
             </div>

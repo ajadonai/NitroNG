@@ -16,7 +16,7 @@ function SettingsModal({ open, onClose, title, dark, t, children }) {
     <div onClick={onClose} className="fixed inset-0 z-[200] flex items-center justify-center bg-black/55 backdrop-blur-[6px]">
       <div onClick={e => e.stopPropagation()} className="w-full max-w-[480px] mx-4 rounded-2xl max-h-[85vh] overflow-y-auto" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, boxShadow: "0 24px 48px rgba(0,0,0,.35)" }}>
         <div className="flex items-center justify-between py-4 px-5" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="text-[16px] font-bold text-t-text">{title}</div>
+          <div className="text-[15px] font-bold text-t-text">{title}</div>
           <button onClick={onClose} className="border-none cursor-pointer p-1 bg-transparent text-t-text-muted">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
@@ -187,8 +187,8 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-semibold text-t-text">Change password</div>
-              <div className="text-[12.5px] mt-0.5 text-t-text-muted">Keep your account secure</div>
+              <div className="text-[13px] font-semibold text-t-text">Change password</div>
+              <div className="text-[13px] mt-0.5 text-t-text-muted">Keep your account secure</div>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
@@ -201,8 +201,8 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-semibold text-t-text">Notifications</div>
-              <div className="text-[12.5px] mt-0.5 text-t-text-muted">{[notifOrders && "Orders", notifPromo && "Promos", notifEmail && "Email"].filter(Boolean).join(" · ") || "All off"}</div>
+              <div className="text-[13px] font-semibold text-t-text">Notifications</div>
+              <div className="text-[13px] mt-0.5 text-t-text-muted">{[notifOrders && "Orders", notifPromo && "Promos", notifEmail && "Email"].filter(Boolean).join(" · ") || "All off"}</div>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
@@ -235,8 +235,8 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-semibold text-t-text">Active sessions</div>
-              <div className="text-[12.5px] mt-0.5 truncate text-t-text-muted">{sessionsLoading ? "Loading..." : `${sessions.length} device${sessions.length !== 1 ? "s" : ""} · This ${sessions.find(s => s.current)?.deviceType || "device"}`}</div>
+              <div className="text-[13px] font-semibold text-t-text">Active sessions</div>
+              <div className="text-[13px] mt-0.5 truncate text-t-text-muted">{sessionsLoading ? "Loading..." : `${sessions.length} device${sessions.length !== 1 ? "s" : ""} · This ${sessions.find(s => s.current)?.deviceType || "device"}`}</div>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
@@ -299,8 +299,8 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
           ].map(([title, desc, on, setOn, key], i, arr) => (
             <div key={title} className="flex items-center justify-between gap-3 py-3" style={{ borderBottom: i < arr.length - 1 ? `0.5px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
               <div>
-                <div className="text-[14px] font-medium text-t-text">{title}</div>
-                <div className="text-[12px] mt-0.5 text-t-text-muted">{desc}</div>
+                <div className="text-[13px] font-medium text-t-text">{title}</div>
+                <div className="text-[11px] mt-0.5 text-t-text-muted">{desc}</div>
               </div>
               <Toggle on={on} onToggle={() => { setOn(!on); saveNotif(key, !on); }} accent={t.accent} />
             </div>

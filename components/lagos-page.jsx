@@ -47,7 +47,7 @@ function LagosInner() {
           {/* Why Lagos matters */}
           <section className="mb-14">
             <h2 className="text-lg font-semibold mb-4" style={{ color: t.text }}>Why being Lagos-based matters</h2>
-            <div className="text-[14px] leading-[1.7] flex flex-col gap-3" style={{ color: t.textSoft }}>
+            <div className="text-[13px] leading-[1.7] flex flex-col gap-3" style={{ color: t.textSoft }}>
               <p>Most SMM panels that show up in Nigerian search results are not Nigerian. They are international services with a Nigeria landing page, priced in dollars or with an exchange rate baked in. When something goes wrong, support is in a different timezone and may not understand how Opay or bank transfer works.</p>
               <p>Nitro is different because we are actually here. The team is in Lagos. The business operates on West Africa Time. When you message support at 2 PM on a Tuesday, you are talking to someone who is also at 2 PM on a Tuesday, not someone working a night shift in another country.</p>
               <p>That sounds like a small thing until you need it.</p>
@@ -67,7 +67,7 @@ function LagosInner() {
                 ].filter(s => s.value != null).map(s => (
                   <div key={s.label} className="rounded-xl p-4 text-center" style={{ background: subtleBg, border: `1px solid ${subtleBorder}` }}>
                     <div className="text-[22px] font-bold mb-1" style={{ color: accent }}>{s.value}</div>
-                    <div className="text-[12px]" style={{ color: t.textMuted }}>{s.label}</div>
+                    <div className="text-[11px]" style={{ color: t.textMuted }}>{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -86,7 +86,7 @@ function LagosInner() {
                 ['Services across 28 platforms', 'Instagram, TikTok, YouTube, Facebook, X, Telegram, Spotify, Audiomack, Boomplay, and 19 more. Music promotion for Nigerian artists on local platforms is something most international panels do not offer.'],
               ].map(([title, desc]) => (
                 <div key={title} className="rounded-xl p-5" style={{ background: cardBg, border: `1px solid ${border}` }}>
-                  <div className="text-[14px] font-semibold mb-1.5" style={{ color: bold }}>{title}</div>
+                  <div className="text-[13px] font-semibold mb-1.5" style={{ color: bold }}>{title}</div>
                   <div className="text-[13px] leading-[1.65]" style={{ color: t.textSoft }}>{desc}</div>
                 </div>
               ))}
@@ -96,7 +96,7 @@ function LagosInner() {
           {/* Popular services */}
           <section className="mb-14">
             <h2 className="text-lg font-semibold mb-2" style={{ color: t.text }}>Popular services in Lagos</h2>
-            <p className="text-[14px] mb-5 leading-[1.6]" style={{ color: t.textSoft }}>
+            <p className="text-[13px] mb-5 leading-[1.6]" style={{ color: t.textSoft }}>
               Lagos creators, businesses and agencies order these services most. Prices are per 1,000, at the time of writing.
             </p>
             <div className="overflow-x-auto">
@@ -128,7 +128,7 @@ function LagosInner() {
                 </tbody>
               </table>
             </div>
-            <p className="text-[12px] mt-3" style={{ color: t.textMuted }}>
+            <p className="text-[11px] mt-3" style={{ color: t.textMuted }}>
               The cheapest service on the catalogue is ₦158 per 1,000. <a href="/pricing" className="underline" style={{ color: accent }}>See all pricing</a>.
             </p>
           </section>
@@ -139,15 +139,15 @@ function LagosInner() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {wa && (
                 <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" className="rounded-xl p-5 no-underline block transition-shadow hover:shadow-lg" style={{ background: cardBg, border: `1px solid ${border}` }}>
-                  <div className="text-[14px] font-semibold mb-1" style={{ color: bold }}>WhatsApp</div>
+                  <div className="text-[13px] font-semibold mb-1" style={{ color: bold }}>WhatsApp</div>
                   <div className="text-[13px]" style={{ color: accent }}>Message us directly</div>
-                  <div className="text-[12px] mt-2" style={{ color: t.textMuted }}>Fastest between 9 AM — 10 PM WAT</div>
+                  <div className="text-[11px] mt-2" style={{ color: t.textMuted }}>Fastest between 9 AM — 10 PM WAT</div>
                 </a>
               )}
               <a href="mailto:support@nitro.ng" className="rounded-xl p-5 no-underline block transition-shadow hover:shadow-lg" style={{ background: cardBg, border: `1px solid ${border}` }}>
-                <div className="text-[14px] font-semibold mb-1" style={{ color: bold }}>Email</div>
+                <div className="text-[13px] font-semibold mb-1" style={{ color: bold }}>Email</div>
                 <div className="text-[13px]" style={{ color: accent }}>support@nitro.ng</div>
-                <div className="text-[12px] mt-2" style={{ color: t.textMuted }}>We reply within 24 hours</div>
+                <div className="text-[11px] mt-2" style={{ color: t.textMuted }}>We reply within 24 hours</div>
               </a>
             </div>
           </section>
@@ -164,7 +164,7 @@ function LagosInner() {
                 ['Why should I choose a Lagos panel over an international one?', 'Naira pricing with no conversion, payment methods that work with your bank, and support in your timezone. International panels may offer lower headline prices but add dollar conversion fees and respond during different hours. For a deeper comparison, read our guide on Nigerian vs international SMM panels.'],
               ].map(([q, a]) => (
                 <details key={q} className="rounded-xl overflow-hidden group" style={{ background: cardBg, border: `1px solid ${border}` }}>
-                  <summary className="cursor-pointer px-5 py-4 text-[14px] font-semibold list-none flex items-center justify-between" style={{ color: bold }}>
+                  <summary className="cursor-pointer px-5 py-4 text-[13px] font-semibold list-none flex items-center justify-between" style={{ color: bold }}>
                     {q}
                     <svg className="w-4 h-4 shrink-0 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
                   </summary>
@@ -184,7 +184,7 @@ function LagosInner() {
                 ['/blog/is-nitro-ng-legit', 'Is Nitro.ng Legit?'],
                 ['/contact', 'Contact Us'],
               ].map(([href, label]) => (
-                <a key={href} href={href} className="text-[14px] no-underline hover:underline" style={{ color: accent }}>{label}</a>
+                <a key={href} href={href} className="text-[13px] no-underline hover:underline" style={{ color: accent }}>{label}</a>
               ))}
             </div>
           </section>

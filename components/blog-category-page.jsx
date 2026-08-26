@@ -22,7 +22,7 @@ function BlogCategoryInner({ slug, label, h1, intro, posts, otherCategories }) {
       <SharedNav />
 
       <nav className="max-w-[900px] mx-auto w-full px-6 pt-8 max-md:pt-6" aria-label="Breadcrumb">
-        <ol className="flex items-center gap-1.5 text-[12px] list-none p-0 m-0" style={{ color: t.muted }}>
+        <ol className="flex items-center gap-1.5 text-[11px] list-none p-0 m-0" style={{ color: t.muted }}>
           <li><a href="/blog" className="no-underline hover:underline" style={{ color: t.muted }}>Blog</a></li>
           <li aria-hidden="true"><Chevron /></li>
           <li style={{ color: accent }}>{label}</li>
@@ -40,10 +40,10 @@ function BlogCategoryInner({ slug, label, h1, intro, posts, otherCategories }) {
 
       {/* Topic chips */}
       <div className="flex flex-wrap justify-center gap-2 px-6 pb-8 max-w-[700px] mx-auto">
-        <a href="/blog" className="py-1.5 px-3.5 rounded-full text-[12px] font-medium no-underline transition-colors" style={{ background: chipBg, color: t.muted }}>All</a>
-        <span className="py-1.5 px-3.5 rounded-full text-[12px] font-medium" style={{ background: chipActive, color: accent, border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.15)'}` }}>{label}</span>
+        <a href="/blog" className="py-1.5 px-3.5 rounded-full text-[11px] font-medium no-underline transition-colors" style={{ background: chipBg, color: t.muted }}>All</a>
+        <span className="py-1.5 px-3.5 rounded-full text-[11px] font-medium" style={{ background: chipActive, color: accent, border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.15)'}` }}>{label}</span>
         {otherCategories.map(c => (
-          <a key={c.slug} href={`/blog/${c.slug}`} className="py-1.5 px-3.5 rounded-full text-[12px] font-medium no-underline transition-colors hover:opacity-80" style={{ background: chipBg, color: t.muted }}>{c.label}</a>
+          <a key={c.slug} href={`/blog/${c.slug}`} className="py-1.5 px-3.5 rounded-full text-[11px] font-medium no-underline transition-colors hover:opacity-80" style={{ background: chipBg, color: t.muted }}>{c.label}</a>
         ))}
       </div>
 

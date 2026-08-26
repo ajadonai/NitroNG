@@ -69,7 +69,7 @@ function HeroCounter({ total, today }) {
         animation: 'pulse-glow 4s ease-in-out infinite',
         pointerEvents: 'none',
       }} />
-      <div style={{ fontSize: 10, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 6, position: 'relative' }}>
+      <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 2, fontWeight: 600, marginBottom: 6, position: 'relative' }}>
         Total Users
       </div>
       <div className="m" style={{ display: 'flex', justifyContent: 'center', gap: 2, position: 'relative' }}>
@@ -125,7 +125,7 @@ function MetricCard({ label, value, formatter, sub, color, icon }) {
       transition: 'background .6s ease, border-color .6s ease, box-shadow .6s ease',
       boxShadow: flash ? `0 0 30px ${color}15, inset 0 0 30px ${color}08` : 'none',
     }}>
-      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
         {icon}
         {label}
       </div>
@@ -138,7 +138,7 @@ function MetricCard({ label, value, formatter, sub, color, icon }) {
       }}>
         {formatter ? formatter(animated) : animated.toLocaleString()}
       </div>
-      {sub && <div style={{ fontSize: 10, color: '#8a8580', marginTop: 3 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 11, color: '#8a8580', marginTop: 3 }}>{sub}</div>}
     </div>
   );
 }
@@ -166,7 +166,7 @@ function Sparkline({ data, color, area, height = 40, label }) {
       padding: '8px 12px',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <span style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>{label}</span>
+        <span style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>{label}</span>
         <span className="m" style={{ fontSize: 11, color, fontWeight: 600 }}>{data[data.length - 1]?.toLocaleString()}</span>
       </div>
       <svg viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" style={{ width: '100%', height, display: 'block' }}>
@@ -182,7 +182,7 @@ function Sparkline({ data, color, area, height = 40, label }) {
           <animate attributeName="opacity" values="1;.4;1" dur="2s" repeatCount="indefinite" />
         </circle>
       </svg>
-      <div style={{ fontSize: 9, color: '#555', marginTop: 2 }}>30d: {Math.round(total).toLocaleString()}</div>
+      <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>30d: {Math.round(total).toLocaleString()}</div>
     </div>
   );
 }
@@ -203,13 +203,13 @@ function HBarChart({ items, label }) {
       height: '100%',
       display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ fontSize: 10, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 16 }}>{label}</div>
+      <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 16 }}>{label}</div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 12 }}>
         {items.map((item, i) => {
           const pct = totalOrders > 0 ? Math.round((item.orders / totalOrders) * 100) : 0;
           return (
             <div key={item.name}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 5 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 5 }}>
                 <span style={{ color: '#f5f3f0', fontWeight: 500 }}>{item.name}</span>
                 <span className="m" style={{ color: colors[i % colors.length], fontSize: 11 }}>{pct}%</span>
               </div>
@@ -244,7 +244,7 @@ function DepositFeed({ deposits }) {
       padding: '10px 14px',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     }}>
-      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>Recent Deposits</div>
+      <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>Recent Deposits</div>
       <div style={{ fontSize: 11, color: '#444', marginTop: 6 }}>No deposits yet</div>
     </div>
   );
@@ -259,10 +259,10 @@ function DepositFeed({ deposits }) {
       overflow: 'hidden',
       display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+      <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#e0a458', animation: 'pulse-dot 2s ease-in-out infinite' }} />
         Recent Deposits
-        <span className="m" style={{ marginLeft: 'auto', fontSize: 9, color: '#555', fontWeight: 500 }}>{deposits.length}</span>
+        <span className="m" style={{ marginLeft: 'auto', fontSize: 11, color: '#555', fontWeight: 500 }}>{deposits.length}</span>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} className="pulse-feed-scroll">
         {deposits.map((tx, i) => {
@@ -273,12 +273,12 @@ function DepositFeed({ deposits }) {
               borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none',
               animation: i < 20 ? `pulse-feed-in .5s ease ${i * 40}ms both` : undefined,
             }}>
-              <div style={{ fontSize: 9, fontWeight: 600, color: mColor, width: 40, letterSpacing: 0.5, flexShrink: 0 }}>{METHOD_LABEL[tx.method] || tx.method?.charAt(0).toUpperCase() + tx.method?.slice(1) || '—'}</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: mColor, width: 40, letterSpacing: 0.5, flexShrink: 0 }}>{METHOD_LABEL[tx.method] || tx.method?.charAt(0).toUpperCase() + tx.method?.slice(1) || '—'}</div>
               <div style={{ flex: 1, fontSize: 11, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
                 {tx.user?.split('@')[0]}
               </div>
               <div className="m" style={{ fontSize: 11, color: '#e0a458', whiteSpace: 'nowrap', fontWeight: 600, width: 52, textAlign: 'right', flexShrink: 0 }}>{fmtNaira(tx.amount)}</div>
-              <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', width: 44, textAlign: 'right', flexShrink: 0 }}>{timeAgo(tx.created)}</div>
+              <div style={{ fontSize: 11, color: '#555', whiteSpace: 'nowrap', width: 44, textAlign: 'right', flexShrink: 0 }}>{timeAgo(tx.created)}</div>
             </div>
           );
         })}
@@ -297,7 +297,7 @@ function RefundFeed({ refunds }) {
       padding: '10px 14px',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     }}>
-      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>Refunded Orders</div>
+      <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>Refunded Orders</div>
       <div style={{ fontSize: 11, color: '#444', marginTop: 6 }}>No refunds yet</div>
     </div>
   );
@@ -312,10 +312,10 @@ function RefundFeed({ refunds }) {
       overflow: 'hidden',
       display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+      <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f0abfc', animation: 'pulse-dot 2s ease-in-out infinite' }} />
         Refunded Orders
-        <span className="m" style={{ marginLeft: 'auto', fontSize: 9, color: '#555', fontWeight: 500 }}>{refunds.length}</span>
+        <span className="m" style={{ marginLeft: 'auto', fontSize: 11, color: '#555', fontWeight: 500 }}>{refunds.length}</span>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} className="pulse-feed-scroll">
         {refunds.map((o, i) => {
@@ -332,13 +332,13 @@ function RefundFeed({ refunds }) {
                   background: isPartial ? '#fdba74' : '#f0abfc',
                   boxShadow: `0 0 6px ${isPartial ? '#fdba74' : '#f0abfc'}66`,
                 }} />
-                <span style={{ fontSize: 9, color: isPartial ? '#fdba74' : '#f0abfc', fontWeight: 600, letterSpacing: 0.3 }}>{isPartial ? 'Part' : 'Full'}</span>
+                <span style={{ fontSize: 11, color: isPartial ? '#fdba74' : '#f0abfc', fontWeight: 600, letterSpacing: 0.3 }}>{isPartial ? 'Part' : 'Full'}</span>
               </div>
               <div style={{ flex: 1, fontSize: 11, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
                 {o.service}
               </div>
               <div className="m" style={{ fontSize: 11, color: '#f0abfc', whiteSpace: 'nowrap', fontWeight: 600, width: 52, textAlign: 'right', flexShrink: 0 }}>{fmtNaira(o.refunded || o.charge)}</div>
-              <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', width: 44, textAlign: 'right', flexShrink: 0 }}>{timeAgo(o.refundedAt)}</div>
+              <div style={{ fontSize: 11, color: '#555', whiteSpace: 'nowrap', width: 44, textAlign: 'right', flexShrink: 0 }}>{timeAgo(o.refundedAt)}</div>
             </div>
           );
         })}
@@ -372,10 +372,10 @@ function LiveFeed({ orders }) {
       overflow: 'hidden',
       display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+      <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', animation: 'pulse-dot 2s ease-in-out infinite' }} />
         Live Feed
-        <span className="m" style={{ marginLeft: 'auto', fontSize: 9, color: '#555', fontWeight: 500 }}>{orders.length}</span>
+        <span className="m" style={{ marginLeft: 'auto', fontSize: 11, color: '#555', fontWeight: 500 }}>{orders.length}</span>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} className="pulse-feed-scroll">
         {orders.map((o, i) => (
@@ -390,14 +390,14 @@ function LiveFeed({ orders }) {
                 background: statusColors[o.status] || '#555',
                 boxShadow: `0 0 6px ${statusColors[o.status] || '#555'}66`,
               }} />
-              <span style={{ fontSize: 9, color: statusColors[o.status] || '#555', fontWeight: 600, letterSpacing: 0.3 }}>{o.status?.slice(0, 4)}</span>
+              <span style={{ fontSize: 11, color: statusColors[o.status] || '#555', fontWeight: 600, letterSpacing: 0.3 }}>{o.status?.slice(0, 4)}</span>
             </div>
             <div style={{ flex: 1, fontSize: 11, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
               {o.service}
-              {o.status === 'Cancelled' && <span style={{ fontSize: 9, color: '#a1a1aa', fontWeight: 400, marginLeft: 4 }}>({cancelLabel(o.cancelReason)})</span>}
+              {o.status === 'Cancelled' && <span style={{ fontSize: 11, color: '#a1a1aa', fontWeight: 400, marginLeft: 4 }}>({cancelLabel(o.cancelReason)})</span>}
             </div>
             <div className="m" style={{ fontSize: 11, color: '#c47d8e', whiteSpace: 'nowrap', fontWeight: 600, width: 52, textAlign: 'right', flexShrink: 0 }}>{fmtNaira(o.charge)}</div>
-            <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', width: 44, textAlign: 'right', flexShrink: 0 }}>{timeAgo(o.created)}</div>
+            <div style={{ fontSize: 11, color: '#555', whiteSpace: 'nowrap', width: 44, textAlign: 'right', flexShrink: 0 }}>{timeAgo(o.created)}</div>
           </div>
         ))}
       </div>
@@ -426,7 +426,7 @@ function PayoutFeed({ payouts, monthPayouts }) {
       padding: '10px 14px',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     }}>
-      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>Payouts</div>
+      <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>Payouts</div>
       <div style={{ fontSize: 11, color: '#444', marginTop: 6 }}>No payouts yet</div>
     </div>
   );
@@ -438,7 +438,7 @@ function PayoutFeed({ payouts, monthPayouts }) {
       borderRadius: 12,
       padding: '10px 14px',
     }}>
-      <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6 }}>Payouts</div>
+      <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 6 }}>Payouts</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         {payouts.map((tx, i) => {
           const meta = PAYOUT_META[tx.type] || { label: tx.type, color: '#888' };
@@ -449,19 +449,19 @@ function PayoutFeed({ payouts, monthPayouts }) {
               animation: `pulse-feed-in .5s ease ${i * 40}ms both`,
             }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: meta.color, boxShadow: `0 0 6px ${meta.color}66` }} />
-              <div style={{ flex: 1, fontSize: 12, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
+              <div style={{ flex: 1, fontSize: 11, color: '#f5f3f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
                 {meta.label}
               </div>
               <div className="m" style={{ fontSize: 11, color: meta.color, whiteSpace: 'nowrap', fontWeight: 600 }}>{fmtNaira(tx.amount)}</div>
-              <div style={{ fontSize: 10, color: '#555', whiteSpace: 'nowrap', minWidth: 40, textAlign: 'right' }}>{timeAgo(tx.created)}</div>
+              <div style={{ fontSize: 11, color: '#555', whiteSpace: 'nowrap', minWidth: 40, textAlign: 'right' }}>{timeAgo(tx.created)}</div>
             </div>
           );
         })}
       </div>
       {total > 0 && (
         <div style={{ marginTop: 6, padding: '5px 8px', borderRadius: 6, background: 'rgba(252,165,165,.06)', border: '1px solid rgba(252,165,165,.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 10, color: '#8a8580', fontWeight: 500 }}>This month</span>
-          <span className="m" style={{ fontSize: 12, color: '#fca5a5', fontWeight: 700 }}>{fmtNaira(Math.round(total))}</span>
+          <span style={{ fontSize: 11, color: '#8a8580', fontWeight: 500 }}>This month</span>
+          <span className="m" style={{ fontSize: 11, color: '#fca5a5', fontWeight: 700 }}>{fmtNaira(Math.round(total))}</span>
         </div>
       )}
     </div>
@@ -540,7 +540,7 @@ export default function PulseDashboard() {
       <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#080b14', fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif" }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
           <NitroLoader size={72} />
-          <div style={{ color: '#555', fontSize: 12 }}>Connecting to live data...</div>
+          <div style={{ color: '#555', fontSize: 11 }}>Connecting to live data...</div>
         </div>
       </div>
     );
@@ -574,9 +574,9 @@ export default function PulseDashboard() {
           <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg,#c47d8e,#8b5e6b)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="11" height="12" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg>
           </div>
-          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, fontWeight: 700, margin: 0, lineHeight: 1 }}>Pulse</h1>
+          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700, margin: 0, lineHeight: 1 }}>Pulse</h1>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11 }}>
           {error && <span style={{ color: '#fca5a5', animation: 'pulse-blink 1s infinite' }}>Connection lost</span>}
           {data.processing > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(224,164,88,.08)', border: '1px solid rgba(224,164,88,.15)', borderRadius: 6, padding: '3px 8px' }}>
@@ -586,9 +586,9 @@ export default function PulseDashboard() {
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: error ? '#fca5a5' : '#10b981', animation: error ? 'none' : 'pulse-dot 2s ease-in-out infinite' }} />
-            <span style={{ color: error ? '#fca5a5' : '#10b981', fontWeight: 600, letterSpacing: 1, fontSize: 10 }}>LIVE</span>
+            <span style={{ color: error ? '#fca5a5' : '#10b981', fontWeight: 600, letterSpacing: 1, fontSize: 11 }}>LIVE</span>
           </div>
-          <span className="m" style={{ color: '#555', fontSize: 10 }}>{secondsAgo}s</span>
+          <span className="m" style={{ color: '#555', fontSize: 11 }}>{secondsAgo}s</span>
           <button onClick={toggleFullscreen} className="pulse-fs-btn" style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 6, padding: '4px 6px', cursor: 'pointer', display: 'flex', alignItems: 'center' }} title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
             {isFullscreen
               ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8580" strokeWidth="2" strokeLinecap="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
@@ -634,7 +634,7 @@ export default function PulseDashboard() {
       <div className="pulse-row3-summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, flexShrink: 0 }}>
         {/* Month to Date */}
         <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 12, padding: '10px 14px' }}>
-          <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>Month to Date</div>
+          <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>Month to Date</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             {[
               { label: 'Revenue', value: fmtNaira(Math.round(data.monthRevenue)), color: '#10b981' },
@@ -644,8 +644,8 @@ export default function PulseDashboard() {
               { label: 'Orders', value: fmtNum(data.monthOrders), color: '#c47d8e' },
             ].map(s => (
               <div key={s.label}>
-                <div className="m" style={{ fontSize: 14, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
-                <div style={{ fontSize: 9, color: '#8a8580', marginTop: 1 }}>{s.label}</div>
+                <div className="m" style={{ fontSize: 13, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
+                <div style={{ fontSize: 11, color: '#8a8580', marginTop: 1 }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -654,7 +654,7 @@ export default function PulseDashboard() {
               <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
                 <div style={{ height: '100%', borderRadius: 2, background: data.monthProfit < 0 ? 'linear-gradient(90deg, #fca5a5, #f87171)' : 'linear-gradient(90deg, #34d399, #10b981)', width: `${Math.max(0, Math.min(100, Math.abs(data.monthCost > 0 ? (data.monthProfit / data.monthCost) * 100 : 0)))}%`, transition: 'width 1s ease' }} />
               </div>
-              <span className="m" style={{ fontSize: 10, color: data.monthProfit < 0 ? '#fca5a5' : '#34d399', fontWeight: 600, whiteSpace: 'nowrap' }}>
+              <span className="m" style={{ fontSize: 11, color: data.monthProfit < 0 ? '#fca5a5' : '#34d399', fontWeight: 600, whiteSpace: 'nowrap' }}>
                 {data.monthCost > 0 ? Math.round((data.monthProfit / data.monthCost) * 100) : 0}% markup
               </span>
             </div>
@@ -663,7 +663,7 @@ export default function PulseDashboard() {
 
         {/* Users & Conversion Funnel */}
         <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 12, padding: '10px 14px' }}>
-          <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>Users & Conversion</div>
+          <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>Users & Conversion</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             {[
               { label: 'New This Month', value: fmtNum(data.monthNewUsers), color: '#6ee7b7' },
@@ -672,8 +672,8 @@ export default function PulseDashboard() {
               { label: 'Idle w/ Balance', value: fmtNum(data.idleUsersWithBalance), color: '#fcd34d' },
             ].map(s => (
               <div key={s.label}>
-                <div className="m" style={{ fontSize: 14, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
-                <div style={{ fontSize: 9, color: '#8a8580', marginTop: 1 }}>{s.label}</div>
+                <div className="m" style={{ fontSize: 13, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
+                <div style={{ fontSize: 11, color: '#8a8580', marginTop: 1 }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -686,7 +686,7 @@ export default function PulseDashboard() {
                   <div style={{ height: '100%', background: '#c47d8e', width: `${repeatPct}%`, transition: 'width 1s ease' }} />
                   <div style={{ height: '100%', background: '#6ee7b7', width: `${100 - repeatPct}%`, transition: 'width 1s ease' }} />
                 </div>
-                <span className="m" style={{ fontSize: 10, color: '#c47d8e', fontWeight: 600, whiteSpace: 'nowrap' }}>{repeatPct}% repeat</span>
+                <span className="m" style={{ fontSize: 11, color: '#c47d8e', fontWeight: 600, whiteSpace: 'nowrap' }}>{repeatPct}% repeat</span>
               </div>
             );
           })()}
@@ -694,7 +694,7 @@ export default function PulseDashboard() {
 
         {/* Quick Stats */}
         <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 12, padding: '10px 14px' }}>
-          <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>Key Metrics</div>
+          <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 8 }}>Key Metrics</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             {(() => {
               const aov = data.monthOrders > 0 ? Math.round(data.monthRevenue / data.monthOrders) : 0;
@@ -715,8 +715,8 @@ export default function PulseDashboard() {
               ];
             })().map(s => (
               <div key={s.label}>
-                <div className="m" style={{ fontSize: 14, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
-                <div style={{ fontSize: 9, color: '#8a8580', marginTop: 1 }}>{s.label}</div>
+                <div className="m" style={{ fontSize: 13, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
+                <div style={{ fontSize: 11, color: '#8a8580', marginTop: 1 }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -729,7 +729,7 @@ export default function PulseDashboard() {
       <div className="pulse-row4" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 10, flex: 1, minHeight: 0 }}>
         <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: 8 }}>
           <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 12, padding: '12px 14px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 10 }}>Top Platforms</div>
+            <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600, marginBottom: 10 }}>Top Platforms</div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
               {(data.topPlatforms || []).map((item, i) => {
                 const maxVal = Math.max(...data.topPlatforms.map(p => p.orders), 1);
@@ -740,7 +740,7 @@ export default function PulseDashboard() {
                   <div key={item.name}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 2 }}>
                       <span style={{ color: '#f5f3f0', fontWeight: 500 }}>{item.name}</span>
-                      <span className="m" style={{ color: colors[i % colors.length], fontSize: 10 }}>{pct}%</span>
+                      <span className="m" style={{ color: colors[i % colors.length], fontSize: 11 }}>{pct}%</span>
                     </div>
                     <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,.05)', overflow: 'hidden' }}>
                       <div style={{ height: '100%', borderRadius: 2, background: `linear-gradient(90deg, ${colors[i % colors.length]}, ${colors[i % colors.length]}88)`, width: `${(item.orders / maxVal) * 100}%`, transition: 'width 1s ease' }} />
@@ -767,7 +767,7 @@ export default function PulseDashboard() {
             return (
               <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)', borderRadius: 12, padding: '10px 14px', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <div style={{ fontSize: 9, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>Order Status</div>
+                  <div style={{ fontSize: 11, color: '#8a8580', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 600 }}>Order Status</div>
                   <div className="m" style={{ fontSize: 11, color: '#f5f3f0', fontWeight: 700 }}>{total.toLocaleString()}</div>
                 </div>
                 <div style={{ height: 8, borderRadius: 4, overflow: 'hidden', display: 'flex', background: 'rgba(255,255,255,.05)', marginBottom: 8 }}>
@@ -784,7 +784,7 @@ export default function PulseDashboard() {
                     <div key={item.status} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: statusColors[item.status] || '#555', boxShadow: `0 0 4px ${statusColors[item.status] || '#555'}44` }} />
                       <span style={{ color: '#ddd', fontWeight: 500 }}>{item.status}</span>
-                      <span className="m" style={{ color: statusColors[item.status] || '#8a8580', fontSize: 10, fontWeight: 600 }}>{Math.round((item.count / total) * 100)}%</span>
+                      <span className="m" style={{ color: statusColors[item.status] || '#8a8580', fontSize: 11, fontWeight: 600 }}>{Math.round((item.count / total) * 100)}%</span>
                     </div>
                   ))}
                 </div>

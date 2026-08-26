@@ -90,9 +90,9 @@ export function Field({ label, id, hint, error, dark, className = "", ...inputPr
         }}
         {...inputProps}
       />
-      {hint && !error && <div id={hintId} className="text-[11.5px] mt-1 text-t-text-muted">{hint}</div>}
+      {hint && !error && <div id={hintId} className="text-[11px] mt-1 text-t-text-muted">{hint}</div>}
       {/* Announced when it appears, so the error is not silent for screen readers. */}
-      {error && <div id={errorId} aria-live="polite" className="text-[11.5px] mt-1" style={{ color: dark ? "#f87171" : "#dc2626" }}>{error}</div>}
+      {error && <div id={errorId} aria-live="polite" className="text-[11px] mt-1" style={{ color: dark ? "#f87171" : "#dc2626" }}>{error}</div>}
     </div>
   );
 }

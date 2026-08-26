@@ -712,7 +712,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
         {/* ====== SIGNUP STEP 1 ====== */}
         {mode === 'signup' && step === 1 && (
           <>
-            <div className="text-center mb-3"><span className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-[12px] font-semibold" style={{background:dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)",color:t.accent}}>🎁 Get up to ₦3,000 free on your first deposit</span></div>
+            <div className="text-center mb-3"><span className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-[11px] font-semibold" style={{background:dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)",color:t.accent}}>🎁 Get up to ₦3,000 free on your first deposit</span></div>
             {/* Google button */}
             <button
               type="button"
@@ -1168,7 +1168,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             <div className="relative mb-5">
               <input id="reset-pw2" name="passwordConfirmation" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value.slice(0, 128))} placeholder="Confirm new password" type={showPw2 ? 'text' : 'password'} className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none pr-11" style={{ background: t.inputBg, border: `1px solid ${pwMismatch ? '#dc2626' : t.inputBorder}`, color: t.text }} />
               <EyeBtn show={showPw2} toggle={() => setShowPw2(!showPw2)} />
-              {pwMismatch && <p className="text-[12px] mt-1 font-medium" style={{ color: '#dc2626' }}>Passwords do not match</p>}
+              {pwMismatch && <p className="text-[11px] mt-1 font-medium" style={{ color: '#dc2626' }}>Passwords do not match</p>}
             </div>
 
             <button type="submit" disabled={authLoading || !pw || !pwMatch} className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: authLoading ? '#999' : t.btnPrimary, opacity: authLoading || !pw || !pwMatch ? 0.7 : 1 }}>

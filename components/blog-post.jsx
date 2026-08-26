@@ -111,16 +111,16 @@ function BlogPostInner({ post, backHref, backLabel, related, prev, next }) {
       {/* Desktop share rail with % read */}
       <div className="hidden lg:flex fixed flex-col gap-2 items-center z-[60]" style={{ left: "max(16px, calc((100vw - 720px) / 2 - 76px))", top: "50%", transform: "translateY(-50%)" }}>
         <div className="text-[11px] font-bold" style={{ color: "#c47d8e", fontVariantNumeric: "tabular-nums" }}>{pct}%</div>
-        <div className="text-[10px] font-semibold uppercase tracking-[1px] mb-1" style={{ color: dark ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.25)" }}>Share</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1" style={{ color: dark ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.25)" }}>Share</div>
         <ShareButtons post={post} dark={dark} />
       </div>
 
       {/* Desktop table of contents */}
       {toc.length >= 3 && (
         <div className="hidden min-[1240px]:block fixed w-[184px] z-[60]" style={{ right: "max(16px, calc((100vw - 720px) / 2 - 216px))", top: "50%", transform: "translateY(-50%)" }}>
-          <div className="text-[10px] font-bold uppercase tracking-[1.4px] mb-2.5" style={{ color: dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.3)" }}>In this piece</div>
+          <div className="text-[11px] font-bold uppercase tracking-[1.4px] mb-2.5" style={{ color: dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.3)" }}>In this piece</div>
           {toc.map(h => (
-            <a key={h.id} href={'#' + h.id} onClick={e => jump(e, h.id)} className="block text-[12.5px] leading-[1.4] py-[5px] pl-3 no-underline transition-colors duration-150" style={{ borderLeft: `2px solid ${active === h.id ? "#c47d8e" : hair}`, color: active === h.id ? "#c47d8e" : (dark ? "rgba(255,255,255,.4)" : "rgba(0,0,0,.4)"), fontWeight: active === h.id ? 700 : 500 }}>{h.text}</a>
+            <a key={h.id} href={'#' + h.id} onClick={e => jump(e, h.id)} className="block text-[13px] leading-[1.4] py-[5px] pl-3 no-underline transition-colors duration-150" style={{ borderLeft: `2px solid ${active === h.id ? "#c47d8e" : hair}`, color: active === h.id ? "#c47d8e" : (dark ? "rgba(255,255,255,.4)" : "rgba(0,0,0,.4)"), fontWeight: active === h.id ? 700 : 500 }}>{h.text}</a>
           ))}
         </div>
       )}
@@ -137,7 +137,7 @@ function BlogPostInner({ post, backHref, backLabel, related, prev, next }) {
         <div className="flex items-center gap-3.5 pb-6 flex-wrap" style={{ borderBottom: "1px solid " + t.surfaceBrd }}>
           <Avatar size={40} />
           <div>
-            <div className="text-[14.5px] font-bold" style={{ color: t.text }}>{post.authorName || "Nitro Team"}</div>
+            <div className="text-[15px] font-bold" style={{ color: t.text }}>{post.authorName || "Nitro Team"}</div>
             <div className="text-xs flex items-center gap-2 flex-wrap mt-0.5" style={{ color: metaColor }}>
               {fD(post.createdAt)}
               <span className="inline-flex items-center gap-1 py-[2px] px-2 rounded-full text-[11px] font-semibold" style={{ background: chipBg, color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)" }}>
@@ -198,10 +198,10 @@ function BlogPostInner({ post, backHref, backLabel, related, prev, next }) {
         <div className="relative overflow-hidden text-center mt-7 rounded-[18px] px-7 py-8" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff" }}>
           <div className="absolute rounded-full pointer-events-none" style={{ width: 280, height: 280, left: -90, bottom: -140, background: "rgba(255,255,255,.12)", filter: "blur(40px)" }} />
           <div className="absolute rounded-full pointer-events-none" style={{ width: 230, height: 230, right: -70, top: -110, background: "rgba(255,255,255,.1)", filter: "blur(36px)" }} />
-          <div className="relative inline-flex mb-3.5 py-[5px] px-3 rounded-full text-[11.5px] font-bold" style={{ background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.25)" }}>{"🎁"} Up to {"₦"}3,000 free promo credit to start</div>
-          <div className="relative font-semibold mb-1.5" style={{ fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", fontSize: 30 }}>Put this to work.</div>
-          <p className="relative text-[14px] mb-4.5" style={{ opacity: .92, marginBottom: 18 }}>Consistent, affordable momentum wins. That{"’"}s the product.</p>
-          <a href="/signup" className="relative inline-block py-3 px-8 rounded-xl text-[14px] font-extrabold no-underline transition-transform duration-150 hover:-translate-y-0.5" style={{ background: "#fff", color: "#8b4a5e" }}>Create free account</a>
+          <div className="relative inline-flex mb-3.5 py-[5px] px-3 rounded-full text-[11px] font-bold" style={{ background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.25)" }}>{"🎁"} Up to {"₦"}3,000 free promo credit to start</div>
+          <div className="relative font-semibold mb-1.5" style={{ fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", fontSize: 28 }}>Put this to work.</div>
+          <p className="relative text-[13px] mb-4.5" style={{ opacity: .92, marginBottom: 18 }}>Consistent, affordable momentum wins. That{"’"}s the product.</p>
+          <a href="/signup" className="relative inline-block py-3 px-8 rounded-xl text-[13px] font-extrabold no-underline transition-transform duration-150 hover:-translate-y-0.5" style={{ background: "#fff", color: "#8b4a5e" }}>Create free account</a>
         </div>
 
         {/* Prev / next */}
@@ -209,14 +209,14 @@ function BlogPostInner({ post, backHref, backLabel, related, prev, next }) {
           <div className="grid grid-cols-2 max-[599px]:grid-cols-1 gap-3 mt-7">
             {prev ? (
               <a href={`/blog/${prev.slug}`} className="p-4 rounded-[14px] no-underline transition-transform duration-150 hover:-translate-y-0.5" style={{ background: cardBg, border: "1px solid " + hair }}>
-                <div className="text-[10.5px] font-extrabold uppercase tracking-[1px] mb-1.5" style={{ color: dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)" }}>{"←"} Previous</div>
-                <div className="text-[13.5px] font-bold leading-[1.4]" style={{ color: t.text }}>{prev.title}</div>
+                <div className="text-[11px] font-extrabold uppercase tracking-[1px] mb-1.5" style={{ color: dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)" }}>{"←"} Previous</div>
+                <div className="text-[13px] font-bold leading-[1.4]" style={{ color: t.text }}>{prev.title}</div>
               </a>
             ) : <span />}
             {next && (
               <a href={`/blog/${next.slug}`} className="p-4 rounded-[14px] no-underline text-right transition-transform duration-150 hover:-translate-y-0.5" style={{ background: cardBg, border: "1px solid " + hair }}>
-                <div className="text-[10.5px] font-extrabold uppercase tracking-[1px] mb-1.5" style={{ color: dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)" }}>Next {"→"}</div>
-                <div className="text-[13.5px] font-bold leading-[1.4]" style={{ color: t.text }}>{next.title}</div>
+                <div className="text-[11px] font-extrabold uppercase tracking-[1px] mb-1.5" style={{ color: dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)" }}>Next {"→"}</div>
+                <div className="text-[13px] font-bold leading-[1.4]" style={{ color: t.text }}>{next.title}</div>
               </a>
             )}
           </div>
@@ -236,7 +236,7 @@ function BlogPostInner({ post, backHref, backLabel, related, prev, next }) {
                       <div className="h-28 shrink-0" style={{ background: dark ? 'linear-gradient(135deg, #2a1a22, #1a1225)' : 'linear-gradient(135deg, #e8d5db, #d4a8b5)' }} />
                     )}
                     <div className="p-3.5 flex flex-col flex-1 gap-1">
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.8px]" style={{ color: t.accent }}>{r.category}</div>
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.8px]" style={{ color: t.accent }}>{r.category}</div>
                       <div className="text-[13px] font-semibold leading-[1.35] line-clamp-2 flex-1" style={{ color: t.text }}>{r.title}</div>
                       {r.createdAt && <div className="text-[11px]" style={{ color: metaColor }}>{fD(r.createdAt)}</div>}
                     </div>

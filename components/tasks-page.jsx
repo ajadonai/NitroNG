@@ -179,8 +179,8 @@ export default function TasksPage({ dark, t }) {
           { label: 'Expiring', value: stats.expiringSoon ? fmtNaira(stats.expiringSoon) : '—', color: stats.expiringSoon ? amber : t.textMuted },
         ].map(s => (
           <div key={s.label} className="p-3 rounded-xl" style={{ background: dark ? 'rgba(255,255,255,.07)' : '#fff', border: `0.5px solid ${border}` }}>
-            <div className="text-[10px] uppercase tracking-[.7px] font-semibold mb-1" style={{ color: t.textMuted }}>{s.label}</div>
-            <div className="m text-base max-md:text-[14px] font-bold" style={{ color: s.color }}>{s.value}</div>
+            <div className="text-[11px] uppercase tracking-[.7px] font-semibold mb-1" style={{ color: t.textMuted }}>{s.label}</div>
+            <div className="m text-base max-md:text-[13px] font-bold" style={{ color: s.color }}>{s.value}</div>
           </div>
         ))}
       </div>
@@ -190,13 +190,13 @@ export default function TasksPage({ dark, t }) {
         <div className="flex items-center gap-3 max-md:gap-2.5 flex-wrap">
           {[['1', 'Do a task'], ['2', 'Submit proof'], ['3', 'Credit in 7 days']].map(([n, label]) => (
             <div key={n} className="flex items-center gap-1.5 text-[11px] font-medium" style={{ color: t.textSoft }}>
-              <span className="w-[16px] h-[16px] rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold" style={{ background: dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.1)', color: accent }}>{n}</span>
+              <span className="w-[16px] h-[16px] rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold" style={{ background: dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.1)', color: accent }}>{n}</span>
               {label}
             </div>
           ))}
         </div>
-        <span className="hidden desktop:block text-[10px]" style={{ color: border }}>|</span>
-        <div className="flex items-center gap-3 text-[10px]" style={{ color: t.textMuted }}>
+        <span className="hidden desktop:block text-[11px]" style={{ color: border }}>|</span>
+        <div className="flex items-center gap-3 text-[11px]" style={{ color: t.textMuted }}>
           <span>Spend-only · {stats.expiryDays || 30}d expiry</span>
           <span style={{ opacity: .4 }}>·</span>
           <span>Fake subs rejected</span>
@@ -205,9 +205,9 @@ export default function TasksPage({ dark, t }) {
 
       {/* Filter bar */}
       <div className="flex items-center gap-2.5 mb-3 min-h-[34px]">
-        <span className="text-[12px]" style={{ color: t.textMuted }}>
+        <span className="text-[11px]" style={{ color: t.textMuted }}>
           {filtered.length} task{filtered.length !== 1 ? 's' : ''}
-          {filter !== 'all' && <button onClick={() => setFilter('all')} className="bg-transparent border-none cursor-pointer font-[inherit] text-[12px] font-medium ml-1.5 underline p-0" style={{ color: accent }}>Show all</button>}
+          {filter !== 'all' && <button onClick={() => setFilter('all')} className="bg-transparent border-none cursor-pointer font-[inherit] text-[11px] font-medium ml-1.5 underline p-0" style={{ color: accent }}>Show all</button>}
         </span>
         <div className="relative ml-auto" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setFilterOpen(false); }}>
           <button onClick={() => setFilterOpen(!filterOpen)} className="inline-flex items-center gap-1.5 py-[7px] px-3 rounded-lg text-[13px] font-medium bg-transparent cursor-pointer font-[inherit]" style={{ border: `1px solid ${dark ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.14)'}`, background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.03)', color: dark ? 'rgba(255,255,255,.7)' : 'rgba(0,0,0,.7)' }}>
@@ -228,7 +228,7 @@ export default function TasksPage({ dark, t }) {
 
       {/* Task list */}
       {filtered.length === 0 ? (
-        <div className="text-center py-8 px-5 rounded-2xl text-[12.5px] leading-relaxed" style={{ color: t.textMuted, background: cardBg, border: `0.5px solid ${border}` }}>
+        <div className="text-center py-8 px-5 rounded-2xl text-[13px] leading-relaxed" style={{ color: t.textMuted, background: cardBg, border: `0.5px solid ${border}` }}>
           {filter === 'all' ? 'No tasks available right now. Check back soon.' : `No ${activeFilter.label.toLowerCase()} tasks.`}
         </div>
       ) : (
@@ -290,45 +290,45 @@ function TaskCard({ task, expanded, onToggle, proof, onProofChange, onSubmit, su
           {icon.svg}
         </div>
         <div className="flex-1 min-w-0" style={{ opacity: dimmed ? .45 : 1 }}>
-          <div className="text-[13.5px] font-semibold leading-[1.35]" style={{ color: t.text }}>{task.title}</div>
+          <div className="text-[13px] font-semibold leading-[1.35]" style={{ color: t.text }}>{task.title}</div>
           {freqLabel && <div className="text-[11px] mt-[2.5px]" style={{ color: t.textMuted }}>{freqLabel}</div>}
         </div>
-        <span className="shrink-0 text-[11.5px] font-bold py-[5px] px-[10px] rounded-full whitespace-nowrap" style={chipStyle}>{chipLabel}</span>
+        <span className="shrink-0 text-[11px] font-bold py-[5px] px-[10px] rounded-full whitespace-nowrap" style={chipStyle}>{chipLabel}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2.5" strokeLinecap="round" className="shrink-0 transition-transform" style={{ transform: expanded ? 'rotate(180deg)' : 'none' }}><polyline points="6 9 12 15 18 9"/></svg>
       </button>
 
       {expanded && (
         <div className="px-[14px] pb-[15px]">
-          <div className="text-[12.5px] leading-[1.6] pt-[10px]" style={{ color: t.textSoft, borderTop: `1px solid ${border}` }}>
+          <div className="text-[13px] leading-[1.6] pt-[10px]" style={{ color: t.textSoft, borderTop: `1px solid ${border}` }}>
             {task.instructions}
           </div>
 
           {task.frequency !== 'one_time' && (
             <div className="flex flex-wrap gap-[5px] mt-2.5">
-              <span className="text-[10px] font-semibold py-[4px] px-[9px] rounded-md" style={{ color: t.textMuted, background: innerBg }}>{freqLabel}</span>
+              <span className="text-[11px] font-semibold py-[4px] px-[9px] rounded-md" style={{ color: t.textMuted, background: innerBg }}>{freqLabel}</span>
             </div>
           )}
 
           {isDone && (
-            <div className="mt-[11px] text-[11.5px] rounded-[10px] py-[9px] px-3 leading-[1.5]" style={{ color: green, background: dark ? 'rgba(110,231,183,.06)' : 'rgba(5,150,105,.04)', border: `1px solid ${dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.1)'}` }}>
+            <div className="mt-[11px] text-[11px] rounded-[10px] py-[9px] px-3 leading-[1.5]" style={{ color: green, background: dark ? 'rgba(110,231,183,.06)' : 'rgba(5,150,105,.04)', border: `1px solid ${dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.1)'}` }}>
               You earned {fmtNaira(task.reward)} credit from this task.
             </div>
           )}
 
           {isPending && (
-            <div className="mt-[11px] text-[11.5px] rounded-[10px] py-[9px] px-3 leading-[1.5]" style={{ color: t.textSoft, background: innerBg }}>
+            <div className="mt-[11px] text-[11px] rounded-[10px] py-[9px] px-3 leading-[1.5]" style={{ color: t.textSoft, background: innerBg }}>
               Your submission is being reviewed. This usually takes up to 7 days.
             </div>
           )}
 
           {isRejected && (
-            <div className="mt-[11px] text-[11.5px] rounded-[10px] py-[9px] px-3 leading-[1.5]" style={{ color: red, background: dark ? 'rgba(252,165,165,.07)' : 'rgba(220,38,38,.04)', border: `1px solid ${dark ? 'rgba(252,165,165,.15)' : 'rgba(220,38,38,.08)'}` }}>
+            <div className="mt-[11px] text-[11px] rounded-[10px] py-[9px] px-3 leading-[1.5]" style={{ color: red, background: dark ? 'rgba(252,165,165,.07)' : 'rgba(220,38,38,.04)', border: `1px solid ${dark ? 'rgba(252,165,165,.15)' : 'rgba(220,38,38,.08)'}` }}>
               {task.rejectionReason || 'Your submission was not approved. You can try again.'}
             </div>
           )}
 
           {isExhausted && (
-            <div className="mt-[11px] text-[10.5px]" style={{ color: t.textMuted }}>
+            <div className="mt-[11px] text-[11px]" style={{ color: t.textMuted }}>
               The reward pool for this month is full. Check back next month.
             </div>
           )}
@@ -357,7 +357,7 @@ function TaskCard({ task, expanded, onToggle, proof, onProofChange, onSubmit, su
           )}
 
           {task.userStatus === 'open' && (
-            <div className="text-[10.5px] mt-[9px] leading-[1.5]" style={{ color: t.textMuted }}>
+            <div className="text-[11px] mt-[9px] leading-[1.5]" style={{ color: t.textMuted }}>
               {proofLabel(task.proofType, task.platform)} required. {proofHint(task.proofType, task.platform)}
             </div>
           )}

@@ -46,7 +46,7 @@ function ReviewsInner() {
           {stats && (
             <section className="mb-12">
               <h2 className="text-lg font-semibold mb-4" style={{ color: t.text }}>The numbers, pulled from our own system</h2>
-              <p className="text-[14px] mb-5 leading-[1.6]" style={{ color: t.textSoft }}>
+              <p className="text-[13px] mb-5 leading-[1.6]" style={{ color: t.textSoft }}>
                 These update automatically. They are not marketing figures, they are what our database says right now.
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -58,7 +58,7 @@ function ReviewsInner() {
                 ].filter(s => s.value != null).map(s => (
                   <div key={s.label} className="rounded-xl p-4 text-center" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)"}` }}>
                     <div className="text-[22px] font-bold mb-1" style={{ color: accent }}>{s.value}</div>
-                    <div className="text-[12px]" style={{ color: t.textMuted }}>{s.label}</div>
+                    <div className="text-[11px]" style={{ color: t.textMuted }}>{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -87,7 +87,7 @@ function ReviewsInner() {
                 ['Live order tracking', 'Start count, current count, target, visible in the dashboard while the order runs.'],
               ].map(([title, desc]) => (
                 <div key={title} className="rounded-xl p-5" style={{ background: cardBg, border: `1px solid ${border}` }}>
-                  <div className="text-[14px] font-semibold mb-1.5" style={{ color: t.text }}>{title}</div>
+                  <div className="text-[13px] font-semibold mb-1.5" style={{ color: t.text }}>{title}</div>
                   <div className="text-[13px] leading-[1.65]" style={{ color: t.textMuted }}>{desc}</div>
                 </div>
               ))}
@@ -105,7 +105,7 @@ function ReviewsInner() {
                 ['"The service I wanted is not listed."', 'A direct consequence of curating. If a service is missing it is usually because it failed testing or the supplier became unreliable. Ask on WhatsApp. Sometimes we can source it, sometimes the honest answer is that we could not find a version that works.'],
               ].map(([title, desc]) => (
                 <div key={title} className="rounded-xl p-5" style={{ background: cardBg, border: `1px solid ${border}` }}>
-                  <div className="text-[14px] font-semibold mb-1.5" style={{ color: t.text }}>{title}</div>
+                  <div className="text-[13px] font-semibold mb-1.5" style={{ color: t.text }}>{title}</div>
                   <div className="text-[13px] leading-[1.65]" style={{ color: t.textMuted }}>{desc}</div>
                 </div>
               ))}
@@ -115,11 +115,11 @@ function ReviewsInner() {
           {/* Refill table */}
           <section className="mb-12">
             <h2 className="text-lg font-semibold mb-4" style={{ color: t.text }}>How refills actually behave</h2>
-            <p className="text-[14px] mb-4 leading-[1.6]" style={{ color: t.textSoft }}>
+            <p className="text-[13px] mb-4 leading-[1.6]" style={{ color: t.textSoft }}>
               Worth being specific, because "refill guarantee" is used loosely across this industry.
             </p>
             <div className="rounded-xl overflow-hidden" style={{ background: cardBg, border: `1px solid ${border}` }}>
-              <div className="grid grid-cols-3 gap-0 text-[12px] font-medium py-3 px-5" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}`, color: t.textMuted }}>
+              <div className="grid grid-cols-3 gap-0 text-[11px] font-medium py-3 px-5" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}`, color: t.textMuted }}>
                 <span>Tier</span><span>Refill</span><span>What that means</span>
               </div>
               {[
@@ -142,7 +142,7 @@ function ReviewsInner() {
           {/* Where we are weak */}
           <section className="mb-12">
             <h2 className="text-lg font-semibold mb-4" style={{ color: t.text }}>Where we are honestly still weak</h2>
-            <div className="text-[14px] leading-[1.75] space-y-3" style={{ color: t.textSoft }}>
+            <div className="text-[13px] leading-[1.75] space-y-3" style={{ color: t.textSoft }}>
               <p>We launched recently. We do not have five years of history and we are not going to pretend otherwise.</p>
               <p>Our third party review footprint is still thin, which is inconvenient for us and reasonable for you to weigh. Our catalogue is smaller than the big panels. Our delivery time estimates on individual services need work. And our support, while fast, is a small team, so at 3am on a Sunday you may be waiting longer than at 2pm on a Tuesday.</p>
             </div>
@@ -152,7 +152,7 @@ function ReviewsInner() {
           <section className="mb-12">
             <div className="p-8 max-md:p-6 rounded-2xl text-center" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)"}` }}>
               <h2 className="text-xl max-md:text-lg font-semibold mb-2" style={{ color: t.text }}>The cheapest way to form your own opinion</h2>
-              <div className="text-[14px] leading-[1.65] max-w-[500px] mx-auto mb-5 space-y-2" style={{ color: t.textSoft }}>
+              <div className="text-[13px] leading-[1.65] max-w-[500px] mx-auto mb-5 space-y-2" style={{ color: t.textSoft }}>
                 <p>Do not decide based on this page. We wrote it, so it is not evidence.</p>
                 <p>Deposit ₦1,000, which is our minimum and deliberately low for this exact reason. Buy one small order on something cheap. Watch whether it starts, whether the tracker matches your actual count, and how fast WhatsApp replies.</p>
                 <p>That test tells you more in one afternoon than any review page can.</p>
