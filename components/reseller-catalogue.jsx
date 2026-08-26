@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from "react";
+import { copyText } from '@/lib/clipboard';
 
 // Read-only catalogue for granted resellers. Browse and copy IDs here; ordering
 // happens on the New Order page (curated) or through the API (either list).
@@ -438,7 +439,7 @@ export default function ResellerCataloguePage({ dark, t }) {
               <div className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: t.textMuted }}>Service ID — use this in API calls</div>
               <div className="flex items-center justify-between">
                 <span className="text-[28px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{drawer.id}</span>
-                <button onClick={() => { navigator.clipboard?.writeText(String(drawer.id)); setCopied(true); }}
+                <button onClick={() => { copyText(String(drawer.id)); setCopied(true); }}
                   className="py-1.5 px-3 rounded-lg text-[11px] font-semibold border-none cursor-pointer transition-colors" style={{ background: copied ? "#16a34a" : t.accent, color: "#fff" }}>{copied ? "Copied" : "Copy"}</button>
               </div>
             </div>

@@ -128,16 +128,34 @@ describe('Meta CAPI strict transport', () => {
     const result = await sendEvent('PageView', {
       eventId: 'test_pageview_timeout',
       testEventCode: 'TEST123',
-    }, { fetchImpl, timeoutMs: 5 });
+    }, { fetchImpl, timeoutMs: 5, retryDelayMs: 0 });
 
     expect(result).toMatchObject({ ok: false, error: { code: 'timeout' } });
+    // One retry, then a warning in the log: Meta's weather is not a page.
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(mocks.logWarn).toHaveBeenCalledWith(
       'MetaCAPI',
       expect.stringContaining('timed out after 5ms'),
     );
+    expect(mocks.reportOperationalFailure).not.toHaveBeenCalled();
+  });
+
+  it('a network failure is retried once and then logged, not paged', async () => {
+    const fetchImpl = vi.fn(() => Promise.reject(Object.assign(new TypeError('fetch failed'), { cause: { code: 'ECONNRESET' } })));
+    const result = await sendEvent('PageView', { eventId: 'test_pageview_network' }, { fetchImpl, retryDelayMs: 0 });
+    expect(result).toMatchObject({ ok: false, error: { code: 'network' } });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(mocks.reportOperationalFailure).not.toHaveBeenCalled();
+  });
+
+  it('a graph error is not retried and still pages', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve({ ok: false, status: 400, json: async () => ({ error: { message: 'Invalid parameter', code: 100 } }) }));
+    const result = await sendEvent('PageView', { eventId: 'test_pageview_graph' }, { fetchImpl, retryDelayMs: 0 });
+    expect(result).toMatchObject({ ok: false, error: { code: 100 } });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(mocks.reportOperationalFailure).toHaveBeenCalledWith(
       'meta_capi_delivery_failed',
-      expect.objectContaining({ dedupeKey: 'meta_capi_delivery_failed:pageview', level: 'warning' }),
+      expect.objectContaining({ dedupeKey: 'meta_capi_delivery_failed:pageview' }),
     );
   });
 });

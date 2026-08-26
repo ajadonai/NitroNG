@@ -5,6 +5,7 @@ import { useTheme } from "../shared-nav";
 import { useToast } from "../toast";
 import { useHeaderAction } from "./shell";
 import { fN } from "@/lib/format";
+import { copyText } from '@/lib/clipboard';
 
 function fmtDate(d) {
   return new Date(d).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
@@ -59,7 +60,7 @@ export default function TeamPage({ initialData }) {
   };
 
   const copyInvite = (url) => {
-    navigator.clipboard.writeText(url || inviteResult?.inviteUrl);
+    copyText(url || inviteResult?.inviteUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

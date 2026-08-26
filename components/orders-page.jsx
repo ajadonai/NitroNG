@@ -7,6 +7,7 @@ import { fN, fD } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { NotSureHelp } from "./new-order";
 import NitroLoader from "./nitro-loader";
+import { copyText } from '@/lib/clipboard';
 
 function CopyId({ value, dark, mono = true }) {
   const [copied, setCopied] = useState(false);
@@ -16,7 +17,7 @@ function CopyId({ value, dark, mono = true }) {
       className="text-sm font-semibold cursor-pointer inline-flex items-center gap-1 transition-opacity hover:opacity-70"
       style={{ color: copied ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#e5e0db" : "#1a1a1a"), fontFamily: mono ? "var(--font-mono, monospace)" : "inherit" }}
       title="Click to copy"
-      onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(String(value)); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+      onClick={e => { e.stopPropagation(); copyText(String(value)); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
     >
       {value}
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: copied ? 1 : 0.4 }}>

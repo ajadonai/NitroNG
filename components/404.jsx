@@ -2,6 +2,7 @@
 import { useState, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
+import { copyText } from '@/lib/clipboard';
 
 const MARK = "M4.8 44.98 L4.8 26.8 A9.61 9.61 0 0 1 24.02 26.8 L24.02 39.15 A9.6 9.6 0 0 0 43.22 39.15 L43.22 6.82";
 const ROUTES = ["dashboard","about","blog","changelog","contact","faq","help","lagos","live","login","pricing","privacy","pulse","quality","refund","reseller","reviews","services","signup","terms"];
@@ -52,7 +53,7 @@ function NotFoundInner() {
   if (!loaded) return <div style={{ minHeight: "100dvh", background: bg }} />;
 
   const copyLink = () => {
-    try { navigator.clipboard.writeText("https://nitro.ng" + pathname); } catch (e) {}
+    try { copyText("https://nitro.ng" + pathname); } catch (e) {}
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   };
