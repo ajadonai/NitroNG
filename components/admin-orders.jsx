@@ -6,6 +6,7 @@ import { PlatformIcon } from "./platform-icon";
 import { fN, fD, fT } from "../lib/format";
 import { FilterDropdown } from "./date-range-picker";
 import { copyText } from '@/lib/clipboard';
+import { AccountTag } from "./account-tag";
 
 const DRIP_CONFIG = {
   followers:  { batchSize: 200,  intervalHours: 2 },
@@ -244,6 +245,7 @@ function AdminFacts({ o, dark, t, isSensitive, setSearch }) {
           {o.childOrderId && <button onClick={() => setSearch(o.childOrderId)} className="text-[10px] font-semibold cursor-pointer border-none rounded px-1.5 py-0.5" style={{ background: `${t.accent}18`, color: t.accent }}>&rarr; {o.childOrderId}</button>}</span>],
         isPartial ? ["Delivered", <span key="d" className="m text-[13px] text-t-text-muted"><B>{delivered.toLocaleString()}</B> of {(o.quantity || 0).toLocaleString()}</span>] : ["Quantity", <B key="q">{(o.quantity || 0).toLocaleString()}</B>],
         ["Start count", o.startCount != null ? <B key="s">{o.startCount.toLocaleString()}</B> : <span key="s" className="text-t-text-muted">Not yet</span>],
+        ["Placed from", <B key="src">{o.source === "api" ? "API" : "Website"}</B>],
         est && !cancelled && o.status !== "Completed" ? ["Est. time", <B key="e" color={t.accent}>{est}</B>] : null,
       ]} />
       <FactRows dark={dark} title="Money" rows={[
@@ -653,7 +655,7 @@ export default function AdminOrdersPage({ dark, t, admin }) {
                             <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5 flex-wrap" style={{ color: t.textMuted }}>
                               <span>{o.created ? fD(o.created, true) : ""}</span>
                               <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                              <span>{o.user}{o.isReseller && <span className="ml-1.5 text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-1.5 rounded-md align-middle" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", color: dark ? "#e8b4c0" : "#a05468" }}>Reseller</span>}</span>
+                              <span>{o.user}<AccountTag reseller={o.isReseller} api={o.source === "api"} dark={dark} className="ml-1.5" /></span>
                             </div>
                           </div>
                           {(o.status === "Processing" || o.status === "Pending") && <span className="w-[6px] h-[6px] rounded-full shrink-0" style={{ background: sClr(o.status, dark), animation: "progress-pulse 2.8s ease-in-out infinite" }} />}
@@ -668,7 +670,7 @@ export default function AdminOrdersPage({ dark, t, admin }) {
                             <div className="flex items-center gap-2.5 mb-2.5">
                               <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: `${t.accent}20`, color: t.accent }}>{(o.user || "?")[0].toUpperCase()}</div>
                               <div className="flex-1 min-w-0">
-                                <span className="text-[12px] font-semibold" style={{ color: t.text }}>{o.user}{o.isReseller && <span className="ml-1.5 text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-1.5 rounded-md align-middle" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", color: dark ? "#e8b4c0" : "#a05468" }}>Reseller</span>}</span>
+                                <span className="text-[12px] font-semibold" style={{ color: t.text }}>{o.user}<AccountTag reseller={o.isReseller} api={o.source === "api"} dark={dark} className="ml-1.5" /></span>
                                 <span className="text-[11px] ml-1.5" style={{ color: t.textMuted }}>{o.email}</span>
                               </div>
                               <span className="text-[11px] shrink-0" style={{ color: t.textMuted }}>{o.created ? fD(o.created) : ""}</span>
@@ -781,7 +783,7 @@ export default function AdminOrdersPage({ dark, t, admin }) {
                   <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5 flex-wrap" style={{ color: t.textMuted }}>
                     <span>{o.created ? fD(o.created, true) : ""}</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                    <span>{o.user}{o.isReseller && <span className="ml-1.5 text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-1.5 rounded-md align-middle" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", color: dark ? "#e8b4c0" : "#a05468" }}>Reseller</span>}</span>
+                    <span>{o.user}<AccountTag reseller={o.isReseller} api={o.source === "api"} dark={dark} className="ml-1.5" /></span>
                   </div>
                 </div>
                 {(o.status === "Processing" || o.status === "Pending") && <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: sClr(o.status, dark), animation: "progress-pulse 2.8s ease-in-out infinite" }} />}

@@ -15,7 +15,7 @@ const mockPrisma = {
     update: vi.fn(),
   },
   transaction: { findMany: vi.fn(), create: vi.fn() },
-  order: { count: vi.fn() },
+  order: { count: vi.fn(), groupBy: vi.fn() },
   activityLog: { create: vi.fn() },
   $transaction: vi.fn(),
 };
@@ -196,6 +196,7 @@ describe('admin account state transitions', () => {
   it('returns canReinstate only inside the pending-deletion grace period', async () => {
     const joined = new Date('2026-01-01T00:00:00.000Z');
     mockPrisma.user.count.mockResolvedValue(4);
+    mockPrisma.order.groupBy.mockResolvedValue([]);
     mockPrisma.user.groupBy.mockResolvedValue([
       { status: 'PendingDeletion', _count: { _all: 2 } },
       { status: 'Deleted', _count: { _all: 1 } },

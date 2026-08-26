@@ -5,6 +5,7 @@ import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
 import { FilterDropdown } from "./date-range-picker";
 import { pointsFromKoboExact } from "../lib/nitro-rewards-core";
+import { AccountTag } from "./account-tag";
 
 const PER_PAGE = 15;
 const TX_PER_PAGE = 15;
@@ -664,6 +665,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[13px] font-semibold truncate" style={{ color: sd.color }}>{name}</span>
+                    <AccountTag reseller={u.isReseller} api={u.usesApi} dark={dark} />
                     {tag && <span className="text-[10px] py-[1px] px-1.5 rounded font-semibold shrink-0" style={{ background: dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)', color: t.textMuted }}>{tag}</span>}
                   </div>
                   <div className="text-[11px] truncate" style={{ color: u.status === 'Suspended' ? t.red : u.status === 'PendingDeletion' ? t.amber : t.textMuted }}>{email}</div>

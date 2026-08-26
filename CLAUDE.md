@@ -191,7 +191,18 @@ Commit messages use a semantic prefix that reflects the significance of the chan
 - **`v2.1:`** — milestones (a product launches, a major feature ships to users)
 - **`v2.1.1:`** — casual fixes (bug fixes, polish, plumbing, admin UX tweaks, refactors)
 
-The milestone counter increments on each milestone (`v2.1`, `v2.2`, `v2.3`, …). The patch counter increments within the current milestone (`v2.1.1`, `v2.1.2`, …) and resets when a new milestone ships. When deciding which prefix to use, ask: "Does this change what users can do?" If yes, it's at least a milestone. If no, it's a casual fix.
+The milestone counter increments on each milestone (`v2.1`, `v2.2`, `v2.3`, …). The patch counter increments within the current milestone (`v2.1.1`, `v2.1.2`, …) and resets when a new milestone ships.
+
+**Default to a patch. The milestone number is expensive; the patch number is free.** `v2.4.5000` is a perfectly good place to be — a long patch run says the milestone is being finished properly, which is the truth worth recording. Racing to the next milestone hides that.
+
+A milestone is earned only when **a capability reaches users that did not exist before**: a product launches, an account can do something on the site or the API it genuinely could not do yesterday. Everything else is a patch — including work that feels big:
+
+- Finishing, correcting or completing a feature that already shipped → **patch**. The API gaining fields, the page gaining a section, the flow gaining a step it always needed.
+- A redesign, however sweeping → **patch**. Nothing new became possible.
+- Infrastructure, refactors, migrations, error fixes, admin tooling → **patch**.
+- Widening who can use an existing capability → **milestone**, if it is genuinely new for those people. Giving every account an API key was a milestone; adding parameters to that API was not.
+
+When it is a close call, it is a patch. Say in one line why a milestone was chosen when you do bump one, so Trip can disagree before it is pushed.
 
 **The patch number tracks the issue, not the push.** While the same problem is still being worked on, every commit keeps the same number — the first attempt, the fix that didn't land, the follow-up after testing on a real device, the polish afterwards. Only a genuinely different piece of work increments it.
 

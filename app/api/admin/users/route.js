@@ -68,6 +68,7 @@ export async function GET(req) {
       email: true, balance: true, status: true,
       emailVerified: true, referralCode: true, createdAt: true,
       deletedAt: true, deletedName: true, deletedEmail: true,
+      resellerProfile: { select: { enabled: true } },
       _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } },
     };
 
@@ -82,6 +83,17 @@ export async function GET(req) {
         ...(isExport ? { take: 10000 } : { skip: (page - 1) * perPage, take: perPage }),
       }),
     ]);
+
+    // Everyone holds an API key now, so "API" means they have actually used it.
+    const apiUserIds = new Set();
+    if (users.length) {
+      // A chip is not worth a 500: if this lookup fails the list still renders.
+      const rows = await prisma.order.groupBy({
+        by: ['userId'],
+        where: { userId: { in: users.map(x => x.id) }, source: 'api', deletedAt: null },
+      }).catch(() => []);
+      rows.forEach(r => apiUserIds.add(r.userId));
+    }
 
     let stats;
     if (includeStats) {
@@ -138,6 +150,8 @@ export async function GET(req) {
         deletedName: u.deletedName || null,
         deletedEmail: sensitive ? (u.deletedEmail || null) : maskEmail(u.deletedEmail),
         canReinstate: u.status === 'PendingDeletion' && Boolean(u.deletedAt && u.deletedAt > now),
+        isReseller: !!u.resellerProfile?.enabled,
+        usesApi: apiUserIds.has(u.id),
       })),
       filteredCount,
       totalPages,
