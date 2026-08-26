@@ -31,18 +31,7 @@ function fmtNaira(kobo) {
 
 const PLATFORM_NAMES = { x: 'X', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook', youtube: 'YouTube', telegram: 'Telegram', whatsapp: 'WhatsApp', nairaland: 'Nairaland', reddit: 'Reddit', google: 'Google', trustpilot: 'Trustpilot', blog: 'Blog' };
 
-function proofLabel(proofType, platform) {
-  const name = PLATFORM_NAMES[platform] || 'your';
-  if (proofType === 'handle') return `Your ${name} handle`;
-  if (proofType === 'link') return 'Link to your post';
-  return 'Link to screenshot';
-}
 
-function proofHint(proofType, platform) {
-  const name = PLATFORM_NAMES[platform] || 'your';
-  if (proofType === 'handle') return `Enter your ${name} username so we can verify.`;
-  return 'Paste a link so we can verify your submission.';
-}
 
 function proofPlaceholder(proofType, platform) {
   if (proofType === 'link' || proofType === 'screenshot') return 'https://...';
@@ -353,12 +342,6 @@ function TaskCard({ task, expanded, onToggle, proof, onProofChange, onSubmit, su
               >
                 {submitting ? 'Sending...' : 'Submit'}
               </button>
-            </div>
-          )}
-
-          {task.userStatus === 'open' && (
-            <div className="text-[11px] mt-[9px] leading-[1.5]" style={{ color: t.textMuted }}>
-              {proofLabel(task.proofType, task.platform)} required. {proofHint(task.proofType, task.platform)}
             </div>
           )}
         </div>
