@@ -161,7 +161,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
     setPwSaving(false);
   };
 
-  const cardBg = dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)";
+  const cardBg = t.cardBg;
   const cardBorder = `0.5px solid ${t.cardBorder}`;
   const admInputStyle = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
 

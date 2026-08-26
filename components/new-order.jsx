@@ -1006,7 +1006,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       </div>
 
       {/* ═══ SERVICE CARDS ═══ */}
-      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" data-tour="no-service-list" ref={listRef} style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" data-tour="no-service-list" ref={listRef} style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
         {filtered.map((svc, i) => <ServiceCard key={svc.id} first={i === 0} cartCounts={cartCounts} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} activePromotion={activePromotion} waNumber={waSupportNumber} userEmail={user?.email} />)}
         {filtered.length > 0 && (
           <div className="pt-1 pb-2">

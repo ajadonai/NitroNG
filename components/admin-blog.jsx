@@ -74,7 +74,7 @@ export default function AdminBlogPage({ dark, t }) {
 
   const inputCls = "w-full box-border py-2.5 px-3.5 rounded-lg text-[15px] outline-none font-[inherit] border";
   const inputSt = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
-  const cardBg = dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)";
+  const cardBg = t.cardBg;
   const cardBd = `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`;
   const headerBg = dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)";
   const headerBorder = `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`;

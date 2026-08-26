@@ -275,7 +275,7 @@ export function AdminCreateOrderPage({ dark, t }) {
   const inp = { width: "100%", padding: "10px 13px", borderRadius: 10, fontSize: 14, outline: "none", background: dark ? "rgba(19,23,40,1)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.14)"}`, color: t.text, fontFamily: "inherit", transition: "border-color .15s" };
   const inpM = { ...inp, fontFamily: "'JetBrains Mono', monospace", fontSize: 13 };
   const lab = { fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: t.textMuted, display: "block", marginBottom: 6 };
-  const card = { background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, borderRadius: 16, padding: 20 };
+  const card = { background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, borderRadius: 16, padding: 20 };
 
   const submitBlock = insufficientBal ? (
     <div>

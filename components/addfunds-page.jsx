@@ -632,7 +632,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
       {/* ═══ DESKTOP + TABLET: side by side ═══ */}
       {/* ── Balance ── */}
-      <div className="rounded-[14px] p-4 mb-2" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
+      <div className="rounded-[14px] p-4 mb-2" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
         <div className="text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted">Balance</div>
         <div className="m text-[30px] desktop:text-[34px] font-bold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.01em" }}>{fN(balance)}</div>
         {lastFunded && <div className="text-[11px] mt-1.5 text-t-text-muted">Last funded {fD(lastFunded.date, true)}</div>}
@@ -673,7 +673,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       <div className="desktop:grid desktop:grid-cols-2 desktop:gap-4 desktop:items-start mt-4">
         <div className={mobileStep === 2 ? "max-desktop:hidden" : ""}>
           <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-0.5 pb-1.5 text-t-text-muted">Add funds</div>
-          <div className="rounded-[14px] p-4" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
+          <div className="rounded-[14px] p-4" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
             {amountInput}
             {couponSection}
             <div className="mt-3"><AcceptedRow /></div>
@@ -686,7 +686,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         <div className={mobileStep === 1 ? "max-desktop:hidden" : ""}>
           <button onClick={() => setMobileStep(1)} className="desktop:hidden inline-flex items-center gap-1.5 bg-transparent border-none text-[12.5px] font-semibold cursor-pointer p-0 mb-2.5 text-accent font-[inherit]">← Change amount</button>
           <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-0.5 pb-1.5 text-t-text-muted">Pay with</div>
-          <div className="rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
+          <div className="rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
             {gatewaysLoading ? (
               [1, 2, 3].map(i => (
                 <div key={i} className="flex items-center gap-3 py-3 px-3.5" style={{ borderTop: i > 1 ? `1px solid ${t.cardBorder}` : "none" }}>
@@ -715,7 +715,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               )}
 
           {(() => { const wb = welcomeEligible && valid ? bonusForNaira(numAmount) : 0; const extra = (discount > 0 ? discount / 100 : 0) + wb; return (
-            <div className="rounded-[14px] px-3.5 mt-3" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `1px solid ${t.cardBorder}` }}>
+            <div className="rounded-[14px] px-3.5 mt-3" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
               {[
                 ["Deposit", <b key="d" className="m text-[13px] font-semibold text-t-text">{valid ? fN(numAmount) : "₦0"}</b>],
                 ["Fee", <b key="f" className="text-[13px] font-semibold text-t-text">Free</b>],
@@ -1030,7 +1030,7 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
       </div>
 
       {/* Transaction list */}
-      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
+      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
         {historyTxs.length > 0 ? historyTxs.map((tx, i) => {
           const dk = dayKeyWallet(tx.date); const prev = i > 0 ? dayKeyWallet(historyTxs[i - 1].date) : null;
           const dayLabel = dk && dk !== prev ? <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-3.5 pt-3 pb-1 text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}>{dk}</div> : null;

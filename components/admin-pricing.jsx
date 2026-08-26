@@ -140,7 +140,7 @@ export default function AdminPricingPage({ dark, t }) {
   const simB = brackets.find(b => simCost >= b.min && simCost < (b.max));
 
   // Shared styles
-  const cardS = { background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` };
+  const cardS = { background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` };
   const divS = { background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)" };
 
   return (
