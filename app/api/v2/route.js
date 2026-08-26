@@ -12,6 +12,7 @@ import prisma from '@/lib/prisma';
 import { getResellerTerms, getMarkupSettings, wholesaleOf } from '@/lib/reseller';
 import { getServiceCatalogue } from '@/lib/service-catalog';
 import { formatResellerService, dedupeCategoryLabels } from '@/lib/reseller-format';
+import { standardType, describeTier, describeService, extraOrderFields } from '@/lib/reseller-instructions';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { FULL_CATALOGUE_WHERE } from '@/lib/reseller-ids';
 import { createOrderForSession, patchOrderForSession } from '@/app/api/orders/route';
@@ -99,6 +100,8 @@ async function listServices(terms) {
     select: { apiId: true, tierId: true },
   });
   const idByTier = Object.fromEntries(tierMaps.map(m => [m.tierId, m.apiId]));
+  const botSetting = await prisma.setting.findUnique({ where: { key: 'discord_bot_url' } }).catch(() => null);
+  const botUrl = botSetting?.value || 'https://nowon.tools';
   for (const g of catalogue.groups) {
     for (const t of g.tiers) {
       const apiId = idByTier[t.id];
@@ -106,12 +109,14 @@ async function listServices(terms) {
       out.push({
         service: apiId,
         name: `${g.name} · ${t.tier}`,
+        type: standardType(t.apiType, { customComments: !!t.customComments }),
         category: g.platform,
         rate: money(wholesaleOf(Math.round(t.price * 100), terms, settings)),
         min: t.min,
         max: t.max,
         refill: !!t.refill,
         cancel: false,
+        description: describeTier(g, t, { botUrl }),
       });
     }
   }
@@ -122,7 +127,7 @@ async function listServices(terms) {
   const services = await prisma.service.findMany({
     where: FULL_WHERE,
     select: {
-      name: true, category: true, sellPer1k: true, costPer1k: true, min: true, max: true, refill: true, cancel: true,
+      name: true, category: true, sellPer1k: true, costPer1k: true, min: true, max: true, refill: true, cancel: true, dripfeed: true, apiType: true,
       resellerMap: { select: { apiId: true, retiredAt: true } },
     },
     orderBy: [{ category: 'asc' }, { costPer1k: 'asc' }, { id: 'asc' }],
@@ -143,12 +148,14 @@ async function listServices(terms) {
       max: s.max,
       refill: !!s.refill,
       cancel: !!s.cancel,
+      type: standardType(s.apiType),
+      description: describeService(s),
       _raw: s.name,
     });
   }
   dedupeCategoryLabels(rows);
   for (const r of rows) {
-    out.push({ service: r.service, name: r.label, category: r.category, rate: r.rate, min: r.min, max: r.max, refill: r.refill, cancel: r.cancel });
+    out.push({ service: r.service, name: r.label, type: r.type, category: r.category, rate: r.rate, min: r.min, max: r.max, refill: r.refill, cancel: r.cancel, description: r.description });
   }
   return out;
 }
@@ -214,7 +221,7 @@ export async function POST(req) {
         ...(target.tierId ? { tierId: target.tierId } : { serviceId: target.serviceId }),
         link: String(p.link),
         quantity,
-        comments: p.comments ? String(p.comments) : undefined,
+        ...extraOrderFields(p),
         confirmDuplicate: true,
       }, req, { source: 'api' });
       const data = await res.json().catch(() => ({}));

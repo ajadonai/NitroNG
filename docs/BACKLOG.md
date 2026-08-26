@@ -10,8 +10,8 @@ never gets picked up twice. Update this in the same commit as the work.
   ("Full providers" labels, analytics tiles), admin Tasks review queue, Users
   list (show the Reseller chip there too).
 - **Reseller API follow-ups** (v2 of the API, not started): drip-feed and
-  multi-day parameters, comment and mention services, webhooks, per-key IP
-  allowlists. Brief: `docs/v2/reseller_api_brief.md`.
+  multi-day parameters, webhooks, per-key IP allowlists. Brief:
+  `docs/v2/reseller_api_brief.md`.
 - **Onboarding funnel, second read** — after ~30 days of `firstSeenWalletAt` /
   `firstSeenNewOrderAt` data (from 26 Aug 2026), rerun the funnel and see where
   the 74% who never pay actually stop.
@@ -24,6 +24,7 @@ never gets picked up twice. Update this in the same commit as the work.
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-08-26 | Reseller API carries instructions: `description` (group note, Discord bot setup with the live link, traffic and comment parameters) and a standard `type` on every service; `add` accepts comments/usernames/keywords and traffic targeting | v2.4 |
 | 2026-08-26 | API keys for every verified account at retail; wholesale by approval on the same key; HQ tab in the nav for everyone | `27001ab9` v2.3.2 |
 | 2026-08-26 | Reseller HQ merged with the public resellers page: one component in two states, no child panel; key in HQ and Settings (`/api/reseller/key`, read + rotate); docs at `/resellers/docs`; catalogue points at both | `b0d4a6a3` v2.3.1 |
 | 2026-08-26 | Reseller API: `POST /api/v2` in the SMM convention, one order path for web and API (`createOrderForSession`, `patchOrderForSession`, `refillOrderForSession`), curated vs full decided by the key, 584 missing IDs minted (map now 9,806) | `e277fcce` v2.3 |

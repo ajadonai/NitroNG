@@ -19,6 +19,7 @@ vi.mock('@/lib/reseller', () => ({
   getMarkupSettings: vi.fn().mockResolvedValue({}),
   wholesaleOf: vi.fn((retail) => Math.round(retail * 0.8)),
 }));
+import { getServiceCatalogue } from '@/lib/service-catalog';
 vi.mock('@/lib/service-catalog', () => ({
   getServiceCatalogue: vi.fn().mockResolvedValue({ groups: [
     { id: 'g1', name: 'Instagram Followers', platform: 'Instagram', tiers: [{ id: 'tier-std', tier: 'Standard', price: 2400, min: 100, max: 50000, refill: true }] },
@@ -93,7 +94,7 @@ describe('balance and services', () => {
   });
   it('a curated key sees only the curated tiers, at wholesale', async () => {
     const r = await call({ key: 'k'.repeat(16), action: 'services' });
-    expect(r.body).toEqual([{ service: 3877, name: 'Instagram Followers · Standard', category: 'Instagram', rate: '1920.00', min: 100, max: 50000, refill: true, cancel: false }]);
+    expect(r.body).toEqual([{ service: 3877, name: 'Instagram Followers · Standard', type: 'Default', category: 'Instagram', rate: '1920.00', min: 100, max: 50000, refill: true, cancel: false, description: '' }]);
     expect(mockPrisma.service.findMany).not.toHaveBeenCalled();
   });
   it('a full key sees the curated tiers and the full list', async () => {
@@ -145,6 +146,49 @@ describe('add', () => {
     const r = await call({ key: 'k'.repeat(16), action: 'add', service: '3877', link: 'https://instagram.com/x', quantity: '1000' });
     expect(r.status).toBe(200);
     expect(r.body).toEqual({ error: 'Insufficient balance' });
+  });
+});
+
+describe('instructions', () => {
+  const withSetup = () => {
+    getServiceCatalogue.mockResolvedValueOnce({ groups: [
+      { id: 'g2', name: 'Discord Members (Offline)', platform: 'Discord', type: 'followers', description: 'Invite link must never expire.', tiers: [{ id: 'tier-dc', tier: 'Standard', price: 3900, min: 100, max: 10000, refill: false }] },
+      { id: 'g3', name: 'Website Traffic', platform: 'Website', type: 'views', tiers: [{ id: 'tier-web', tier: 'Standard', price: 1500, min: 1000, max: 100000, refill: false, trafficTargeting: true, apiType: 'Web Traffic' }] },
+      { id: 'g4', name: 'Instagram Comments', platform: 'Instagram', type: 'comments', tiers: [{ id: 'tier-cm', tier: 'Premium', price: 9000, min: 10, max: 500, refill: false, customComments: true }] },
+    ] });
+    mockPrisma.resellerServiceMap.findMany.mockResolvedValue([{ apiId: 102, tierId: 'tier-dc' }, { apiId: 103, tierId: 'tier-web' }, { apiId: 104, tierId: 'tier-cm' }]);
+  };
+  it('each service carries a standard type and the instructions a buyer needs', async () => {
+    withSetup();
+    const r = await call({ key: 'k'.repeat(16), action: 'services' });
+    const discord = r.body.find(s => s.service === 102);
+    expect(discord.type).toBe('Default');
+    expect(discord.description).toContain('Invite link must never expire.');
+    expect(discord.description).toContain('1. Add the bot to your server');
+    expect(discord.description).toContain('never expire');
+    const traffic = r.body.find(s => s.service === 103);
+    expect(traffic.description).toContain('country');
+    expect(traffic.description).toContain('referrer');
+    const comments = r.body.find(s => s.service === 104);
+    expect(comments.type).toBe('Custom Comments');
+    expect(comments.description).toContain('one comment per line');
+  });
+  it('add folds traffic targeting and list parameters into the order', async () => {
+    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: { id: 'tier-web', enabled: true, group: { enabled: true } }, service: null });
+    createOrderForSession.mockResolvedValue(Response.json({ success: true, order: { id: 'NTR-9', status: 'Processing' } }));
+    const r = await call({ key: 'k'.repeat(16), action: 'add', service: '103', link: 'https://example.com', quantity: '1000', country: 'ng', device: 'Mobile', keyword: 'buy shoes lagos', usernames: 'a\nb' });
+    expect(r.status).toBe(200);
+    const [, body] = createOrderForSession.mock.calls[0];
+    expect(body.trafficConfig).toEqual({ country: 'ng', device: 'mobile', trafficType: 'keyword', keyword: 'buy shoes lagos', referrer: '' });
+    expect(body.comments).toBe('a\nb');
+  });
+  it('add without extras sends neither comments nor traffic', async () => {
+    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: { id: 'tier-std', enabled: true, group: { enabled: true } }, service: null });
+    createOrderForSession.mockResolvedValue(Response.json({ success: true, order: { id: 'NTR-10', status: 'Processing' } }));
+    await call({ key: 'k'.repeat(16), action: 'add', service: '3877', link: 'https://instagram.com/x', quantity: '100' });
+    const [, body] = createOrderForSession.mock.calls[0];
+    expect(body.comments).toBeUndefined();
+    expect(body.trafficConfig).toBeUndefined();
   });
 });
 
