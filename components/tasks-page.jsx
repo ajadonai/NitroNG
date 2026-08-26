@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from 'react';
 import { useToast } from './toast';
 
 const PLATFORM_ICONS = {
@@ -33,6 +33,18 @@ const PLATFORM_NAMES = { x: 'X', instagram: 'Instagram', tiktok: 'TikTok', faceb
 
 
 
+function proofLabel(proofType, platform) {
+  const name = PLATFORM_NAMES[platform] || platform;
+  if (proofType === 'handle') return `${name} handle`;
+  if (proofType === 'link') return 'Link to your post';
+  if (proofType === 'phone') return 'WhatsApp number';
+  if (proofType === 'text') return 'Name on the review';
+  return 'Screenshot link';
+}
+function bandOf(rewardKobo) {
+  return rewardKobo <= 10000 ? 'Follow and join' : rewardKobo <= 25000 ? 'Share' : 'Write and recommend';
+}
+
 function proofPlaceholder(proofType, platform) {
   if (proofType === 'link' || proofType === 'screenshot') return 'https://...';
   const map = {
@@ -54,6 +66,15 @@ export default function TasksPage({ dark, t }) {
   const [submitting, setSubmitting] = useState(null);
   const [filter, setFilter] = useState('open');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [sumOpen, setSumOpen] = useState(false);
+  const sumRef = useRef(null);
+  useEffect(() => {
+    if (!sumOpen) return;
+    const onDown = (e) => { if (sumRef.current && !sumRef.current.contains(e.target)) setSumOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setSumOpen(false); };
+    document.addEventListener('mousedown', onDown); document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [sumOpen]);
 
   const toast = useToast();
   const accent = '#c47d8e';
@@ -158,191 +179,158 @@ export default function TasksPage({ dark, t }) {
     );
   }
 
+  const openCount = tasks.filter(x => x.userStatus === 'open').length;
+  const card = { background: dark ? 'rgba(255,255,255,.07)' : '#fff', border: `1px solid ${border}` };
   return (
     <>
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 mb-2.5">
-        {[
-          { label: 'Earned', value: fmtNaira(stats.earned || 0), color: green },
-          { label: 'In review', value: stats.pending || 0, color: accent },
-          { label: 'Expiring', value: stats.expiringSoon ? fmtNaira(stats.expiringSoon) : '—', color: stats.expiringSoon ? amber : t.textMuted },
-        ].map(s => (
-          <div key={s.label} className="p-3 rounded-xl" style={{ background: dark ? 'rgba(255,255,255,.07)' : '#fff', border: `0.5px solid ${border}` }}>
-            <div className="text-[11px] uppercase tracking-[.7px] font-semibold mb-1" style={{ color: t.textMuted }}>{s.label}</div>
-            <div className="m text-base max-md:text-[13px] font-bold" style={{ color: s.color }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* How it works */}
-      <div className="rounded-xl py-2.5 px-3.5 mb-3.5 flex max-md:flex-col max-md:gap-1.5 items-start desktop:items-center gap-4" style={{ background: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.02)', border: `0.5px solid ${border}` }}>
-        <div className="flex items-center gap-3 max-md:gap-2.5 flex-wrap">
-          {[['1', 'Do a task'], ['2', 'Submit proof'], ['3', 'Credit in 7 days']].map(([n, label]) => (
-            <div key={n} className="flex items-center gap-1.5 text-[11px] font-medium" style={{ color: t.textSoft }}>
-              <span className="w-[16px] h-[16px] rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold" style={{ background: dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.1)', color: accent }}>{n}</span>
-              {label}
-            </div>
-          ))}
+      {/* Header, with the summary closed until asked for */}
+      <div className="flex justify-between items-start gap-3 pb-2 desktop:pb-3">
+        <div>
+          <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Tasks</div>
+          <div className="text-sm desktop:text-[15px] text-t-text-muted">Small tasks, free credit</div>
         </div>
-        <span className="hidden desktop:block text-[11px]" style={{ color: border }}>|</span>
-        <div className="flex items-center gap-3 text-[11px]" style={{ color: t.textMuted }}>
-          <span>Spend-only · {stats.expiryDays || 30}d expiry</span>
-          <span style={{ opacity: .4 }}>·</span>
-          <span>Fake subs rejected</span>
-        </div>
-      </div>
-
-      {/* Filter bar */}
-      <div className="flex items-center gap-2.5 mb-3 min-h-[34px]">
-        <span className="text-[11px]" style={{ color: t.textMuted }}>
-          {filtered.length} task{filtered.length !== 1 ? 's' : ''}
-          {filter !== 'all' && <button onClick={() => setFilter('all')} className="bg-transparent border-none cursor-pointer font-[inherit] text-[11px] font-medium ml-1.5 underline p-0" style={{ color: accent }}>Show all</button>}
-        </span>
-        <div className="relative ml-auto" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setFilterOpen(false); }}>
-          <button onClick={() => setFilterOpen(!filterOpen)} className="inline-flex items-center gap-1.5 py-[7px] px-3 rounded-lg text-[13px] font-medium bg-transparent cursor-pointer font-[inherit]" style={{ border: `1px solid ${dark ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.14)'}`, background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.03)', color: dark ? 'rgba(255,255,255,.7)' : 'rgba(0,0,0,.7)' }}>
-            {activeFilter.label}
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ opacity: .5, transform: filterOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}><polyline points="6 9 12 15 18 9"/></svg>
+        <div ref={sumRef} className="relative shrink-0">
+          <button onClick={() => setSumOpen(v => !v)} aria-expanded={sumOpen} className="flex items-center gap-1.5 h-9 px-3 rounded-xl cursor-pointer text-[12.5px] font-medium text-t-text-soft" style={card}>
+            Summary
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: sumOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="m6 9 6 6 6-6"/></svg>
           </button>
-          {filterOpen && (
-            <div className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-[10px] overflow-hidden min-w-[150px] py-1" style={{ background: dark ? '#1a1d2e' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.14)'}`, boxShadow: dark ? '0 8px 32px rgba(0,0,0,.5)' : '0 8px 32px rgba(0,0,0,.12)' }}>
-              {FILTERS.map(f => (
-                <button key={f.key} onClick={() => { setFilter(f.key); setFilterOpen(false); }} className="block w-full text-left py-[7px] px-3 text-[13px] bg-transparent border-none cursor-pointer font-[inherit] whitespace-nowrap transition-colors" style={{ background: f.key === filter ? (dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.08)') : 'transparent', color: f.key === filter ? accent : (dark ? 'rgba(255,255,255,.7)' : 'rgba(0,0,0,.7)'), fontWeight: f.key === filter ? 600 : 400 }}>
-                  {f.label}
-                </button>
+          {sumOpen && (
+            <div className="absolute right-0 top-11 z-20 w-[240px] rounded-2xl px-3.5 py-1" style={{ background: dark ? '#161b2e' : '#fff', border: `1px solid ${border}`, boxShadow: '0 18px 44px rgba(0,0,0,.18)' }}>
+              {[['Earned', fmtNaira(stats.earned || 0), green], ['In review', String(stats.pending || 0), dark ? '#a5b4fc' : '#4f46e5'], ['Open tasks', String(openCount), t.text], ['Credit expires', `${stats.expiryDays || 30} days`, t.text]].map(([label, val, color], i) => (
+                <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-soft" style={{ borderTop: i > 0 ? `1px solid ${border}` : 'none' }}><span>{label}</span><b className="m text-[15px] font-semibold" style={{ color }}>{val}</b></div>
               ))}
             </div>
           )}
         </div>
       </div>
 
-      {/* Task list */}
+      {/* How it works: three steps, then the fine print on one line */}
+      <div className="grid grid-cols-3 gap-1.5 mb-2">
+        {[['1', 'Do a task'], ['2', 'Submit proof'], ['3', 'Credit lands']].map(([n, label]) => (
+          <div key={n} className="flex items-center gap-2 py-2 px-2.5 rounded-xl text-[12px] font-medium whitespace-nowrap text-t-text-soft" style={card}>
+            <span className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 text-[10.5px] font-bold text-white" style={{ background: accent }}>{n}</span>{label}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-1.5 flex-wrap mb-3 px-0.5 text-[12px] text-t-text-muted">
+        <span>Spend-only credit</span><span className="opacity-50">·</span><span>{stats.expiryDays || 30} day expiry</span><span className="opacity-50">·</span><span>Fake accounts rejected</span>
+      </div>
+
+      {/* Filter bar */}
+      <div className="flex items-center gap-2.5 mb-2 min-h-[34px]">
+        <span className="text-[12px] text-t-text-muted">
+          {filtered.length} task{filtered.length !== 1 ? 's' : ''}
+          {filter !== 'all' && <button onClick={() => setFilter('all')} className="bg-transparent border-none cursor-pointer font-[inherit] text-[12px] font-medium ml-1.5 underline p-0" style={{ color: accent }}>Show all</button>}
+        </span>
+        <div className="relative ml-auto" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setFilterOpen(false); }}>
+          <button onClick={() => setFilterOpen(!filterOpen)} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[12.5px] font-medium cursor-pointer font-[inherit] text-t-text-soft" style={card}>
+            {activeFilter.label}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          {filterOpen && (
+            <div className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-[10px] overflow-hidden min-w-[150px] py-1" style={{ background: dark ? '#1a1d2e' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.14)'}`, boxShadow: '0 8px 32px rgba(0,0,0,.18)' }}>
+              {FILTERS.map(f => (
+                <button key={f.key} onClick={() => { setFilter(f.key); setFilterOpen(false); }} className="block w-full text-left py-[7px] px-3 text-[13px] bg-transparent border-none cursor-pointer font-[inherit] whitespace-nowrap" style={{ color: f.key === filter ? accent : t.text, fontWeight: f.key === filter ? 600 : 400 }}>{f.label}</button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Task list: one surface, grouped by the effort the reward tracks */}
       {filtered.length === 0 ? (
-        <div className="text-center py-8 px-5 rounded-2xl text-[13px] leading-relaxed" style={{ color: t.textMuted, background: cardBg, border: `0.5px solid ${border}` }}>
+        <div className="text-center py-8 px-5 rounded-2xl text-[13px] leading-relaxed text-t-text-muted" style={card}>
           {filter === 'all' ? 'No tasks available right now. Check back soon.' : `No ${activeFilter.label.toLowerCase()} tasks.`}
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          {filtered.map(task => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              expanded={expanded === task.id}
-              onToggle={() => setExpanded(expanded === task.id ? null : task.id)}
-              proof={proofs[task.id] || ''}
-              onProofChange={v => setProofs(p => ({ ...p, [task.id]: v }))}
-              onSubmit={() => handleSubmit(task.id)}
-              submitting={submitting === task.id}
-              dark={dark}
-              t={t}
-              accent={accent}
-              border={border}
-              cardBg={cardBg}
-              innerBg={innerBg}
-              amber={amber}
-              green={green}
-              red={red}
-            />
-          ))}
+        <div className="rounded-[14px] overflow-hidden" style={card}>
+          {[...filtered].sort((a, b) => a.reward - b.reward).map((task, i, arr) => {
+            const band = bandOf(task.reward);
+            const showBand = i === 0 || bandOf(arr[i - 1].reward) !== band;
+            return (
+              <Fragment key={task.id}>
+                {showBand && <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-3.5 pt-3 pb-1 text-t-text-muted" style={{ background: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.025)', borderTop: i > 0 ? `1px solid ${border}` : 'none' }}>{band}</div>}
+                <TaskCard
+                  task={task}
+                  first={showBand}
+                  expanded={expanded === task.id}
+                  onToggle={() => setExpanded(expanded === task.id ? null : task.id)}
+                  proof={proofs[task.id] || ''}
+                  onProofChange={v => setProofs(p => ({ ...p, [task.id]: v }))}
+                  onSubmit={() => handleSubmit(task.id)}
+                  submitting={submitting === task.id}
+                  dark={dark} t={t} accent={accent} border={border} innerBg={innerBg} amber={amber} green={green} red={red}
+                />
+              </Fragment>
+            );
+          })}
         </div>
       )}
-
     </>
   );
 }
 
-function TaskCard({ task, expanded, onToggle, proof, onProofChange, onSubmit, submitting, dark, t, accent, border, cardBg, innerBg, amber, green, red }) {
-  const icon = PLATFORM_ICONS[task.platform] || { bg: 'rgba(196,125,142,.12)', lbg: 'rgba(196,125,142,.08)', svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 12-14h-8l0-6z"/></svg> };
+function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSubmit, submitting, dark, t, accent, border, innerBg, amber, green, red }) {
+  const icon = PLATFORM_ICONS[task.platform] || { bg: 'rgba(196,125,142,.12)', lbg: 'rgba(196,125,142,.08)', svg: null };
   const isDone = task.userStatus === 'done';
   const isPending = task.userStatus === 'pending';
   const isRejected = task.userStatus === 'rejected';
   const isExhausted = task.userStatus === 'exhausted';
   const dimmed = isDone || isExhausted;
-
   const chipStyle = isDone
-    ? { background: dark ? 'rgba(110,231,183,.1)' : 'rgba(5,150,105,.08)', color: green }
+    ? { background: dark ? 'rgba(110,231,183,.12)' : '#ecfdf5', color: green }
     : isPending
-    ? { background: dark ? 'rgba(251,191,36,.1)' : 'rgba(180,83,9,.08)', color: amber }
+    ? { background: dark ? 'rgba(165,180,252,.14)' : '#eef2ff', color: dark ? '#a5b4fc' : '#4f46e5' }
     : isRejected
-    ? { background: dark ? 'rgba(252,165,165,.1)' : 'rgba(220,38,38,.07)', color: red }
+    ? { background: dark ? 'rgba(253,186,116,.14)' : '#fff7ed', color: dark ? '#fdba74' : '#c2410c' }
     : isExhausted
     ? { background: innerBg, color: t.textMuted }
-    : { background: dark ? 'rgba(196,125,142,.13)' : 'rgba(196,125,142,.1)', color: accent };
-
+    : { background: dark ? 'rgba(196,125,142,.13)' : 'rgba(196,125,142,.12)', color: accent, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 };
   const chipLabel = isDone ? 'Done' : isPending ? 'In review' : isRejected ? 'Rejected' : isExhausted ? 'Pool full' : fmtNaira(task.reward);
-
-  const freqLabel = task.frequency === 'one_time' ? 'One-time' : task.frequency === 'daily' ? 'Daily' : task.frequency === 'weekly' ? 'Weekly' : task.frequency === 'monthly' ? 'Monthly' : '';
-
+  const freq = task.frequency === 'daily' ? 'daily' : task.frequency === 'weekly' ? 'weekly' : task.frequency === 'monthly' ? 'monthly' : 'once';
+  const SectionHead = ({ children, first: f }) => <div className={`text-[10.5px] font-semibold uppercase tracking-[1px] pb-1.5 ${f ? '' : 'mt-3 pt-3 border-t border-solid'}`} style={{ color: t.textMuted, borderColor: border }}>{children}</div>;
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: cardBg, border: `0.5px solid ${border}` }}>
-      <button onClick={onToggle} className="w-full flex items-center gap-3 py-[13px] px-[14px] text-left bg-transparent font-[inherit] transition-colors">
-        <div className="w-9 h-9 rounded-[11px] flex items-center justify-center shrink-0" style={{ background: dark ? icon.bg : icon.lbg, opacity: dimmed ? .45 : 1 }}>
-          {icon.svg}
+    <div style={{ borderTop: first ? 'none' : `1px solid ${border}` }}>
+      <button onClick={onToggle} aria-expanded={expanded} className="w-full flex items-center gap-3 py-3 px-3.5 text-left bg-transparent border-none font-[inherit] cursor-pointer">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? icon.bg : icon.lbg, opacity: dimmed ? .5 : 1 }}>{icon.svg}</div>
+        <div className="flex-1 min-w-0" style={{ opacity: dimmed ? .55 : 1 }}>
+          <div className="text-[13.5px] font-semibold leading-[1.35] text-t-text">{task.title}</div>
+          <div className="text-[11px] mt-[2px] text-t-text-muted">{proofLabel(task.proofType, task.platform)} · {freq}</div>
         </div>
-        <div className="flex-1 min-w-0" style={{ opacity: dimmed ? .45 : 1 }}>
-          <div className="text-[13px] font-semibold leading-[1.35]" style={{ color: t.text }}>{task.title}</div>
-          {freqLabel && <div className="text-[11px] mt-[2.5px]" style={{ color: t.textMuted }}>{freqLabel}</div>}
-        </div>
-        <span className="shrink-0 text-[11px] font-bold py-[5px] px-[10px] rounded-full whitespace-nowrap" style={chipStyle}>{chipLabel}</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2.5" strokeLinecap="round" className="shrink-0 transition-transform" style={{ transform: expanded ? 'rotate(180deg)' : 'none' }}><polyline points="6 9 12 15 18 9"/></svg>
+        <span className="shrink-0 text-[11px] font-semibold py-[4px] px-[9px] rounded-full whitespace-nowrap" style={chipStyle}>{chipLabel}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
       </button>
 
       {expanded && (
-        <div className="px-[14px] pb-[15px]">
-          <div className="text-[13px] leading-[1.6] pt-[10px]" style={{ color: t.textSoft, borderTop: `1px solid ${border}` }}>
-            {task.instructions}
-          </div>
-
-          {task.frequency !== 'one_time' && (
-            <div className="flex flex-wrap gap-[5px] mt-2.5">
-              <span className="text-[11px] font-semibold py-[4px] px-[9px] rounded-md" style={{ color: t.textMuted, background: innerBg }}>{freqLabel}</span>
-            </div>
-          )}
-
-          {isDone && (
-            <div className="mt-[11px] text-[11px] rounded-[10px] py-[9px] px-3 leading-[1.5]" style={{ color: green, background: dark ? 'rgba(110,231,183,.06)' : 'rgba(5,150,105,.04)', border: `1px solid ${dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.1)'}` }}>
-              You earned {fmtNaira(task.reward)} credit from this task.
-            </div>
-          )}
-
-          {isPending && (
-            <div className="mt-[11px] text-[11px] rounded-[10px] py-[9px] px-3 leading-[1.5]" style={{ color: t.textSoft, background: innerBg }}>
-              Your submission is being reviewed. This usually takes up to 7 days.
-            </div>
-          )}
-
-          {isRejected && (
-            <div className="mt-[11px] text-[11px] rounded-[10px] py-[9px] px-3 leading-[1.5]" style={{ color: red, background: dark ? 'rgba(252,165,165,.07)' : 'rgba(220,38,38,.04)', border: `1px solid ${dark ? 'rgba(252,165,165,.15)' : 'rgba(220,38,38,.08)'}` }}>
-              {task.rejectionReason || 'Your submission was not approved. You can try again.'}
-            </div>
-          )}
-
-          {isExhausted && (
-            <div className="mt-[11px] text-[11px]" style={{ color: t.textMuted }}>
-              The reward pool for this month is full. Check back next month.
-            </div>
-          )}
+        <div className="px-3.5 pb-4" style={{ background: dark ? 'rgba(196,125,142,.06)' : 'rgba(196,125,142,.04)', borderTop: `1px solid ${border}` }}>
+          {isDone && <div className="pt-3 text-[12.5px] leading-[1.5]" style={{ color: green }}>You earned {fmtNaira(task.reward)} credit from this task. It is in your wallet, spend-only, valid for 30 days.</div>}
+          {isPending && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-soft">We are checking your proof. The credit lands as soon as it clears.</div>}
+          {isExhausted && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-muted">The reward pool for this month is full. Check back next month.</div>}
+          {isRejected && <div className="pt-3 text-[12.5px] leading-[1.5]" style={{ color: dark ? '#fdba74' : '#c2410c' }}>{task.rejectionReason || 'Your proof did not match. Do the task again and resend it.'}</div>}
 
           {(task.userStatus === 'open' || isRejected) && (
-            <div className="flex gap-2 mt-3">
-              <input
-                type="text"
-                placeholder={proofPlaceholder(task.proofType, task.platform)}
-                value={proof}
-                onChange={e => onProofChange(e.target.value)}
-                className="flex-1 h-10 rounded-[10px] text-[13px] px-[13px] outline-none"
-                style={{ background: dark ? '#0d1020' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.12)'}`, color: t.text }}
-                onFocus={e => { e.target.style.borderColor = 'rgba(196,125,142,.55)'; }}
-                onBlur={e => { e.target.style.borderColor = dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.12)'; }}
-              />
-              <button
-                onClick={onSubmit}
-                disabled={submitting || !proof.trim()}
-                className="h-10 px-[18px] rounded-[10px] text-[13px] font-bold shrink-0 transition-opacity"
-                style={{ background: accent, color: '#14060a', opacity: submitting || !proof.trim() ? .5 : 1 }}
-              >
-                {submitting ? 'Sending...' : 'Submit'}
-              </button>
-            </div>
+            <>
+              <div className="pt-3"><SectionHead first>Do it</SectionHead></div>
+              <div className="text-[13px] leading-[1.6] text-t-text-soft">{task.instructions}</div>
+              <SectionHead>Proof</SectionHead>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  aria-label={proofLabel(task.proofType, task.platform)}
+                  placeholder={proofPlaceholder(task.proofType, task.platform)}
+                  value={proof}
+                  onChange={e => onProofChange(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && proof.trim() && !submitting) onSubmit(); }}
+                  className="flex-1 min-w-0 h-10 rounded-[10px] text-[13px] px-[13px] outline-none"
+                  style={{ background: dark ? '#0d1020' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.12)'}`, color: t.text }}
+                  onFocus={e => { e.target.style.borderColor = 'rgba(196,125,142,.55)'; }}
+                  onBlur={e => { e.target.style.borderColor = dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.12)'; }}
+                />
+                <button onClick={onSubmit} disabled={submitting || !proof.trim()} className="h-10 px-[18px] rounded-[10px] text-[13px] font-bold shrink-0 border-none cursor-pointer text-white disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: accent }}>
+                  {submitting ? 'Sending...' : 'Submit'}
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}
