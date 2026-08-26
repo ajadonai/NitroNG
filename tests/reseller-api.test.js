@@ -53,23 +53,22 @@ async function call(params) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockPrisma.resellerProfile.findUnique.mockResolvedValue({ userId: 'u1', enabled: true, user });
+  mockPrisma.user.findUnique.mockImplementation(({ where }) => Promise.resolve(where?.apiKey ? { ...user, emailVerified: true } : { balance: user.balance }));
   getResellerTerms.mockResolvedValue({ catalog: 'curated', discountPct: null });
   mockPrisma.resellerServiceMap.findMany.mockResolvedValue([{ apiId: 3877, tierId: 'tier-std' }]);
   mockPrisma.setting.findUnique.mockResolvedValue({ value: '1600' });
-  mockPrisma.user.findUnique.mockResolvedValue({ balance: user.balance });
   mockPrisma.order.findFirst.mockResolvedValue(null);
 });
 
 describe('POST /api/v2 — auth', () => {
   it('rejects a missing or unknown key with 401', async () => {
-    mockPrisma.resellerProfile.findUnique.mockResolvedValue(null);
+    mockPrisma.user.findUnique.mockResolvedValue(null);
     const r = await call({ key: 'nope-nope-nope', action: 'balance' });
     expect(r.status).toBe(401);
     expect(r.body).toEqual({ error: 'Invalid API key' });
   });
-  it('rejects a disabled reseller', async () => {
-    mockPrisma.resellerProfile.findUnique.mockResolvedValue({ userId: 'u1', enabled: false, user });
+  it('rejects an unverified account', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ ...user, emailVerified: false });
     const r = await call({ key: 'k'.repeat(16), action: 'balance' });
     expect(r.status).toBe(401);
   });
@@ -84,6 +83,13 @@ describe('balance and services', () => {
   it('returns the balance as a two-place NGN string', async () => {
     const r = await call({ key: 'k'.repeat(16), action: 'balance' });
     expect(r.body).toEqual({ balance: '123456.00', currency: 'NGN' });
+  });
+  it('an account with no terms gets the curated tiers at retail, and no full list', async () => {
+    getResellerTerms.mockResolvedValue(null);
+    const r = await call({ key: 'k'.repeat(16), action: 'services' });
+    expect(r.status).toBe(200);
+    expect(r.body).toHaveLength(1);
+    expect(mockPrisma.service.findMany).not.toHaveBeenCalled();
   });
   it('a curated key sees only the curated tiers, at wholesale', async () => {
     const r = await call({ key: 'k'.repeat(16), action: 'services' });

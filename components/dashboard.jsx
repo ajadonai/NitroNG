@@ -118,6 +118,7 @@ const TasksPage = dynamic(() => import("./tasks-page").then(m => m.default), { s
 /* ═══ SVG ICONS                          ═══ */
 /* ═══════════════════════════════════════════ */
 const I = {
+  lab: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m21 2-2 2m-7.6 7.6a5.5 5.5 0 11-7.8 7.8 5.5 5.5 0 017.8-7.8zm0 0L19 3l2 2-3 3"/></svg>,
   audit: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 01-1 1H9a1 1 0 01-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="10" y1="24" x2="14" y2="24"/></svg>,
   cleanup: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21l2-2m0 0l4-7 3 3-7 4z"/><path d="M14 3l1.5 3L19 7.5 15.5 9 14 12l-1.5-3L9 7.5 12.5 6z"/><path d="M19 14l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>,
   overview: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
@@ -130,7 +131,6 @@ const I = {
   settings: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
   earn: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15.5 9.5c0-1.38-1.57-2.5-3.5-2.5s-3.5 1.12-3.5 2.5S10.07 12 12 12s3.5 1.12 3.5 2.5-1.57 2.5-3.5 2.5-3.5-1.12-3.5-2.5"/></svg>,
   tasks: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>,
-  lab: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3h6v7l5 8a1 1 0 01-.85 1.52H4.85A1 1 0 014 18l5-8V3z"/><line x1="9" y1="3" x2="15" y2="3"/></svg>,
   catalogue: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/><line x1="6" y1="8" x2="9" y2="8"/><line x1="6" y1="12" x2="9" y2="12"/></svg>,
   resellers: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 13h6"/></svg>,
   changelog: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>,
@@ -1251,10 +1251,11 @@ function DashboardInner({ initialData }) {
                 // behind the avatar on desktop and in the More sheet on mobile.
                 const byId = Object.fromEntries(NAV_ITEMS.map(n => [n.id, n]));
                 const browse = isReseller ? { id: "catalogue", label: "Catalogue" } : { id: "resellers", label: "Resellers", href: "/resellers" };
+                const hq = { id: "lab", label: isReseller ? "Reseller HQ" : "API access" };
                 const sections = [
                   ["Order", [byId.overview, byId.services, byId.orders]],
                   ["Money", [byId["add-funds"], byId.tasks]],
-                  ["Browse", [browse, byId.guide]],
+                  ["Browse", [browse, hq, byId.guide]],
                   ["Help", [byId.support]],
                 ];
                 return sections.flatMap(([section, items]) => items.filter(Boolean).map((item, j) => ({ ...item, section, first: j === 0 })));
@@ -1338,7 +1339,7 @@ function DashboardInner({ initialData }) {
           </div>}
           {isLab && <div className="pb-2 desktop:pb-3.5">
             <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Reseller HQ</div>
-            <div className="text-sm desktop:text-[15px] text-t-text-muted">Your key, your catalogue, and the API for your panel</div>
+            <div className="text-sm desktop:text-[15px] text-t-text-muted">Your key, your prices, and the API for your panel</div>
             <div className="page-divider bg-t-card-border" />
           </div>}
           {isTasks && <div className="pb-2 desktop:pb-3.5">
@@ -1420,10 +1421,11 @@ function DashboardInner({ initialData }) {
           {(() => {
             const byId = Object.fromEntries(MORE_ITEMS.map(m => [m.id, m]));
             const browse = isReseller ? { id: "catalogue", label: "Catalogue" } : { id: "resellers", label: "Resellers", href: "/resellers" };
+            const hq = { id: "lab", label: isReseller ? "Reseller HQ" : "API access" };
             const sec = (id, label) => ({ id, section: label, header: true });
             return [
               sec("sec-money", "Money"), byId.referrals, byId.tasks,
-              sec("sec-browse", "Browse"), browse, byId.guide, byId.changelog,
+              sec("sec-browse", "Browse"), browse, hq, byId.guide, byId.changelog,
               sec("sec-account", "Account"), byId.support, byId.settings,
               byId.logout,
             ].filter(Boolean);
