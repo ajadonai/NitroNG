@@ -354,10 +354,24 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
     "min": 100,
     "max": 50000,
     "refill": true,
-    "cancel": true
+    "cancel": true,
+    "type": "Default",
+    "description": ""
   },
-  { "service": 4102, "name": "TikTok Views", "category": "TikTok", "rate": "520.00", "min": 500, "max": 1000000, "refill": false, "cancel": false }
+  {
+    "service": 4310,
+    "name": "Discord Members (Offline) · Standard",
+    "category": "Discord",
+    "rate": "3900.00",
+    "min": 100,
+    "max": 10000,
+    "refill": false,
+    "cancel": false,
+    "type": "Default",
+    "description": "Members join your server but appear offline. Your server invite link must be set to never expire. Required setup before ordering: 1. Add the bot to your server: https://nowon.tools 2. Set verification level to None or Low ..."
+  }
 ]`} />
+                  <Callout variant="blue"><b>Read <code>description</code> before you sell a service.</b> It carries what the buyer must do first: the Discord bot setup, which link to paste, the traffic-targeting and comment parameters. Show it on your order page. <code>type</code> is the standard panel type (<code>Default</code>, <code>Custom Comments</code>, <code>SEO</code>, <code>Package</code>) so your panel asks for the right extra fields.</Callout>
                 </div>
 
                 {/* add */}
@@ -370,7 +384,13 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
                     ['service', true, 'Service ID from <code>services</code>'],
                     ['link', true, 'Target URL or username'],
                     ['quantity', true, 'Amount, within the service min and max'],
-                    ['comments', false, 'Custom comments, one per line, for comment services only'],
+                    ['comments', false, 'Comment services (<code>type</code> Custom Comments): one comment per line; quantity is the number of lines'],
+                    ['usernames', false, 'Mention services: usernames, one per line'],
+                    ['keywords', false, 'SEO services: search terms, one per line'],
+                    ['country', false, 'Traffic services: 2-letter country code, <code>WW</code> for worldwide, or a continent (<code>AFR</code>, <code>ASI</code>, <code>EUR</code>, <code>NAM</code>, <code>SAM</code>, <code>MEA</code>)'],
+                    ['device', false, 'Traffic services: <code>all</code>, <code>mobile</code> or <code>desktop</code>. Defaults to all'],
+                    ['keyword', false, 'Traffic services: search term the visits appear to come from. Leave out for direct visits'],
+                    ['referrer', false, 'Traffic services: referring site the visits appear to come from. Leave out for direct visits'],
                   ]} />
                   <CodeBlock params={[['key', 'YOUR_API_KEY'], ['action', 'add'], ['service', '3877'], ['link', 'https://instagram.com/client'], ['quantity', '1000']]} lang={lang} setLang={setLang} onCopy={copyText} />
                   <ResponseBlock json={'{"order": 4211}'} />
