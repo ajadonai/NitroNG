@@ -581,7 +581,7 @@ function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDERS PAGE                         ═══ */
 /* ═══════════════════════════════════════════ */
-export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, txs, dark, t, onNavigate, onRefresh, waNum }) {
+export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, txs, dark, t, onNavigate, onRefresh, waNum, email }) {
   const initialTotalCount = Number.isFinite(initialTotal) ? initialTotal : initialOrders.length;
   const confirm = useConfirm();
   const [orders, setOrders] = useState(initialOrders);
@@ -831,7 +831,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
               <>
                 <div className="text-base font-semibold mb-1 text-t-text-soft">No orders yet</div>
                 <div className="text-[13px] text-t-text-muted mb-3">Your orders will show up here once you start boosting</div>
-                <NotSureHelp waNumber={waNum} dark={dark} t={t} />
+                <NotSureHelp waNumber={waNum} dark={dark} t={t} email={email} />
               </>
             )}
           </div>

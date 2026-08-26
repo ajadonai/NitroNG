@@ -114,7 +114,7 @@ const TIER_STACK = {
   Premium: { bestFor: "your main page", detail: "Best accounts · free lifetime refill · priority start" },
 };
 
-function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, waNumber }) {
+function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, waNumber, userEmail }) {
   const promoOff = activePromotion?.active ? activePromotion.discountPercent / 100 : 0;
   return (
     <div className="mt-3" data-tour="no-tier-select">
@@ -141,7 +141,7 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, wa
           );
         })}
       </div>
-      <OrderForMeCard waNumber={waNumber} dark={dark} context={svc.name} />
+      <OrderForMeCard waNumber={waNumber} dark={dark} context={svc.name} email={userEmail} />
     </div>
   );
 }
@@ -208,7 +208,7 @@ function TierExplainer({ dark, t, selTier, narrow }) {
   );
 }
 
-function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t, orderMode, activePromotion, waNumber }) {
+function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t, orderMode, activePromotion, waNumber, userEmail }) {
   const isSel = selSvc?.id === svc.id;
   const [explOpen, setExplOpen] = useState(false);
   const [narrow, setNarrow] = useState(false);
@@ -242,7 +242,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
           </div>
         )}
       </div>
-      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={handlePickTier} dark={dark} activePromotion={activePromotion} waNumber={waNumber} />}
+      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={handlePickTier} dark={dark} activePromotion={activePromotion} waNumber={waNumber} userEmail={userEmail} />}
       {isSel && (
         <>
           <div className="mt-2.5 flex items-center gap-2 rounded-[9px] py-[7px] px-2.5 border border-solid transition-all duration-200" style={{ borderColor: s ? `${s.text}4d` : t.cardBorder, background: s ? (dark ? `${s.text}0f` : `${s.text}0a`) : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") }}>
@@ -366,21 +366,32 @@ export function OrderForm(props) {
 /* ═══════════════════════════════════════════ */
 const WA_ICON = <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" className="shrink-0"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.3 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.76-.72 2-1.42.25-.7.25-1.3.18-1.42-.08-.13-.28-.2-.58-.35zM12.05 21.8h-.01a9.87 9.87 0 01-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.85 9.85 0 01-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88a9.83 9.83 0 016.99 2.9 9.82 9.82 0 012.9 7c0 5.45-4.45 9.87-9.9 9.87z"/></svg>;
 
-const waHelpLink = (waNumber, context) => `https://wa.me/${waNumber}?text=${encodeURIComponent(
-  context ? `Hi! I want to order ${context} on Nitro. Can you help me place it?` : "Hi! I'd like to place an order on Nitro. Can you help me?",
+const waHelpLink = (waNumber, context, email) => `https://wa.me/${waNumber}?text=${encodeURIComponent(
+  (context ? `Hi! I want to order ${context} on Nitro. Can you help me place it?` : "Hi! I'd like to place an order on Nitro. Can you help me?")
+  + (email ? `\n\nMy account: ${email}` : ""),
 )}`;
 
 /**
  * The concierge offer: we place it for them. Used as a quiet inline link in
  * empty states, where there is nothing else on screen to compete with.
  */
-export function NotSureHelp({ waNumber, dark, t, context }) {
+/** On a phone the wa.me link opens the app and leaves an empty tab behind, so
+ *  hand off in place there. Desktop keeps the new tab. */
+const openInPlaceOnPhone = e => {
+  if (typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches) {
+    e.preventDefault();
+    window.location.href = e.currentTarget.href;
+  }
+};
+
+export function NotSureHelp({ waNumber, dark, t, context, email }) {
   if (!waNumber) return null;
   return (
     <a
-      href={waHelpLink(waNumber, context)}
+      href={waHelpLink(waNumber, context, email)}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={openInPlaceOnPhone}
       className="inline-flex items-center gap-1.5 text-[13px] font-medium no-underline transition-opacity hover:opacity-80"
       style={{ color: dark ? "#4ade80" : "#16a34a" }}
     >
@@ -395,14 +406,14 @@ export function NotSureHelp({ waNumber, dark, t, context }) {
  * service is open. That is the moment people hesitate, and it costs no scrolling
  * to find.
  */
-export function OrderForMeCard({ waNumber, dark, context }) {
+export function OrderForMeCard({ waNumber, dark, context, email }) {
   if (!waNumber) return null;
   return (
     <a
-      href={waHelpLink(waNumber, context)}
+      href={waHelpLink(waNumber, context, email)}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={e => e.stopPropagation()}
+      onClick={e => { e.stopPropagation(); openInPlaceOnPhone(e); }}
       className="mt-2.5 flex items-center gap-2.5 rounded-[11px] py-2 px-3 no-underline transition-transform duration-150 hover:-translate-y-px"
       style={{
         // Nitro accent, not WhatsApp green: the picker already uses green for
@@ -485,7 +496,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       const r = el.getBoundingClientRect();
       const isMobile = window.innerWidth < 1200;
       const inset = isMobile ? 14 : 20;
-      setCartBounds({ left: r.left + inset, right: window.innerWidth - r.right + inset, bottom: isMobile ? 56 + 14 : inset });
+      setCartBounds({ left: r.left + inset, right: window.innerWidth - r.right + inset, bottom: isMobile ? 60 + 14 + 8 : inset });
     };
     measure();
     window.addEventListener("resize", measure);
@@ -1008,10 +1019,10 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* ═══ SERVICE CARDS ═══ */}
       <div className="flex flex-col gap-2" data-tour="no-service-list" ref={listRef}>
-        {filtered.map(svc => <ServiceCard key={svc.id} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} activePromotion={activePromotion} waNumber={waSupportNumber} />)}
+        {filtered.map(svc => <ServiceCard key={svc.id} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} activePromotion={activePromotion} waNumber={waSupportNumber} userEmail={user?.email} />)}
         {filtered.length > 0 && (
           <div className="pt-1 pb-2">
-            <OrderForMeCard waNumber={waSupportNumber} dark={dark} context={activePlat?.label} />
+            <OrderForMeCard waNumber={waSupportNumber} dark={dark} context={activePlat?.label} email={user?.email} />
           </div>
         )}
         {filtered.length === 0 && (
@@ -1019,7 +1030,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
             <div className="text-[15px] mb-1.5" style={{ color: t.textMuted }}>
               {search.trim() ? `Nothing matching "${search.trim()}".` : "Coming soon."}
             </div>
-            <NotSureHelp waNumber={waSupportNumber} dark={dark} t={t} context={search.trim() || activePlat?.label} />
+            <NotSureHelp waNumber={waSupportNumber} dark={dark} t={t} context={search.trim() || activePlat?.label} email={user?.email} />
           </div>
         )}
       </div>
