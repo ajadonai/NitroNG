@@ -585,7 +585,7 @@ export default function AdminOrdersPage({ dark, t, admin }) {
       </div>
 
       {/* Orders list */}
-      <div className="adm-card" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+      <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
         {loading ? (
           <div className="adm-empty">{[1,2,3,4,5].map(i => <div key={i} className={`skel-bone h-[52px] rounded-lg mb-1.5 ${dark ? "skel-dark" : "skel-light"}`} />)}</div>
         ) : paged.length > 0 ? paged.map((item, idx) => {
@@ -652,7 +652,7 @@ export default function AdminOrdersPage({ dark, t, admin }) {
                             <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5 flex-wrap" style={{ color: t.textMuted }}>
                               <span>{o.created ? fD(o.created, true) : ""}</span>
                               <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                              <span>{o.user}</span>
+                              <span>{o.user}{o.isReseller && <span className="ml-1.5 text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-1.5 rounded-md align-middle" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", color: dark ? "#e8b4c0" : "#a05468" }}>Reseller</span>}</span>
                             </div>
                           </div>
                           {(o.status === "Processing" || o.status === "Pending") && <span className="w-[6px] h-[6px] rounded-full shrink-0" style={{ background: sClr(o.status, dark), animation: "progress-pulse 2.8s ease-in-out infinite" }} />}
@@ -667,7 +667,7 @@ export default function AdminOrdersPage({ dark, t, admin }) {
                             <div className="flex items-center gap-2.5 mb-2.5">
                               <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: `${t.accent}20`, color: t.accent }}>{(o.user || "?")[0].toUpperCase()}</div>
                               <div className="flex-1 min-w-0">
-                                <span className="text-[12px] font-semibold" style={{ color: t.text }}>{o.user}</span>
+                                <span className="text-[12px] font-semibold" style={{ color: t.text }}>{o.user}{o.isReseller && <span className="ml-1.5 text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-1.5 rounded-md align-middle" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", color: dark ? "#e8b4c0" : "#a05468" }}>Reseller</span>}</span>
                                 <span className="text-[11px] ml-1.5" style={{ color: t.textMuted }}>{o.email}</span>
                               </div>
                               <span className="text-[11px] shrink-0" style={{ color: t.textMuted }}>{o.created ? fD(o.created) : ""}</span>
@@ -780,7 +780,7 @@ export default function AdminOrdersPage({ dark, t, admin }) {
                   <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5 flex-wrap" style={{ color: t.textMuted }}>
                     <span>{o.created ? fD(o.created, true) : ""}</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                    <span>{o.user}</span>
+                    <span>{o.user}{o.isReseller && <span className="ml-1.5 text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-1.5 rounded-md align-middle" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", color: dark ? "#e8b4c0" : "#a05468" }}>Reseller</span>}</span>
                   </div>
                 </div>
                 {(o.status === "Processing" || o.status === "Pending") && <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: sClr(o.status, dark), animation: "progress-pulse 2.8s ease-in-out infinite" }} />}
