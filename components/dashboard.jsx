@@ -349,6 +349,8 @@ function DashboardInner({ initialData }) {
     }
   }, []);
   const [leftOpen, setLeftOpen] = useState(false);
+  const [avOpen, setAvOpen] = useState(false);
+  const avRef = useRef(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [showOrderTour, setShowOrderTour] = useState(false);
 
@@ -976,6 +978,15 @@ function DashboardInner({ initialData }) {
     return () => document.removeEventListener("mousedown", handler);
   }, [notifOpen]);
 
+  useEffect(() => {
+    if (!avOpen) return;
+    const onDown = (e) => { if (avRef.current && !avRef.current.contains(e.target)) setAvOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setAvOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [avOpen]);
+
   const handleLogout = async () => {
     let res;
     try {
@@ -1133,19 +1144,12 @@ function DashboardInner({ initialData }) {
           </div>
         </div>
         <div className="dash-nav-right">
-          {/* Balance pill — desktop only */}
-          <button onClick={() => setActive("add-funds")} className="max-desktop:hidden flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] cursor-pointer bg-transparent" style={{ border: `0.5px solid ${dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.12)"}`, background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", transition: "background .2s ease" }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            <span className="m text-[11px] font-semibold text-t-green">₦{Math.round(user?.balance || 0).toLocaleString()}</span>
-          </button>
-          {/* Theme toggle — desktop only */}
-          <button onClick={toggleTheme} className="dash-theme-toggle max-desktop:hidden" aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} style={{ background: dark ? "rgba(99,102,241,.28)" : "rgba(0,0,0,.12)", border: `0.5px solid ${dark ? "rgba(99,102,241,.24)" : "rgba(0,0,0,.14)"}` }}>
-            <div className="dash-theme-thumb" style={{ background: dark ? "#1e1b4b" : "#fff", left: dark ? 23 : 3, boxShadow: dark ? "0 0 6px rgba(99,102,241,.3)" : "0 1px 4px rgba(0,0,0,.15)" }}>
-              {dark
-                ? <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-                : <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-              }
-            </div>
+          {/* Balance pill — desktop only. Balance as a number, Top up as the action inside it. */}
+          <button onClick={() => setActive("add-funds")} aria-label={`Balance ₦${Math.round(user?.balance || 0).toLocaleString()}. Top up`}
+            className="max-desktop:hidden flex items-center gap-2 h-[34px] pl-3 pr-1.5 rounded-full cursor-pointer text-[13px] font-semibold text-t-text"
+            style={{ background: dark ? "rgba(255,255,255,.07)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, fontVariantNumeric: "tabular-nums" }}>
+            ₦{Math.round(user?.balance || 0).toLocaleString()}
+            <span className="text-[11px] font-bold text-white py-1 px-2.5 rounded-full" style={{ background: t.accent }}>Top up</span>
           </button>
           {/* Support — mobile/tablet only (replaces theme toggle) */}
           <button onClick={() => { if (socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); } }} className="hidden max-desktop:flex items-center gap-1 h-[30px] px-2.5 rounded-[8px] cursor-pointer border-none relative" aria-label="Support" style={{ background: "#25d366", color: "#fff" }}>
@@ -1160,10 +1164,41 @@ function DashboardInner({ initialData }) {
             </button>
             {notifOpen && <NotifDropdown items={notifItems} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} setClearedAt={setNotifClearedAt} readAllAt={notifReadAllAt} setReadAllAt={setNotifReadAllAt} onNavigate={setActive} socialLinks={socialLinks} />}
           </div>
-          {/* Avatar → Settings */}
-          <button onClick={() => { setActive("settings"); setLeftOpen(false); }} className="dash-avatar-btn" aria-label="Profile">
-            <Avatar size={30} rounded={10} />
-          </button>
+          {/* Avatar → account menu on desktop, Settings on mobile (the More sheet carries the rest there) */}
+          <div ref={avRef} className="relative">
+            <button
+              onClick={() => { if (window.matchMedia("(min-width: 1200px)").matches) setAvOpen(o => !o); else { setActive("settings"); setLeftOpen(false); } }}
+              className="dash-avatar-btn" aria-label="Account menu" aria-haspopup="menu" aria-expanded={avOpen}>
+              <Avatar size={30} rounded={10} />
+            </button>
+            {avOpen && (
+              <div role="menu" aria-label="Account" className="dash-av-menu" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+                <div className="dash-av-head" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
+                  <Avatar size={34} rounded={10} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-semibold truncate text-t-text">{user?.name || "Your account"}</div>
+                    <div className="text-[11px] truncate text-t-text-muted">{user?.email || ""}</div>
+                  </div>
+                  <button role="menuitem" onClick={() => { setAvOpen(false); setActive("settings"); }} className="dash-av-gear" aria-label="Settings" style={{ color: t.textMuted }}>{I.settings}</button>
+                </div>
+                <div className="dash-nav-eyebrow text-t-text-muted" style={{ padding: "8px 10px 4px" }}>Account</div>
+                <button role="menuitem" onClick={() => { setAvOpen(false); window.location.href = "/changelog"; }} className="dash-av-item" style={{ color: t.textSoft }}>{I.changelog}What&rsquo;s New</button>
+                <button role="menuitem" onClick={() => { setAvOpen(false); setActive("referrals"); }} className="dash-av-item" style={{ color: t.textSoft }}>{I.referrals}Referrals</button>
+                <button role="menuitem" onClick={() => { setAvOpen(false); if (socialLinks.social_whatsapp_support) window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); }} className="dash-av-item" style={{ color: "#25d366" }}>{I.support}Support on WhatsApp</button>
+                <div className="dash-av-foot" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
+                  <div className="dash-seg" role="group" aria-label="Theme" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.09)" }}>
+                    <button onClick={() => { if (dark) toggleTheme(); }} aria-pressed={!dark} aria-label="Light theme" className="dash-seg-btn" style={!dark ? { background: dark ? "#131728" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.15)" } : { color: t.textMuted }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                    </button>
+                    <button onClick={() => { if (!dark) toggleTheme(); }} aria-pressed={dark} aria-label="Dark theme" className="dash-seg-btn" style={dark ? { background: "#131728", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.35)" } : { color: t.textMuted }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                    </button>
+                  </div>
+                  <button role="menuitem" onClick={handleLogout} className="dash-av-logout" style={{ color: t.textMuted }}>Log out</button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
@@ -1175,9 +1210,20 @@ function DashboardInner({ initialData }) {
 
             {/* ── Nav items — grouped on desktop, flat on mobile ── */}
             <>
-              {[...NAV_ITEMS.slice(0, 2),
-                isReseller ? { id: "catalogue", label: "Catalogue" } : { id: "resellers", label: "Resellers", href: "/resellers" },
-                ...NAV_ITEMS.slice(2)].map((item, i) => {
+              {(() => {
+                // Sections group the rail by what you are doing, not alphabetically.
+                // Account-level items (referrals, what's new, settings, log out) live
+                // behind the avatar on desktop and in the More sheet on mobile.
+                const byId = Object.fromEntries(NAV_ITEMS.map(n => [n.id, n]));
+                const browse = isReseller ? { id: "catalogue", label: "Catalogue" } : { id: "resellers", label: "Resellers", href: "/resellers" };
+                const sections = [
+                  ["Order", [byId.overview, byId.services, byId.orders]],
+                  ["Money", [byId["add-funds"], byId.tasks]],
+                  ["Browse", [browse, byId.guide]],
+                  ["Help", [byId.support]],
+                ];
+                return sections.flatMap(([section, items]) => items.filter(Boolean).map((item, j) => ({ ...item, section, first: j === 0 })));
+              })().map((item, i) => {
                 const processingCount = item.id === "orders" ? orderSummary.active : 0;
                 const isSupportItem = item.id === "support";
                 const isTasksItem = item.id === "tasks";
@@ -1185,7 +1231,7 @@ function DashboardInner({ initialData }) {
                 const specialClr = isSupportItem ? "#25d366" : isTasksItem ? (dark ? "#fbbf24" : "#d97706") : null;
                 return (
                   <Fragment key={item.id}>
-                    {(item.id === "leaderboard" || item.id === "audit") && <div className="dash-sidebar-divider max-desktop:hidden my-1 bg-t-sidebar-border" />}
+                    {item.first && <div className="dash-nav-eyebrow text-t-text-muted">{item.section}</div>}
                     <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setLeftOpen(false); return; } setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: isActive ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : specialClr ? (dark ? `${specialClr}1e` : `${specialClr}14`) : "transparent", color: item.soon ? t.textMuted : (isActive ? t.accent : specialClr || t.textSoft), fontWeight: isActive || specialClr ? 600 : 450, opacity: item.soon ? 0.5 : 1, cursor: item.soon ? "default" : "pointer" }}>
                       <span className="shrink-0" style={{ opacity: isActive || specialClr ? 1 : .55, color: isActive ? (specialClr || t.accent) : specialClr || t.textMuted }}>{I[item.id]}</span>
                       {item.label}
@@ -1215,11 +1261,6 @@ function DashboardInner({ initialData }) {
               </a>}
             </div>
           </div>
-          <div className="dash-sidebar-divider bg-t-sidebar-border" />
-          <button onClick={handleLogout} className="dash-logout">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            Log Out
-          </button>
         </aside>
 
         {/* Overlay */}
@@ -1330,8 +1371,30 @@ function DashboardInner({ initialData }) {
       {/* ═══ MOBILE BOTTOM NAV ═══ */}
       {moreOpen && <div className="dash-more-overlay" onClick={() => setMoreOpen(false)} />}
       {moreOpen && (
-        <div className="dash-more-popup" style={{ background: dark ? "#161b2e" : "#fff", border: `1.5px solid ${dark ? "rgba(196,125,142,.31)" : "rgba(196,125,142,.28)"}` }}>
-          {[isReseller ? { id: "catalogue", label: "Catalogue" } : { id: "resellers", label: "Resellers", href: "/resellers" }, ...MORE_ITEMS].map(item => {
+        <div className="dash-more-sheet" role="dialog" aria-modal="true" aria-label="More" style={{ background: dark ? "#161b2e" : "#fff", borderTop: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+          <div className="dash-more-grab" style={{ background: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.18)" }} />
+          <div className="dash-more-head" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
+            <Avatar size={34} rounded={10} />
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-semibold truncate text-t-text">{user?.name || "Your account"}</div>
+              <div className="text-[11px] truncate text-t-text-muted">{user?.email || ""}</div>
+            </div>
+            <button onClick={toggleTheme} aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} className="w-11 h-6 rounded-xl relative shrink-0 border-none cursor-pointer" style={{ background: dark ? "#c47d8e" : "rgba(0,0,0,.12)" }}>
+              <span className="w-[18px] h-[18px] rounded-full bg-white absolute top-[3px]" style={{ left: dark ? 23 : 3, transition: "left .3s cubic-bezier(.2,.8,.2,1)" }} />
+            </button>
+          </div>
+          {(() => {
+            const byId = Object.fromEntries(MORE_ITEMS.map(m => [m.id, m]));
+            const browse = isReseller ? { id: "catalogue", label: "Catalogue" } : { id: "resellers", label: "Resellers", href: "/resellers" };
+            const sec = (id, label) => ({ id, section: label, header: true });
+            return [
+              sec("sec-money", "Money"), byId.referrals, byId.tasks,
+              sec("sec-browse", "Browse"), browse, byId.guide, byId.changelog,
+              sec("sec-account", "Account"), byId.support, byId.settings,
+              byId.logout,
+            ].filter(Boolean);
+          })().map(item => {
+            if (item.header) return <div key={item.id} className="dash-more-eyebrow text-t-text-muted">{item.section}</div>;
             if (item.id === "logout") {
               return (
                 <button key={item.id} onClick={() => { setMoreOpen(false); handleLogout(); }} className="dash-more-item" style={{ background: dark ? "rgba(220,38,38,.06)" : "rgba(220,38,38,.03)", color: dark ? "#fca5a5" : "#dc2626", fontWeight: 500 }}>
