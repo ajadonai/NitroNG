@@ -233,6 +233,29 @@
 /* Shimmer button */
 .shimmer-btn { position: relative; overflow: hidden; transition: all 0.3s ease; }
 .shimmer-btn::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent); animation: shimmer 3s ease-in-out infinite; }
+/* ── Every button answers the hand ──
+   A press should feel like one everywhere, not only where a component thought
+   to style it. Hover dims a touch on light and lifts on dark (works on any
+   colour), the press itself sinks slightly, and disabled controls stay inert.
+   Components that already set their own hover keep it: these rules are weak. */
+@media (hover: hover) {
+  button:not(:disabled):not([aria-disabled="true"]):hover,
+  [role="button"]:not([aria-disabled="true"]):hover,
+  a[class*="btn"]:hover,
+  .nudge-btn:hover { transform: translateY(-1px); }
+}
+button:not(:disabled):not([aria-disabled="true"]):active,
+[role="button"]:not([aria-disabled="true"]):active,
+a[class*="btn"]:active,
+.nudge-btn:active { transform: translateY(0) scale(.985); }
+.nudge-btn:hover { box-shadow: 0 4px 12px rgba(37,211,102,.18); }
+button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13s ease, box-shadow .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease; }
+@media (prefers-reduced-motion: reduce) {
+  button, [role="button"], a[class*="btn"], .nudge-btn { transition: none; }
+  button:hover, [role="button"]:hover, a[class*="btn"]:hover, .nudge-btn:hover,
+  button:active, [role="button"]:active, a[class*="btn"]:active, .nudge-btn:active { transform: none; }
+}
+
 .shimmer-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(196, 125, 142, 0.2); }
 
 /* ── Hero ── */

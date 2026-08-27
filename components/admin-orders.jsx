@@ -7,6 +7,7 @@ import { fN, fD, fT } from "../lib/format";
 import { FilterDropdown } from "./date-range-picker";
 import { copyText } from '@/lib/clipboard';
 import { AccountTag } from "./account-tag";
+import { openCardFrame, openCardHeader } from '@/lib/expandable-card';
 
 const DRIP_CONFIG = {
   followers:  { batchSize: 200,  intervalHours: 2 },
@@ -612,6 +613,7 @@ export default function AdminOrdersPage({ dark, t, admin }) {
 
             return (
               <div key={batch.batchId} style={{ borderBottom: idx < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>{dayLabel}
+                <div style={isOpen ? openCardFrame(t, dark) : undefined}>
                 {/* Batch header */}
                 <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => { setExpandedBatch(isOpen ? null : batch.batchId); setExpandedBatchOrder(null); setExpanded(null); }} className="flex items-center py-3 px-3.5 desktop:py-3.5 desktop:px-5 cursor-pointer gap-3 desktop:gap-4 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ ...(hasAttention && { borderLeft: `3px solid ${dark ? "#fbbf24" : "#d97706"}` }) }}>
                   <div className="shrink-0 flex items-center justify-center rounded-xl" style={{ width: 42, height: 42, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}` }}>
@@ -760,6 +762,7 @@ export default function AdminOrdersPage({ dark, t, admin }) {
                     ))}
                   </div>
                 )}
+                </div>
               </div>
             );
           }
@@ -768,7 +771,8 @@ export default function AdminOrdersPage({ dark, t, admin }) {
           const o = item.order;
           return (
             <div key={o.id} style={{ borderBottom: idx < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>{dayLabel}
-              <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => { setExpanded(expanded === o.id ? null : o.id); setExpandedBatch(null); setExpandedBatchOrder(null); }} className="flex items-center py-3 px-3.5 desktop:py-3.5 desktop:px-5 cursor-pointer gap-3 desktop:gap-4 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ cursor: "pointer" }}>
+              <div style={expanded === o.id ? openCardFrame(t, dark) : undefined}>
+              <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => { setExpanded(expanded === o.id ? null : o.id); setExpandedBatch(null); setExpandedBatchOrder(null); }} className="flex items-center py-3 px-3.5 desktop:py-3.5 desktop:px-5 cursor-pointer gap-3 desktop:gap-4 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ cursor: "pointer" , ...(expanded === o.id ? openCardHeader(dark) : {})}}>
                 <div className="shrink-0 flex items-center justify-center rounded-xl" style={{ width: 42, height: 42, background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                   <PlatformIcon platform={o.platform} dark={dark} size={26} />
                 </div>
@@ -884,6 +888,7 @@ export default function AdminOrdersPage({ dark, t, admin }) {
                   </div>
                 </div>
               )}
+              </div>
             </div>
           );
         }) : (

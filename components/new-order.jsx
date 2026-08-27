@@ -390,11 +390,12 @@ export function NotSureHelp({ waNumber, dark, t, context, email }) {
       target="_blank"
       rel="noopener noreferrer"
       onClick={openInPlaceOnPhone}
-      className="inline-flex items-center gap-1.5 text-[13px] font-medium no-underline transition-opacity hover:opacity-80"
-      style={{ color: dark ? "#4ade80" : "#16a34a" }}
+      className="nudge-btn inline-flex items-center gap-2 py-1.5 px-3 rounded-full text-[13px] font-semibold no-underline"
+      style={{ color: dark ? "#4ade80" : "#15803d", background: dark ? "rgba(37,211,102,.12)" : "rgba(37,211,102,.1)", border: `1px solid ${dark ? "rgba(37,211,102,.3)" : "rgba(22,163,74,.25)"}` }}
     >
       {WA_ICON}
       We can order for you
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-70"><polyline points="9 18 15 12 9 6" /></svg>
     </a>
   );
 }
@@ -412,11 +413,12 @@ export function OrderForMeCard({ waNumber, dark, context, email }) {
       target="_blank"
       rel="noopener noreferrer"
       onClick={e => { e.stopPropagation(); openInPlaceOnPhone(e); }}
-      className="mt-2 inline-flex items-center gap-2 text-[12.5px] no-underline"
-      style={{ color: "#8a8580" }}
+      className="nudge-btn mt-2 inline-flex items-center gap-2 py-1.5 px-3 rounded-full text-[12.5px] no-underline"
+      style={{ color: dark ? "#a8a29a" : "#6b6660", background: dark ? "rgba(37,211,102,.1)" : "rgba(37,211,102,.08)", border: `1px solid ${dark ? "rgba(37,211,102,.26)" : "rgba(22,163,74,.22)"}` }}
     >
       <span className="shrink-0 flex" style={{ color: "#25d366" }}>{WA_ICON}</span>
-      <span>Not sure? <b className="font-semibold" style={{ color: dark ? "#4ade80" : "#16a34a" }}>We can order for you</b></span>
+      <span>Not sure? <b className="font-semibold" style={{ color: dark ? "#4ade80" : "#15803d" }}>We can order for you</b></span>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60"><polyline points="9 18 15 12 9 6" /></svg>
     </a>
   );
 }
@@ -1008,11 +1010,6 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       {/* ═══ SERVICE CARDS ═══ */}
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" data-tour="no-service-list" ref={listRef} style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
         {filtered.map((svc, i) => <ServiceCard key={svc.id} first={i === 0} cartCounts={cartCounts} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} activePromotion={activePromotion} waNumber={waSupportNumber} userEmail={user?.email} />)}
-        {filtered.length > 0 && (
-          <div className="pt-1 pb-2">
-            <OrderForMeCard waNumber={waSupportNumber} dark={dark} context={activePlat?.label} email={user?.email} />
-          </div>
-        )}
         {filtered.length === 0 && (
           <div className="py-10 text-center px-5">
             <div className="text-[15px] mb-1.5" style={{ color: t.textMuted }}>

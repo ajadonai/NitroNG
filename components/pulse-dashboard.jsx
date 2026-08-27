@@ -105,7 +105,7 @@ function MoneyIn({ data }) {
           <div className="pl-row" key={d.id}>
             <span className="pl-t m">{ago(d.created)}</span>
             <span className="pl-who">{d.user}</span>
-            <span className="pl-what">{method(d.method)}</span>
+            <span className={`pl-what pl-via pl-via-${String(d.method || 'wallet').toLowerCase().replace(/[^a-z_]/g, '')}`}>{method(d.method)}</span>
             <span className="pl-amt m pl-in">+{naira(d.amount)}</span>
           </div>
         ))}
@@ -292,6 +292,7 @@ const CSS = `
 .pl-t{color:var(--dim);font-size:11px;width:28px;flex-shrink:0}.pl-who{font-weight:600;flex:0 0 auto;white-space:nowrap}
 .pl-what{flex:1;min-width:0;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pl-what em{display:block;font-style:normal;font-size:11px;color:var(--dim)}
 .pl-amt{flex-shrink:0;font-weight:600;font-size:12px}.pl-in{color:var(--ok)}.pl-out{color:var(--bad)}
+.pl-via{font-weight:600}.pl-via-flutterwave{color:var(--wait)}.pl-via-manual{color:var(--run)}.pl-via-alatpay{color:#a78bfa}.pl-via-monnify{color:#f472b6}.pl-via-admin_credit{color:var(--ac)}.pl-via-wallet{color:var(--mu)}
 .pl-two{align-items:flex-start}.pl-two .pl-t,.pl-two .pl-who{padding-top:2px}
 .pl-empty{padding:18px 14px;font-size:12px;color:var(--dim)}
 .pl-bot{display:grid;grid-template-columns:1.6fr 1fr;gap:10px;flex-shrink:0}
