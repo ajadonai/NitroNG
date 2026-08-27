@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { useToast } from './toast';
-import { copyText } from '@/lib/clipboard';
+import { copyText as copyToClipboard } from '@/lib/clipboard';
 
 export default function ResellerApiDocsView() {
   return <ThemeProvider><ApiDocsInner /></ThemeProvider>;
@@ -151,7 +151,7 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
   const curatedCount = stats?.services || 0;
 
   const copyText = useCallback((text) => {
-    try { copyText(text); } catch {}
+    copyToClipboard(text);
     toast?.success('Copied', text.length > 44 ? text.slice(0, 44) + '...' : text, { duration: 2000 });
   }, [toast]);
 

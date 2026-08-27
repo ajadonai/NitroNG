@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { fN, fD } from "../lib/format";
 import { Avatar } from "./avatar";
-import { copyText } from '@/lib/clipboard';
+import { copyText as copyToClipboard } from '@/lib/clipboard';
 
 function useRefSettings() {
   const [s, setS] = useState({ referrer: 50000, invitee: 50000, minDeposit: 0 });
@@ -45,7 +45,7 @@ export default function ReferralsPage({ user, dark, t }) {
   const paged = referrals.slice((page - 1) * perPage, page * perPage);
 
   const copyText = (text, type) => {
-    try { copyText(text); } catch {}
+    copyToClipboard(text);
     setCopied(type);
     setTimeout(() => setCopied(null), 2000);
   };
