@@ -8,6 +8,7 @@ import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { NotSureHelp } from "./new-order";
 import NitroLoader from "./nitro-loader";
 import { copyText } from '@/lib/clipboard';
+import { openCardFrame, openCardHeader } from '@/lib/expandable-card';
 
 function CopyId({ value, dark, mono = true }) {
   const [copied, setCopied] = useState(false);
@@ -553,8 +554,8 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
 
           {/* Child orders */}
           {batch.orders.map((o) => (
-            <div key={o.id}>
-              <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)} className="flex items-center py-2.5 px-3 desktop:py-3 desktop:px-4 pl-4 desktop:pl-5 cursor-pointer gap-2.5 desktop:gap-3 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, ...(isAttention(o) && { borderLeft: `3px solid ${dark ? "#fbbf24" : "#d97706"}` }) }}>
+            <div key={o.id} style={expandedOrder === o.id ? openCardFrame(t, dark) : undefined}>
+              <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)} className="flex items-center py-2.5 px-3 desktop:py-3 desktop:px-4 pl-4 desktop:pl-5 cursor-pointer gap-2.5 desktop:gap-3 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, ...(expandedOrder === o.id ? openCardHeader(dark) : {}), ...(isAttention(o) && { borderLeft: `3px solid ${dark ? "#fbbf24" : "#d97706"}` }) }}>
                 <div className="shrink-0 flex items-center justify-center rounded-lg" style={{ width: 36, height: 36, background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.10)" : "rgba(0,0,0,.05)"}` }}>
                   <PlatformIcon platform={o.platform} dark={dark} size={22} />
                 </div>
@@ -856,7 +857,8 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
           const attn = isAttention(o);
           return (
             <div key={o.id}>{dayLabel}
-              <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => { setExpanded(expanded === o.id ? null : o.id); setExpandedBatch(null); setExpandedBatchOrder(null); }} className="flex items-center py-3 px-3.5 desktop:py-3.5 desktop:px-[18px] cursor-pointer gap-3 desktop:gap-4 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ borderBottom: (i < pagedGroups.length - 1 || expanded === o.id) ? `1px solid ${t.cardBorder}` : "none", ...(attn && { borderLeft: `3px solid ${dark ? "#fbbf24" : "#d97706"}` }) }}>
+              <div style={expanded === o.id ? openCardFrame(t, dark) : undefined}>
+              <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => { setExpanded(expanded === o.id ? null : o.id); setExpandedBatch(null); setExpandedBatchOrder(null); }} className="flex items-center py-3 px-3.5 desktop:py-3.5 desktop:px-[18px] cursor-pointer gap-3 desktop:gap-4 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ borderBottom: (i < pagedGroups.length - 1 || expanded === o.id) ? `1px solid ${t.cardBorder}` : "none", ...(attn && { borderLeft: `3px solid ${dark ? "#fbbf24" : "#d97706"}` }), ...(expanded === o.id ? openCardHeader(dark) : {}) }}>
                 <div className="shrink-0 flex items-center justify-center rounded-xl" style={{ width: 42, height: 42, background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
                   <PlatformIcon platform={o.platform} dark={dark} size={26} />
                 </div>
@@ -875,6 +877,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
 
               {/* Expanded details */}
               {expanded === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={setViewComments} doRefill={doRefill} refillLoading={refillLoading} />}
+              </div>
             </div>
           );
         }) : (
