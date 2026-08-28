@@ -83,7 +83,10 @@ async function resolveVisible(apiId, terms) {
   if (map.service) {
     if (terms?.catalog !== 'full') return { error: 'Incorrect service ID' };
     const s = map.service;
-    if (!s.enabled || !s.providerListedAt || !['mtp', 'dao'].includes(s.provider) || !(Number(s.costPer1k) > 0)) return { error: 'Service not available' };
+    // `enabled` is the retail menu switch, not a supply switch: the full
+    // catalogue is every listed, priced provider service, exactly as `services`
+    // lists it. Orderable if the provider still lists it at a real cost.
+    if (!s.providerListedAt || !['mtp', 'dao'].includes(s.provider) || !(Number(s.costPer1k) > 0)) return { error: 'Service not available' };
     return { serviceId: s.id };
   }
   return { error: 'Incorrect service ID' };
@@ -223,7 +226,7 @@ export async function POST(req) {
         quantity,
         ...extraOrderFields(p),
         confirmDuplicate: true,
-      }, req, { source: 'api' });
+      }, req, { source: 'api', catalogue: terms?.catalog === 'full' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.order?.id) return err(data?.error || 'Order could not be placed');
       return Response.json({ order: data.order.id });

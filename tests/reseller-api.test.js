@@ -118,7 +118,7 @@ describe('add', () => {
     const [session, body, , opts] = createOrderForSession.mock.calls[0];
     expect(session.id).toBe('u1');
     expect(body).toMatchObject({ tierId: 'tier-std', link: 'https://instagram.com/x', quantity: 1000, confirmDuplicate: true });
-    expect(opts).toEqual({ source: 'api' });
+    expect(opts).toMatchObject({ source: 'api', catalogue: false });
   });
   it('a retry inside sixty seconds answers with the order already placed', async () => {
     mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: { id: 'tier-std', enabled: true, group: { enabled: true } }, service: null });
@@ -127,6 +127,17 @@ describe('add', () => {
     expect(r.body).toEqual({ order: 'NTR-4211' });
     expect(createOrderForSession).not.toHaveBeenCalled();
     expect(mockPrisma.order.findFirst.mock.calls[0][0].where).toMatchObject({ userId: 'u1', source: 'api', link: 'https://instagram.com/x', quantity: 1000, tierId: 'tier-std' });
+  });
+  it('a full key can order a listed service the retail menu has switched off', async () => {
+    getResellerTerms.mockResolvedValue({ catalog: 'full', discountPct: null });
+    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: null, service: { id: 's9', enabled: false, provider: 'dao', providerListedAt: new Date(), costPer1k: 2 } });
+    createOrderForSession.mockResolvedValue(Response.json({ success: true, order: { id: 'NTR-77', status: 'Processing' } }));
+    const r = await call({ key: 'k'.repeat(16), action: 'add', service: '4102', link: 'https://x.com/a', quantity: '1000' });
+    expect(r.status).toBe(200);
+    expect(r.body).toEqual({ order: 'NTR-77' });
+    const [, body, , opts] = createOrderForSession.mock.calls[0];
+    expect(body.serviceId).toBe('s9');
+    expect(opts).toMatchObject({ source: 'api', catalogue: true });
   });
   it('a curated key cannot order a full-list ID', async () => {
     mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: null, service: { id: 's1', enabled: true, provider: 'mtp', providerListedAt: new Date(), costPer1k: 1 } });

@@ -778,7 +778,7 @@ export async function POST(req) {
  * here: the same validation, pricing, wholesale, balance debit, creation and
  * provider placement. `source` is stamped on the order so admin can tell them apart.
  */
-export async function createOrderForSession(session, body, req, { source = 'web' } = {}) {
+export async function createOrderForSession(session, body, req, { source = 'web', catalogue = false } = {}) {
   try {
     const parsedInput = parseCreateOrderInput(body);
     if (!parsedInput.ok) return Response.json({ error: parsedInput.error }, { status: 400 });
@@ -838,9 +838,11 @@ export async function createOrderForSession(session, body, req, { source = 'web'
         return Response.json({ error: 'Backing service not available' }, { status: 400 });
       }
     } else {
-      // Legacy flow: direct serviceId
+      // Legacy flow: direct serviceId. A full-catalogue reseller may order any
+      // listed, priced provider service whether or not it is on the retail menu.
       service = await prisma.service.findUnique({ where: { id: serviceId } });
-      if (!service || !service.enabled) {
+      const inCatalogue = catalogue && service && ['mtp', 'dao'].includes(service.provider) && service.providerListedAt && Number(service.costPer1k) > 0;
+      if (!service || (!service.enabled && !inCatalogue)) {
         return Response.json({ error: 'Service not available' }, { status: 400 });
       }
     }
