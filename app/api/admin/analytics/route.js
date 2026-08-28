@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin } from '@/lib/admin';
 import { watBounds } from '@/lib/format';
+import { getRevenue } from '@/lib/revenue';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('finance');
@@ -151,8 +152,11 @@ export async function GET(req) {
       .slice(0, 5)
       .map(p => ({ ...p, revenue: Math.round(p.revenue) }));
 
-    const totalRevenue = ((ordersAgg._sum.charge || 0) - partialChargeAdj) / 100;
-    const totalCost = ((ordersAgg._sum.cost || 0) - partialCostAdj) / 100;
+    // Revenue is net of the refunds that actually reverse it: lib/revenue.js.
+    const rev = await getRevenue({ from: dateFilter?.gte, to: dateFilter?.lt });
+    const grossRevenue = rev.gross;
+    const totalRevenue = rev.net;
+    const totalCost = rev.cost;
     const totalCampaignDiscounts = (ordersAgg._sum.campaignDiscount || 0) / 100;
     const totalLoyaltyDiscounts = (ordersAgg._sum.loyaltyDiscount || 0) / 100;
     const orderCount = ordersAgg._count || 0;
@@ -200,6 +204,11 @@ export async function GET(req) {
     return Response.json({
       range,
       totalRevenue,
+      grossRevenue,
+      revenueRefunds: rev.refunds,
+      grossMargin: rev.grossMargin,
+      netMargin: rev.netMargin,
+      costWasted: rev.costWasted,
       totalCost,
       profit: totalRevenue - totalCost,
       totalRefunds,

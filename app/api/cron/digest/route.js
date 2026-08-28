@@ -5,6 +5,7 @@ import { log } from '@/lib/logger';
 import { watBounds } from '@/lib/format';
 import { tgDigest } from '@/lib/telegram';
 import { getBearerToken } from '@/lib/bearer-token';
+import { getRevenue } from '@/lib/revenue';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -71,6 +72,7 @@ export async function GET(req) {
     const yesterdayRevenue = ((yesterdayRevenueAgg._sum.charge || 0) - adjY.charge) / 100;
     const todayDeposits = (todayDepositsAgg._sum.amount || 0) / 100;
     const yesterdayDeposits = (yesterdayDepositsAgg._sum.amount || 0) / 100;
+    const revNet = await getRevenue({ from: monthStart });
     const mRev = ((monthRevAgg._sum.charge || 0) - adjM.charge) / 100;
     const mCost = ((monthCostAgg._sum.cost || 0) - adjM.cost) / 100;
     const mDep = (monthDepAgg._sum.amount || 0) / 100;
@@ -101,9 +103,11 @@ export async function GET(req) {
       orders: todayOrderCount,
       ordersPct: fmtPct(pct(todayOrderCount, yesterdayOrderCount)),
       processing: processingCount,
-      monthRevenue: fmtNaira(Math.round(mRev)),
-      monthProfit: fmtNaira(Math.round(mRev - mCost)),
-      monthMargin: marginPct(mRev, mCost),
+      monthRevenue: fmtNaira(Math.round(revNet.net)),
+      monthGross: fmtNaira(Math.round(revNet.gross)),
+      monthRefunds: fmtNaira(Math.round(revNet.refunds)),
+      monthProfit: fmtNaira(Math.round(revNet.net - revNet.cost - revNet.costWasted)),
+      monthMargin: `${Math.round(revNet.netMargin)}%`,
       monthDeposits: fmtNaira(Math.round(mDep)),
       monthOrders: monthOrderCount.toLocaleString(),
     });

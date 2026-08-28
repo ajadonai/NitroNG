@@ -13,6 +13,7 @@ import {
   rateLimitUnavailable,
   tooManyRequests,
 } from '@/lib/rate-limit';
+import { getRevenue } from '@/lib/revenue';
 
 export const dynamic = 'force-dynamic';
 
@@ -317,6 +318,8 @@ export async function GET(req) {
       _sum: { amount: true }, _count: true,
     });
 
+    const monthRevenueNet = await getRevenue({ from: monthStart });
+
     const res = withInternalDashboardNoStore(Response.json({
       totalUsers,
       newUsersToday,
@@ -408,7 +411,10 @@ export async function GET(req) {
       })),
       welcomeBonus: { count: welcomeBonusResult[0]?.count || 0, total: (welcomeBonusResult[0]?.total || 0) / 100 },
       monthDepositors: monthDepositorsResult[0]?.count || 0,
-      monthRefunds: (monthRefundAgg._sum.amount || 0) / 100,
+      monthRefunds: monthRevenueNet.refunds,
+      monthGrossRevenue: monthRevenueNet.gross,
+      monthNetRevenue: monthRevenueNet.net,
+      monthNetMargin: monthRevenueNet.netMargin,
       monthRefundCount: monthRefundAgg._count || 0,
       generatedAt: now.toISOString(),
     }));

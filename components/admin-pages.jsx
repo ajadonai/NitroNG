@@ -451,7 +451,9 @@ function FinanceOverviewTab({ dark, t }) {
       {loading ? <div className="adm-stats">{[1,2,3,4,5,6,7,8].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[90px] rounded-xl`} />)}</div> : <>
       <div className="adm-stats mt-0">
         {[
-          ["Revenue", fN(s.totalRevenue || 0), t.green],
+          ["Gross Revenue", fN(s.revenue?.gross ?? s.totalRevenue ?? 0), t.textMuted],
+          ["Refunds", "-" + fN(s.revenue?.refunds || 0), dark ? "#fca5a5" : "#dc2626"],
+          ["Net Revenue", fN(s.revenue?.net ?? s.totalRevenue ?? 0), t.green],
           ["Provider Cost", fN(s.totalCost || 0), dark ? "#fca5a5" : "#dc2626"],
           ["Profit", fN(s.profit || 0), s.profit >= 0 ? t.green : (dark ? "#fca5a5" : "#dc2626")],
           ["Money In", fN(s.totalMoneyIn || 0), t.green],
