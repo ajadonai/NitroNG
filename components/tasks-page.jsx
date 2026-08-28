@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from 'react';
 import { useToast } from './toast';
+import { openCardFrame, openCardHeader } from '@/lib/expandable-card';
 
 const PLATFORM_ICONS = {
   x: { bg: 'rgba(245,243,240,.12)', lbg: 'rgba(28,27,25,.08)', svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> },
@@ -290,8 +291,8 @@ function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSub
   const freq = task.frequency === 'daily' ? 'daily' : task.frequency === 'weekly' ? 'weekly' : task.frequency === 'monthly' ? 'monthly' : 'once';
   const SectionHead = ({ children, first: f }) => <div className={`text-[10.5px] font-semibold uppercase tracking-[1px] pb-1.5 ${f ? '' : 'mt-3 pt-3 border-t border-solid'}`} style={{ color: t.textMuted, borderColor: border }}>{children}</div>;
   return (
-    <div style={{ borderTop: first ? 'none' : `1px solid ${border}` }}>
-      <button onClick={onToggle} aria-expanded={expanded} className="w-full flex items-center gap-3 py-3 px-3.5 text-left bg-transparent border-none font-[inherit] cursor-pointer">
+    <div style={expanded ? openCardFrame(t, dark) : { borderTop: first ? 'none' : `1px solid ${border}` }}>
+      <button onClick={onToggle} aria-expanded={expanded} className="w-full flex items-center gap-3 py-3 px-3.5 text-left bg-transparent border-none font-[inherit] cursor-pointer" style={expanded ? openCardHeader(dark) : undefined}>
         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? icon.bg : icon.lbg, opacity: dimmed ? .5 : 1 }}>{icon.svg}</div>
         <div className="flex-1 min-w-0" style={{ opacity: dimmed ? .55 : 1 }}>
           <div className="text-[13.5px] font-semibold leading-[1.35] text-t-text">{task.title}</div>

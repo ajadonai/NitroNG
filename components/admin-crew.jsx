@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
+import { openCardFrame, openCardHeader } from '@/lib/expandable-card';
 
 function initials(name) {
   return (name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
@@ -445,8 +446,8 @@ export function AdminCrewPage({ dark, t }) {
               const expanded = expandedId === p.id;
               const statusColor = PAYOUT_COLORS[p.status] || "#6B7280";
               return (
-                <div key={p.id}>
-                  <div className="py-3.5 px-[18px] flex items-center gap-3 cursor-pointer hover:bg-[rgba(196,125,142,.03)] transition-colors" style={{ borderBottom: (i < filteredPayouts.length - 1 || expanded) ? `1px solid ${hair}` : "none" }} onClick={() => setExpandedId(expanded ? null : p.id)}>
+                <div key={p.id} style={expanded ? openCardFrame(t, dark) : undefined}>
+                  <div className="py-3.5 px-[18px] flex items-center gap-3 cursor-pointer hover:bg-[rgba(196,125,142,.03)] transition-colors" style={{ ...(expanded ? openCardHeader(dark) : {}), borderBottom: (i < filteredPayouts.length - 1 || expanded) ? `1px solid ${hair}` : "none" }} onClick={() => setExpandedId(expanded ? null : p.id)}>
                     <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-[11px] font-bold shrink-0" style={{ background: `${statusColor}18`, color: statusColor }}>{initials(p.memberName)}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2"><span className="text-[13.5px] font-semibold" style={{ color: t.text }}>{p.memberName}</span><span className="text-[10.5px] py-[1px] px-[6px] rounded-full font-medium capitalize" style={{ background: `${statusColor}18`, color: statusColor }}>{p.status}</span></div>
