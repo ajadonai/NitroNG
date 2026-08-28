@@ -5,6 +5,7 @@ import { useToast } from './toast';
 import InlineAlert from './inline-alert';
 import { PlatformIcon } from './platform-icon';
 import { proofToLink } from '@/lib/proof-link';
+import { openCardFrame, openCardHeader } from '@/lib/expandable-card';
 const fmt = (n) => Math.abs(n).toLocaleString('en-NG');
 
 const PLATFORMS = [
@@ -420,8 +421,8 @@ export default function AdminTasksPage({ dark, t }) {
               const isOpen = expanded[s.id];
               const link = proofToLink(s.proof, s.task?.platform);
               return (
-                <div key={s.id} style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-                  <div onClick={() => toggleExpand(s.id)} className="flex items-center gap-3 px-5 max-md:px-3.5 py-3 cursor-pointer select-none hover:bg-black/[.015] dark:hover:bg-white/[.015]">
+                <div key={s.id} style={isOpen ? openCardFrame(t, dark) : { borderBottom: `1px solid ${t.cardBorder}` }}>
+                  <div onClick={() => toggleExpand(s.id)} className="flex items-center gap-3 px-5 max-md:px-3.5 py-3 cursor-pointer select-none hover:bg-black/[.015] dark:hover:bg-white/[.015]" style={isOpen ? openCardHeader(dark) : undefined}>
                     <PlatformIcon platform={s.task?.platform} size={28} />
                     <div className="min-w-0 flex-1">
                       <div className="text-[13.5px] font-semibold truncate" style={{ color: t.text }}>{s.task?.title}</div>
