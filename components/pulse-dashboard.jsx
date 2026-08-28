@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import NitroLoader from './nitro-loader';
+import { platformBrand } from '@/lib/platform-brand';
 
 // Pulse: the office screen. People first, today's figures on their own day
 // lines, three lists for what is happening, one row of facts for the month.
@@ -139,10 +140,15 @@ function Month({ data }) {
   const markup = data.monthCost > 0 ? Math.round((data.monthProfit / data.monthCost) * 100) : 0;
   const avg = data.monthOrders > 0 ? data.monthRevenue / data.monthOrders : 0;
   const repeat = data.monthActiveUsers > 0 ? Math.round(((data.monthRepeatUsers || 0) / data.monthActiveUsers) * 100) : 0;
+  const payouts = Object.values(data.monthPayouts || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+  const statusTotal = (data.byStatus || []).reduce((s, i) => s + i.count, 0);
+  const cancelled = (data.byStatus || []).reduce((s, i) => (['Cancelled', 'Failed', 'Rejected'].includes(i.status) ? s + i.count : s), 0);
+  const cancelRate = statusTotal > 0 ? Math.round((cancelled / statusTotal) * 100) : 0;
   const d = new Date(); const monthName = d.toLocaleDateString('en-NG', { month: 'long', timeZone: 'Africa/Lagos' }); const day = Number(d.toLocaleDateString('en-NG', { day: 'numeric', timeZone: 'Africa/Lagos' }));
   const facts = [
     ['Revenue', naira(data.monthRevenue)], ['Cost', naira(data.monthCost)], ['Profit', naira(data.monthProfit)], ['Markup', `${markup}%`], ['Orders', num(data.monthOrders)],
     ['Avg order', naira(avg)], ['Deposits', naira(data.monthDeposits)], ['Depositors', num(data.monthDepositors)], ['New people', num(data.monthNewUsers)], ['Repeat buyers', `${repeat}%`],
+    ['Bonuses', naira(data.welcomeBonus?.total || 0)], ['Payouts', naira(payouts)], ['Refunds', naira(data.monthRefunds || 0)], ['Cancel rate', `${cancelRate}%`], ['Idle wallets', num(data.idleUsersWithBalance)],
   ];
   return (
     <section className="pl-month">
@@ -164,8 +170,8 @@ function Bars({ data }) {
     <section className="pl-bars">
       <div className="pl-bar">
         <header><h3>Platforms</h3><span className="pl-cnt">this month</span></header>
-        <div className="pl-stack">{plats.map((p, i) => <i key={p.name} style={{ width: `${(p.orders / ptot) * 100}%` }} className={`pl-p${i}`} />)}</div>
-        <div className="pl-leg">{plats.map((p, i) => <span key={p.name}><i className={`pl-sw pl-p${i}`} />{p.name} <b className="m">{Math.round((p.orders / ptot) * 100)}%</b></span>)}</div>
+        <div className="pl-stack">{plats.map((p, i) => <i key={p.name} style={{ width: `${(p.orders / ptot) * 100}%`, background: platformBrand(p.name, { index: i }) }} />)}</div>
+        <div className="pl-leg">{plats.map((p, i) => <span key={p.name}><i className="pl-sw" style={{ background: platformBrand(p.name, { index: i }) }} />{p.name} <b className="m">{Math.round((p.orders / ptot) * 100)}%</b></span>)}</div>
       </div>
       <div className="pl-bar">
         <header><h3>Order status</h3><span className="pl-cnt">30 days</span></header>
@@ -297,7 +303,7 @@ const CSS = `
 .pl-empty{padding:18px 14px;font-size:12px;color:var(--dim)}
 .pl-bot{display:grid;grid-template-columns:1.6fr 1fr;gap:10px;flex-shrink:0}
 .pl-month,.pl-bar{background:var(--sf);border:1px solid var(--hair);border-radius:14px;min-width:0}
-.pl-mfs{display:grid;grid-template-columns:repeat(5,1fr)}.pl-mf{padding:9px 14px;border-left:1px solid var(--hair)}.pl-mf:first-child,.pl-mf:nth-child(6){border-left:0}.pl-mf:nth-child(n+6){border-top:1px solid var(--hair)}
+.pl-mfs{display:grid;grid-template-columns:repeat(5,1fr)}.pl-mf{padding:9px 14px;border-left:1px solid var(--hair)}.pl-mf:nth-child(5n+1){border-left:0}.pl-mf:nth-child(n+6){border-top:1px solid var(--hair)}
 .pl-mv{font-size:15px;font-weight:700;letter-spacing:-.01em}.pl-ml{font-size:11px;color:var(--mu);margin-top:2px}
 .pl-bars{display:grid;grid-template-rows:1fr 1fr;gap:10px}
 .pl-stack{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:12px 14px 8px;background:rgba(255,255,255,.05);gap:2px}.pl-stack i{display:block;height:100%}

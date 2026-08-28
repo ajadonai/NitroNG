@@ -311,6 +311,12 @@ export async function GET(req) {
       d.setDate(d.getDate() + 1);
     }
 
+    // Refunds are the biggest leak in the book and were never on the screen.
+    const monthRefundAgg = await prisma.transaction.aggregate({
+      where: { type: 'refund', status: 'Completed', createdAt: { gte: monthStart } },
+      _sum: { amount: true }, _count: true,
+    });
+
     const res = withInternalDashboardNoStore(Response.json({
       totalUsers,
       newUsersToday,
@@ -402,6 +408,8 @@ export async function GET(req) {
       })),
       welcomeBonus: { count: welcomeBonusResult[0]?.count || 0, total: (welcomeBonusResult[0]?.total || 0) / 100 },
       monthDepositors: monthDepositorsResult[0]?.count || 0,
+      monthRefunds: (monthRefundAgg._sum.amount || 0) / 100,
+      monthRefundCount: monthRefundAgg._count || 0,
       generatedAt: now.toISOString(),
     }));
     renewInternalDashboardGrant(access, res);
