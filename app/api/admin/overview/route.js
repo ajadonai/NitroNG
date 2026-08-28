@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import { requireAdmin, getAdminPages, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { watBounds } from '@/lib/format';
 import { getOrderOfferDisplay } from '@/lib/order-offer-display';
+import { getRevenue } from '@/lib/revenue';
 
 function humanize(raw) {
   let m;
@@ -184,6 +185,9 @@ export async function GET() {
 
     const sensitive = canSeeSensitive(admin);
 
+    // One definition of revenue for every surface: lib/revenue.js.
+    const [rev, revToday] = await Promise.all([getRevenue(), getRevenue({ from: todayStart })]);
+
     return Response.json({
       admin: { name: admin.name, role: admin.role, email: admin.email, themePreference: admin.themePreference || 'auto', pages: getAdminPages(admin), customActions: admin.customActions || null },
       revenue: todayRevenue,
@@ -195,10 +199,16 @@ export async function GET() {
       newUsersToday: todayUsers,
       revenueChange: pctChange(todayRevenue, yesterdayRevenue),
       depositsChange: pctChange(todayDeposits, yesterdayDeposits),
-      totalRevenue: ((revenueAgg._sum.charge || 0) - adjAll.charge) / 100,
+      totalRevenue: rev.net,
+      grossRevenue: rev.gross,
+      totalRefunds: rev.refunds,
+      revenueToday: { gross: revToday.gross, refunds: revToday.refunds, net: revToday.net },
       ...(sensitive ? {
-        totalCost: ((costAgg._sum.cost || 0) - adjAll.cost) / 100,
-        totalProfit: (((revenueAgg._sum.charge || 0) - adjAll.charge) - ((costAgg._sum.cost || 0) - adjAll.cost)) / 100,
+        totalCost: rev.cost,
+        totalProfit: rev.net - rev.cost - rev.costWasted,
+        grossMargin: rev.grossMargin,
+        netMargin: rev.netMargin,
+        costWasted: rev.costWasted,
       } : {}),
       totalDeposits: (depositsAgg._sum.amount || 0) / 100,
       unreadTicketCount,

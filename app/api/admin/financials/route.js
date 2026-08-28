@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import { requireAdmin, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { watBounds } from '@/lib/format';
 import { getOrderOfferDisplay } from '@/lib/order-offer-display';
+import { getRevenue } from '@/lib/revenue';
 
 const ALL_SECTIONS = ['wallet', 'orders', 'points', 'provider', 'affiliate', 'liabilities'];
 
@@ -448,6 +449,10 @@ export async function GET(req) {
     const sensitive = canSeeSensitive(admin);
 
     return Response.json({
+
+      // Gross, refunds and net side by side: lib/revenue.js.
+
+      revenue: await getRevenue({ from: txWhere?.createdAt?.gte, to: txWhere?.createdAt?.lt }),
       range,
       filters: { platform, tier, provider },
       profitability: {

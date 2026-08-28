@@ -146,7 +146,7 @@ function Month({ data }) {
   const cancelRate = statusTotal > 0 ? Math.round((cancelled / statusTotal) * 100) : 0;
   const d = new Date(); const monthName = d.toLocaleDateString('en-NG', { month: 'long', timeZone: 'Africa/Lagos' }); const day = Number(d.toLocaleDateString('en-NG', { day: 'numeric', timeZone: 'Africa/Lagos' }));
   const facts = [
-    ['Revenue', naira(data.monthRevenue)], ['Cost', naira(data.monthCost)], ['Profit', naira(data.monthProfit)], ['Markup', `${markup}%`], ['Orders', num(data.monthOrders)],
+    ['Revenue', naira(data.monthNetRevenue ?? data.monthRevenue)], ['Cost', naira(data.monthCost)], ['Profit', naira(data.monthProfit)], ['Markup', `${markup}%`], ['Orders', num(data.monthOrders)],
     ['Avg order', naira(avg)], ['Deposits', naira(data.monthDeposits)], ['Depositors', num(data.monthDepositors)], ['New people', num(data.monthNewUsers)], ['Repeat buyers', `${repeat}%`],
     ['Bonuses', naira(data.welcomeBonus?.total || 0)], ['Payouts', naira(payouts)], ['Refunds', naira(data.monthRefunds || 0)], ['Cancel rate', `${cancelRate}%`], ['Idle wallets', num(data.idleUsersWithBalance)],
   ];
