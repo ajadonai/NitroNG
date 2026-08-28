@@ -10,6 +10,7 @@ import NitroLoader from "./nitro-loader";
 import { cleanLink } from "../lib/clean-link";
 import { OrderForm as ExtractedOrderForm } from "./order-form";
 import { TASKS_ENABLED } from './rewards';
+import { openCardFrame } from '@/lib/expandable-card';
 
 // ── Success-modal promo slides ──
 // 'tasks' activates automatically when TASKS_ENABLED flips in rewards.jsx.
@@ -144,65 +145,99 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, wa
   );
 }
 
-function TierExplainer({ dark, t, selTier, narrow }) {
-  const selName = selTier?.tier;
-  if (narrow) {
-    return (
-      <div className="mt-2 rounded-[11px] border border-solid overflow-hidden" style={{ borderColor: t.cardBorder, background: dark ? "#141830" : "#fafaf8" }}>
-        <div className="rounded-[9px] border border-solid overflow-hidden mx-2.5 mt-2.5" style={{ borderColor: t.cardBorder }}>
-          {TIER_NAMES.map((name, i) => {
-            const s = TS[name];
-            const st = TIER_STACK[name];
-            return (
-              <div key={name} className="flex items-start gap-2 py-2 px-2.5" style={{ borderBottom: i < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>
-                <span className="w-[17px] h-[17px] rounded-full flex items-center justify-center text-white shrink-0 mt-px" style={{ background: s.grad }}>{s.label}</span>
-                <span>
-                  <span className="text-[11px] block" style={{ fontWeight: 800, color: s.text }}>{name} <span className="text-[11px] font-bold" style={{ color: dark ? "#8a8580" : "#757170" }}>· best for {st.bestFor}</span></span>
-                  <span className="block text-[11px] mt-px leading-[1.45]" style={{ color: dark ? "#c9c5c0" : "#4a4744" }}>{st.detail}</span>
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        <div className="text-[11px] leading-[1.5] mx-2.5 mt-2 mb-2.5" style={{ color: dark ? "#8a8580" : "#757170" }}>
-          Small drops are normal — platforms clear out inactive accounts. Refill means we top yours back up for free.
-          <div className="mt-1 font-bold" style={{ color: "#c47d8e" }}>Building something long term? Go Standard or Premium.</div>
-        </div>
-      </div>
-    );
-  }
+const TX_ICON = {
+  people: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>,
+  refill: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
+  queue: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>,
+};
+// Same service on every tier. What changes is how well the numbers hold,
+// whether we replace drops, and who goes first when we are busy. Nothing here
+// calls a tier basic or slow: ten Budget tiers start inside two hours.
+const TX_TIERS = [
+  { key: "Budget", cap: "Trying it out", short: ["Good", "None", "Normal"], long: ["Good profiles", "No refill", "Normal queue"], pick: "Testing a service, or the price matters more than the extras.",
+    c: { light: "#b45309", bg: "#fef7ed", ln: "#e8d5b8", dark: "#e0a458", bgD: "#2d2210", lnD: "#5a4020" } },
+  { key: "Standard", cap: "Most pick", rec: true, short: ["Better", "30 days", "Priority"], long: ["Better profiles", "Free for 30 days", "Priority when busy"], pick: "A page you post on, and you want the numbers to stay.",
+    c: { light: "#1d5fa5", bg: "#eef4fb", ln: "#b8d0e8", dark: "#7aa2f7", bgD: "#0f1e30", lnD: "#1e4070" } },
+  { key: "Premium", cap: "Main page", short: ["Best", "For life", "First"], long: ["Our best profiles", "Free for life", "Front of the queue"], pick: "The account your business runs on.",
+    c: { light: "#6d28d9", bg: "#f5eef5", ln: "#d4b8d4", dark: "#a78bfa", bgD: "#221535", lnD: "#3d2060" } },
+];
+const TX_CSS = `
+.tx{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px}
+.tx *{box-sizing:border-box}
+.tx-lead{font-size:11.5px;line-height:1.45;color:var(--mut);padding:0 1px 9px;margin:0}
+.tx-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:stretch}
+.tx-col{--bt:#fff;border:1px solid var(--line);border-radius:10px;background:var(--card);display:flex;flex-direction:column;min-width:0;overflow:hidden;padding:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer;transition:transform .13s ease,box-shadow .15s ease}
+.tx-col:hover{transform:translateY(-1px)}
+.tx-col.is-rec{border-color:var(--cln);box-shadow:0 0 0 1px var(--cln)}
+.tx-col.is-sel{border-color:var(--c);box-shadow:0 0 0 2px var(--c)}
+.tx-col.is-off{opacity:.45;cursor:default}.tx-col.is-off:hover{transform:none}
+.tx-id{padding:8px 6px;background:var(--cbg);border-bottom:1px solid var(--cln);text-align:center}
+.tx-hd{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0}
+.tx-chip{width:19px;height:19px;border-radius:6px;background:var(--card);border:1px solid var(--cln);color:var(--c);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.tx-chip svg{width:10.5px;height:10.5px}
+.tx-col.is-sel .tx-chip{background:var(--c);border-color:var(--c);color:#fff}
+.tx-hd b{font-size:12.5px;font-weight:700;color:var(--c);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-cap{height:17px;display:flex;align-items:center;justify-content:center;margin-top:5px;min-width:0}
+.tx-capt{font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);white-space:nowrap;text-align:center}
+.tx-pill{font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#fff;background:var(--c);border-radius:999px;padding:2px 7px;line-height:1.25;white-space:nowrap}
+.tx-vals{display:flex;flex-direction:column}
+.tx-v{display:flex;align-items:center;min-height:26px;padding:0 8px;border-top:1px solid var(--rail);min-width:0}
+.tx-v:first-child{border-top:none}
+.tx-vi{width:25px;color:var(--mut);flex-shrink:0;display:inline-flex;align-items:center}
+.tx-vi svg{width:12px;height:12px}
+.tx-vt{font-size:11px;font-weight:600;color:var(--ink);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-pick{font-size:11px;line-height:1.45;color:var(--mut);padding:8px;margin:auto 0 0;border-top:1px solid var(--rail)}
+.tx-legend{display:flex;gap:14px;flex-wrap:wrap;padding:9px 1px 0;font-size:10.5px;color:var(--mut);margin:0}
+.tx-legend span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.tx-legend svg{width:12px;height:12px}
+.tx.wide{padding:12px}
+.tx.wide .tx-lead{font-size:12.5px;padding-bottom:11px}
+.tx.wide .tx-cols{gap:9px}
+.tx.wide .tx-id{padding:10px}
+.tx.wide .tx-hd b{font-size:13.5px}
+.tx.wide .tx-cap{height:19px;margin-top:6px}
+.tx.wide .tx-capt,.tx.wide .tx-pill{font-size:9.5px}
+.tx.wide .tx-v{min-height:30px;padding:0 11px}
+.tx.wide .tx-vt{font-size:11.5px}
+.tx.wide .tx-pick{padding:10px 11px}
+@media (prefers-reduced-motion:reduce){.tx-col{transition:none}.tx-col:hover{transform:none}}
+`;
+
+function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick }) {
+  const wide = !narrow;
+  const vars = {
+    "--card": dark ? "#141930" : "#ffffff", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ink": t.text, "--mut": t.textMuted, "--line": t.cardBorder,
+    "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
+  };
   return (
-    <div className="mt-2 rounded-[11px] border border-solid" style={{ borderColor: t.cardBorder, background: dark ? "#141830" : "#fafaf8" }}>
-      <div className="mx-2.5 mt-2.5 rounded-[9px] border border-solid overflow-hidden" style={{ display: "grid", gridTemplateColumns: "minmax(52px,66px) repeat(3,1fr)", borderColor: t.cardBorder }}>
-        <div style={{ padding: "7px 5px 6px", borderBottom: `1px solid ${t.cardBorder}`, borderRight: `1px solid ${t.cardBorder}` }} />
-        {TIER_NAMES.map((name, i) => {
-          const s = TS[name];
+    <section className={`tx${wide ? " wide" : ""}`} style={vars} onClick={e => e.stopPropagation()}>
+      <style>{TX_CSS}</style>
+      <p className="tx-lead">All three start about as fast. You are choosing how well the numbers hold, whether we replace drops, and who goes first when we are busy. Tap one to pick it.</p>
+      <div className="tx-cols">
+        {TX_TIERS.map(d => {
+          const tier = tiers.find(x => x.tier === d.key);
+          const sel = selTier?.tier === d.key;
+          const c = dark ? { c: d.c.dark, bg: d.c.bgD, ln: d.c.lnD } : { c: d.c.light, bg: d.c.bg, ln: d.c.ln };
+          const vals = wide ? d.long : d.short;
           return (
-            <div key={name} className="text-center" style={{ padding: "6px 4px 5px", borderBottom: `1px solid ${t.cardBorder}`, borderRight: i < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>
-              <span className="w-[17px] h-[17px] rounded-full flex items-center justify-center text-white mx-auto mb-0.5" style={{ background: s.grad }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{s.label.props.children}</svg></span>
-              <span className="text-[11px] block" style={{ fontWeight: 800, color: s.text }}>{name}</span>
-            </div>
+            <button key={d.key} type="button" onClick={e => { e.stopPropagation(); if (tier && onPick) onPick(tier, e); }} aria-pressed={sel} aria-disabled={!tier}
+              className={`tx-col${d.rec ? " is-rec" : ""}${sel ? " is-sel" : ""}${tier ? "" : " is-off"}`}
+              style={{ "--c": c.c, "--cbg": c.bg, "--cln": c.ln }} title={tier ? `Pick ${d.key}` : `${d.key} is not offered for this service`}>
+              <div className="tx-id">
+                <div className="tx-hd"><span className="tx-chip">{TS[d.key].label}</span><b>{d.key}</b></div>
+                <div className="tx-cap">{d.rec ? <span className="tx-pill">{d.cap}</span> : <span className="tx-capt">{d.cap}</span>}</div>
+              </div>
+              <div className="tx-vals">
+                {["people", "refill", "queue"].map((ic, i) => <div className="tx-v" key={ic}><span className="tx-vi">{TX_ICON[ic]}</span><span className="tx-vt">{vals[i]}</span></div>)}
+              </div>
+              {wide && <p className="tx-pick">{d.pick}</p>}
+            </button>
           );
         })}
-        {TIER_COMPARE.map((row, ri) => {
-          const isLast = ri === TIER_COMPARE.length - 1;
-          const isBold = row.label === "Best for";
-          return [
-            <div key={`lab-${ri}`} className="flex items-center" style={{ padding: "6px 5px", fontSize: 11, fontWeight: 800, letterSpacing: ".3px", textTransform: "uppercase", color: dark ? "#8a8580" : "#757170", borderBottom: isLast ? undefined : `1px solid ${t.cardBorder}`, borderRight: `1px solid ${t.cardBorder}` }}>{row.label}</div>,
-            ...TIER_NAMES.map((name, ci) => {
-              const s = TS[name];
-              return (
-                <div key={`${ri}-${ci}`} className="text-center" style={{ padding: "6px 5px", fontSize: 11, lineHeight: 1.35, color: isBold ? (dark ? "#f5f3f0" : "#1c1b19") : (dark ? "#c9c5c0" : "#4a4744"), fontWeight: isBold ? 800 : undefined, borderBottom: isLast ? undefined : `1px solid ${t.cardBorder}`, borderRight: ci < 2 ? `1px solid ${t.cardBorder}` : undefined, background: selName === name ? (dark ? s.bgD : s.bg) : undefined }}>{row[name]}</div>
-              );
-            }),
-          ];
-        })}
       </div>
-      <div className="text-[11px] leading-[1.5] mx-2.5 mt-2 mb-2.5" style={{ color: dark ? "#8a8580" : "#757170" }}>
-        Small drops are normal — platforms clear out inactive accounts. Refill means we top yours back up for free.
-        <div className="mt-1 font-bold" style={{ color: "#c47d8e" }}>Building something long term? Go Standard or Premium.</div>
-      </div>
-    </div>
+      {!wide && <p className="tx-legend"><span>{TX_ICON.people}Profiles</span><span>{TX_ICON.refill}Refill</span><span>{TX_ICON.queue}Queue</span></p>}
+    </section>
   );
 }
 
@@ -259,7 +294,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
               {explOpen ? "Close" : "Which tier?"}
             </button>
           </div>
-          {explOpen && <TierExplainer dark={dark} t={t} selTier={selTier} narrow={narrow} />}
+          {explOpen && <TierExplainer dark={dark} t={t} selTier={selTier} narrow={narrow} tiers={svc.tiers} onPick={handlePickTier} />}
         </>
       )}
     </div>
@@ -913,7 +948,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           <div className="flex gap-0 mb-3.5 border-b border-solid" style={{ borderBottomColor: t.cardBorder }}>
             {[72, 48, 88].map((w, i) => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[32px] rounded-md`} style={{ width: w }} />)}
           </div>
-          <div className="hidden desktop:grid desktop:grid-cols-10 desktop:gap-2 desktop:mb-4">
+          <div className="hidden desktop:grid desktop:grid-cols-10 desktop:gap-1.5 desktop:mb-4">
             {Array.from({ length: 10 }, (_, i) => (
               <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} aspect-square rounded-[14px]`} />
             ))}
@@ -938,9 +973,9 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       {!menuLoading && !menuError && <>
 
       {/* ═══ GROUP TABS ═══ */}
-      <div className="flex gap-0 mb-3.5 border-b border-solid" data-tour="no-platform-tabs" style={{ borderBottomColor: t.cardBorder }}>
+      <div className="flex gap-0.5 mb-3 border-b border-solid" data-tour="no-platform-tabs" style={{ borderBottomColor: t.cardBorder }}>
         {PLATFORM_GROUPS.map(g => (
-          <button key={g.label} onClick={() => { setPlatGroup(g.label); const first = g.platforms.find(p => (platformCounts[p.id] || 0) > 0); if (first) setPlatform(first.id); }} className={`py-1.5 px-3 text-xs md:py-[7px] md:px-3.5 md:text-[13px] desktop:py-2 desktop:px-4 desktop:text-sm font-medium cursor-pointer border-none border-b-2 border-b-transparent -mb-px bg-transparent font-[inherit] transition-colors duration-150${platGroup === g.label ? " !font-semibold" : ""}`} style={{ color: platGroup === g.label ? t.accent : t.textMuted, borderBottomColor: platGroup === g.label ? t.accent : "transparent" }}>
+          <button key={g.label} onClick={() => { setPlatGroup(g.label); const first = g.platforms.find(p => (platformCounts[p.id] || 0) > 0); if (first) setPlatform(first.id); }} className="py-[7px] px-3 text-[13px] cursor-pointer border-none border-b-2 -mb-px bg-transparent font-[inherit] transition-colors duration-150" style={{ color: platGroup === g.label ? t.text : t.textMuted, fontWeight: platGroup === g.label ? 600 : 500, borderBottomColor: platGroup === g.label ? t.accent : "transparent" }}>
             {g.label.replace(" Platforms", "")}
           </button>
         ))}
@@ -951,9 +986,9 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         {visiblePlatforms.map(p => {
           const isActive = platform === p.id;
           return (
-            <button key={p.id} onClick={() => setPlatform(p.id)} className={`no-plat-icon-btn aspect-square rounded-[14px] border-[1.5px] border-solid flex flex-col items-center justify-center gap-2.5 cursor-pointer font-[inherit] transition-all duration-150 w-full hover:!border-[rgba(196,125,142,.38)]${isActive ? " no-plat-icon-on !border-[2.5px]" : ""}`} style={{ borderColor: isActive ? t.accent : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)") : (dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.8)"), color: isActive ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.55)") }} title={p.label}>
-              <span className="flex items-center justify-center w-5 h-5 text-current">{p.icon}</span>
-              <span className="text-[8px] font-medium leading-none w-full text-center overflow-hidden text-ellipsis whitespace-nowrap px-0.5" style={{ color: isActive ? t.accent : t.textMuted }}>{p.label.replace(" / X", "/X")}</span>
+            <button key={p.id} onClick={() => setPlatform(p.id)} className={`no-plat-tile rounded-[11px] border border-solid flex flex-col items-center justify-center cursor-pointer font-[inherit] w-full px-1 min-w-0 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(0,0,0,.07)]`} style={{ height: 58, gap: 6, borderColor: isActive ? (dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)") : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)") : (dark ? "#111634" : "#faf9f7"), color: isActive ? t.accent : t.text }} title={p.label}>
+              <span className="flex items-center justify-center [&_svg]:w-[16px] [&_svg]:h-[16px]" style={{ width: 16, height: 16, opacity: isActive ? 1 : .72 }}>{p.icon}</span>
+              <span className="font-medium leading-none w-full text-center overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 10, color: isActive ? t.accent : t.textMuted, fontWeight: isActive ? 600 : 500 }}>{p.label.replace(" / X", "/X")}</span>
             </button>
           );
         })}
@@ -961,31 +996,32 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* ═══ MOBILE/TABLET: 5 icon window + expandable grid ═══ */}
       <div className="hidden max-desktop:block mb-3.5">
-        <div className="grid grid-cols-5 gap-1.5 md:gap-2 mb-2">
+        <div className="grid grid-cols-5 gap-1.5 mb-2">
           {visiblePlatforms.slice(platWindowStart, platWindowStart + 5).map(p => {
             const isActive = platform === p.id;
             return (
-              <button key={p.id} onClick={() => setPlatform(p.id)} className={`no-mob-plat-btn aspect-square rounded-[10px] md:rounded-xl border-[1.5px] border-solid flex flex-col items-center justify-center gap-1.5 md:gap-2 cursor-pointer font-[inherit] transition-all duration-150${isActive ? " no-mob-plat-on !border-[2.5px]" : ""}`} style={{ borderColor: isActive ? t.accent : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)") : (dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.8)"), color: isActive ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)") }}>
-                <span className="flex items-center justify-center w-4 h-4 md:w-5 md:h-5">{p.icon}</span>
-                <span className="text-[7px] md:text-[8px] font-medium leading-none w-full text-center overflow-hidden text-ellipsis whitespace-nowrap px-0.5" style={{ color: isActive ? t.accent : t.textMuted }}>{p.label.replace(" / X", "/X")}</span>
+              <button key={p.id} onClick={() => setPlatform(p.id)} className={`no-plat-tile rounded-[10px] border border-solid flex flex-col items-center justify-center cursor-pointer font-[inherit] w-full px-1 min-w-0 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(0,0,0,.07)]`} style={{ height: 54, gap: 6, borderColor: isActive ? (dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)") : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)") : (dark ? "#111634" : "#faf9f7"), color: isActive ? t.accent : t.text }} title={p.label}>
+              <span className="flex items-center justify-center [&_svg]:w-[15px] [&_svg]:h-[15px]" style={{ width: 15, height: 15, opacity: isActive ? 1 : .72 }}>{p.icon}</span>
+              <span className="font-medium leading-none w-full text-center overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 9.5, color: isActive ? t.accent : t.textMuted, fontWeight: isActive ? 600 : 500 }}>{p.label.replace(" / X", "/X")}</span>
               </button>
             );
           })}
         </div>
         {visiblePlatforms.length > 5 && (
-          <button onClick={() => setPlatExpanded(!platExpanded)} className="w-full py-2 rounded-lg border border-dashed bg-transparent text-xs font-medium cursor-pointer font-[inherit] mb-2 transition-transform duration-200 hover:-translate-y-px" style={{ color: t.accent, borderColor: dark ? "rgba(196,125,142,.35)" : "rgba(196,125,142,.4)", background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)" }}>
-            {platExpanded ? "Collapse ▴" : `View all ${visiblePlatforms.length} platforms ▾`}
+          <button onClick={() => setPlatExpanded(!platExpanded)} className="w-full h-[30px] rounded-[9px] border border-solid bg-transparent text-[12px] font-medium cursor-pointer font-[inherit] mb-2 flex items-center justify-center gap-1.5 transition-transform duration-150 hover:-translate-y-px" style={{ color: t.textMuted, borderColor: t.cardBorder }}>
+            {platExpanded ? "Show less" : `All ${visiblePlatforms.length} platforms`}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ transform: platExpanded ? "rotate(180deg)" : "none", transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         )}
         {platExpanded && (
-          <div className="border border-solid rounded-xl p-2.5 mb-2" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.02)" }}>
-            <div className="grid grid-cols-5 gap-[5px] md:gap-1.5">
+          <div className="border border-solid rounded-xl p-2 mb-2" style={{ borderColor: t.cardBorder, background: dark ? "#111634" : "#faf9f7" }}>
+            <div className="grid grid-cols-5 gap-[5px]">
               {visiblePlatforms.map((p, i) => {
                 const isActive = platform === p.id;
                 return (
-                  <button key={p.id} onClick={() => { setPlatform(p.id); const rowStart = Math.floor(i / 5) * 5; setPlatWindowStart(Math.min(rowStart, Math.max(0, visiblePlatforms.length - 5))); setPlatExpanded(false); }} className={`no-mob-plat-btn aspect-square rounded-[10px] md:rounded-xl border-[1.5px] border-solid flex flex-col items-center justify-center gap-1.5 md:gap-2 cursor-pointer font-[inherit] transition-all duration-150${isActive ? " no-mob-plat-on !border-[2.5px]" : ""}`} style={{ borderColor: isActive ? t.accent : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)") : (dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.8)"), color: isActive ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)") }}>
-                    <span className="flex items-center justify-center w-4 h-4 md:w-5 md:h-5">{p.icon}</span>
-                    <span className="text-[7px] md:text-[8px] font-medium leading-none w-full text-center overflow-hidden text-ellipsis whitespace-nowrap px-0.5" style={{ color: isActive ? t.accent : t.textMuted }}>{p.label.replace(" / X", "/X")}</span>
+                  <button key={p.id} onClick={() => { setPlatform(p.id); const rowStart = Math.floor(i / 5) * 5; setPlatWindowStart(Math.min(rowStart, Math.max(0, visiblePlatforms.length - 5))); setPlatExpanded(false); }} className={`no-plat-tile rounded-[10px] border border-solid flex flex-col items-center justify-center cursor-pointer font-[inherit] w-full px-1 min-w-0 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(0,0,0,.07)]`} style={{ height: 54, gap: 6, borderColor: isActive ? (dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)") : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)") : (dark ? "#141930" : "#ffffff"), color: isActive ? t.accent : t.text }} title={p.label}>
+              <span className="flex items-center justify-center [&_svg]:w-[15px] [&_svg]:h-[15px]" style={{ width: 15, height: 15, opacity: isActive ? 1 : .72 }}>{p.icon}</span>
+              <span className="font-medium leading-none w-full text-center overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 9.5, color: isActive ? t.accent : t.textMuted, fontWeight: isActive ? 600 : 500 }}>{p.label.replace(" / X", "/X")}</span>
                   </button>
                 );
               })}
@@ -1599,7 +1635,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           );
 
           return (
-            <div key={row.id} data-row={idx} className={`rounded-[12px] p-3.5 px-4 max-md:p-3 max-md:px-3.5 border border-solid transition-all duration-200`} style={{ background: dup ? (dark ? "rgba(239,68,68,.14)" : "#fbe7e7") : badLink ? (dark ? "rgba(239,68,68,.1)" : "#fef5f5") : (dark ? "rgba(255,255,255,.09)" : "#f7f5f1"), borderColor: dup ? (dark ? "#fca5a5" : "#dc2626") : badLink ? (dark ? "#fca5a5" : "#dc2626") : emptyLink ? "rgba(196,125,142,.4)" : qtyBad ? "rgba(196,125,142,.4)" : needsCommentsWarning ? "rgba(196,125,142,.4)" : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)") }}>
+            <div key={row.id} data-row={idx} className={`rounded-[12px] p-3.5 px-4 max-md:p-3 max-md:px-3.5 border border-solid transition-all duration-200`} style={(dup || badLink) ? { background: dup ? (dark ? "rgba(239,68,68,.14)" : "#fbe7e7") : (dark ? "rgba(239,68,68,.1)" : "#fef5f5"), borderColor: dark ? "#fca5a5" : "#dc2626" } : { ...openCardFrame(t, dark), margin: 0, borderRadius: 12 }}>
               {/* Top: platform + name + tier + collapse + remove */}
               <div className="flex items-center gap-2.5 mb-3">
                 <span className="flex items-center justify-center w-5 h-5 shrink-0 [&_svg]:w-[18px] [&_svg]:h-[18px]" style={{ color: t.textMuted }}>{PLATFORMS.find(pl => pl.id === row.platform)?.icon}</span>
