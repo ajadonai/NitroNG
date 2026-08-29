@@ -2,6 +2,9 @@
 import { useEffect, useState } from "react";
 import { useConfirm } from "./confirm-dialog";
 import InlineAlert from "./inline-alert";
+import { useToast } from "./toast";
+import { SITE } from "../lib/site";
+import { SettingsRow as Row, SettingsSectionHead as SectionHead, I_LOCK, I_BELL, I_PULSE, I_OUT, I_CHEV, I_SUN, I_MOON, I_AUTO } from "./settings-page";
 
 function SettingsModal({ open, onClose, title, dark, t, children }) {
   useEffect(() => {
@@ -24,37 +27,36 @@ function SettingsModal({ open, onClose, title, dark, t, children }) {
   );
 }
 
-function CleanupButton({ dark, t }) {
+function CleanupRow({ dark, t }) {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [info, setInfo] = useState(null);
   const [cleaning, setCleaning] = useState(false);
-  const [result, setResult] = useState(null);
-
-  useEffect(() => {
-    fetch("/api/admin/cleanup").then(r => r.json()).then(d => setInfo(d)).catch(() => {});
-  }, []);
-
+  useEffect(() => { fetch("/api/admin/cleanup").then(r => r.json()).then(d => setInfo(d)).catch(() => {}); }, []);
   const run = async () => {
-    setCleaning(true); setResult(null);
+    const ok = await confirm({ title: "Clean up stale accounts?", message: `${info?.staleCount || 0} unverified accounts older than ${info?.cutoffDays || 30} days are removed. Verified accounts are never touched.`, confirmLabel: "Clean up", danger: true });
+    if (!ok) return;
+    setCleaning(true);
     try {
       const res = await fetch("/api/admin/cleanup", { method: "POST" });
       const data = await res.json();
-      setResult(res.ok ? { type: "success", text: data.message } : { type: "error", text: data.error });
-      if (res.ok) fetch("/api/admin/cleanup").then(r => r.json()).then(d => setInfo(d)).catch(() => {});
-    } catch { setResult({ type: "error", text: "Failed" }); }
+      if (res.ok) { toast.success("Cleaned up", data.message || ""); fetch("/api/admin/cleanup").then(r => r.json()).then(d => setInfo(d)).catch(() => {}); }
+      else toast.error("Failed", data.error || "");
+    } catch { toast.error("Request failed", "Check your connection"); }
     setCleaning(false);
   };
-
   return (
-    <>
-      {info && <div className="text-sm mb-2.5" style={{ color: t.text }}>{info.unverifiedTotal || 0} unverified accounts total · {info.staleCount || 0} safe to remove after {info.cutoffDays || 30} days</div>}
-      {result && <div className="py-2 px-3 rounded-lg mb-2.5 text-sm" style={{ background: result.type === "success" ? (dark ? "rgba(110,231,183,.08)" : "#ecfdf5") : (dark ? "rgba(220,38,38,.08)" : "#fef2f2"), color: result.type === "success" ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fca5a5" : "#dc2626") }}>{result.type === "success" ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>} {result.text}</div>}
-      <button onClick={run} disabled={cleaning} className="adm-btn-primary" style={{ opacity: cleaning ? .5 : 1 }}>{cleaning ? "Cleaning..." : "Clean Up Stale Accounts"}</button>
-    </>
+    <Row id="set-cleanup" icon={I_BROOM} title="Clean up stale accounts" sub={info ? `${info.unverifiedTotal || 0} unverified · ${info.staleCount || 0} safe to remove after ${info.cutoffDays || 30} days` : "Unverified accounts that never came back"} dark={dark} t={t}
+      right={<button type="button" onClick={run} disabled={cleaning || !info?.staleCount} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: info?.staleCount ? t.accent : t.textMuted, opacity: cleaning ? .5 : 1 }}>{cleaning ? "Cleaning…" : "Clean up"}</button>} />
   );
 }
 
+const I_MAIL = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>;
+const I_SHARE = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>;
+const I_GIFT = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>;
+const I_BROOM = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 3l-7 7M4 21l6-6M9 15l-3-3 6-6 3 3z"/><path d="M4 21h5l2-2-5-5-2 2z"/></svg>;
+
 export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, setDark, onLogout, notifPrefs, updateNotifPref }) {
-  const confirm = useConfirm();
   const [social, setSocial] = useState({ social_instagram: "", social_twitter: "", social_whatsapp_support: "", social_whatsapp_channel: "", social_telegram_support: "", social_tiktok: "", discord_bot_url: "" });
   const [emails, setEmails] = useState({ site_email_general: "", site_email_support: "" });
   const [socialLoading, setSocialLoading] = useState(true);
@@ -124,7 +126,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
   // Profile edit
   const [editName, setEditName] = useState(admin?.name || "");
   const [editEmail, setEditEmail] = useState(admin?.email || "");
-  const [profileEditing, setProfileEditing] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState(null);
 
@@ -135,7 +137,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
     try {
       const res = await fetch("/api/auth/admin/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update-profile", name: editName, email: editEmail }) });
       const data = await res.json();
-      if (res.ok) { setProfileMsg({ type: "success", text: "Profile updated" }); setProfileEditing(false); } else setProfileMsg({ type: "error", text: data.error || "Failed" });
+      if (res.ok) { setProfileMsg({ type: "success", text: "Profile updated" }); setProfileModalOpen(false); } else setProfileMsg({ type: "error", text: data.error || "Failed" });
     } catch { setProfileMsg({ type: "error", text: "Request failed" }); }
     setProfileSaving(false);
   };
@@ -162,167 +164,94 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
   };
 
   const cardBg = t.cardBg;
-  const cardBorder = `0.5px solid ${t.cardBorder}`;
   const admInputStyle = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
+  const card = { background: cardBg, border: `1px solid ${t.cardBorder}` };
+  const initials = (admin?.name || "A").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+  const notifOn = notifPrefs ? Object.values(notifPrefs).filter(Boolean).length : null;
+  const themeBtn = (id, label, icon) => (
+    <button key={id} onClick={() => applyTheme(id)} aria-pressed={themeMode === id} className="inline-flex items-center gap-1 h-[26px] px-2.5 rounded-full border-none font-[inherit] text-[11.5px] font-semibold cursor-pointer" style={themeMode === id ? { background: dark ? "#161b2e" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.12)" } : { background: "transparent", color: t.textMuted }}>{icon}{label}</button>
+  );
 
   return (
     <>
       <div className="adm-header">
         <div className="adm-title" style={{ color: t.text }}>Settings</div>
-        <div className="adm-subtitle" style={{ color: t.textMuted }}>Admin preferences and configuration</div>
+        <div className="adm-subtitle" style={{ color: t.textMuted }}>Your account, and what the site shows and sends.</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {/* ── PROFILE HERO ── */}
-      <div className="mb-4 overflow-hidden rounded-[14px] max-desktop:rounded-xl" style={{ background: cardBg, border: cardBorder }}>
-        <div className="h-[72px] max-md:h-16" style={{ background: "linear-gradient(135deg, #c47d8e 0%, #a3586b 50%, #8b5e6b 100%)" }} />
-        <div className="px-5 pb-5 max-desktop:px-4 max-desktop:pb-4">
-          <div className="w-[56px] h-[56px] max-md:w-12 max-md:h-12 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg border-[3px] -mt-8 max-md:-mt-7 mb-3" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)", borderColor: dark ? "#0e1225" : "#f3f0ec" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <div className="desktop:grid desktop:grid-cols-2 desktop:gap-x-4 desktop:items-start">
+        <div>
+          {/* ── Profile ── */}
+          <div className="flex items-center gap-3 rounded-[14px] p-3.5 mb-2" style={card}>
+            <div className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center text-white text-[17px] font-bold shrink-0" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }}>{initials}</div>
+            <div className="flex flex-col gap-[3px] min-w-0">
+              <div className="text-[16px] font-semibold truncate" style={{ color: t.text }}>{admin?.name || "Admin"}</div>
+              <div className="text-[11.5px] font-semibold uppercase tracking-[.6px]" style={{ color: t.accent }}>{admin?.role || "admin"}</div>
+            </div>
           </div>
-          {profileMsg && <InlineAlert type={profileMsg.type} dark={dark} className="mb-3">{profileMsg.text}</InlineAlert>}
-          {profileEditing ? (
-            <>
-              <div className="mb-3">
-                <label className="text-sm block mb-1" style={{ color: t.textMuted }}>Name</label>
-                <input value={editName} onChange={e => setEditName(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg text-[15px] outline-none border" style={admInputStyle} />
+          <div className="rounded-[14px] px-3.5 mb-[18px]" style={card}>
+            {[["Email", admin?.email || "—"], ["Role", admin?.role || "admin"]].map(([label, val], i) => (
+              <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px]" style={{ color: t.textMuted, borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}>
+                <span>{label}</span>
+                <b className="text-[13px] font-semibold truncate" style={{ color: t.text }}>{val}</b>
               </div>
-              <div className="mb-3">
-                <label className="text-sm block mb-1" style={{ color: t.textMuted }}>Email</label>
-                <input value={editEmail} onChange={e => setEditEmail(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg text-[15px] outline-none border" style={admInputStyle} />
-              </div>
-              <div className="mb-2">
-                <div className="text-[13px] uppercase tracking-wide mb-0.5" style={{ color: t.textMuted }}>Role</div>
-                <div className="text-[15px] font-medium" style={{ color: t.textMuted }}>{admin?.role || "admin"} (cannot be changed)</div>
-              </div>
-              <div className="flex gap-2 mt-3.5">
-                <button onClick={saveProfile} disabled={profileSaving} className="adm-btn-primary" style={{ opacity: profileSaving ? .5 : 1 }}>{profileSaving ? "Saving..." : "Save"}</button>
-                <button onClick={() => { setProfileEditing(false); setEditName(admin?.name || ""); setEditEmail(admin?.email || ""); setProfileMsg(null); }} className="py-2 px-4 rounded-lg bg-none text-sm cursor-pointer transition-transform duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textSoft }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-lg font-semibold" style={{ color: t.text }}>{admin?.name || "Admin"}</div>
-                <button onClick={() => setProfileEditing(true)} className="text-[13px] bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px flex items-center gap-1" style={{ color: t.accent }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-              </div>
-              <div className="grid grid-cols-3 max-md:grid-cols-1 gap-y-3 gap-x-6 mt-3">
-                {[["Email", admin?.email || ""], ["Role", admin?.role || "admin"]].map(([label, val]) => (
-                  <div key={label}><div className="text-[11px] font-semibold tracking-[.8px] uppercase mb-[3px]" style={{ color: t.textMuted }}>{label}</div><div className="text-[15px] font-medium" style={{ color: t.text }}>{val}</div></div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* ── SETTINGS GRID ── */}
-      <div className="grid grid-cols-2 max-md:grid-cols-1 gap-4">
-
-        {/* ── NOTIFICATIONS ── */}
-        <div className="set-card" style={{ background: cardBg, border: cardBorder, cursor: "pointer" }} onClick={() => setNotifModalOpen(true)}>
-          <div className="flex items-center gap-3 p-4">
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-semibold" style={{ color: t.text }}>Notifications</div>
-              <div className="text-[12.5px] mt-0.5" style={{ color: t.textMuted }}>{notifPrefs ? `${Object.values(notifPrefs).filter(Boolean).length} of 6 alerts enabled` : "Configure alert preferences"}</div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-        </div>
-
-        {/* ── CHANGE PASSWORD ── */}
-        <div className="set-card" style={{ background: cardBg, border: cardBorder, cursor: "pointer" }} onClick={() => setPwModalOpen(true)}>
-          <div className="flex items-center gap-3 p-4">
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-semibold" style={{ color: t.text }}>Change password</div>
-              <div className="text-[12.5px] mt-0.5" style={{ color: t.textMuted }}>Update your admin password regularly</div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-        </div>
-
-        {/* ── CONTACT EMAILS ── */}
-        <div className="set-card" style={{ background: cardBg, border: cardBorder, cursor: "pointer" }} onClick={() => setEmailModalOpen(true)}>
-          <div className="flex items-center gap-3 p-4">
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-semibold" style={{ color: t.text }}>Contact emails</div>
-              <div className="text-[12.5px] mt-0.5 truncate" style={{ color: t.textMuted }}>{[emails.site_email_general, emails.site_email_support].filter(Boolean).join(" · ") || "Not configured"}</div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-        </div>
-
-        {/* ── SOCIAL LINKS ── */}
-        <div className="set-card" style={{ background: cardBg, border: cardBorder, cursor: "pointer" }} onClick={() => setSocialModalOpen(true)}>
-          <div className="flex items-center gap-3 p-4">
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-semibold" style={{ color: t.text }}>Social links</div>
-              <div className="text-[12.5px] mt-0.5 truncate" style={{ color: t.textMuted }}>{[social.social_instagram && "Instagram", social.social_twitter && "X", social.social_tiktok && "TikTok", social.social_whatsapp_support && "WhatsApp", social.social_telegram_support && "Telegram"].filter(Boolean).join(" · ") || "Not configured"}</div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-        </div>
-
-        {/* ── WIN-BACK CREDITS ── */}
-        <div className="set-card" style={{ background: cardBg, border: cardBorder, cursor: "pointer" }} onClick={() => setWinbackModalOpen(true)}>
-          <div className="flex items-center gap-3 p-4">
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-semibold" style={{ color: t.text }}>Win-back credits</div>
-              <div className="text-[12.5px] mt-0.5" style={{ color: t.textMuted }}>Day 30: {winback.winback30_pct || 15}% · Day 60: {winback.winback60_pct || 25}% · Expires {winback.winback_credit_expiry_days || 7}d</div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-        </div>
-
-        {/* ── THEME ── */}
-        <div className="set-card" style={{ background: cardBg, border: cardBorder }}>
-          <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <div className="set-card-title" style={{ color: t.textMuted }}>Theme</div>
-            <div className="set-card-desc" style={{ color: t.textMuted }}>Choose how Nitro looks for you.</div>
-          </div>
-          <div className="set-card-body">
-          <div className="flex gap-2">
-            {[
-              ["day", "Light", <svg key="s" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>],
-              ["night", "Dark", <svg key="m" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>],
-              ["auto", "Auto", <svg key="a" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="currentColor" opacity=".4"/></svg>],
-            ].map(([id, lb, icon]) => (
-              <button key={id} onClick={() => applyTheme(id)} className="flex-1 py-3 px-2.5 rounded-[10px] border text-[15px] flex items-center justify-center gap-1.5" style={{ borderColor: themeMode === id ? t.accent : t.cardBorder, background: themeMode === id ? (dark ? "#2a1a22" : "#fdf2f4") : (dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.8)"), color: themeMode === id ? t.accent : t.textSoft, fontWeight: themeMode === id ? 600 : 500 }}>{icon} {lb}</button>
             ))}
-          </div>
-          </div>
-        </div>
-
-        {/* ── CLEANUP ── */}
-        <div className="set-card" style={{ background: cardBg, border: cardBorder }}>
-          <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <div className="set-card-title" style={{ color: t.textMuted }}>Cleanup</div>
-            <div className="set-card-desc" style={{ color: t.textMuted }}>Free up space by removing stale accounts.</div>
-          </div>
-          <div className="set-card-body">
-          <div className="text-sm mb-3 leading-normal" style={{ color: t.textMuted }}>Remove abandoned, unverified signups older than 30 days only when they have no recent activity or related records.</div>
-          <CleanupButton dark={dark} t={t} />
+            <button type="button" onClick={() => { setProfileMsg(null); setProfileModalOpen(true); }} className="w-full text-left py-2 text-[12.5px] font-semibold bg-transparent border-none cursor-pointer font-[inherit]" style={{ color: t.accent, borderTop: `1px solid ${t.cardBorder}` }}>Edit name or email</button>
           </div>
         </div>
 
+        <div>
+          <SectionHead>Account</SectionHead>
+          <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
+            <Row id="set-change-password" first icon={I_LOCK} title="Change password" sub="Keep your admin login secure" onClick={() => { setAdmPwMsg(null); setPwModalOpen(true); }} dark={dark} t={t} />
+            <Row id="set-notifications" icon={I_BELL} title="Notifications" sub={notifOn != null ? `${notifOn} of 6 alerts on` : "Which events alert you"} onClick={() => setNotifModalOpen(true)} dark={dark} t={t} />
+          </div>
+        </div>
+
+        <div>
+          <SectionHead>Site</SectionHead>
+          <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
+            <Row id="set-emails" first icon={I_MAIL} title="Contact emails" sub={socialLoading ? "Loading…" : (emails.site_email_general || "Not set")} onClick={() => { setEmailMsg(null); setEmailModalOpen(true); }} dark={dark} t={t} />
+            <Row id="set-social" icon={I_SHARE} title="Social links" sub="Instagram, X, TikTok, WhatsApp, Telegram, the Discord bot" onClick={() => { setSocialMsg(null); setSocialModalOpen(true); }} dark={dark} t={t} />
+            <Row id="set-winback" icon={I_GIFT} title="Win-back credits" sub={`Day 30: ${winback.winback30_pct || 0}% · Day 60: ${winback.winback60_pct || 0}% · expire in ${winback.winback_credit_expiry_days || 7} days`} onClick={() => { setWinbackMsg(null); setWinbackModalOpen(true); }} dark={dark} t={t} />
+          </div>
+        </div>
+
+        <div>
+          <SectionHead>Appearance</SectionHead>
+          <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
+            <Row id="set-theme" first icon={dark ? I_MOON : I_SUN} title="Theme" sub={themeMode === "auto" ? "Auto: light 6:30am to 6:30pm, dark otherwise" : "Choose how the admin looks"} dark={dark} t={t}
+              right={<span className="inline-flex p-[3px] rounded-full" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", border: `1px solid ${t.cardBorder}` }}>{themeBtn("auto", "Auto", I_AUTO)}{themeBtn("day", "Light", I_SUN)}{themeBtn("night", "Dark", I_MOON)}</span>} />
+          </div>
+          <SectionHead>System</SectionHead>
+          <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
+            <Row id="set-status" first icon={I_PULSE} title="System status" sub="Check that every Nitro service is running" href={SITE.status} right={<span className="w-[9px] h-[9px] rounded-full" style={{ background: "#059669", boxShadow: "0 0 0 3px rgba(5,150,105,.15)" }} />} dark={dark} t={t} />
+            <CleanupRow dark={dark} t={t} />
+          </div>
+        </div>
+
+        <div className="desktop:col-span-2">
+          <div className="rounded-[14px] overflow-hidden mb-4" style={card}>
+            <Row id="set-logout" first icon={I_OUT} title="Log out" sub="Of this device" onClick={onLogout} right={I_CHEV} dark={dark} t={t} />
+          </div>
+        </div>
       </div>
 
-      {/* ── MODALS ── */}
+      <SettingsModal open={profileModalOpen} onClose={() => setProfileModalOpen(false)} title="Edit profile" dark={dark} t={t}>
+        {profileMsg && <InlineAlert type={profileMsg.type} dark={dark} className="mb-3">{profileMsg.text}</InlineAlert>}
+        <div className="mb-3">
+          <label className="text-sm block mb-1" style={{ color: t.textMuted }}>Name</label>
+          <input value={editName} onChange={e => setEditName(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg text-[15px] outline-none border" style={admInputStyle} />
+        </div>
+        <div className="mb-3">
+          <label className="text-sm block mb-1" style={{ color: t.textMuted }}>Email</label>
+          <input value={editEmail} onChange={e => setEditEmail(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg text-[15px] outline-none border" style={admInputStyle} />
+        </div>
+        <div className="text-[12.5px] mb-4" style={{ color: t.textMuted }}>Role: <b style={{ color: t.text }}>{admin?.role || "admin"}</b> — set by the owner, not here.</div>
+        <button onClick={saveProfile} disabled={profileSaving} className="adm-btn-primary" style={{ opacity: profileSaving ? .5 : 1 }}>{profileSaving ? "Saving…" : "Save changes"}</button>
+      </SettingsModal>
+
       <SettingsModal open={pwModalOpen} onClose={() => setPwModalOpen(false)} title="Change password" dark={dark} t={t}>
         {admPwMsg && <InlineAlert type={admPwMsg.type} dark={dark} className="mb-3">{admPwMsg.text}</InlineAlert>}
         <div className="mb-3">
@@ -445,14 +374,6 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         )}
       </SettingsModal>
 
-      {/* ── LOG OUT ── */}
-      <div className="mt-4">
-        <button onClick={onLogout} className="flex items-center justify-center gap-2 w-full py-3 px-5 rounded-[10px] bg-none cursor-pointer text-[15px] font-semibold font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)"}`, color: dark ? "#fca5a5" : "#dc2626" }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          Log out
-        </button>
-      </div>
     </>
   );
 }
-

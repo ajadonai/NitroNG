@@ -371,3 +371,6 @@ export function SettingsSidebar({ user, dark, t }) {
     </div>
   );
 }
+
+// Shared with the admin Settings page so both read the same.
+export { Row as SettingsRow, SectionHead as SettingsSectionHead, I_LOCK, I_BELL, I_PULSE, I_OUT, I_CHEV, I_SUN, I_MOON, I_AUTO };
