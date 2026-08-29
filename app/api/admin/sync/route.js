@@ -11,17 +11,44 @@ import { lockOrderSettlementAccount, ORDER_SETTLEMENT_ACCOUNT_STATUSES } from '@
 
 export const maxDuration = 60;
 
+// What the last catalogue sync did, per provider, for the Providers page.
+export async function recordLastSync(providerId, summary) {
+  const key = `sync_last_${providerId}`;
+  const value = JSON.stringify({ at: new Date().toISOString(), ...summary });
+  try { await prisma.setting.upsert({ where: { key }, update: { value }, create: { key, value } }); } catch {}
+}
+
 export async function GET() {
   const { admin, error } = await requireAdmin('services');
   if (error) return error;
 
-  return Response.json({
-    status: {
-      mtp: isProviderConfigured('mtp'),
-      jap: isProviderConfigured('jap'),
-      dao: isProviderConfigured('dao'),
-    },
-  });
+  const ids = ['mtp', 'jap', 'dao'];
+  const status = Object.fromEntries(ids.map(id => [id, isProviderConfigured(id)]));
+  // The Providers page: balance, how much of each catalogue is on the menu, orders sent, last sync.
+  let providers = {};
+  try {
+    const [balRow, syncRows, menu, catalogue, orders] = await Promise.all([
+      prisma.setting.findUnique({ where: { key: 'provider_balances' } }),
+      prisma.setting.findMany({ where: { key: { in: ids.map(id => `sync_last_${id}`) } } }),
+      prisma.service.groupBy({ by: ['provider'], where: { enabled: true }, _count: true }),
+      prisma.service.groupBy({ by: ['provider'], _count: true }),
+      prisma.$queryRaw`select s.provider, count(*)::int as n from orders o join services s on s.id = o."serviceId" group by s.provider`,
+    ]);
+    let balances = {}; try { balances = JSON.parse(balRow?.value || '{}'); } catch {}
+    const lastSync = {}; syncRows.forEach(r => { try { lastSync[r.key.replace('sync_last_', '')] = JSON.parse(r.value); } catch {} });
+    providers = Object.fromEntries(ids.map(id => [id, {
+      configured: status[id],
+      name: getProviderName(id),
+      balance: typeof balances[id]?.balance === 'number' ? balances[id].balance : null,
+      checkedAt: balances.checkedAt || null,
+      menu: menu.find(m => m.provider === id)?._count || 0,
+      catalogue: catalogue.find(m => m.provider === id)?._count || 0,
+      orders: Number(orders.find(o => o.provider === id)?.n || 0),
+      lastSync: lastSync[id] || null,
+    }]));
+  } catch (err) { log.error('Providers', err.message); }
+
+  return Response.json({ status, providers });
 }
 
 export async function POST(req) {
@@ -106,6 +133,7 @@ export async function POST(req) {
       await logActivity(admin.name, `Synced from ${getProviderName(providerId)}: ${updated} updated, ${skipped} skipped, ${disabled} disabled (removed by provider)`, 'service');
 
       if (updated > 0 || disabled > 0) invalidateServiceCatalogue();
+      await recordLastSync(providerId, { total: providerServices.length, updated, skipped, disabled, by: admin.name });
       return Response.json({ success: true, provider: providerId, total: providerServices.length, updated, skipped, disabled });
     }
 

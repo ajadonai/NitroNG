@@ -230,6 +230,11 @@ export async function GET(req) {
     });
 
     if (updated > 0 || created > 0 || disabled > 0) invalidateServiceCatalogue();
+    try {
+      const key = `sync_last_${next}`;
+      const value = JSON.stringify({ at: new Date().toISOString(), total: providerServices.length, updated, created, disabled, by: 'nightly' });
+      await prisma.setting.upsert({ where: { key }, update: { value }, create: { key, value } });
+    } catch {}
 
     log.info('CronSync', `${getProviderName(next)}: ${updated} updated, ${created} added, ${disabled} disabled`
       + `${malformed ? `, ${malformed} malformed` : ''}${deferred ? `, ${deferred} new deferred to next run` : ''}`
