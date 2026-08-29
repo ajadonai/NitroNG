@@ -142,6 +142,13 @@ export function AdminCreateOrderPage({ dark, t }) {
   const totalCost = costPer1kNgn * qtyNum / 1000 * nLinks;
 
   const showTraffic = !!selectedTier?.trafficTargeting;
+  // Same rule as the customer form: the provider's API type says what the order needs typed in,
+  // and reviews need their text. The customComments flag is a manual override on top.
+  const apiType = (selectedTier?.apiType || tierService?.apiType || "").toLowerCase();
+  const groupName = (selectedGroup?.name || "").toLowerCase();
+  const typedInput = selectedTier?.customComments || apiType.includes("custom comment") || apiType.includes("comment replies") || (groupName.includes("review") && !groupName.includes("review like")) ? "comments"
+    : apiType.includes("mention") ? "mentions" : apiType === "poll" ? "poll" : apiType === "seo" ? "keywords" : null;
+  const typedLabel = { comments: ["Comments", "one per line", "One comment per line"], mentions: ["Usernames to mention", "one per line, without @", "username1\nusername2"], poll: ["Poll answer", "the option number", "1"], keywords: ["Keywords", "one per line", "best smm panel nigeria"] }[typedInput] || null;
   const trafficValid = !showTraffic || (
     traffic.country.trim().length >= 2 && traffic.country.trim().length <= 3 && traffic.device &&
     (traffic.trafficType === "blank" ||
@@ -545,10 +552,10 @@ export function AdminCreateOrderPage({ dark, t }) {
                 </div>
               </div>
             </div>
-            {selectedTier?.customComments && (
+            {typedLabel && (
               <div className="co-fld">
-                <label>Comments <em>one per line</em></label>
-                <textarea value={comments} onChange={e => setComments(e.target.value)} placeholder="One comment per line" rows={4} className="co-ta" />
+                <label>{typedLabel[0]} <em>{typedLabel[1]}</em></label>
+                <textarea value={comments} onChange={e => setComments(e.target.value)} placeholder={typedLabel[2]} rows={typedInput === "poll" ? 1 : 4} className="co-ta" />
               </div>
             )}
             {showTraffic && (

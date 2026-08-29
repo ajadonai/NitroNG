@@ -15,7 +15,7 @@ export async function GET() {
           orderBy: { sortOrder: 'asc' },
           include: {
             service: {
-              select: { id: true, apiId: true, name: true, category: true, provider: true, costPer1k: true, min: true, max: true, refill: true, avgTime: true },
+              select: { id: true, apiId: true, name: true, category: true, provider: true, costPer1k: true, min: true, max: true, refill: true, avgTime: true, apiType: true },
             },
           },
         },
@@ -49,6 +49,7 @@ export async function GET() {
           enabled: t.enabled,
           pricePinned: t.pricePinned,
           customComments: t.customComments,
+          apiType: t.service?.apiType || 'Default',
           trafficTargeting: t.trafficTargeting,
           sortOrder: t.sortOrder,
           serviceId: t.serviceId,
