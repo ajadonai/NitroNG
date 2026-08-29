@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useRef, useTransition, Fragment } from "react";
+import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
 import { NitroWordmark } from "./nitro-logo";
@@ -205,7 +206,13 @@ function WaitlistPage({ feature, dark, t }) {
     setSubmitting(false);
   };
 
-  if (loading) return <div className="flex justify-center py-20"><div className={`skel-bone w-48 h-6 rounded-lg ${dark ? "skel-dark" : "skel-light"}`} /></div>;
+  if (loading) return (
+    <div className="rounded-[14px] max-md:rounded-xl overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
+      <div className="py-10 px-6 max-md:py-8 max-md:px-4 flex flex-col items-center gap-3">
+        <Bone dark={dark} w={56} h={56} r={28} /><Bone dark={dark} w={220} h={18} /><Bone dark={dark} w={320} h={10} style={{ maxWidth: "100%" }} /><Bone dark={dark} w={260} h={10} style={{ maxWidth: "100%" }} /><Bone dark={dark} w={320} h={44} r={10} style={{ maxWidth: "100%", marginTop: 8 }} />
+      </div>
+    </div>
+  );
 
   return (
     <div className="rounded-[14px] max-md:rounded-xl overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>

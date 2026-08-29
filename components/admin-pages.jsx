@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from "react";
+import { SkelFacts, SkelList } from "./skeleton";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
@@ -425,7 +426,7 @@ function FinanceOverviewTab({ dark, t }) {
     <div className="fo" style={vars}>
       <style>{FO_CSS}</style>
       <div className="fo-bar"><DateRangePicker dark={dark} t={t} value={dateValue} onChange={changeDateValue} defaultPreset="This month" /></div>
-      {loading ? <>{bone(84)}{bone(120)}{bone(230)}<div className="fo-cols">{bone(220)}{bone(220)}</div></> : <>
+      {loading ? <><SkelFacts dark={dark} /><SkelList dark={dark} rows={1} title avatar={false} rowH={90} /><SkelList dark={dark} rows={1} title avatar={false} rowH={200} /><div className="fo-cols"><SkelList dark={dark} rows={5} title avatar={false} rowH={38} /><SkelList dark={dark} rows={5} title avatar={false} rowH={38} /></div></> : <>
         <div className="fo-stats">
           <div className="fo-stt"><b className="m">{fN(net)}</b><span>Net revenue</span>{delta(net, s.prev?.netRevenue) || <i>gross {fN(gross)}</i>}</div>
           <div className="fo-stt"><b className={"m" + (profit >= 0 ? " ok" : " bad")}>{fN(profit)}</b><span>Profit</span><i>{markup}% on cost{s.prev ? <> · {delta(profit, s.prev.profit)}</> : ""}</i></div>
@@ -704,7 +705,7 @@ function FinanceBreakdownTab({ dark, t, admin }) {
           )}
         </div>
       </div>
-      {loading ? <><div className="fo-cols">{bone(220)}{bone(220)}</div><div className="fo-cols">{bone(220)}{bone(220)}</div></> : <>
+      {loading ? <><div className="fo-cols"><SkelList dark={dark} rows={5} title avatar={false} rowH={38} /><SkelList dark={dark} rows={5} title avatar={false} rowH={38} /></div><div className="fo-cols"><SkelList dark={dark} rows={5} title avatar={false} rowH={38} /><SkelList dark={dark} rows={5} title avatar={false} rowH={38} /></div></> : <>
         <div className="fo-cols">
           <Ledger title="Revenue" cnt="what customers paid" rows={[
             ["Gross revenue", fN(gross), "before refunds"],
@@ -837,7 +838,7 @@ function FinanceRewardsTab({ dark, t }) {
     <div className="fo fb" style={vars}>
       <style>{FO_CSS}{FB_CSS}</style>
       <div className="fo-bar"><DateRangePicker dark={dark} t={t} value={dateValue} onChange={changeDateValue} defaultPreset="This month" /></div>
-      {loading ? <>{bone(84)}<div className="fo-cols">{bone(220)}{bone(220)}</div></> : !data ? <div className="fo-empty">Could not load rewards data.</div> : <>
+      {loading ? <><SkelFacts dark={dark} /><div className="fo-cols"><SkelList dark={dark} rows={5} title avatar={false} rowH={38} /><SkelList dark={dark} rows={5} title avatar={false} rowH={38} /></div></> : !data ? <div className="fo-empty">Could not load rewards data.</div> : <>
         <div className="fo-stats">
           <div className="fo-stt"><b className="m">{n(owed)}</b><span>Points owed</span><i>redeemable at checkout today</i></div>
           <div className="fo-stt"><b className="m">{n(accrual.kobo)}</b><span>Reward cost</span><i>points issued and discounts given</i></div>

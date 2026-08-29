@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from "react";
+import { SkelList } from "./skeleton";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
@@ -319,6 +320,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
   const toast = useToast();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
   const [filter, setFilter] = useState(initialFilter || "all");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState(null);
@@ -336,6 +338,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
     if (background && (document.visibilityState !== "visible" || abortRef.current)) return;
     if (!background) abortRef.current?.abort();
     const controller = new AbortController();
+    setFetching(true);
     abortRef.current = controller;
     const params = new URLSearchParams();
     if (q?.trim().length >= 2) params.set('search', q.trim());
@@ -354,6 +357,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
       setLoading(false);
     }).catch(e => { if (e.name !== 'AbortError') setLoading(false); }).finally(() => {
       if (abortRef.current === controller) abortRef.current = null;
+      if (abortRef.current === null) setFetching(false);
     });
   }, []);
 
@@ -589,9 +593,9 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
       </div>
 
       {/* Orders list */}
-      <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+      <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, opacity: fetching && !loading ? .55 : 1, transition: "opacity .2s" }}>
         {loading ? (
-          <div className="adm-empty">{[1,2,3,4,5].map(i => <div key={i} className={`skel-bone h-[52px] rounded-lg mb-1.5 ${dark ? "skel-dark" : "skel-light"}`} />)}</div>
+          <div className="px-4"><SkelList dark={dark} rows={6} bare avatar="square" rowH={62} /></div>
         ) : paged.length > 0 ? paged.map((item, idx) => {
           const createdOf = (g) => g ? (g.type === "batch" ? g.orders[0]?.created : g.order.created) : null;
           const dk = dayKeyAdm(createdOf(item));

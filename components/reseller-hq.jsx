@@ -7,6 +7,7 @@
 // the questions that matter. Joining is a WhatsApp message and a switch on our
 // side; the key appears here and in Settings once approved. No child panel.
 import { useEffect, useState } from 'react';
+import { Bone } from "./skeleton";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { useToast } from './toast';
@@ -193,7 +194,7 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
       <div className="rhq-phead"><div><span className="rhq-pill">Reseller HQ</span><h1 className="rhq-h1" style={{ fontSize: 22, margin: '8px 0 2px' }}>{wholesale ? 'Wholesale is on.' : 'Your API is ready.'}</h1><p>{wholesale ? 'Everything you need, in one place.' : 'Retail prices today. Wholesale is one message away.'}</p></div><span className="rhq-badge-sm big">{wholesale ? (full ? 'FULL CATALOGUE' : 'WHOLESALE') : 'RETAIL'}</span></div>
       <div className="rhq-keystrip">
         <span className="rhq-kicon">{I(P.key, 14)}</span><span className="rhq-klabel">API key</span>
-        <code className="m">{key ? (shown ? key : masked) : 'Loading…'}</code>
+        <code className="m">{key ? (shown ? key : masked) : <Bone dark={dark} w={220} h={12} style={{ display: "inline-block", verticalAlign: "middle", maxWidth: "100%" }} />}</code>
         <span className="rhq-kb">
           <button type="button" className="rhq-btn-g" onClick={() => setShown(v => !v)} disabled={!key}>{I(P.eye, 12)} {shown ? 'Hide' : 'Show'}</button>
           <button type="button" className="rhq-btn-g" onClick={copyKey} disabled={!key}>{I(P.copy, 12)} Copy</button>

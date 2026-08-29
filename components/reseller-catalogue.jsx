@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from "react";
+import { SkelList } from "./skeleton";
 import { copyText } from '@/lib/clipboard';
 
 // Read-only catalogue for granted resellers. Browse and copy IDs here; ordering
@@ -10,9 +11,6 @@ const GRADE_META = {
   basic: { dot: "#eab308", label: "Basic", letter: "B" },
 };
 
-function Spinner({ size = 16, color = "currentColor" }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="animate-spin"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" strokeLinecap="round" opacity=".25" /><path d="M12 2a10 10 0 0 1 10 10" stroke={color} strokeWidth="3" strokeLinecap="round" /></svg>;
-}
 
 const naira = (n) => `₦${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
@@ -390,11 +388,12 @@ export default function ResellerCataloguePage({ dark, t }) {
                       {catRows[c.name].rows.length
                         ? catRows[c.name].rows.map(fullRow)
                         : <div className="py-6 px-4 text-[13px]" style={{ color: t.textMuted }}>Nothing available in this category right now.</div>}
+                      {catRows[c.name].loadingMore && <SkelList dark={dark} rows={3} bare avatar={false} rowH={44} />}
                       {catRows[c.name].hasMore && (
                         <button onClick={() => loadMore(c.name)} disabled={catRows[c.name].loadingMore}
                           className="w-full py-3 text-[13px] font-semibold cursor-pointer border-none"
                           style={{ background: dark ? "rgba(196,125,142,.07)" : "rgba(196,125,142,.05)", color: t.accent, borderTop: `1px solid ${dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"}` }}>
-                          {catRows[c.name].loadingMore ? <Spinner size={13} color={t.accent} /> : `Show more (${catRows[c.name].rows.length.toLocaleString()} of ${c.count.toLocaleString()})`}
+                          {catRows[c.name].loadingMore ? "Loading more…" : `Show more (${catRows[c.name].rows.length.toLocaleString()} of ${c.count.toLocaleString()})`}
                         </button>
                       )}
                     </>)

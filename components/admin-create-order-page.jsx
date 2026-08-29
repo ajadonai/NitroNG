@@ -1,5 +1,6 @@
 'use client';
 import { TRAFFIC_COUNTRIES, TRAFFIC_CONTINENTS } from "../lib/traffic-targets";
+import { Bone } from "./skeleton";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useToast } from "./toast";
@@ -31,6 +32,7 @@ export function AdminCreateOrderPage({ dark, t }) {
   const [searching, setSearching] = useState(false);
 
   const [catalog, setCatalog] = useState([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
   const [platform, setPlatform] = useState("");
   const [groupId, setGroupId] = useState("");
   const [tierId, setTierId] = useState("");
@@ -70,7 +72,7 @@ export function AdminCreateOrderPage({ dark, t }) {
   const debounceRef = useRef(null);
 
   useEffect(() => {
-    fetch("/api/admin/service-groups").then(r => r.json()).then(d => setCatalog(d.groups || [])).catch(() => {});
+    fetch("/api/admin/service-groups").then(r => r.json()).then(d => setCatalog(d.groups || [])).catch(() => {}).finally(() => setCatalogLoading(false));
   }, []);
 
   useEffect(() => {
@@ -484,14 +486,14 @@ export function AdminCreateOrderPage({ dark, t }) {
             <div className="co-row2">
               <div className="co-fld">
                 <label>Platform</label>
-                <div className={"co-selw" + (platform ? " ic" : "")}>
+                {catalogLoading ? <Bone dark={dark} h={42} r={10} /> : <div className={"co-selw" + (platform ? " ic" : "")}>
                   {platform && <span className="co-pi"><PlatformIcon platform={platform} dark={dark} size={15} /></span>}
                   <select value={platform} onChange={e => { setPlatform(e.target.value); setGroupId(""); setTierId(""); }} className="co-sel">
                     <option value="">Pick a platform</option>
                     {platforms.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                   {chevron}
-                </div>
+                </div>}
               </div>
               <div className="co-fld">
                 <label>Service</label>

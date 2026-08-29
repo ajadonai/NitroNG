@@ -1,5 +1,6 @@
 'use client';
 import { Fragment, useState, useEffect, useCallback, useRef } from "react";
+import { SkelFacts, SkelBar, SkelList, Bone } from "./skeleton";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
@@ -358,7 +359,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {loading ? <>{bone(84)}{bone(240)}</> : <>
+      {loading ? <><SkelFacts dark={dark} /><SkelList dark={dark} rows={4} title rowH={62} /><SkelList dark={dark} rows={5} title avatar={false} rowH={40} /></> : <>
         <div className="tm-stats">
           <div className="tm-stt"><b className="m">{admins.length}</b><span>People</span><i>{activeToday} active today</i></div>
           {busiest.map(a => <div key={a.id} className="tm-stt"><b className="m">{actsOf(a).toLocaleString()}</b><span>{a.name}, 30 days</span><i>{actions30[a.name]?.telegram ? `${actions30[a.name].telegram} from Telegram` : "on the panel"}</i></div>)}
@@ -1082,7 +1083,7 @@ export function AdminMaintenancePage({ dark, t }) {
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {loading ? <>{bone(120)}{bone(320)}</> : <>
+      {loading ? <><SkelList dark={dark} rows={1} title avatar={false} rowH={96} /><div style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}><Bone dark={dark} w={80} h={9} /><SkelBar dark={dark} search={false} pills={6} /><Bone dark={dark} w={70} h={9} /><Bone dark={dark} h={72} r={10} /><Bone dark={dark} w={60} h={9} /><Bone dark={dark} h={150} r={12} /></div></> : <>
         <section className="mt-card">
           <header><h3>Right now</h3><span className="mt-cnt">only the owner or a superadmin can flip this</span></header>
           <div className="mt-body">
@@ -1222,7 +1223,7 @@ export function AdminAPIPage({ dark, t }) {
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {loading ? <>{bone(84)}{bone(220)}</> : <>
+      {loading ? <><SkelFacts dark={dark} /><SkelList dark={dark} rows={3} title avatar="square" rowH={66} /><SkelList dark={dark} rows={3} title avatar={false} rowH={40} /></> : <>
         <div className="pv-stats">
           <div className="pv-stt"><b className="m">${totalBal.toFixed(2)}</b><span>Across providers</span><i>{checkedAt ? `checked ${ago(checkedAt)}` : "not checked yet"}</i></div>
           <div className="pv-stt"><b className="m">{totalMenu.toLocaleString()}</b><span>Services on the menu</span><i>of {totalCat.toLocaleString()} in the catalogues</i></div>
@@ -1996,7 +1997,7 @@ export function AdminIssuesPage({ dark, t }) {
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {loading ? <>{bone(84)}{bone(220)}<div className="is-cols">{bone(200)}{bone(200)}</div></> : <>
+      {loading ? <><SkelFacts dark={dark} /><SkelList dark={dark} rows={3} title avatar={false} rowH={62} /><div className="is-cols"><SkelList dark={dark} rows={5} title avatar={false} rowH={40} /><SkelList dark={dark} rows={5} title avatar={false} rowH={40} /></div></> : <>
         <div className="is-stats">
           <div className={"is-stt" + (decisions ? " bad" : open.length ? " warn" : "")}><b className="m">{open.length}</b><span>Open</span><i>{decisions ? `${decisions} need${decisions === 1 ? "s" : ""} a decision` : open.length ? "nothing urgent" : "all clear"}</i></div>
           {balanceEntries.slice(0, 3).map(([pid, v]) => (

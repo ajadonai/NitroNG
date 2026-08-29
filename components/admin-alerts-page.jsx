@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from "react";
+import { SkelList } from "./skeleton";
 import { useConfirm } from "./confirm-dialog";
 import { fD } from "../lib/format";
 import AnnouncementBanner from "./announcement-banner";
@@ -134,7 +135,8 @@ export function AdminAlertsPage({ dark, t }) {
         <style>{CSS}</style>
 
         <section className="aa-card">
-          <header><h3>Live now</h3><span className="aa-cnt">{loading ? "Loading…" : `${live.length} ${live.length === 1 ? "notice" : "notices"}`}</span></header>
+          <header><h3>Live now</h3><span className="aa-cnt">{loading ? "" : `${live.length} ${live.length === 1 ? "notice" : "notices"}`}</span></header>
+          {loading && <div style={{ padding: "4px 16px" }}><SkelList dark={dark} rows={2} bare avatar={false} rowH={58} /></div>}
           {!loading && live.length === 0 && <div className="aa-empty">Nothing is live. Post a notice below and it shows at once.</div>}
           {live.map(a => <Row key={a.id} a={a} livePane />)}
         </section>
