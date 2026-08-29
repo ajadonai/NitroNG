@@ -21,7 +21,13 @@ async function activityFor(userIds) {
     _count: true,
     _sum: { charge: true },
   });
-  return Object.fromEntries(rows.map(r => [r.userId, { orders: r._count, spend: naira(r._sum.charge) }]));
+  const api = await prisma.order.groupBy({
+    by: ['userId'],
+    where: { userId: { in: userIds }, createdAt: { gte: since }, deletedAt: null, status: { not: 'Cancelled' }, source: 'api' },
+    _count: true,
+  }).catch(() => []);
+  const apiBy = Object.fromEntries(api.map(r => [r.userId, r._count]));
+  return Object.fromEntries(rows.map(r => [r.userId, { orders: r._count, spend: naira(r._sum.charge), apiOrders: apiBy[r.userId] || 0 }]));
 }
 
 export async function GET(req) {
@@ -118,6 +124,7 @@ export async function GET(req) {
         createdAt: p.createdAt,
         recentOrders: activity[p.userId]?.orders || 0,
         recentSpend: activity[p.userId]?.spend || 0,
+        apiOrders: activity[p.userId]?.apiOrders || 0,
       })),
     });
   } catch (err) {
