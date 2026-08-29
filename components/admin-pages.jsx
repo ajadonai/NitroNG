@@ -651,398 +651,230 @@ function FinanceBreakdownTab({ dark, t, admin }) {
     setTopupSaving(false);
   };
 
-  const green = dark ? "#6ee7b7" : "#059669";
-  const red = dark ? "#fca5a5" : "#dc2626";
-  const amber = dark ? "#fbbf24" : "#d97706";
-  const blue = dark ? "#93c5fd" : "#2563eb";
-  const cardBg = dark ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.85)";
-  const cardBorder = dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)";
-  const subText = dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)";
-  const rowBorder = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)";
-  const sectionHeading = "text-xs font-semibold uppercase tracking-[1.5px] mb-2.5";
-
-  const DropdownFilter = ({ value, onChange, options }) => (
-    <FilterDropdown dark={dark} t={t} value={value} onChange={onChange} options={options} />
-  );
-
-  const MetricCard = ({ label, value, sub, color }) => (
-    <div className="py-3.5 px-4 rounded-xl" style={{ background: cardBg, border: `0.5px solid ${cardBorder}` }}>
-      <div className="text-[10px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: subText }}>{label}</div>
-      <div className="m text-xl font-bold" style={{ color: color || t.text }}>{value}</div>
-      {sub && <div className="text-[11px] mt-[3px]" style={{ color: subText }}>{sub}</div>}
-    </div>
-  );
-
-  const MiniBar = ({ value, max, color }) => (
-    <div className="h-[3px] rounded-sm overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)" }}>
-      <div className="h-full rounded-sm" style={{ width: `${Math.min((value / (max || 1)) * 100, 100)}%`, background: color }} />
-    </div>
-  );
-
   const s = stats || {};
   const p = s.profitability || {};
   const mIn = s.moneyIn || {};
   const mOut = s.moneyOut || {};
   const wObl = s.walletObligations || {};
   const lib = s.liability || {};
-  const totalIn = (mIn.deposits || 0) + (mIn.adminCredits || 0);
-  const totalOut = (mOut.providerTopups || 0);
-  const totalWalletObl = (wObl.refunds || 0) + (wObl.couponBonuses || 0) + (wObl.referralBonuses || 0) + (wObl.adminGifts || 0);
-
+  const rev = s.revenue || {};
+  const sensitive = !!s.moneyOut;
+  const net = p.netRevenue || 0, gross = p.grossRevenue || 0, refunds = rev.refunds ?? p.totalRefunds ?? 0;
+  const cost = p.totalCost || 0, profit = p.grossProfit ?? (net - cost);
+  const cashIn = (mIn.deposits || 0) + (mIn.adminCredits || 0);
+  const cashOut = (mOut.providerTopups || 0) + (mOut.refundedToBank || 0);
+  const tiers = s.byTier || [], plats = s.byPlatform || [];
+  const maxTier = Math.max(1, ...tiers.map(x => x.revenue || 0)), maxPlat = Math.max(1, ...plats.map(x => x.revenue || 0));
+  const short = (v) => v >= 1e6 ? `₦${(v / 1e6).toFixed(2)}M` : v >= 1e3 ? `₦${Math.round(v / 1e3)}K` : `₦${Math.round(v)}`;
+  const TC = { Budget: "bud", Standard: "std", Premium: "prm" };
+  const Ledger = ({ title, cnt, rows, total }) => (
+    <section className="fo-card">
+      <header><h3>{title}</h3>{cnt && <span className="fo-cnt">{cnt}</span>}</header>
+      <div className="fo-cb tight">
+        {rows.filter(Boolean).map(([label, value, hint, cls, sub]) => (
+          <div key={label} className={"fb-lr" + (sub ? " sub" : "")}><span>{label}</span>{hint && <em>{hint}</em>}<b className={"m " + (cls || "")}>{value}</b></div>
+        ))}
+        {total && <div className="fb-lr tot"><span>{total[0]}</span><b className={"m " + (total[2] || "")}>{total[1]}</b></div>}
+      </div>
+    </section>
+  );
+  const vars = {
+    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
+    "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--bad": dark ? "#fca5a5" : "#c62828", "--cost": dark ? "#5c6170" : "#a19b93", "--in": dark ? "#a5b4fc" : "#4c62c4",
+    "--bud": dark ? "#e0a458" : "#854F0B", "--std": dark ? "#7aa2f7" : "#185FA5", "--prm": dark ? "#a78bfa" : "#534AB7", "--soft": dark ? "#111634" : "#faf9f7",
+  };
+  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   return (
-    <>
-      {/* Filters */}
-      <div className="flex gap-2 mb-5 flex-wrap justify-end">
+    <div className="fo fb" style={vars}>
+      <style>{FO_CSS}{FB_CSS}</style>
+      <div className="fo-bar">
         <DateRangePicker dark={dark} t={t} value={dateValue} onChange={setDateValue} defaultPreset="This month" />
-        <DropdownFilter value={platform} onChange={setPlatform} options={[
-          { value: "all", label: "All platforms" }, { value: "instagram", label: "Instagram" },
-          { value: "tiktok", label: "TikTok" }, { value: "youtube", label: "YouTube" },
-          { value: "twitter", label: "Twitter/X" }, { value: "telegram", label: "Telegram" },
-          { value: "facebook", label: "Facebook" }, { value: "spotify", label: "Spotify" },
+        <FilterDropdown dark={dark} t={t} value={platform} onChange={setPlatform} options={[
+          { value: "all", label: "All platforms" }, { value: "instagram", label: "Instagram" }, { value: "tiktok", label: "TikTok" }, { value: "youtube", label: "YouTube" },
+          { value: "twitter", label: "Twitter/X" }, { value: "telegram", label: "Telegram" }, { value: "facebook", label: "Facebook" }, { value: "spotify", label: "Spotify" },
         ]} />
-        <DropdownFilter value={tier} onChange={setTier} options={[
-          { value: "all", label: "All tiers" }, { value: "budget", label: "Budget" },
-          { value: "standard", label: "Standard" }, { value: "premium", label: "Premium" },
-        ]} />
-        <DropdownFilter value={provider} onChange={setProvider} options={[
-          { value: "all", label: "All providers" }, { value: "mtp", label: "MTP" },
-          { value: "jap", label: "JAP" }, { value: "dao", label: "DaoSMM" },
-        ]} />
-        {['owner', 'superadmin'].includes(admin?.role) && (
-          <div className="relative" ref={csvMenuRef}>
-            <button onClick={() => setCsvMenuOpen(o => !o)} disabled={reportLoading} className="h-9 px-3.5 rounded-lg text-xs font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px disabled:opacity-60" style={{ background: dark ? "rgba(52,211,153,.12)" : "rgba(5,150,105,.08)", border: `1px solid ${dark ? "rgba(52,211,153,.28)" : "rgba(5,150,105,.18)"}`, color: green }}>
-              {reportLoading ? "Preparing..." : "↓ Finance CSV"}
-            </button>
-            {csvMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 rounded-lg p-2.5 z-50 min-w-[180px]" style={{ background: dark ? "#1e1e2e" : "#fff", border: `1px solid ${cardBorder}`, boxShadow: "0 4px 16px rgba(0,0,0,.18)" }}>
-                <div className="text-[10px] font-semibold uppercase tracking-[1px] mb-2" style={{ color: subText }}>Include sections</div>
-                {[["wallet", "Wallet"], ["orders", "Orders"], ["points", "Nitro Points"], ["provider", "Provider Top-ups"], ["affiliate", "Affiliate"], ["liabilities", "Liabilities"]].map(([key, label]) => (
-                  <label key={key} className="flex items-center gap-2 py-1 text-xs cursor-pointer" style={{ color: t.text }}>
-                    <input type="checkbox" checked={csvSections[key]} onChange={() => setCsvSections(s => ({ ...s, [key]: !s[key] }))} className="rounded" />
-                    {label}
-                  </label>
-                ))}
-                <button onClick={downloadReport} disabled={reportLoading} className="mt-2 w-full h-8 rounded-md text-xs font-semibold cursor-pointer" style={{ background: green, color: dark ? "#111" : "#fff" }}>
-                  Download
-                </button>
+        <FilterDropdown dark={dark} t={t} value={tier} onChange={setTier} options={[{ value: "all", label: "All tiers" }, { value: "budget", label: "Budget" }, { value: "standard", label: "Standard" }, { value: "premium", label: "Premium" }]} />
+        <FilterDropdown dark={dark} t={t} value={provider} onChange={setProvider} options={[{ value: "all", label: "All providers" }, { value: "mtp", label: "MTP" }, { value: "jap", label: "JAP" }, { value: "dao", label: "DaoSMM" }]} />
+        <div className="fb-export" ref={csvMenuRef}>
+          <button type="button" className="fb-b" onClick={() => setCsvMenuOpen(v => !v)} disabled={reportLoading}>{reportLoading ? "Preparing…" : "Export report"}</button>
+          {csvMenuOpen && (
+            <div className="fb-menu">
+              <div className="fb-mh">Sections</div>
+              {[["wallet", "Wallet"], ["orders", "Orders"], ["points", "Nitro Points"], ["provider", "Provider top-ups"], ["affiliate", "Affiliate"], ["liabilities", "Liabilities"]].map(([key, label]) => (
+                <label key={key} className="fb-mi"><input type="checkbox" checked={csvSections[key]} onChange={() => setCsvSections(c => ({ ...c, [key]: !c[key] }))} />{label}</label>
+              ))}
+              <button type="button" className="fb-pri" onClick={downloadReport}>Download CSV</button>
+            </div>
+          )}
+        </div>
+      </div>
+      {loading ? <><div className="fo-cols">{bone(220)}{bone(220)}</div><div className="fo-cols">{bone(220)}{bone(220)}</div></> : <>
+        <div className="fo-cols">
+          <Ledger title="Revenue" cnt="what customers paid" rows={[
+            ["Gross revenue", fN(gross), "before refunds"],
+            ["Refunds to wallets", `−${fN(refunds)}`, "against orders that did not deliver", "bad", true],
+            p.totalDiscounts > 0 ? ["Discounts", `−${fN(p.totalDiscounts)}`, "status and campaign discounts", "", true] : null,
+            ["Net revenue", fN(net)],
+          ]} total={sensitive ? ["Kept as profit after cost", fN(profit), profit >= 0 ? "ok" : "bad"] : null} />
+          {sensitive && <Ledger title="Cost" cnt="paid to providers" rows={[
+            ["Provider cost", fN(cost), "on the orders above"],
+            ["Provider top-ups", fN(mOut.providerTopups || 0), "what we actually sent"],
+            ["Profit on cost", `${p.margin ?? 0}%`, "net revenue less cost, over cost", "ok"],
+            ["Per order", fN(p.profitPerOrder || 0), `across ${(p.orderCount || 0).toLocaleString()} orders`],
+          ]} />}
+          <Ledger title="Cash" cnt="in and out of the business" rows={[
+            ["Deposits", fN(mIn.deposits || 0), `${(s.depositCount || 0) ? `${s.depositCount.toLocaleString()} deposits` : "customers funding wallets"}`, "ok"],
+            ["Admin credits", fN(mIn.adminCredits || 0), "wallet money we added", "", true],
+            sensitive ? ["Provider top-ups", `−${fN(mOut.providerTopups || 0)}`, "", "bad"] : null,
+            sensitive ? ["Refunded to bank", `−${fN(mOut.refundedToBank || 0)}`, mOut.refundedToBankCount ? `${mOut.refundedToBankCount} ${mOut.refundedToBankCount === 1 ? "deposit" : "deposits"} sent back` : "nothing sent back", "bad"] : null,
+          ]} total={sensitive ? ["Net cash flow", fN(cashIn - cashOut), cashIn - cashOut >= 0 ? "ok" : "bad"] : null} />
+          <Ledger title="What we owe" cnt="wallets and promises" rows={[
+            ["Wallet balances", fN(lib.walletBalances || 0), `${(lib.walletUsers || 0).toLocaleString()} people`],
+            ["Order refunds", fN(wObl.refunds || 0), "credited back to wallets", "", true],
+            ["Coupon bonuses", fN(wObl.couponBonuses || 0), "", "", true],
+            ["Referral bonuses", fN(wObl.referralBonuses || 0), "", "", true],
+            ["Gifts", fN(wObl.adminGifts || 0), "", "", true],
+          ]} />
+        </div>
+        <div className="fo-cols">
+          <section className="fo-card">
+            <header><h3>By tier</h3><span className="fo-cnt">revenue · orders{sensitive ? " · profit on cost" : ""}</span></header>
+            <div className="fo-cb tight">
+              {tiers.length === 0 ? <div className="fo-empty">No orders in this period.</div> : tiers.map(x => (
+                <div key={x.name} className="fo-pr"><span className={`fo-pn fb-tc ${TC[x.name] || ""}`}>{x.name}</span><span className="fo-pb"><i style={{ width: `${(x.revenue || 0) / maxTier * 100}%` }} /></span><b className="m">{short(x.revenue || 0)}</b><span className="m fo-dimc">{(x.orders || 0).toLocaleString()}</span><span className="m ok">{sensitive && x.cost > 0 ? `${Math.round((x.revenue - x.cost) / x.cost * 100)}%` : "—"}</span></div>
+              ))}
+            </div>
+          </section>
+          <section className="fo-card">
+            <header><h3>By platform</h3><span className="fo-cnt">revenue · orders{sensitive ? " · profit on cost" : ""}</span></header>
+            <div className="fo-cb tight">
+              {plats.length === 0 ? <div className="fo-empty">No orders in this period.</div> : plats.map(x => (
+                <div key={x.name} className="fo-pr"><span className="fo-pn">{x.name}</span><span className="fo-pb"><i style={{ width: `${(x.revenue || 0) / maxPlat * 100}%` }} /></span><b className="m">{short(x.revenue || 0)}</b><span className="m fo-dimc">{(x.orders || 0).toLocaleString()}</span><span className="m ok">{sensitive && x.cost > 0 ? `${Math.round((x.revenue - x.cost) / x.cost * 100)}%` : "—"}</span></div>
+              ))}
+            </div>
+          </section>
+        </div>
+        {(admin?.role === "owner" || admin?.role === "superadmin") && (
+          <section className="fo-card">
+            <header><h3>Record a provider top-up</h3><span className="fo-cnt">so cash out stays true</span></header>
+            <div className="fo-cb">
+              <div className="fb-row3">
+                <select value={topupProvider} onChange={e => setTopupProvider(e.target.value)} className="fb-in"><option value="mtp">MoreThanPanel</option><option value="dao">DaoSMM</option><option value="jap">JAP</option></select>
+                <input type="number" min="0" value={topupAmount} onChange={e => setTopupAmount(e.target.value)} placeholder="₦ amount" className="fb-in m" />
+                <input value={topupNote} onChange={e => setTopupNote(e.target.value)} placeholder="Note (optional)" className="fb-in" />
               </div>
-            )}
-          </div>
+              <button type="button" className="fb-pri" disabled={topupSaving || !parseFloat(topupAmount)} onClick={handleTopup}>{topupSaving ? "Saving…" : "Record top-up"}</button>
+            </div>
+          </section>
         )}
-      </div>
-
-      {loading ? <div className="adm-stats">{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-20 rounded-xl`} />)}</div> : <>
-
-      {/* Profitability */}
-      <div className={sectionHeading} style={{ color: subText }}>Profitability</div>
-      <div className="adm-stats mb-5">
-        <MetricCard label="Gross Revenue" value={fN(p.grossRevenue || 0)} sub="Before discounts" />
-        <MetricCard label="Discounts" value={fN(p.totalDiscounts || 0)} sub={`Promo ₦${(p.promoDiscounts || 0).toLocaleString()} | Status ₦${(p.loyaltyDiscounts || 0).toLocaleString()}`} color={amber} />
-        <MetricCard label="Net Revenue" value={fN(p.netRevenue || 0)} sub="What users actually paid" color={green} />
-        <MetricCard label="Provider Cost" value={fN(p.totalCost || 0)} sub="MTP + JAP + DAO" color={red} />
-        <MetricCard label="Gross Profit" value={fN(p.grossProfit || 0)} sub={`${p.margin || 0}% markup`} color={p.grossProfit >= 0 ? green : red} />
-        <MetricCard label="Per Order" value={fN(p.profitPerOrder || 0)} sub={`${p.orderCount || 0} orders | ${p.refundRate || 0}% refund rate`} />
-      </div>
-
-      {/* Money In / Money Out */}
-      <div className="adm-grid-2 mb-5">
-        <div>
-          <div className="rounded-[14px] py-3.5 px-4" style={{ background: cardBg, border: `0.5px solid ${cardBorder}` }}>
-            <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-3 flex items-center gap-1.5" style={{ color: green }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/></svg>
-              Money In
-            </div>
-            {[
-              ["Deposits", mIn.deposits],
-              ["Admin Credits", mIn.adminCredits],
-            ].map(([label, val]) => (
-              <div key={label} className="flex justify-between py-[7px]" style={{ borderBottom: `0.5px solid ${rowBorder}` }}>
-                <span className="text-[13px]" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.5)" }}>{label}</span>
-                <span className="m text-[13px] font-semibold" style={{ color: green }}>{fN(val || 0)}</span>
-              </div>
-            ))}
-            <div className="flex justify-between pt-2.5 pb-0.5 mt-1">
-              <span className="text-[13px] font-bold" style={{ color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)" }}>Total In</span>
-              <span className="m text-[15px] font-bold" style={{ color: green }}>{fN(totalIn)}</span>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div className="rounded-[14px] py-3.5 px-4" style={{ background: cardBg, border: `0.5px solid ${cardBorder}` }}>
-            <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-3 flex items-center gap-1.5" style={{ color: red }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
-              Money Out
-            </div>
-            {[
-              ["Provider Top-ups", mOut.providerTopups],
-              ["Est. Provider Cost", mOut.providerCosts],
-            ].map(([label, val]) => (
-              <div key={label} className="flex justify-between py-[7px]" style={{ borderBottom: `0.5px solid ${rowBorder}` }}>
-                <span className="text-[13px]" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.5)" }}>{label}</span>
-                <span className="m text-[13px] font-semibold" style={{ color: red }}>{fN(val || 0)}</span>
-              </div>
-            ))}
-            <div className="flex justify-between pt-2.5 pb-0.5 mt-1">
-              <span className="text-[13px] font-bold" style={{ color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)" }}>Total Cash Out</span>
-              <span className="m text-[15px] font-bold" style={{ color: red }}>{fN(totalOut)}</span>
-            </div>
-            <div className="text-[11px] font-semibold uppercase tracking-[1px] mt-4 mb-2 flex items-center gap-1.5" style={{ color: amber }}>
-              Wallet Obligations
-            </div>
-            {[
-              ["Order Refunds", wObl.refunds],
-              ["Coupon Bonuses", wObl.couponBonuses],
-              ["Referral Bonuses", wObl.referralBonuses],
-              ["Admin Gifts", wObl.adminGifts],
-            ].map(([label, val]) => (
-              <div key={label} className="flex justify-between py-[7px]" style={{ borderBottom: `0.5px solid ${rowBorder}` }}>
-                <span className="text-[13px]" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.5)" }}>{label}</span>
-                <span className="m text-[13px] font-semibold" style={{ color: amber }}>{fN(val || 0)}</span>
-              </div>
-            ))}
-            <div className="flex justify-between pt-2.5 pb-0.5 mt-1">
-              <span className="text-[13px] font-bold" style={{ color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)" }}>Total Obligations</span>
-              <span className="m text-[15px] font-bold" style={{ color: amber }}>{fN(totalWalletObl)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Record Top-up */}
-      <div className="rounded-[14px] py-3.5 px-4 mb-5" style={{ background: cardBg, border: `0.5px solid ${cardBorder}` }}>
-        <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-3" style={{ color: subText }}>Record Provider Top-up</div>
-        <div className="flex gap-2 items-end flex-wrap max-sm:flex-col max-sm:items-stretch">
-          <div className="flex gap-2 items-end">
-            <select value={topupProvider} onChange={e => setTopupProvider(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }}>
-              <option value="dao">DaoSMM</option>
-              <option value="mtp">MTP</option>
-              <option value="jap">JAP</option>
-            </select>
-            <input type="number" placeholder="Amount (₦)" value={topupAmount} onChange={e => setTopupAmount(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] w-32 outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }} />
-          </div>
-          <div className="flex gap-2 items-end flex-1 min-w-0">
-            <input type="text" placeholder="Note (optional)" value={topupNote} onChange={e => setTopupNote(e.target.value)} className="h-9 rounded-lg px-2.5 text-[13px] flex-1 min-w-0 outline-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `0.5px solid ${cardBorder}`, color: t.text }} />
-            <button onClick={handleTopup} disabled={topupSaving || !topupAmount} className="h-9 px-4 rounded-lg text-[13px] font-semibold text-white shrink-0" style={{ background: t.accent, opacity: topupSaving || !topupAmount ? 0.5 : 1 }}>
-              {topupSaving ? "Saving..." : "Record"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Liability */}
-      <div className={sectionHeading} style={{ color: subText }}>Liability & Cash</div>
-      <div className="adm-stats mb-5">
-        <MetricCard label="Wallet Liability" value={fN(lib.walletBalances || 0)} sub={`${lib.walletUsers || 0} users with balance`} color={amber} />
-        <MetricCard label="Net Cash Flow" value={fN(totalIn - totalOut)} sub="Money in - Money out" color={totalIn - totalOut >= 0 ? green : red} />
-        <MetricCard label="Retained Profit" value={fN((p.grossProfit || 0))} sub={`${p.margin || 0}% markup`} color={green} />
-      </div>
-
-      {/* Profit by Platform */}
-      {(s.byPlatform || []).length > 0 && <>
-        <div className={`${sectionHeading} mt-1`} style={{ color: subText }}>Profit by platform</div>
-        <div className="adm-card mb-5 overflow-hidden" style={{ background: cardBg, border: `0.5px solid ${cardBorder}` }}>
-          {/* Header */}
-          <div className="fin-table-header grid grid-cols-[2fr_1fr_1fr_1fr_0.7fr_0.6fr] py-2.5 px-3.5" style={{ borderBottom: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-            {["Platform", "Revenue", "Cost", "Profit", "Orders", "Markup"].map(h => (
-              <div key={h} className="text-[10px] font-semibold uppercase tracking-[1px]" style={{ color: subText, textAlign: h !== "Platform" ? "right" : "left" }}>{h}</div>
-            ))}
-          </div>
-          {s.byPlatform.map((pl, i) => (
-            <div key={pl.name}>
-              <div className="fin-table-row grid grid-cols-[2fr_1fr_1fr_1fr_0.7fr_0.6fr] py-2.5 px-3.5" style={{ borderBottom: i < s.byPlatform.length - 1 ? `0.5px solid ${rowBorder}` : "none" }}>
-                <div className="text-[13px] font-semibold" style={{ color: t.text }}>{pl.name}</div>
-                <div className="m text-xs text-right" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)" }}>{fN(pl.revenue || 0)}</div>
-                <div className="m text-xs text-right" style={{ color: red }}>{fN(pl.cost || 0)}</div>
-                <div className="m text-xs text-right font-semibold" style={{ color: green }}>{fN(pl.profit || 0)}</div>
-                <div className="text-xs text-right" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.5)" }}>{pl.orders}</div>
-                <div className="text-xs text-right font-semibold" style={{ color: (pl.margin || 0) >= 100 ? green : amber }}>{pl.margin || 0}%</div>
-              </div>
-              <div className="px-3.5 pb-1.5"><MiniBar value={pl.profit || 0} max={(s.byPlatform[0]?.profit || 1)} color={t.accent} /></div>
-            </div>
-          ))}
-        </div>
       </>}
-
-      {/* Profit by Tier */}
-      {(s.byTier || []).length > 0 && <>
-        <div className={sectionHeading} style={{ color: subText }}>Profit by tier</div>
-        <div className="adm-stats mb-5">
-          {s.byTier.map(tr => {
-            const tierColor = tr.name === "Budget" ? "#f59e0b" : tr.name === "Standard" ? "#3b82f6" : "#8b5cf6";
-            return (
-              <div key={tr.name} className="py-3.5 px-4 rounded-xl" style={{ background: cardBg, border: `0.5px solid ${cardBorder}` }}>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <div className="w-2 h-2 rounded-full" style={{ background: tierColor }} />
-                  <span className="text-[13px] font-semibold" style={{ color: t.text }}>{tr.name}</span>
-                </div>
-                <div className="m text-lg font-bold mb-[3px]" style={{ color: green }}>{fN(tr.profit || 0)}</div>
-                <div className="text-[11px] mb-2" style={{ color: subText }}>{tr.orders} orders · {tr.margin || 0}% markup</div>
-                <MiniBar value={tr.margin || 0} max={Math.max(...(s.byTier || []).map(t => t.margin || 0), 100)} color={tierColor} />
-                <div className="flex justify-between mt-2 text-[11px]" style={{ color: subText }}>
-                  <span>Rev: {fN(tr.revenue || 0)}</span>
-                  <span>Cost: {fN(tr.cost || 0)}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </>}
-
-      {/* Top Spenders */}
-      {(s.topSpenders || []).length > 0 && <>
-        <div className={sectionHeading} style={{ color: subText }}>Top spenders</div>
-        <div className="adm-card overflow-hidden" style={{ background: cardBg, border: `0.5px solid ${cardBorder}` }}>
-          {s.topSpenders.map((sp, i) => (
-            <div key={i} className="flex items-center gap-3 py-2.5 px-3.5" style={{ borderBottom: i < s.topSpenders.length - 1 ? `0.5px solid ${rowBorder}` : "none" }}>
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", color: t.accent }}>{i + 1}</div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{sp.name}</div>
-                <div className="text-[11px]" style={{ color: subText }}>{sp.orders} orders</div>
-              </div>
-              <div className="m text-sm font-bold shrink-0" style={{ color: green }}>{fN(sp.spent || 0)}</div>
-            </div>
-          ))}
-        </div>
-      </>}
-      </>}
-    </>
+    </div>
   );
 }
+
+const FB_CSS = `
+.fb-lr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"lab val" "hint val";align-items:center;column-gap:12px;padding:8px 0;border-top:1px solid var(--rail);font-size:13.5px}.fb-lr:first-child{border-top:0}
+.fb-lr>span{grid-area:lab;font-weight:600}.fb-lr em{grid-area:hint;font-style:normal;font-size:11.5px;color:var(--dim)}.fb-lr b{grid-area:val;font-weight:700;text-align:right}.fb-lr b.ok{color:var(--ok)}.fb-lr b.bad{color:var(--bad)}
+.fb-lr.sub>span{font-weight:500;color:var(--mut);padding-left:12px}.fb-lr.sub em{padding-left:12px}.fb-lr.sub b{font-weight:600;color:var(--mut)}.fb-lr.sub b.bad{color:var(--bad)}.fb-lr.sub b.ok{color:var(--ok)}
+.fb-lr.tot{border-top:1px solid var(--line);margin-top:2px;padding-top:10px}.fb-lr.tot>span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}.fb-lr.tot b{font-size:18px;font-weight:800;color:var(--ac)}.fb-lr.tot b.ok{color:var(--ok)}.fb-lr.tot b.bad{color:var(--bad)}
+.fb-tc.bud{color:var(--bud)}.fb-tc.std{color:var(--std)}.fb-tc.prm{color:var(--prm)}
+.fb-export{position:relative;margin-left:auto}
+.fb-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap}.fb-b:disabled{opacity:.5;cursor:not-allowed}
+.fb-pri{font:inherit;font-size:12.5px;font-weight:800;height:36px;padding:0 16px;border-radius:9px;border:0;background:var(--ac);color:#fff;cursor:pointer;white-space:nowrap}.fb-pri:disabled{opacity:.5;cursor:not-allowed}
+.fb-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;width:220px;padding:8px;border-radius:12px;background:var(--card);border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.14);display:flex;flex-direction:column;gap:2px}
+.fb-mh{font-size:10.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--mut);padding:4px 6px 6px}
+.fb-mi{display:flex;align-items:center;gap:8px;padding:6px;border-radius:8px;font-size:13px;cursor:pointer}.fb-mi:hover{background:var(--soft)}.fb-mi input{accent-color:var(--ac)}
+.fb-menu .fb-pri{margin-top:6px;width:100%}
+.fb-ladder{grid-template-columns:96px 1fr 74px 60px}
+.fb-row3{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px}
+.fb-in{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);font:inherit;font-size:13px;color:var(--ink);outline:none;min-width:0;width:100%}.fb-in:focus{border-color:var(--ac)}
+.fb .fb-pri{align-self:flex-start}
+@media (max-width:900px){.fb-export{margin-left:0;width:100%}.fb-export .fb-b{width:100%}.fb-menu{left:0;right:auto;width:100%}.fb-row3{grid-template-columns:1fr}.fb .fb-pri{align-self:stretch}}
+`;
+
+
 
 function FinanceRewardsTab({ dark, t }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const [dateValue, setDateValue] = useState(null);
   const reqRef = useRef(0);
-
-  const load = (fromVal, toVal) => {
+  const load = (dv) => {
     const reqId = ++reqRef.current;
     setLoading(true);
     const params = new URLSearchParams({ view: 'summary' });
-    if (fromVal) params.set('from', fromVal);
-    if (toVal) params.set('to', toVal);
+    if (dv?.start) params.set('from', localDate(dv.start));
+    if (dv?.end) params.set('to', localDate(dv.end));
     fetch(`/api/admin/rewards?${params}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (reqId === reqRef.current) { setData(d); setLoading(false); } })
       .catch(() => { if (reqId === reqRef.current) setLoading(false); });
   };
-
-  useEffect(() => { load(from, to); }, []);
-
-  const cardBg = dark ? 'rgba(255,255,255,.06)' : '#fff';
-  const cardBd = `1px solid ${dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)'}`;
-
-  const TYPES = [
-    { key: 'earned_order', label: 'Earned', color: t.green },
-    { key: 'redeemed_order', label: 'Redeemed', color: t.red },
-    { key: 'reversed_refund', label: 'Reversed', color: t.amber },
-    { key: 'restored_refund', label: 'Restored', color: t.green },
-    { key: 'manual_credit', label: 'Manual credit', color: t.accent },
-    { key: 'manual_debit', label: 'Manual debit', color: t.red },
-  ];
-
-  const koboToNaira = (kobo) => Math.round((kobo || 0) / 100);
+  useEffect(() => { load(null); }, []);
+  const changeDateValue = (v) => { setDateValue(v); load(v); };
+  const n = (kobo) => fN(Math.round((kobo || 0) / 100));
   const cost = data?.cost || {};
   const checkout = cost.checkoutReductions || {};
   const movement = cost.pointsMovement || {};
   const accrual = cost.accrualRewardCost || {};
-  const movementColor = (movement.netLiabilityChangeKobo || 0) >= 0 ? t.amber : t.green;
-  const fSignedKobo = (kobo) => `${(kobo || 0) < 0 ? '-' : ''}${fN(koboToNaira(kobo))}`;
-  const fPts = (points) => (Number(points) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
-
-  return (
-    <div className="p-6 max-w-[900px]">
-      {/* Date filter */}
-      <div className="flex flex-wrap gap-2 mb-5 items-center">
-        <span className="text-[12px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.textMuted }}>Period</span>
-        <input type="date" value={from} onChange={e => { setFrom(e.target.value); load(e.target.value, to); }} className="py-1.5 px-2.5 rounded-lg text-[12px] outline-none font-[inherit]" style={{ border: cardBd, background: cardBg, color: t.text }} />
-        <span className="text-[11px]" style={{ color: t.textMuted }}>to</span>
-        <input type="date" value={to} onChange={e => { setTo(e.target.value); load(from, e.target.value); }} className="py-1.5 px-2.5 rounded-lg text-[12px] outline-none font-[inherit]" style={{ border: cardBd, background: cardBg, color: t.text }} />
-        {(from || to) && <button onClick={() => { setFrom(''); setTo(''); load('', ''); }} className="text-[11px] font-semibold cursor-pointer font-[inherit] border-none bg-transparent" style={{ color: t.accent }}>Clear</button>}
+  const owed = data?.liability?.kobo || 0;
+  const netChange = movement.netLiabilityChangeKobo || 0;
+  const ladder = data?.statusLadder || [];
+  const maxLadder = Math.max(1, ...ladder.map(x => x.orders || 0));
+  const vars = {
+    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
+    "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--bad": dark ? "#fca5a5" : "#c62828", "--soft": dark ? "#111634" : "#faf9f7",
+  };
+  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
+  const Ledger = ({ title, cnt, rows, total }) => (
+    <section className="fo-card">
+      <header><h3>{title}</h3>{cnt && <span className="fo-cnt">{cnt}</span>}</header>
+      <div className="fo-cb tight">
+        {rows.map(([label, value, hint, cls, sub]) => (
+          <div key={label} className={"fb-lr" + (sub ? " sub" : "")}><span>{label}</span>{hint && <em>{hint}</em>}<b className={"m " + (cls || "")}>{value}</b></div>
+        ))}
+        {total && <div className="fb-lr tot"><span>{total[0]}</span><b className={"m " + (total[2] || "")}>{total[1]}</b></div>}
       </div>
-
-      {loading ? (
-        <div className="space-y-3">
-          {[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? 'skel-dark' : 'skel-light'}`} style={{ height: 60, borderRadius: 10 }} />)}
+    </section>
+  );
+  return (
+    <div className="fo fb" style={vars}>
+      <style>{FO_CSS}{FB_CSS}</style>
+      <div className="fo-bar"><DateRangePicker dark={dark} t={t} value={dateValue} onChange={changeDateValue} defaultPreset="This month" /></div>
+      {loading ? <>{bone(84)}<div className="fo-cols">{bone(220)}{bone(220)}</div></> : !data ? <div className="fo-empty">Could not load rewards data.</div> : <>
+        <div className="fo-stats">
+          <div className="fo-stt"><b className="m">{n(owed)}</b><span>Points owed</span><i>redeemable at checkout today</i></div>
+          <div className="fo-stt"><b className="m">{n(accrual.kobo)}</b><span>Reward cost</span><i>points issued and discounts given</i></div>
+          <div className="fo-stt"><b className="m">{n(checkout.pointsRedeemedKobo)}</b><span>Redeemed</span><i>points used at checkout</i></div>
+          <div className="fo-stt"><b className={"m " + (netChange > 0 ? "bad" : "ok")}>{netChange >= 0 ? "+" : "−"}{n(Math.abs(netChange))}</b><span>{netChange >= 0 ? "Owed grew by" : "Owed fell by"}</span><i>issued less redeemed</i></div>
         </div>
-      ) : data ? (
-        <>
-          {/* Liability card */}
-          <div className="rounded-xl p-5 mb-5" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.12)'}` }}>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Outstanding Points Liability</div>
-            <div className="text-[28px] font-bold" style={{ color: t.accent, fontFamily: 'JetBrains Mono, monospace' }}>{fPts(data.liability.points || 0)} <span className="text-[14px] font-medium" style={{ color: t.textSoft }}>pts</span></div>
-            <div className="text-[13px] mt-1" style={{ color: t.textSoft }}>₦{fPts(data.liability.points || 0)} redeemable value</div>
-          </div>
-
-          {/* Cost reporting */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-            <div className="rounded-xl p-4" style={{ background: cardBg, border: cardBd }}>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Reward cost</div>
-              <div className="text-[20px] font-bold" style={{ color: t.red, fontFamily: 'JetBrains Mono, monospace' }}>{fN(koboToNaira(accrual.kobo))}</div>
-              <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>Status/campaign discounts + points issued</div>
+        <div className="fo-cols">
+          <Ledger title="Points this period" cnt="how the balance moved" rows={[
+            ["Earned from orders", `+${n(movement.earnedKobo)}`, "new points on spend", "ok"],
+            ["Manual point credits", `+${n(movement.manualCreditKobo)}`, "issued by an admin", "", true],
+            ["Opening balances", `+${n(movement.openingBalanceKobo)}`, "imported at launch", "", true],
+            ["Restored on refunds", `+${n(movement.restoredKobo)}`, "redeemed points handed back", "", true],
+            ["Redeemed at checkout", `−${n(movement.redeemedKobo)}`, "paid for orders with points", "bad"],
+            ["Reversed on refunds", `−${n(movement.reversedKobo)}`, "earned points taken back", "", true],
+            ["Manual point debits", `−${n(movement.manualDebitKobo)}`, "reduced by an admin", "", true],
+          ]} total={["Net change", `${netChange >= 0 ? "+" : "−"}${n(Math.abs(netChange))}`, netChange > 0 ? "bad" : "ok"]} />
+          <Ledger title="Checkout reductions" cnt="money not charged" rows={[
+            ["Status discounts", n(checkout.statusDiscountKobo), "Pulse and above pay less"],
+            ["Campaign discounts", n(checkout.campaignDiscountKobo), "promotions"],
+            ["Points redeemed", n(checkout.pointsRedeemedKobo), "counted when issued, shown here for cash"],
+          ]} total={["Given at checkout", n(checkout.totalKobo), ""]} />
+        </div>
+        {ladder.length > 0 && (
+          <section className="fo-card">
+            <header><h3>Orders by status</h3><span className="fo-cnt">the status held when they bought, and what it takes off</span></header>
+            <div className="fo-cb tight">
+              {ladder.map(x => (
+                <div key={x.key} className="fo-pr fb-ladder"><span className="fo-pn" style={{ color: x.color }}>{x.name}</span><span className="fo-pb"><i style={{ width: `${(x.orders || 0) / maxLadder * 100}%`, background: x.color }} /></span><b className="m">{(x.orders || 0).toLocaleString()}</b><span className="m fo-dimc">{x.discountPct}% off</span></div>
+              ))}
             </div>
-            <div className="rounded-xl p-4" style={{ background: cardBg, border: cardBd }}>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Checkout reductions</div>
-              <div className="text-[20px] font-bold" style={{ color: t.amber, fontFamily: 'JetBrains Mono, monospace' }}>{fN(koboToNaira(checkout.totalKobo))}</div>
-              <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>Discounts + points used at checkout</div>
-            </div>
-            <div className="rounded-xl p-4" style={{ background: cardBg, border: cardBd }}>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>Net points liability change</div>
-              <div className="text-[20px] font-bold" style={{ color: movementColor, fontFamily: 'JetBrains Mono, monospace' }}>{fSignedKobo(movement.netLiabilityChangeKobo)}</div>
-              <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>{(movement.netLiabilityChangeKobo || 0) >= 0 ? 'Liability increased' : 'Liability reduced'} this period</div>
-            </div>
-          </div>
-
-          <div className="rounded-xl p-4 mb-5" style={{ background: cardBg, border: cardBd }}>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-3" style={{ color: t.textMuted }}>Monthly rewards report breakdown</div>
-            {[
-              ['Nitro Status discounts', checkout.statusDiscountKobo, 'Immediate revenue reduction on orders', t.amber],
-              ['Campaign discounts', checkout.campaignDiscountKobo, 'Platform/recurring promotion reduction', t.amber],
-              ['Points redeemed at checkout', checkout.pointsRedeemedKobo, 'Existing liability used to pay for orders', t.red],
-              ['Points earned from orders', movement.earnedKobo, 'New points liability created by spend', t.green],
-              ['Manual point credits', movement.manualCreditKobo, 'Admin-issued points liability', t.accent],
-              ['Opening balances', movement.openingBalanceKobo, 'Imported/launch points liability', t.accent],
-              ['Points restored on refunds', movement.restoredKobo, 'Redeemed points returned after refunds', t.green],
-              ['Earned points reversed', movement.reversedKobo, 'Earned points removed after refunds', t.red],
-              ['Manual point debits', movement.manualDebitKobo, 'Admin-reduced liability', t.red],
-            ].map(([label, kobo, note, color]) => (
-              <div key={label} className="flex items-start justify-between gap-3 py-2.5" style={{ borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)'}` }}>
-                <div>
-                  <div className="text-[13px] font-semibold" style={{ color: t.text }}>{label}</div>
-                  <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>{note}</div>
-                </div>
-                <div className="text-[13px] font-bold text-right whitespace-nowrap" style={{ color, fontFamily: 'JetBrains Mono, monospace' }}>{fN(koboToNaira(kobo))}</div>
-              </div>
-            ))}
-            <div className="text-[11px] mt-3 leading-relaxed" style={{ color: t.textMuted }}>
-              Reward cost excludes points redeemed because those points were already counted when issued. Checkout reductions include points redeemed so cash collected can still be reconciled.
-            </div>
-          </div>
-
-          {/* Movement metrics */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {TYPES.map(({ key, label, color }) => {
-              const entry = data.byType?.[key];
-              if (!entry) return null;
-              const pts = Math.abs(Math.round((entry.kobo || 0) / 100));
-              return (
-                <div key={key} className="rounded-xl p-4" style={{ background: cardBg, border: cardBd }}>
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.5px] mb-1" style={{ color: t.textMuted }}>{label}</div>
-                  <div className="text-[18px] font-bold" style={{ color, fontFamily: 'JetBrains Mono, monospace' }}>{pts.toLocaleString()}</div>
-                  <div className="text-[11px] mt-0.5" style={{ color: t.textSoft }}>{entry.count} {entry.count === 1 ? 'entry' : 'entries'}</div>
-                </div>
-              );
-            })}
-          </div>
-
-          {data.dateFiltered && (
-            <div className="mt-4 text-[11px]" style={{ color: t.textMuted }}>Metrics filtered by date range. Liability is always the current total.</div>
-          )}
-        </>
-      ) : (
-        <div className="py-8 text-center text-[13px]" style={{ color: t.textMuted }}>Could not load rewards data</div>
-      )}
+          </section>
+        )}
+      </>}
     </div>
   );
 }
