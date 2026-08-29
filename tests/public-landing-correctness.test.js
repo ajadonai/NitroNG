@@ -171,7 +171,13 @@ describe('public statistic labels', () => {
     const route = readFileSync('app/api/site-info/route.js', 'utf8');
 
     expect(route).toContain('const PROCESSING_BASE = 20;');
-    expect(route).toContain('const displayOrders = orderCount + ORDER_BASE;');
+    // The head start lives in one shared constant now, so the route must not
+    // carry its own number: it imports the helper and applies it to the count.
+    expect(route).toContain("import { publicOrderCount } from '@/lib/public-counts';");
+    expect(route).toContain('const displayOrders = publicOrderCount(orderCount);');
+    expect(route).not.toMatch(/ORDER_BASE\s*=\s*\d+/);
+    const counts = readFileSync('lib/public-counts.js', 'utf8');
+    expect(counts).toMatch(/export const ORDER_BASE = \d+;/);
     expect(route).toContain('Math.max(90, Math.round');
     expect(route).toContain('processingCount = liveProcessing + PROCESSING_BASE;');
   });

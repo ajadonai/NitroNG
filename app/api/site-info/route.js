@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { ok } from '@/lib/utils';
+import { publicOrderCount } from '@/lib/public-counts';
 
 export const revalidate = 300;
 
@@ -19,10 +20,9 @@ export async function GET() {
       uniquePlatforms = distinctPlatforms.length;
     } catch {}
 
-    const ORDER_BASE = 8000;
     const PROCESSING_BASE = 20;
     const displayUsers = userCount;
-    const displayOrders = orderCount + ORDER_BASE;
+    const displayOrders = publicOrderCount(orderCount);
 
     let deliveryRate, processingCount;
     try {
