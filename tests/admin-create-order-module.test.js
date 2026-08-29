@@ -29,6 +29,6 @@ describe("admin create-order module boundary", () => {
       "export function AdminCreateOrderPage({ dark, t })",
     );
     expect(createOrderSource).toContain("const DRIP_DAILY_CAP");
-    expect(createOrderSource).toContain("function SumRow(");
+    expect(createOrderSource).toContain("const CO_CSS = ");
   });
 });
