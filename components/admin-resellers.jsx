@@ -231,7 +231,9 @@ const CSS = `
 @media (max-width:900px){
   .re-stats{grid-template-columns:1fr 1fr}.re-stt:nth-child(3){border-left:0}.re-stt:nth-child(n+3){border-top:1px solid var(--line)}.re-stt b{font-size:17px}
   .re-rh{display:none}
-  .re-rr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"un st" "act act" "why why" "ctl ctl";gap:8px 10px;padding:12px}
+  .re-list{background:none;border:0;border-radius:0;overflow:visible;display:flex;flex-direction:column;gap:10px}
+  .re-rr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"un st" "act act" "why why" "ctl ctl";gap:8px 10px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px}.re-rr:hover{background:var(--card)}
+  .re-empty{background:var(--card);border:1px solid var(--line);border-radius:14px}
   .re-un{grid-area:un}.re-st{grid-area:st;justify-self:end;align-self:start}.re-ap{display:none}
   .re-act{grid-area:act;text-align:left;font-size:12.5px}.re-act::after{content:" · last 90 days";color:var(--dim)}
   .re-why{grid-area:why;height:32px}

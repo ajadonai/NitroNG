@@ -445,6 +445,8 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   .dash-logo-n { display: flex; }
   .dash-logo-wordmark { display: none; }
   .adm-header-row { flex-direction: column; gap: 8px; }
+  .adm-header-row > * + * { width: 100%; display: flex; gap: 6px; }
+  .adm-header-row > * + * > button, .adm-header-row > button + *, .adm-header-row > * + button { flex: 1; width: 100%; justify-content: center; text-align: center; }
   .dash-nav { height: 50px; padding: 0 12px; }
   .dash-nav-name { display: none; }
   .dash-nav-right { gap: 4px; }
