@@ -4,6 +4,7 @@ import { DEFAULT_USD_RATE } from "../lib/markup";
 import { useConfirm } from "./confirm-dialog";
 import InlineAlert from "./inline-alert";
 import { PlatformIcon } from "./platform-icon";
+import { serviceDisplay } from "../lib/service-display";
 import { openCardFrame, openCardHeader } from "../lib/expandable-card";
 
 // The whole menu as one list, grouped by platform, with the three tier prices
@@ -133,7 +134,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
       <div className="mb-svcl">
         {svcMatches.map(s => { const c = costKobo(s); const m = priceKobo ? gmPct(priceKobo, c) : null; return (
           <button type="button" key={s.id} className="mb-svc" onClick={() => onPick(s)}>
-            <b className={`mb-prov ${s.provider}`}>{s.provider}</b><span className="mb-sid m">#{s.apiId}</span><span className="mb-sn">{s.name}</span>
+            <b className={`mb-prov ${s.provider}`}>{s.provider}</b><span className="mb-sid m">#{s.apiId}</span><span className="mb-sn" title={s.name}>{serviceDisplay(s.name).title}<em>{serviceDisplay(s.name).facts.join(" · ")}</em></span>
             <span className="mb-sm m">{c != null ? naira(c) : "—"}/1k</span>{m != null && <span className={`mb-gm ${gmCls(m)} m`}>{m}%</span>}
           </button>
         ); })}
@@ -151,7 +152,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
         <span className="mb-price m">{naira(ti.sellPer1k)}<small>/1k</small>{ti.pricePinned && <i className="mb-lock" title="Pinned: recalculation leaves it alone" />}</span>
         <span className={`mb-gm ${gmCls(m)} m`} title="Profit on cost at today's rate">{m == null ? "—" : `${m}%`}</span>
         <span className="mb-svc-cell">
-          {ti.service ? <><b className={`mb-prov ${ti.service.provider}`}>{ti.service.provider}</b><span className="mb-sid m">#{ti.service.apiId}</span><span className="mb-sn">{ti.service.name}</span><span className="mb-sm">{c != null ? `${naira(c)}/1k` : ""}{ti.service.min != null ? ` · ${Number(ti.service.min).toLocaleString()}–${Number(ti.service.max).toLocaleString()}` : ""}</span></> : <span className="mb-sn" style={{ color: "var(--bad)" }}>No backing service</span>}
+          {ti.service ? <><b className={`mb-prov ${ti.service.provider}`}>{ti.service.provider}</b><span className="mb-sid m">#{ti.service.apiId}</span><span className="mb-sn" title={ti.service.name}>{serviceDisplay(ti.service.name).title}<em>{serviceDisplay(ti.service.name).facts.join(" · ")}</em></span><span className="mb-sm">{c != null ? `${naira(c)}/1k` : ""}{ti.service.min != null ? ` · ${Number(ti.service.min).toLocaleString()}–${Number(ti.service.max).toLocaleString()}` : ""}</span></> : <span className="mb-sn" style={{ color: "var(--bad)" }}>No backing service</span>}
         </span>
         <span className="mb-meta">{refill}<em>{ti.speed || "—"}</em></span>
         <button type="button" className={`mb-tog${ti.enabled ? "" : " o"}`} onClick={() => act({ action: "update-tier", tierIdToUpdate: ti.id, enabled: !ti.enabled })} aria-label={ti.enabled ? "Switch tier off" : "Switch tier on"}><i /></button>
@@ -304,7 +305,7 @@ const CSS = `
 .mb-gm{font-weight:700;font-size:12px;color:var(--dim)}.mb-gm.good{color:var(--ok)}.mb-gm.mid{color:var(--warn)}.mb-gm.low{color:var(--bad)}
 .mb-svc-cell{display:grid;grid-template-columns:auto auto 1fr;gap:2px 7px;align-items:center;min-width:0}
 .mb-prov{font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:1px 5px;border-radius:5px;color:#fff;background:#6b7280}.mb-prov.mtp{background:#ef4444}.mb-prov.dao{background:#22c55e}.mb-prov.jap{background:#3b82f6}
-.mb-sid{font-size:11px;color:var(--dim)}.mb-sn{color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.mb-sm{grid-column:1/-1;font-size:11px;color:var(--dim)}
+.mb-sid{font-size:11px;color:var(--dim)}.mb-sn{color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.mb-sn em{display:block;font-style:normal;font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mb-sm{grid-column:1/-1;font-size:11px;color:var(--dim)}
 .mb-meta{font-size:11.5px;color:var(--mut);line-height:1.35;display:flex;flex-direction:column}.mb-meta em{font-style:normal;color:var(--dim)}
 .mb-acts{display:flex;gap:4px}
 .mb-panel{grid-column:1/-1;margin-top:4px;padding:12px;border-radius:12px;background:var(--soft);border:1px solid var(--line)}

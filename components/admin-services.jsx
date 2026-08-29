@@ -2,15 +2,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
-import { fN } from "../lib/format";
 import { FilterDropdown } from "./date-range-picker";
+import { serviceDisplay } from "../lib/service-display";
 
-
-const TIER_COLORS = {
-  Budget: { color: "#d97706", bg: "rgba(217,119,6,.08)" },
-  Standard: { color: "#2563eb", bg: "rgba(37,99,235,.08)" },
-  Premium: { color: "#7c3aed", bg: "rgba(124,58,237,.08)" },
-};
+const PROV = { mtp: "MTP", dao: "DAO", jap: "JAP" };
+const naira = (v) => `₦${Math.round(Number(v || 0)).toLocaleString()}`;
+const short = (v) => v >= 1e6 ? `${Math.round(v / 1e6)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}K` : String(v || 0);
+const SEARCH = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="20" y1="20" x2="16.5" y2="16.5" /></svg>;
+const CHEV = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>;
 
 export default function AdminServicesPage({ dark, t }) {
   const confirm = useConfirm();
@@ -23,28 +22,31 @@ export default function AdminServicesPage({ dark, t }) {
   const [providerFilter, setProviderFilter] = useState("all");
   const [expanded, setExpanded] = useState(null);
   const [editMode, setEditMode] = useState(null);
+  const [editData, setEditData] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncingPrices, setSyncingPrices] = useState(false);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(50);
 
   const fetchServices = useCallback(() => {
     fetch("/api/admin/services").then(r => r.json()).then(d => { setServices(d.services || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
-
   useEffect(() => { fetchServices(); }, [fetchServices]);
-
   useEffect(() => {
     const iv = setInterval(fetchServices, 30000);
-    const onVis = () => { if (document.visibilityState === 'visible') fetchServices(); };
-    document.addEventListener('visibilitychange', onVis);
-    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); };
+    const onVis = () => { if (document.visibilityState === "visible") fetchServices(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { clearInterval(iv); document.removeEventListener("visibilitychange", onVis); };
   }, [fetchServices]);
 
-  const categories = [...new Set(services.map(s => s.category))].filter(Boolean);
+  const categories = [...new Set(services.map(s => s.category))].filter(Boolean).sort((a, b) => a.localeCompare(b));
   const providers = [...new Set(services.map(s => s.provider || "mtp"))];
+  const sensitive = services.some(s => s.costPer1k != null);
   const activeCount = services.filter(s => s.enabled).length;
-  const inactiveCount = services.filter(s => !s.enabled).length;
   const inUseCount = services.filter(s => s.tiers > 0).length;
   const inUseDisabledCount = services.filter(s => s.tiers > 0 && !s.enabled).length;
+
   const filtered = services.filter(s => {
     if (providerFilter !== "all" && (s.provider || "mtp") !== providerFilter) return false;
     if (statusFilter === "active" && !s.enabled) return false;
@@ -52,246 +54,282 @@ export default function AdminServicesPage({ dark, t }) {
     if (statusFilter === "in-use" && s.tiers === 0) return false;
     if (statusFilter === "in-use-disabled" && !(s.tiers > 0 && !s.enabled)) return false;
     if (catFilter !== "all" && s.category !== catFilter) return false;
-    if (search) { const q = search.toLowerCase(); return s.name?.toLowerCase().includes(q) || s.category?.toLowerCase().includes(q) || String(s.apiId) === q; }
+    if (search) {
+      const q = search.toLowerCase().replace(/^#/, "");
+      return s.name?.toLowerCase().includes(q) || s.category?.toLowerCase().includes(q) || String(s.apiId) === q;
+    }
     return true;
   });
-  const totalPages = Math.ceil(filtered.length / perPage);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const paged = filtered.slice((page - 1) * perPage, page * perPage);
 
-  const [editData, setEditData] = useState({});
-  const [saving, setSaving] = useState(false);
-  
-  const [syncing, setSyncing] = useState(false);
-  const [syncingPrices, setSyncingPrices] = useState(false);
+  const post = async (body) => {
+    const res = await fetch("/api/admin/services", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, data };
+  };
 
   const syncPrices = async () => {
     setSyncingPrices(true);
     try {
       const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sync-prices" }) });
       const data = await res.json();
-      if (res.ok) {
-        toast.success("Price sync done", `${data.updated} costs updated · ${data.repriced} repriced · ${data.losers} below cost`);
-        const r = await fetch("/api/admin/services");
-        if (r.ok) { const d = await r.json(); setServices(d.services || []); }
-      } else {
-        toast.error("Sync failed", data.error || "Price sync failed");
-      }
+      if (res.ok) { toast.success("Prices synced", `${data.updated} costs updated · ${data.repriced} repriced · ${data.losers} below cost`); fetchServices(); }
+      else toast.error("Sync failed", data.error || "Price sync failed");
     } catch { toast.error("Request failed", "Check your connection"); }
     setSyncingPrices(false);
   };
 
-  const toggleEnabled = async (id, enabled) => {
-    try {
-      const res = await fetch("/api/admin/services", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", serviceId: id }) });
-      const data = await res.json();
-      if (res.ok) {
-        setServices(prev => prev.map(s => s.id === id ? { ...s, enabled: data.enabled } : s));
-        if (data.cascaded) toast.success("Done", data.message);
-      }
-    } catch {}
-  };
-
   const syncEnable = async () => {
-    setSyncing(true); 
+    setSyncing(true);
     try {
-      const res = await fetch("/api/admin/services", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sync-enable" }) });
-      const data = await res.json();
-      if (res.ok) {
-        toast.success("Done", data.message);
-        // Refresh list
-        const r = await fetch("/api/admin/services");
-        if (r.ok) { const d = await r.json(); setServices(d.services || []); }
-      } else {
-        toast.error("Sync failed", data.error || "Sync failed");
-      }
+      const { ok, data } = await post({ action: "sync-enable" });
+      if (ok) { toast.success("Done", data.message); fetchServices(); } else toast.error("Sync failed", data.error || "Sync failed");
     } catch { toast.error("Request failed", "Check your connection"); }
     setSyncing(false);
   };
 
-  const startEdit = (s) => {
-    setEditMode(s.id);
-    setEditData({ name: s.name, category: s.category, min: s.min, max: s.max, refill: s.refill, avgTime: s.avgTime || "" });
+  const toggleEnabled = async (s) => {
+    const ok = await confirm({
+      title: s.enabled ? "Switch this service off?" : "Switch this service on?",
+      message: s.enabled ? `"${serviceDisplay(s.name).title}" stops being orderable${s.tiers > 0 ? ` and the ${s.tiers} menu tier${s.tiers > 1 ? "s" : ""} behind it will fail` : ""}.` : `"${serviceDisplay(s.name).title}" becomes orderable again.`,
+      confirmLabel: s.enabled ? "Switch off" : "Switch on",
+      danger: s.enabled,
+    });
+    if (!ok) return;
+    try {
+      const { ok: fine, data } = await post({ action: "toggle", serviceId: s.id });
+      if (fine) { setServices(prev => prev.map(x => x.id === s.id ? { ...x, enabled: data.enabled } : x)); if (data.cascaded) toast.success("Done", data.message); }
+    } catch {}
   };
 
+  const startEdit = (s) => { setEditMode(s.id); setEditData({ name: s.name, category: s.category, min: s.min, max: s.max, refill: s.refill, avgTime: s.avgTime || "" }); };
   const saveEdit = async (id) => {
-    setSaving(true); 
+    setSaving(true);
     try {
-      const res = await fetch("/api/admin/services", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "edit", serviceId: id, ...editData }) });
-      const data = await res.json();
-      if (res.ok) {
-        setServices(prev => prev.map(s => s.id === id ? { ...s, ...data.service } : s));
-        setEditMode(null);
-        toast.success("Saved", "Service updated");
-      } else {
-        toast.error("Failed", data.error || "Failed to save");
-      }
+      const { ok, data } = await post({ action: "edit", serviceId: id, ...editData });
+      if (ok) { setServices(prev => prev.map(s => s.id === id ? { ...s, ...data.service } : s)); setEditMode(null); toast.success("Saved", "Service updated"); }
+      else toast.error("Failed", data.error || "Failed to save");
     } catch { toast.error("Request failed", "Check your connection"); }
     setSaving(false);
   };
 
   const deleteService = async (s) => {
-    const ok = await confirm({ title: "Delete Service", message: `Delete "${s.name}"? If it has orders, it will be disabled instead.`, confirmLabel: "Delete", danger: true });
+    const ok = await confirm({ title: "Delete this service?", message: `"${serviceDisplay(s.name).title}" is removed from the list. If it has orders it is switched off instead.`, confirmLabel: "Delete", danger: true });
     if (!ok) return;
     try {
-      const res = await fetch("/api/admin/services", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", serviceId: s.id }) });
-      const data = await res.json();
-      if (res.ok) {
-        if (data.deleted) {
-          setServices(prev => prev.filter(x => x.id !== s.id));
-          toast.success("Deleted", "Service deleted");
-        } else if (data.disabled) {
-          setServices(prev => prev.map(x => x.id === s.id ? { ...x, enabled: false } : x));
-          toast.success("Done", data.message);
-        }
-      } else {
-        toast.error("Failed", data.error || "Failed to delete");
-      }
+      const { ok: fine, data } = await post({ action: "delete", serviceId: s.id });
+      if (!fine) { toast.error("Failed", data.error || "Failed to delete"); return; }
+      if (data.deleted) { setServices(prev => prev.filter(x => x.id !== s.id)); toast.success("Deleted", "Service removed"); }
+      else if (data.disabled) { setServices(prev => prev.map(x => x.id === s.id ? { ...x, enabled: false } : x)); toast.success("Switched off", data.message); }
     } catch { toast.error("Request failed", "Check your connection"); }
   };
 
+  const setFilter = (fn) => (v) => { fn(v); setPage(1); };
+  const vars = {
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
+    "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent, "--acbg": dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)", "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)",
+    "--ok": dark ? "#6ee7b7" : "#0a7d54", "--okbg": dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", "--warn": dark ? "#fcd34d" : "#b45309",
+    "--bad": dark ? "#fca5a5" : "#c62828", "--badbg": dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", "--blue": dark ? "#a5b4fc" : "#4c62c4", "--bluebg": dark ? "rgba(122,162,247,.18)" : "rgba(122,162,247,.14)",
+  };
+  const bone = (w, h = 12) => <i className={`rs-bone skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ width: w, height: h }} />;
+
   return (
-    <>
+    <div className="rs" style={vars}>
+      <style>{CSS}</style>
       <div className="adm-header">
-        <div className="flex justify-between items-start">
+        <div className="adm-header-row">
           <div>
-            <div className="adm-title" style={{ color: t.text }}>Raw Services</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>{services.length} services · {activeCount} active · {inUseCount} in use by Menu Builder</div>
+            <div className="adm-title" style={{ color: t.text }}>Raw services</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>Everything the providers list. The menu picks from here.</div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={syncPrices} disabled={syncingPrices} className="py-2 px-4 rounded-lg text-[13px] font-semibold transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}`, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", color: t.accent, cursor: syncingPrices ? "wait" : "pointer", opacity: syncingPrices ? .5 : 1 }}>{syncingPrices ? "Syncing..." : "Sync Prices"}</button>
-            {inUseDisabledCount > 0 && <button onClick={syncEnable} disabled={syncing} className="py-2 px-4 rounded-lg text-[13px] font-semibold transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(110,231,183,.28)" : "rgba(5,150,105,.24)"}`, background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)", color: dark ? "#6ee7b7" : "#059669", cursor: syncing ? "wait" : "pointer", opacity: syncing ? .5 : 1 }}>{syncing ? "Syncing..." : `Enable ${inUseDisabledCount} In-Use`}</button>}
+          <div className="rs-hb">
+            {inUseDisabledCount > 0 && <button type="button" className="rs-b warn" disabled={syncing} onClick={syncEnable}>{syncing ? "Working…" : `Switch on ${inUseDisabledCount} in use`}</button>}
+            <button type="button" className="rs-b" disabled={syncingPrices} onClick={syncPrices}>{syncingPrices ? "Syncing…" : "Sync prices"}</button>
           </div>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {inUseDisabledCount > 0 && <div className="py-2.5 px-3.5 rounded-lg mb-3 text-[13px] leading-[1.5]" style={{ background: dark ? "rgba(224,164,88,.12)" : "rgba(217,119,6,.08)", border: `1px solid ${dark ? "rgba(224,164,88,.24)" : "rgba(217,119,6,.18)"}`, color: dark ? "#e0a458" : "#92400e" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {inUseDisabledCount} service{inUseDisabledCount > 1 ? "s" : ""} used by Menu Builder {inUseDisabledCount > 1 ? "are" : "is"} disabled. Users can see {inUseDisabledCount > 1 ? "them" : "it"} in the menu but orders may fail.</div>}
+      <div className="rs-stats">
+        <div className="rs-stt"><b className="m">{loading ? "—" : services.length.toLocaleString()}</b><span>Services</span><i>{loading ? " " : `from ${providers.length} provider${providers.length === 1 ? "" : "s"}`}</i></div>
+        <div className="rs-stt"><b className="m">{loading ? "—" : activeCount.toLocaleString()}</b><span>Switched on</span><i>{loading ? " " : `${(services.length - activeCount).toLocaleString()} off`}</i></div>
+        <div className="rs-stt"><b className="m">{loading ? "—" : inUseCount.toLocaleString()}</b><span>In the menu</span><i>{loading ? " " : "behind a tier"}</i></div>
+        <div className={"rs-stt" + (inUseDisabledCount ? " warn" : "")}><b className="m">{loading ? "—" : inUseDisabledCount}</b><span>In use but off</span><i>{loading ? " " : inUseDisabledCount ? "needs a look" : "all good"}</i></div>
+      </div>
 
-      {/* Search + filters */}
-      <div className="flex items-center gap-3 mb-3 flex-wrap">
-        <div className="relative flex-1 min-w-full desktop:min-w-[200px]">
-          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search services..." className="w-full py-2 px-3 pr-8 rounded-lg border text-sm outline-none" style={{ borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text }} />
-          {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+      <div className="rs-bar">
+        <div className="rs-srch">
+          <span className="rs-si">{SEARCH}</span>
+          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search name, platform or #id" />
+          {search && <button type="button" className="rs-x" onClick={() => { setSearch(""); setPage(1); }} aria-label="Clear search">✕</button>}
         </div>
         {providers.length > 1 && (
-          <FilterDropdown dark={dark} t={t} value={providerFilter} onChange={(v) => { setProviderFilter(v); setPage(1); }} options={[
-            { value: "all", label: "All providers" },
-            ...providers.map(p => {
-              const label = p === "mtp" ? "MTP" : p === "jap" ? "JAP" : p === "dao" ? "DaoSMM" : p.toUpperCase();
-              return { value: p, label };
-            }),
-          ]} />
+          <FilterDropdown dark={dark} t={t} value={providerFilter} onChange={setFilter(setProviderFilter)} options={[{ value: "all", label: "All providers" }, ...providers.map(p => ({ value: p, label: PROV[p] || p.toUpperCase() }))]} />
         )}
-        <FilterDropdown dark={dark} t={t} value={statusFilter} onChange={(v) => { setStatusFilter(v); setPage(1); }} options={
-          [["all", "All"], ["active", "Active"], ["inactive", "Inactive"], ["in-use", "In Use"], ...(inUseDisabledCount > 0 ? [["in-use-disabled", "In Use + Disabled"]] : [])].map(([val, label]) => ({ value: val, label }))
-        } />
-        <FilterDropdown dark={dark} t={t} value={catFilter} onChange={(v) => { setCatFilter(v); setPage(1); }} options={[
-          { value: "all", label: "All platforms" },
-          ...categories.map(cat => ({ value: cat, label: cat })),
-        ]} />
+        <FilterDropdown dark={dark} t={t} value={statusFilter} onChange={setFilter(setStatusFilter)} options={[["all", "On and off"], ["active", "Switched on"], ["inactive", "Switched off"], ["in-use", "In the menu"], ...(inUseDisabledCount > 0 ? [["in-use-disabled", "In use but off"]] : [])].map(([value, label]) => ({ value, label }))} />
+        <FilterDropdown dark={dark} t={t} value={catFilter} onChange={setFilter(setCatFilter)} options={[{ value: "all", label: "All platforms" }, ...categories.map(c => ({ value: c, label: c }))]} />
+        <span className="rs-cnt rs-count">{loading ? "" : `${filtered.length.toLocaleString()} service${filtered.length === 1 ? "" : "s"}${totalPages > 1 ? ` · page ${page} of ${totalPages}` : ""}`}</span>
       </div>
 
-
-      <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-        {loading ? (
-          <div className="adm-empty">{[1,2,3,4,5].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-11 rounded-md mb-1.5`} />)}</div>
-        ) : paged.length > 0 ? paged.map((s, i) => (
-          <div key={s.id}>
-            <div className="adm-list-row cursor-pointer" role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => { setExpanded(expanded === s.id ? null : s.id); if (editMode === s.id) setEditMode(null); }} style={{ borderBottom: i < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[15px] font-medium" style={{ color: t.text }}>{s.name}</span>
-                  {s.provider && s.provider !== "mtp" && <span className="text-[10px] py-px px-[5px] rounded-[3px] font-bold uppercase" style={{ background: dark ? "rgba(165,180,252,.1)" : "rgba(79,70,229,.06)", color: dark ? "#a5b4fc" : "#4f46e5" }}>{s.provider === "jap" ? "JAP" : s.provider === "dao" ? "DAO" : s.provider}</span>}
-                  {s.tiers > 0 && <span className="text-xs py-px px-1.5 rounded font-semibold" style={{ background: dark ? "rgba(96,165,250,.1)" : "rgba(37,99,235,.06)", color: dark ? "#60a5fa" : "#2563eb" }}>In Use · {s.tiers}</span>}
-                  {!s.enabled && <span className="text-xs py-px px-1.5 rounded font-semibold" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: t.red }}>Disabled</span>}
-                  {s.tiers > 0 && !s.enabled && <span className="text-xs py-px px-1.5 rounded font-semibold" style={{ background: dark ? "rgba(224,164,88,.1)" : "rgba(217,119,6,.06)", color: dark ? "#e0a458" : "#d97706" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>}
+      <div className="rs-list">
+        <div className="rs-sh"><span>Service</span><span>Platform</span>{sensitive && <span className="r">Cost / 1k</span>}<span className="r">Orders</span><span className="r">Min – max</span><span /><span /></div>
+        {loading ? Array.from({ length: 8 }, (_, i) => (
+          <div key={i} className="rs-sr sk">
+            <span className="rs-sn">{bone("55%", 13)}{bone("35%", 10)}</span><span>{bone(64)}</span>{sensitive && <span className="r">{bone(52)}</span>}<span className="r">{bone(36)}</span><span className="r">{bone(70)}</span><span>{bone(34, 20)}</span><span />
+          </div>
+        )) : paged.length === 0 ? (
+          <div className="rs-empty">{services.length === 0 ? "No services yet. They appear once a provider is synced." : "Nothing matches these filters."}</div>
+        ) : paged.map(s => {
+          const d = serviceDisplay(s.name);
+          const open = expanded === s.id;
+          const prov = s.provider || "mtp";
+          return (
+            <div key={s.id}>
+              <div className={"rs-sr" + (open ? " open" : "") + (s.enabled ? "" : " off")} role="button" tabIndex={0}
+                onClick={() => { setExpanded(open ? null : s.id); if (editMode === s.id) setEditMode(null); }}
+                onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }}>
+                <span className="rs-sn">
+                  <b title={s.name}>{d.title}</b>
+                  <i>
+                    {sensitive && <span className={`rs-pv ${prov}`}>{PROV[prov] || prov.toUpperCase()}</span>}
+                    <span className="rs-sid m">#{s.apiId}</span>
+                    {s.tiers > 0 && <span className="rs-use">In use · {s.tiers}</span>}
+                    {!s.enabled && <span className="rs-offc">Off</span>}
+                    {d.facts.length > 0 && <span className="rs-facts">{d.facts.join(" · ")}</span>}
+                  </i>
+                </span>
+                <span className="rs-cat">{s.category}</span>
+                {sensitive && <span className="r m rs-cost">{naira(s.costPer1k)}</span>}
+                <span className="r m rs-ord">{(s.orders || 0).toLocaleString()}</span>
+                <span className="r m rs-rng">{(s.min || 0).toLocaleString()} – {short(s.max || 0)}</span>
+                <span className="rs-tg" onClick={e => e.stopPropagation()}>
+                  <button type="button" className={"rs-tog" + (s.enabled ? "" : " o")} onClick={() => toggleEnabled(s)} aria-label={s.enabled ? "Switch off" : "Switch on"}><i /></button>
+                </span>
+                <span className={"rs-chev" + (open ? " up" : "")}>{CHEV}</span>
+              </div>
+              {open && (
+                <div className="rs-sx">
+                  {editMode === s.id ? (
+                    <div className="rs-edit">
+                      <div className="rs-grid">
+                        <label className="rs-fld"><span>Name</span><input className="rs-in" value={editData.name || ""} onChange={e => setEditData(p => ({ ...p, name: e.target.value }))} /></label>
+                        <label className="rs-fld"><span>Platform</span><input className="rs-in" value={editData.category || ""} onChange={e => setEditData(p => ({ ...p, category: e.target.value }))} /></label>
+                        <label className="rs-fld"><span>Min order</span><input className="rs-in m" type="number" value={editData.min ?? ""} onChange={e => setEditData(p => ({ ...p, min: e.target.value }))} /></label>
+                        <label className="rs-fld"><span>Max order</span><input className="rs-in m" type="number" value={editData.max ?? ""} onChange={e => setEditData(p => ({ ...p, max: e.target.value }))} /></label>
+                        <label className="rs-fld"><span>Start time</span><input className="rs-in" value={editData.avgTime || ""} onChange={e => setEditData(p => ({ ...p, avgTime: e.target.value }))} placeholder="0-2 hrs" /></label>
+                        <label className="rs-fld rs-chk"><span>Refill</span><span className="rs-chkrow"><input type="checkbox" checked={!!editData.refill} onChange={e => setEditData(p => ({ ...p, refill: e.target.checked }))} /> Provider refills drops</span></label>
+                      </div>
+                      <div className="rs-acts">
+                        <button type="button" className="rs-pri" disabled={saving} onClick={() => saveEdit(s.id)}>{saving ? "Saving…" : "Save changes"}</button>
+                        <button type="button" className="rs-b" onClick={() => setEditMode(null)}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="rs-facts-g">
+                        <div className="rs-f"><span>Provider</span><b>{sensitive ? `${PROV[prov] || prov.toUpperCase()} · ` : ""}#{s.apiId}</b></div>
+                        {sensitive && <div className="rs-f"><span>Cost per 1k</span><b className="m">{naira(s.costPer1k)}</b></div>}
+                        <div className="rs-f"><span>Min · max</span><b className="m">{(s.min || 0).toLocaleString()} · {(s.max || 0).toLocaleString()}</b></div>
+                        <div className="rs-f"><span>Refill</span><b>{s.refill ? "Yes" : "No"}</b></div>
+                        <div className="rs-f"><span>Start</span><b>{s.avgTime || "—"}</b></div>
+                        <div className="rs-f"><span>In the menu</span><b>{s.tiers > 0 ? `${s.tiers} tier${s.tiers > 1 ? "s" : ""}` : "Not used"}</b></div>
+                        <div className="rs-f rs-raw"><span>Provider's name</span><b>{s.name}</b></div>
+                      </div>
+                      <div className="rs-acts">
+                        <button type="button" className="rs-b" onClick={() => startEdit(s)}>Edit</button>
+                        <button type="button" className="rs-b" onClick={() => toggleEnabled(s)}>{s.enabled ? "Switch off" : "Switch on"}</button>
+                        <button type="button" className="rs-b danger rs-right" onClick={() => deleteService(s)}>Delete</button>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="text-sm mt-0.5" style={{ color: t.textMuted }}>{s.category} · API #{s.apiId} · {s.orders || 0} orders</div>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[13px]" style={{ color: t.textMuted }}>₦{s.costPer1k?.toLocaleString()}</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expanded === s.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
+              )}
             </div>
-            {expanded === s.id && (
-              <div className="pt-3 px-4 pb-4" style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.02)", borderLeft: `3px solid ${t.accent}`, borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}` }}>
-                {editMode === s.id ? (
-                  <>
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div><label className="text-xs block mb-[3px]" style={{ color: t.textMuted }}>Name</label><input value={editData.name || ""} onChange={e => setEditData(p => ({ ...p, name: e.target.value }))} className="w-full py-[7px] px-2.5 rounded-lg text-[13px]" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? "#131728" : "#fff", color: t.text }} /></div>
-                      <div><label className="text-xs block mb-[3px]" style={{ color: t.textMuted }}>Category</label><input value={editData.category || ""} onChange={e => setEditData(p => ({ ...p, category: e.target.value }))} className="w-full py-[7px] px-2.5 rounded-lg text-[13px]" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? "#131728" : "#fff", color: t.text }} /></div>
-                      <div><label className="text-xs block mb-[3px]" style={{ color: t.textMuted }}>Min order</label><input type="number" value={editData.min || ""} onChange={e => setEditData(p => ({ ...p, min: e.target.value }))} className="w-full py-[7px] px-2.5 rounded-lg text-sm" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? "#131728" : "#fff", color: t.text, fontFamily: "'JetBrains Mono',monospace" }} /></div>
-                      <div><label className="text-xs block mb-[3px]" style={{ color: t.textMuted }}>Max order</label><input type="number" value={editData.max || ""} onChange={e => setEditData(p => ({ ...p, max: e.target.value }))} className="w-full py-[7px] px-2.5 rounded-lg text-sm" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? "#131728" : "#fff", color: t.text, fontFamily: "'JetBrains Mono',monospace" }} /></div>
-                      <div><label className="text-xs block mb-[3px]" style={{ color: t.textMuted }}>Avg time</label><input value={editData.avgTime || ""} onChange={e => setEditData(p => ({ ...p, avgTime: e.target.value }))} className="w-full py-[7px] px-2.5 rounded-lg text-[13px]" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? "#131728" : "#fff", color: t.text }} /></div>
-                      <div className="flex items-end pb-1"><label className="flex items-center gap-1.5 text-sm" style={{ color: t.textSoft }}><input type="checkbox" checked={editData.refill || false} onChange={e => setEditData(p => ({ ...p, refill: e.target.checked }))} style={{ accentColor: "#c47d8e" }} /> Refill</label></div>
-                    </div>
-                    <div className="flex gap-1.5">
-                      <button onClick={() => saveEdit(s.id)} disabled={saving} className="adm-btn-sm" style={{ borderColor: t.accent, color: t.accent, opacity: saving ? .5 : 1 }}>{saving ? "Saving..." : "Save"}</button>
-                      <button onClick={() => setEditMode(null)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-3 gap-2.5 mb-3 text-[13px]">
-                      <div><span style={{ color: t.textMuted }}>Category:</span> <span style={{ color: t.text }}>{s.category}</span></div>
-                      <div><span style={{ color: t.textMuted }}>Provider:</span> <span style={{ color: t.text }}>MTP #{s.apiId}</span></div>
-                      <div><span style={{ color: t.textMuted }}>Status:</span> <span style={{ color: s.enabled ? t.green : t.red }}>{s.enabled ? "Active" : "Disabled"}</span></div>
-                      <div><span style={{ color: t.textMuted }}>Min:</span> <span style={{ color: t.text }}>{s.min?.toLocaleString() || 0}</span></div>
-                      <div><span style={{ color: t.textMuted }}>Max:</span> <span style={{ color: t.text }}>{s.max?.toLocaleString() || 0}</span></div>
-                      <div><span style={{ color: t.textMuted }}>Refill:</span> <span style={{ color: s.refill ? t.green : t.textMuted }}>{s.refill ? "Yes" : "No"}</span></div>
-                      <div><span style={{ color: t.textMuted }}>Cost/1K:</span> <span style={{ color: t.text }}>₦{s.costPer1k?.toLocaleString()}</span></div>
-                      <div><span style={{ color: t.textMuted }}>Sell/1K:</span> <span style={{ color: t.text }}>₦{s.sellPer1k?.toLocaleString()}</span></div>
-                      <div><span style={{ color: t.textMuted }}>Avg time:</span> <span style={{ color: t.text }}>{s.avgTime || "—"}</span></div>
-                    </div>
-                    <div className="flex gap-1.5">
-                      <button onClick={async () => { const ok = await confirm({ title: s.enabled ? "Disable Service" : "Enable Service", message: s.enabled ? `Disable "${s.name}"? Users won't be able to order it.` : `Re-enable "${s.name}"?`, confirmLabel: s.enabled ? "Disable" : "Enable", danger: s.enabled }); if (ok) toggleEnabled(s.id, s.enabled); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: s.enabled ? t.red : t.green }}>{s.enabled ? "Disable" : "Enable"}</button>
-                      <button onClick={() => startEdit(s)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                      <button onClick={() => deleteService(s)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: t.red }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
-                    </div>
-                  </>
-                )}
-              </div>
+          );
+        })}
+        {!loading && filtered.length > 0 && (
+          <div className="rs-pg">
+            <span className="rs-cnt">{((page - 1) * perPage + 1).toLocaleString()}–{Math.min(page * perPage, filtered.length).toLocaleString()} of {filtered.length.toLocaleString()} ·
+              <select className="rs-pp" value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}>{[25, 50, 100, 200].map(v => <option key={v} value={v}>{v} per page</option>)}</select>
+            </span>
+            {totalPages > 1 && (
+              <span className="rs-pgn">
+                <button type="button" className="rs-ib" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} aria-label="Previous page">‹</button>
+                <span className="rs-cnt">{page} of {totalPages}</span>
+                <button type="button" className="rs-ib" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} aria-label="Next page">›</button>
+              </span>
             )}
           </div>
-        )) : (
-          <div className="py-[60px] px-5 text-center">
-            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
-              <rect x="8" y="8" width="20" height="20" rx="4" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
-              <rect x="36" y="8" width="20" height="20" rx="4" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
-              <rect x="8" y="36" width="20" height="20" rx="4" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
-              <rect x="36" y="36" width="20" height="20" rx="4" stroke={t.accent} strokeWidth="1.5" opacity=".15" />
-            </svg>
-            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No services found</div>
-            <div className="text-sm" style={{ color: t.textMuted }}>Services will appear here once synced</div>
-          </div>
         )}
       </div>
-
-      {/* Pagination */}
-      {filtered.length > perPage && (
-        <div className="flex justify-between items-center mt-3 flex-wrap gap-2">
-          <div className="flex items-center gap-2 text-[13px]">
-            <span style={{ color: t.textMuted }}>Show</span>
-            <select value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }} className="py-[5px] pr-6 pl-2 rounded-md text-[13px] appearance-none cursor-pointer font-[inherit]" style={{
-              border: `1px solid ${t.cardBorder}`, backgroundColor: dark ? "rgba(255,255,255,.12)" : "#fff", color: t.text,
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
-              backgroundRepeat: "no-repeat", backgroundPosition: "right 6px center",
-            }}>
-              {[25, 50, 100, 200].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-            <span style={{ color: t.textMuted }}>{filtered.length} total</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} className="py-[5px] px-2 rounded-md bg-transparent" style={{ border: `1px solid ${t.cardBorder}`, color: t.textSoft, cursor: page <= 1 ? "default" : "pointer", opacity: page <= 1 ? .3 : 1 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-            <span className="text-[13px] px-2" style={{ color: t.textMuted }}>{page} / {totalPages}</span>
-            <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page >= totalPages} className="py-[5px] px-2 rounded-md bg-transparent" style={{ border: `1px solid ${t.cardBorder}`, color: t.textSoft, cursor: page >= totalPages ? "default" : "pointer", opacity: page >= totalPages ? .3 : 1 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 }
+
+const CSS = `
+.rs{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.rs *{box-sizing:border-box}
+.rs .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.rs-hb{display:flex;gap:6px;flex-shrink:0}
+.rs-b{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;transition:transform .15s}
+.rs-b:hover{transform:translateY(-1px)}.rs-b:disabled{opacity:.5;cursor:not-allowed;transform:none}.rs-b.danger{color:var(--bad)}.rs-b.warn{color:var(--warn)}.rs-right{margin-left:auto}
+.rs-pri{font:inherit;font-size:12.5px;font-weight:800;padding:8px 16px;border-radius:9px;border:0;background:var(--ac);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(196,125,142,.28);white-space:nowrap}.rs-pri:disabled{opacity:.5;cursor:not-allowed}
+.rs-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.rs-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.rs-stt:first-child{border-left:0}
+.rs-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}.rs-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px}.rs-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;min-height:15px}
+.rs-stt.warn b,.rs-stt.warn i{color:var(--warn)}
+.rs-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rs-srch{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);color:var(--dim);font-size:13px;min-width:280px}
+.rs-srch:focus-within{border-color:var(--acln)}.rs-si{display:inline-flex;width:14px;height:14px;flex-shrink:0}.rs-si svg{width:14px;height:14px}
+.rs-srch input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:13px;color:var(--ink);outline:none}
+.rs-x{width:18px;height:18px;border-radius:50%;border:0;background:var(--rail);color:var(--mut);font-size:10px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.rs-cnt{font-size:12px;color:var(--dim)}.rs-count{margin-left:auto}
+.rs-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.rs-sh,.rs-sr{display:grid;grid-template-columns:minmax(240px,1fr) 100px 90px 70px 120px 44px 20px;align-items:center;gap:12px;padding:0 14px}
+.rs-sh{height:34px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line)}.rs .r{text-align:right}
+.rs-sr{padding-top:9px;padding-bottom:9px;border-top:1px solid var(--rail);font-size:13px;min-width:0;cursor:pointer;outline:none}.rs-sr:hover{background:var(--soft)}.rs-sr.open{background:var(--acbg)}.rs-sr:focus-visible{box-shadow:inset 0 0 0 2px var(--acln)}
+.rs-sr.off .rs-sn b,.rs-sr.off .rs-cost,.rs-sr.off .rs-ord,.rs-sr.off .rs-rng,.rs-sr.off .rs-cat{opacity:.55}
+.rs-sr.sk{cursor:default}.rs-sr.sk:hover{background:none}
+.rs-sn{display:flex;flex-direction:column;gap:2px;min-width:0}.rs-sn b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs-sn i{font-style:normal;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mut);min-width:0}
+.rs-facts{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.rs-pv{font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:2px 5px;border-radius:5px;background:var(--soft);border:1px solid var(--line);color:var(--mut);flex-shrink:0}.rs-pv.dao{color:var(--blue);background:var(--bluebg);border-color:transparent}.rs-pv.jap{color:var(--warn)}
+.rs-sid{color:var(--dim);flex-shrink:0}.rs-use{font-size:10.5px;font-weight:700;color:var(--ok);background:var(--okbg);padding:1px 6px;border-radius:6px;flex-shrink:0;white-space:nowrap}.rs-offc{font-size:10.5px;font-weight:700;color:var(--bad);background:var(--badbg);padding:1px 6px;border-radius:6px;flex-shrink:0}
+.rs-cat{font-size:12.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rs-cost{font-weight:700}.rs-ord{font-weight:600}.rs-rng{font-size:12px;color:var(--mut);white-space:nowrap}
+.rs-tog{width:34px;height:20px;border-radius:10px;background:var(--ac);position:relative;display:inline-block;border:0;padding:0;cursor:pointer}.rs-tog i{position:absolute;top:2px;left:16px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}.rs-tog.o{background:var(--line)}.rs-tog.o i{left:2px}
+.rs-chev{width:12px;height:12px;color:var(--dim);display:inline-flex;transition:transform .15s}.rs-chev svg{width:12px;height:12px}.rs-chev.up{transform:rotate(180deg)}
+.rs-sx{padding:12px 14px 14px;background:var(--acbg);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.rs-facts-g{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.rs-f{display:flex;flex-direction:column;gap:2px;padding:9px 12px;border-top:1px solid var(--rail);border-left:1px solid var(--rail);min-width:0}.rs-f:nth-child(-n+3){border-top:0}.rs-f:nth-child(3n+1){border-left:0}
+.rs-f span{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}.rs-f b{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs-raw{grid-column:1/-1;border-left:0}.rs-raw b{white-space:normal;font-weight:500;font-size:12.5px;color:var(--mut)}
+.rs-acts{display:flex;gap:6px;flex-wrap:wrap}
+.rs-edit{display:flex;flex-direction:column;gap:12px}.rs-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.rs-fld{display:flex;flex-direction:column;gap:5px}.rs-fld>span:first-child{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
+.rs-in{width:100%;height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:inherit;font-size:13px;color:var(--ink);outline:none}.rs-in:focus{border-color:var(--acln)}
+.rs-chkrow{display:inline-flex;align-items:center;gap:8px;height:34px;font-size:13px;color:var(--ink)}
+.rs-pg{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}
+.rs-pp{font:inherit;font-size:12px;color:var(--ac);font-weight:600;background:none;border:0;cursor:pointer;padding:0 0 0 4px}
+.rs-pgn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0}
+.rs-ib{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);font:inherit;font-size:14px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}.rs-ib:disabled{opacity:.4;cursor:not-allowed}
+.rs-empty{padding:40px 14px;text-align:center;font-size:13px;color:var(--mut)}
+.rs-bone{display:block;margin:3px 0}
+@media (max-width:900px){
+  .rs-hb{width:100%}.rs-hb .rs-b{flex:1}
+  .rs-stats{grid-template-columns:1fr 1fr}.rs-stt:nth-child(3){border-left:0}.rs-stt:nth-child(n+3){border-top:1px solid var(--line)}.rs-stt b{font-size:17px}
+  .rs-srch{width:100%;min-width:0}.rs-count{display:none}
+  .rs-sh{display:none}
+  .rs-sr{display:grid;grid-template-columns:1fr auto auto;grid-template-areas:"sn sn sn" "cost ord tg";gap:8px 10px;padding:10px 12px}
+  .rs-sn{grid-area:sn}.rs-cat,.rs-rng,.rs-chev{display:none}
+  .rs-cost{grid-area:cost;text-align:left;justify-self:start}.rs-cost::before{content:"cost ";font-family:Outfit,sans-serif;font-weight:500;color:var(--dim);font-size:11.5px}
+  .rs-ord{grid-area:ord;text-align:left}.rs-ord::after{content:" orders";font-family:Outfit,sans-serif;font-weight:500;color:var(--dim);font-size:11.5px}
+  .rs-tg{grid-area:tg;justify-self:end}
+  .rs-sr.sk{grid-template-areas:"sn sn sn" "cost ord tg"}
+  .rs-facts-g{grid-template-columns:1fr 1fr}.rs-f:nth-child(-n+3){border-top:1px solid var(--rail)}.rs-f:nth-child(-n+2){border-top:0}.rs-f:nth-child(3n+1){border-left:1px solid var(--rail)}.rs-f:nth-child(odd){border-left:0}.rs-raw{grid-column:1/-1}
+  .rs-grid{grid-template-columns:1fr 1fr}
+  .rs-acts .rs-b{flex:1;text-align:center}.rs-right{margin-left:0}
+  .rs-pg{flex-wrap:wrap}
+}
+`;
