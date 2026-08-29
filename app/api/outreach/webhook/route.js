@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { watBounds } from '@/lib/format';
 import { OUTREACH_TOPIC_TO_TOUCH, outreachWhatsAppMessage, outreachButtons, tgOutreachReplacement, STAFF_NAMES } from '@/lib/telegram';
 import { callbackOptions, watWhen, watLabel, scheduleRetry, nextWorkingMorning, tooLateForReplacement } from '@/lib/outreach-time';
 import { pullReplacements, poolWhere } from '@/lib/outreach-pool';
@@ -413,8 +414,7 @@ export async function POST(req) {
         // A count per topic, not a name dump. The cards live in the topics with
         // their buttons, so a list of names in a message is not actionable — and
         // the old version ran to four chunked pages of it.
-        const todayStart = new Date();
-        todayStart.setUTCHours(0, 0, 0, 0);
+        const { todayStart } = watBounds();
         // Handed out per stamp, so open work can be traced back to a topic. Backlog
         // reuses day1's stamp, so those two can only ever be counted together.
         const stamped = (field) => prisma.user.count({ where: { [field]: { gte: todayStart } } });
@@ -547,8 +547,7 @@ export async function POST(req) {
           );
         } else {
           const [staffId, name] = target;
-          const todayStart = new Date();
-          todayStart.setUTCHours(0, 0, 0, 0);
+          const { todayStart } = watBounds();
           const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
           const dayEnd = new Date();
           dayEnd.setUTCHours(23, 59, 59, 999);
@@ -592,8 +591,7 @@ export async function POST(req) {
         }
 
       } else if (cmd === '/stats') {
-        const todayStart = new Date();
-        todayStart.setUTCHours(0, 0, 0, 0);
+        const { todayStart } = watBounds();
         // Handed out vs worked is the number that matters: for a long time most
         // of what went out was never touched, and nothing surfaced that.
         const [sent, contacts] = await Promise.all([

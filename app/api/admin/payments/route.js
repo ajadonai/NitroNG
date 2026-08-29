@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { watBounds } from '@/lib/format';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { finalizeDeposit } from '@/lib/deposit-finalization';
@@ -119,9 +120,8 @@ export async function GET(req) {
     };
 
     // The facts row: what is waiting, what came in today and this month, what failed today. Not filtered.
-    const dayStart = new Date(); dayStart.setUTCHours(-1, 0, 0, 0); // midnight in Lagos (UTC+1)
-    if (dayStart > new Date()) dayStart.setUTCDate(dayStart.getUTCDate() - 1);
-    const monthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1) - 3600000);
+    // Today and this month start at midnight in Lagos, like every other admin figure.
+    const { todayStart: dayStart, monthStart } = watBounds();
     const [pendingAgg, todayAgg, monthAgg, failedToday, monthByMethod] = await Promise.all([
       prisma.transaction.aggregate({ where: { type: 'deposit', method: { in: ['manual', 'crypto'] }, status: 'Pending', NOT: { note: { contains: '[awaiting_confirmation]' } } }, _sum: { amount: true }, _count: true }),
       prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: dayStart } }, _sum: { amount: true }, _count: true }),

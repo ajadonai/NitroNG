@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { watBounds } from '@/lib/format';
 import { log } from '@/lib/logger';
 import { sendOutreach } from '@/lib/telegram';
 import { row, pct } from '@/lib/outreach-format';
@@ -40,8 +41,7 @@ export async function GET(req) {
   if (!moment) return Response.json({ ok: true, skipped: 'not a break boundary' });
 
   try {
-    const todayStart = new Date();
-    todayStart.setUTCHours(0, 0, 0, 0);
+    const { todayStart } = watBounds();
     const stamped = (f) => prisma.user.count({ where: { [f]: { gte: todayStart } } });
     const [handed, contacts] = await Promise.all([
       Promise.all([

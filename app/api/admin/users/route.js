@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { watBounds } from '@/lib/format';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail, maskPhone } from '@/lib/admin';
 import { sendEmail, walletCreditEmail } from '@/lib/email';
@@ -56,11 +57,9 @@ export async function GET(req) {
       : { createdAt: sortDir };
 
     // --- Dates for stats ---
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Week and month start at midnight in Lagos, not on the server's clock.
+    const { now, todayStart, monthStart: startOfMonth } = watBounds();
+    const startOfWeek = new Date(todayStart.getTime() - new Date(now.getTime() + 3600000).getUTCDay() * 86400000);
 
     // --- Select fields ---
     const userSelect = {

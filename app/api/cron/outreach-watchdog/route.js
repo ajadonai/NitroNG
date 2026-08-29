@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { watBounds } from '@/lib/format';
 import { log } from '@/lib/logger';
 import { sendOutreach, OUTREACH_TOPICS } from '@/lib/telegram';
 import { isOutreachPaused } from '@/lib/outreach-pause';
@@ -43,8 +44,7 @@ export async function GET(req) {
   }
   if (await isOutreachPaused()) return Response.json({ ok: true, paused: true });
 
-  const todayStart = new Date();
-  todayStart.setUTCHours(0, 0, 0, 0);
+  const { todayStart } = watBounds();
   const problems = [];
 
   try {
