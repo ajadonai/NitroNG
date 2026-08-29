@@ -392,9 +392,6 @@ function FinanceOverviewTab({ dark, t }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dateValue, setDateValue] = useState(null);
-  const chartRef = useRef(null);
-  const chartInstance = useRef(null);
-
   const load = (dv) => {
     setLoading(true);
     const params = new URLSearchParams();
@@ -403,153 +400,150 @@ function FinanceOverviewTab({ dark, t }) {
     if (!dv) params.set("range", "all");
     fetch(`/api/admin/analytics?${params}`).then(res => res.json()).then(d => { setStats(d); setLoading(false); }).catch(() => setLoading(false));
   };
-
-  // Render chart when data is ready
-  useEffect(() => {
-    if (!stats?.chartData?.length || !chartRef.current) return;
-    let destroyed = false;
-    import("chart.js/auto").then(({ default: Chart }) => {
-      if (destroyed || !chartRef.current) return;
-      if (chartInstance.current) chartInstance.current.destroy();
-      const cd = stats.chartData;
-      const gridColor = dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
-      const tickColor = dark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)";
-      chartInstance.current = new Chart(chartRef.current, {
-        type: "bar",
-        data: {
-          labels: cd.map(d => { const dt = new Date(d.date); return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }),
-          datasets: [
-            { label: "Orders", data: cd.map(d => d.orders), backgroundColor: dark ? "rgba(196,125,142,0.5)" : "rgba(196,125,142,0.6)", borderRadius: 4, barPercentage: 0.6, yAxisID: "y" },
-            { label: "Deposits", data: cd.map(d => d.deposits), backgroundColor: dark ? "rgba(5,150,105,0.45)" : "rgba(5,150,105,0.55)", borderRadius: 4, barPercentage: 0.6, yAxisID: "y1" },
-          ],
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          interaction: { mode: "index", intersect: false },
-          plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ctx.dataset.label === "Deposits" ? "Deposits: ₦" + ctx.parsed.y.toLocaleString() : "Orders: " + ctx.parsed.y } } },
-          scales: {
-            x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 15 } },
-            y: { position: "left", grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 }, stepSize: 1 }, title: { display: true, text: "Orders", color: tickColor, font: { size: 11 } } },
-            y1: { position: "right", grid: { drawOnChartArea: false }, ticks: { color: tickColor, font: { size: 11 }, callback: (v) => "₦" + (v >= 1000 ? Math.round(v / 1000) + "K" : v) }, title: { display: true, text: "Deposits", color: tickColor, font: { size: 11 } } },
-          },
-        },
-      });
-    });
-    return () => { destroyed = true; if (chartInstance.current) { chartInstance.current.destroy(); chartInstance.current = null; } };
-  }, [stats, dark]);
-
   const changeDateValue = (v) => { setDateValue(v); load(v); };
-
   const s = stats || {};
+  const net = s.totalRevenue || 0, gross = s.grossRevenue || net, refunds = s.revenueRefunds || 0, cost = s.totalCost || 0, profit = net - cost;
+  const markup = cost > 0 ? Math.round(profit / cost * 100) : 0;
+  const deposits = s.totalDeposits || 0, orders = s.orderCount || 0;
+  const delta = (now, before) => {
+    if (!s.prev || !before) return null;
+    const pct = Math.round((now - before) / before * 100);
+    return <i className={"fo-d " + (pct >= 0 ? "up" : "dn")}>{pct >= 0 ? "↑" : "↓"} {Math.abs(pct)}% vs before</i>;
+  };
+  const short = (v) => v >= 1e6 ? `₦${(v / 1e6).toFixed(2)}M` : v >= 1e3 ? `₦${Math.round(v / 1e3)}K` : `₦${Math.round(v)}`;
+  const days = (s.chartData || []).slice(-31);
+  const maxDay = Math.max(1, ...days.map(d => d.revenue || 0));
+  const best = days.reduce((m, d) => (d.revenue || 0) > (m?.revenue || 0) ? d : m, null);
+  const plats = (s.topPlatforms || []);
+  const maxPlat = Math.max(1, ...plats.map(p => p.revenue || 0));
+  const methods = (s.depositsByMethod || []);
+  const methodTotal = methods.reduce((n, m) => n + m.amount, 0) || 1;
+  const methodName = (m) => ({ flutterwave: "Flutterwave", manual: "Bank transfer", crypto: "Crypto", paystack: "Paystack" })[m] || m.charAt(0).toUpperCase() + m.slice(1);
+  const dayLabel = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const vars = {
+    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
+    "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--bad": dark ? "#fca5a5" : "#c62828", "--cost": dark ? "#5c6170" : "#a19b93", "--in": dark ? "#a5b4fc" : "#4c62c4",
+  };
+  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   return (
-    <>
-      {/* Range filter */}
-      <div className="flex justify-end mb-4">
-        <DateRangePicker dark={dark} t={t} value={dateValue} onChange={changeDateValue} defaultPreset="This month" />
-      </div>
-
-      {loading ? <div className="adm-stats">{[1,2,3,4,5,6,7,8].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[90px] rounded-xl`} />)}</div> : <>
-      <div className="adm-stats mt-0">
-        {[
-          ["Gross Revenue", fN(s.revenue?.gross ?? s.totalRevenue ?? 0), t.textMuted],
-          ["Refunds", "-" + fN(s.revenue?.refunds || 0), dark ? "#fca5a5" : "#dc2626"],
-          ["Net Revenue", fN(s.revenue?.net ?? s.totalRevenue ?? 0), t.green],
-          ["Provider Cost", fN(s.totalCost || 0), dark ? "#fca5a5" : "#dc2626"],
-          ["Profit", fN(s.profit || 0), s.profit >= 0 ? t.green : (dark ? "#fca5a5" : "#dc2626")],
-          ["Money In", fN(s.totalMoneyIn || 0), t.green],
-          ["Provider Top-ups", fN(s.totalMoneyOut || 0), dark ? "#fca5a5" : "#dc2626"],
-          ["Net Cash Flow", fN(s.netCashFlow || 0), (s.netCashFlow || 0) >= 0 ? t.green : (dark ? "#fca5a5" : "#dc2626")],
-          ["Orders", String(s.orderCount || 0), t.amber],
-          ["New Users", String(s.newUsers || 0), t.blue],
-        ].map(([label, val, color]) => (
-          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.85)", border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-            <div className="dash-stat-dot" style={{ background: color }} />
-            <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
-            <div className="m dash-stat-value" style={{ color }}>{val}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Chart — Orders & Deposits */}
-      {stats?.chartData?.length > 0 && (
-        <div className="adm-card mb-6" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-          <div className="set-card-header flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <div className="set-card-title" style={{ color: t.textMuted }}>Orders & Deposits</div>
-            <div className="flex gap-3 text-xs" style={{ color: t.textMuted }}>
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: dark ? "rgba(196,125,142,0.5)" : "rgba(196,125,142,0.6)" }} />Orders</span>
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "#059669" }} />Deposits</span>
-            </div>
-          </div>
-          <div className="set-card-body">
-            <div className="relative h-60">
-              <canvas ref={chartRef} />
-            </div>
-          </div>
+    <div className="fo" style={vars}>
+      <style>{FO_CSS}</style>
+      <div className="fo-bar"><DateRangePicker dark={dark} t={t} value={dateValue} onChange={changeDateValue} defaultPreset="This month" /></div>
+      {loading ? <>{bone(84)}{bone(120)}{bone(230)}<div className="fo-cols">{bone(220)}{bone(220)}</div></> : <>
+        <div className="fo-stats">
+          <div className="fo-stt"><b className="m">{fN(net)}</b><span>Net revenue</span>{delta(net, s.prev?.netRevenue) || <i>gross {fN(gross)}</i>}</div>
+          <div className="fo-stt"><b className={"m" + (profit >= 0 ? " ok" : " bad")}>{fN(profit)}</b><span>Profit</span><i>{markup}% on cost{s.prev ? <> · {delta(profit, s.prev.profit)}</> : ""}</i></div>
+          <div className="fo-stt"><b className="m">{fN(deposits)}</b><span>Cash in</span><i>{(s.depositCount || 0).toLocaleString()} deposits{s.prev ? <> · {delta(deposits, s.prev.deposits)}</> : ""}</i></div>
+          <div className="fo-stt"><b className="m">{orders.toLocaleString()}</b><span>Orders</span><i>{fN(s.avgOrderValue || 0)} average{s.prev ? <> · {delta(orders, s.prev.orders)}</> : ""}</i></div>
         </div>
-      )}
 
-      <div className="adm-grid-2 mt-6">
-        <div>
-          <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-            <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-              <div className="set-card-title" style={{ color: t.textMuted }}>Top platforms</div>
-            </div>
-            {(s.topPlatforms || []).length > 0 ? s.topPlatforms.map((p, i, arr) => (
-              <div key={p.name} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                <div><div className="text-[15px] font-medium" style={{ color: t.text }}>{p.name}</div><div className="text-sm" style={{ color: t.textMuted }}>{p.orders} orders</div></div>
-                <div className="text-[15px] font-semibold" style={{ color: t.green }}>{fN(p.revenue || 0)}</div>
+        {gross > 0 && (
+          <section className="fo-card">
+            <header><h3>Where the money went</h3><span className="fo-cnt">gross {fN(gross)}</span></header>
+            <div className="fo-cb">
+              <div className="fo-flow">
+                {[["Refunds", refunds, "ref"], ["Provider cost", cost, "cost"], ["Profit", Math.max(0, profit), "prof"]].map(([lab, v, c]) => (
+                  <i key={c} className={c} style={{ width: `${Math.max(0, v / gross * 100)}%` }}><span>{lab}<b className="m">{short(v)}</b></span></i>
+                ))}
               </div>
-            )) : <div className="py-8 px-5 text-center">
-              <svg width="36" height="36" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 10px", opacity: .7 }}>
-                <rect x="6" y="28" width="14" height="24" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
-                <rect x="25" y="12" width="14" height="40" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
-                <rect x="44" y="20" width="14" height="32" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".25" />
-              </svg>
-              <div className="text-sm font-semibold" style={{ color: t.textSoft }}>No platform data yet</div>
-            </div>}
-          </div>
-        </div>
-        <div>
-          <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-            <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-              <div className="set-card-title" style={{ color: t.textMuted }}>Order status breakdown</div>
+              <div className="fo-legend">
+                <span><i className="ref" />Refunds {fN(refunds)} · {(refunds / gross * 100).toFixed(1)}%</span>
+                <span><i className="cost" />Provider cost {fN(cost)} · {(cost / gross * 100).toFixed(1)}%</span>
+                <span><i className="prof" />Profit {fN(profit)} · {(profit / gross * 100).toFixed(1)}%</span>
+              </div>
             </div>
-            {[["Completed", s.byStatus?.find(x => x.status === "Completed")?.count || 0, t.green], ["Processing", s.byStatus?.find(x => x.status === "Processing")?.count || 0, t.blue], ["Pending", s.byStatus?.find(x => x.status === "Pending")?.count || 0, t.amber], ["Cancelled", s.byStatus?.find(x => x.status === "Cancelled")?.count || 0, dark ? "#fca5a5" : "#dc2626"]].map(([label, count, color], i, arr) => (
-              <div key={label} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-                  <span className="text-[15px]" style={{ color: t.text }}>{label}</span>
+          </section>
+        )}
+
+        {days.length > 1 && (
+          <section className="fo-card">
+            <header><h3>Revenue and cost by day</h3><span className="fo-cnt">{days.length} days · {fN(days.reduce((n, d) => n + (d.revenue || 0), 0))}</span></header>
+            <div className="fo-cb">
+              <div className="fo-days">
+                {days.map((d, i) => (
+                  <div key={d.date} className="fo-dbar" title={`${dayLabel(d.date)} · ${fN(d.revenue || 0)} revenue · ${fN(d.cost || 0)} cost`}>
+                    <i className="rv" style={{ height: `${(d.revenue || 0) / maxDay * 100}%` }} />
+                    <i className="cs" style={{ height: `${(d.cost || 0) / maxDay * 100}%` }} />
+                    {(days.length <= 16 || i % Math.ceil(days.length / 12) === 0) && <em>{new Date(d.date + "T12:00:00").getDate()}</em>}
+                  </div>
+                ))}
+              </div>
+              <div className="fo-legend"><span><i className="rv" />Revenue</span><span><i className="cs" />Provider cost</span>{best && <span className="fo-dim">Best day {dayLabel(best.date)} · {fN(best.revenue)}</span>}</div>
+            </div>
+          </section>
+        )}
+
+        <div className="fo-cols">
+          <section className="fo-card">
+            <header><h3>Platforms</h3><span className="fo-cnt">revenue · orders · profit on cost</span></header>
+            <div className="fo-cb tight">
+              {plats.length === 0 ? <div className="fo-empty">No orders in this period.</div> : plats.map(p => (
+                <div key={p.name} className="fo-pr">
+                  <span className="fo-pn">{p.name}</span>
+                  <span className="fo-pb"><i style={{ width: `${(p.revenue || 0) / maxPlat * 100}%` }} /></span>
+                  <b className="m">{short(p.revenue || 0)}</b>
+                  <span className="m fo-dimc">{(p.orders || 0).toLocaleString()}</span>
+                  <span className="m ok">{p.cost > 0 ? `${Math.round((p.revenue - p.cost) / p.cost * 100)}%` : "—"}</span>
                 </div>
-                <span className="text-[15px] font-semibold" style={{ color }}>{count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Top Services */}
-      {(s.topServices || []).length > 0 && (
-        <div className="mt-6">
-          <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-            <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-              <div className="set-card-title" style={{ color: t.textMuted }}>Top services by revenue</div>
+              ))}
             </div>
-            {s.topServices.map((sv, i, arr) => (
-              <div key={i} className="adm-list-row" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[15px] font-medium truncate" style={{ color: t.text }}>{sv.name}</div>
-                  <div className="text-[13px]" style={{ color: t.textMuted }}>{sv.category} · {sv.orders} orders</div>
+          </section>
+          <section className="fo-card">
+            <header><h3>Cash in, by method</h3><span className="fo-cnt">{fN(deposits)} · {(s.depositCount || 0).toLocaleString()} deposits</span></header>
+            <div className="fo-cb tight">
+              {methods.length === 0 ? <div className="fo-empty">No deposits in this period.</div> : methods.map(m => (
+                <div key={m.method} className="fo-pr">
+                  <span className="fo-pn">{methodName(m.method)}</span>
+                  <span className="fo-pb"><i className="in" style={{ width: `${m.amount / methodTotal * 100}%` }} /></span>
+                  <b className="m">{short(m.amount)}</b>
+                  <span className="m fo-dimc">{m.count.toLocaleString()}</span>
+                  <span className="m fo-dimc">{Math.round(m.amount / methodTotal * 100)}%</span>
                 </div>
-                <div className="text-[15px] font-semibold" style={{ color: t.green }}>{fN(sv.revenue || 0)}</div>
-              </div>
-            ))}
-          </div>
+              ))}
+              {s.walletLiability && <div className="fo-note"><span>Held in wallets</span><b className="m">{fN(s.walletLiability.balances)}</b><em>{s.walletLiability.users.toLocaleString()} people</em></div>}
+            </div>
+          </section>
         </div>
-      )}
       </>}
-    </>
+    </div>
   );
 }
+
+const FO_CSS = `
+.fo{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.fo *{box-sizing:border-box}
+.fo .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.fo-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fo-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.fo-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.fo-stt:first-child{border-left:0}
+.fo-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fo-stt b.ok{color:var(--ok)}.fo-stt b.bad{color:var(--bad)}
+.fo-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px}
+.fo-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fo-d.up{color:var(--ok)}.fo-d.dn{color:var(--bad)}
+.fo-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.fo-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}
+.fo-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.fo-cnt{font-size:11.5px;color:var(--dim)}
+.fo-cb{padding:14px 16px;display:flex;flex-direction:column;gap:10px}.fo-cb.tight{padding:6px 16px 10px;gap:0}
+.fo-flow{display:flex;height:44px;border-radius:10px;overflow:hidden;background:var(--rail)}.fo-flow i{display:flex;align-items:center;justify-content:center;min-width:0;font-style:normal}
+.fo-flow i.ref{background:var(--bad);opacity:.85}.fo-flow i.cost{background:var(--cost)}.fo-flow i.prof{background:var(--ok)}
+.fo-flow span{display:flex;flex-direction:column;align-items:center;color:#fff;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap;overflow:hidden;padding:0 6px}.fo-flow span b{font-size:13px;letter-spacing:0;text-transform:none}.fo-flow i.ref span{display:none}
+.fo-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--mut)}.fo-legend span{display:inline-flex;align-items:center;gap:6px}.fo-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.fo-legend i.ref{background:var(--bad)}.fo-legend i.cost,.fo-legend i.cs{background:var(--cost)}.fo-legend i.prof{background:var(--ok)}.fo-legend i.rv{background:var(--ac)}.fo-dim{margin-left:auto;color:var(--dim)}
+.fo-days{display:flex;align-items:flex-end;gap:6px;height:150px;padding-top:6px;border-bottom:1px solid var(--line)}
+.fo-dbar{flex:1;display:flex;align-items:flex-end;justify-content:center;gap:2px;height:100%;position:relative;padding-bottom:18px;min-width:0}
+.fo-dbar i{width:44%;border-radius:3px 3px 0 0;display:block;min-height:1px}.fo-dbar i.rv{background:var(--ac)}.fo-dbar i.cs{background:var(--cost);opacity:.7}.fo-dbar em{position:absolute;bottom:0;font-style:normal;font-size:10px;color:var(--dim)}
+.fo-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.fo-pr{display:grid;grid-template-columns:96px 1fr 74px 52px 44px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--rail);font-size:13px}.fo-pr:first-child{border-top:0}
+.fo-pn{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fo-pb{height:8px;border-radius:4px;background:var(--rail);overflow:hidden}.fo-pb i{display:block;height:100%;background:var(--ac);border-radius:4px}.fo-pb i.in{background:var(--in)}
+.fo-pr b{text-align:right;font-weight:700}.fo-dimc{text-align:right;color:var(--mut);font-size:12px}.fo-pr .ok{text-align:right;color:var(--ok);font-weight:700;font-size:12px}
+.fo-note{display:flex;align-items:baseline;gap:8px;margin-top:8px;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px;color:var(--mut)}.fo-note b{font-size:14px;color:var(--ink)}.fo-note em{font-style:normal;color:var(--dim);margin-left:auto}
+.fo-empty{padding:18px 0;font-size:13px;color:var(--mut)}
+@media (max-width:900px){
+  .fo-stats{grid-template-columns:1fr 1fr}.fo-stt:nth-child(3){border-left:0}.fo-stt:nth-child(n+3){border-top:1px solid var(--line)}.fo-stt b{font-size:17px}
+  .fo-flow{height:40px}.fo-flow span b{font-size:12px}.fo-days{gap:3px;height:120px}
+  .fo-cols{grid-template-columns:1fr}.fo-pr{grid-template-columns:84px 1fr 64px 40px}.fo-pr>span:nth-child(4){display:none}
+}
+`;
 
 /* ═══════════════════════════════════════════ */
 /* ═══ ALERTS PAGE                         ═══ */
