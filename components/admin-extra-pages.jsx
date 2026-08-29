@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from "react";
+import { Fragment, useState, useEffect, useCallback, useRef } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
@@ -26,27 +26,26 @@ export function AdminActivityPage({ dark, t }) {
   const [filter, setFilter] = useState("all");
   const [adminFilter, setAdminFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [period, setPeriod] = useState("all");
+  const [sysSev, setSysSev] = useState("all");
   const [sysFilter, setSysFilter] = useState("all");
   const [expandedEvent, setExpandedEvent] = useState(null);
   const [page, setPage] = useState(0);
-  const [perPage, setPerPage] = useState(10);
+  const perPage = 25;
   const [sysPage, setSysPage] = useState(0);
-  const [sysPerPage, setSysPerPage] = useState(10);
+  const sysPerPage = 25;
 
   const fetchActivity = useCallback((q) => {
-    const params = q ? `?search=${encodeURIComponent(q)}` : '';
+    const params = `?limit=500${q ? `&search=${encodeURIComponent(q)}` : ''}`;
     fetch(`/api/admin/activity${params}`).then(r => r.json()).then(d => { setLogs(d.activity || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
-
   useEffect(() => { fetchActivity(); }, [fetchActivity]);
-
   const actSearchTimer = useRef(null);
   useEffect(() => {
     if (actSearchTimer.current) clearTimeout(actSearchTimer.current);
     actSearchTimer.current = setTimeout(() => fetchActivity(search), search ? 350 : 0);
     return () => clearTimeout(actSearchTimer.current);
   }, [search, fetchActivity]);
-
   useEffect(() => {
     if (tab === "system" && sysEvents.length === 0 && !sysLoading) {
       setSysLoading(true);
@@ -54,221 +53,170 @@ export function AdminActivityPage({ dark, t }) {
     }
   }, [tab]);
 
-  // Admin tab helpers
-  const typeLabels = { user: "Users", order: "Orders", alert: "Alerts", blog: "Blog", coupon: "Coupons", settings: "Settings", service: "Services", payment: "Payments", reward: "Rewards", leaderboard_reward: "Rewards", leaderboard_announcement: "Rewards", auto_reward_config: "Rewards", team: "Team", admin: "Admin", ticket: "Tickets", maintenance: "Maintenance", crew: "Crew", acquisition: "Tracking Links" };
+  const typeLabels = { user: "Users", order: "Orders", alert: "Alerts", blog: "Blog", coupon: "Coupons", settings: "Settings", service: "Services", payment: "Payments", reward: "Rewards", leaderboard_reward: "Rewards", leaderboard_announcement: "Rewards", auto_reward_config: "Rewards", team: "Team", admin: "Admin", ticket: "Tickets", system: "System", refill: "Refills", reseller: "Resellers", crew: "Crew", changelog: "Changelog", promotion: "Promotions", pricing: "Pricing", issue: "Issues" };
   const getTypeLabel = (type) => {
     if (!type) return "Other";
     if (typeLabels[type]) return typeLabels[type];
     if (type.startsWith("Rewarded") || type.startsWith("Updated auto-reward") || type.startsWith("Updated leaderboard")) return "Rewards";
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
-  const groupedTypes = {};
-  const adminNames = new Set();
+  const dayKey = (iso) => new Date(iso).toDateString();
+  const todayKey = new Date().toDateString();
+  const yesterdayKey = new Date(Date.now() - 86400e3).toDateString();
+  const weekAgo = Date.now() - 7 * 86400e3;
+  const inPeriod = (l) => period === "all" ? true : period === "today" ? dayKey(l.time) === todayKey : new Date(l.time).getTime() >= weekAgo;
+  const groupedTypes = {}; const adminNames = new Set();
   logs.forEach(l => { const label = getTypeLabel(l.type); groupedTypes[label] = (groupedTypes[label] || 0) + 1; if (l.admin) adminNames.add(l.admin); });
   const typeEntries = Object.entries(groupedTypes).sort((a, b) => b[1] - a[1]);
-  const filtered = logs.filter(l => {
-    if (filter !== "all" && getTypeLabel(l.type) !== filter) return false;
-    if (adminFilter !== "all" && l.admin !== adminFilter) return false;
-    return true;
-  });
-  const adminPages = Math.ceil(filtered.length / perPage);
+  const filtered = logs.filter(l => (filter === "all" || getTypeLabel(l.type) === filter) && (adminFilter === "all" || l.admin === adminFilter) && inPeriod(l));
+  const adminPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const adminPaged = filtered.slice(page * perPage, (page + 1) * perPage);
-  const typeColor = (type) => {
-    if (type === "order") return t.blue;
-    if (type === "credit" || type === "deposit") return t.green;
-    if (type === "admin" || type === "maintenance") return t.amber;
-    if (type === "notification") return t.accent;
-    if (type === "crew" || type === "acquisition") return t.accent;
-    return t.textMuted;
-  };
+  const todayLogs = logs.filter(l => dayKey(l.time) === todayKey);
+  const weekBy = {}; logs.forEach(l => { if (new Date(l.time).getTime() >= weekAgo && l.admin) weekBy[l.admin] = (weekBy[l.admin] || 0) + 1; });
+  const weekTop = Object.entries(weekBy).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const peopleToday = new Set(todayLogs.map(l => l.admin).filter(Boolean)).size;
+  const cleanName = (n) => (n || "").replace(/\s*\(TG\)\s*$/, "");
+  const fromTg = (n) => /\(TG\)\s*$/.test(n || "");
+  const initialsOf = (n) => cleanName(n).split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "?";
+  const timeOf = (iso) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const dayLabel = (iso) => { const k = dayKey(iso); if (k === todayKey) return `Today · ${new Date(iso).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}`; if (k === yesterdayKey) return "Yesterday"; return new Date(iso).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }); };
 
-  // System tab helpers
-  const SYS_META = {
-    dispatch_error:   { label: "Dispatch errors", icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>, color: dk => dk ? "#fca5a5" : "#dc2626" },
-    partial_delivery: { label: "Partial deliveries", icon: "◑", color: dk => dk ? "#fcd34d" : "#d97706" },
-    refund:           { label: "Refunds", icon: "↩", color: dk => dk ? "#a5b4fc" : "#4f46e5" },
-  };
-  const sysFiltered = sysFilter === "all" ? sysEvents : sysEvents.filter(e => e.type === sysFilter);
-  const sysPages = Math.ceil(sysFiltered.length / sysPerPage);
+  const sysTypeLabel = { dispatch_error: "Dispatch", partial_delivery: "Delivery", refund: "Refund" };
+  const sysFiltered = sysEvents.filter(e => (sysFilter === "all" || e.type === sysFilter) && (sysSev === "all" || e.severity === sysSev));
+  const sysPages = Math.max(1, Math.ceil(sysFiltered.length / sysPerPage));
   const sysPaged = sysFiltered.slice(sysPage * sysPerPage, (sysPage + 1) * sysPerPage);
-  const severityColor = (sev, dk) => sev === "high" ? (dk ? "#fca5a5" : "#dc2626") : sev === "medium" ? (dk ? "#fcd34d" : "#d97706") : (dk ? "#a5b4fc" : "#4f46e5");
+  const highCount = sysEvents.filter(e => e.severity === "high").length;
+  const refundsToday = sysEvents.filter(e => e.type === "refund" && dayKey(e.time) === todayKey);
+  const refundsTodaySum = refundsToday.reduce((n, e) => n + (Number(e.meta?.amount) || 0), 0);
+  const metaOf = (ev) => ev.meta && typeof ev.meta === "object" ? Object.entries(ev.meta).filter(([, v]) => v != null && v !== "") : [];
 
+  const vars = {
+    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent, "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)", "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828", "--badbg": dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.06)",
+  };
+  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
+  const pager = (pg, pages, total, setPg) => (
+    <div className="lg-pg"><span className="lg-cnt">{total === 0 ? "" : `${pg * perPage + 1}–${Math.min((pg + 1) * perPage, total)} of ${total}`}</span><span className="lg-pgn"><button type="button" className="lg-ib" disabled={pg === 0} onClick={() => setPg(p => p - 1)} aria-label="Previous page">‹</button><span className="lg-cnt">{pg + 1} of {pages}</span><button type="button" className="lg-ib" disabled={pg >= pages - 1} onClick={() => setPg(p => p + 1)} aria-label="Next page">›</button></span></div>
+  );
   return (
-    <>
+    <div className="lg" style={vars}>
+      <style>{LG_CSS}</style>
       <div className="adm-header">
         <div className="adm-header-row">
           <div>
             <div className="adm-title" style={{ color: t.text }}>Logs</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>{tab === "admin" ? `Admin audit trail — ${logs.length} entries` : `System events — last 30 days`}</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>Who did what, and what the system did on its own.</div>
           </div>
           <SegPill value={tab} options={[{ value: "admin", label: "Admin" }, { value: "system", label: `System${sysEvents.length > 0 ? ` (${sysEvents.length})` : ""}` }]} onChange={v => { setTab(v); setExpandedEvent(null); }} dark={dark} t={t} />
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {/* ═══ ADMIN TAB ═══ */}
       {tab === "admin" && <>
-        <div className="adm-filters flex items-center gap-2 flex-wrap">
-          <div className="relative flex-1 min-w-[180px] max-w-[300px]">
-            <input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} placeholder="Search logs..." className="w-full py-2 px-3 pr-8 rounded-lg text-[13px] outline-none font-[inherit] box-border" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.12)" : "#fff", color: t.text }} />
-            {search && <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
-          </div>
-          <div className="flex items-center gap-2 ml-auto">
-            <FilterDropdown dark={dark} t={t} value={adminFilter} onChange={(v) => { setAdminFilter(v); setPage(0); }} options={[
-              { value: "all", label: "All admins" },
-              ...[...adminNames].sort().map(name => ({ value: name, label: name })),
-            ]} />
-            <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(0); }} options={[
-              { value: "all", label: "All types" },
-              ...typeEntries.map(([label]) => ({ value: label, label })),
-            ]} />
-          </div>
+        <div className="lg-stats">
+          {loading ? Array.from({ length: 4 }, (_, i) => <div key={i} className="lg-stt">{bone(20)}</div>) : <>
+            <div className="lg-stt"><b className="m">{todayLogs.length}</b><span>Actions today</span><i>{peopleToday ? `${peopleToday} ${peopleToday === 1 ? "person" : "people"}` : "nobody yet"}</i></div>
+            {weekTop.map(([name, n]) => <div key={name} className="lg-stt"><b className="m">{n}</b><span>{cleanName(name)}, 7 days</span><i>{fromTg(name) ? "from Telegram" : "on the panel"}</i></div>)}
+            {weekTop.length < 3 && Array.from({ length: 3 - weekTop.length }, (_, i) => <div key={i} className="lg-stt"><b className="m">—</b><span>Quiet</span><i>no one else this week</i></div>)}
+          </>}
         </div>
-
-        <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-          {loading ? (
-            <div className="adm-empty">{[1,2,3,4,5].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-10 rounded-md mb-1.5`} />)}</div>
-          ) : adminPaged.length > 0 ? adminPaged.map((l, i) => (
-            <div key={l.id || i} className="adm-list-row" style={{ borderBottom: i < adminPaged.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-              <div className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ background: typeColor(l.type) }} />
-              <div className="flex-1 min-w-0">
-                <div className="text-[15px] font-medium" style={{ color: t.text }}>{l.action}</div>
-                <div className="text-sm mt-0.5" style={{ color: t.textMuted }}>
-                  <span className="font-semibold" style={{ color: t.textSoft }}>{l.admin}</span> · {l.type || "action"} · {l.time ? fD(l.time) : ""}
-                </div>
-              </div>
-            </div>
-          )) : (
-            <div className="py-[60px] px-5 text-center">
-              <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
-                <circle cx="32" cy="32" r="22" stroke={t.accent} strokeWidth="1.5" opacity=".25" />
-                <line x1="32" y1="18" x2="32" y2="32" stroke={t.accent} strokeWidth="2" opacity=".3" strokeLinecap="round" />
-                <line x1="32" y1="32" x2="42" y2="38" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
-              </svg>
-              <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No activity logged yet</div>
-              <div className="text-sm" style={{ color: t.textMuted }}>Activity will appear here as actions are taken</div>
-            </div>
-          )}
-          {adminPages > 1 && (
-            <div className="flex items-center justify-between py-3 px-5" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
-              <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page === 0 ? .35 : 1 }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                Prev
-              </button>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 text-[12px]" style={{ color: t.textMuted }}>
-                  <span>Show</span>
-                  <select value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(0); }} className="py-1 px-1.5 rounded-md text-[12px] font-medium cursor-pointer font-[inherit]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>
-                    {[10, 25, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
-                  </select>
-                </div>
-                <span className="text-[12px] font-medium" style={{ color: t.textMuted }}>Page {page + 1} of {adminPages}</span>
-              </div>
-              <button onClick={() => setPage(p => Math.min(adminPages - 1, p + 1))} disabled={page >= adminPages - 1} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page >= adminPages - 1 ? .35 : 1 }}>
-                Next
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
-            </div>
-          )}
+        <div className="lg-bar">
+          <div className="lg-srch"><input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} placeholder="Search actions" />{search && <button type="button" className="lg-x" onClick={() => setSearch("")} aria-label="Clear search">✕</button>}</div>
+          <FilterDropdown dark={dark} t={t} value={adminFilter} onChange={(v) => { setAdminFilter(v); setPage(0); }} options={[{ value: "all", label: "Everyone" }, ...[...adminNames].sort().map(n => ({ value: n, label: n }))]} />
+          <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(0); }} options={[{ value: "all", label: "All kinds" }, ...typeEntries.map(([label]) => ({ value: label, label }))]} />
+          <FilterDropdown dark={dark} t={t} value={period} onChange={(v) => { setPeriod(v); setPage(0); }} options={[{ value: "all", label: "All time" }, { value: "today", label: "Today" }, { value: "week", label: "This week" }]} />
+          <span className="lg-cnt">{loading ? "" : `${filtered.length} action${filtered.length === 1 ? "" : "s"}`}</span>
         </div>
-      </>}
-
-      {/* ═══ SYSTEM TAB ═══ */}
-      {tab === "system" && <>
-        <div className="adm-filters flex justify-end">
-          <FilterDropdown dark={dark} t={t} value={sysFilter} onChange={(v) => { setSysFilter(v); setSysPage(0); setExpandedEvent(null); }} options={[
-            { value: "all", label: "All" },
-            ...Object.entries(SYS_META).map(([key, m]) => ({ value: key, label: m.label })),
-          ]} />
-        </div>
-
-        <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-          {sysLoading ? (
-            <div className="adm-empty">{[1,2,3,4,5].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-10 rounded-md mb-1.5`} />)}</div>
-          ) : sysPaged.length > 0 ? sysPaged.map((ev, i) => {
-            const meta = SYS_META[ev.type] || SYS_META.dispatch_error;
-            const isOpen = expandedEvent === ev.id;
+        <div className="lg-list">
+          {loading ? <div className="lg-sk">{bone(34)}{bone(34)}{bone(34)}{bone(34)}</div> : adminPaged.length === 0 ? <div className="lg-empty">{logs.length === 0 ? "Nothing logged yet." : "No actions match."}</div> : adminPaged.map((l, i) => {
+            const newDay = i === 0 || dayKey(l.time) !== dayKey(adminPaged[i - 1].time);
             return (
-              <div key={ev.id}>
-                <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => setExpandedEvent(isOpen ? null : ev.id)} className="adm-list-row cursor-pointer transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ borderBottom: (i < sysPaged.length - 1 || isOpen) ? `1px solid ${t.cardBorder}` : "none" }}>
-                  <div className="w-7 h-7 rounded-[8px] flex items-center justify-center text-sm font-semibold shrink-0" style={{ background: dark ? `${meta.color(dark)}15` : `${meta.color(dark)}10`, color: meta.color(dark) }}>{meta.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[15px] font-medium flex items-center gap-2" style={{ color: t.text }}>
-                      <span className="overflow-hidden text-ellipsis whitespace-nowrap">{ev.title}</span>
-                      {ev.severity === "high" && <span className="text-[10px] font-semibold py-0.5 px-1.5 rounded shrink-0" style={{ background: dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>HIGH</span>}
-                    </div>
-                    <div className="text-sm mt-0.5" style={{ color: t.textMuted }}>
-                      {ev.meta?.user && <><span className="font-semibold" style={{ color: t.textSoft }}>{ev.meta.user}</span> · </>}
-                      {ev.meta?.provider && <>{ev.meta.provider.toUpperCase()} · </>}
-                      {ev.time ? fD(ev.time) : ""}
-                    </div>
-                  </div>
-                  <svg className="shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
+              <Fragment key={l.id}>
+                {newDay && <div className="lg-day">{dayLabel(l.time)}</div>}
+                <div className="lg-lr">
+                  <span className="lg-tm m">{timeOf(l.time)}</span>
+                  <span className="lg-who"><span className="lg-av">{initialsOf(l.admin)}</span><span className="lg-wn"><b>{cleanName(l.admin) || "System"}</b>{fromTg(l.admin) && <i>from Telegram</i>}</span></span>
+                  <span className="lg-act" title={l.action}>{l.action}</span>
+                  <span className="lg-ty">{getTypeLabel(l.type)}</span>
                 </div>
-                {isOpen && (
-                  <div className="py-3 px-4 pb-4" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.02)", borderBottom: i < sysPaged.length - 1 ? `1px solid ${t.cardBorder}` : "none", borderLeft: `3px solid ${meta.color(dark)}`, borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}` }}>
-                    {ev.detail && (
-                      <div className="text-[13px] mb-2.5 py-2 px-3 rounded-lg font-[JetBrains_Mono,monospace] break-all" style={{ background: dark ? "rgba(0,0,0,.38)" : "rgba(0,0,0,.08)", color: dark ? "#fca5a5" : "#dc2626", border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>{ev.detail}</div>
-                    )}
-                    <div className="grid gap-1.5 text-[13px]" style={{ gridTemplateColumns: "auto 1fr" }}>
-                      {ev.meta?.orderId && <><span style={{ color: t.textMuted }}>Order:</span><span className="m" style={{ color: t.text }}>{ev.meta.orderId}</span></>}
-                      {ev.meta?.batchId && <><span style={{ color: t.textMuted }}>Batch:</span><span className="m" style={{ color: t.text }}>{ev.meta.batchId}</span></>}
-                      {ev.meta?.service && <><span style={{ color: t.textMuted }}>Service:</span><span style={{ color: t.text }}>{ev.meta.service}</span></>}
-                      {ev.meta?.provider && <><span style={{ color: t.textMuted }}>Provider:</span><span className="font-semibold" style={{ color: t.text }}>{ev.meta.provider.toUpperCase()}</span></>}
-                      {ev.meta?.retries != null && <><span style={{ color: t.textMuted }}>Retries:</span><span style={{ color: ev.meta.retries >= 3 ? (dark ? "#fca5a5" : "#dc2626") : t.text }}>{ev.meta.retries}</span></>}
-                      {ev.meta?.status && <><span style={{ color: t.textMuted }}>Status:</span><span style={{ color: severityColor(ev.severity, dark) }}>{ev.meta.status}</span></>}
-                      {ev.meta?.delivered != null && <><span style={{ color: t.textMuted }}>Delivered:</span><span style={{ color: t.text }}>{ev.meta.delivered.toLocaleString()} / {ev.meta.total.toLocaleString()}</span></>}
-                      {ev.meta?.amount != null && <><span style={{ color: t.textMuted }}>Amount:</span><span style={{ color: t.green }}>{fN(ev.meta.amount)}</span></>}
-                      {ev.meta?.reference && <><span style={{ color: t.textMuted }}>Reference:</span><span className="m" style={{ color: t.text }}>{ev.meta.reference}</span></>}
-                      {ev.meta?.user && <><span style={{ color: t.textMuted }}>User:</span><span style={{ color: t.text }}>{ev.meta.user}</span></>}
-                    </div>
-                  </div>
-                )}
-              </div>
+              </Fragment>
             );
-          }) : (
-            <div className="py-[60px] px-5 text-center">
-              <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
-                <circle cx="32" cy="32" r="22" stroke={t.accent} strokeWidth="1.5" opacity=".25" />
-                <path d="M32 24v10" stroke={t.accent} strokeWidth="2" opacity=".3" strokeLinecap="round" />
-                <circle cx="32" cy="40" r="1.5" fill={t.accent} opacity=".3" />
-              </svg>
-              <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No system events</div>
-              <div className="text-sm" style={{ color: t.textMuted }}>Dispatch errors, partial deliveries, and refunds will appear here</div>
-            </div>
-          )}
-          {sysPages > 1 && (
-            <div className="flex items-center justify-between py-3 px-5" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
-              <button onClick={() => setSysPage(p => Math.max(0, p - 1))} disabled={sysPage === 0} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: sysPage === 0 ? .35 : 1 }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                Prev
-              </button>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 text-[12px]" style={{ color: t.textMuted }}>
-                  <span>Show</span>
-                  <select value={sysPerPage} onChange={e => { setSysPerPage(Number(e.target.value)); setSysPage(0); }} className="py-1 px-1.5 rounded-md text-[12px] font-medium cursor-pointer font-[inherit]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>
-                    {[10, 25, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
-                  </select>
-                </div>
-                <span className="text-[12px] font-medium" style={{ color: t.textMuted }}>Page {sysPage + 1} of {sysPages}</span>
-              </div>
-              <button onClick={() => setSysPage(p => Math.min(sysPages - 1, p + 1))} disabled={sysPage >= sysPages - 1} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: sysPage >= sysPages - 1 ? .35 : 1 }}>
-                Next
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
-            </div>
-          )}
+          })}
+          {!loading && filtered.length > perPage && pager(page, adminPages, filtered.length, setPage)}
         </div>
       </>}
-    </>
+
+      {tab === "system" && <>
+        <div className="lg-stats">
+          {sysLoading ? Array.from({ length: 4 }, (_, i) => <div key={i} className="lg-stt">{bone(20)}</div>) : <>
+            <div className={"lg-stt" + (highCount ? " warn" : "")}><b className="m">{highCount}</b><span>Needs a look</span><i>{highCount ? "dispatches that gave up" : "nothing urgent"}</i></div>
+            <div className="lg-stt"><b className="m">{sysCounts.partial_delivery || 0}</b><span>Partial deliveries</span><i>the rest was refunded</i></div>
+            <div className="lg-stt"><b className="m">{refundsToday.length}</b><span>Refunds today</span><i>{refundsToday.length ? `${fN(refundsTodaySum)} back to wallets` : "none"}</i></div>
+            <div className="lg-stt"><b className="m">30d</b><span>Kept</span><i>older events drop off</i></div>
+          </>}
+        </div>
+        <div className="lg-bar">
+          <FilterDropdown dark={dark} t={t} value={sysFilter} onChange={(v) => { setSysFilter(v); setSysPage(0); setExpandedEvent(null); }} options={[{ value: "all", label: "All kinds" }, { value: "dispatch_error", label: `Dispatch (${sysCounts.dispatch_error || 0})` }, { value: "partial_delivery", label: `Delivery (${sysCounts.partial_delivery || 0})` }, { value: "refund", label: `Refunds (${sysCounts.refund || 0})` }]} />
+          {["high", "medium", "low"].map(s => <button key={s} type="button" className={"lg-tg" + (sysSev === s ? " on" : "")} onClick={() => { setSysSev(sysSev === s ? "all" : s); setSysPage(0); }}>{s.charAt(0).toUpperCase() + s.slice(1)}</button>)}
+          <span className="lg-cnt">{sysLoading ? "" : `${sysFiltered.length} event${sysFiltered.length === 1 ? "" : "s"} · 30 days`}</span>
+        </div>
+        <div className="lg-list">
+          {sysLoading ? <div className="lg-sk">{bone(46)}{bone(46)}{bone(46)}</div> : sysPaged.length === 0 ? <div className="lg-empty">{sysEvents.length === 0 ? "Nothing went sideways in the last 30 days." : "No events match."}</div> : sysPaged.map((ev, i) => {
+            const isOpen = expandedEvent === ev.id; const newDay = i === 0 || dayKey(ev.time) !== dayKey(sysPaged[i - 1].time); const meta = metaOf(ev);
+            return (
+              <Fragment key={ev.id}>
+                {newDay && <div className="lg-day">{dayLabel(ev.time)}</div>}
+                <div className={`lg-sr ${ev.severity || "low"}${isOpen ? " open" : ""}`} onClick={() => setExpandedEvent(isOpen ? null : ev.id)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedEvent(isOpen ? null : ev.id); } }}>
+                  <span className="lg-sbar" />
+                  <span className="lg-st"><b>{ev.title}</b><i>{ev.detail || ""}</i>{isOpen && meta.length > 0 && <span className="lg-meta">{meta.map(([k, v]) => <span key={k}><em>{k}</em> {typeof v === "object" ? JSON.stringify(v) : String(v)}</span>)}</span>}</span>
+                  <span className="lg-ty">{sysTypeLabel[ev.type] || ev.type}</span>
+                  <span className="lg-tm m">{timeOf(ev.time)}</span>
+                </div>
+              </Fragment>
+            );
+          })}
+          {!sysLoading && sysFiltered.length > sysPerPage && pager(sysPage, sysPages, sysFiltered.length, setSysPage)}
+        </div>
+      </>}
+    </div>
   );
 }
 
-/* ═══════════════════════════════════════════ */
+const LG_CSS = `
+.lg{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.lg *{box-sizing:border-box}
+.lg .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.lg-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.lg-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.lg-stt:first-child{border-left:0}
+.lg-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}.lg-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lg-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg-stt.warn b{color:var(--warn)}
+.lg-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lg-srch{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);min-width:280px}.lg-srch:focus-within{border-color:var(--acln)}
+.lg-srch input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:13px;color:var(--ink);outline:none}.lg-srch input::placeholder{color:var(--dim)}
+.lg-x{width:18px;height:18px;border-radius:50%;border:0;background:var(--rail);color:var(--mut);font-size:10px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.lg-tg{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer}.lg-tg.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.lg-cnt{font-size:12px;color:var(--dim);margin-left:auto}
+.lg-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}.lg-sk{display:flex;flex-direction:column;gap:8px;padding:12px}
+.lg-day{font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);padding:8px 14px;border-bottom:1px solid var(--line);border-top:1px solid var(--line)}.lg-day:first-child{border-top:0}
+.lg-lr{display:grid;grid-template-columns:52px 190px 1fr 96px;align-items:center;gap:12px;padding:9px 14px;border-top:1px solid var(--rail);font-size:13px}.lg-day+.lg-lr,.lg-day+.lg-sr{border-top:0}
+.lg-tm{font-size:12px;color:var(--dim);white-space:nowrap}.lg-who{display:flex;align-items:center;gap:8px;min-width:0}.lg-av{width:28px;height:28px;border-radius:50%;background:var(--ac);color:#fff;font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.lg-wn{display:flex;flex-direction:column;min-width:0}.lg-wn b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lg-wn i{font-style:normal;font-size:11px;color:var(--dim)}
+.lg-act{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg-ty{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);background:var(--soft);border:1px solid var(--line);padding:3px 8px;border-radius:999px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lg-pg{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}.lg-pg .lg-cnt{margin:0}.lg-pgn{display:inline-flex;align-items:center;gap:6px}
+.lg-ib{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:14px;cursor:pointer;padding:0}.lg-ib:disabled{opacity:.35;cursor:not-allowed}
+.lg-empty{padding:40px 14px;text-align:center;font-size:13px;color:var(--mut)}
+.lg-sr{display:grid;grid-template-columns:4px 1fr 90px 52px;align-items:center;gap:12px;padding:11px 14px 11px 12px;border-top:1px solid var(--rail);cursor:pointer;outline:none}.lg-sbar{width:4px;min-height:34px;align-self:stretch;border-radius:2px;background:var(--dim)}.lg-sr.high .lg-sbar{background:var(--bad)}.lg-sr.medium .lg-sbar{background:var(--warn)}.lg-sr.high{background:var(--badbg)}
+.lg-st{display:flex;flex-direction:column;gap:2px;min-width:0}.lg-st b{font-size:13.5px;font-weight:600}.lg-st i{font-style:normal;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lg-sr.open .lg-st i{white-space:normal}
+.lg-meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:11.5px;color:var(--mut)}.lg-meta em{font-style:normal;color:var(--dim)}
+@media (max-width:900px){
+  .lg-stats{grid-template-columns:1fr 1fr}.lg-stt:nth-child(3){border-left:0}.lg-stt:nth-child(n+3){border-top:1px solid var(--line)}.lg-stt b{font-size:17px}
+  .lg-srch{width:100%;min-width:0}.lg-cnt{display:none}.lg-pg .lg-cnt{display:inline}
+  .lg-lr{grid-template-columns:1fr auto;grid-template-areas:"who tm" "act act";gap:4px 10px}.lg-who{grid-area:who}.lg-lr .lg-tm{grid-area:tm}.lg-act{grid-area:act;white-space:normal;padding-left:36px}.lg-lr .lg-ty{display:none}
+  .lg-sr{grid-template-columns:4px 1fr;grid-template-areas:"b st" "b meta";gap:4px 10px}.lg-sbar{grid-area:b}.lg-st{grid-area:st}.lg-st i{white-space:normal}.lg-sr .lg-ty{grid-area:meta;justify-self:start}.lg-sr .lg-tm{grid-area:meta;justify-self:end}
+}
+`;
 
-/* ═══════════════════════════════════════════ */
-/* ═══ TEAM MANAGEMENT                     ═══ */
-/* ═══════════════════════════════════════════ */
 const ROLE_INFO = {
   owner:      { color: "#e0a458", desc: "Full platform access. Cannot be modified. Only one owner exists." },
   superadmin: { color: "#c47d8e", desc: "Full access to all admin features. Can manage team and settings." },
@@ -1950,25 +1898,18 @@ export function AdminAcquisitionPage({ dark, t }) {
 /* ═══ ADMIN ISSUES PAGE                   ═══ */
 /* ═══════════════════════════════════════════ */
 
-function IssueSection({ title, icon, count, countColor, dark, t, defaultOpen, children }) {
-  const [open, setOpen] = useState(defaultOpen ?? false);
-  const rowBorder = dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)";
-  return (
-    <div className="rounded-xl mb-3 overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.85)", border: `0.5px solid ${t.cardBorder}` }}>
-      <button onClick={() => setOpen(!open)} className="flex items-center gap-2.5 w-full py-3 px-4 border-none cursor-pointer font-[inherit] text-left" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)" }}>
-        <span style={{ color: t.accent, opacity: .7 }}>{icon}</span>
-        <span className="text-sm font-semibold flex-1" style={{ color: t.text }}>{title}</span>
-        {count != null && <span className="text-[11px] font-semibold py-0.5 px-2 rounded-full" style={{ background: countColor?.bg || (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"), color: countColor?.color || t.textMuted }}>{count}</span>}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s", shrinkFlex: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      {open && <div style={{ borderTop: `1px solid ${rowBorder}` }}>{children}</div>}
-    </div>
-  );
-}
-
-const PROVIDER_COLORS = { mtp: "#ef4444", jap: "#3b82f6", dao: "#22c55e" };
 const PROVIDER_NAMES = { mtp: "MoreThanPanel", jap: "JustAnotherPanel", dao: "DaoSMM" };
 const LOW_BALANCE_USD = 10;
+// How loud an issue is: red needs a decision from a person, amber can wait a day, grey is routine.
+const ISSUE_SEVERITY = { crypto_payment_review: "high", order_failure: "high", void_failed: "high", low_balance: "medium", dangling_tier: "medium", dead_service: "medium", ghost_dispatch: "medium", price_alert: "medium", revived_service: "low" };
+const ISSUE_KIND = { crypto_payment_review: "Payment", order_failure: "Order", void_failed: "Commission", low_balance: "Balance", dangling_tier: "Menu", dead_service: "Catalogue", revived_service: "Catalogue", ghost_dispatch: "Dispatch", price_alert: "Pricing" };
+const CHECKS = [
+  ["Provider balances", "every 30 min", "low_balance"],
+  ["Prices below cost", "every 6 hours", "price_alert"],
+  ["Catalogue changes", "nightly, 1 to 3 am", "revived_service"],
+  ["Menu items on disabled services", "nightly", "dangling_tier"],
+  ["Stuck dispatches", "every 5 min", "ghost_dispatch"],
+];
 
 export function AdminIssuesPage({ dark, t }) {
   const [issues, setIssues] = useState([]);
@@ -1979,11 +1920,9 @@ export function AdminIssuesPage({ dark, t }) {
   const [resolving, setResolving] = useState(null);
   const [firingCrons, setFiringCrons] = useState(false);
   const [cronResults, setCronResults] = useState(null);
-  const [expandedIssue, setExpandedIssue] = useState(null);
-  const [resolvedPage, setResolvedPage] = useState(1);
-  const resolvedPerPage = 10;
+  const [expanded, setExpanded] = useState(null);
+  const [showAllHandled, setShowAllHandled] = useState(false);
   const toast = useToast();
-
   const load = () => {
     fetch("/api/admin/issues").then(r => r.json()).then(d => {
       setIssues(d.issues || []);
@@ -1993,374 +1932,172 @@ export function AdminIssuesPage({ dark, t }) {
       setLoading(false);
     }).catch(() => setLoading(false));
   };
-
   useEffect(() => { load(); }, []);
-
-  const handleResolve = async (id) => {
+  const act = async (id, action) => {
     setResolving(id);
     try {
-      const res = await fetch("/api/admin/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "resolve", issueId: id }) });
+      const res = await fetch("/api/admin/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, issueId: id }) });
       const d = await res.json();
-      if (res.ok) {
-        load();
-        toast.success(d.detail || "Issue resolved");
-      } else { if (res.status === 409) load(); toast.error(d.error || "Failed"); }
+      if (res.ok) { load(); toast.success(d.detail || (action === "resolve" ? "Resolved" : "Ignored")); }
+      else { if (res.status === 409) load(); toast.error(d.error || "Failed"); }
     } catch { toast.error("Network error"); }
     setResolving(null);
   };
-
-  const handleIgnore = async (id) => {
-    setResolving(id);
-    try {
-      const res = await fetch("/api/admin/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "ignore", issueId: id }) });
-      const d = await res.json();
-      if (res.ok) {
-        load();
-        toast.success("Issue ignored");
-      } else { if (res.status === 409) load(); toast.error(d.error || "Failed"); }
-    } catch { toast.error("Network error"); }
-    setResolving(null);
-  };
-
-  const handleFireCrons = async () => {
-    setFiringCrons(true);
-    setCronResults(null);
+  const runChecks = async () => {
+    setFiringCrons(true); setCronResults(null);
     try {
       const res = await fetch("/api/admin/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "fire_crons" }) });
       const d = await res.json();
-      if (res.ok) {
-        setCronResults(d.results || []);
-        toast.success("All crons fired");
-        setTimeout(() => load(), 2000);
-      } else { toast.error(d.error || "Failed to fire crons"); }
+      if (res.ok) { setCronResults(d.results || []); toast.success("Checks run", `${(d.results || []).filter(r => r.ok).length} of ${(d.results || []).length} came back clean`); setTimeout(() => load(), 2000); }
+      else toast.error(d.error || "Could not run the checks");
     } catch { toast.error("Network error"); }
     setFiringCrons(false);
   };
 
-  const rowBorder = dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)";
-  const skBone = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
-
-  const KNOWN_TYPES = new Set(["dead_service", "revived_service", "order_failure", "low_balance", "price_alert", "crypto_payment_review", "ghost_dispatch", "dangling_tier"]);
-  const deadServices = issues.filter(i => i.type === "dead_service" && i.status === "open");
-  const revivedServices = issues.filter(i => i.type === "revived_service" && i.status === "open");
-  const orderFailures = issues.filter(i => i.type === "order_failure" && i.status === "open");
-  const lowBalanceIssues = issues.filter(i => i.type === "low_balance" && i.status === "open");
-  const priceIssues = issues.filter(i => i.type === "price_alert" && i.status === "open");
-  const cryptoPaymentReviews = issues.filter(i => i.type === "crypto_payment_review" && i.status === "open");
-  const ghostDispatches = issues.filter(i => i.type === "ghost_dispatch" && i.status === "open");
-  const danglingTiers = issues.filter(i => i.type === "dangling_tier" && i.status === "open");
-  const otherIssues = issues.filter(i => i.status === "open" && !KNOWN_TYPES.has(i.type));
-  const resolvedIssues = issues.filter(i => i.status === "resolved" || i.status === "ignored");
-
-  const balanceEntries = balances ? Object.entries(balances).filter(([k]) => k !== "checkedAt") : [];
+  const SEV_RANK = { high: 0, medium: 1, low: 2 };
+  const open = issues.filter(i => i.status === "open").sort((a, b) => (SEV_RANK[ISSUE_SEVERITY[a.type] || "low"] - SEV_RANK[ISSUE_SEVERITY[b.type] || "low"]) || (new Date(b.createdAt) - new Date(a.createdAt)));
+  const handled = issues.filter(i => i.status !== "open").sort((a, b) => new Date(b.resolvedAt || b.createdAt) - new Date(a.resolvedAt || a.createdAt));
+  const sevOf = (i) => ISSUE_SEVERITY[i.type] || "low";
+  const kindOf = (i) => ISSUE_KIND[i.type] || "Other";
+  const decisions = open.filter(i => sevOf(i) === "high").length;
+  const balanceEntries = balances ? Object.entries(balances).filter(([k, v]) => k !== "checkedAt" && v && typeof v === "object") : [];
   const losers = priceAlerts?.losers || [];
-
-  const redBadge = { bg: dark ? "rgba(252,165,165,.15)" : "#fef2f2", color: dark ? "#fca5a5" : "#dc2626" };
-  const amberBadge = { bg: dark ? "rgba(252,211,77,.15)" : "#fffbeb", color: dark ? "#fcd34d" : "#d97706" };
-  const greenBadge = { bg: dark ? "rgba(110,231,183,.15)" : "#ecfdf5", color: dark ? "#6ee7b7" : "#059669" };
-  const blueBadge = { bg: dark ? "rgba(165,180,252,.15)" : "#eef2ff", color: dark ? "#a5b4fc" : "#4f46e5" };
-
-  if (loading) return <><div className="adm-header"><div className="adm-title" style={{ color: t.text }}>Platform Issues</div><div className="adm-subtitle" style={{ color: t.textMuted }}>Loading...</div><div className="page-divider" style={{ background: t.cardBorder }} /></div><div>{[1,2,3,4,5].map(i => <div key={i} className={`${skBone} h-[48px] rounded-xl mb-3`} />)}</div></>;
-
+  const lastOf = (type) => { const hit = issues.find(i => i.type === type); return hit ? hit.createdAt : null; };
+  const metaOf = (i) => { try { return i.metadata ? JSON.parse(i.metadata) : null; } catch { return null; } };
+  const when = (iso) => { if (!iso) return "—"; const d = new Date(iso); const diff = Date.now() - d.getTime(); if (diff < 3600e3) return `${Math.max(1, Math.round(diff / 60e3))} min ago`; if (diff < 86400e3) return `${Math.round(diff / 3600e3)} h ago`; return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
+  const labelsFor = (i) => i.type === "crypto_payment_review" ? ["Approve", "Reject"] : ["Resolve", "Ignore"];
+  const canAct = (i) => i.type !== "crypto_payment_review" || canResolveCryptoReviews;
+  const vars = {
+    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--warnbg": dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)", "--bad": dark ? "#fca5a5" : "#c62828", "--badbg": dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.07)",
+  };
+  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   return (
-    <>
+    <div className="is" style={vars}>
+      <style>{IS_CSS}</style>
       <div className="adm-header">
         <div className="adm-header-row">
           <div>
-            <div className="adm-title" style={{ color: t.text }}>Platform Issues</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>Payment reviews, provider health, service status, and cron management</div>
+            <div className="adm-title" style={{ color: t.text }}>Issues</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>What needs a person today, and what the checks found.</div>
           </div>
-          <button onClick={handleFireCrons} disabled={firingCrons} className="flex items-center gap-2 py-2 px-4 rounded-xl border-none text-sm font-semibold cursor-pointer font-[inherit] transition-all duration-200 shrink-0" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent, opacity: firingCrons ? .6 : 1 }}>
-            {firingCrons ? (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><circle cx="12" cy="12" r="10" strokeDasharray="40 60" /></svg>
-            ) : (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            )}
-            {firingCrons ? "Firing..." : "Fire All Crons"}
-          </button>
+          <button type="button" className="is-b" onClick={runChecks} disabled={firingCrons}>{firingCrons ? "Running…" : "Run all checks now"}</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {/* ═══ CRYPTO PAYMENT REVIEWS ═══ */}
-      <IssueSection title="Crypto Payment Reviews" defaultOpen={cryptoPaymentReviews.length > 0} dark={dark} t={t}
-        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
-        count={cryptoPaymentReviews.length}
-        countColor={cryptoPaymentReviews.length > 0 ? redBadge : greenBadge}
-      >
-        {cryptoPaymentReviews.length > 0 ? <>
-          <div className="py-2 px-4 text-[12px]" style={{ color: t.textMuted, borderBottom: `1px solid ${rowBorder}` }}>Review the newest observation before acting. One disposition closes all observations currently shown for that payment.</div>
-          {cryptoPaymentReviews.map((issue, i) => (
-            <IssueRow key={issue.id} issue={issue} i={i} total={cryptoPaymentReviews.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} canAct={canResolveCryptoReviews} />
+      {loading ? <>{bone(84)}{bone(220)}<div className="is-cols">{bone(200)}{bone(200)}</div></> : <>
+        <div className="is-stats">
+          <div className={"is-stt" + (decisions ? " bad" : open.length ? " warn" : "")}><b className="m">{open.length}</b><span>Open</span><i>{decisions ? `${decisions} need${decisions === 1 ? "s" : ""} a decision` : open.length ? "nothing urgent" : "all clear"}</i></div>
+          {balanceEntries.slice(0, 3).map(([pid, v]) => (
+            <div key={pid} className="is-stt"><b className={"m " + (v.balance < LOW_BALANCE_USD ? "bad" : v.balance < 20 ? "warn" : "ok")}>${Number(v.balance || 0).toFixed(2)}</b><span>{PROVIDER_NAMES[pid] || pid}</span><i>{v.balance < LOW_BALANCE_USD ? "below $10, top up" : v.balance < 20 ? "below $20" : "fine"}</i></div>
           ))}
-        </> : (
-          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>No crypto payments need manual review</div>
-        )}
-      </IssueSection>
-
-      {/* ═══ CRON RESULTS ═══ */}
-      <IssueSection title="Cron Results" defaultOpen={!!cronResults} dark={dark} t={t}
-        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
-        count={cronResults ? `${cronResults.filter(r => r.ok).length}/${cronResults.length}` : null}
-        countColor={cronResults?.every(r => r.ok) ? greenBadge : amberBadge}
-      >
-        {cronResults ? cronResults.map((r, i) => (
-          <div key={i} className="flex items-center gap-2.5 py-2 px-4" style={{ borderBottom: i < cronResults.length - 1 ? `1px solid ${rowBorder}` : "none" }}>
-            <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: r.ok ? t.green : t.red }} />
-            <span className="text-[13px] font-mono flex-1 min-w-0" style={{ color: t.text }}>{r.cron.replace('/api/cron/', '')}</span>
-            <span className="text-[12px] font-medium shrink-0" style={{ color: r.ok ? t.green : t.red }}>{r.ok ? "OK" : r.error || "Failed"}</span>
-          </div>
-        )) : (
-          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>Click "Fire All Crons" to run all cron jobs and see results here</div>
-        )}
-      </IssueSection>
-
-      {/* ═══ PROVIDER BALANCES ═══ */}
-      <IssueSection title="Provider Balances" defaultOpen={true} dark={dark} t={t}
-        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>}
-        count={balanceEntries.filter(([, v]) => typeof v === 'object' && v.balance < LOW_BALANCE_USD).length > 0 ? `${balanceEntries.filter(([, v]) => typeof v === 'object' && v.balance < LOW_BALANCE_USD).length} low` : null}
-        countColor={redBadge}
-      >
-        {balanceEntries.length > 0 ? (
-          <div className="p-4">
-            <div className="grid gap-2.5" style={{ gridTemplateColumns: `repeat(${Math.min(balanceEntries.length, 3)}, 1fr)` }}>
-              {balanceEntries.map(([pid, data]) => {
-                const isLow = typeof data === 'object' && data.balance < LOW_BALANCE_USD;
-                const color = PROVIDER_COLORS[pid] || t.accent;
-                return (
-                  <div key={pid} className="py-3 px-4 rounded-xl" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)", border: isLow ? `1px solid ${dark ? "rgba(252,165,165,.3)" : "rgba(220,38,38,.2)"}` : `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}` }}>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="w-[7px] h-[7px] rounded-full" style={{ background: color }} />
-                      <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: t.textMuted }}>{PROVIDER_NAMES[pid] || pid}</span>
-                    </div>
-                    {typeof data === 'object' && data.balance != null ? (
-                      <div className="text-lg font-semibold" style={{ color: isLow ? t.red : t.green }}>${data.balance.toFixed(2)}</div>
-                    ) : (
-                      <div className="text-sm" style={{ color: t.textMuted }}>{data?.status || "—"}</div>
-                    )}
-                    {isLow && <div className="text-[11px] mt-1 font-medium" style={{ color: t.red }}>Below ${LOW_BALANCE_USD} threshold</div>}
-                  </div>
-                );
-              })}
-            </div>
-            {balances?.checkedAt && <div className="text-[11px] mt-2.5" style={{ color: t.textMuted }}>Last checked {fD(balances.checkedAt)}</div>}
-          </div>
-        ) : (
-          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>Balance data not available yet — run the balance cron</div>
-        )}
-        {lowBalanceIssues.length > 0 && (
-          <div style={{ borderTop: `1px solid ${rowBorder}` }}>
-            <div className="text-[11px] font-semibold uppercase tracking-wide py-2 px-4" style={{ color: t.red }}>Open Issues</div>
-            {lowBalanceIssues.map((issue, i) => (
-              <IssueRow key={issue.id} issue={issue} i={i} total={lowBalanceIssues.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
-            ))}
-          </div>
-        )}
-      </IssueSection>
-
-      {/* ═══ PRICE ALERTS ═══ */}
-      <IssueSection title="Price Alerts" dark={dark} t={t}
-        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
-        count={losers.length > 0 ? `${losers.length} below cost` : null}
-        countColor={redBadge}
-        defaultOpen={losers.length > 0}
-      >
-        {losers.length > 0 ? (
-          <>
-            {losers.map((l, i) => (
-              <div key={i} className="flex items-center gap-3 py-2.5 px-4" style={{ borderBottom: i < losers.length - 1 ? `1px solid ${rowBorder}` : "none" }}>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-medium" style={{ color: t.text }}>{l.service}</div>
-                  <div className="text-[11px]" style={{ color: t.textMuted }}>{l.category}{l.tier ? ` · ${l.tier}` : ""}</div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="text-[12px]" style={{ color: t.textMuted }}>Cost <span className="font-semibold" style={{ color: t.text }}>₦{(l.costNaira || 0).toLocaleString()}</span></div>
-                  <div className="text-[12px]" style={{ color: t.red }}>Sell <span className="font-semibold">₦{(l.sellNaira || 0).toLocaleString()}</span> <span className="text-[11px]">(−₦{(l.lossPerK || 0).toLocaleString()}/1K)</span></div>
-                </div>
-              </div>
-            ))}
-            {priceAlerts?.checkedAt && <div className="text-[11px] py-2 px-4" style={{ color: t.textMuted }}>Last synced {fD(priceAlerts.checkedAt)} · Rate ₦{priceAlerts.usdRate || "?"}/USD</div>}
-          </>
-        ) : (
-          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>
-            {priceAlerts?.checkedAt ? <>All services priced above cost <span style={{ color: t.textMuted }}>· checked {fD(priceAlerts.checkedAt)}</span></> : "Price data not available yet — run the prices cron"}
-          </div>
-        )}
-        {priceIssues.length > 0 && (
-          <div style={{ borderTop: `1px solid ${rowBorder}` }}>
-            <div className="text-[11px] font-semibold uppercase tracking-wide py-2 px-4" style={{ color: t.red }}>Open Issues</div>
-            {priceIssues.map((issue, i) => (
-              <IssueRow key={issue.id} issue={issue} i={i} total={priceIssues.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
-            ))}
-          </div>
-        )}
-      </IssueSection>
-
-      {/* ═══ DEAD SERVICES ═══ */}
-      <IssueSection title="Dead Services" dark={dark} t={t}
-        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>}
-        count={deadServices.length > 0 ? deadServices.length : null}
-        countColor={redBadge}
-        defaultOpen={deadServices.length > 0}
-      >
-        {deadServices.length > 0 ? deadServices.map((issue, i) => (
-          <IssueRow key={issue.id} issue={issue} i={i} total={deadServices.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
-        )) : (
-          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>No dead services detected</div>
-        )}
-      </IssueSection>
-
-      {/* ═══ REVIVED SERVICES ═══ */}
-      <IssueSection title="Revived Services" dark={dark} t={t}
-        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>}
-        count={revivedServices.length > 0 ? revivedServices.length : null}
-        countColor={blueBadge}
-        defaultOpen={revivedServices.length > 0}
-      >
-        {revivedServices.length > 0 ? revivedServices.map((issue, i) => (
-          <IssueRow key={issue.id} issue={issue} i={i} total={revivedServices.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
-        )) : (
-          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>No revived services</div>
-        )}
-      </IssueSection>
-
-      {/* ═══ ORDER FAILURES ═══ */}
-      <IssueSection title="Order Failures" dark={dark} t={t}
-        icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>}
-        count={orderFailures.length > 0 ? orderFailures.length : null}
-        countColor={amberBadge}
-        defaultOpen={orderFailures.length > 0}
-      >
-        {orderFailures.length > 0 ? orderFailures.map((issue, i) => (
-          <IssueRow key={issue.id} issue={issue} i={i} total={orderFailures.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
-        )) : (
-          <div className="py-4 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>No order failures</div>
-        )}
-      </IssueSection>
-
-      {/* ═══ GHOST DISPATCHES ═══ */}
-      {ghostDispatches.length > 0 && (
-        <IssueSection title="Ghost Dispatches" dark={dark} t={t}
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 00-6.88 17.23l.9.67V22l2.82-1.45A9.93 9.93 0 0012 21a10 10 0 000-19z"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/></svg>}
-          count={ghostDispatches.length}
-          countColor={amberBadge}
-          defaultOpen
-        >
-          {ghostDispatches.map((issue, i) => (
-            <IssueRow key={issue.id} issue={issue} i={i} total={ghostDispatches.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
-          ))}
-        </IssueSection>
-      )}
-
-      {/* ═══ DANGLING TIERS ═══ */}
-      {danglingTiers.length > 0 && (
-        <IssueSection title="Dangling Tiers" dark={dark} t={t}
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
-          count={danglingTiers.length}
-          countColor={amberBadge}
-          defaultOpen
-        >
-          {danglingTiers.map((issue, i) => (
-            <IssueRow key={issue.id} issue={issue} i={i} total={danglingTiers.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
-          ))}
-        </IssueSection>
-      )}
-
-      {/* ═══ OTHER ISSUES (catch-all) ═══ */}
-      {otherIssues.length > 0 && (
-        <IssueSection title="Other Issues" dark={dark} t={t}
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>}
-          count={otherIssues.length}
-          countColor={amberBadge}
-          defaultOpen
-        >
-          {otherIssues.map((issue, i) => (
-            <IssueRow key={issue.id} issue={issue} i={i} total={otherIssues.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
-          ))}
-        </IssueSection>
-      )}
-
-      {/* ═══ RESOLVED ═══ */}
-      {resolvedIssues.length > 0 && (() => {
-        const totalResolvedPages = Math.ceil(resolvedIssues.length / resolvedPerPage);
-        const pagedResolved = resolvedIssues.slice((resolvedPage - 1) * resolvedPerPage, resolvedPage * resolvedPerPage);
-        return (
-          <IssueSection title="Resolved & Ignored" dark={dark} t={t}
-            icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-            count={resolvedIssues.length}
-            countColor={greenBadge}
-          >
-            {pagedResolved.map((issue, i) => (
-              <IssueRow key={issue.id} issue={issue} i={i} total={pagedResolved.length} dark={dark} t={t} rowBorder={rowBorder} expanded={expandedIssue} setExpanded={setExpandedIssue} resolving={resolving} onResolve={handleResolve} onIgnore={handleIgnore} />
-            ))}
-            {totalResolvedPages > 1 && (
-              <div className="flex items-center justify-between py-2.5 px-4" style={{ borderTop: `1px solid ${rowBorder}` }}>
-                <span className="text-[12px]" style={{ color: t.textMuted }}>{resolvedIssues.length} resolved</span>
-                <div className="flex gap-1">
-                  <button onClick={() => setResolvedPage(p => Math.max(1, p - 1))} disabled={resolvedPage <= 1} className="w-[26px] h-[26px] rounded-md flex items-center justify-center border cursor-pointer bg-transparent" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: resolvedPage <= 1 ? .3 : 1 }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-                  </button>
-                  <span className="text-[12px] flex items-center px-1.5" style={{ color: t.textMuted }}>{resolvedPage}/{totalResolvedPages}</span>
-                  <button onClick={() => setResolvedPage(p => Math.min(totalResolvedPages, p + 1))} disabled={resolvedPage >= totalResolvedPages} className="w-[26px] h-[26px] rounded-md flex items-center justify-center border cursor-pointer bg-transparent" style={{ borderColor: t.cardBorder, color: t.textSoft, opacity: resolvedPage >= totalResolvedPages ? .3 : 1 }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-                </div>
-              </div>
-            )}
-          </IssueSection>
-        );
-      })()}
-    </>
-  );
-}
-
-function IssueRow({ issue, i, total, dark, t, rowBorder, expanded, setExpanded, resolving, onResolve, onIgnore, canAct = true }) {
-  const isExpanded = expanded === issue.id;
-  let meta = null;
-  try { meta = issue.metadata ? JSON.parse(issue.metadata) : null; } catch {}
-  return (
-    <div style={{ borderBottom: i < total - 1 ? `1px solid ${rowBorder}` : "none" }}>
-      <div className="flex items-center gap-3 py-2.5 px-4 cursor-pointer" onClick={() => setExpanded(isExpanded ? null : issue.id)}>
-        <div className="min-w-0 flex-1">
-          <div className="text-[13px] font-medium" style={{ color: t.text }}>{issue.title}</div>
-          <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(issue.createdAt)}</div>
         </div>
-        {issue.status === "open" && canAct ? (
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button onClick={(e) => { e.stopPropagation(); onIgnore(issue.id); }} disabled={resolving === issue.id} className="text-[11px] font-medium py-1 px-2.5 rounded-lg border-none cursor-pointer font-[inherit]" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted, opacity: resolving === issue.id ? .5 : 1 }}>
-              Ignore
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); onResolve(issue.id); }} disabled={resolving === issue.id} className="text-[11px] font-semibold py-1 px-2.5 rounded-lg border-none cursor-pointer font-[inherit]" style={{ background: dark ? "rgba(110,231,183,.12)" : "#ecfdf5", color: t.green, opacity: resolving === issue.id ? .5 : 1 }}>
-              {resolving === issue.id ? "..." : "Resolve"}
-            </button>
+
+        <section className="is-card">
+          <header><h3>Open</h3><span className="is-cnt">newest first · red needs a decision, amber can wait a day</span></header>
+          <div className="is-cb">
+            {open.length === 0 ? <div className="is-empty">Nothing open. The checks keep running on their own.</div> : open.map(i => {
+              const sev = sevOf(i); const [yes, no] = labelsFor(i); const meta = metaOf(i); const isOpen = expanded === i.id;
+              return (
+                <div key={i.id} className={`is-ir ${sev}`}>
+                  <span className="is-bar" />
+                  <span className="is-it" onClick={() => setExpanded(isOpen ? null : i.id)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded(isOpen ? null : i.id); } }}>
+                    <b>{i.title}</b>
+                    <i>{i.message || ""}</i>
+                    {isOpen && meta && <span className="is-meta">{Object.entries(meta).filter(([k]) => !["losers", "services", "providers"].includes(k)).map(([k, v]) => <span key={k}><em>{k}</em> {typeof v === "object" ? JSON.stringify(v) : String(v)}</span>)}</span>}
+                  </span>
+                  <span className="is-ty">{kindOf(i)}</span>
+                  <span className="is-when">{when(i.createdAt)}</span>
+                  <span className="is-acts">
+                    {canAct(i) ? <><button type="button" className="is-b sm pri" disabled={resolving === i.id} onClick={() => act(i.id, "resolve")}>{resolving === i.id ? "…" : yes}</button><button type="button" className="is-b sm" disabled={resolving === i.id} onClick={() => act(i.id, "ignore")}>{no}</button></> : <span className="is-dimc">owner decides</span>}
+                  </span>
+                </div>
+              );
+            })}
           </div>
-        ) : issue.status === "open" ? (
-          <span className="text-[11px] font-semibold py-0.5 px-2 rounded-[5px] shrink-0" style={{ background: dark ? "rgba(252,211,77,.10)" : "#fffbeb", color: dark ? "#fcd34d" : "#d97706" }}>Owner review</span>
-        ) : (
-          <span className="text-[11px] font-semibold py-0.5 px-2 rounded-[5px] shrink-0" style={{ background: issue.status === "ignored" ? (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") : (dark ? "rgba(110,231,183,.08)" : "#ecfdf5"), color: issue.status === "ignored" ? t.textMuted : t.green }}>{issue.status === "ignored" ? "Ignored" : "Resolved"}</span>
-        )}
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s", flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      {isExpanded && (
-        <div className="py-2.5 px-4 text-[13px] leading-relaxed" style={{ background: dark ? "rgba(0,0,0,.15)" : "rgba(0,0,0,.02)", color: t.textMuted, borderTop: `1px solid ${rowBorder}` }}>
-          <div className="mb-2 whitespace-pre-line">{issue.message}</div>
-          {meta && (
-            <div className="font-mono text-[12px] p-2.5 rounded-lg mt-2" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)" }}>
-              {Object.entries(meta).filter(([k]) => !['losers', 'services', 'providers'].includes(k)).map(([k, v]) => (
-                <div key={k}><span style={{ color: t.accent }}>{k}:</span> {typeof v === 'object' ? JSON.stringify(v) : String(v)}</div>
+        </section>
+
+        {losers.length > 0 && (
+          <section className="is-card">
+            <header><h3>Selling below cost</h3><span className="is-cnt">{losers.length} tier{losers.length === 1 ? "" : "s"} · checked {when(priceAlerts.checkedAt)}</span></header>
+            <div className="is-cb tight">
+              {losers.map((l, idx) => (
+                <div key={idx} className="is-lr"><span className="is-ln">{l.group || l.name || l.service || "Tier"}{l.tier ? ` · ${l.tier}` : ""}</span><span className="m is-dimc">sells {fN(l.sell ?? l.sellPer1k ?? 0)} · costs {fN(l.cost ?? l.costPer1k ?? 0)}</span></div>
               ))}
             </div>
-          )}
-          {issue.resolvedBy && <div className="mt-2 text-[12px]">{issue.status === "ignored" ? "Ignored" : "Resolved"} by <strong style={{ color: t.text }}>{issue.resolvedBy}</strong> on {fD(issue.resolvedAt)}</div>}
+          </section>
+        )}
+
+        <div className="is-cols">
+          <section className="is-card">
+            <header><h3>Checks</h3><span className="is-cnt">what runs on its own, and when it last found something</span></header>
+            <div className="is-cb tight">
+              {CHECKS.map(([name, every, type]) => {
+                const last = type === "low_balance" ? balances?.checkedAt : type === "price_alert" ? priceAlerts?.checkedAt : lastOf(type);
+                const openNow = open.filter(i => i.type === type || (type === "revived_service" && i.type === "dead_service")).length;
+                return <div key={type} className="is-ck"><span className={"is-dot " + (openNow ? "warn" : "ok")} /><span className="is-ckn">{name}</span><span className="is-ckw">{every}{last ? ` · ${type === "low_balance" || type === "price_alert" ? "checked" : "last found"} ${when(last)}` : ""}</span><span className="is-cks">{openNow ? `${openNow} open` : "clear"}</span></div>;
+              })}
+              {cronResults && (
+                <div className="is-results">
+                  <span className="is-lbl">Just now</span>
+                  {cronResults.map((r, idx) => <span key={idx} className={"is-res " + (r.ok ? "ok" : "bad")}>{String(r.cron || "").replace("/api/cron/", "")}{r.ok ? "" : ` · ${r.error || "failed"}`}</span>)}
+                </div>
+              )}
+            </div>
+          </section>
+          <section className="is-card">
+            <header><h3>Handled</h3><span className="is-cnt">{handled.length ? `${Math.min(handled.length, showAllHandled ? handled.length : 8)} of ${handled.length}` : "nothing yet"}{handled.length > 8 && <> · <button type="button" className="is-link" onClick={() => setShowAllHandled(v => !v)}>{showAllHandled ? "fewer" : "all"}</button></>}</span></header>
+            <div className="is-cb tight">
+              {handled.slice(0, showAllHandled ? handled.length : 8).map(i => (
+                <div key={i.id} className="is-dr" title={i.resolvedBy ? `${i.status === "ignored" ? "Ignored" : "Resolved"} by ${i.resolvedBy}` : ""}><span className="is-dw">{when(i.resolvedAt || i.createdAt)}</span><span className="is-dt">{kindOf(i)}</span><span className="is-dtt">{i.title}</span><span className={"is-ds " + i.status}>{i.status}</span></div>
+              ))}
+            </div>
+          </section>
         </div>
-      )}
+      </>}
     </div>
   );
 }
 
-/* ═══════════════════════════════════════════ */
-/* ═══ PIT (AFFILIATES)                   ═══ */
-/* ═══════════════════════════════════════════ */
+const IS_CSS = `
+.is{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.is *{box-sizing:border-box}
+.is .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.is-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.is-b:hover{transform:translateY(-1px)}.is-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.is-b.sm{height:30px;padding:0 10px;font-size:12px}.is-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.is-link{font:inherit;font-size:inherit;font-weight:600;color:var(--ac);background:none;border:0;cursor:pointer;padding:0}
+.is-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.is-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.is-stt:first-child{border-left:0}
+.is-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}.is-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px}.is-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.is-stt.bad b,.is-stt b.bad{color:var(--bad)}.is-stt.warn b,.is-stt b.warn{color:var(--warn)}.is-stt b.ok{color:var(--ok)}
+.is-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.is-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.is-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.is-cnt{font-size:11.5px;color:var(--dim)}
+.is-cb{padding:0}.is-cb.tight{padding:4px 16px 8px}
+.is-ir{display:grid;grid-template-columns:4px 1fr 86px 92px auto;align-items:center;gap:12px;padding:12px 16px 12px 12px;border-top:1px solid var(--rail)}.is-ir:first-child{border-top:0}
+.is-bar{width:4px;min-height:36px;align-self:stretch;border-radius:2px;background:var(--dim)}.is-ir.medium .is-bar{background:var(--warn)}.is-ir.high .is-bar{background:var(--bad)}.is-ir.high{background:var(--badbg)}
+.is-it{display:flex;flex-direction:column;gap:2px;min-width:0;cursor:pointer;outline:none}.is-it b{font-size:13.5px;font-weight:600}.is-it i{font-style:normal;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.is-meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:11.5px;color:var(--mut)}.is-meta em{font-style:normal;color:var(--dim)}
+.is-ty{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);background:var(--soft);border:1px solid var(--line);padding:3px 8px;border-radius:999px;text-align:center;white-space:nowrap}
+.is-when{font-size:12px;color:var(--dim);white-space:nowrap}.is-acts{display:flex;gap:6px;justify-content:flex-end}.is-dimc{font-size:12px;color:var(--dim);white-space:nowrap}
+.is-empty{padding:28px 16px;text-align:center;font-size:13px;color:var(--mut)}
+.is-lr{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--rail);font-size:13px}.is-lr:first-child{border-top:0}.is-ln{font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.is-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.is-ck{display:grid;grid-template-columns:8px 1fr auto 70px;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--rail);font-size:13px}.is-ck:first-child{border-top:0}
+.is-dot{width:8px;height:8px;border-radius:50%;display:inline-block}.is-dot.ok{background:var(--ok)}.is-dot.warn{background:var(--warn)}.is-ckn{font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.is-ckw{font-size:12px;color:var(--mut);white-space:nowrap}.is-cks{font-size:12px;color:var(--dim);text-align:right;white-space:nowrap}
+.is-results{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-top:10px;margin-top:4px;border-top:1px solid var(--line)}.is-lbl{font-size:10.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--mut);margin-right:4px}
+.is-res{font-size:11.5px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}.is-res.ok{color:var(--ok)}.is-res.bad{color:var(--bad)}
+.is-dr{display:grid;grid-template-columns:64px 90px 1fr 70px;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--rail);font-size:13px}.is-dr:first-child{border-top:0}
+.is-dw{font-size:11.5px;color:var(--dim);white-space:nowrap}.is-dt{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--mut)}.is-dtt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mut)}.is-ds{font-size:11.5px;text-align:right;font-weight:600;color:var(--ok)}.is-ds.ignored{color:var(--dim)}
+@media (max-width:900px){
+  .is-stats{grid-template-columns:1fr 1fr}.is-stt:nth-child(3){border-left:0}.is-stt:nth-child(n+3){border-top:1px solid var(--line)}.is-stt b{font-size:17px}
+  .is-ir{grid-template-columns:4px 1fr auto;grid-template-areas:"bar it ty" "bar when when" "bar acts acts";gap:6px 10px}.is-bar{grid-area:bar}.is-it{grid-area:it}.is-it i{white-space:normal}.is-ty{grid-area:ty;align-self:start}.is-when{grid-area:when}.is-acts{grid-area:acts;justify-content:stretch}.is-acts .is-b{flex:1}
+  .is-cols{grid-template-columns:1fr}
+  .is-ck{grid-template-columns:8px 1fr auto;grid-template-areas:"d n s" ". w w"}.is-ck .is-dot{grid-area:d}.is-ckn{grid-area:n}.is-ckw{grid-area:w;white-space:normal}.is-cks{grid-area:s}
+  .is-dr{grid-template-columns:64px 1fr 60px;grid-template-areas:"w t s" "w tt tt"}.is-dw{grid-area:w}.is-dt{grid-area:t}.is-dtt{grid-area:tt;white-space:normal}.is-ds{grid-area:s}
+}
+`;
+
 const TIER_COLORS = { starter: "#6B7280", growth: "#3B82F6", pro: "#c47d8e" };
 const STATUS_COLORS_CREW = { pending: "#F59E0B", approved: "#059669", suspended: "#EF4444", rejected: "#6B7280" };
 
