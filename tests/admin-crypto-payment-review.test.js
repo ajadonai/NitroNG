@@ -480,23 +480,15 @@ describe('admin crypto payment review UI wiring', () => {
     'utf8',
   );
 
-  it('shows open crypto reviews first, counted, highlighted, and expanded by default', () => {
-    expect(source).toMatch(
-      /cryptoPaymentReviews\s*=\s*issues\.filter\(i\s*=>\s*i\.type\s*===\s*"crypto_payment_review"\s*&&\s*i\.status\s*===\s*"open"\)/,
-    );
-
-    const reviewSection = source.indexOf('<IssueSection title="Crypto Payment Reviews"');
-    const cronSection = source.indexOf('<IssueSection title="Cron Results"');
-    expect(reviewSection).toBeGreaterThan(-1);
-    expect(reviewSection).toBeLessThan(cronSection);
-
-    const reviewMarkup = source.slice(reviewSection, cronSection);
-    expect(reviewMarkup).toContain('defaultOpen={cryptoPaymentReviews.length > 0}');
-    expect(reviewMarkup).toContain('count={cryptoPaymentReviews.length}');
-    expect(reviewMarkup).toContain('countColor={cryptoPaymentReviews.length > 0 ? redBadge : greenBadge}');
-    expect(reviewMarkup).toContain('<IssueRow key={issue.id} issue={issue}');
-    expect(reviewMarkup).toContain('canAct={canResolveCryptoReviews}');
+  it('shows open crypto reviews at the top as red decisions, gated to the owner', () => {
+    // Crypto reviews are the loudest kind: red, and sorted above everything else that is open.
+    expect(source).toMatch(/ISSUE_SEVERITY\s*=\s*\{[^}]*crypto_payment_review:\s*"high"/);
+    expect(source).toMatch(/const open = issues\.filter\(i => i\.status === "open"\)\.sort\(/);
+    expect(source).toContain('SEV_RANK[ISSUE_SEVERITY[a.type] || "low"] - SEV_RANK[ISSUE_SEVERITY[b.type] || "low"]');
+    // The buttons read Approve / Reject for a review, and only the owner gets them.
+    expect(source).toContain('i.type === "crypto_payment_review" ? ["Approve", "Reject"] : ["Resolve", "Ignore"]');
+    expect(source).toContain('const canAct = (i) => i.type !== "crypto_payment_review" || canResolveCryptoReviews;');
     expect(source).toContain('setCanResolveCryptoReviews(d.canResolveCryptoReviews === true)');
-    expect(source).toContain('Owner review');
+    expect(source).toContain('owner decides');
   });
 });

@@ -22,6 +22,8 @@ never gets picked up twice. Update this in the same commit as the work.
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-08-29 | Issues is one triage list, decisions first then newest, red needs a person and amber can wait; provider balances in the facts row; a Checks card (what runs when, what it last found); Handled list; Run all checks now. Logs is a day-grouped timeline with a who-was-busy facts row and a System tab with a severity bar | `6286b08a` v2.4.41 |
+| 2026-08-29 | Payments rebuilt: facts row (waiting, in today, this month, failed today), waiting rows tinted with Approve and Reject on the row, copyable reference, sender under the method, Needs approval toggle, plain status words; Gateways as doors with live count and share by method; phone cards | `ae8457a6` v2.4.40 |
 | 2026-08-29 | Refills badge clears: an admin sending a refill marks the request handled (`refillHandledAt`, new column and migration), a new customer request clears it, and the Refills page and both badge counts show only requests not yet sent | `0af569aa` v2.4.39 |
 | 2026-08-29 | Landing page scrolls as a normal document on phones and tablets with the nav sticky, so no band of background sits under the footer; desktop keeps the inner scroller and snap | `453135d4` v2.4.38 |
 | 2026-08-29 | Admin badges refresh on every page, not only Overview: a light counts endpoint polled every 20s and on arrival, Refills included; the More sheet on a phone gets the rail's rows and eyebrows and its Support row opens the concierge | `977449f6` v2.4.37 |
