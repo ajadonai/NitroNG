@@ -500,6 +500,7 @@ function FinanceOverviewTab({ dark, t }) {
                   <span className="m fo-dimc">{Math.round(m.amount / methodTotal * 100)}%</span>
                 </div>
               ))}
+              {s.cashRefunds > 0 && <div className="fo-note"><span>Refunded to bank</span><b className="m" style={{ color: "var(--bad)" }}>−{fN(s.cashRefunds)}</b><em>{s.cashRefundCount} {s.cashRefundCount === 1 ? "deposit" : "deposits"} sent back</em></div>}
               {s.walletLiability && <div className="fo-note"><span>Held in wallets</span><b className="m">{fN(s.walletLiability.balances)}</b><em>{s.walletLiability.users.toLocaleString()} people</em></div>}
             </div>
           </section>

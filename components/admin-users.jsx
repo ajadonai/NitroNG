@@ -149,6 +149,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   const [creditAmt, setCreditAmt] = useState('');
   const [creditType, setCreditType] = useState('credit');
   const [creditReason, setCreditReason] = useState('');
+  const [cashRefund, setCashRefund] = useState(false);
   const [rewards, setRewards] = useState(null);
   const [rewardsLoading, setRewardsLoading] = useState(false);
   const [ptsAdjOpen, setPtsAdjOpen] = useState(false);
@@ -252,7 +253,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
       const res = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, userId, amount: Number(amount) || 0, subtype, reason: reason || undefined }),
+        body: JSON.stringify({ action, userId, amount: Number(amount) || 0, subtype, reason: reason || undefined, ...(action === 'debit' && cashRefund ? { cashRefund: true } : {}) }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Request failed'); }
       if (action === 'credit') {
@@ -266,8 +267,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
         const amt = Number(amount) || 0;
         setUsers(prev => prev.map(u => u.id === userId ? { ...u, balance: (u.balance || 0) - amt } : u));
         if (drawerUser?.id === userId) setDrawerUser(prev => ({ ...prev, balance: (prev.balance || 0) - amt }));
-        setCreditAmt(''); setCreditType('credit'); setCreditReason('');
-        toast.success(`Debited ${fN(amt)} from wallet`);
+        setCreditAmt(''); setCreditType('credit'); setCreditReason(''); setCashRefund(false);
+        toast.success(cashRefund ? `${fN(amt)} refunded to bank` : `Debited ${fN(amt)} from wallet`);
       }
       if (action === 'suspend') {
         setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'Suspended' } : u));
@@ -627,6 +628,12 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                 <button type="button" className="us-b" disabled={actionLoading || Number(creditAmt) <= 0 || (creditType === 'debit' && !creditReason.trim())} onClick={() => handleCredit(drawerUser)}>Apply</button>
               </div>
               <div className="us-quick">{[1000, 2000, 5000, 10000].map(p => <button key={p} type="button" className="us-b sm" onClick={() => setCreditAmt(String(p))}>{fN(p)}</button>)}</div>
+              {creditType === 'debit' && (
+                <label className="us-cashref">
+                  <input type="checkbox" checked={cashRefund} onChange={e => setCashRefund(e.target.checked)} />
+                  <span><b>Sent back to their bank</b><i>Books as money out on Finance, not just a wallet adjustment</i></span>
+                </label>
+              )}
             </section>
           )}
 
@@ -870,6 +877,7 @@ const US_CSS = `
 .us-dsec h4{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);font-weight:700;margin:0;white-space:nowrap}
 .us-cred{display:grid;grid-template-columns:130px 1fr 1fr auto;gap:8px;padding:10px 12px;align-items:center}
 .us-quick{display:flex;gap:6px;padding:0 12px 10px;flex-wrap:wrap}
+.us-cashref{display:flex;align-items:flex-start;gap:10px;margin:0 12px 12px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--soft);cursor:pointer;font-size:12.5px}.us-cashref input{margin-top:2px;accent-color:var(--ac)}.us-cashref span{display:flex;flex-direction:column;gap:2px}.us-cashref b{font-weight:600;color:var(--ink)}.us-cashref i{font-style:normal;font-size:11.5px;color:var(--mut)}
 .us-segs{display:flex;gap:3px;padding:3px;border-radius:9px;background:var(--soft);border:1px solid var(--line)}
 .us-seg{flex:1;text-align:center;font:inherit;font-size:12px;font-weight:600;padding:6px;border-radius:6px;color:var(--mut);background:none;border:0;cursor:pointer}.us-seg.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .us-in{width:100%;height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:inherit;font-size:13px;color:var(--ink);outline:none;min-width:0}.us-in:focus{border-color:var(--acln)}
