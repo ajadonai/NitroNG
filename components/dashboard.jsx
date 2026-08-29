@@ -1436,19 +1436,19 @@ function DashboardInner({ initialData }) {
               byId.logout,
             ].filter(Boolean);
           })().map(item => {
-            if (item.header) return <div key={item.id} className="dash-more-eyebrow text-t-text-muted">{item.section}</div>;
-            if (item.id === "logout") {
-              return (
-                <button key={item.id} onClick={() => { setMoreOpen(false); handleLogout(); }} className="dash-more-item" style={{ background: dark ? "rgba(220,38,38,.06)" : "rgba(220,38,38,.03)", color: dark ? "#fca5a5" : "#dc2626", fontWeight: 500 }}>
-                  <div className="dash-more-item-icon" style={{ background: dark ? "rgba(220,38,38,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626" }}>{I[item.id]}</div>
-                  {item.label}
-                </button>
-              );
-            }
+            if (item.header) return <div key={item.id} className="rail-sec"><span>{item.section}</span></div>;
+            const tint = item.id === "support" ? "#25d366" : (item.id === "tasks" || item.id === "resellers") ? (dark ? "#60a5fa" : "#2563eb") : item.id === "logout" ? (dark ? "#fca5a5" : "#dc2626") : null;
+            const go = () => {
+              if (item.soon) return;
+              if (item.id === "logout") { setMoreOpen(false); handleLogout(); return; }
+              if (item.href) { window.location.href = item.href; return; }
+              if (item.id === "support") { setMoreOpen(false); setChatOpen(true); return; }
+              setActive(item.id); setMoreOpen(false);
+            };
             return (
-              <button key={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (item.id === "support" && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setMoreOpen(false); return; } setActive(item.id); setMoreOpen(false); }} className="dash-more-item" style={{ background: item.id === "support" ? (dark ? "rgba(37,211,102,.15)" : "rgba(37,211,102,.1)") : item.id === "tasks" ? (dark ? "rgba(96,165,250,.14)" : "rgba(37,99,235,.08)") : (active === item.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)")), color: item.soon ? (dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)") : (item.id === "support" ? "#25d366" : item.id === "tasks" ? (dark ? "#fbbf24" : "#d97706") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.6)"))), fontWeight: active === item.id || item.id === "tasks" ? 600 : 500, cursor: item.soon ? "default" : "pointer", borderColor: item.soon ? "transparent" : undefined }}>
-                <div className="dash-more-item-icon" style={{ background: item.soon ? (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)") : (item.id === "support" ? (dark ? "rgba(37,211,102,.12)" : "rgba(37,211,102,.08)") : item.id === "tasks" ? (dark ? "rgba(96,165,250,.14)" : "rgba(37,99,235,.08)") : (active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"))), color: item.soon ? (dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.3)") : (item.id === "support" ? "#25d366" : item.id === "tasks" ? (dark ? "#fbbf24" : "#d97706") : (active === item.id ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)"))) }}>{I[item.id]}</div>
-                {item.label}
+              <button key={item.id} type="button" onClick={go} className={"rail-it" + (active === item.id && !item.href ? " on" : "") + (tint ? " tint" : "") + (item.soon ? " soon" : "")} style={tint ? { "--ic": tint } : undefined}>
+                <span className="rail-ii">{I[item.id]}</span>
+                <span className="rail-il">{item.label}</span>
                 {item.soon && <span className="text-[11px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
               </button>
             );
