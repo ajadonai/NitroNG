@@ -341,7 +341,18 @@ describe('resolved offer input rules', () => {
       comments: 'one\ntwo',
     })).toEqual({
       ok: false,
-      error: 'Please provide at least 10 unique comments (one per line). You entered 2.',
+      error: 'Comments need words: at least 10 lines with words in them, one per line. You have 2.',
+    });
+
+    // Lines with only emoji are not comments to a provider, so they do not count towards the minimum.
+    expect(validateCreateOrderOfferInput({
+      service: service({ apiType: 'Custom Comments', min: 10 }),
+      link: 'https://instagram.com/p/ABC123',
+      isUrl: true,
+      comments: 'one\n😍😍😍\n🔥🔥\ntwo',
+    })).toEqual({
+      ok: false,
+      error: 'Comments need words: at least 10 lines with words in them, one per line. You have 2 (lines with only emoji do not count).',
     });
 
     expect(validateCreateOrderOfferInput({
