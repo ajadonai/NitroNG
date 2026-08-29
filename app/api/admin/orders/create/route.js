@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { requireAdmin, logActivity } from '@/lib/admin';
 import { cleanLink } from '@/lib/clean-link';
-import { validateTrafficConfig } from '@/lib/order-create-input.server';
+import { validateTrafficConfig, countCommentLines } from '@/lib/order-create-input.server';
 import { validateDripConfig, calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility, validateIntradayDuration } from '@/lib/drip-feed';
 import { buildOrderOfferSnapshot } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder } from '@/lib/order-queue';
@@ -94,6 +94,10 @@ export async function POST(req) {
         // untargeted — the exact bug the single path just fixed. Refuse it.
         if (tier.trafficTargeting) return Response.json({ error: 'Traffic services need targeting — create them one at a time' }, { status: 400 });
         if (!tier.service?.enabled) return Response.json({ error: `Service for tier ${it.tierId} is disabled` }, { status: 400 });
+        const itemApiType = (tier.service.apiType || '').toLowerCase();
+        if (itemApiType.includes('comment') || itemApiType.includes('mention') || itemApiType === 'poll' || itemApiType === 'seo') {
+          return Response.json({ error: `${tier.group.name} needs comments or other typed input — create it one at a time` }, { status: 400 });
+        }
 
         const qty = Number(it.quantity) || 0;
         const min = tier.min || tier.service.min || 100;
@@ -230,6 +234,20 @@ export async function POST(req) {
     }
     if (!tier.group?.enabled) return Response.json({ error: 'Service group disabled' }, { status: 400 });
     if (!tier.service?.enabled) return Response.json({ error: 'Service disabled' }, { status: 400 });
+
+    // Same rule as the customer form: some services need typed input, and comments need words.
+    const apiType = (tier.service.apiType || '').toLowerCase();
+    const needsCommentText = apiType.includes('custom comment') || apiType.includes('comment replies');
+    const needsTyped = needsCommentText || apiType.includes('mention') || apiType === 'poll' || apiType === 'seo';
+    if (needsTyped && !rawComments?.trim()) {
+      const what = apiType === 'seo' ? 'keywords' : apiType.includes('mention') ? 'usernames to mention' : apiType === 'poll' ? 'the poll answer' : 'comments';
+      return Response.json({ error: `This service needs ${what} before it can go to the provider` }, { status: 400 });
+    }
+    if (needsCommentText) {
+      const lines = countCommentLines(rawComments);
+      const minLines = Math.max(tier.service.min || 0, 10);
+      if (lines < minLines) return Response.json({ error: `Comments need words: at least ${minLines} lines with words in them, one per line. You have ${lines} (lines with only emoji do not count).` }, { status: 400 });
+    }
 
     const qty = Number(quantity) || 0;
     const min = tier.min || tier.service.min || 100;

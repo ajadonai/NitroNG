@@ -1,3 +1,4 @@
+import { countCommentLines } from '@/lib/order-create-input.server';
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getCurrentUser } from '@/lib/auth';
@@ -891,10 +892,10 @@ export async function POST(req) {
         return Response.json({ error: `Row ${i + 1}: this service requires ${at === 'seo' ? 'keywords' : at.includes('mention') ? 'usernames' : at === 'poll' ? 'an answer selection' : 'comments'}` }, { status: 400 });
       }
       if ((at.includes('custom comment') || at.includes('comment replies')) && comments) {
-        const lineCount = comments.split('\n').filter(l => l.trim()).length;
+        const lineCount = countCommentLines(comments);
         const minLines = Math.max(service.min, 10);
         if (lineCount < minLines) {
-          return Response.json({ error: `Row ${i + 1}: please provide at least ${minLines} unique comments (one per line). You entered ${lineCount}.` }, { status: 400 });
+          return Response.json({ error: `Row ${i + 1}: comments need words. At least ${minLines} lines with words in them, one per line; you have ${lineCount} (lines with only emoji do not count).` }, { status: 400 });
         }
       }
 

@@ -148,6 +148,7 @@ export function AdminCreateOrderPage({ dark, t }) {
   const groupName = (selectedGroup?.name || "").toLowerCase();
   const typedInput = selectedTier?.customComments || apiType.includes("custom comment") || apiType.includes("comment replies") || (groupName.includes("review") && !groupName.includes("review like")) ? "comments"
     : apiType.includes("mention") ? "mentions" : apiType === "poll" ? "poll" : apiType === "seo" ? "keywords" : null;
+  const typedOk = !typedInput || (typedInput === "comments" ? /[\p{L}\p{N}]/u.test(comments) : comments.trim().length > 0);
   const typedLabel = { comments: ["Comments", "one per line", "One comment per line"], mentions: ["Usernames to mention", "one per line, without @", "username1\nusername2"], poll: ["Poll answer", "the option number", "1"], keywords: ["Keywords", "one per line", "best smm panel nigeria"] }[typedInput] || null;
   const trafficValid = !showTraffic || (
     traffic.country.trim().length >= 2 && traffic.country.trim().length <= 3 && traffic.device &&
@@ -374,7 +375,7 @@ export function AdminCreateOrderPage({ dark, t }) {
       <button type="button" className="co-b full" style={{ marginTop: 8 }} onClick={openTopUp}>Top up {first}</button>
     </>
   ) : (
-    <button type="button" className="co-pri wide" disabled={!ready} onClick={handleSubmit}>{submitLabel}</button>
+    <button type="button" className="co-pri wide" disabled={!ready || !typedOk} onClick={handleSubmit}>{submitLabel}</button>
   );
 
   const summary = (
@@ -621,7 +622,8 @@ export function AdminCreateOrderPage({ dark, t }) {
             )}
             {mode === "bulk" && (
               <>
-                <button type="button" className="co-b full" disabled={!canAddToBatch} onClick={addToBatch}>+ Add to batch</button>
+                <button type="button" className="co-b full" disabled={!canAddToBatch || !!typedInput} onClick={addToBatch}>+ Add to batch</button>
+                {typedInput && <div className="co-hint">{selectedGroup?.name} needs {typedLabel ? typedLabel[0].toLowerCase() : "typed input"} — switch to Single to place it.</div>}
                 {batchItems.length > 0 && (
                   <div className="co-batch">
                     {batchItems.map((item, i) => (
@@ -735,7 +737,7 @@ export function AdminCreateOrderPage({ dark, t }) {
           <button type="button" className="co-b" onClick={() => setMobileReview(true)}>Review</button>
           {insufficientBal
             ? <button type="button" className="co-pri" onClick={openTopUp}>Top up</button>
-            : <button type="button" className="co-pri" disabled={!ready} onClick={handleSubmit}>{submitting ? "Creating..." : "Create"}</button>}
+            : <button type="button" className="co-pri" disabled={!ready || !typedOk} onClick={handleSubmit}>{submitting ? "Creating..." : "Create"}</button>}
         </div>
       )}
 

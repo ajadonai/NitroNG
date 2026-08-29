@@ -882,7 +882,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       scrollToRow(dupIdx);
       return;
     }
-    const needsComments = cartRows.findIndex(r => (r.needsComments || r.needsMentions || r.needsPoll || r.needsKeywords) && !r.comments.trim());
+    const needsComments = cartRows.findIndex(r => (r.needsComments || r.needsMentions || r.needsPoll || r.needsKeywords) && !(r.needsComments ? /[\p{L}\p{N}]/u.test(r.comments) : r.comments.trim()));
     if (needsComments >= 0) {
       const r = cartRows[needsComments];
       const label = r.needsKeywords ? "keywords" : r.needsPoll ? "a poll answer" : r.needsMentions ? "usernames" : "comments";

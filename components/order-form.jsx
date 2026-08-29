@@ -117,7 +117,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
       (trafficConfig.trafficType === 'referrer' && trafficConfig.referrer.trim()))
   );
 
-  const commentLines = (comments || "").split("\n").filter(l => l.trim()).length;
+  // Only lines with words count: providers reject emoji-only lines, so we say so here rather than after paying.
+  const commentLines = (comments || "").split("\n").filter(l => /[\p{L}\p{N}]/u.test(l)).length;
   const minCommentLines = isCustomComment ? Math.max(selTier?.min || 10, 10) : 0;
   const commentShort = needsComments && commentLines > 0 && commentLines < minCommentLines;
 
