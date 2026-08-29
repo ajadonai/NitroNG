@@ -1,39 +1,34 @@
 'use client';
 import { useState, useEffect } from "react";
 
-const ICONS = {
-  info: (c) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>,
-  warning: (c) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
-  success: (c) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
-  urgent: (c) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+// Nine times out of ten this is an operational notice, so it is drawn as a
+// status line, not an alert box: a dot in the type colour, the type as one
+// small word, the message, an optional action, and a dismiss that stays out of
+// the text. Several notices can be live at once; the newest shows first and
+// dismissing one reveals the next.
+const TYPES = {
+  info:    { label: "Notice",   c: ["#8b5e6b", "#e0a0b0"], bg: ["rgba(196,125,142,.08)", "rgba(196,125,142,.14)"] },
+  warning: { label: "Heads up", c: ["#b45309", "#fcd34d"], bg: ["rgba(217,119,6,.08)",   "rgba(251,191,36,.12)"] },
+  success: { label: "Fixed",    c: ["#0a7d54", "#6ee7b7"], bg: ["rgba(5,150,105,.08)",   "rgba(110,231,183,.12)"] },
+  urgent:  { label: "Urgent",   c: ["#c62828", "#fca5a5"], bg: ["rgba(220,38,38,.08)",   "rgba(252,165,165,.12)"] },
 };
 
-const STYLES = {
-  info: {
-    bgD: "rgba(196,125,142,.12)", bgL: "rgba(196,125,142,.07)",
-    solidD: "#2a1a22", solidL: "#fdf6f8",
-    brdD: "rgba(196,125,142,.3)", brdL: "rgba(196,125,142,.2)",
-    colD: "#e0a0b0", colL: "#8b5e6b",
-  },
-  warning: {
-    bgD: "rgba(251,191,36,.12)", bgL: "rgba(217,119,6,.07)",
-    solidD: "#2a2210", solidL: "#fefbf0",
-    brdD: "rgba(251,191,36,.3)", brdL: "rgba(217,119,6,.2)",
-    colD: "#fcd34d", colL: "#d97706",
-  },
-  success: {
-    bgD: "rgba(110,231,183,.12)", bgL: "rgba(5,150,105,.07)",
-    solidD: "#122a1e", solidL: "#f3fff9",
-    brdD: "rgba(110,231,183,.3)", brdL: "rgba(5,150,105,.2)",
-    colD: "#6ee7b7", colL: "#059669",
-  },
-  urgent: {
-    bgD: "rgba(252,165,165,.12)", bgL: "rgba(220,38,38,.07)",
-    solidD: "#2a1414", solidL: "#fff5f5",
-    brdD: "rgba(252,165,165,.3)", brdL: "rgba(220,38,38,.2)",
-    colD: "#fca5a5", colL: "#dc2626",
-  },
-};
+const CSS = `
+.an{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:13px;line-height:1.4;min-width:0;color:var(--ink)}
+.an-dot{width:8px;height:8px;border-radius:50%;background:var(--c);flex-shrink:0;box-shadow:0 0 0 3px var(--cbg)}
+.an-lbl{font-size:10.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--c);flex-shrink:0}
+.an-msg{flex:1;min-width:0}.an-msg strong{font-weight:700}
+.an-act{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;font-weight:700;color:var(--c);white-space:nowrap;flex-shrink:0;text-decoration:none}.an-act svg{width:12px;height:12px}.an-act:hover{text-decoration:underline}
+.an-cnt{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:var(--dim);flex-shrink:0;padding-left:8px;border-left:1px solid var(--line)}
+.an-x{width:24px;height:24px;border-radius:7px;border:0;background:transparent;color:var(--dim);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin:-4px -4px -4px 0;padding:0}.an-x svg{width:11px;height:11px}.an-x:hover{background:var(--soft);color:var(--ink)}
+.an-land{border-radius:0;border:0;border-bottom:1px solid var(--line);background:var(--cbg);padding:9px 20px;justify-content:center}
+.an-land .an-msg{flex:0 1 auto}
+@media (max-width:767px){
+  .an{flex-wrap:wrap;padding:10px 12px;row-gap:6px}
+  .an-msg{flex-basis:100%;order:3}.an-act{order:4}.an-cnt{order:5;margin-left:auto}.an-x{order:2;margin-left:auto}
+  .an-land{padding:10px 14px}.an-land .an-msg{text-align:left}
+}
+`;
 
 export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", onDismiss }) {
   const [dismissed, setDismissed] = useState(new Set());
@@ -55,6 +50,7 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
         const next = new Set(prev);
         next.add(alert.id);
         try {
+          // Urgent and warning come back next session; the rest stay dismissed.
           if (alert.type === "urgent" || alert.type === "warning") {
             const arr = JSON.parse(sessionStorage.getItem("nitro_dismissed_alerts_session") || "[]");
             if (!arr.includes(alert.id)) { arr.push(alert.id); sessionStorage.setItem("nitro_dismissed_alerts_session", JSON.stringify(arr)); }
@@ -73,55 +69,44 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
   if (visible.length === 0) return null;
 
   const alert = visible[0];
-  const type = STYLES[alert.type] ? alert.type : "info";
-  const s = STYLES[type];
-  const icon = ICONS[type] || ICONS.info;
+  const type = TYPES[alert.type] ? alert.type : "info";
+  const T = TYPES[type];
+  const i = dark ? 1 : 0;
+  const action = alert.action || (alert.actionLabel && alert.actionHref ? { label: alert.actionLabel, href: alert.actionHref } : null);
   const isLeaving = leaving === alert.id;
+  const vars = {
+    "--c": T.c[i], "--cbg": T.bg[i],
+    "--card": dark ? "#141930" : "#ffffff", "--ink": dark ? "#f2efe9" : "#1c1b19",
+    "--dim": dark ? "#5c6170" : "#a19b93", "--line": dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)", "--soft": dark ? "#111634" : "#faf9f7",
+  };
+  const landing = mode === "landing";
 
   return (
     <div
-      className={isLeaving ? "animate-[announceOut_.25s_ease_forwards]" : "animate-[announceIn_.35s_cubic-bezier(.34,1.2,.64,1)_both]"}
-      style={{
-        ...(mode === "landing"
-          ? { position: "fixed", top: 57, left: 0, right: 0, zIndex: 90, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }
-          : { marginBottom: 16 }),
-        background: mode === "landing" ? (dark ? s.solidD : s.solidL) : (dark ? s.bgD : s.bgL),
-        borderTop: `1px solid ${dark ? s.brdD : s.brdL}`,
-        borderRight: `1px solid ${dark ? s.brdD : s.brdL}`,
-        borderBottom: `1px solid ${dark ? s.brdD : s.brdL}`,
-        borderLeft: `3px solid ${dark ? s.colD : s.colL}`,
-        borderRadius: mode !== "landing" ? 12 : 0,
-        boxShadow: mode === "landing" ? (dark ? "0 2px 12px rgba(0,0,0,.3)" : "0 2px 12px rgba(0,0,0,.06)") : "none",
-      }}
+      className={`an${landing ? " an-land" : ""} ${isLeaving ? "animate-[announceOut_.25s_ease_forwards]" : "animate-[announceIn_.35s_cubic-bezier(.34,1.2,.64,1)_both]"}`}
+      role="status"
+      style={{ ...vars, ...(landing
+        ? { position: "fixed", top: 57, left: 0, right: 0, zIndex: 90, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }
+        : { marginBottom: 16 }) }}
     >
-      <div className="flex items-center gap-2.5 py-2.5 px-4 pl-5 pr-10 justify-center relative">
-        <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: `${dark ? s.colD : s.colL}18` }}>
-          {icon(dark ? s.colD : s.colL)}
-        </div>
-        <div className="text-[13px] md:text-sm font-medium" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>
-          {alert.message.split(/(\*[^*]+\*)/).map((part, i) =>
-            part.startsWith('*') && part.endsWith('*')
-              ? <strong key={i}>{part.slice(1, -1)}</strong>
-              : part
-          )}
-          {alert.action && (
-            <a
-              href={alert.action.href || "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs md:text-[13px] font-semibold ml-1.5 hover:underline"
-              style={{ color: dark ? s.colD : s.colL }}
-            >
-              {alert.action.label || "Learn more →"}
-            </a>
-          )}
-        </div>
-        <button
-          onClick={() => dismiss(alert)}
-          className="bg-transparent border-none cursor-pointer p-1.5 opacity-50 hover:opacity-80 absolute right-2 top-1/2 -translate-y-1/2"
-          style={{ color: dark ? "#8a8580" : "#757170" }}
-        ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-      </div>
+      <style>{CSS}</style>
+      <span className="an-dot" />
+      <span className="an-lbl">{T.label}</span>
+      <span className="an-msg">
+        {alert.message.split(/(\*[^*]+\*)/).map((part, k) =>
+          part.startsWith('*') && part.endsWith('*') ? <strong key={k}>{part.slice(1, -1)}</strong> : part
+        )}
+      </span>
+      {action && (
+        <a href={action.href || "#"} target="_blank" rel="noopener noreferrer" className="an-act">
+          {action.label || "Learn more"}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      )}
+      {visible.length > 1 && <span className="an-cnt">1 of {visible.length}</span>}
+      <button type="button" onClick={() => dismiss(alert)} className="an-x" aria-label="Dismiss">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
   );
 }

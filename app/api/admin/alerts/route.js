@@ -43,16 +43,7 @@ export async function POST(req) {
       if (!message?.trim()) return Response.json({ error: 'Message required' }, { status: 400 });
       const tgt = target || 'users';
 
-      // Auto-pause: "everyone" pauses ALL active alerts, others pause same-target only
-      await prisma.alert.updateMany({
-        where: {
-          active: true,
-          deletedAt: null,
-          ...(tgt === 'everyone' ? {} : { target: tgt }),
-        },
-        data: { active: false },
-      });
-
+      // Several notices can be live at once; the strip shows the newest first.
       const alert = await prisma.alert.create({
         data: {
           message: message.trim(),

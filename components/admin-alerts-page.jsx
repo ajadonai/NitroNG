@@ -30,11 +30,7 @@ export function AdminAlertsPage({ dark, t }) {
       const res = await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
       if (res.ok && data.alert) {
-        setAlerts(prev => [data.alert, ...prev.map(a => {
-          if (target === "everyone") return { ...a, active: false };
-          if (a.target === target) return { ...a, active: false };
-          return a;
-        })]);
+        setAlerts(prev => [data.alert, ...prev]);
         setNewMsg(""); setCreating(null); setNewType("info"); setNewActionLabel(""); setNewActionHref("");
       }
     } catch {}
@@ -45,13 +41,7 @@ export function AdminAlertsPage({ dark, t }) {
     try {
       await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
       if (!active) {
-        // Activating: if everyone → pause all others, otherwise pause same-target
-        setAlerts(prev => prev.map(a => {
-          if (a.id === id) return { ...a, active: true };
-          if (target === "everyone") return { ...a, active: false };
-          if (a.target === target && a.active) return { ...a, active: false };
-          return a;
-        }));
+        setAlerts(prev => prev.map(a => a.id === id ? { ...a, active: !active } : a));
       } else {
         setAlerts(prev => prev.map(a => a.id === id ? { ...a, active: false } : a));
       }
@@ -80,12 +70,12 @@ export function AdminAlertsPage({ dark, t }) {
   };
 
   const [histPage, setHistPage] = useState({});
-  const getActive = (target) => alerts.find(a => a.target === target && a.active);
+  const getActives = (target) => alerts.filter(a => a.target === target && a.active);
   const getHistory = (target) => alerts.filter(a => a.target === target && !a.active);
-  const everyoneActive = getActive("everyone");
+  const everyoneActive = getActives("everyone")[0];
 
   const renderSlotCard = (target, title, desc, isOverride) => {
-    const active = getActive(target);
+    const actives = getActives(target);
     const history = getHistory(target);
     const isCreating = creating === target;
     const cardBorder = isOverride ? (dark ? "rgba(251,191,36,.24)" : "rgba(217,119,6,.19)") : t.cardBorder;
@@ -100,9 +90,12 @@ export function AdminAlertsPage({ dark, t }) {
           </div>
           <div className="set-card-body">
 
-          {active ? (
+          {actives.length ? (
             <>
-              <div className="flex items-center gap-2.5 py-3 px-3.5 rounded-[10px] mb-3" style={{
+              {actives.map(active => (
+                <div key={active.id} className="mb-3">
+
+              <div className="flex items-center gap-2.5 py-3 px-3.5 rounded-[10px] mb-2" style={{
                 background: dark ? `${typeColors[active.type]}15` : `${typeColors[active.type]}08`,
                 border: `1px solid ${dark ? `${typeColors[active.type]}40` : `${typeColors[active.type]}30`}`,
                 borderLeft: `3px solid ${typeColors[active.type]}`,
@@ -119,29 +112,27 @@ export function AdminAlertsPage({ dark, t }) {
                   </div>
                 </div>
               </div>
-              <div className={`flex gap-1.5 flex-wrap ${history.length > 0 ? "mb-3" : ""}`}>
+              <div className="flex gap-1.5 flex-wrap">
                 <button onClick={() => toggleAlert(active.id, true, target)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(251,191,36,.24)" : "rgba(217,119,6,.19)", color: dark ? "#fbbf24" : "#d97706" }}>Pause</button>
                 <button onClick={async () => { const ok = await confirm({ title: "Delete Alert", message: `Delete "${active.message?.slice(0, 50)}..."?`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(active.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+              </div>
+                </div>
+              ))}
+              <div className={`flex ${history.length > 0 ? "mb-3" : ""}`}>
                 <button onClick={() => { setCreating(target); setNewMsg(""); setNewType("info"); setNewActionLabel(""); setNewActionHref(""); }} className="adm-btn-sm ml-auto" style={{ borderColor: t.cardBorder, color: t.accent }}>+ New</button>
               </div>
             </>
           ) : (
             <div className="flex items-center gap-2 mb-3">
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: t.textMuted }} />
-              <span className="text-[13px]" style={{ color: t.textMuted }}>No active alert</span>
+              <span className="text-[13px]" style={{ color: t.textMuted }}>No live notices</span>
               <button onClick={() => { setCreating(target); setNewMsg(""); setNewType("info"); setNewActionLabel(""); setNewActionHref(""); }} className="adm-btn-primary ml-auto text-xs py-1.5 px-3.5">+ Create</button>
             </div>
           )}
 
           {isCreating && (
             <div className="mt-2 pt-3" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-              {active && (
-                <div className="flex items-center gap-2 text-xs mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(251,191,36,.06)" : "rgba(217,119,6,.04)", color: dark ? "#fbbf24" : "#d97706" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  Current alert will be auto-paused when you create a new one.
-                </div>
-              )}
-              <textarea value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder="What do you want to announce?" rows={3} className="w-full py-2.5 px-3.5 rounded-lg border text-sm outline-none resize-y font-[inherit] box-border mb-1.5" style={{ borderColor: t.cardBorder, background: inputBg, color: t.text }} />
+              <textarea value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder="What is affected · what it means for them · what we are doing. e.g. Instagram Followers *Budget* is delivering slower than usual. Orders still go through, just past the estimate." rows={3} className="w-full py-2.5 px-3.5 rounded-lg border text-sm outline-none resize-y font-[inherit] box-border mb-1.5" style={{ borderColor: t.cardBorder, background: inputBg, color: t.text }} />
               <div className="text-[11px] mb-3" style={{ color: t.textMuted }}>Wrap text in <code className="py-0.5 px-1 rounded text-[10px]" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>*asterisks*</code> for <strong>bold</strong></div>
               <div className="flex gap-2 mb-3">
                 <input value={newActionLabel} onChange={e => setNewActionLabel(e.target.value)} placeholder="Link text (optional)" className="flex-1 py-2 px-3 rounded-lg border text-[13px] outline-none font-[inherit] box-border" style={{ borderColor: t.cardBorder, background: inputBg, color: t.text }} />
@@ -211,7 +202,7 @@ export function AdminAlertsPage({ dark, t }) {
       <div className="adm-header">
         <div>
           <div className="adm-title" style={{ color: t.text }}>Announcements</div>
-          <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage banners for each audience independently</div>
+          <div className="adm-subtitle" style={{ color: t.textMuted }}>Notices for each audience. Several can be live at once; the newest shows first</div>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -223,7 +214,7 @@ export function AdminAlertsPage({ dark, t }) {
       )}
 
       <div className="grid grid-cols-2 max-md:grid-cols-1 gap-4">
-        {renderSlotCard("everyone", "Everyone override", "Overrides all slots. Shows on landing page, user dashboard, and admin panel simultaneously.", true)}
+        {renderSlotCard("everyone", "Everyone", "Shows to visitors, users and admins, alongside each audience's own notices.", true)}
         {renderSlotCard("landing", "Landing page", "Shown to visitors on the landing page before they log in.")}
         {renderSlotCard("users", "Users", "Shown to logged-in users across all dashboard pages.")}
         {renderSlotCard("admin", "Admin", "Internal notes shown only in the admin panel.")}
