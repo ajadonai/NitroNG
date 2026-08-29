@@ -118,7 +118,27 @@ export async function GET(req) {
       };
     };
 
+    // The facts row: what is waiting, what came in today and this month, what failed today. Not filtered.
+    const dayStart = new Date(); dayStart.setUTCHours(-1, 0, 0, 0); // midnight in Lagos (UTC+1)
+    if (dayStart > new Date()) dayStart.setUTCDate(dayStart.getUTCDate() - 1);
+    const monthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1) - 3600000);
+    const [pendingAgg, todayAgg, monthAgg, failedToday, monthByMethod] = await Promise.all([
+      prisma.transaction.aggregate({ where: { type: 'deposit', method: { in: ['manual', 'crypto'] }, status: 'Pending', NOT: { note: { contains: '[awaiting_confirmation]' } } }, _sum: { amount: true }, _count: true }),
+      prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: dayStart } }, _sum: { amount: true }, _count: true }),
+      prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),
+      prisma.transaction.count({ where: { type: 'deposit', status: { in: ['Failed', 'Rejected', 'Expired'] }, createdAt: { gte: dayStart } } }),
+      prisma.transaction.groupBy({ by: ['method'], where: { type: 'deposit', status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),
+    ]);
+    const facts = {
+      pending: { count: pendingAgg._count || 0, amount: (pendingAgg._sum.amount || 0) / 100 },
+      today: { count: todayAgg._count || 0, amount: (todayAgg._sum.amount || 0) / 100 },
+      month: { count: monthAgg._count || 0, amount: (monthAgg._sum.amount || 0) / 100 },
+      failedToday,
+      byMethod: monthByMethod.map(m => ({ method: m.method || 'other', amount: (m._sum.amount || 0) / 100, count: m._count })).sort((a, b) => b.amount - a.amount),
+    };
+
     return Response.json({
+      facts,
       gateways: masked,
       deposits: deposits.map(formatTx),
       pendingCount: deposits.filter(d => d.status === 'Pending' && !d.note?.includes('[awaiting_confirmation]')).length,

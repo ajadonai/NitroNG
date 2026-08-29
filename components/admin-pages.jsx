@@ -19,6 +19,7 @@ export function AdminPaymentsPage({ dark, t }) {
   const [gateways, setGateways] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
+  const [facts, setFacts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [configuring, setConfiguring] = useState(null);
   const [configFields, setConfigFields] = useState({});
@@ -43,6 +44,7 @@ export function AdminPaymentsPage({ dark, t }) {
       if (d.gateways) setGateways(d.gateways);
       if (d.deposits) setDeposits(d.deposits);
       if (d.pendingCount != null) setPendingCount(d.pendingCount);
+      if (d.facts) setFacts(d.facts);
       if (d.canApprove != null) setCanApprove(d.canApprove);
       if (d.canConfigure != null) setCanConfigure(d.canConfigure);
       setLoading(false);
@@ -140,152 +142,103 @@ export function AdminPaymentsPage({ dark, t }) {
   const FIELD_LABELS = { secretKey: "Secret Key", publicKey: "Public Key", apiKey: "API Key", contractCode: "Contract Code", bankName: "Bank Name", accountNumber: "Account Number", accountName: "Account Name" };
   const statusColors = { Pending: { bg: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.04)", color: dark ? "#fbbf24" : "#d97706" }, Processing: { bg: dark ? "rgba(165,180,252,.08)" : "rgba(79,70,229,.04)", color: dark ? "#a5b4fc" : "#4f46e5" }, Completed: { bg: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.04)", color: dark ? "#6ee7b7" : "#059669" }, Failed: { bg: dark ? "rgba(220,38,38,.08)" : "rgba(220,38,38,.04)", color: dark ? "#fca5a5" : "#dc2626" }, Rejected: { bg: dark ? "rgba(220,38,38,.08)" : "rgba(220,38,38,.04)", color: dark ? "#fca5a5" : "#dc2626" }, Cancelled: { bg: dark ? "rgba(220,38,38,.08)" : "rgba(220,38,38,.04)", color: dark ? "#fca5a5" : "#dc2626" } };
 
+  const STATUS_WORD = { Completed: ["Cleared", "ok"], Pending: ["Waiting", "warn"], Failed: ["Failed", "bad"], Rejected: ["Rejected", "bad"], Expired: ["Expired", "dim"], Processing: ["Processing", "dim"], Review: ["In review", "warn"], Refunded: ["Refunded", "dim"] };
+  const METHOD_WORD = { manual: "Bank transfer", crypto: "Crypto", flutterwave: "Flutterwave", monnify: "Monnify", korapay: "KoraPay", alatpay: "ALATPay", paystack: "Paystack" };
+  const methodWord = (m) => METHOD_WORD[m] || (m ? m.charAt(0).toUpperCase() + m.slice(1) : "—");
+  const short = (v) => v >= 1e6 ? `₦${(v / 1e6).toFixed(2)}M` : v >= 1e3 ? `₦${Math.round(v / 1e3)}K` : `₦${Math.round(v)}`;
+  const initialsOf = (name) => (name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+  const timeOf = (iso) => { const d = new Date(iso); const today = new Date().toDateString() === d.toDateString(); return today ? d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }); };
+  const liveDoors = gateways.filter(g => g.enabled);
+  const methodTotal = (facts?.byMethod || []).reduce((n, m) => n + m.amount, 0) || 1;
+  const vars = {
+    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent, "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)", "--ok": dark ? "#6ee7b7" : "#0a7d54", "--okbg": dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", "--warn": dark ? "#fcd34d" : "#b45309", "--warnbg": dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)", "--bad": dark ? "#fca5a5" : "#c62828",
+  };
+  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   return (
     <>
-      <div className="adm-header">
-        <div className="adm-header-row">
-          <div>
-            <div className="adm-title" style={{ color: t.text }}>Payments</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage deposits and payment gateways</div>
+      <div className="pm" style={vars}>
+        <style>{PM_CSS}</style>
+        <div className="adm-header">
+          <div className="adm-header-row">
+            <div>
+              <div className="adm-title" style={{ color: t.text }}>Payments</div>
+              <div className="adm-subtitle" style={{ color: t.textMuted }}>Money coming in, and the doors it comes through.</div>
+            </div>
+            <SegPill value={tab} options={[{ value: "deposits", label: `Deposits${pendingCount > 0 ? ` (${pendingCount})` : ""}` }, ...(canConfigure ? [{ value: "gateways", label: "Gateways" }] : [])]} onChange={setTab} dark={dark} t={t} />
           </div>
-          <SegPill value={tab} options={[{value: "deposits", label: `Deposits${pendingCount > 0 ? ` (${pendingCount})` : ""}`}, ...(canConfigure ? [{value: "gateways", label: "Gateway Config"}] : [])]} onChange={setTab} dark={dark} t={t} />
-        </div>
-        <div className="page-divider" style={{ background: t.cardBorder }} />
-      </div>
-
-
-      {/* ═══ DEPOSITS TAB ═══ */}
-      {tab === "deposits" && (<>
-        {/* Search + filters */}
-        <div className="flex items-center gap-3 mb-3.5 flex-wrap">
-          <div className="relative flex-1 min-w-full desktop:min-w-[200px]">
-            <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && doSearch()} placeholder="Search ref, user, email, sender name..." className="w-full py-2 px-3 pr-8 rounded-lg text-[13px] outline-none font-[inherit] box-border" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? "rgba(255,255,255,.12)" : "#fff", color: t.text }} />
-            {search && <button aria-label="Clear search" onClick={() => { setSearch(""); refresh("", statusFilter); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
-          </div>
-          <DateRangePicker dark={dark} t={t} value={dateValue} onChange={changeDateValue} />
-          <FilterDropdown dark={dark} t={t} value={statusFilter} onChange={changeStatus} options={[
-            { value: "all", label: "All statuses" },
-            { value: "Pending", label: "Pending" },
-            { value: "Completed", label: "Completed" },
-            { value: "Failed", label: "Failed" },
-            { value: "Rejected", label: "Rejected" },
-          ]} />
-          <button onClick={downloadCSV} className="py-[7px] px-3.5 rounded-lg bg-none text-xs cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`, color: t.textMuted }}>↓ CSV</button>
+          <div className="page-divider" style={{ background: t.cardBorder }} />
         </div>
 
-        {loading ? <div>{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[60px] rounded-lg mb-1.5`} />)}</div> :
-        deposits.length === 0 ? (
-          <div className="py-[60px] px-5 text-center">
-            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" className="block mx-auto mb-3.5 opacity-50">
-              <rect x="8" y="16" width="48" height="32" rx="6" stroke={t.accent} strokeWidth="1.5" opacity=".25" />
-              <rect x="38" y="26" width="18" height="12" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
-              <circle cx="46" cy="32" r="2" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
-              <line x1="16" y1="24" x2="30" y2="24" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
-            </svg>
-            <div className="text-base font-medium mb-1" style={{ color: t.text }}>{statusFilter === "Pending" ? "No pending deposits" : "No deposits found"}</div>
-            <div className="text-sm" style={{ color: t.textMuted }}>{statusFilter === "Pending" ? "Manual and crypto deposits will appear here" : "Try adjusting your search or filters"}</div>
+        {tab === "deposits" && (<>
+          <div className="pm-stats">
+            {!facts ? Array.from({ length: 4 }, (_, i) => <div key={i} className="pm-stt">{bone(20)}</div>) : <>
+              <div className={"pm-stt" + (facts.pending.count ? " warn" : "")}><b className="m">{facts.pending.count}</b><span>Waiting for approval</span><i>{facts.pending.count ? `${fN(facts.pending.amount)} · bank transfer or crypto` : "nothing waiting"}</i></div>
+              <div className="pm-stt"><b className="m">{fN(facts.today.amount)}</b><span>In today</span><i>{facts.today.count} deposit{facts.today.count === 1 ? "" : "s"}{facts.today.count ? ` · ${fN(Math.round(facts.today.amount / facts.today.count))} average` : ""}</i></div>
+              <div className="pm-stt"><b className="m">{short(facts.month.amount)}</b><span>This month</span><i>{facts.month.count.toLocaleString()} deposits</i></div>
+              <div className={"pm-stt" + (facts.failedToday ? " bad" : "")}><b className="m">{facts.failedToday}</b><span>Failed today</span><i>{facts.failedToday ? "declined, expired or rejected" : "none"}</i></div>
+            </>}
           </div>
-        ) : (
-          <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, borderRadius: 14, overflow: "hidden" }}>
-            {deposits.map((tx, i) => {
-              const sc = statusColors[tx.status] || statusColors.Pending;
-              const initials = (tx.user || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+          <div className="pm-bar">
+            <div className="pm-srch">
+              <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && doSearch()} placeholder="Search reference, name, email or sender" />
+              {search && <button type="button" className="pm-x" onClick={() => { setSearch(""); refresh("", statusFilter); }} aria-label="Clear search">✕</button>}
+            </div>
+            <DateRangePicker dark={dark} t={t} value={dateValue} onChange={changeDateValue} />
+            <FilterDropdown dark={dark} t={t} value={statusFilter} onChange={changeStatus} options={[{ value: "all", label: "All statuses" }, { value: "Pending", label: "Waiting" }, { value: "Completed", label: "Cleared" }, { value: "Failed", label: "Failed" }, { value: "Rejected", label: "Rejected" }]} />
+            <button type="button" className={"pm-tg" + (statusFilter === "Pending" ? " on" : "")} onClick={() => changeStatus(statusFilter === "Pending" ? "all" : "Pending")}>Needs approval</button>
+            <span className="pm-cnt">{loading ? "" : `${deposits.length} deposit${deposits.length === 1 ? "" : "s"}`}</span>
+            <button type="button" className="pm-b" onClick={downloadCSV} disabled={!deposits.length}>CSV</button>
+          </div>
+          <div className="pm-list">
+            <div className="pm-lh"><span>Person</span><span>Reference</span><span>Method</span><span>Status</span><span>Time</span><span className="r">Amount</span><span /></div>
+            {loading ? Array.from({ length: 5 }, (_, i) => <div key={i} className="pm-dr sk">{bone(34)}</div>) : deposits.length === 0 ? (
+              <div className="pm-empty">{statusFilter === "Pending" ? "Nothing waiting for approval." : "No deposits match."}</div>
+            ) : deposits.map(tx => {
+              const [word, cls] = STATUS_WORD[tx.status] || [tx.status, "dim"];
               const isPending = tx.status === "Pending";
               return (
-                <div key={tx.id} style={{ display: "flex", gap: 13, padding: "13px 16px", borderBottom: i < deposits.length - 1 ? `1px solid ${t.cardBorder}` : "none", alignItems: "flex-start", ...(isPending ? { boxShadow: `inset 2.5px 0 0 ${sc.color}` } : {}), transition: "background .12s" }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 7, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: t.text }}>{tx.user}</span>
-                      <span style={{ fontSize: 12, color: t.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.email}</span>
-                      {statusFilter === "all" && <span className="text-[11px] py-0.5 px-2 rounded font-semibold" style={{ background: sc.bg, color: sc.color }}>{tx.status}</span>}
-                    </div>
-                    {tx.senderRef && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, minHeight: 20 }}>
-                        <span style={{ width: 50, flexShrink: 0, fontSize: 9, fontWeight: 800, letterSpacing: 1, color: t.textMuted }}>SENDER</span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: t.text, textTransform: "capitalize" }}>{tx.senderRef.toLowerCase()}</span>
-                      </div>
-                    )}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, minHeight: 20 }}>
-                      <span style={{ width: 50, flexShrink: 0, fontSize: 9, fontWeight: 800, letterSpacing: 1, color: t.textMuted }}>REF</span>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", border: `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.08)"}`, borderRadius: 7, padding: "3px 8px", fontSize: 11, color: dark ? "#c9c5c0" : "#4a4744" }}>
-                        <span className="m">{tx.reference}</span>
-                        <button onClick={() => { copyText(tx.reference); toast.success("Copied", tx.reference); }} style={{ display: "flex", color: t.textMuted, transition: ".12s", cursor: "pointer", background: "none", border: "none", padding: 0 }} title="Copy reference">
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                        </button>
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, minHeight: 20 }}>
-                      <span style={{ width: 50, flexShrink: 0, fontSize: 9, fontWeight: 800, letterSpacing: 1, color: t.textMuted }}>DATE</span>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: t.textMuted }}>{fD(tx.date)}</span>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0, alignSelf: "stretch", justifyContent: "space-between" }}>
-                    <span className="m" style={{ fontSize: 17, fontWeight: 700, color: isPending ? sc.color : sc.color }}>{fN(tx.amount)}</span>
-                    {isPending && canApprove && (
-                      <div style={{ display: "flex", gap: 7 }}>
-                        <button onClick={() => approveManual(tx)} style={{ background: "linear-gradient(135deg,#34d399,#059669)", color: "#fff", fontSize: 12.5, fontWeight: 800, padding: "8px 16px", borderRadius: 9, display: "flex", alignItems: "center", gap: 5, transition: ".15s", boxShadow: "0 3px 10px rgba(5,150,105,.25)", border: "none", cursor: "pointer" }}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                          <span className="max-md:hidden">Approve</span>
-                        </button>
-                        <button onClick={() => rejectManual(tx)} style={{ fontSize: 12.5, fontWeight: 700, padding: "8px 14px", borderRadius: 9, border: `1px solid ${dark ? "rgba(252,165,165,.35)" : "rgba(220,38,38,.35)"}`, color: dark ? "#fca5a5" : "#dc2626", transition: ".15s", cursor: "pointer", background: "none" }}>
-                          <span className="max-md:hidden">Reject</span>
-                          <svg className="hidden max-md:block" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        </button>
-                      </div>
-                    )}
-                    {isPending && !canApprove && (
-                      <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>View only</span>
-                    )}
-                    {!isPending && tx.actionBy && (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, color: sc.color, background: sc.bg, padding: "3px 8px", borderRadius: 6 }}>
-                        {tx.status === "Completed" ? (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        ) : (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        )}
-                        {tx.status === "Completed" ? "Approved" : "Rejected"} by {tx.actionBy}
-                      </span>
-                    )}
-                  </div>
+                <div key={tx.id} className={"pm-dr" + (isPending ? " pend" : "")}>
+                  <span className="pm-un"><span className="pm-av">{initialsOf(tx.user)}</span><span className="pm-unt"><b>{tx.user}</b><i>{tx.email}</i></span></span>
+                  <button type="button" className="pm-ref m" title="Copy the reference" onClick={() => { copyText(tx.reference); toast.success("Copied", tx.reference); }}>{tx.reference}</button>
+                  <span className="pm-mth"><b>{methodWord(tx.method)}</b>{tx.senderRef && <i>sender: {tx.senderRef.toLowerCase()}</i>}</span>
+                  <span className="pm-st"><i className={`pm-dot ${cls}`} />{word}</span>
+                  <span className="pm-tm">{timeOf(tx.date)}</span>
+                  <b className="pm-amt m">{fN(tx.amount)}</b>
+                  <span className="pm-acts">
+                    {isPending && canApprove && <><button type="button" className="pm-b sm ok" onClick={() => approveManual(tx)}>Approve</button><button type="button" className="pm-b sm bad" onClick={() => rejectManual(tx)}>Reject</button></>}
+                    {isPending && !canApprove && <span className="pm-dimc">view only</span>}
+                    {!isPending && tx.actionBy && <span className="pm-dimc">by {tx.actionBy}</span>}
+                  </span>
                 </div>
               );
             })}
           </div>
-        )}
-      </>)}
+        </>)}
 
-      {/* ═══ GATEWAY CONFIG TAB ═══ */}
-      {tab === "gateways" && (
-        <>
-          <div className="flex justify-end mb-3">
-            <button onClick={() => setAddModal(true)} className="adm-btn-primary shrink-0">+ Add Gateway</button>
+        {tab === "gateways" && (<>
+          <div className="pm-stats">
+            <div className="pm-stt"><b className="m">{liveDoors.length}</b><span>Live doors</span><i>{liveDoors.map(g => g.name).join(", ") || "none"}</i></div>
+            {(facts?.byMethod || []).slice(0, 3).map(m => (
+              <div key={m.method} className="pm-stt"><b className="m">{Math.round(m.amount / methodTotal * 100)}%</b><span>By {methodWord(m.method).toLowerCase()}</span><i>this month · {short(m.amount)}</i></div>
+            ))}
           </div>
-          {loading ? <div>{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[52px] rounded-lg mb-1.5`} />)}</div> : (
-            <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-              {gateways.map((g, i) => (
-                <div key={g.id} className="adm-list-row flex-wrap gap-2.5" style={{ borderBottom: i < gateways.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                  <div className="flex-1 min-w-[160px]">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-[15px] font-medium" style={{ color: t.text }}>{g.name}</span>
-                      <span className="text-[11px] py-0.5 px-1.5 rounded font-semibold" style={{ background: g.enabled ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)"), color: g.enabled ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>{g.enabled ? "Active" : "Disabled"}</span>
-                      {g.hasKeys && <span className="text-[11px] py-0.5 px-1.5 rounded font-semibold" style={{ background: dark ? "rgba(96,165,250,.08)" : "rgba(59,130,246,.06)", color: dark ? "#60a5fa" : "#2563eb" }}>Keys set</span>}
-                    </div>
-                    <div className="text-[13px]" style={{ color: t.textMuted }}>{g.desc}</div>
-                  </div>
-                  <div className="flex gap-1.5 items-center flex-wrap">
-                    <div className="flex flex-col gap-0.5 mr-1">
-                      <button onClick={() => reorder(i, -1)} disabled={i === 0} className="w-5 h-4 flex items-center justify-center rounded bg-transparent border-none cursor-pointer transition-opacity" style={{ color: t.textMuted, opacity: i === 0 ? .2 : .6 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
-                      <button onClick={() => reorder(i, 1)} disabled={i === gateways.length - 1} className="w-5 h-4 flex items-center justify-center rounded bg-transparent border-none cursor-pointer transition-opacity" style={{ color: t.textMuted, opacity: i === gateways.length - 1 ? .2 : .6 }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
-                    </div>
-                    <button onClick={() => toggle(g.id, !g.enabled)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: g.enabled ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{g.enabled ? "Disable" : "Enable"}</button>
-                    <button onClick={() => openConfig(g)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.accent }}>Configure</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+          <div className="pm-bar"><span className="pm-cnt" style={{ marginLeft: 0 }}>Customers see them in this order</span><button type="button" className="pm-b" style={{ marginLeft: "auto" }} onClick={() => setAddModal(true)}>+ Add a gateway</button></div>
+          <div className="pm-list">
+            {loading ? Array.from({ length: 3 }, (_, i) => <div key={i} className="pm-gr sk">{bone(34)}</div>) : gateways.map((g, i) => (
+              <div key={g.id} className={"pm-gr" + (g.enabled ? "" : " off")}>
+                <span className="pm-ord"><button type="button" className="pm-ib" onClick={() => reorder(i, -1)} disabled={i === 0} aria-label="Move up">↑</button><button type="button" className="pm-ib" onClick={() => reorder(i, 1)} disabled={i === gateways.length - 1} aria-label="Move down">↓</button></span>
+                <span className="pm-gt"><b>{g.name}</b><i>{g.desc}</i></span>
+                <span className="pm-st"><i className={`pm-dot ${g.enabled ? "ok" : "dim"}`} />{g.enabled ? "Live" : "Off"}</span>
+                <span className="pm-keys">{g.hasKeys ? "Keys set" : "No keys"}</span>
+                <button type="button" className={"pm-tog" + (g.enabled ? "" : " o")} onClick={() => toggle(g.id, !g.enabled)} aria-label={g.enabled ? "Switch off" : "Switch on"}><i /></button>
+                <button type="button" className="pm-b sm" onClick={() => openConfig(g)}>Configure</button>
+              </div>
+            ))}
+          </div>
+        </>)}
+      </div>
+
       {configuring && (
         <div onClick={() => setConfiguring(null)} onKeyDown={e=>{if(e.key==='Escape')setConfiguring(null)}} className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" style={{ background: "rgba(0,0,0,.45)" }}>
           <div role="dialog" aria-modal="true" aria-label="Configure gateway" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
@@ -362,6 +315,49 @@ export function AdminPaymentsPage({ dark, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ ANALYTICS PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
+const PM_CSS = `
+.pm{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.pm *{box-sizing:border-box}
+.pm .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.pm .r{text-align:right}
+.pm-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.pm-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.pm-stt:first-child{border-left:0}
+.pm-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pm-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px}.pm-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pm-stt.warn b{color:var(--warn)}.pm-stt.bad b{color:var(--bad)}
+.pm-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pm-srch{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);min-width:300px}.pm-srch:focus-within{border-color:var(--acln)}
+.pm-srch input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:13px;color:var(--ink);outline:none}.pm-srch input::placeholder{color:var(--dim)}
+.pm-x{width:18px;height:18px;border-radius:50%;border:0;background:var(--rail);color:var(--mut);font-size:10px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.pm-tg{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer}.pm-tg.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.pm-cnt{font-size:12px;color:var(--dim);margin-left:auto}
+.pm-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.pm-b:hover{transform:translateY(-1px)}.pm-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.pm-b.sm{height:30px;padding:0 10px;font-size:12px}.pm-b.ok{color:var(--ok);border-color:var(--ok);background:var(--okbg)}.pm-b.bad{color:var(--bad)}
+.pm-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.pm-lh,.pm-dr{display:grid;grid-template-columns:minmax(190px,1.2fr) 190px 150px 96px 56px 96px 150px;align-items:center;gap:12px;padding:0 14px}
+.pm-lh{height:34px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line)}
+.pm-dr{padding-top:9px;padding-bottom:9px;border-top:1px solid var(--rail);font-size:13px;min-width:0}.pm-dr.pend{background:var(--warnbg)}.pm-dr.sk{display:block}
+.pm-un{display:flex;align-items:center;gap:10px;min-width:0}.pm-av{width:34px;height:34px;border-radius:50%;background:var(--ac);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.pm-unt{display:flex;flex-direction:column;gap:1px;min-width:0}.pm-unt b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pm-unt i{font-style:normal;font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pm-ref{font:inherit;font-size:12px;color:var(--mut);background:none;border:0;padding:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:copy;min-width:0}.pm-ref:hover{color:var(--ink)}
+.pm-mth{display:flex;flex-direction:column;gap:1px;min-width:0}.pm-mth b{font-weight:600}.pm-mth i{font-style:normal;font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:capitalize}
+.pm-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.pm-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}.pm-dot.ok{background:var(--ok)}.pm-dot.warn{background:var(--warn)}.pm-dot.bad{background:var(--bad)}.pm-dot.dim{background:var(--dim)}
+.pm-tm{font-size:12px;color:var(--mut);white-space:nowrap}.pm-amt{text-align:right;font-weight:700;font-size:14px}.pm-acts{display:flex;gap:6px;justify-content:flex-end;align-items:center}.pm-dimc{font-size:12px;color:var(--mut);white-space:nowrap}
+.pm-empty{padding:40px 14px;text-align:center;font-size:13px;color:var(--mut)}
+.pm-gr{display:grid;grid-template-columns:52px 1fr 90px 90px 44px 110px;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--rail)}.pm-gr:first-child{border-top:0}.pm-gr.off .pm-gt{opacity:.55}.pm-gr.sk{display:block}
+.pm-ord{display:inline-flex;gap:2px}.pm-ib{width:24px;height:24px;border-radius:7px;border:1px solid var(--line);background:var(--card);color:var(--mut);font:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}.pm-ib:disabled{opacity:.35;cursor:not-allowed}
+.pm-gt{display:flex;flex-direction:column;gap:2px;min-width:0}.pm-gt b{font-weight:600}.pm-gt i{font-style:normal;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pm-keys{font-size:11.5px;color:var(--mut)}
+.pm-tog{width:34px;height:20px;border-radius:10px;background:var(--ac);position:relative;display:inline-block;border:0;padding:0;cursor:pointer}.pm-tog i{position:absolute;top:2px;left:16px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}.pm-tog.o{background:var(--line)}.pm-tog.o i{left:2px}
+@media (max-width:900px){
+  .pm-stats{grid-template-columns:1fr 1fr}.pm-stt:nth-child(3){border-left:0}.pm-stt:nth-child(n+3){border-top:1px solid var(--line)}.pm-stt b{font-size:17px}
+  .pm-srch{width:100%;min-width:0}.pm-cnt{display:none}
+  .pm-lh{display:none}.pm-list{background:none;border:0;display:flex;flex-direction:column;gap:10px;overflow:visible}
+  .pm-dr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"un amt" "mth st" "ref ref" "acts acts";gap:6px 10px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px}.pm-dr.pend{border-color:var(--warn)}
+  .pm-un{grid-area:un}.pm-amt{grid-area:amt;align-self:start}.pm-mth{grid-area:mth}.pm-st{grid-area:st;justify-self:end}.pm-ref{grid-area:ref;font-size:11.5px}.pm-tm{display:none}
+  .pm-acts{grid-area:acts;justify-content:stretch}.pm-acts .pm-b{flex:1}.pm-acts:empty{display:none}
+  .pm-gr{grid-template-columns:52px 1fr 44px;grid-template-areas:"ord gt tog" ". st keys" ". b b";gap:6px 10px;background:var(--card);border:1px solid var(--line);border-radius:14px}.pm-ord{grid-area:ord}.pm-gt{grid-area:gt}.pm-gr .pm-st{grid-area:st}.pm-keys{grid-area:keys;justify-self:end}.pm-tog{grid-area:tog}.pm-gr .pm-b{grid-area:b;justify-self:start}
+}
+`;
+
 export function AdminFinancePage({ dark, t, admin }) {
   const [tab, setTab] = useState("overview");
   const canBreakdown = admin?.pages === "*" || (Array.isArray(admin?.pages) && admin.pages.includes("financials"));
