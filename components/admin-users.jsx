@@ -551,11 +551,13 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   const [drawerOpenMobile, setDrawerOpenMobile] = useState(false);
   // A sheet over the list: nothing behind it scrolls or takes taps while it is up.
   useEffect(() => {
-    if (!(drawerUser && drawerOpenMobile)) return undefined;
+    if (!drawerUser) return undefined;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, [drawerUser, drawerOpenMobile]);
+    const onKey = (e) => { if (e.key === 'Escape') closeDrawer(); };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [drawerUser]);
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 900px)');
     const sync = () => setDrawerOpenMobile(mq.matches);
@@ -661,7 +663,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                 <div key={tx.id} className="us-tr">
                   <span className="us-td">{joinedShort(tx.createdAt)}</span>
                   <span className="us-tn" title={txText(tx)}>{txText(tx)}</span>
-                  <b className={"m " + (tx.status !== 'Completed' ? 'dim' : txSign(tx) === '+' ? 'in' : 'out')}>{txSign(tx) === '-' ? '−' : txSign(tx)}{fN(tx.amount)}</b>
+                  <b className={"m " + (tx.status !== 'Completed' ? 'dim' : txSign(tx) === '+' ? 'in' : 'out')}>{txSign(tx) === '-' ? '−' : txSign(tx)}{fN(Math.abs(tx.amount) / 100)}</b>
                 </div>
               ))}
               {txAll && txTotalPages > 1 && (
@@ -723,7 +725,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
         </div>
       )}
 
-      <div className={"us-cols" + (drawerUser ? " open" : "")}>
+      <div className="us-cols">
         <div className="us-list">
           <div className="us-uh">
             <span><button type="button" className={"us-cb" + (allSelected ? " on" : "")} onClick={toggleAll} aria-label="Select all" /></span>
@@ -773,10 +775,9 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
             </div>
           )}
         </div>
-        {drawerUser && !drawerOpenMobile && drawer}
       </div>
 
-      {drawerUser && drawerOpenMobile && (
+      {drawerUser && (
         <>
           <div className="us-back" onClick={closeDrawer} />
           {drawer}
@@ -831,10 +832,9 @@ const US_CSS = `
 .us-tg.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .us-count{margin-left:auto;font-size:12px}
 .us-bb{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:var(--acbg);border:1px solid var(--line);font-size:13px;flex-wrap:wrap}.us-bb b{margin-right:4px}
-.us-cols{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}.us-cols.open{grid-template-columns:1fr 380px}
+.us-cols{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
 .us-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
 .us-uh,.us-ur{display:grid;grid-template-columns:22px minmax(200px,1fr) 96px 100px 64px 80px 100px;align-items:center;gap:12px;padding:0 14px}
-.us-cols.open .us-uh,.us-cols.open .us-ur{grid-template-columns:22px minmax(160px,1fr) 90px 96px 56px 70px 100px}
 .us-uh{height:34px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line)}
 .us-uh .r{text-align:right}.us-sort{cursor:pointer;user-select:none}
 .us-ur{padding-top:9px;padding-bottom:9px;border-top:1px solid var(--rail);font-size:13px;min-width:0;cursor:pointer}.us-ur:hover{background:var(--soft)}.us-ur.sel{background:var(--acbg)}
@@ -854,7 +854,7 @@ const US_CSS = `
 .us-pg{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}
 .us-pgn{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap}
 .us-empty{padding:28px 14px;text-align:center;font-size:13px;color:var(--mut)}
-.us-dr{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px;position:sticky;top:14px;min-width:0}
+.us-dr{background:var(--card);border-left:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:14px;position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);z-index:999;overflow:auto;box-shadow:-12px 0 40px rgba(0,0,0,.2);min-width:0}
 .us-grab{display:none}
 .us-dh{display:flex;align-items:center;gap:12px;min-width:0}
 .us-dn{display:flex;flex-direction:column;min-width:0;flex:1}.us-dn b{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -884,17 +884,16 @@ const US_CSS = `
 .us-mi{display:block;width:100%;text-align:left;padding:8px 12px;font:inherit;font-size:13px;font-weight:500;color:var(--ink);background:none;border:0;cursor:pointer}.us-mi:hover{background:var(--soft)}.us-mi.danger{color:var(--bad)}
 .us-msep{height:1px;background:var(--line);margin:6px 12px}
 .us-back{position:fixed;inset:0;z-index:998;background:rgba(0,0,0,.45)}
-.us-dr.sheet{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:999;border-radius:20px 20px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.25);max-height:92vh;overflow:auto}
+.us-dr.sheet{left:0;right:0;bottom:0;top:auto;width:auto;border-left:0;border-top:1px solid var(--line);border-radius:20px 20px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.25);max-height:92vh}
 .us-dr.sheet .us-grab{display:block;width:36px;height:4px;border-radius:2px;background:var(--line);margin:-4px auto 2px}
 @media (max-width:900px){
   .us-stats{grid-template-columns:1fr 1fr}.us-stt:nth-child(3){border-left:0}.us-stt:nth-child(n+3){border-top:1px solid var(--line)}.us-stt b{font-size:17px}
   .us-srch{width:100%;min-width:0}.us-count{display:none}
   .us-uh{display:none}
-  .us-ur,.us-cols.open .us-ur{display:flex;align-items:center;gap:10px;padding:10px 12px}
+  .us-ur{display:flex;align-items:center;gap:10px;padding:10px 12px}
   .us-ur>span:first-child,.us-ord,.us-jn,.us-ra,.us-st{display:none}.us-un{flex:1}.us-bal{flex-shrink:0;font-size:13px}
   .us-unt i{display:flex;align-items:center;gap:6px}
   .us-unt i::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);flex-shrink:0}.us-ur.banned .us-unt i::before{background:var(--bad)}
-  .us-cols.open{grid-template-columns:1fr}
   .us-cred{grid-template-columns:1fr 1fr}.us-cred .us-segs{grid-column:1/-1}.us-cred .us-b{grid-column:1/-1}
 }
 `;
