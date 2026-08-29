@@ -11,14 +11,14 @@ import { cleanLink } from "../lib/clean-link";
 import { OrderForm as ExtractedOrderForm } from "./order-form";
 import { TASKS_ENABLED } from './rewards';
 import { openCardFrame } from '@/lib/expandable-card';
+import { copyText } from '@/lib/clipboard';
 
 // ── Success-modal promo slides ──
 // 'tasks' activates automatically when TASKS_ENABLED flips in rewards.jsx.
 // Flip RESELLER_SLIDE_ENABLED to true when the reseller programme launches
 // (and point RESELLER_SLIDE_HREF at the live reseller hub route).
-const RESELLER_SLIDE_ENABLED = false;
-const TASKS_SLIDE_HREF = '/dashboard'; // confirm the Tasks route at launch
-const RESELLER_SLIDE_HREF = '/reseller'; // update to the reseller hub route on activation
+const RESELLER_SLIDE_ENABLED = true;
+const RESELLER_SLIDE_HREF = '/resellers';
 const PROMO_SLIDES = ['wa', 'ig', ...(TASKS_ENABLED ? ['tasks'] : []), ...(RESELLER_SLIDE_ENABLED ? ['reseller'] : [])];
 
 /* ═══════════════════════════════════════════ */
@@ -161,6 +161,39 @@ const TX_TIERS = [
   { key: "Premium", cap: "Main page", short: ["Best", "For life", "First"], long: ["Our best profiles", "Free for life", "Front of the queue"], pick: "The account your business runs on.",
     c: { light: "#6d28d9", bg: "#f5eef5", ln: "#d4b8d4", dark: "#a78bfa", bgD: "#221535", lnD: "#3d2060" } },
 ];
+const RCP_CSS = `
+.rcp{padding:22px 22px 20px;color:var(--ink)}
+@media (max-width:767px){.rcp{padding:14px 16px 18px}}
+.rcp *{box-sizing:border-box}
+.rcp-hd{display:flex;align-items:center;gap:12px}
+.rcp-ck{width:40px;height:40px;border-radius:50%;background:var(--ok);color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 18px rgba(10,125,84,.22)}.rcp-ck svg{width:20px;height:20px}
+.rcp-ht{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.rcp-ht b{font-size:19px;font-weight:800;letter-spacing:-.01em;line-height:1.1}
+@media (min-width:768px){.rcp-ht b{font-size:21px}}
+.rcp-id{font-size:12px;color:var(--mut);display:inline-flex;align-items:center;gap:5px;background:transparent;border:0;padding:0;cursor:pointer;font-weight:500;text-align:left}.rcp-id svg{width:12px;height:12px;color:var(--dim)}
+.rcp-what{display:flex;align-items:center;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.rcp-pi{width:30px;height:30px;border-radius:9px;background:var(--soft);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;color:var(--ink);opacity:.8;flex-shrink:0}.rcp-pi svg{width:16px;height:16px}
+.rcp-wn{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}.rcp-wn b{font-size:14.5px;font-weight:700}
+.rcp-tier{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid transparent}
+.rcp-lnk{font-size:12px;color:var(--mut);margin:6px 0 0 40px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcp-facts{margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+@media (min-width:768px){.rcp-facts{margin-top:16px}}
+.rcp-f{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border-top:1px solid var(--rail);font-size:13px}.rcp-f:first-child{border-top:0}
+@media (min-width:768px){.rcp-f{padding:10px 14px}}
+.rcp-f span{color:var(--mut)}.rcp-f b{font-weight:600;color:var(--ink);text-align:right;min-width:0}.rcp-money{color:var(--ok)}.rcp-mut{color:var(--dim);font-weight:500}
+.rcp-car{margin-top:12px}
+.rcp-sl{display:flex;align-items:center;gap:12px;padding:0 13px;height:66px;border-radius:14px;background:color-mix(in srgb,var(--sc) 9%,var(--card));border:1px solid color-mix(in srgb,var(--sc) 22%,transparent)}
+.rcp-si{width:40px;height:40px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 6px 16px rgba(0,0,0,.14)}.rcp-si svg{width:20px;height:20px}
+.rcp-st{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.rcp-st b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rcp-st i{font-style:normal;font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcp-sb{color:#fff;font-size:12.5px;font-weight:800;padding:9px 14px;border-radius:999px;white-space:nowrap;text-decoration:none;flex-shrink:0;border:0;cursor:pointer;font-family:inherit;line-height:1.2}
+.rcp-dots{display:flex;justify-content:center;gap:6px;margin-top:9px}
+.rcp-dot{position:relative;width:6px;height:6px;border-radius:3px;background:var(--line);border:0;padding:0;cursor:pointer;overflow:hidden;transition:width .2s}.rcp-dot.on{width:18px}
+.rcp-fill{position:absolute;inset:0;border-radius:3px;background:var(--ac);transform-origin:left}
+.rcp-acts{display:flex;gap:10px;margin-top:16px}
+@media (min-width:768px){.rcp-acts{margin-top:18px}}
+.rcp-btn{flex:1;text-align:center;padding:13px 14px;border-radius:13px;font-size:14px;font-weight:700;border:1px solid var(--line);color:var(--ink);background:var(--card);cursor:pointer;font-family:inherit}
+.rcp-pri{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:800;box-shadow:0 8px 22px rgba(196,125,142,.28)}
+`;
+
 const TX_CSS = `
 .tx{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px}
 .tx *{box-sizing:border-box}
@@ -458,7 +491,7 @@ export function OrderForMeCard({ waNumber, dark, context, email }) {
   );
 }
 
-export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal, tourActive, activePromotion, rewards, socialLinks, refreshRewards }) {
+export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onNavigate, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal, tourActive, activePromotion, rewards, socialLinks, refreshRewards }) {
   const toast = useToast();
   const [filterType, setFilterType] = useState("all");
   const [search, setSearch] = useState("");
@@ -1078,126 +1111,65 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         <div className="no-modal-overlay flex fixed inset-0 z-[95] items-end justify-center desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); setRedeemPoints(false); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null);setRedeemPoints(false);}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
           <div role="dialog" aria-modal="true" aria-label="Order summary" className={`w-full overflow-y-auto border border-solid max-h-[calc(100dvh-84px)] desktop:max-h-[90vh] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] ${orderSuccess ? "rounded-t-[26px] desktop:rounded-[26px] desktop:max-w-[460px]" : "rounded-t-[22px] desktop:rounded-[22px] desktop:max-w-[440px]"}`} onClick={e => e.stopPropagation()} style={{ background: orderSuccess ? successChrome.card : (dark ? "#0e1120" : "#fff"), borderColor: orderSuccess ? "transparent" : (dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"), boxShadow: orderSuccess ? "0 30px 80px rgba(20,10,14,.35)" : (dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)") }}>
             {orderSuccess ? (
-              <div className="p-[30px] pb-[26px] max-md:p-5 max-md:pb-6">
-                {/* Header — calm success state */}
-                <div className="flex items-start gap-3.5">
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ background: successChrome.money, boxShadow: dark ? "0 6px 18px rgba(79,209,161,.22)" : "0 6px 18px rgba(10,125,84,.28)" }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xl font-extrabold tracking-[-.2px]" style={{ color: successChrome.text }}>{orderSuccess.queued ? "Order queued" : "Order placed"}</div>
-                    <div className="text-[13px] mt-[3px] flex items-center gap-[7px] min-w-0 flex-wrap" style={{ color: successChrome.muted }}>
-                      <span className="font-semibold truncate max-w-full" style={{ color: successChrome.text }}>{orderSuccess.service.replace(/\s*\((?:Budget|Standard|Premium)\)\s*$/i, '')}</span>
-                      {successTierClr && orderSuccess.tier && <span className="text-[11px] font-extrabold tracking-[.6px] uppercase px-2 py-[2.5px] rounded-full shrink-0" style={{ background: successTierClr.bg, color: successTierClr.text }}>{orderSuccess.tier}</span>}
-                    </div>
+              <div className="rcp" style={{ "--card": successChrome.card, "--ink": successChrome.text, "--mut": successChrome.muted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": successChrome.hair, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7", "--ac": t.accent, "--ok": successChrome.money }}>
+                <style>{RCP_CSS}</style>
+                <div className="rcp-hd">
+                  <span className="rcp-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+                  <div className="rcp-ht">
+                    <b>{orderSuccess.queued ? "Order queued" : "Order placed"}</b>
+                    <button type="button" className="rcp-id m" onClick={() => { copyText(String(orderSuccess.id)); toast.success("Order number copied"); }} aria-label="Copy order number">
+                      {orderSuccess.id}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
                   </div>
                 </div>
-
-                {orderSuccess.link && (
-                  <div className="flex items-center gap-2 mt-[18px] py-3 border-t border-solid text-[13px] min-w-0" style={{ borderColor: successChrome.hair, color: successChrome.muted }}>
-                    <span className="w-[15px] h-[15px] flex items-center justify-center shrink-0 opacity-75 [&>svg]:!w-[15px] [&>svg]:!h-[15px]">
-                      {successPlatformIcon || <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/></svg>}
-                    </span>
-                    <span className="truncate min-w-0">{orderSuccess.link}</span>
-                  </div>
-                )}
-
-                {/* Stats row */}
-                <div className="flex flex-wrap border-y border-solid py-3.5 mb-3.5" style={{ borderColor: successChrome.hair }}>
-                  <div className="flex-1 basis-1/3 min-w-0 pr-3">
-                    <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: successChrome.muted }}>Qty</div>
-                    <div className="mt-1 text-[15px] font-bold truncate" style={{ color: successChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{(orderSuccess.quantity || 0).toLocaleString()}</div>
-                  </div>
-                  <div className="flex-1 basis-1/3 min-w-0 border-l border-solid px-[18px] max-[380px]:pr-0" style={{ borderColor: successChrome.hair }}>
-                    <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: successChrome.muted }}>Charged</div>
-                    <div className="mt-1 text-[15px] font-bold truncate" style={{ color: successChrome.money, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>₦{(orderSuccess.charge || 0).toLocaleString()}</div>
-                  </div>
-                  <div className="flex-1 basis-1/3 min-w-0 border-l border-solid pl-[18px] max-[380px]:basis-full max-[380px]:border-l-0 max-[380px]:border-t max-[380px]:pt-3 max-[380px]:mt-3 max-[380px]:pl-0" style={{ borderColor: successChrome.hair }}>
-                    <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: successChrome.muted }}>Balance</div>
-                    <div className="mt-1 text-[15px] font-bold truncate" style={{ color: successChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{orderSuccess.balanceAfter != null ? `₦${orderSuccess.balanceAfter.toLocaleString()}` : "—"}</div>
-                  </div>
+                <div className="rcp-what">
+                  <span className="rcp-pi">{successPlatformIcon || <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/></svg>}</span>
+                  <span className="rcp-wn">
+                    <b>{orderSuccess.service.replace(/\s*\((?:Budget|Standard|Premium)\)\s*$/i, '')}</b>
+                    {successTierClr && orderSuccess.tier && <span className="rcp-tier" style={{ background: successTierClr.bg, color: successTierClr.text, borderColor: successTierClr.border || "transparent" }}>{orderSuccess.tier}</span>}
+                  </span>
                 </div>
-
-                {/* Meta rows */}
-                <div className="flex items-center justify-between gap-4 py-[3px] text-[13px]" style={{ color: successChrome.muted }}>
-                  <span>Order ID</span>
-                  <span className="font-semibold min-w-0 truncate" style={{ color: successChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>#{orderSuccess.id}</span>
+                {orderSuccess.link && <div className="rcp-lnk">{String(orderSuccess.link).replace(/^https?:\/\/(www\.)?/, "")}</div>}
+                <div className="rcp-facts">
+                  <div className="rcp-f"><span>Quantity</span><b className="m">{(orderSuccess.quantity || 0).toLocaleString()}</b></div>
+                  <div className="rcp-f"><span>Charged</span><b className="m rcp-money">₦{(orderSuccess.charge || 0).toLocaleString()}</b></div>
+                  {orderSuccess.balanceAfter != null && <div className="rcp-f"><span>Balance after</span><b className="m">₦{Math.round(orderSuccess.balanceAfter).toLocaleString()}</b></div>}
+                  <div className="rcp-f"><span>Delivery</span><b>{orderSuccess.queued ? "Starts when your active order completes" : formatDeliverySpeed(orderSuccess.speed)}</b></div>
+                  {orderSuccess.tier && <div className="rcp-f"><span>Refill</span><b className={orderSuccess.tier === "Budget" ? "rcp-mut" : ""}>{orderSuccess.tier === "Budget" ? "Not on Budget" : orderSuccess.tier === "Standard" ? "Free for 30 days" : "Free for life"}</b></div>}
+                  {orderSuccess.pointsRedeemed > 0 && <div className="rcp-f"><span>Points used</span><b className="m" style={{ color: dark ? "#fbbf24" : "#92400e" }}>₦{orderSuccess.pointsRedeemed.toLocaleString()}</b></div>}
                 </div>
-                <div className="flex items-center justify-between gap-4 py-[3px] text-[13px]" style={{ color: successChrome.muted }}>
-                  <span>Est. delivery</span>
-                  <span className="font-semibold text-right min-w-0 truncate" style={{ color: successChrome.text }}>{orderSuccess.queued ? "Starts when active order completes" : formatDeliverySpeed(orderSuccess.speed)}</span>
-                </div>
-                {orderSuccess.pointsRedeemed > 0 && (
-                  <div className="flex items-center justify-between gap-4 py-[3px] text-[13px]" style={{ color: successChrome.muted }}>
-                    <span>Points used</span>
-                    <span className="font-semibold min-w-0 truncate" style={{ color: dark ? "#fbbf24" : "#92400e", fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>₦{orderSuccess.pointsRedeemed.toLocaleString()}</span>
-                  </div>
-                )}
-
-                {/* Promo carousel */}
-                <div
-                  className="mt-4"
-                  onMouseEnter={() => setPromoPaused(true)}
-                  onMouseLeave={() => setPromoPaused(false)}
+                {/* Promo carousel: one slide at a time, every slide the same height */}
+                <div className="rcp-car" onMouseEnter={() => setPromoPaused(true)} onMouseLeave={() => setPromoPaused(false)}
                   onTouchStart={e => { promoTouchX.current = e.touches[0].clientX; setPromoPaused(true); }}
-                  onTouchEnd={e => { const sx = promoTouchX.current; promoTouchX.current = null; setPromoPaused(false); if (sx != null) { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 36) setPromoSlide(s => (s + (dx < 0 ? 1 : -1) + PROMO_SLIDES.length) % PROMO_SLIDES.length); } }}
-                >
-                  {PROMO_SLIDES[promoSlide] === "wa" ? (
-                    <div className="rounded-2xl p-[15px] pr-4 flex items-center gap-[13px] max-[380px]:items-start" style={{ background: successChrome.waTint }}>
-                      <div className="w-[42px] h-[42px] rounded-full flex items-center justify-center shrink-0 text-white" style={{ background: "linear-gradient(135deg,#2bc76a,#128c46)", boxShadow: "0 6px 16px rgba(18,140,70,.25)" }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg>
+                  onTouchEnd={e => { const sx = promoTouchX.current; promoTouchX.current = null; setPromoPaused(false); if (sx != null) { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 36) setPromoSlide(p => (p + (dx < 0 ? 1 : PROMO_SLIDES.length - 1)) % PROMO_SLIDES.length); } }}>
+                  {(() => {
+                    const slides = {
+                      wa: { title: "Updates on WhatsApp", sub: "Delivery news and deals, in one channel.", cta: "Follow", c: "#25d366", grad: "linear-gradient(135deg,#2bc76a,#128c46)", href: waChannelUrl, icon: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg> },
+                      ig: { title: "We're on Instagram", sub: "See what we post before you post it.", cta: "Follow", c: "#e1306c", grad: "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", href: `https://instagram.com/${igHandle}`, icon: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg> },
+                      tasks: { title: "Earn while it delivers", sub: "Quick tasks, real promo credit.", cta: "See tasks", c: "#2563eb", grad: "linear-gradient(135deg,#60a5fa,#2563eb)", onClick: () => { setOrderSuccess(null); setOrderModal(false); onNavigate?.("tasks"); }, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> },
+                      reseller: { title: "Ordering for clients?", sub: "Wholesale rates on the account you already have.", cta: "Join", c: t.accent, grad: "linear-gradient(135deg,#d99aa8,#a05468)", href: RESELLER_SLIDE_HREF, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12v8h14v-8"/><path d="M10 20v-5h4v5"/></svg> },
+                    };
+                    const sl = slides[PROMO_SLIDES[promoSlide]] || slides.wa;
+                    const Cta = sl.href ? "a" : "button";
+                    return (
+                      <div className="rcp-sl" style={{ "--sc": sl.c }}>
+                        <span className="rcp-si" style={{ background: sl.grad }}>{sl.icon}</span>
+                        <span className="rcp-st"><b>{sl.title}</b><i>{sl.sub}</i></span>
+                        <Cta className="rcp-sb" style={{ background: sl.c }} {...(sl.href ? { href: sl.href, target: "_blank", rel: "noopener" } : { type: "button", onClick: sl.onClick })}>{sl.cta}</Cta>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-bold" style={{ color: successChrome.text }}>Updates on WhatsApp</div>
-                      </div>
-                      <a href={waChannelUrl} target="_blank" rel="noopener" className="shrink-0 text-white text-[13px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: "#128c46" }}>Follow</a>
-                    </div>
-                  ) : PROMO_SLIDES[promoSlide] === "ig" ? (
-                    <div className="rounded-2xl p-[15px] pr-4 flex items-center gap-[13px] max-[380px]:items-start" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)" }}>
-                      <div className="w-[42px] h-[42px] rounded-full flex items-center justify-center shrink-0 text-white" style={{ background: "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", boxShadow: "0 6px 16px rgba(220,39,67,.25)" }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-bold" style={{ color: successChrome.text }}>We're on Instagram</div>
-                      </div>
-                      <a href={`https://instagram.com/${igHandle}`} target="_blank" rel="noopener" className="shrink-0 text-white text-[13px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: t.accent }}>Follow</a>
-                    </div>
-                  ) : PROMO_SLIDES[promoSlide] === "tasks" ? (
-                    <div className="rounded-2xl p-[15px] pr-4 flex items-center gap-[13px] max-[380px]:items-start" style={{ background: dark ? "rgba(224,164,88,.09)" : "rgba(217,119,6,.06)" }}>
-                      <div className="w-[42px] h-[42px] rounded-full flex items-center justify-center shrink-0 text-white" style={{ background: "linear-gradient(135deg,#f2b866,#d97706)", boxShadow: "0 6px 16px rgba(217,119,6,.28)" }}>
-                        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-bold" style={{ color: successChrome.text }}>Earn while it delivers</div>
-                        <div className="text-[11px] mt-0.5" style={{ color: successChrome.soft || (dark ? "rgba(244,241,237,.55)" : "rgba(28,27,25,.55)") }}>Quick tasks, real promo credit.</div>
-                      </div>
-                      <a href={TASKS_SLIDE_HREF} className="shrink-0 text-white text-[13px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: "#d97706" }}>See tasks</a>
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl p-[15px] pr-4 flex items-center gap-[13px] max-[380px]:items-start" style={{ background: dark ? "rgba(96,165,250,.09)" : "rgba(37,99,235,.06)" }}>
-                      <div className="w-[42px] h-[42px] rounded-full flex items-center justify-center shrink-0 text-white" style={{ background: "linear-gradient(135deg,#60a5fa,#2563eb)", boxShadow: "0 6px 16px rgba(37,99,235,.28)" }}>
-                        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v6.31L4.72 17.7A2 2 0 0 0 6.46 21h11.08a2 2 0 0 0 1.74-3.3L14 8.31V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-bold" style={{ color: successChrome.text }}>Ordering for clients?</div>
-                        <div className="text-[11px] mt-0.5" style={{ color: successChrome.soft || (dark ? "rgba(244,241,237,.55)" : "rgba(28,27,25,.55)") }}>Reseller rates and your own panel.</div>
-                      </div>
-                      <a href={RESELLER_SLIDE_HREF} className="shrink-0 text-white text-[13px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap" style={{ background: "#2563eb" }}>Open Lab</a>
-                    </div>
-                  )}
-                  <div className="flex justify-center gap-1.5 mt-2.5">
+                    );
+                  })()}
+                  <div className="rcp-dots">
                     {PROMO_SLIDES.map((_, i) => (
-                      <button key={i} onClick={() => setPromoSlide(i)} aria-label={`Slide ${i + 1}`} className="relative h-[6px] rounded-full border-none p-0 cursor-pointer overflow-hidden transition-all duration-300" style={{ width: promoSlide === i ? 26 : 6, background: promoSlide === i ? (dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.22)") : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.12)") }}>
-                        {promoSlide === i && <span key={`f${promoSlide}`} className="absolute inset-0 rounded-full origin-left" style={{ background: t.accent, animation: promoPaused ? "none" : "promoFill 5s linear forwards" }} />}
+                      <button key={i} type="button" onClick={() => setPromoSlide(i)} aria-label={`Slide ${i + 1}`} className={`rcp-dot${promoSlide === i ? " on" : ""}`}>
+                        {promoSlide === i && <span key={`f${promoSlide}`} className="rcp-fill" style={{ animation: promoPaused ? "none" : "promoFill 5s linear forwards" }} />}
                       </button>
                     ))}
                   </div>
                 </div>
-
-                {/* Action buttons */}
-                <div className="flex gap-2.5 mt-5">
-                  <button onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="flex-1 py-[13px] px-4 rounded-[14px] text-sm font-bold border border-solid cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: successChrome.hair, color: successChrome.text }}>Place another</button>
-                  {onViewOrders && <button onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="flex-1 py-[13px] px-4 rounded-[14px] text-sm font-extrabold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>View orders</button>}
+                <div className="rcp-acts">
+                  <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="rcp-btn">Order again</button>
+                  {onViewOrders && <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="rcp-btn rcp-pri">Track this order</button>}
                 </div>
               </div>
             ) : (
