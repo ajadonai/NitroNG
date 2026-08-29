@@ -913,6 +913,10 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   }
   .dash-more-item:active { background: rgba(196,125,142,.12); border-color: rgba(196,125,142,.4); }
   .dash-more-eyebrow { margin-top: 4px; }
+  /* The More sheet is the rail, folded into a sheet: same rows, a touch taller for thumbs. */
+  .dash-more-sheet .rail-it { height: 44px; font-size: 14.5px; }
+  .dash-more-sheet .rail-sec { padding-top: 14px; }
+  .dash-more-sheet .rail-it.tint .rail-il { color: var(--ic); }
   .dash-more-item-icon {
     width: 34px; height: 34px; border-radius: 9px;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;

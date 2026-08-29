@@ -22,6 +22,7 @@ never gets picked up twice. Update this in the same commit as the work.
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-08-29 | Admin badges refresh on every page, not only Overview: a light counts endpoint polled every 20s and on arrival, Refills included; the More sheet on a phone gets the rail's rows and eyebrows and its Support row opens the concierge | `977449f6` v2.4.37 |
 | 2026-08-29 | The dock is five tabs again; WhatsApp is a float above it (bottom-right on a desktop) that opens the concierge panel: We can order for you, the order-page service as one tap, three quick prompts, the paste-your-link field with the same message as before; Support on the rail opens the panel; the mobile Help button and the More-sheet WhatsApp link are gone | `926bb9ad` v2.4.36 |
 | 2026-08-29 | Comment orders that providers reject: only lines with words count as comments (emoji-only lines do not), said before paying on the customer form, the cart, the single and bulk APIs; admin Create Order now requires comments and other typed input on the services that need them and refuses them in batch mode | `89392005` v2.4.35 |
 | 2026-08-29 | Finance Breakdown and Rewards rebuilt to the mock: four ledgers (Revenue, Cost, Cash with Refunded to bank, What we owe) each ending on one total, by tier and by platform in the overview's row shape, the top-up form as a card, filters and Export in their own row; Rewards as four facts, two ledgers and an orders-by-status ladder (new in the rewards API), on the shared period picker | `ce4ccad3` v2.4.34 |

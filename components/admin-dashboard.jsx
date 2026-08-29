@@ -606,8 +606,14 @@ function AdminDashboardInner({ initialData }) {
               pendingOrderCount: d.pendingOrderCount || 0,
               openIssueCount: d.openIssueCount || 0,
               pendingTaskReviewCount: d.pendingTaskReviewCount || 0,
+              pendingRefillCount: d.pendingRefillCount || 0,
             });
           }
+        } else {
+          // Every other page: only the badge counts, so a badge clears once the work is done.
+          const br = await fetch("/api/admin/badges");
+          if (br.status === 401) { window.location.replace("/admin/login"); return; }
+          if (br.ok) { const counts = await br.json(); setData(prev => ({ ...prev, ...counts })); }
         }
 
         if (notifLastPollRef.current) {
@@ -652,6 +658,8 @@ function AdminDashboardInner({ initialData }) {
     const stop = () => { clearInterval(interval); interval = null; };
     const onVisibility = () => { if (document.visibilityState === 'visible') poll(); };
     start();
+    // Arriving on a page refreshes the counts at once, not on the next tick.
+    if (active !== 'overview') poll();
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       stop();
