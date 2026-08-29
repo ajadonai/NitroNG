@@ -93,6 +93,16 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
+## Modals, drawers and pop-ups
+
+Anything that sits over the page — a modal, a drawer, a bottom sheet, a pop-over — owns the screen while it is up:
+
+- The page behind it does not scroll (`document.body.style.overflow = "hidden"` while open, restored on close) and does not take clicks or taps.
+- There is always a backdrop, and a click or tap on the backdrop does exactly one thing: close it. It never reaches whatever was underneath.
+- The surface itself is opaque (a solid card colour, never a translucent token), so the page never shows through it.
+
+`SettingsModal` in `components/admin-settings-page.jsx` is the reference. Match it rather than inventing a new one.
+
 ## The backlog
 
 `docs/BACKLOG.md` is the one list of open and closed work. Before proposing "what's next", read it; when something ships, move it to Closed with its commit in the same push. Never re-propose a Closed item.

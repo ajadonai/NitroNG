@@ -9,7 +9,7 @@ import { openCardFrame, openCardHeader } from "../lib/expandable-card";
 // The whole menu as one list, grouped by platform, with the three tier prices
 // on every row so pricing scans without opening anything. An open group takes
 // the shared opened-card look; each tier is a row on rails carrying the number
-// this page never showed before, its margin. Swap is a first-class action.
+// this page never showed before, its profit on cost. Swap is a first-class action.
 const TIERS = ["Budget", "Standard", "Premium"];
 const TYPES = ["followers", "likes", "views", "comments", "engagement", "plays", "reviews", "saves", "reposts", "downloads", "traffic", "verified-comments", "shorts", "subscribers", "members", "shares", "impressions", "watchtime"];
 const naira = (kobo) => `₦${Math.round(Number(kobo) / 100).toLocaleString("en-NG")}`;
@@ -64,8 +64,9 @@ export default function AdminServiceGroupsPage({ dark, t }) {
 
   const usdRate = Number(markupSettings.markup_usd_rate || DEFAULT_USD_RATE || 1600);
   const costKobo = (svc) => svc?.costPer1k != null ? Math.round(Number(svc.costPer1k) * usdRate) : null;
-  const gmPct = (sellKobo, cKobo) => sellKobo > 0 && cKobo != null ? Math.round(((sellKobo - cKobo) / sellKobo) * 100) : null;
-  const gmCls = (m) => m == null ? "" : m >= 60 ? "good" : m >= 45 ? "mid" : "low";
+  // Profit on cost, the figure this panel has always used: (sell − cost) ÷ cost.
+  const gmPct = (sellKobo, cKobo) => sellKobo > 0 && cKobo > 0 ? Math.round(((sellKobo - cKobo) / cKobo) * 100) : null;
+  const gmCls = (m) => m == null ? "" : m >= 150 ? "good" : m >= 80 ? "mid" : "low";
 
   const platforms = useMemo(() => [...new Set(groups.map(g => g.platform))].sort((a, b) => a.localeCompare(b)), [groups]);
   const filtersActive = search !== "" || platFilter !== "all" || ngFilter;
@@ -148,14 +149,14 @@ export default function AdminServiceGroupsPage({ dark, t }) {
       <div className={`mb-tr${ti.enabled ? "" : " off"}`}>
         <span className={`mb-tchip ${TC[ti.tier] || "std"}`}>{ti.tier}</span>
         <span className="mb-price m">{naira(ti.sellPer1k)}<small>/1k</small>{ti.pricePinned && <i className="mb-lock" title="Pinned: recalculation leaves it alone" />}</span>
-        <span className={`mb-gm ${gmCls(m)} m`} title="Gross margin at today's rate">{m == null ? "—" : `${m}%`}</span>
+        <span className={`mb-gm ${gmCls(m)} m`} title="Profit on cost at today's rate">{m == null ? "—" : `${m}%`}</span>
         <span className="mb-svc-cell">
           {ti.service ? <><b className={`mb-prov ${ti.service.provider}`}>{ti.service.provider}</b><span className="mb-sid m">#{ti.service.apiId}</span><span className="mb-sn">{ti.service.name}</span><span className="mb-sm">{c != null ? `${naira(c)}/1k` : ""}{ti.service.min != null ? ` · ${Number(ti.service.min).toLocaleString()}–${Number(ti.service.max).toLocaleString()}` : ""}</span></> : <span className="mb-sn" style={{ color: "var(--bad)" }}>No backing service</span>}
         </span>
         <span className="mb-meta">{refill}<em>{ti.speed || "—"}</em></span>
         <button type="button" className={`mb-tog${ti.enabled ? "" : " o"}`} onClick={() => act({ action: "update-tier", tierIdToUpdate: ti.id, enabled: !ti.enabled })} aria-label={ti.enabled ? "Switch tier off" : "Switch tier on"}><i /></button>
         <span className="mb-acts"><button type="button" className="mb-b sm" onClick={() => { setPanel(p === "swap" ? {} : { [ti.id]: "swap" }); setSvcQ(""); }}>Swap</button><button type="button" className="mb-b sm" onClick={() => p === "edit" ? setPanel({}) : startEdit(ti)}>Edit</button></span>
-        {p === "swap" && <div className="mb-panel"><div className="mb-ph">Swap the service behind <b>{g.name} · {ti.tier}</b>. Price stays at {naira(ti.sellPer1k)}; the margin beside each candidate is at that price.</div><SvcList onPick={s => swapTo(ti, s)} priceKobo={Number(ti.sellPer1k)} /></div>}
+        {p === "swap" && <div className="mb-panel"><div className="mb-ph">Swap the service behind <b>{g.name} · {ti.tier}</b>. Price stays at {naira(ti.sellPer1k)}; the profit beside each candidate is at that price.</div><SvcList onPick={s => swapTo(ti, s)} priceKobo={Number(ti.sellPer1k)} /></div>}
         {p === "edit" && e && (
           <div className="mb-panel mb-edit">
             <label>Price per 1k <input className="mb-in m" value={e.price} onChange={ev => setEdit({ [ti.id]: { ...e, price: ev.target.value.replace(/[^0-9.]/g, "") } })} /></label>
@@ -182,12 +183,12 @@ export default function AdminServiceGroupsPage({ dark, t }) {
           <span className={`mb-chev${open ? " up" : ""}`} />
           <span className="mb-gi"><PlatformIcon platform={g.platform} dark={dark} size={30} /></span>
           <span className="mb-gname"><b>{g.name}</b>{g.nigerian && <span className="mb-ng">NG</span>}<span className="mb-gtype">{g.type}</span></span>
-          <span className="mb-pills">{tiers.map(ti => <span key={ti.id} className={`mb-pill ${TC[ti.tier] || "std"}${ti.enabled ? "" : " off"}`}><i>{ti.tier[0]}</i>{naira(ti.sellPer1k)}</span>)}{tiers.length === 0 && <span className="mb-pill empty">No tiers</span>}</span>
+          <span className="mb-pills">{(hideOff ? tiers.filter(x => x.enabled) : tiers).map(ti => <span key={ti.id} className={`mb-pill ${TC[ti.tier] || "std"}${ti.enabled ? "" : " off"}`}><i>{ti.tier[0]}</i>{naira(ti.sellPer1k)}</span>)}{tiers.length === 0 && <span className="mb-pill empty">No tiers</span>}</span>
           <button type="button" className={`mb-tog${g.enabled ? "" : " o"}`} onClick={e => { e.stopPropagation(); act({ action: "update-group", groupId: g.id, enabled: !g.enabled }); }} aria-label={g.enabled ? "Switch group off" : "Switch group on"}><i /></button>
         </div>
         {open && (
           <div className="mb-gb">
-            {tiers.map(ti => <TierRow key={ti.id} ti={ti} g={g} />)}
+            {(hideOff ? tiers.filter(x => x.enabled) : tiers).map(ti => <TierRow key={ti.id} ti={ti} g={g} />)}
             {addFor === g.id && (
               <div className="mb-panel mb-add">
                 <div className="mb-ph">Add a tier to <b>{g.name}</b>. Leave the price blank and it is set from the markup rules.</div>
@@ -322,11 +323,11 @@ const CSS = `
 @media (max-width:767px){
   .mb-new{grid-template-columns:1fr}
   .mb-bar{gap:8px}.mb-srch{max-width:none;width:100%}.mb-sel{flex:1}.mb-sel select{width:100%}.mb-tgl{margin-left:0!important;flex:1;justify-content:center;height:36px;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:0 10px}
-  .mb-gh{display:grid;grid-template-columns:auto auto 1fr auto;grid-template-areas:"chev icon name tog" "pills pills pills pills";gap:8px 10px;padding:12px}
+  .mb-gh{display:grid;grid-template-columns:auto auto 1fr auto;grid-template-areas:"chev icon name tog" ". pills pills pills";gap:8px 10px;padding:12px}
   .mb-chev{grid-area:chev}.mb-gi{grid-area:icon}.mb-gname{grid-area:name;flex-wrap:wrap}.mb-gh .mb-tog{grid-area:tog}.mb-pills{grid-area:pills;flex-wrap:wrap}
   .mb-gb{padding:8px;display:flex;flex-direction:column;gap:8px}
   .mb-tr{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"chip price gm" "svc svc svc" "meta meta tog" "acts acts acts" "panel panel panel";gap:8px 10px;padding:11px 12px;border:1px solid var(--line);border-radius:12px}
-  .mb-tchip{grid-area:chip}.mb-price{grid-area:price}.mb-gm{grid-area:gm;font-size:13px;text-align:right}.mb-svc-cell{grid-area:svc}.mb-meta{grid-area:meta;flex-direction:row;gap:8px}.mb-tr .mb-tog{grid-area:tog;justify-self:end}.mb-acts{grid-area:acts;padding-top:8px;border-top:1px solid var(--rail)}.mb-panel{grid-area:panel;margin-top:0}
+  .mb-tchip{grid-area:chip}.mb-price{grid-area:price}.mb-gm{grid-area:gm;font-size:13px;text-align:right}.mb-svc-cell{grid-area:svc}.mb-meta{grid-area:meta;flex-direction:row;gap:8px}.mb-tr .mb-tog{grid-area:tog;justify-self:end}.mb-acts{grid-area:acts;padding-top:8px;border-top:1px solid var(--rail);justify-content:flex-end}.mb-panel{grid-area:panel;margin-top:0}
   .mb-gfoot{flex-wrap:wrap;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--line)}.mb-addt{flex:1;text-align:center}.mb-gacts{width:100%}.mb-gacts .mb-b{flex:1}
 }
 `;

@@ -13,6 +13,18 @@ const AUD = { everyone: "Everyone", landing: "Visitors", users: "Users", admin: 
 const TYPES = [["info", "Notice"], ["warning", "Heads up"], ["success", "Fixed"], ["urgent", "Urgent"]];
 const EXPIRY = [["never", "When I take it down"], ["6h", "6 h"], ["24h", "24 h"], ["3d", "3 days"]];
 const EXPIRY_MS = { "6h": 6 * 3600e3, "24h": 24 * 3600e3, "3d": 3 * 86400e3 };
+// An explainer: a line of text on a desktop, an (i) you tap on a phone.
+function Hint({ text }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="aa-hintw">
+      <span className="aa-hint">{text}</span>
+      <button type="button" className="aa-i" aria-label="What this means" onClick={e => { e.stopPropagation(); setOpen(o => !o); }}>i</button>
+      {open && <><span className="aa-iback" onClick={e => { e.stopPropagation(); setOpen(false); }} /><span className="aa-pop" onClick={e => e.stopPropagation()}>{text}</span></>}
+    </span>
+  );
+}
+
 const PLACEHOLDER = "What is affected · what it means for them · what we are doing. e.g. Instagram Followers *Budget* is delivering slower than usual. Orders still go through, just past the estimate.";
 const CH = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
 
@@ -28,6 +40,7 @@ export function AdminAlertsPage({ dark, t }) {
   const blank = { target: "users", type: "info", message: "", actionLabel: "", actionHref: "", expiry: "never" };
   const [form, setForm] = useState(blank);
   const [editing, setEditing] = useState(null);      // alert id being edited, if any
+  const [composeOpen, setComposeOpen] = useState(false); // the composer is a closed card until you need it
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
@@ -123,9 +136,12 @@ export function AdminAlertsPage({ dark, t }) {
           {live.map(a => <Row key={a.id} a={a} livePane />)}
         </section>
 
-        <section className="aa-card" id="aa-composer">
-          <header><h3>{editing ? "Edit notice" : "Post a notice"}</h3><span className="aa-cnt">Shows at the top of the page for the audience you pick</span></header>
-          <div className="aa-cb">
+        <section className={`aa-card aa-composer${composeOpen || editing ? " open" : ""}`} id="aa-composer">
+          <header onClick={() => { if (editing) return; setComposeOpen(v => !v); }} role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!editing) setComposeOpen(v => !v); } }}>
+            <h3>{editing ? "Edit notice" : "Post a notice"}</h3>
+            <span className="aa-cnt">{composeOpen || editing ? <Hint text="Shows at the top of the site for the audience you pick." /> : "Open to write one"}<i className={`aa-chev${composeOpen || editing ? " up" : ""}`} /></span>
+          </header>
+          {(composeOpen || editing) && <div className="aa-cb">
             <div className="aa-row2">
               <div className="aa-fld"><label>Who sees it</label><div className="aa-segs">{Object.entries(AUD).map(([k, v]) => <button type="button" key={k} className={`aa-seg${form.target === k ? " on" : ""}`} onClick={() => set("target", k)}>{v}</button>)}</div></div>
               <div className="aa-fld"><label>What kind</label><div className="aa-segs aa-types">{TYPES.map(([k, v]) => <button type="button" key={k} className={`aa-seg ${tcls[k]}${form.type === k ? " on" : ""}`} onClick={() => set("type", k)}><i />{v}</button>)}</div></div>
@@ -133,7 +149,7 @@ export function AdminAlertsPage({ dark, t }) {
             <div className="aa-fld">
               <label>Message</label>
               <textarea className="aa-ta" rows={3} value={form.message} onChange={e => set("message", e.target.value)} placeholder={PLACEHOLDER} />
-              <span className="aa-hint">What is affected · what it means for them · what we are doing. Wrap a word in *stars* to make it bold.</span>
+              <Hint text="Say what is affected, what it means for them, and what we are doing about it. Put *stars* around a word to make it bold." />
             </div>
             <div className="aa-row2">
               <div className="aa-fld"><label>Link <em>optional</em></label><div className="aa-inl"><input className="aa-in" value={form.actionLabel} onChange={e => set("actionLabel", e.target.value)} placeholder="Link text" /><input className="aa-in wide" value={form.actionHref} onChange={e => set("actionHref", e.target.value)} placeholder="https://nitro.ng/…" /></div></div>
@@ -142,14 +158,14 @@ export function AdminAlertsPage({ dark, t }) {
             <div className="aa-fld"><label>How it will look</label><AnnouncementBanner alerts={previewAlerts} dark={dark} mode="dashboard" preview /></div>
             <div className="aa-foot">
               <button type="button" className="aa-pri" disabled={!form.message.trim() || saving} onClick={submit}>{saving ? "Saving…" : editing ? "Save changes" : "Post notice"}</button>
-              {editing && <button type="button" className="aa-b" onClick={() => { setEditing(null); setForm(blank); }}>Cancel</button>}
-              <span className="aa-hint">Goes live at once. Live notices stack; the newest shows first.</span>
+              {editing && <button type="button" className="aa-b" onClick={() => { setEditing(null); setForm(blank); setComposeOpen(false); }}>Cancel</button>}
+              <Hint text="It goes live the moment you post. When more than one is live, the newest shows first." />
             </div>
-          </div>
+          </div>}
         </section>
 
         <section className="aa-card">
-          <header><h3>Past notices</h3><span className="aa-cnt">Taken down, kept here. Restore brings one back as-is; Remove is for good</span></header>
+          <header><h3>Past notices</h3><span className="aa-cnt"><Hint text="Taken down but kept. Restore puts one back as it was. Remove deletes it for good." /></span></header>
           {!loading && past.length === 0 && <div className="aa-empty">No past notices yet.</div>}
           {past.slice(0, pastShown).map(a => <Row key={a.id} a={a} />)}
           {past.length > pastShown && <button type="button" className="aa-more" onClick={() => setPastShown(n => n + 12)}>Show {Math.min(12, past.length - pastShown)} more</button>}
@@ -164,6 +180,8 @@ const CSS = `
 .aa *{box-sizing:border-box}
 .aa-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .aa-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}
+.aa-composer>header{cursor:pointer;user-select:none;border-bottom:0}.aa-composer.open>header{border-bottom:1px solid var(--line)}.aa-composer>header:hover{background:var(--soft)}
+.aa-chev{display:inline-block;width:8px;height:8px;border-right:1.5px solid var(--dim);border-bottom:1.5px solid var(--dim);transform:rotate(45deg);margin:0 3px 3px 10px;transition:transform .15s}.aa-chev.up{transform:rotate(-135deg);margin-bottom:-2px}
 .aa-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.aa-cnt{font-size:11.5px;color:var(--dim);text-align:right}
 .aa-empty{padding:18px 16px;font-size:13px;color:var(--dim)}
 .t-ac{--c:var(--ac);--cbg:var(--ac-bg)}.t-warn{--c:var(--warn);--cbg:var(--warn-bg)}.t-ok{--c:var(--ok);--cbg:var(--ok-bg)}.t-bad{--c:var(--bad);--cbg:var(--bad-bg)}
@@ -187,10 +205,14 @@ const CSS = `
 .aa-types .aa-seg i{width:7px;height:7px;border-radius:50%;background:var(--c)}.aa-types .aa-seg.on{color:var(--c)}
 .aa-ta{width:100%;min-height:74px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;line-height:1.5;resize:vertical;outline:none}.aa-ta:focus{border-color:var(--pri)}
 .aa-hint{font-size:11.5px;color:var(--dim);line-height:1.45}
+.aa-hintw{display:inline-flex;align-items:center;position:relative}.aa-i{display:none}
+.aa-pop{display:none}
 .aa-inl{display:flex;gap:8px}.aa-in{flex:1;min-width:0;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13px;outline:none}.aa-in.wide{flex:2}.aa-in:focus{border-color:var(--pri)}
 .aa-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .aa-pri{font:inherit;font-size:13.5px;font-weight:800;padding:11px 18px;border-radius:11px;border:0;background:var(--pri);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(196,125,142,.28)}.aa-pri:disabled{opacity:.45;cursor:default;box-shadow:none}
 @media (max-width:767px){
+  .aa-hint{display:none}.aa-i{display:inline-flex;width:18px;height:18px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--mut);font:inherit;font-size:11px;font-weight:700;font-style:italic;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
+  .aa-iback{position:fixed;inset:0;z-index:19}.aa-pop{display:block;position:absolute;right:0;top:24px;z-index:20;width:min(280px,78vw);padding:10px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.18);font-size:12.5px;color:var(--ink);line-height:1.5;text-align:left;font-style:normal;font-weight:400}
   .aa-row2{grid-template-columns:1fr}.aa-who{margin-left:0;flex-basis:100%}
   .aa-seg{font-size:12px;padding:7px 5px}
 }
