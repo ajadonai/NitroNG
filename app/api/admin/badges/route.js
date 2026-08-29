@@ -16,7 +16,7 @@ export async function GET() {
       prisma.order.count({ where: { status: { in: ['Pending', 'Processing'] }, deletedAt: null, queuedBehind: null } }).catch(() => 0),
       prisma.adminIssue?.findMany({ where: { status: 'open' }, select: { type: true }, distinct: ['type'] }).then(r => r.length).catch(() => 0) ?? Promise.resolve(0),
       prisma.taskSubmission.count({ where: { status: 'pending' } }).catch(() => 0),
-      prisma.order.count({ where: { refillRequestedAt: { not: null }, deletedAt: null } }).catch(() => 0),
+      prisma.order.count({ where: { refillRequestedAt: { not: null }, refillHandledAt: null, deletedAt: null } }).catch(() => 0),
     ]);
     return Response.json({ unreadTicketCount, pendingManualCount, pendingOrderCount, openIssueCount, pendingTaskReviewCount, pendingRefillCount }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {

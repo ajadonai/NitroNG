@@ -9,7 +9,8 @@ export async function GET() {
 
   try {
     const orders = await prisma.order.findMany({
-      where: { refillRequestedAt: { not: null }, deletedAt: null },
+      // Pending means asked for and not yet sent by an admin.
+      where: { refillRequestedAt: { not: null }, refillHandledAt: null, deletedAt: null },
       orderBy: { refillRequestedAt: 'desc' },
       include: {
         user: { select: { name: true, email: true } },

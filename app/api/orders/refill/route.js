@@ -44,7 +44,7 @@ export async function refillOrderForSession(session, orderId) {
 
   try {
     await refillOrder(provider, order.apiOrderId);
-    await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: new Date() } });
+    await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: new Date(), refillHandledAt: null } });
     log.info('User refill', `${session.email} requested refill for ${order.orderId}`);
     return Response.json({ success: true, message: 'Refill requested — delivery will begin shortly' });
   } catch (err) {
@@ -54,7 +54,7 @@ export async function refillOrderForSession(session, orderId) {
       return Response.json({ error: 'This order cannot be refilled.' }, { status: 400 });
     }
     if (msg.includes('Refill already')) {
-      await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: new Date() } });
+      await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: new Date(), refillHandledAt: null } });
       return Response.json({ error: 'A refill is already in progress for this order.' }, { status: 400 });
     }
     return Response.json({ error: msg || 'Failed to request refill. Please try again or contact support.' }, { status: 500 });
