@@ -108,12 +108,15 @@ export function AdminAlertsPage({ dark, t }) {
 
   const Row = ({ a, livePane }) => (
     <div className={`aa-row ${tcls[a.type] || "t-ac"}`}>
-      <div className="aa-top"><span className="aa-dot" /><span className="aa-lbl">{tlabel[a.type] || "Notice"}</span><span className="aa-aud">{AUD[a.target] || a.target}</span><span className="aa-who">{a.createdBy} · {a.created ? fD(a.created) : ""}{a.expiresAt ? ` · comes down ${fD(a.expiresAt)}` : ""}</span></div>
+      <div className="aa-top"><span className="aa-dot" /><span className="aa-lbl">{tlabel[a.type] || "Notice"}</span><span className="aa-aud">{AUD[a.target] || a.target}</span></div>
       <div className="aa-msg">{bold(a.message)}{a.actionLabel && a.actionHref && <a className="aa-act" href={a.actionHref} target="_blank" rel="noopener noreferrer">{a.actionLabel}{CH}</a>}</div>
-      <div className="aa-acts">
+      <div className="aa-foot">
+        <span className="aa-when">{a.created ? fD(a.created) : ""}{a.expiresAt ? ` · comes down ${fD(a.expiresAt)}` : ""}</span>
+        <span className="aa-acts">
         {livePane
           ? <><button type="button" className="aa-b" onClick={() => setActive(a.id, false)}>Take down</button><button type="button" className="aa-b" onClick={() => edit(a)}>Edit</button></>
           : <><button type="button" className="aa-b sm" onClick={() => setActive(a.id, true)}>Restore</button><button type="button" className="aa-b sm danger" onClick={() => remove(a)}>Remove</button></>}
+        </span>
       </div>
     </div>
   );
@@ -188,12 +191,12 @@ const CSS = `
 .aa-dot{width:8px;height:8px;border-radius:50%;background:var(--c);flex-shrink:0;box-shadow:0 0 0 3px var(--cbg)}
 .aa-lbl{font-size:10.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--c);flex-shrink:0}
 .aa-aud{font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);background:var(--soft);border:1px solid var(--line);padding:2px 7px;border-radius:999px}
-.aa-who{font-size:11.5px;color:var(--dim);margin-left:auto;white-space:nowrap}
+
 .aa-row{padding:12px 16px;border-top:1px solid var(--rail);display:flex;flex-direction:column;gap:8px}.aa-row:first-of-type{border-top:0}
 .aa-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .aa-msg{font-size:13.5px;line-height:1.45;padding-left:16px}.aa-msg b{font-weight:700}
 .aa-act{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;font-weight:700;color:var(--c);white-space:nowrap;text-decoration:none;margin-left:8px}.aa-act svg{width:12px;height:12px}
-.aa-acts{display:flex;gap:6px;padding-left:16px}
+.aa-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-left:16px}.aa-when{font-size:11.5px;color:var(--dim);white-space:nowrap}.aa-acts{display:flex;gap:6px;flex-shrink:0}
 .aa-b{font:inherit;font-size:12px;font-weight:600;padding:6px 11px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}.aa-b.danger{color:var(--bad)}.aa-b.sm{padding:4px 9px;font-size:11.5px}
 .aa-more{display:block;width:100%;padding:10px;border:0;border-top:1px solid var(--rail);background:transparent;color:var(--mut);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
 .aa-cb{padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px}
@@ -213,7 +216,7 @@ const CSS = `
 @media (max-width:767px){
   .aa-hint{display:none}.aa-i{display:inline-flex;width:18px;height:18px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--mut);font:inherit;font-size:11px;font-weight:700;font-style:italic;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
   .aa-iback{position:fixed;inset:0;z-index:19}.aa-pop{display:block;position:absolute;right:0;top:24px;z-index:20;width:min(280px,78vw);padding:10px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.18);font-size:12.5px;color:var(--ink);line-height:1.5;text-align:left;font-style:normal;font-weight:400}
-  .aa-row2{grid-template-columns:1fr}.aa-who{margin-left:0;flex-basis:100%}
+  .aa-row2{grid-template-columns:1fr}
   .aa-seg{font-size:12px;padding:7px 5px}
 }
 `;

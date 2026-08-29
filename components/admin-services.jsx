@@ -4,6 +4,7 @@ import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { FilterDropdown } from "./date-range-picker";
 import { serviceDisplay } from "../lib/service-display";
+import { copyText } from "@/lib/clipboard";
 
 const PROV = { mtp: "MTP", dao: "DAO", jap: "JAP" };
 const naira = (v) => `₦${Math.round(Number(v || 0)).toLocaleString()}`;
@@ -194,7 +195,7 @@ export default function AdminServicesPage({ dark, t }) {
                   <b title={s.name}>{d.title}</b>
                   <i>
                     {sensitive && <span className={`rs-pv ${prov}`}>{PROV[prov] || prov.toUpperCase()}</span>}
-                    <span className="rs-sid m">#{s.apiId}</span>
+                    <button type="button" className="rs-sid m" title="Copy the id" onClick={e => { e.stopPropagation(); copyText(String(s.apiId)); toast.success("Copied", `#${s.apiId}`); }}>#{s.apiId}</button>
                     {s.tiers > 0 && <span className="rs-use">In use · {s.tiers}</span>}
                     {!s.enabled && <span className="rs-offc">Off</span>}
                     {d.facts.length > 0 && <span className="rs-facts">{d.facts.join(" · ")}</span>}
@@ -296,7 +297,7 @@ const CSS = `
 .rs-sn i{font-style:normal;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mut);min-width:0}
 .rs-facts{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .rs-pv{font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:2px 5px;border-radius:5px;background:var(--soft);border:1px solid var(--line);color:var(--mut);flex-shrink:0}.rs-pv.dao{color:var(--blue);background:var(--bluebg);border-color:transparent}.rs-pv.jap{color:var(--warn)}
-.rs-sid{color:var(--dim);flex-shrink:0}.rs-use{font-size:10.5px;font-weight:700;color:var(--ok);background:var(--okbg);padding:1px 6px;border-radius:6px;flex-shrink:0;white-space:nowrap}.rs-offc{font-size:10.5px;font-weight:700;color:var(--bad);background:var(--badbg);padding:1px 6px;border-radius:6px;flex-shrink:0}
+.rs-sid{color:var(--dim);flex-shrink:0;font:inherit;background:none;border:0;padding:0 3px;margin:0 -3px;border-radius:4px;cursor:copy}.rs-sid:hover{background:var(--rail);color:var(--ink)}.rs-use{font-size:10.5px;font-weight:700;color:var(--ok);background:var(--okbg);padding:1px 6px;border-radius:6px;flex-shrink:0;white-space:nowrap}.rs-offc{font-size:10.5px;font-weight:700;color:var(--bad);background:var(--badbg);padding:1px 6px;border-radius:6px;flex-shrink:0}
 .rs-cat{font-size:12.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rs-cost{font-weight:700}.rs-ord{font-weight:600}.rs-rng{font-size:12px;color:var(--mut);white-space:nowrap}
 .rs-tog{width:34px;height:20px;border-radius:10px;background:var(--ac);position:relative;display:inline-block;border:0;padding:0;cursor:pointer}.rs-tog i{position:absolute;top:2px;left:16px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}.rs-tog.o{background:var(--line)}.rs-tog.o i{left:2px}
 .rs-chev{width:12px;height:12px;color:var(--dim);display:inline-flex;transition:transform .15s}.rs-chev svg{width:12px;height:12px}.rs-chev.up{transform:rotate(180deg)}
