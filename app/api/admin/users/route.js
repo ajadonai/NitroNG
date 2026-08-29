@@ -95,6 +95,18 @@ export async function GET(req) {
       rows.forEach(r => apiUserIds.add(r.userId));
     }
 
+    // What each listed account has spent on live orders in the last 90 days, for the profile.
+    const spend90 = new Map();
+    if (users.length && !isExport) {
+      const since = new Date(now.getTime() - 90 * 86400000);
+      const rows = await prisma.order.groupBy({
+        by: ['userId'],
+        where: { userId: { in: users.map(x => x.id) }, createdAt: { gte: since }, status: { not: 'Cancelled' }, deletedAt: null },
+        _sum: { charge: true },
+      }).catch(() => []);
+      rows.forEach(r => spend90.set(r.userId, (r._sum.charge || 0) / 100));
+    }
+
     let stats;
     if (includeStats) {
       const [totalUsers, activeUsers, balanceAgg, totalOrders, newThisWeek, ordersThisMonth, fundedWallets] = await Promise.all([
@@ -152,6 +164,7 @@ export async function GET(req) {
         canReinstate: u.status === 'PendingDeletion' && Boolean(u.deletedAt && u.deletedAt > now),
         isReseller: !!u.resellerProfile?.enabled,
         usesApi: apiUserIds.has(u.id),
+        spend90: spend90.get(u.id) || 0,
       })),
       filteredCount,
       totalPages,
