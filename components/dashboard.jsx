@@ -357,7 +357,7 @@ function DashboardInner({ initialData }) {
   }, []);
   const [leftOpen, setLeftOpen] = useState(false);
   const [avOpen, setAvOpen] = useState(false);
-  const [dockChat, setDockChat] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false); // the concierge panel: a sheet on a phone, a docked window on a desktop
   // Onboarding funnel: tell the server the first time Wallet and New Order are opened.
   const seenSurfaces = useRef(new Set());
   useEffect(() => {
@@ -1006,12 +1006,16 @@ function DashboardInner({ initialData }) {
   }, [avOpen]);
 
   useEffect(() => {
-    if (!dockChat) return;
+    if (!chatOpen) return undefined;
     dockInputRef.current?.focus();
-    const onKey = (e) => { if (e.key === "Escape") setDockChat(false); };
+    const onKey = (e) => { if (e.key === "Escape") setChatOpen(false); };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [dockChat]);
+    // On a phone the panel is a sheet and owns the screen; on a desktop it is a small window and the page stays live.
+    const phone = window.matchMedia("(max-width: 1199px)").matches;
+    const prev = document.body.style.overflow;
+    if (phone) document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); if (phone) document.body.style.overflow = prev; };
+  }, [chatOpen]);
 
   const sendDockMessage = () => {
     const num = socialLinks.social_whatsapp_support?.replace(/\D/g, "");
@@ -1022,9 +1026,17 @@ function DashboardInner({ initialData }) {
     const text = (dockMsg.trim()
       ? `Hi Nitro, please place this order for me: ${dockMsg.trim()}`
       : "Hi Nitro, I want to place an order. Can you help me?") + who;
-    window.location.href = `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
-    setDockMsg(""); setDockChat(false);
+    openWa(text);
+    setDockMsg(""); setChatOpen(false);
   };
+  // In place on a phone (WhatsApp takes over the screen anyway), a new tab on a desktop.
+  const openWa = (text) => {
+    const num = socialLinks.social_whatsapp_support?.replace(/\D/g, "");
+    if (!num) return;
+    const url = `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
+    if (window.matchMedia("(max-width: 1199px)").matches) window.location.href = url; else window.open(url, "_blank", "noopener");
+  };
+  const chatQuick = (text) => { const who = user?.email ? `\n\nMy account: ${user.email}` : ""; openWa(text + who); setChatOpen(false); };
 
   const handleLogout = async () => {
     let res;
@@ -1190,11 +1202,6 @@ function DashboardInner({ initialData }) {
             ₦{Math.round(user?.balance || 0).toLocaleString()}
             <span className="text-[11px] font-bold text-white py-1 px-2.5 rounded-full" style={{ background: t.accent }}>Top up</span>
           </button>
-          {/* Support — mobile/tablet only (replaces theme toggle) */}
-          <button onClick={() => { if (socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); } }} className="hidden max-desktop:flex items-center gap-1 h-[30px] px-2.5 rounded-[8px] cursor-pointer border-none relative" aria-label="Support" style={{ background: "#25d366", color: "#fff" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg>
-            <span className="text-[11px] font-bold">Help</span>
-          </button>
           {/* Notification bell */}
           <div ref={notifRef} className="relative">
             <button onClick={() => setNotifOpen(!notifOpen)} className="dash-bell" aria-label="Notifications" style={{ color: t.textSoft }}>
@@ -1268,7 +1275,7 @@ function DashboardInner({ initialData }) {
                 return (
                   <Fragment key={item.id}>
                     {item.first && <div className="rail-sec"><span>{item.section}</span></div>}
-                    <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setLeftOpen(false); return; } setActive(item.id); setLeftOpen(false); }} className={"rail-it" + (isActive ? " on" : "") + (specialClr && !isActive ? " tint" : "") + (item.soon ? " soon" : "")} style={specialClr ? { "--ic": specialClr } : undefined}>
+                    <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem) { setLeftOpen(false); setChatOpen(true); return; } setActive(item.id); setLeftOpen(false); }} className={"rail-it" + (isActive ? " on" : "") + (specialClr && !isActive ? " tint" : "") + (item.soon ? " soon" : "")} style={specialClr ? { "--ic": specialClr } : undefined}>
                       <span className="rail-ii">{I[item.id]}</span>
                       <span className="rail-il">{item.label}</span>
                       {item.soon && <span className="text-[11px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
@@ -1451,13 +1458,13 @@ function DashboardInner({ initialData }) {
             <div className="w-px h-5 shrink-0" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }} />
             <a href={`https://x.com/${(socialLinks.social_twitter || "TheNitroNG").replace(/^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="X" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.4)" }}>{I.x}</a>
             {socialLinks.social_tiktok && <><div className="w-px h-5 shrink-0" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }} /><a href={`https://tiktok.com/@${socialLinks.social_tiktok.replace(/^(https?:\/\/)?(www\.)?(tiktok\.com\/@?)?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.4)" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.41a8.16 8.16 0 004.77 1.52V7.48a4.85 4.85 0 01-1-.79z"/></svg></a></>}
-            {socialLinks.social_whatsapp_support && <><div className="w-px h-5 shrink-0" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }} /><a href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: "#25d366" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a></>}
+            
           </div>
         </div>
       )}
       {/* Bottom dock: a floating capsule with the five tabs, and the WhatsApp
           concierge at the end that expands into a one-line message. */}
-      <nav ref={bottomNavRef} aria-label="Primary" className={`dash-bottom-nav dash-dock ${dark ? "dark" : "light"}${dockChat ? " chat" : ""}`} style={{ background: dark ? "#161b2e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+      <nav ref={bottomNavRef} aria-label="Primary" className={`dash-bottom-nav dash-dock ${dark ? "dark" : "light"}`} style={{ background: dark ? "#161b2e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
         {BOTTOM_TABS.map(tab => {
           const isMore = tab.id === "more";
           return (
@@ -1477,23 +1484,47 @@ function DashboardInner({ initialData }) {
             </button>
           );
         })}
-        {socialLinks.social_whatsapp_support && <>
-          <span className="dash-dock-sep" aria-hidden="true" />
-          <button type="button" onClick={() => setDockChat(true)} className="dash-dock-wa" aria-label="We can order for you. Message us on WhatsApp" aria-expanded={dockChat}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.3 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.76-.72 2-1.42.25-.7.25-1.3.18-1.42-.08-.13-.28-.2-.58-.35zM12.05 21.8h-.01a9.87 9.87 0 01-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.85 9.85 0 01-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88a9.83 9.83 0 016.99 2.9 9.82 9.82 0 012.9 7c0 5.45-4.45 9.87-9.9 9.87z"/></svg>
-          </button>
-          <div className="dash-dock-chat">
-            <input ref={dockInputRef} value={dockMsg} onChange={e => setDockMsg(e.target.value)} onKeyDown={e => { if (e.key === "Enter") sendDockMessage(); }}
-              aria-label="Your link, or what you want ordered" placeholder="Paste your link, we place the order" autoComplete="off" spellCheck={false} style={{ color: t.text }} />
-            <button type="button" onClick={sendDockMessage} className="dash-dock-send" aria-label="Send on WhatsApp">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
-            </button>
-            <button type="button" onClick={() => setDockChat(false)} className="dash-dock-close" aria-label="Close" style={{ color: t.textMuted }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
-        </>}
       </nav>
+
+      {/* ── The concierge: a float above the dock (bottom-right on a desktop) that opens the "we can order for you" panel.
+          A sheet over the dock on a phone, a docked window on a desktop. Send hands off to WhatsApp with the message ready. ── */}
+      {socialLinks.social_whatsapp_support && !chatOpen && !moreOpen && !leftOpen && (
+        <button type="button" className="dash-chat-fab" onClick={() => setChatOpen(true)} aria-label="We can order for you. Message us on WhatsApp"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></button>
+      )}
+      {chatOpen && (
+        <>
+          <div className="dash-chat-back" onClick={() => setChatOpen(false)} />
+          <div className="dash-chat" role="dialog" aria-modal="true" aria-label="We can order for you" style={{ background: dark ? "#141930" : "#fff", borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)", color: t.text }}>
+            <div className="dash-chat-grab" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)" }} />
+            <div className="dash-chat-hd">
+              <span className="dash-chat-av"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></span>
+              <span className="dash-chat-t"><b>We can order for you</b><i style={{ color: t.textMuted }}>Nitro Support on WhatsApp · replies in minutes</i></span>
+              <button type="button" onClick={() => setChatOpen(false)} className="dash-chat-x" aria-label="Close" style={{ color: t.textMuted }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+            </div>
+            <div className="dash-chat-bub" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)" }}>Not sure what to pick, or in a hurry? Paste your link and say what you want. We place the order on your account.</div>
+            {active === "services" && noSelSvc && (
+              <div className="dash-chat-ctx" style={{ borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)" }}>
+                <span className="dash-chat-ci" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textMuted }}>{I.services}</span>
+                <span className="dash-chat-ct"><b>{noSelSvc.name}{noSelTier?.tier ? ` · ${noSelTier.tier}` : ""}</b><i style={{ color: t.textMuted }}>the service you are looking at</i></span>
+                <button type="button" className="dash-chat-cb" onClick={() => chatQuick(`Hi! I want to order ${noSelSvc.name}${noSelTier?.tier ? ` (${noSelTier.tier})` : ""} on Nitro. Can you help me place it?`)}>Order this for me</button>
+              </div>
+            )}
+            <div className="dash-chat-quick">
+              {[["Where is my order?", "Hi Nitro, where is my order?"], ["Add funds", "Hi Nitro, I want to add funds to my wallet. Can you help?"], ["Something went wrong", "Hi Nitro, something went wrong with my order. Can you help?"]].map(([label, text]) => (
+                <button key={label} type="button" onClick={() => chatQuick(text)} style={{ borderColor: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)", color: t.text }}>{label}</button>
+              ))}
+            </div>
+            <div className="dash-chat-field" style={{ borderColor: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)" }}>
+              <input ref={dockInputRef} value={dockMsg} onChange={e => setDockMsg(e.target.value)} onKeyDown={e => { if (e.key === "Enter") sendDockMessage(); }}
+                aria-label="Your link, or what you want ordered" placeholder="Paste your link, we place the order" autoComplete="off" spellCheck={false} style={{ color: t.text }} />
+              <button type="button" onClick={sendDockMessage} className="dash-chat-send" aria-label="Send on WhatsApp">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
+              </button>
+            </div>
+            <div className="dash-chat-foot" style={{ color: t.textMuted }}>Opens WhatsApp with the message ready, with your account attached.</div>
+          </div>
+        </>
+      )}
 
       {/* Phone number prompt for existing users */}
       {(phonePromptDone || shouldShowPhonePrompt({ phoneKnown, phone: phoneForPrompt, user, currentTosVersion })) && (
