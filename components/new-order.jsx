@@ -680,15 +680,17 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     } catch { setTiktokDisclaimer(true); }
   }, [platform]);
 
+  // Only subscriber orders get the pace notice; views and likes on YouTube move like anywhere else.
+  const ytSubscribers = platform === 'youtube' && /subscriber/i.test(selSvc?.name || '');
   useEffect(() => {
-    if (platform !== 'youtube') return;
+    if (!ytSubscribers) return;
     try {
       const dismissed = localStorage.getItem('nitro_youtube_disclaimer');
       if (!dismissed || Date.now() - Number(dismissed) > 3 * 24 * 60 * 60 * 1000) {
         setYoutubeDisclaimer(true);
       }
     } catch { setYoutubeDisclaimer(true); }
-  }, [platform]);
+  }, [ytSubscribers]);
 
   /* Click outside any card → collapse */
   const listRef = useRef(null);
@@ -1188,16 +1190,28 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: t.text }}><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.89 2.89 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.11V9.38a6.33 6.33 0 00-.79-.05A6.34 6.34 0 003.14 15.67 6.34 6.34 0 009.48 22a6.34 6.34 0 006.34-6.34V9.17a8.16 8.16 0 004.77 1.53V7.26a4.85 4.85 0 01-1-.57z"/></svg>
                 </div>
-                <div className="text-base font-semibold" style={{ color: t.text }}>Heads up about TikTok</div>
+                <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>TikTok is the one platform we can’t promise on</div>
               </div>
-              <div className="text-[13px] leading-[1.65] mb-1" style={{ color: t.textMuted }}>
-                TikTok services are unstable due to frequent platform changes. Orders may deliver slowly, partially, or experience drops after delivery.
+              <div className="text-[13px] leading-[1.6] mb-3" style={{ color: t.textMuted }}>
+                TikTok changes how it works often, and every change hits delivery.
               </div>
-              <div className="text-[13px] leading-[1.65] mb-1 font-semibold" style={{ color: t.text }}>
-                Drops are not covered by refill.
+              <div className="flex flex-col gap-2 mb-3">
+                {[
+                  <>An order can come in <b style={{ color: t.text, fontWeight: 600 }}>slowly</b></>,
+                  <>It can <b style={{ color: t.text, fontWeight: 600 }}>stop short</b> of the full number</>,
+                  <>Some of what landed can <b style={{ color: t.text, fontWeight: 600 }}>drop</b> days later, and on TikTok drops are <b style={{ color: t.text, fontWeight: 600 }}>not topped back up</b></>,
+                ].map((line, i) => (
+                  <div key={i} className="flex gap-2.5 text-[13px] leading-[1.5]" style={{ color: t.textMuted }}>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0 mt-[7px]" style={{ background: t.accent }} />
+                    <span>{line}</span>
+                  </div>
+                ))}
               </div>
-              <div className="text-[13px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
-                We recommend starting with a small order to test. By placing a TikTok order, you accept this risk.
+              <div className="rounded-xl px-3 py-2.5 mb-3 text-[13px] leading-[1.5]" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: t.textMuted }}>
+                <b style={{ color: t.text, fontWeight: 700 }}>Test with a small order first.</b> Once you see it land, go bigger.
+              </div>
+              <div className="text-[12.5px] leading-[1.6] mb-4" style={{ color: t.textSoft }}>
+                Placing a TikTok order means you’re okay with this.
               </div>
               <button onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>I understand</button>
             </div>
@@ -1214,13 +1228,17 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: t.text }}><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                 </div>
-                <div className="text-base font-semibold" style={{ color: t.text }}>About YouTube subscribers</div>
+                <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>YouTube subscribers come in slowly, on purpose</div>
               </div>
-              <div className="text-[13px] leading-[1.65] mb-1" style={{ color: t.textMuted }}>
-                YouTube subscriber orders are fulfilled by real people completing tasks, not bots. This means delivery is slower than other services and may take several days to complete.
+              <div className="text-[13px] leading-[1.6] mb-3" style={{ color: t.textMuted }}>
+                YouTube watches for sudden jumps, so they are added a little at a time. That way the channel keeps them.
               </div>
-              <div className="text-[13px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
-                Please allow extra time for subscriber orders to process.
+              <div className="rounded-[14px] px-3.5 py-3 mb-3" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)" }}>
+                <div className="text-[24px] font-extrabold leading-none -tracking-[.5px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>50 – 500</div>
+                <div className="text-[13px] leading-[1.4] mt-1.5" style={{ color: t.textMuted }}>subscribers a day, until your order is done</div>
+              </div>
+              <div className="text-[12.5px] leading-[1.6] mb-4" style={{ color: t.textSoft }}>
+                Nothing to do on your side. You can watch it climb in Orders.
               </div>
               <button onClick={() => { try { localStorage.setItem('nitro_youtube_disclaimer', String(Date.now())); } catch {} setYoutubeDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>Got it</button>
             </div>
