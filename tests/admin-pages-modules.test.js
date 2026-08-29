@@ -38,7 +38,7 @@ describe("admin page module boundaries", () => {
     expect(alertsSource).toMatch(/^'use client';/);
     expect(alertsSource).toContain("export function AdminAlertsPage({ dark, t })");
     expect(settingsSource).toMatch(/^'use client';/);
-    expect(settingsSource).toContain("function CleanupButton({ dark, t })");
+    expect(settingsSource).toContain("function CleanupRow({ dark, t })");
     expect(settingsSource).toContain("export function AdminSettingsPage(");
   });
 
