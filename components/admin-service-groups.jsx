@@ -1,64 +1,20 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from "react";
-import { calculateTierPrice, formatNaira, DEFAULT_USD_RATE } from "../lib/markup";
+import { DEFAULT_USD_RATE } from "../lib/markup";
 import { useConfirm } from "./confirm-dialog";
-import { FilterDropdown } from "./date-range-picker";
 import InlineAlert from "./inline-alert";
 import { PlatformIcon } from "./platform-icon";
+import { openCardFrame, openCardHeader } from "../lib/expandable-card";
 
-const TIER_COLORS = { Budget: "#f59e0b", Standard: "#3b82f6", Premium: "#a855f7" };
-const TIER_BG = { Budget: "rgba(245,158,11,.14)", Standard: "rgba(59,130,246,.14)", Premium: "rgba(168,85,247,.14)" };
-const PROV_META = { mtp: ["MTP", "#ef4444"], jap: ["JAP", "#3b82f6"], dao: ["DAO", "#22c55e"] };
-
-/* Provider tag — renders only when the API payload includes service.provider */
-function ProvTag({ provider }) {
-  const meta = PROV_META[provider];
-  if (!meta) return null;
-  return <span className="text-[9px] font-extrabold tracking-[.5px] py-0.5 px-1.5 rounded-full mr-1.5 align-middle" style={{ color: meta[1], background: `${meta[1]}22` }}>{meta[0]}</span>;
-}
-
-function LinkServiceInline({ tierId, services, dark, t, inputStyle, markupSettings, onLink }) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [linking, setLinking] = useState(false);
-  const filtered = useMemo(() => {
-    if (!search) return services.slice(0, 15);
-    return services.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || String(s.apiId).includes(search)).slice(0, 15);
-  }, [services, search]);
-
-  if (!open) {
-    return (
-      <span className="flex items-center gap-1.5">
-        <span className="text-xs py-0.5 px-2 rounded-full font-semibold flex items-center gap-1" style={{ background: dark ? "rgba(224,164,88,.1)" : "rgba(217,119,6,.06)", color: dark ? "#e0a458" : "#d97706" }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          Unlinked
-        </span>
-        <button onClick={() => setOpen(true)} className="bg-transparent text-xs font-semibold cursor-pointer border-none p-0 font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ color: "#c47d8e" }}>Link service</button>
-      </span>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="relative">
-        <input aria-label="Search services" placeholder="Search services..." value={search} onChange={e => setSearch(e.target.value)} autoFocus className="w-full py-[5px] px-2 pr-7 rounded-lg text-[13px] outline-none font-[inherit]" style={{ ...inputStyle }} />
-        {search && <button aria-label="Clear search" onClick={() => setSearch("")} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full text-[10px] cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
-      </div>
-      <div className="max-h-[120px] overflow-y-auto overscroll-contain rounded-md" style={{ border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, background: dark ? "#131728" : "#fff" }}>
-        {filtered.map(s => (
-          <div key={s.id} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={async () => { setLinking(true); await onLink(s.id); setLinking(false); setOpen(false); }} className="py-[5px] px-2 text-xs cursor-pointer" style={{ color: t.text, borderBottom: `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` }}>
-            <ProvTag provider={s.provider} />
-            <span className="text-[10px] mr-1" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.textMuted }}>#{s.apiId}</span>
-            {s.name?.slice(0, 50)}
-            <span className="text-[10px] ml-1" style={{ color: t.textMuted }}>— {formatNaira(Math.round(s.costPer1k * Number(markupSettings.markup_usd_rate || 1600) / 100))}/1k</span>
-          </div>
-        ))}
-        {filtered.length === 0 && <div className="p-2 text-xs text-center" style={{ color: t.textMuted }}>No matches</div>}
-      </div>
-      <button onClick={() => setOpen(false)} className="bg-transparent text-[11px] cursor-pointer border-none p-0 self-start font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    </div>
-  );
-}
+// The whole menu as one list, grouped by platform, with the three tier prices
+// on every row so pricing scans without opening anything. An open group takes
+// the shared opened-card look; each tier is a row on rails carrying the number
+// this page never showed before, its margin. Swap is a first-class action.
+const TIERS = ["Budget", "Standard", "Premium"];
+const TYPES = ["followers", "likes", "views", "comments", "engagement", "plays", "reviews", "saves", "reposts", "downloads", "traffic", "verified-comments", "shorts", "subscribers", "members", "shares", "impressions", "watchtime"];
+const naira = (kobo) => `₦${Math.round(Number(kobo) / 100).toLocaleString("en-NG")}`;
+const CH = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>;
+const SEARCH = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.5" y2="16.5"/></svg>;
 
 export default function AdminServiceGroupsPage({ dark, t }) {
   const confirm = useConfirm();
@@ -69,576 +25,308 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [platFilter, setPlatFilter] = useState("all");
-  const [showGuide, setShowGuide] = useState(false);
   const [ngFilter, setNgFilter] = useState(false);
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
-
+  const [hideOff, setHideOff] = useState(false);
   const [showNew, setShowNew] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newPlatform, setNewPlatform] = useState("");
-  const [newType, setNewType] = useState("followers");
-  const [newNigerian, setNewNigerian] = useState(false);
-
-  const [addTierGroup, setAddTierGroup] = useState(null);
-  const [tierSvcSearch, setTierSvcSearch] = useState("");
-  const [tierSvcId, setTierSvcId] = useState("");
-  const [tierLevel, setTierLevel] = useState("Standard");
-  const [tierPrice, setTierPrice] = useState("");
-  const [tierCustomComments, setTierCustomComments] = useState(false);
-  const [tierTrafficTargeting, setTierTrafficTargeting] = useState(false);
-
-  /* Accordion state — persisted so open groups survive reloads */
-  const [openIds, setOpenIds] = useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem("nitro_mb_open") || "[]")); } catch { return new Set(); }
-  });
-  const persistOpen = (next) => {
-    setOpenIds(next);
-    try { localStorage.setItem("nitro_mb_open", JSON.stringify([...next])); } catch {}
-  };
-  const toggleGroup = (id) => {
-    const next = new Set(openIds);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    persistOpen(next);
-  };
-  const openGroup = (id) => {
-    if (openIds.has(id)) return;
-    const next = new Set(openIds); next.add(id); persistOpen(next);
-  };
-
-  const cardsRef = useRef(null);
-
-  /* Inline tier editing — saves through the existing update-tier action */
-  const [editTier, setEditTier] = useState(null); // { id, price, pricePinned, customComments }
-  // Mobile card expansion. Was imperative DOM manipulation, which React undid on
-  // the next render — so opening the editor collapsed the card that held it.
-  const [openTiers, setOpenTiers] = useState({});
-  const [savingTier, setSavingTier] = useState(false);
+  const [newG, setNewG] = useState({ name: "", platform: "", type: "followers", nigerian: false });
+  const [busy, setBusy] = useState(false);
+  // per-tier panels: { [tierId]: 'swap' | 'edit' }, and one add-tier panel per group
+  const [panel, setPanel] = useState({});
+  const [addFor, setAddFor] = useState(null);
+  const [svcQ, setSvcQ] = useState("");
+  const [edit, setEdit] = useState({});          // tierId → { price, pinned, customComments, trafficTargeting }
+  const [addForm, setAddForm] = useState({ tier: "Standard", serviceId: "", price: "" });
+  const [openIds, setOpenIds] = useState(() => { try { return new Set(JSON.parse(localStorage.getItem("nitro_mb_open") || "[]")); } catch { return new Set(); } });
+  const persistOpen = (next) => { setOpenIds(next); try { localStorage.setItem("nitro_mb_open", JSON.stringify([...next])); } catch {} };
+  const toggleGroup = (id) => { const n = new Set(openIds); n.has(id) ? n.delete(id) : n.add(id); persistOpen(n); };
+  const listRef = useRef(null);
 
   const load = async () => {
     try {
-      const [sgRes, stRes] = await Promise.all([
-        fetch("/api/admin/service-groups"),
-        fetch("/api/admin/settings"),
-      ]);
+      const [sgRes, stRes] = await Promise.all([fetch("/api/admin/service-groups"), fetch("/api/admin/settings")]);
       if (!sgRes.ok) throw new Error("Failed to load");
-      const sgData = await sgRes.json();
-      setGroups(sgData.groups || []);
-      setServices(sgData.services || []);
-      if (stRes.ok) {
-        const stData = await stRes.json();
-        const ms = {};
-        Object.entries(stData.settings || {}).filter(([k]) => k.startsWith("markup_")).forEach(([k, v]) => { ms[k] = v; });
-        setMarkupSettings(ms);
-      }
+      const sg = await sgRes.json();
+      setGroups(sg.groups || []); setServices(sg.services || []);
+      if (stRes.ok) { const st = await stRes.json(); const ms = {}; Object.entries(st.settings || {}).filter(([k]) => k.startsWith("markup_")).forEach(([k, v]) => { ms[k] = v; }); setMarkupSettings(ms); }
     } catch (e) { setError(e.message); }
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
-
   const act = async (body) => {
+    setBusy(true);
     try {
       const res = await fetch("/api/admin/service-groups", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Action failed"); return false; }
-      await load();
-      return true;
-    } catch { setError("Request failed"); return false; }
-  };
-
-  const platforms = useMemo(() => [...new Set(groups.map(g => g.platform))].sort(), [groups]);
-  const filtersActive = search !== "" || platFilter !== "all" || ngFilter;
-  useEffect(() => {
-    const handler = (e) => {
-      if (filtersActive || openIds.size === 0) return;
-      if (cardsRef.current && !cardsRef.current.contains(e.target)) persistOpen(new Set());
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [openIds, filtersActive]);
-  const isOpen = (g) => filtersActive || openIds.has(g.id);
-  const filtered = useMemo(() => {
-    let g = groups;
-    if (platFilter !== "all") g = g.filter(gr => gr.platform === platFilter);
-    if (ngFilter) g = g.filter(gr => gr.nigerian);
-    if (search) g = g.filter(gr => gr.name.toLowerCase().includes(search.toLowerCase()) || gr.platform.toLowerCase().includes(search.toLowerCase()));
-    return g;
-  }, [groups, platFilter, ngFilter, search]);
-
-  const totalPages = Math.ceil(filtered.length / perPage);
-  const paged = filtered.slice((page - 1) * perPage, page * perPage);
-
-  const filteredSvcs = useMemo(() => {
-    if (!tierSvcSearch) return services.slice(0, 20);
-    return services.filter(s => s.name.toLowerCase().includes(tierSvcSearch.toLowerCase()) || String(s.apiId).includes(tierSvcSearch)).slice(0, 20);
-  }, [services, tierSvcSearch]);
-
-  const createGroup = async () => {
-    if (!newName || !newPlatform) { setError("Name and platform required"); return; }
-    const ok = await act({ action: "create-group", name: newName, platform: newPlatform, type: newType, nigerian: newNigerian });
-    if (ok) { setShowNew(false); setNewName(""); setNewPlatform(""); setNewType("Standard"); setNewNigerian(false); }
-  };
-
-  const addTier = async () => {
-    if (!addTierGroup || !tierSvcId || !tierPrice) { setError("Service and price required"); return; }
-    const ok = await act({ action: "add-tier", groupId: addTierGroup, serviceId: tierSvcId, tier: tierLevel, sellPer1k: Math.round(Number(tierPrice) * 100), customComments: tierCustomComments, trafficTargeting: tierTrafficTargeting });
-    if (ok) { setAddTierGroup(null); setTierSvcId(""); setTierSvcSearch(""); setTierLevel("Standard"); setTierPrice(""); setTierCustomComments(false); }
-  };
-
-  const saveTierEdit = async () => {
-    if (!editTier) return;
-    setSavingTier(true);
-    const ok = await act({ action: "update-tier", tierIdToUpdate: editTier.id, sellPer1k: Math.round(Number(editTier.price) * 100), pricePinned: editTier.pricePinned, customComments: editTier.customComments, trafficTargeting: editTier.trafficTargeting });
-    setSavingTier(false);
-    if (ok) setEditTier(null);
+      if (!res.ok) { setError(data.error || "Action failed"); setBusy(false); return false; }
+      await load(); setBusy(false); return true;
+    } catch { setError("Request failed"); setBusy(false); return false; }
   };
 
   const usdRate = Number(markupSettings.markup_usd_rate || DEFAULT_USD_RATE || 1600);
-  const tierCostKobo = (tier) => tier.service?.costPer1k != null ? Math.round(tier.service.costPer1k * usdRate) : null;
-  const marginPct = (sellKobo, cKobo) => cKobo > 0 ? Math.round(((sellKobo - cKobo) / cKobo) * 100) : 0;
-  const lowMargin = (sellKobo, cKobo) => sellKobo > 0 && sellKobo < Math.ceil(cKobo * 1.5);
+  const costKobo = (svc) => svc?.costPer1k != null ? Math.round(Number(svc.costPer1k) * usdRate) : null;
+  const gmPct = (sellKobo, cKobo) => sellKobo > 0 && cKobo != null ? Math.round(((sellKobo - cKobo) / sellKobo) * 100) : null;
+  const gmCls = (m) => m == null ? "" : m >= 60 ? "good" : m >= 45 ? "mid" : "low";
 
-  const cardBg = t.cardBg;
-  const cardBd = `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`;
-  const headerBg = dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)";
-  const headerBorder = `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`;
-  const inputCls = "py-2.5 px-3.5 rounded-lg text-sm outline-none font-[inherit]";
-  const inputStyle = { background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`, color: t.text };
-  const selectSt = {
-    backgroundColor: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)",
-    border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`,
-    color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)",
-    backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
+  const platforms = useMemo(() => [...new Set(groups.map(g => g.platform))].sort((a, b) => a.localeCompare(b)), [groups]);
+  const filtersActive = search !== "" || platFilter !== "all" || ngFilter;
+  const isOpen = (g) => filtersActive || openIds.has(g.id);
+  const filtered = useMemo(() => {
+    let g = groups;
+    if (platFilter !== "all") g = g.filter(x => x.platform === platFilter);
+    if (ngFilter) g = g.filter(x => x.nigerian);
+    if (hideOff) g = g.filter(x => x.enabled);
+    if (search) { const q = search.toLowerCase(); g = g.filter(x => x.name.toLowerCase().includes(q) || x.platform.toLowerCase().includes(q) || x.tiers.some(ti => ti.service?.name?.toLowerCase().includes(q) || String(ti.service?.apiId || "").includes(q))); }
+    return g;
+  }, [groups, platFilter, ngFilter, hideOff, search]);
+  const sections = useMemo(() => {
+    const by = {};
+    for (const g of filtered) (by[g.platform] ||= []).push(g);
+    return Object.entries(by).sort((a, b) => b[1].length - a[1].length);
+  }, [filtered]);
+  const svcMatches = useMemo(() => {
+    const q = svcQ.trim().toLowerCase();
+    const list = q ? services.filter(s => s.name.toLowerCase().includes(q) || String(s.apiId).includes(q)) : services;
+    return list.slice(0, 20);
+  }, [services, svcQ]);
+
+  useEffect(() => {
+    const handler = (e) => { if (filtersActive || openIds.size === 0) return; if (listRef.current && !listRef.current.contains(e.target)) persistOpen(new Set()); };
+    document.addEventListener("mousedown", handler); return () => document.removeEventListener("mousedown", handler);
+  }, [openIds, filtersActive]);
+
+  const startEdit = (ti) => { setEdit({ [ti.id]: { price: String(Math.round(Number(ti.sellPer1k) / 100)), pinned: !!ti.pricePinned, customComments: !!ti.customComments, trafficTargeting: !!ti.trafficTargeting } }); setPanel({ [ti.id]: "edit" }); };
+  const saveEdit = async (ti) => {
+    const e = edit[ti.id]; if (!e) return;
+    const ok = await act({ action: "update-tier", tierIdToUpdate: ti.id, sellPer1k: Math.round(Number(e.price) * 100), pricePinned: e.pinned, customComments: e.customComments, trafficTargeting: e.trafficTargeting });
+    if (ok) setPanel({});
+  };
+  const swapTo = async (ti, svc) => {
+    const ok = await act({ action: "update-tier", tierIdToUpdate: ti.id, serviceId: svc.id });
+    if (ok) { setPanel({}); setSvcQ(""); }
+  };
+  const addTier = async (g) => {
+    if (!addForm.serviceId) { setError("Pick a service first"); return; }
+    const ok = await act({ action: "add-tier", groupId: g.id, serviceId: addForm.serviceId, tier: addForm.tier, sellPer1k: addForm.price ? Math.round(Number(addForm.price) * 100) : 0 });
+    if (ok) { setAddFor(null); setAddForm({ tier: "Standard", serviceId: "", price: "" }); setSvcQ(""); }
+  };
+  const createGroup = async () => {
+    if (!newG.name || !newG.platform) { setError("Name and platform required"); return; }
+    const ok = await act({ action: "create-group", ...newG });
+    if (ok) { setShowNew(false); setNewG({ name: "", platform: "", type: "followers", nigerian: false }); }
   };
 
+  const vars = {
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
+    "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent, "--acbg": dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)", "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)",
+    "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828",
+    "--bud": dark ? "#e0a458" : "#854F0B", "--budbg": dark ? "#2d2210" : "#fef7ed", "--std": dark ? "#7aa2f7" : "#185FA5", "--stdbg": dark ? "#0f1e30" : "#eef4fb", "--prm": dark ? "#a78bfa" : "#534AB7", "--prmbg": dark ? "#221535" : "#f5eef5",
+    "--ng": dark ? "#4ade80" : "#16a34a", "--ngbg": dark ? "rgba(74,222,128,.12)" : "rgba(22,163,74,.1)",
+  };
+  const TC = { Budget: "bud", Standard: "std", Premium: "prm" };
   const totalTiers = groups.reduce((a, g) => a + g.tiers.length, 0);
-  const enabledGroups = groups.filter(g => g.enabled).length;
-  const ngCount = groups.filter(g => g.nigerian).length;
 
-  const statChips = [
-    ["Groups", String(groups.length), "linear-gradient(135deg,#c47d8e,#8b5e6b)", <svg key="g" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>],
-    ["Enabled", String(enabledGroups), "linear-gradient(135deg,#34d399,#059669)", <svg key="e" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>],
-    ["Tiers", String(totalTiers), "linear-gradient(135deg,#60a5fa,#2563eb)", <svg key="t" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>],
-    ...(ngCount > 0 ? [["Nigerian", String(ngCount), "linear-gradient(135deg,#4ade80,#16a34a)", <svg key="n" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>]] : []),
-  ];
+  const SvcList = ({ onPick, priceKobo }) => (
+    <div className="mb-svcs">
+      <div className="mb-srch"><span>{SEARCH}</span><input autoFocus value={svcQ} onChange={e => setSvcQ(e.target.value)} placeholder="Search services by name or #id" /></div>
+      <div className="mb-svcl">
+        {svcMatches.map(s => { const c = costKobo(s); const m = priceKobo ? gmPct(priceKobo, c) : null; return (
+          <button type="button" key={s.id} className="mb-svc" onClick={() => onPick(s)}>
+            <b className={`mb-prov ${s.provider}`}>{s.provider}</b><span className="mb-sid m">#{s.apiId}</span><span className="mb-sn">{s.name}</span>
+            <span className="mb-sm m">{c != null ? naira(c) : "—"}/1k</span>{m != null && <span className={`mb-gm ${gmCls(m)} m`}>{m}%</span>}
+          </button>
+        ); })}
+        {svcMatches.length === 0 && <div className="mb-empty">Nothing matches.</div>}
+      </div>
+    </div>
+  );
+
+  const TierRow = ({ ti, g }) => {
+    const c = costKobo(ti.service); const m = gmPct(Number(ti.sellPer1k), c); const p = panel[ti.id]; const e = edit[ti.id];
+    const refill = ti.refill && ti.refillDays > 0 ? (ti.refillDays >= 365 ? "Lifetime" : `${ti.refillDays} days`) : "No refill";
+    return (
+      <div className={`mb-tr${ti.enabled ? "" : " off"}`}>
+        <span className={`mb-tchip ${TC[ti.tier] || "std"}`}>{ti.tier}</span>
+        <span className="mb-price m">{naira(ti.sellPer1k)}<small>/1k</small>{ti.pricePinned && <i className="mb-lock" title="Pinned: recalculation leaves it alone" />}</span>
+        <span className={`mb-gm ${gmCls(m)} m`} title="Gross margin at today's rate">{m == null ? "—" : `${m}%`}</span>
+        <span className="mb-svc-cell">
+          {ti.service ? <><b className={`mb-prov ${ti.service.provider}`}>{ti.service.provider}</b><span className="mb-sid m">#{ti.service.apiId}</span><span className="mb-sn">{ti.service.name}</span><span className="mb-sm">{c != null ? `${naira(c)}/1k` : ""}{ti.service.min != null ? ` · ${Number(ti.service.min).toLocaleString()}–${Number(ti.service.max).toLocaleString()}` : ""}</span></> : <span className="mb-sn" style={{ color: "var(--bad)" }}>No backing service</span>}
+        </span>
+        <span className="mb-meta">{refill}<em>{ti.speed || "—"}</em></span>
+        <button type="button" className={`mb-tog${ti.enabled ? "" : " o"}`} onClick={() => act({ action: "update-tier", tierIdToUpdate: ti.id, enabled: !ti.enabled })} aria-label={ti.enabled ? "Switch tier off" : "Switch tier on"}><i /></button>
+        <span className="mb-acts"><button type="button" className="mb-b sm" onClick={() => { setPanel(p === "swap" ? {} : { [ti.id]: "swap" }); setSvcQ(""); }}>Swap</button><button type="button" className="mb-b sm" onClick={() => p === "edit" ? setPanel({}) : startEdit(ti)}>Edit</button></span>
+        {p === "swap" && <div className="mb-panel"><div className="mb-ph">Swap the service behind <b>{g.name} · {ti.tier}</b>. Price stays at {naira(ti.sellPer1k)}; the margin beside each candidate is at that price.</div><SvcList onPick={s => swapTo(ti, s)} priceKobo={Number(ti.sellPer1k)} /></div>}
+        {p === "edit" && e && (
+          <div className="mb-panel mb-edit">
+            <label>Price per 1k <input className="mb-in m" value={e.price} onChange={ev => setEdit({ [ti.id]: { ...e, price: ev.target.value.replace(/[^0-9.]/g, "") } })} /></label>
+            <label className="mb-chk"><input type="checkbox" checked={e.pinned} onChange={ev => setEdit({ [ti.id]: { ...e, pinned: ev.target.checked } })} /> Pin price</label>
+            {(g.type || "").toLowerCase().includes("comment") && <label className="mb-chk"><input type="checkbox" checked={e.customComments} onChange={ev => setEdit({ [ti.id]: { ...e, customComments: ev.target.checked } })} /> Custom comments</label>}
+            {(g.type || "").toLowerCase().includes("traffic") && <label className="mb-chk"><input type="checkbox" checked={e.trafficTargeting} onChange={ev => setEdit({ [ti.id]: { ...e, trafficTargeting: ev.target.checked } })} /> Traffic targeting</label>}
+            <span className="mb-spacer" />
+            <button type="button" className="mb-b sm danger" onClick={async () => { if (await confirm({ title: "Delete tier", message: `Delete the ${ti.tier} tier from "${g.name}"?`, confirmLabel: "Delete", danger: true })) { const ok = await act({ action: "delete-tier", tierId: ti.id }); if (ok) setPanel({}); } }}>Delete tier</button>
+            <button type="button" className="mb-b sm" onClick={() => setPanel({})}>Cancel</button>
+            <button type="button" className="mb-pri sm" disabled={busy} onClick={() => saveEdit(ti)}>Save</button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const Group = ({ g }) => {
+    const open = isOpen(g);
+    const have = new Set(g.tiers.map(x => x.tier)); const missing = TIERS.filter(x => !have.has(x));
+    const tiers = [...g.tiers].sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier));
+    return (
+      <div className={`mb-grp${g.enabled ? "" : " goff"}`} style={open ? openCardFrame(t, dark) : undefined}>
+        <div className="mb-gh" role="button" tabIndex={0} onClick={() => toggleGroup(g.id)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleGroup(g.id); } }} aria-expanded={open} style={open ? openCardHeader(dark) : undefined}>
+          <span className={`mb-chev${open ? " up" : ""}`} />
+          <span className="mb-gi"><PlatformIcon platform={g.platform} dark={dark} size={30} /></span>
+          <span className="mb-gname"><b>{g.name}</b>{g.nigerian && <span className="mb-ng">NG</span>}<span className="mb-gtype">{g.type}</span></span>
+          <span className="mb-pills">{tiers.map(ti => <span key={ti.id} className={`mb-pill ${TC[ti.tier] || "std"}${ti.enabled ? "" : " off"}`}><i>{ti.tier[0]}</i>{naira(ti.sellPer1k)}</span>)}{tiers.length === 0 && <span className="mb-pill empty">No tiers</span>}</span>
+          <button type="button" className={`mb-tog${g.enabled ? "" : " o"}`} onClick={e => { e.stopPropagation(); act({ action: "update-group", groupId: g.id, enabled: !g.enabled }); }} aria-label={g.enabled ? "Switch group off" : "Switch group on"}><i /></button>
+        </div>
+        {open && (
+          <div className="mb-gb">
+            {tiers.map(ti => <TierRow key={ti.id} ti={ti} g={g} />)}
+            {addFor === g.id && (
+              <div className="mb-panel mb-add">
+                <div className="mb-ph">Add a tier to <b>{g.name}</b>. Leave the price blank and it is set from the markup rules.</div>
+                <div className="mb-addrow">
+                  <span className="mb-segs">{missing.length ? missing.map(x => <button type="button" key={x} className={`mb-seg${addForm.tier === x ? " on" : ""}`} onClick={() => setAddForm(f => ({ ...f, tier: x }))}>{x}</button>) : TIERS.map(x => <button type="button" key={x} className={`mb-seg${addForm.tier === x ? " on" : ""}`} onClick={() => setAddForm(f => ({ ...f, tier: x }))}>{x}</button>)}</span>
+                  <input className="mb-in m" value={addForm.price} onChange={e => setAddForm(f => ({ ...f, price: e.target.value.replace(/[^0-9.]/g, "") }))} placeholder="Price ₦/1k (auto)" />
+                </div>
+                {addForm.serviceId
+                  ? <div className="mb-picked">{(() => { const s = services.find(x => x.id === addForm.serviceId); return s ? <><b className={`mb-prov ${s.provider}`}>{s.provider}</b><span className="mb-sid m">#{s.apiId}</span><span className="mb-sn">{s.name}</span></> : null; })()}<button type="button" className="mb-b sm" onClick={() => setAddForm(f => ({ ...f, serviceId: "" }))}>Change</button></div>
+                  : <SvcList onPick={s => setAddForm(f => ({ ...f, serviceId: s.id }))} priceKobo={addForm.price ? Math.round(Number(addForm.price) * 100) : null} />}
+                <div className="mb-acts-r"><button type="button" className="mb-b sm" onClick={() => { setAddFor(null); setSvcQ(""); }}>Cancel</button><button type="button" className="mb-pri sm" disabled={busy || !addForm.serviceId} onClick={() => addTier(g)}>Add tier</button></div>
+              </div>
+            )}
+            <div className="mb-gfoot">
+              <button type="button" className="mb-addt" onClick={() => { setAddFor(addFor === g.id ? null : g.id); setAddForm({ tier: missing[0] || "Standard", serviceId: "", price: "" }); setSvcQ(""); }}>{missing.length ? `+ Add ${missing[0]} tier` : "+ Add tier"}</button>
+              <span className="mb-gacts">
+                <button type="button" className="mb-b sm" onClick={() => act({ action: "duplicate-group", groupId: g.id })}>Duplicate</button>
+                <button type="button" className="mb-b sm danger" onClick={async () => { if (await confirm({ title: "Delete group", message: `Delete "${g.name}" and all its tiers?`, confirmLabel: "Delete", danger: true })) act({ action: "delete-group", groupId: g.id }); }}>Delete group</button>
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
       <div className="adm-header">
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start gap-3 flex-wrap">
           <div>
             <div className="adm-title" style={{ color: t.text }}>Menu Builder</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>{groups.length} groups · {totalTiers} tiers · {services.length} services available</div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => { setShowGuide(!showGuide); if (!showGuide) setShowNew(false); }} className="adm-btn-sm flex items-center gap-1.5" style={{ borderColor: t.cardBorder, color: t.accent }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-              {showGuide ? "Hide Guide" : "Guide"}
-            </button>
-            <button onClick={() => { setShowNew(!showNew); if (!showNew) setShowGuide(false); }} className="adm-btn-primary flex items-center gap-1.5">
-              {showNew ? "Cancel" : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New Group</>}
-            </button>
+            <button type="button" className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft }} disabled={busy} onClick={async () => { if (await confirm({ title: "Recalculate prices", message: "Recalculate every unpinned tier from the markup rules?", confirmLabel: "Recalculate" })) act({ action: "recalculate-prices" }); }}>Recalculate prices</button>
+            <button type="button" className="adm-btn-primary" onClick={() => setShowNew(v => !v)}>{showNew ? "Cancel" : "+ New group"}</button>
           </div>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
-
-      {/* Stats */}
-      {!loading && <div className="flex gap-2 flex-wrap mt-4">
-        {statChips.map(([label, val, grad, icon]) => (
-          <div key={label} className="flex-1 min-w-[110px] flex items-center gap-2.5 rounded-xl py-2.5 px-3.5" style={{ background: cardBg, border: cardBd }}>
-            <div className="w-[30px] h-[30px] rounded-[9px] flex items-center justify-center shrink-0 text-white" style={{ background: grad }}>{icon}</div>
-            <div>
-              <div className="text-[9.5px] font-bold uppercase tracking-[.9px]" style={{ color: t.textMuted }}>{label}</div>
-              <div className="m text-base font-bold mt-px" style={{ color: t.text, fontFamily: "'JetBrains Mono',monospace" }}>{val}</div>
-            </div>
+      <div className="mb" style={vars}>
+        <style>{CSS}</style>
+        {error && <InlineAlert type="error" message={error} onClose={() => setError("")} dark={dark} />}
+        {showNew && (
+          <div className="mb-card mb-new">
+            <div className="mb-fld"><label>Group name</label><input className="mb-in" value={newG.name} onChange={e => setNewG(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Instagram Followers" /></div>
+            <div className="mb-fld"><label>Platform</label><input className="mb-in" list="mb-platforms" value={newG.platform} onChange={e => setNewG(f => ({ ...f, platform: e.target.value }))} placeholder="e.g. Instagram" /><datalist id="mb-platforms">{platforms.map(p => <option key={p} value={p} />)}</datalist></div>
+            <div className="mb-fld"><label>Type</label><select className="mb-in" value={newG.type} onChange={e => setNewG(f => ({ ...f, type: e.target.value }))}>{TYPES.map(x => <option key={x} value={x}>{x}</option>)}</select></div>
+            <label className="mb-chk mb-fld-chk"><input type="checkbox" checked={newG.nigerian} onChange={e => setNewG(f => ({ ...f, nigerian: e.target.checked }))} /> Nigerian audience</label>
+            <button type="button" className="mb-pri" disabled={busy || !newG.name || !newG.platform} onClick={createGroup}>Create group</button>
           </div>
-        ))}
-      </div>}
-
-      {/* Guide */}
-      {showGuide && (
-        <div className="adm-card mt-4 overflow-hidden" style={{ background: cardBg, border: cardBd }}>
-          <div className="set-card-header" style={{ background: headerBg, borderBottom: headerBorder }}>
-            <div className="set-card-title" style={{ color: t.textMuted }}>How the Menu Builder Works</div>
-          </div>
-          <div className="set-card-body text-sm leading-[1.75]" style={{ color: t.textMuted }}>
-            <div className="mb-3.5">
-              <b style={{ color: t.text }}>Structure:</b> The menu is organized as <b style={{ color: t.text }}>Groups</b> &rarr; <b style={{ color: t.text }}>Tiers</b>. A group is a service customers see (e.g. "Instagram Followers"). Each group has 1&ndash;3 tiers (Budget, Standard, Premium) &mdash; each tier is linked to a different provider backend service with different quality/speed.
-            </div>
-            <div className="mb-3.5">
-              <b style={{ color: t.text }}>Pricing flow:</b> Providers charge in USD &rarr; we convert at the USD&rarr;NGN rate (set in Settings) &rarr; then apply markup % per tier &rarr; that's the customer sell price. Go to <b style={{ color: t.text }}>Settings &rarr; Pricing &amp; Markup</b> to set the rate and percentages.
-            </div>
-            <div className="mb-3.5 flex items-center gap-2 flex-wrap">
-              <b style={{ color: t.text }}>Tier colors:</b>
-              {[["Budget", "#f59e0b", "cheapest, basic quality"], ["Standard", "#3b82f6", "recommended, good balance"], ["Premium", "#a855f7", "best quality, highest price"]].map(([name, color, desc]) => (
-                <span key={name} className="inline-flex items-center gap-1 text-[13px]">
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-                  <span className="font-semibold" style={{ color }}>{name}</span>
-                  <span>({desc})</span>
-                </span>
-              ))}
-            </div>
-            <div className="mb-3.5">
-              <b style={{ color: t.text }}>Nigerian services:</b> Check the Nigerian flag when creating a group to mark it as Nigeria-specific. These get a green tint and flag badge on the customer page.
-            </div>
-            <div>
-              <b style={{ color: t.text }}>Adding a tier:</b> Click "+ Tier" on any group &rarr; search for the provider service &rarr; pick a tier level &rarr; the sell price auto-fills from your markup settings. You can override it manually.
-            </div>
-          </div>
+        )}
+        <div className="mb-bar">
+          <label className="mb-srch"><span>{SEARCH}</span><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search groups or services" aria-label="Search groups" /></label>
+          <span className="mb-sel"><select value={platFilter} onChange={e => setPlatFilter(e.target.value)} aria-label="Platform"><option value="all">All platforms</option>{platforms.map(p => <option key={p} value={p}>{p}</option>)}</select>{CH}</span>
+          <button type="button" className={`mb-tgl${ngFilter ? " on" : ""}`} onClick={() => setNgFilter(v => !v)}><i /><span>NG only</span></button>
+          <button type="button" className={`mb-tgl${hideOff ? " on" : ""}`} onClick={() => setHideOff(v => !v)}><i /><span>Hide off</span></button>
         </div>
-      )}
-
-      {error && <InlineAlert type="error" dark={dark} onDismiss={() => setError("")} className="mt-4">{error}</InlineAlert>}
-
-      {/* New group form */}
-      {showNew && (
-        <div className="adm-card mt-4 overflow-hidden" style={{ background: cardBg, border: cardBd }}>
-          <div className="set-card-header" style={{ background: headerBg, borderBottom: headerBorder }}>
-            <div className="set-card-title" style={{ color: t.textMuted }}>Create Service Group</div>
-          </div>
-          <div className="set-card-body">
-            <div className="grid grid-cols-2 max-md:grid-cols-1 gap-3 mb-3.5">
-              <div><label className="text-[13px] font-semibold block mb-1" style={{ color: t.textMuted }}>Group Name</label><input placeholder="e.g. Instagram Followers" value={newName} onChange={e => setNewName(e.target.value)} className={`${inputCls} w-full`} style={inputStyle} /></div>
-              <div><label className="text-[13px] font-semibold block mb-1" style={{ color: t.textMuted }}>Platform</label><input list="platform-list" placeholder="e.g. Instagram" value={newPlatform} onChange={e => setNewPlatform(e.target.value)} className={`${inputCls} w-full`} style={inputStyle} /><datalist id="platform-list">{[...new Set(groups.map(g => g.platform))].sort().map(p => <option key={p} value={p} />)}</datalist></div>
-              <div><label className="text-[13px] font-semibold block mb-1" style={{ color: t.textMuted }}>Type</label>
-                <select value={newType} onChange={e => setNewType(e.target.value)} className={`${inputCls} w-full appearance-none cursor-pointer bg-no-repeat bg-[position:right_10px_center]`} style={selectSt}>
-                  {["followers", "likes", "views", "comments", "engagement", "plays", "reviews", "saves", "reposts", "downloads", "traffic", "verified-comments", "shorts-views", "shorts-comments", "monthly-listeners", "podcast-plays", "podcast-followers", "listeners", "reshares", "channel-members", "community-members", "default"].map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div className="flex items-end pb-1">
-                <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: t.textSoft }}>
-                  <input type="checkbox" checked={newNigerian} onChange={e => setNewNigerian(e.target.checked)} className="w-4 h-4" style={{ accentColor: "#c47d8e" }} />
-                  <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><rect width="5.33" height="12" fill="#008751"/><rect x="5.33" width="5.34" height="12" fill="#fff"/><rect x="10.67" width="5.33" height="12" fill="#008751"/></svg>
-                  Nigerian service
-                </label>
-              </div>
+        <div className="mb-list" ref={listRef}>
+          {loading && <div className="mb-empty">Loading the menu…</div>}
+          {!loading && sections.length === 0 && <div className="mb-empty">Nothing matches.</div>}
+          {sections.map(([plat, gs]) => (
+            <div key={plat}>
+              <div className="mb-sec"><i><PlatformIcon platform={plat} dark={dark} size={13} /></i>{plat}<span>{gs.length} {gs.length === 1 ? "group" : "groups"}</span></div>
+              {gs.map(g => <Group key={g.id} g={g} />)}
             </div>
-            <button onClick={createGroup} className="adm-btn-primary w-full" style={{ opacity: newName && newPlatform ? 1 : .4 }}>Create Group</button>
-          </div>
+          ))}
         </div>
-      )}
-
-      {/* Filters */}
-      <div className="flex gap-2.5 mt-4 mb-4 flex-wrap items-center">
-        <div className="relative flex-1 min-w-[160px]">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: t.textMuted }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input aria-label="Search groups" placeholder="Search groups..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className={`${inputCls} w-full pl-9 pr-7`} style={inputStyle} />
-          {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
-        </div>
-        <FilterDropdown dark={dark} t={t} searchable value={platFilter} onChange={(v) => { setPlatFilter(v); setPage(1); }} options={[
-          { value: "all", label: "All Platforms" },
-          ...platforms.map(p => ({ value: p, label: p })),
-        ]} />
-        <button onClick={() => { setNgFilter(!ngFilter); setPage(1); }} className="adm-btn-sm flex items-center gap-1.5" style={{ borderColor: ngFilter ? (dark ? "rgba(74,222,128,.28)" : "rgba(22,163,74,.24)") : t.cardBorder, background: ngFilter ? (dark ? "rgba(74,222,128,.12)" : "rgba(22,163,74,.08)") : "transparent", color: ngFilter ? (dark ? "#4ade80" : "#16a34a") : t.textMuted }}>
-          <svg width="14" height="10" viewBox="0 0 16 12" fill="none"><rect width="5.33" height="12" fill={ngFilter ? "#008751" : (dark ? "#555" : "#999")}/><rect x="5.33" width="5.34" height="12" fill={ngFilter ? "#fff" : (dark ? "#777" : "#ccc")}/><rect x="10.67" width="5.33" height="12" fill={ngFilter ? "#008751" : (dark ? "#555" : "#999")}/></svg>
-          Nigerian
-        </button>
       </div>
-
-      {/* Loading */}
-      {loading && <div className="adm-card p-5" style={{ background: cardBg, border: cardBd }}>{[1,2,3,4].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-14 rounded-[10px] mb-2`} />)}</div>}
-
-      {/* Empty */}
-      {!loading && paged.length === 0 && (
-        <div className="adm-card py-[60px] px-5 text-center" style={{ background: cardBg, border: cardBd }}>
-          <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
-            <rect x="8" y="28" width="48" height="24" rx="4" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
-            <rect x="8" y="12" width="48" height="24" rx="4" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
-          </svg>
-          <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>{search || platFilter !== "all" || ngFilter ? "No matching groups" : "No service groups yet"}</div>
-          <div className="text-sm" style={{ color: t.textMuted }}>{search || platFilter !== "all" || ngFilter ? "Try a different filter" : "Create one to get started"}</div>
-        </div>
-      )}
-
-      <div ref={cardsRef}>{!loading && paged.map(g => {
-        const open = isOpen(g);
-        const ng = g.nigerian;
-        const ngCardBg = ng ? (dark ? "rgba(74,222,128,.06)" : "rgba(22,163,74,.04)") : cardBg;
-        const ngCardBd = ng ? `0.5px solid ${dark ? "rgba(74,222,128,.2)" : "rgba(22,163,74,.15)"}` : cardBd;
-        const ngHeaderBg = ng ? (dark ? "rgba(74,222,128,.12)" : "rgba(22,163,74,.06)") : headerBg;
-        return (
-        <div key={g.id} className="adm-card mb-3 overflow-hidden" style={{ background: ngCardBg, border: ngCardBd, opacity: g.enabled ? 1 : .55, borderLeft: ng ? `3px solid ${dark ? "#4ade80" : "#16a34a"}` : undefined }}>
-          {/* Group header — click to expand */}
-          <div role="button" tabIndex={0} aria-expanded={open} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleGroup(g.id);}}} onClick={() => toggleGroup(g.id)} className="flex justify-between items-center py-3 px-4 flex-wrap gap-2 cursor-pointer select-none" style={{ background: ngHeaderBg, borderBottom: open ? headerBorder : "none" }}>
-            <div className="flex items-center gap-2.5 min-w-0">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform duration-200" style={{ color: open ? t.accent : t.textMuted, transform: open ? "rotate(90deg)" : "none" }}><polyline points="9 18 15 12 9 6"/></svg>
-              <PlatformIcon platform={g.platform} dark={dark} size={34} />
-              <span className="text-[15px] font-bold truncate" style={{ color: t.text }}>{g.name}</span>
-              {g.nigerian && <span className="text-[10.5px] py-0.5 px-2 rounded-full font-bold shrink-0" style={{ background: dark ? "rgba(74,222,128,.12)" : "rgba(22,163,74,.08)", color: dark ? "#4ade80" : "#16a34a" }}>Nigerian</span>}
-              {!g.enabled && <span className="text-[10.5px] py-0.5 px-2 rounded-full font-bold shrink-0" style={{ background: dark ? "rgba(160,160,160,.1)" : "rgba(100,100,100,.06)", color: t.textMuted }}>Disabled</span>}
-            </div>
-            <div className="flex gap-1.5 items-center" onClick={e => e.stopPropagation()}>
-              <button onClick={() => act({ action: "update-group", groupId: g.id, enabled: !g.enabled })} title={g.enabled ? "Enabled — click to disable" : "Disabled — click to enable"} aria-label="Toggle group enabled" className="relative w-[34px] h-[19px] rounded-full border border-solid cursor-pointer transition-colors duration-200 shrink-0" style={{ background: g.enabled ? (dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.1)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"), borderColor: g.enabled ? (dark ? "rgba(110,231,183,.4)" : "rgba(5,150,105,.35)") : t.cardBorder }}>
-                <span className="absolute top-[2px] w-[13px] h-[13px] rounded-full transition-all duration-200" style={{ left: g.enabled ? 17 : 2, background: g.enabled ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }} />
-              </button>
-              <button onClick={() => { const opening = addTierGroup !== g.id; setAddTierGroup(opening ? g.id : null); if (opening) openGroup(g.id); }} title={addTierGroup === g.id ? "Cancel" : "Add tier"} className="adm-btn-sm text-[12px]" style={{ borderColor: t.cardBorder, color: t.accent }}>{addTierGroup === g.id ? "Cancel" : "+ Tier"}</button>
-              <button onClick={async () => { if (await confirm({ title: "Delete Group", message: `Delete "${g.name}" and all its tiers?`, confirmLabel: "Delete", danger: true })) act({ action: "delete-group", groupId: g.id }); }} title="Delete group" className="adm-btn-sm text-[12px]" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-              </button>
-            </div>
-          </div>
-
-          {open && <>
-          {/* Add tier form */}
-          {addTierGroup === g.id && (
-            <div className="py-4 px-5" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", borderBottom: headerBorder }}>
-              <div className="text-sm font-semibold mb-0.5" style={{ color: t.text }}>Add Tier to {g.name}</div>
-              <div className="text-[11px] mb-3" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono',monospace" }}>Markup: {Object.keys(markupSettings).length > 0 ? `DB (${markupSettings.markup_standard || "?"}% std)` : "defaults (no DB settings)"}</div>
-              <div className="mb-2.5">
-                <div className="relative mb-1.5">
-                  <input aria-label="Search services" placeholder="Search services..." value={tierSvcSearch} onChange={e => { setTierSvcSearch(e.target.value); setTierSvcId(""); }} className={`${inputCls} w-full pr-7`} style={inputStyle} />
-                  {tierSvcSearch && <button aria-label="Clear search" onClick={() => setTierSvcSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full text-[10px] cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
-                </div>
-                {!tierSvcId && (
-                  <div className="max-h-[220px] overflow-y-auto overscroll-contain rounded-lg" style={{ border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, background: dark ? "#131728" : "#fff" }}>
-                    {filteredSvcs.map(s => (
-                      <div key={s.id} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => { setTierSvcId(s.id); setTierSvcSearch(s.name); const suggested = calculateTierPrice(s.costPer1k, tierLevel, markupSettings); setTierPrice((suggested / 100).toFixed(2)); }} className="py-1.5 px-3 text-[13px] cursor-pointer transition-[background-color] duration-100" style={{ color: tierSvcId === s.id ? "#c47d8e" : t.text, background: tierSvcId === s.id ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)") : "transparent", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` }}>
-                        <ProvTag provider={s.provider} />
-                        <span className="text-[11px] mr-1.5" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.textMuted }}>#{s.apiId}</span>
-                        {s.name} <span className="text-[10px]" style={{ color: t.textMuted }}>— {formatNaira(Math.round(s.costPer1k * usdRate / 100))}/1k</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-2.5 flex-wrap mb-2.5">
-                <select value={tierLevel} onChange={e => { setTierLevel(e.target.value); if (tierSvcId) { const svc = services.find(s => s.id === tierSvcId); if (svc) { const suggested = calculateTierPrice(svc.costPer1k, e.target.value, markupSettings); setTierPrice((suggested / 100).toFixed(2)); } } }} className={`${inputCls} w-[110px] max-md:w-full appearance-none cursor-pointer bg-no-repeat bg-[position:right_8px_center]`} style={selectSt}>
-                  <option>Budget</option><option>Standard</option><option>Premium</option>
-                </select>
-                <input placeholder="Sell price ₦/1k" value={tierPrice} onChange={e => setTierPrice(e.target.value.replace(/[^0-9.]/g, ""))} className={`${inputCls} w-[130px] max-md:w-full`} style={inputStyle} />
-                {g.type?.toLowerCase() === 'comments' && <label className="flex items-center gap-1.5 text-[13px] cursor-pointer" style={{ color: t.textSoft }}>
-                  <button type="button" onClick={() => setTierCustomComments(v => !v)} className="relative w-[28px] h-[16px] rounded-full border-none cursor-pointer shrink-0 transition-colors duration-150" style={{ background: tierCustomComments ? (dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.15)") : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)") }}>
-                    <span className="absolute top-[2px] w-[12px] h-[12px] rounded-full transition-all duration-150" style={{ left: tierCustomComments ? 14 : 2, background: tierCustomComments ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#666" : "#999") }} />
-                  </button>
-                  Custom Comments
-                </label>}
-                {g.platform === 'Website' && <label className="flex items-center gap-1.5 text-[13px] cursor-pointer" style={{ color: t.textSoft }}>
-                  <button type="button" onClick={() => setTierTrafficTargeting(v => !v)} className="relative w-[28px] h-[16px] rounded-full border-none cursor-pointer shrink-0 transition-colors duration-150" style={{ background: tierTrafficTargeting ? (dark ? "rgba(147,197,253,.18)" : "rgba(37,99,235,.15)") : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)") }}>
-                    <span className="absolute top-[2px] w-[12px] h-[12px] rounded-full transition-all duration-150" style={{ left: tierTrafficTargeting ? 14 : 2, background: tierTrafficTargeting ? (dark ? "#93c5fd" : "#2563eb") : (dark ? "#666" : "#999") }} />
-                  </button>
-                  Traffic Targeting
-                </label>}
-              </div>
-              {tierSvcId && (() => {
-                const svc = services.find(s => s.id === tierSvcId);
-                if (!svc) return null;
-                const costUsd = svc.costPer1k;
-                const costKobo = Math.round(costUsd * usdRate);
-                const sell = Math.round(Number(tierPrice) * 100);
-                const suggested = calculateTierPrice(costUsd, tierLevel, markupSettings);
-                const margin = sell > 0 ? Math.round(((sell - costKobo) / sell) * 100) : 0;
-                const isLow = sell > 0 && sell < Math.ceil(costKobo * 1.5);
-                const markupPct = markupSettings[`markup_${tierLevel.toLowerCase()}`] || "?";
-                return (
-                  <div className="flex gap-3 flex-wrap items-center mb-3 py-2.5 px-3 rounded-lg text-xs" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>
-                    <span>Cost: <b className="m" style={{ color: t.text }}>{formatNaira(Math.round(costKobo / 100))}</b>/1k</span>
-                    <span>Suggested: <b className="m" style={{ color: "#c47d8e" }}>{formatNaira(Math.round(suggested / 100))}</b> ({markupPct}%)</span>
-                    {sell > 0 && <span>Margin: <b className="m" style={{ color: isLow ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{margin}%</b>{isLow && " (low)"}</span>}
-                    {sell > 0 && sell !== suggested && <button onClick={() => setTierPrice((suggested / 100).toFixed(2))} className="bg-transparent text-xs font-semibold cursor-pointer border-none p-0 font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ color: "#c47d8e" }}>Use suggested</button>}
-                  </div>
-                );
-              })()}
-              <button onClick={addTier} className="adm-btn-primary" style={{ opacity: tierSvcId && tierPrice ? 1 : .4 }}>Add Tier</button>
-            </div>
-          )}
-
-          {/* Tiers */}
-          {g.tiers.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-[13px] max-md:hidden">
-                <thead>
-                  <tr style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}` }}>
-                    {["", "Tier", "Service", "Price /1k", "Profit", "Flags", ""].map((h, hi) => (
-                      <th key={hi} className="text-left py-2.5 px-3.5 text-[11px] font-semibold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {g.tiers.map((tier, i) => {
-                    const cKobo = tierCostKobo(tier);
-                    const isEditing = editTier?.id === tier.id;
-                    const m = cKobo != null ? marginPct(tier.sellPer1k, cKobo) : null;
-                    const low = cKobo != null && lowMargin(tier.sellPer1k, cKobo);
-                    const flags = [tier.refill && "refill", tier.pricePinned && "pinned", tier.customComments && "custom", tier.trafficTargeting && "traffic"].filter(Boolean);
-                    return (
-                    <tr key={tier.id} className="transition-[background-color] duration-100 hover:bg-[rgba(196,125,142,.04)]" style={{ borderBottom: i < g.tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` : "none", background: isEditing ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)") : undefined, opacity: tier.enabled ? 1 : .45 }}>
-                      <td className="py-2.5 px-2 w-8">
-                        {g.tiers.length > 1 && (
-                          <div className="flex flex-col gap-0.5">
-                            <button disabled={i === 0} onClick={() => act({ action: "swap-tier-order", tierA: tier.id, tierB: g.tiers[i - 1].id })} className="bg-transparent border-none cursor-pointer p-0 leading-none" style={{ color: i === 0 ? (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") : t.textMuted, cursor: i === 0 ? "default" : "pointer" }} title="Move up">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-                            </button>
-                            <button disabled={i === g.tiers.length - 1} onClick={() => act({ action: "swap-tier-order", tierA: tier.id, tierB: g.tiers[i + 1].id })} className="bg-transparent border-none cursor-pointer p-0 leading-none" style={{ color: i === g.tiers.length - 1 ? (dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.15)") : t.textMuted, cursor: i === g.tiers.length - 1 ? "default" : "pointer" }} title="Move down">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-2.5 px-3.5">
-                        <span className="inline-flex items-center text-[11.5px] font-bold py-[3px] px-2.5 rounded-full" style={{ color: TIER_COLORS[tier.tier] || t.text, background: TIER_BG[tier.tier] || (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)") }}>{tier.tier}</span>
-                      </td>
-                      <td className="py-2.5 px-3.5" style={{ color: t.text }}>
-                        {tier.serviceId ? (
-                          <><ProvTag provider={tier.service?.provider} /><span className="text-[11px]" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.textMuted }}>#{tier.service?.apiId} </span>{tier.service?.name?.slice(0, 40)}</>
-                        ) : (
-                          <LinkServiceInline tierId={tier.id} services={services} dark={dark} t={t} inputStyle={inputStyle} markupSettings={markupSettings} onLink={(svcId) => act({ action: "update-tier", tierIdToUpdate: tier.id, serviceId: svcId })} />
-                        )}
-                      </td>
-                      {isEditing ? (
-                        <td className="py-2.5 px-3.5"><input aria-label="Sell price" value={editTier.price} onChange={e => setEditTier({ ...editTier, price: e.target.value.replace(/[^0-9.]/g, "") })} className="w-[90px] py-1.5 px-2 rounded-md text-[12.5px] outline-none font-[inherit]" style={{ ...inputStyle, borderColor: dark ? "rgba(196,125,142,.4)" : "rgba(196,125,142,.35)", fontFamily: "'JetBrains Mono',monospace" }} /></td>
-                      ) : (
-                        <td className="py-2.5 px-3.5">
-                          <div className="font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono',monospace", fontSize: "13px" }}>₦{(tier.sellPer1k / 100).toFixed(2)}</div>
-                          {cKobo != null && <div className="text-[10.5px]" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono',monospace" }}>cost {formatNaira(Math.round(cKobo / 100))}</div>}
-                        </td>
-                      )}
-                      <td className="py-2.5 px-3.5">
-                        {isEditing || m == null ? <span style={{ color: t.textMuted }}>—</span> : (
-                          <span className="font-bold" style={{ color: low ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669"), fontFamily: "'JetBrains Mono',monospace", fontSize: "13.5px" }}>{m}%{low && <span className="text-[9px] font-extrabold tracking-[.5px] py-0.5 px-1.5 rounded-full ml-1.5" style={{ background: dark ? "rgba(252,165,165,.14)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626" }}>LOW</span>}</span>
-                        )}
-                      </td>
-                      <td className="py-2.5 px-3.5">
-                        {isEditing ? (
-                          <div className="flex flex-col gap-1.5">
-                            {[["pricePinned", "Pinned"], ...(g.type?.toLowerCase() === 'comments' ? [["customComments", "Custom"]] : []), ...(g.platform === 'Website' ? [["trafficTargeting", "Traffic"]] : [])].map(([key, label]) => (
-                              <label key={key} className="flex items-center gap-1.5 text-[11px] cursor-pointer" style={{ color: t.textSoft }}>
-                                <button type="button" onClick={() => setEditTier({ ...editTier, [key]: !editTier[key] })} className="relative w-[28px] h-[16px] rounded-full border-none cursor-pointer shrink-0 transition-colors duration-150" style={{ background: editTier[key] ? (dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.15)") : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)") }}>
-                                  <span className="absolute top-[2px] w-[12px] h-[12px] rounded-full transition-all duration-150" style={{ left: editTier[key] ? 14 : 2, background: editTier[key] ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#666" : "#999") }} />
-                                </button>
-                                {label}
-                              </label>
-                            ))}
-                          </div>
-                        ) : flags.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {tier.refill && <span className="inline-flex items-center gap-1 text-[10px] font-semibold py-[2px] px-[6px] rounded-[5px]" style={{ color: dark ? "#6ee7b7" : "#059669", background: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)" }}>
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Refill</span>}
-                            {tier.pricePinned && <span className="inline-flex items-center gap-1 text-[10px] font-semibold py-[2px] px-[6px] rounded-[5px]" style={{ color: dark ? "#fbbf24" : "#d97706", background: dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.07)" }}>
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V6h1V2H8v4h1v4.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24z"/></svg>Pinned</span>}
-                            {tier.customComments && <span className="inline-flex items-center gap-1 text-[10px] font-semibold py-[2px] px-[6px] rounded-[5px]" style={{ color: dark ? "#c4b5fd" : "#7c3aed", background: dark ? "rgba(196,181,253,.1)" : "rgba(124,58,237,.07)" }}>
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Custom</span>}
-                            {tier.trafficTargeting && <span className="inline-flex items-center gap-1 text-[10px] font-semibold py-[2px] px-[6px] rounded-[5px]" style={{ color: dark ? "#93c5fd" : "#2563eb", background: dark ? "rgba(147,197,253,.1)" : "rgba(37,99,235,.07)" }}>
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>Traffic</span>}
-                          </div>
-                        ) : <span style={{ color: t.textMuted }}>—</span>}
-                      </td>
-                      <td className="py-2.5 px-3.5 whitespace-nowrap">
-                        {isEditing ? (
-                          <span className="flex gap-1.5">
-                            <button onClick={saveTierEdit} disabled={savingTier} className="adm-btn-sm text-[12px]" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", borderColor: "transparent", color: "#fff", opacity: savingTier ? .6 : 1 }}>{savingTier ? "Saving..." : "Save"}</button>
-                            <button onClick={() => setEditTier(null)} disabled={savingTier} className="adm-btn-sm text-[12px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Cancel</button>
-                          </span>
-                        ) : (
-                          <span className="flex gap-1.5 items-center">
-                            <button onClick={() => act({ action: "update-tier", tierIdToUpdate: tier.id, enabled: !tier.enabled })} title={tier.enabled ? "Disable tier" : "Enable tier"} className="relative w-[30px] h-[17px] rounded-full border border-solid cursor-pointer transition-colors duration-200 shrink-0" style={{ background: tier.enabled ? (dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.1)") : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"), borderColor: tier.enabled ? (dark ? "rgba(110,231,183,.4)" : "rgba(5,150,105,.35)") : t.cardBorder }}>
-                              <span className="absolute top-[2px] w-[11px] h-[11px] rounded-full transition-all duration-200" style={{ left: tier.enabled ? 15 : 2, background: tier.enabled ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }} />
-                            </button>
-                            <button onClick={() => setEditTier({ id: tier.id, price: (tier.sellPer1k / 100).toFixed(2), pricePinned: !!tier.pricePinned, customComments: !!tier.customComments, trafficTargeting: !!tier.trafficTargeting })} title="Edit tier" className="adm-btn-sm text-[12px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Edit</button>
-                            <button onClick={async () => { if (await confirm({ title: "Delete Tier", message: "Delete this tier?", confirmLabel: "Delete", danger: true })) act({ action: "delete-tier", tierIdToDelete: tier.id }); }} title="Delete tier" className="adm-btn-sm text-[12px]" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-                            </button>
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {/* Mobile card layout */}
-              <div className="md:hidden">
-                {g.tiers.map((tier, i) => {
-                  const cKobo = tierCostKobo(tier);
-                  const m = cKobo != null ? marginPct(tier.sellPer1k, cKobo) : null;
-                  const low = cKobo != null && lowMargin(tier.sellPer1k, cKobo);
-                  return (
-                    <div key={tier.id} style={{ borderBottom: i < g.tiers.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}` : "none", opacity: tier.enabled ? 1 : .45 }}>
-                      <button type="button" onClick={() => setOpenTiers(o => ({ ...o, [tier.id]: !o[tier.id] }))} className="w-full flex items-center justify-between py-2.5 px-3.5 gap-2 border-none cursor-pointer" style={{ background: "transparent" }}>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="inline-flex items-center text-[10.5px] font-bold py-[2px] px-2 rounded-full shrink-0" style={{ color: TIER_COLORS[tier.tier] || t.text, background: TIER_BG[tier.tier] || (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)") }}>{tier.tier}</span>
-                          <span className="text-[12px] truncate" style={{ color: t.text }}>{tier.service?.name?.slice(0, 30) || "Unlinked"}</span>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {m != null && <span className="font-bold text-[12px]" style={{ fontFamily: "'JetBrains Mono',monospace", color: low ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{m}%</span>}
-                          {low && <span className="text-[8px] font-extrabold tracking-[.5px] py-[1px] px-1.5 rounded-full" style={{ background: dark ? "rgba(252,165,165,.14)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626" }}>LOW</span>}
-                          <svg className="m-chev shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "transform .15s", transform: openTiers[tier.id] ? "rotate(180deg)" : "none" }}><polyline points="6 9 12 15 18 9"/></svg>
-                        </div>
-                      </button>
-                      <div style={{ display: (openTiers[tier.id] || editTier?.id === tier.id) ? "grid" : "none", gridTemplateColumns: "1fr 1fr", gap: "8px", padding: "0 14px 12px" }}>
-                        <div><div className="text-[9px] font-semibold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>Service</div><div className="text-[12px]" style={{ color: t.text }}><ProvTag provider={tier.service?.provider} /><span className="text-[10px]" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.textMuted }}>#{tier.service?.apiId}</span></div></div>
-                        <div><div className="text-[9px] font-semibold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>Sell / Cost</div><div className="text-[12px]" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.text }}>₦{(tier.sellPer1k / 100).toFixed(2)} <span style={{ color: t.textMuted, fontSize: "10px" }}>/ {cKobo != null ? formatNaira(Math.round(cKobo / 100)) : "—"}</span></div></div>
-                        {(tier.refill || tier.pricePinned || tier.customComments || tier.trafficTargeting) && <div style={{ gridColumn: "1 / -1" }}><div className="text-[9px] font-semibold uppercase tracking-[.5px] mb-1" style={{ color: t.textMuted }}>Flags</div><div className="flex flex-wrap gap-1">
-                          {tier.refill && <span className="inline-flex items-center gap-1 text-[9.5px] font-semibold py-[2px] px-[6px] rounded-[4px]" style={{ color: dark ? "#6ee7b7" : "#059669", background: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)" }}>Refill</span>}
-                          {tier.pricePinned && <span className="inline-flex items-center gap-1 text-[9.5px] font-semibold py-[2px] px-[6px] rounded-[4px]" style={{ color: dark ? "#fbbf24" : "#d97706", background: dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.07)" }}>Pinned</span>}
-                          {tier.customComments && <span className="inline-flex items-center gap-1 text-[9.5px] font-semibold py-[2px] px-[6px] rounded-[4px]" style={{ color: dark ? "#c4b5fd" : "#7c3aed", background: dark ? "rgba(196,181,253,.1)" : "rgba(124,58,237,.07)" }}>Custom</span>}
-                          {tier.trafficTargeting && <span className="inline-flex items-center gap-1 text-[9.5px] font-semibold py-[2px] px-[6px] rounded-[4px]" style={{ color: dark ? "#93c5fd" : "#2563eb", background: dark ? "rgba(147,197,253,.1)" : "rgba(37,99,235,.07)" }}>Traffic</span>}
-                        </div></div>}
-                        {editTier?.id === tier.id ? (
-                          <div style={{ gridColumn: "1 / -1", paddingTop: "8px", borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
-                            <div className="text-[9px] font-semibold uppercase tracking-[.5px] mb-1" style={{ color: t.textMuted }}>Sell price per 1k</div>
-                            <div className="flex items-center gap-1.5 mb-2.5">
-                              <span className="text-[13px]" style={{ color: t.textMuted }}>&#8358;</span>
-                              <input aria-label="Sell price" inputMode="decimal" value={editTier.price} onChange={e => setEditTier({ ...editTier, price: e.target.value.replace(/[^0-9.]/g, "") })} className="flex-1 py-2 px-2.5 rounded-md text-[14px] outline-none font-[inherit]" style={{ ...inputStyle, borderColor: dark ? "rgba(196,125,142,.4)" : "rgba(196,125,142,.35)", fontFamily: "'JetBrains Mono',monospace" }} />
-                            </div>
-                            <div className="flex flex-wrap gap-3 mb-2.5">
-                              {[["pricePinned", "Pinned"], ...(g.type?.toLowerCase() === 'comments' ? [["customComments", "Custom"]] : []), ...(g.platform === 'Website' ? [["trafficTargeting", "Traffic"]] : [])].map(([key, label]) => (
-                                <label key={key} className="flex items-center gap-1.5 text-[12px] cursor-pointer" style={{ color: t.textSoft }}>
-                                  <button type="button" onClick={() => setEditTier({ ...editTier, [key]: !editTier[key] })} className="relative w-[32px] h-[18px] rounded-full border-none cursor-pointer shrink-0 transition-colors duration-150" style={{ background: editTier[key] ? (dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.15)") : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.12)") }}>
-                                    <span className="absolute top-[2px] w-[14px] h-[14px] rounded-full transition-all duration-150" style={{ left: editTier[key] ? 16 : 2, background: editTier[key] ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#666" : "#999") }} />
-                                  </button>
-                                  {label}
-                                </label>
-                              ))}
-                            </div>
-                            <div className="flex gap-2">
-                              <button onClick={saveTierEdit} className="adm-btn-primary flex-1 text-[12px] py-2">Save</button>
-                              <button onClick={() => setEditTier(null)} className="adm-btn-sm flex-1 text-[12px] py-2" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Cancel</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ gridColumn: "1 / -1", display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "6px", paddingTop: "4px", borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
-                            <button onClick={() => act({ action: "update-tier", tierIdToUpdate: tier.id, enabled: !tier.enabled })} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: tier.enabled ? (dark ? "#fbbf24" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{tier.enabled ? "Disable" : "Enable"}</button>
-                            <button onClick={() => setEditTier({ id: tier.id, price: (tier.sellPer1k / 100).toFixed(2), pricePinned: !!tier.pricePinned, customComments: !!tier.customComments, trafficTargeting: !!tier.trafficTargeting })} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: t.textMuted }}>Edit</button>
-                            <button onClick={async () => { if (await confirm({ title: "Delete Tier", message: `Delete the ${tier.tier} tier from "${g.name}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) act({ action: "delete-tier", tierIdToDelete: tier.id }); }} className="adm-btn-sm text-[11px]" style={{ borderColor: t.cardBorder, color: dark ? "#fca5a5" : "#dc2626" }}>Delete</button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="py-5 text-sm text-center" style={{ color: t.textMuted }}>No tiers added yet — click "+ Tier" to start</div>
-          )}
-          </>}
-        </div>
-        );
-      })}</div>
-
-      {/* Pagination */}
-      {!loading && totalPages > 1 && (
-        <div className="adm-card mt-3 flex items-center justify-between py-3 px-5" style={{ background: cardBg, border: cardBd }}>
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page === 1 ? .35 : 1 }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            Prev
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-[12px]" style={{ color: t.textMuted }}>
-              <span>Show</span>
-              <select value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }} className="py-1 px-1.5 rounded-md text-[12px] font-medium cursor-pointer font-[inherit]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>
-                {[10, 25, 50].map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </div>
-            <span className="text-[12px] font-medium" style={{ color: t.textMuted }}>Page {page} of {totalPages}</span>
-          </div>
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page >= totalPages ? .35 : 1 }}>
-            Next
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-        </div>
-      )}
     </>
   );
 }
+
+const CSS = `
+.mb{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.mb *{box-sizing:border-box}
+.mb .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mb-card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.mb-new{display:grid;grid-template-columns:2fr 1.2fr 1fr auto auto;gap:10px;align-items:end;padding:14px 16px}
+.mb-fld{display:flex;flex-direction:column;gap:6px;min-width:0}.mb-fld label{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
+.mb-in{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13px;outline:none;min-width:0;width:100%}.mb-in:focus{border-color:var(--ac)}
+.mb-chk{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--mut);white-space:nowrap}.mb-chk input{accent-color:var(--ac)}
+.mb-fld-chk{height:36px}
+.mb-b{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap}.mb-b.sm{padding:5px 9px;font-size:11.5px}.mb-b.danger{color:var(--bad)}
+.mb-pri{font:inherit;font-size:13px;font-weight:800;padding:9px 14px;border-radius:10px;border:0;background:var(--ac);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(196,125,142,.28);white-space:nowrap;height:36px}.mb-pri.sm{height:auto;padding:6px 11px;font-size:12px;box-shadow:none}.mb-pri:disabled{opacity:.45;cursor:default;box-shadow:none}
+/* toolbar */
+.mb-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mb-srch{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);color:var(--dim);font-size:13px;min-width:250px;flex:1;max-width:420px}.mb-srch svg{width:14px;height:14px}.mb-srch input{flex:1;min-width:0;border:0;outline:none;background:transparent;color:var(--ink);font:inherit;font-size:13px}
+.mb-sel{position:relative;display:inline-flex;align-items:center;height:36px;border-radius:10px;background:var(--card);border:1px solid var(--line)}.mb-sel select{appearance:none;border:0;background:transparent;color:var(--ink);font:inherit;font-size:13px;font-weight:600;padding:0 30px 0 12px;height:100%;outline:none;cursor:pointer}.mb-sel svg{position:absolute;right:10px;width:13px;height:13px;color:var(--dim);pointer-events:none}
+.mb-tgl{display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:12.5px;font-weight:600;color:var(--mut);background:transparent;border:0;cursor:pointer;padding:0}.mb-tgl:first-of-type{margin-left:auto}
+.mb-tgl i{width:30px;height:18px;border-radius:9px;background:var(--line);position:relative;display:inline-block;transition:background .15s}.mb-tgl i::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--card);transition:left .15s}.mb-tgl.on i{background:var(--ac)}.mb-tgl.on i::after{left:14px}.mb-tgl.on{color:var(--ink)}
+/* list */
+.mb-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.mb-empty{padding:18px 16px;font-size:13px;color:var(--dim)}
+.mb-sec{font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);padding:10px 14px 6px;background:var(--soft);border-bottom:1px solid var(--line);display:flex;align-items:center}.mb-sec i{display:inline-flex;margin-right:7px;color:var(--mut)}.mb-sec span{font-weight:600;letter-spacing:0;text-transform:none;color:var(--dim);margin-left:8px}
+.mb-grp{border-top:1px solid var(--rail)}.mb-grp.goff{opacity:.55}
+.mb-gh{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;min-width:0}
+.mb-chev{width:8px;height:8px;border-right:1.5px solid var(--dim);border-bottom:1.5px solid var(--dim);transform:rotate(45deg);flex-shrink:0;margin-right:2px;transition:transform .15s}.mb-chev.up{transform:rotate(-135deg)}
+.mb-gi{width:30px;height:30px;border-radius:9px;background:var(--soft);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.mb-gname{display:flex;align-items:center;gap:8px;min-width:0;flex:1}.mb-gname b{font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mb-gtype{font-size:11px;color:var(--dim)}
+.mb-ng{font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:2px 6px;border-radius:999px;background:var(--ngbg);color:var(--ng)}
+.mb-pills{display:flex;gap:5px;flex-shrink:0}.mb-pill{display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:3px 8px 3px 4px;border-radius:999px;border:1px solid var(--line);color:var(--ink);background:var(--card)}
+.mb-pill i{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-size:9.5px;font-weight:800;font-style:normal;color:#fff}
+.mb-pill.bud i{background:var(--bud)}.mb-pill.std i{background:var(--std)}.mb-pill.prm i{background:var(--prm)}.mb-pill.off{opacity:.45;text-decoration:line-through}.mb-pill.empty{color:var(--dim);font-family:Outfit,sans-serif;font-weight:500;padding:3px 8px}
+.mb-tog{width:34px;height:20px;border-radius:10px;background:var(--ok);position:relative;flex-shrink:0;display:inline-block;border:0;padding:0;cursor:pointer}.mb-tog i{position:absolute;top:2px;left:16px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}.mb-tog.o{background:var(--line)}.mb-tog.o i{left:2px}
+/* tier rows */
+.mb-gb{background:var(--card)}
+.mb-tr{display:grid;grid-template-columns:86px 120px 52px 1fr 108px 34px auto;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--rail);font-size:12.5px}.mb-tr.off>*:not(.mb-acts):not(.mb-tog):not(.mb-panel){opacity:.5}
+.mb-tchip{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:4px 9px;border-radius:999px;text-align:center}.mb-tchip.bud{background:var(--budbg);color:var(--bud)}.mb-tchip.std{background:var(--stdbg);color:var(--std)}.mb-tchip.prm{background:var(--prmbg);color:var(--prm)}
+.mb-price{font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:5px}.mb-price small{font-size:10px;color:var(--dim);font-weight:500}
+.mb-lock{width:9px;height:11px;border:1.5px solid var(--mut);border-radius:2px;position:relative;display:inline-block}.mb-lock::before{content:"";position:absolute;left:1px;top:-5px;width:4px;height:5px;border:1.5px solid var(--mut);border-bottom:0;border-radius:3px 3px 0 0}
+.mb-gm{font-weight:700;font-size:12px;color:var(--dim)}.mb-gm.good{color:var(--ok)}.mb-gm.mid{color:var(--warn)}.mb-gm.low{color:var(--bad)}
+.mb-svc-cell{display:grid;grid-template-columns:auto auto 1fr;gap:2px 7px;align-items:center;min-width:0}
+.mb-prov{font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;padding:1px 5px;border-radius:5px;color:#fff;background:#6b7280}.mb-prov.mtp{background:#ef4444}.mb-prov.dao{background:#22c55e}.mb-prov.jap{background:#3b82f6}
+.mb-sid{font-size:11px;color:var(--dim)}.mb-sn{color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.mb-sm{grid-column:1/-1;font-size:11px;color:var(--dim)}
+.mb-meta{font-size:11.5px;color:var(--mut);line-height:1.35;display:flex;flex-direction:column}.mb-meta em{font-style:normal;color:var(--dim)}
+.mb-acts{display:flex;gap:4px}
+.mb-panel{grid-column:1/-1;margin-top:4px;padding:12px;border-radius:12px;background:var(--soft);border:1px solid var(--line)}
+.mb-ph{font-size:12.5px;color:var(--mut);margin-bottom:10px}.mb-ph b{color:var(--ink)}
+.mb-edit{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.mb-edit label{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--mut)}.mb-edit .mb-in{width:120px;height:32px}.mb-spacer{flex:1}
+.mb-srch.mb-srch{max-width:none}
+.mb-svcs .mb-srch{width:100%;margin-bottom:8px}
+.mb-svcl{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.mb-svc{display:grid;grid-template-columns:auto auto 1fr auto auto;gap:8px;align-items:center;width:100%;text-align:left;padding:8px 10px;border:0;border-top:1px solid var(--rail);background:transparent;color:var(--ink);font:inherit;font-size:12.5px;cursor:pointer}.mb-svc:first-child{border-top:0}.mb-svc:hover{background:var(--soft)}
+.mb-add .mb-addrow{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}.mb-add .mb-in{width:170px;height:34px}
+.mb-segs{display:inline-flex;gap:3px;padding:3px;border-radius:9px;background:var(--card);border:1px solid var(--line)}.mb-seg{font:inherit;font-size:12px;font-weight:600;padding:6px 10px;border-radius:6px;border:0;background:transparent;color:var(--mut);cursor:pointer}.mb-seg.on{background:var(--acbg);color:var(--ink)}
+.mb-picked{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:12.5px;margin-bottom:10px}.mb-picked .mb-b{margin-left:auto}
+.mb-acts-r{display:flex;justify-content:flex-end;gap:6px}
+.mb-gfoot{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--rail);background:var(--soft)}
+.mb-addt{font:inherit;font-size:12.5px;font-weight:700;color:var(--ac);background:transparent;border:1px dashed var(--acln);border-radius:9px;padding:6px 11px;cursor:pointer}.mb-gacts{display:flex;gap:4px}
+@media (max-width:767px){
+  .mb-new{grid-template-columns:1fr}
+  .mb-bar{gap:8px}.mb-srch{max-width:none;width:100%}.mb-sel{flex:1}.mb-sel select{width:100%}.mb-tgl{margin-left:0!important;flex:1;justify-content:center;height:36px;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:0 10px}
+  .mb-gh{display:grid;grid-template-columns:auto auto 1fr auto;grid-template-areas:"chev icon name tog" "pills pills pills pills";gap:8px 10px;padding:12px}
+  .mb-chev{grid-area:chev}.mb-gi{grid-area:icon}.mb-gname{grid-area:name;flex-wrap:wrap}.mb-gh .mb-tog{grid-area:tog}.mb-pills{grid-area:pills;flex-wrap:wrap}
+  .mb-gb{padding:8px;display:flex;flex-direction:column;gap:8px}
+  .mb-tr{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"chip price gm" "svc svc svc" "meta meta tog" "acts acts acts" "panel panel panel";gap:8px 10px;padding:11px 12px;border:1px solid var(--line);border-radius:12px}
+  .mb-tchip{grid-area:chip}.mb-price{grid-area:price}.mb-gm{grid-area:gm;font-size:13px;text-align:right}.mb-svc-cell{grid-area:svc}.mb-meta{grid-area:meta;flex-direction:row;gap:8px}.mb-tr .mb-tog{grid-area:tog;justify-self:end}.mb-acts{grid-area:acts;padding-top:8px;border-top:1px solid var(--rail)}.mb-panel{grid-area:panel;margin-top:0}
+  .mb-gfoot{flex-wrap:wrap;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--line)}.mb-addt{flex:1;text-align:center}.mb-gacts{width:100%}.mb-gacts .mb-b{flex:1}
+}
+`;
