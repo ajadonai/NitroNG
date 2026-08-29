@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { watBounds } from '@/lib/format';
 import { log } from '@/lib/logger';
 import { tgOutreach } from '@/lib/telegram';
 import { sendOutreach as ifySendOutreach } from '@/lib/ify/outreach';
@@ -59,8 +60,7 @@ const MAX_RUN = 90;
 // is smaller, so an over-subscribed set of caps can no longer starve Backlog.
 const BACKLOG_FLOOR = 15;
 async function sentTodayCount() {
-  const startOfToday = new Date();
-  startOfToday.setUTCHours(0, 0, 0, 0);
+  const { todayStart: startOfToday } = watBounds();
   return prisma.user.count({
     where: {
       OR: [
@@ -157,11 +157,11 @@ export async function GET(req) {
       const baseWhere = poolWhere('backlog');
 
       const now = new Date();
-      const day = now.getUTCDay();
+      // The weekend window is counted in Lagos time.
+      const wat = new Date(now.getTime() + 3600000);
+      const day = wat.getUTCDay();
       const daysSinceSat = (day + 1) % 7;
-      const lastSat = new Date(now);
-      lastSat.setUTCDate(lastSat.getUTCDate() - daysSinceSat);
-      lastSat.setUTCHours(0, 0, 0, 0);
+      const lastSat = new Date(Date.UTC(wat.getUTCFullYear(), wat.getUTCMonth(), wat.getUTCDate() - daysSinceSat) - 3600000);
       const weekendEnd = new Date(lastSat);
       weekendEnd.setUTCDate(weekendEnd.getUTCDate() + 2);
 

@@ -15,6 +15,9 @@ never gets picked up twice. Update this in the same commit as the work.
   payment. **Paused (26 Aug 2026): no staff.** The whole outreach machine is
   off via Admin → Outreach → Pause (`outreach_paused` setting); resume there
   when there is a team again, then pick this up.
+- **Marketing pages not yet remodelled** — Outreach, Crew, Promotions,
+  Acquisition, Changelog, Tasks and Blog still wear the old layout. Mock each
+  before rebuilding; their skeletons are fixed with the rebuild, not before.
 - **Cohort / ops** — anything the nightly cohort check surfaces (see the
   protected routes in CLAUDE.md).
 
@@ -22,6 +25,8 @@ never gets picked up twice. Update this in the same commit as the work.
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-08-30 | Today starts at Lagos midnight on the server everywhere (Payments facts, Users week/month, outreach day windows) | `e8592c4b` v2.4.47 |
+| 2026-08-30 | Solid surfaces in both themes on the rebuilt admin pages: selected chips readable in dark mode, drawers and menus opaque | `fac27f45` v2.4.46 |
 | 2026-08-30 | Skeleton pass: a shared kit shaped like the pages (facts, toolbar, rows) on both sides; no grey slabs, spinners or Loading… text; Orders and Users dim instead of blanking while paging | `9900fd6e` v2.4.45 |
 | 2026-08-30 | Overview rebuilt: today against yesterday, a needs-you strip of doors that open the page pre-filtered, orders by the hour, latest orders, newest customers, what the team did | `9aaffc24` v2.4.44 |
 | 2026-08-29 | Refills is a queue, oldest ask first, Send refill and Reset on the row, facts row and Handled list; phone cards read top to bottom | `8bac61e4` v2.4.43 |
