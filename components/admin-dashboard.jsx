@@ -347,10 +347,9 @@ function AdminDashboardInner({ initialData }) {
   useEffect(() => { try { const saved = localStorage.getItem("nitro-admin-page"); if (saved) setActiveRaw(saved); } catch {} }, []);
 
   const [leftOpen, setLeftOpen] = useState(false);
-  // The rail: one section open at a time (opening another closes the previous), following the page you are on.
-  const sectionOf = (id) => ADMIN_NAV.find(sec => sec.items.some(it => it.id === id))?.section || null;
-  const [openSection, setOpenSection] = useState(() => sectionOf(active));
-  useEffect(() => { const sec = sectionOf(active); if (sec) setOpenSection(sec); }, [active]);
+  // The rail: every section starts folded; one opens at a time (opening another closes the previous).
+  // Picking a page inside a section keeps that section open; the pinned tiles and the jump box do not open one.
+  const [openSection, setOpenSection] = useState(null);
   const [jump, setJump] = useState("");
   const jumpRef = useRef(null);
   useEffect(() => {
@@ -861,7 +860,7 @@ function AdminDashboardInner({ initialData }) {
                         {pins.map(item => (
                           <button key={item.id} type="button" className={"rail-pin" + (active === item.id ? " on" : "")} onClick={() => go(item.id)}>
                             <span className="rail-ii">{item.icon}</span>
-                            <span>{item.id === "create-order" ? "Create" : item.label}</span>
+                            <span>{item.id === "create-order" ? "Create order" : item.label}</span>
                             {badgeOf(item) != null && <b className="m rail-pb">{badgeOf(item)}</b>}
                           </button>
                         ))}
@@ -876,7 +875,6 @@ function AdminDashboardInner({ initialData }) {
                         <div key={section.section} className={"rail-acc" + (open ? " open" : "")}>
                           <button type="button" className="rail-ah" onClick={() => setOpenSection(open ? null : section.section)} aria-expanded={open}>
                             <span className="rail-an">{section.section}</span>
-                            <span className="rail-ac">{items.length}</span>
                             {!open && folded > 0 && <span className="m rail-bd">{folded > 9 ? "9+" : folded}</span>}
                             <span className="rail-chev">{CHEV}</span>
                           </button>
