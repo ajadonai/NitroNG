@@ -92,7 +92,7 @@ export function AdminActivityPage({ dark, t }) {
   const metaOf = (ev) => ev.meta && typeof ev.meta === "object" ? Object.entries(ev.meta).filter(([, v]) => v != null && v !== "") : [];
 
   const vars = {
-    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)", "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828", "--badbg": dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.06)",
   };
   const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
@@ -336,7 +336,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
   const ROLE_LINE = { owner: "Everything. Only one, cannot be changed.", superadmin: "Everything, including the team and settings.", admin: "Most pages. Pages and abilities can be trimmed or added.", support: "Orders and users. Approving money is a grant.", finance: "Payments and the books. Nothing else.", staff: "Overview, orders, refills, users and outreach." };
   const roleColor = (r) => (ROLE_INFO[r] || { color: "#6ee7b7" }).color;
   const vars = {
-    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828", "--in": dark ? "#131728" : "#fff",
   };
   const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
@@ -1066,7 +1066,7 @@ export function AdminMaintenancePage({ dark, t }) {
   const left = mins - elapsed;
   const headline = mins < 60 ? `Back in about ${mins} minutes` : mins === 60 ? "Back in about an hour" : mins % 60 === 0 ? `Back in about ${mins / 60} hours` : `Back in about ${Math.floor(mins / 60)}h ${mins % 60}m`;
   const vars = {
-    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7", "--bg": t.bg || (dark ? "#0b0e1a" : "#e8e2d9"),
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7", "--bg": t.bg || (dark ? "#0b0e1a" : "#e8e2d9"),
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--warnbg": dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)",
   };
   const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
@@ -1204,7 +1204,7 @@ export function AdminAPIPage({ dark, t }) {
   const lastSyncAt = PROVIDERS.map(p => info[p.id]?.lastSync?.at).filter(Boolean).sort().pop();
   const ago = (iso) => { if (!iso) return null; const diff = Date.now() - new Date(iso).getTime(); if (diff < 3600e3) return `${Math.max(1, Math.round(diff / 60e3))} min ago`; if (diff < 86400e3) return `${new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} today`; return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
   const vars = {
-    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828",
   };
   const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
@@ -1979,7 +1979,7 @@ export function AdminIssuesPage({ dark, t }) {
   const labelsFor = (i) => i.type === "crypto_payment_review" ? ["Approve", "Reject"] : ["Resolve", "Ignore"];
   const canAct = (i) => i.type !== "crypto_payment_review" || canResolveCryptoReviews;
   const vars = {
-    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--warnbg": dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)", "--bad": dark ? "#fca5a5" : "#c62828", "--badbg": dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.07)",
   };
   const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;

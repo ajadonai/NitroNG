@@ -121,7 +121,7 @@ function AdminOverview({ data, dark, t, setActive, openOrders }) {
   const PF = { tiktok: "TT", instagram: "IG", youtube: "YT", facebook: "FB", twitter: "X", x: "X", telegram: "TG", discord: "DC", spotify: "SP", threads: "TH", snapchat: "SC", linkedin: "LI", website: "WEB", traffic: "WEB" };
   const okStatus = (st) => st === "Completed" ? "ok" : st === "Cancelled" || st === "Failed" ? "bad" : "warn";
   const vars = {
-    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828",
   };
   return (

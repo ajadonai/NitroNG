@@ -152,7 +152,7 @@ export function AdminPaymentsPage({ dark, t }) {
   const liveDoors = gateways.filter(g => g.enabled);
   const methodTotal = (facts?.byMethod || []).reduce((n, m) => n + m.amount, 0) || 1;
   const vars = {
-    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)", "--ok": dark ? "#6ee7b7" : "#0a7d54", "--okbg": dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", "--warn": dark ? "#fcd34d" : "#b45309", "--warnbg": dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)", "--bad": dark ? "#fca5a5" : "#c62828",
   };
   const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
@@ -418,7 +418,7 @@ function FinanceOverviewTab({ dark, t }) {
   const methodName = (m) => ({ flutterwave: "Flutterwave", manual: "Bank transfer", crypto: "Crypto", paystack: "Paystack" })[m] || m.charAt(0).toUpperCase() + m.slice(1);
   const dayLabel = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
   const vars = {
-    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--bad": dark ? "#fca5a5" : "#c62828", "--cost": dark ? "#5c6170" : "#a19b93", "--in": dark ? "#a5b4fc" : "#4c62c4",
   };
   const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
@@ -676,7 +676,7 @@ function FinanceBreakdownTab({ dark, t, admin }) {
     </section>
   );
   const vars = {
-    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--bad": dark ? "#fca5a5" : "#c62828", "--cost": dark ? "#5c6170" : "#a19b93", "--in": dark ? "#a5b4fc" : "#4c62c4",
     "--bud": dark ? "#e0a458" : "#854F0B", "--std": dark ? "#7aa2f7" : "#185FA5", "--prm": dark ? "#a78bfa" : "#534AB7", "--soft": dark ? "#111634" : "#faf9f7",
   };
@@ -819,7 +819,7 @@ function FinanceRewardsTab({ dark, t }) {
   const ladder = data?.statusLadder || [];
   const maxLadder = Math.max(1, ...ladder.map(x => x.orders || 0));
   const vars = {
-    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--bad": dark ? "#fca5a5" : "#c62828", "--soft": dark ? "#111634" : "#faf9f7",
   };
   const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
