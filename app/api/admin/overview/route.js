@@ -107,6 +107,7 @@ export async function GET() {
       partials,
       unreadTicketCount, pendingManualCount, pendingOrderCount, openIssueCount, pendingTaskReviewCount,
       pendingRefillCount,
+      yesterdayOrders, yesterdayUsers, pendingDispatchCount, hourRows,
     ] = await Promise.all([
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.order.count({ where: { deletedAt: null } }),
@@ -128,7 +129,13 @@ export async function GET() {
       prisma.taskSubmission.count({ where: { status: 'pending' } }).catch(() => 0),
       // Refill requests waiting on an admin, for the sidebar badge.
       prisma.order.count({ where: { refillRequestedAt: { not: null }, refillHandledAt: null, deletedAt: null } }),
+      // Yesterday's orders and sign-ups, and orders by the hour today (Lagos hours), for the overview.
+      prisma.order.count({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null } }),
+      prisma.user.count({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, emailVerified: true } }),
+      prisma.order.count({ where: { status: 'Pending', deletedAt: null, queuedBehind: null } }).catch(() => 0),
+      prisma.$queryRaw`select extract(hour from ("createdAt" + interval '1 hour'))::int as h, count(*)::int as n, coalesce(sum(charge), 0)::bigint as c from orders where "createdAt" >= ${todayStart} and "deletedAt" is null group by 1`.catch(() => []),
     ]);
+    const ordersByHour = Array.from({ length: 24 }, (_, h) => { const r = hourRows.find(x => Number(x.h) === h); return { h, n: r ? Number(r.n) : 0, revenue: r ? Number(r.c) / 100 : 0 }; });
 
     const partialAll = partials;
     const partialToday = partials.filter(p => p.createdAt >= todayStart);
@@ -156,7 +163,7 @@ export async function GET() {
       prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
         take: 5,
-        select: { id: true, name: true, email: true, createdAt: true, _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } } },
+        select: { id: true, name: true, email: true, createdAt: true, balance: true, _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } } },
       }),
       prisma.ticket.findMany({
         where: { status: 'Open' },
@@ -198,6 +205,8 @@ export async function GET() {
       ordersToday: todayOrders,
       newUsersToday: todayUsers,
       revenueChange: pctChange(todayRevenue, yesterdayRevenue),
+      revenueYesterday: yesterdayRevenue,
+      depositsYesterday: yesterdayDeposits,
       depositsChange: pctChange(todayDeposits, yesterdayDeposits),
       totalRevenue: rev.net,
       grossRevenue: rev.gross,
@@ -217,6 +226,11 @@ export async function GET() {
       pendingRefillCount,
       openIssueCount,
       pendingTaskReviewCount,
+      ordersYesterday: yesterdayOrders,
+      newUsersYesterday: yesterdayUsers,
+      partialCount: partials.length,
+      pendingDispatchCount,
+      ordersByHour,
       openTickets: openTickets.map(tk => ({
         id: tk.ticketId || tk.id,
         subject: tk.subject,
@@ -242,6 +256,7 @@ export async function GET() {
         name: u.name,
         email: sensitive ? u.email : maskEmail(u.email),
         orders: u._count.orders,
+        balance: (u.balance || 0) / 100,
         created: u.createdAt.toISOString(),
       })),
       activity: await (async () => {
