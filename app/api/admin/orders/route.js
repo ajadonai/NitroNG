@@ -475,13 +475,13 @@ export async function POST(req) {
           await refillOrder(provider, order.apiOrderId);
         } catch (e) { log.warn(`Admin Refill ${providerLabel}`, e.message); }
       }
-      await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: new Date() } });
+      await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: new Date(), refillHandledAt: new Date() } });
       await logActivity(admin.name, `Requested refill for ${orderId} (${providerLabel})`, 'order');
       return Response.json({ success: true, message: 'Refill requested' });
     }
 
     if (action === 'reset_refill') {
-      await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: null } });
+      await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: null, refillHandledAt: null } });
       await logActivity(admin.name, `Reset refill for ${orderId}`, 'order');
       return Response.json({ success: true, message: 'Refill reset — user can request again' });
     }

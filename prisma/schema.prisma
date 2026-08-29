@@ -321,6 +321,7 @@ model Order {
   refundedAt              DateTime?
   redispatchedAt          DateTime?
   refillRequestedAt       DateTime?
+  refillHandledAt         DateTime?   // set when an admin sends the refill; cleared when the customer asks again
   parentOrderId           String?
   source                  String    @default("web") // "web" | "api"
   loyaltyDiscount         Int       @default(0)
