@@ -1,5 +1,6 @@
 export const maxDuration = 60;
 
+import { serviceDisplay } from '@/lib/service-display';
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { checkOrder } from '@/lib/smm';
@@ -497,7 +498,7 @@ export async function GET(req) {
                     data: {
                       type: 'order_failure',
                       title: `1 service rejected by provider`,
-                      message: `${svc.name} (${pid.toUpperCase()} #${svc.apiId})`,
+                      message: `${serviceDisplay(svc.name).title} (${pid.toUpperCase()} #${svc.apiId})`,
                       metadata: JSON.stringify({ count: 1, services: [entry] }),
                     },
                   });
