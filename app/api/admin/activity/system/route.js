@@ -1,3 +1,4 @@
+import { serviceDisplay } from '@/lib/service-display';
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { requireAdmin } from '@/lib/admin';
@@ -59,7 +60,7 @@ export async function GET() {
           detail: o.lastError,
           meta: {
             orderId: o.orderId, status: o.status,
-            retries: o.retryCount, service: o.service?.name,
+            retries: o.retryCount, service: serviceDisplay(o.service?.name).title,
             provider: o.service?.provider || 'mtp', user: o.user?.name,
           },
           time: (o.updatedAt || o.createdAt).toISOString(),
@@ -77,7 +78,7 @@ export async function GET() {
         detail: orders[0].lastError,
         meta: {
           batchId, orderCount: orders.length, status: latest.status,
-          retries: maxRetries, service: orders.map(o => o.service?.name).filter(Boolean)[0],
+          retries: maxRetries, service: orders.map(o => o.service?.name).filter(Boolean).map(x => serviceDisplay(x).title)[0],
           provider: orders[0].service?.provider || 'mtp', user: orders[0].user?.name,
         },
         time: (latest.updatedAt || latest.createdAt).toISOString(),
@@ -94,7 +95,7 @@ export async function GET() {
         detail: `${o.remains ?? '?'} of ${o.quantity} remaining`,
         meta: {
           orderId: o.orderId, batchId: o.batchId,
-          service: o.service?.name, user: o.user?.name,
+          service: serviceDisplay(o.service?.name).title, user: o.user?.name,
           delivered: o.quantity - (o.remains || 0), total: o.quantity,
         },
         time: o.updatedAt.toISOString(),
