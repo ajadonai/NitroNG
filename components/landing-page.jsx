@@ -94,7 +94,7 @@ function LandingInner({ initialAuthQuery }){
   const [socialLinks,setSocialLinks]=useState({});
   const [pricingData,setPricingData]=useState(null);
 
-  useEffect(()=>{const el=scrollRef.current;if(!el)return;const onScroll=()=>setScrolled(el.scrollTop>20);el.addEventListener("scroll",onScroll);return()=>el.removeEventListener("scroll",onScroll);},[]);
+  useEffect(()=>{const el=scrollRef.current;if(!el)return;const onScroll=()=>setScrolled(Math.max(el.scrollTop,window.scrollY)>20);el.addEventListener("scroll",onScroll);window.addEventListener("scroll",onScroll,{passive:true});return()=>{el.removeEventListener("scroll",onScroll);window.removeEventListener("scroll",onScroll);};},[]);
   useEffect(()=>{trackViewContent({content_name:'homepage',content_type:'landing'});},[]);
   useEffect(()=>{if(initialVia)fetch('/api/click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:initialVia})}).catch(()=>{});},[initialVia]);
   const [logoutMsg,setLogoutMsg]=useState(false);
@@ -172,14 +172,14 @@ function LandingInner({ initialAuthQuery }){
   }),[dark,baseT]);
 
   return(
-    <div className="root h-dvh overflow-hidden flex flex-col" suppressHydrationWarning>
+    <div className="root h-dvh overflow-hidden flex flex-col max-desktop:h-auto max-desktop:min-h-dvh max-desktop:overflow-visible" suppressHydrationWarning>
       <style suppressHydrationWarning>{`
         .root{background:${t.bg};color:${t.text};transition:background 1.2s ease,color 1.2s ease}
       `}</style>
 
       {/* ═══ NAVBAR — outside snap container ═══ */}
-      <nav className="main-nav px-8 max-desktop:px-7 max-md:px-3.5 h-14 max-md:h-[52px] flex items-center justify-between shrink-0 z-[100]" style={{background:dark?"#0e1122":scrolled?"rgba(139,74,94,.98)":"rgba(163,88,107,.96)",borderBottom:`0.5px solid ${dark?"rgba(255,255,255,.16)":"rgba(255,255,255,.24)"}`,transition:"background 1.2s ease"}}>
-          <button onClick={()=>scrollRef.current?.scrollTo({top:0,behavior:"smooth"})} className="nav-brand flex items-center gap-2.5 bg-transparent p-0">
+      <nav className="main-nav px-8 max-desktop:px-7 max-md:px-3.5 h-14 max-md:h-[52px] flex items-center justify-between shrink-0 z-[100] max-desktop:sticky max-desktop:top-0" style={{background:dark?"#0e1122":scrolled?"rgba(139,74,94,.98)":"rgba(163,88,107,.96)",borderBottom:`0.5px solid ${dark?"rgba(255,255,255,.16)":"rgba(255,255,255,.24)"}`,transition:"background 1.2s ease"}}>
+          <button onClick={()=>{scrollRef.current?.scrollTo({top:0,behavior:"smooth"});window.scrollTo({top:0,behavior:"smooth"});}} className="nav-brand flex items-center gap-2.5 bg-transparent p-0">
             <span className="md:hidden w-[30px] h-[30px] rounded-lg flex items-center justify-center" style={{background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",boxShadow:"0 2px 8px rgba(196,125,142,.3)"}}><svg width="12" height="13" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></span>
             <span className="max-md:hidden h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
           </button>
@@ -194,7 +194,7 @@ function LandingInner({ initialAuthQuery }){
       </nav>
       <PublicNavSheet open={navOpen} onClose={()=>setNavOpen(false)} dark={dark} toggleTheme={toggleTheme} onLogin={()=>{setNavOpen(false);setModal("login")}} onSignup={()=>{setNavOpen(false);setModal("signup")}} />
 
-      <div ref={scrollRef} className="snap-container flex-1 overflow-y-auto overflow-x-hidden relative">
+      <div ref={scrollRef} className="snap-container flex-1 overflow-y-auto overflow-x-hidden relative max-desktop:flex-none max-desktop:overflow-y-visible max-desktop:overflow-x-clip">
 
         {/* Site-wide announcement banner */}
         <AnnouncementBanner alerts={siteAlerts} dark={dark} mode="landing" />
