@@ -507,7 +507,7 @@ describe('recoverStalePendingPayments', () => {
 
     const stats = await recoverStalePendingPayments();
 
-    expect(stats).toMatchObject({ checked: 10, retryable: 10 });
+    expect(stats).toMatchObject({ checked: 10, retryable: 7, retryableTerminal: 3 });
     expect(maxInFlight).toBe(4);
     expect(mocks.reconcileFlutterwaveDeposit).toHaveBeenCalledTimes(10);
     for (const [input] of mocks.reconcileFlutterwaveDeposit.mock.calls) {

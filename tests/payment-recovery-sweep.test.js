@@ -251,6 +251,28 @@ describe('gradual backoff for old deposits', () => {
     expect(stats.errors).toEqual([]);
   });
 
+  it('does not raise the stuck signal for a retryable read on a row that is already closed', async () => {
+    const now = new Date('2026-07-20T12:00:00.000Z');
+    const d = deposit({
+      id: 'tx-closed',
+      status: 'Expired',
+      createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+      paymentReconciliationAttemptAt: new Date(now.getTime() - 10 * 60 * 1000),
+    });
+    useExpiredBackoffBuckets([d]);
+    mocks.reconcileFlutterwaveDeposit.mockResolvedValue({
+      paymentState: 'retryable',
+      newlyFinalized: false,
+      finalization: null,
+    });
+
+    const stats = await recoverStalePendingPayments({ now });
+
+    expect(stats.retryable).toBe(0);
+    expect(stats.retryableTerminal).toBe(1);
+    expect(mocks.reportOperationalFailure).not.toHaveBeenCalledWith('stuck_payments', expect.anything());
+  });
+
   it('throttles a 5-hour-old deposit with a 30-minute-old attempt (hourly tier)', async () => {
     const now = new Date('2026-07-20T12:00:00.000Z');
     const d = deposit({
