@@ -7,6 +7,7 @@
 // the questions that matter. Joining is a WhatsApp message and a switch on our
 // side; the key appears here and in Settings once approved. No child panel.
 import { useEffect, useState } from 'react';
+import { RailSec, RailCard, RailRow, RailLink } from "./rail";
 import { Bone } from "./skeleton";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
@@ -224,18 +225,16 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
   );
 }
 
-export function ResellerHQSidebar({ dark, t, onNavigate }) {
+export function ResellerHQSidebar({ onNavigate }) {
+  const facts = [['Base URL', 'https://nitro.ng/api/v2'], ['Actions', 'services · add · status · refill · balance · cancel'], ['Your key', 'At the top of this page, and in Settings'], ['Prices', 'Retail for every account, wholesale by approval']];
   return (
-    <div className="flex flex-col gap-0">
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.08)' }}>Quick reference</div>
-      {[['Base URL', 'https://nitro.ng/api/v2'], ['Actions', 'services · add · status · refill · balance · cancel'], ['Your key', 'At the top of this page, and in Settings'], ['Prices', 'Retail for every account, wholesale by approval']].map(([k, v]) => (
-        <div key={k} className="py-2.5 px-2.5 rounded-lg mb-1.5" style={{ background: t.cardBg }}>
-          <div className="text-[11px] uppercase tracking-[.5px] mb-0.5 text-t-text-muted">{k}</div>
-          <div className="text-[13px] font-medium break-words text-t-text">{v}</div>
-        </div>
-      ))}
-      <a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="mt-1 py-2 px-2.5 rounded-lg text-[13px] font-semibold no-underline text-center text-accent" style={{ background: dark ? 'rgba(196,125,142,.12)' : 'rgba(196,125,142,.08)' }}>Open the API docs</a>
-      <button type="button" onClick={() => onNavigate?.('catalogue')} className="mt-1.5 py-2 px-2.5 rounded-lg text-[13px] font-semibold border-none cursor-pointer text-t-text-soft" style={{ background: t.cardBg }}>Browse the catalogue</button>
+    <div className="rr">
+      <RailSec>The API</RailSec>
+      <RailCard>
+        {facts.map(([k, v]) => <RailRow key={k} title={v} sub={k} />)}
+      </RailCard>
+      <RailLink href="/resellers/docs">Read the docs</RailLink>
+      <RailLink onClick={() => onNavigate?.('catalogue')}>Open the catalogue</RailLink>
     </div>
   );
 }

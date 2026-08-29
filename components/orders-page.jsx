@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, Fragment } from "react";
+import { RailSec, RailCard, RailFact, RailRow, RailNote, RailEmpty } from "./rail";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
@@ -142,25 +143,6 @@ function DayLabel({ label, dark }) {
 }
 
 /** The summary as rows: label left, value right. Used by the header dropdown and the sidebar. */
-function SummaryRows({ orderSummary, dark, t }) {
-  const rows = [
-    ["Total orders", String(orderSummary?.total ?? 0), null],
-    ["Delivering now", String(orderSummary?.active || 0), dark ? "#a5b4fc" : "#4f46e5"],
-    (orderSummary?.attention || 0) > 0 ? ["Needs attention", String(orderSummary.attention), dark ? "#fdba74" : "#c2410c"] : null,
-    ["Completed", String(orderSummary?.completed || 0), dark ? "#6ee7b7" : "#059669"],
-    ["Total spent", fN(orderSummary?.spent || 0), t.accent],
-  ].filter(Boolean);
-  return (
-    <div>
-      {rows.map(([label, val, color], i) => (
-        <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-soft" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
-          <span className="flex items-center gap-2">{label === "Delivering now" && Number(val) > 0 && <span className="w-[7px] h-[7px] rounded-full animate-pulse" style={{ background: "#4f46e5" }} />}{label}</span>
-          <b className="m text-[15px] font-semibold" style={{ color: color || t.text }}>{val}</b>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function Badge({ status, dark }) {
   return <span className="text-[11px] font-semibold py-0.5 px-1.5 rounded-[5px] border-[0.5px] whitespace-nowrap inline-block leading-tight" style={{ background: sBg(status, dark), color: sClr(status, dark), borderColor: sBrd(status, dark) }}>{status}</span>;
@@ -924,43 +906,26 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDERS RIGHT SIDEBAR                ═══ */
 /* ═══════════════════════════════════════════ */
-export function OrdersSidebar({ orders, orderSummary, dark, t }) {
+export function OrdersSidebar({ orders, orderSummary, dark }) {
   const activeCount = orderSummary?.active || 0;
   const attentionCount = orderSummary?.attention || 0;
-  const completedCount = orderSummary?.completed || 0;
-  const totalSpent = orderSummary?.spent || 0;
-  const totalOrders = orderSummary?.total ?? 0;
-
   return (
-    <div className="flex flex-col gap-0">
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Order Summary</div>
-      <div className="rounded-xl mb-3 px-3" style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.07)"}` }}>
-        <SummaryRows orderSummary={orderSummary} dark={dark} t={t} />
-      </div>
-      {activeCount > 0 && (
-        <div className="flex gap-2.5 items-start rounded-xl px-3.5 py-3 mb-3" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(251,191,36,.1)", border: `1px solid ${dark ? "rgba(251,191,36,.2)" : "rgba(217,119,6,.18)"}` }}>
-          <span className="text-base leading-none mt-px shrink-0">⏱</span>
-          <div className="text-[11px] leading-[1.55]" style={{ color: dark ? "#fbbf24" : "#92400e" }}>
-            <span className="font-semibold">Delivery: 0–6 hrs</span> (up to 24 hrs in some cases). We cannot act on speed requests within the first 6 hours.
-          </div>
-        </div>
-      )}
-
-      <div className="h-px mb-3 bg-t-sidebar-border" />
-
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Recent Activity</div>
-      {orders.slice(0, 5).map(o => (
-        <div key={o.id} className="py-2 px-2.5 rounded-lg mb-1 bg-t-card-bg">
-          <div className="flex items-center gap-2.5">
-            <PlatformIcon platform={o.platform} dark={dark} size={28} />
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{o.service}</div>
-              {o.tier && <div className="text-[11px] font-medium text-accent">{o.tier}</div>}
-              <div className="text-[11px] text-t-text-muted">{o.created ? fD(o.created, true) : ""}</div>
-            </div>
-          </div>
-        </div>
-      ))}
+    <div className="rr">
+      <RailSec>Your orders</RailSec>
+      <RailCard>
+        <RailFact label="Total" value={String(orderSummary?.total ?? 0)} />
+        <RailFact label="Delivering now" value={String(activeCount)} color={activeCount ? (dark ? "#a5b4fc" : "#4f46e5") : undefined} />
+        {attentionCount > 0 && <RailFact label="Needs attention" value={String(attentionCount)} color={dark ? "#fdba74" : "#c2410c"} />}
+        <RailFact label="Completed" value={String(orderSummary?.completed || 0)} />
+        <RailFact label="Spent" value={fN(orderSummary?.spent || 0)} />
+      </RailCard>
+      {activeCount > 0 && <RailNote>Delivery takes 0 to 6 hours, up to 24 in a few cases. Speed requests are looked at after the first 6 hours.</RailNote>}
+      <RailSec>Recent</RailSec>
+      <RailCard>
+        {orders.length === 0 ? <RailEmpty>No orders yet.</RailEmpty> : orders.slice(0, 5).map(o => (
+          <RailRow key={o.id} tile={<PlatformIcon platform={o.platform} dark={dark} size={16} />} title={o.service} sub={`${o.created ? fD(o.created, true) : ""}${o.tier ? ` · ${o.tier}` : ""}${o.status ? ` · ${o.status}` : ""}`} right={o.charge != null ? fN(o.charge) : null} />
+        ))}
+      </RailCard>
     </div>
   );
 }

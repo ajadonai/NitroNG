@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from "react";
+import { RailSec, RailCard, RailRow, RailLink, RailEmpty, RailLegend } from "./rail";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
 import { NitroWordmark } from "./nitro-logo";
@@ -255,84 +256,41 @@ function PlaceholderPage({ title, subtitle, dark, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ RIGHT SIDEBAR                       ═══ */
 /* ═══════════════════════════════════════════ */
-function AdminRightSidebar({ data, dark, t, active, admin }) {
+function AdminRightSidebar({ data, dark, t, active, admin, setActive }) {
   const isSensitive = admin?.role === 'owner' || admin?.role === 'superadmin';
   const showProviderColors = isSensitive && ["orders", "services", "menu-builder", "pricing", "finance", "payments"].includes(active);
   const showActivity = !["leaderboard"].includes(active);
-
   const activityTypeMap = {
-    overview: null,
-    orders: ["order"],
-    finance: ["order", "payment", "user"],
-    users: ["user"],
-    blog: ["blog"],
+    overview: null, orders: ["order"], finance: ["order", "payment", "user"], users: ["user"], blog: ["blog"],
     tickets: ["ticket"], // support moved to WhatsApp — page kept for history
-    services: ["service"],
-    "menu-builder": ["service"],
-    pricing: ["service", "settings"],
-    payments: ["payment"],
-    team: ["admin"],
-    coupons: ["coupon"],
-    alerts: ["alert"],
-    promotions: ["promotion"],
-    settings: ["settings", "maintenance"],
-    notifications: ["notification"],
-    maintenance: ["maintenance"],
-    issues: ["system", "alert"],
-    api: ["settings"],
-    crew: ["crew"],
-    acquisition: ["acquisition"],
+    services: ["service"], "menu-builder": ["service"], pricing: ["service", "settings"], payments: ["payment"], team: ["admin"], coupons: ["coupon"],
+    alerts: ["alert"], promotions: ["promotion"], settings: ["settings", "maintenance"], notifications: ["notification"], maintenance: ["maintenance"],
+    issues: ["system", "alert"], api: ["settings"], crew: ["crew"], acquisition: ["acquisition"],
   };
   const allowedTypes = activityTypeMap[active] || null;
-  const filteredActivity = allowedTypes
-    ? (data.activity || []).filter(a => allowedTypes.includes(a.type))
-    : (data.activity || []);
+  const filteredActivity = allowedTypes ? (data.activity || []).filter(a => allowedTypes.includes(a.type)) : (data.activity || []);
   const activityLabel = {
-    orders: "Order Activity", finance: "Financial Activity", users: "User Activity",
-    blog: "Blog Activity", tickets: "Ticket Activity", services: "Service Activity",
-    "menu-builder": "Service Activity", pricing: "Pricing Activity", payments: "Payment Activity",
-    team: "Team Activity", coupons: "Coupon Activity", alerts: "Alert Activity", promotions: "Promotion Activity",
-    notifications: "Notification Activity", maintenance: "Maintenance Activity",
-  }[active] || "Recent Activity";
-
-  const activityDotColor = (type) => type === "order" ? t.green : type === "user" ? t.blue : type === "deposit" || type === "payment" ? t.green : type === "ticket" ? t.amber : type === "blog" ? (dark ? "#a5b4fc" : "#4f46e5") : t.accent;
-
+    orders: "Orders, by the team", finance: "Money, by the team", users: "Users, by the team", blog: "Blog activity", tickets: "Ticket activity",
+    services: "Catalogue activity", "menu-builder": "Catalogue activity", pricing: "Pricing activity", payments: "Payments, by the team",
+    team: "Team changes", coupons: "Coupon activity", alerts: "Notice activity", promotions: "Promotion activity", notifications: "Notification activity", maintenance: "Maintenance activity",
+  }[active] || "What the team did";
+  const ini = (n) => (n || "S").replace(/\s*\(TG\)\s*$/, "").split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+  const when = (iso) => { const d = new Date(iso); return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
   return (
-    <>
-      {showProviderColors && (
-        <div className="shrink-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Providers</div>
-          <div className="rounded-[14px] py-2.5 px-3.5 flex gap-4 bg-t-card-bg" style={{ border: `1px solid ${t.cardBorder}` }}>
-            {[["MTP", "#ef4444"], ["JAP", "#3b82f6"], ["DAO", "#22c55e"]].map(([name, color]) => (
-              <div key={name} className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ background: color }} />
-                <span className="text-xs font-semibold text-t-text-soft">{name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {showActivity && (
-        <div className="flex-1 overflow-auto min-h-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>{activityLabel}</div>
-          <div className="rounded-[14px] p-1.5 bg-t-card-bg" style={{ border: `1px solid ${t.cardBorder}` }}>
-            {filteredActivity.slice(0, 6).map((a, i) => (
-              <div key={i} className="flex gap-2.5 py-2.5 px-2.5 rounded-[10px]" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` : "none" }}>
-                <div className="w-[6px] h-[6px] rounded-full mt-[7px] shrink-0" style={{ background: activityDotColor(a.type) }} />
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-t-text">{(a.action || "").split("\n")[0]}</div>
-                  {(a.action || "").includes("\n") && <div className="text-[12px] mt-0.5 text-t-text-muted">{a.action.split("\n")[1]}</div>}
-                  <div className="text-[12px] mt-0.5 text-t-text-muted">{a.detail}</div>
-                  <div className="text-[11px] mt-0.5 text-t-text-muted opacity-70">{a.time ? fD(a.time) : ""}</div>
-                </div>
-              </div>
-            ))}
-            {filteredActivity.length === 0 && <div className="text-sm py-3 px-3 text-t-text-muted">No recent activity</div>}
-          </div>
-        </div>
-      )}
-    </>
+    <div className="rr" style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+      {showActivity && <>
+        <RailSec action={<RailLink onClick={() => setActive?.("activity")}>All logs</RailLink>}>{activityLabel}</RailSec>
+        <RailCard>
+          {filteredActivity.length === 0 ? <RailEmpty>Nothing yet.</RailEmpty> : filteredActivity.slice(0, 6).map((a, i) => (
+            <RailRow key={i} tile={ini(a.detail)} round title={(a.detail || "System").replace(/\s*\(TG\)\s*$/, "")} sub={(a.action || "").split("\n")[0]} right={a.time ? when(a.time) : null} />
+          ))}
+        </RailCard>
+      </>}
+      {showProviderColors && <>
+        <RailSec>Providers</RailSec>
+        <RailLegend items={[["MTP", "#ef4444"], ["DAO", "#22c55e"], ["JAP", "#3b82f6"]]} />
+      </>}
+    </div>
   );
 }
 
@@ -973,7 +931,7 @@ function AdminDashboardInner({ initialData }) {
         </main>
 
         <div className="dash-right bg-t-sidebar-bg" style={{ borderLeft: `0.5px solid ${t.sidebarBorder}` }}>
-          {active === "create-order" ? <div id="create-order-sidebar" className="flex flex-col gap-4 flex-1 overflow-auto min-h-0" /> : active === "leaderboard" ? <AdminLeaderboardSidebar dark={dark} t={t} /> : <AdminRightSidebar data={data} dark={dark} t={t} active={active} admin={admin} />}
+          {active === "create-order" ? <div id="create-order-sidebar" className="flex flex-col gap-4 flex-1 overflow-auto min-h-0" /> : active === "leaderboard" ? <AdminLeaderboardSidebar dark={dark} t={t} /> : <AdminRightSidebar data={data} dark={dark} t={t} active={active} admin={admin} setActive={setActive} />}
         </div>
       </div>
     </div>

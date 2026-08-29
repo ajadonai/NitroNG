@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { RailSec, RailCard, RailRow, RailEmpty } from "./rail";
 import { SkelList } from "./skeleton";
 import { fN, fD } from "../lib/format";
 import { SegPill } from "./seg-pill";
@@ -348,33 +349,21 @@ export default function AdminLeaderboardPage({ dark, t }) {
 }
 
 /* ═══ RIGHT SIDEBAR — Recent Rewards ═══ */
-export function AdminLeaderboardSidebar({ dark, t }) {
+export function AdminLeaderboardSidebar() {
   const [rewards, setRewards] = useState([]);
   useEffect(() => {
     fetch("/api/admin/leaderboard?period=all").then(r => r.json()).then(d => setRewards(d.rewards || [])).catch(() => {});
   }, []);
-
   const total = rewards.reduce((s, r) => s + (r.amount || 0), 0);
-
+  const ini = (n) => (n || "?").split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
   return (
-    <>
-      <div className="mt-2.5 text-xs font-semibold uppercase tracking-[1px] mb-2.5 py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Recent Rewards</div>
-      {rewards.length > 0 && (
-        <div className="text-[11px] mb-2.5 px-1 flex justify-between" style={{ color: t.textMuted }}>
-          <span>{rewards.length} total</span>
-          <span className="font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(total)}</span>
-        </div>
-      )}
-      {rewards.length > 0 ? rewards.slice(0, 8).map((r, i) => (
-        <div key={r.id} className="py-2 px-1" style={{ borderBottom: i < Math.min(rewards.length, 8) - 1 ? `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` : "none" }}>
-          <div className="flex justify-between items-center">
-            <span className="text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{fN(r.amount)}</span>
-            <span className="text-[11px]" style={{ color: t.textMuted }}>{r.date ? new Date(r.date).toLocaleDateString("en-NG", { month: "short", day: "numeric" }) : ""}</span>
-          </div>
-          <div className="text-[13px] mt-px" style={{ color: t.text }}>{r.user?.name || "Unknown"}</div>
-          <div className="text-[11px] mt-px" style={{ color: t.textMuted }}>{r.note}</div>
-        </div>
-      )) : <div className="text-[13px] py-2 px-1" style={{ color: t.textMuted }}>No rewards yet</div>}
-    </>
+    <div className="rr">
+      <RailSec action={rewards.length > 0 ? <span className="m">{fN(total)}</span> : null}>Recent rewards</RailSec>
+      <RailCard>
+        {rewards.length === 0 ? <RailEmpty>No rewards yet.</RailEmpty> : rewards.slice(0, 8).map(r => (
+          <RailRow key={r.id} tile={ini(r.user?.name)} round title={r.user?.name || "Unknown"} sub={`${r.date ? new Date(r.date).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : ""}${r.note ? ` · ${r.note}` : ""}`} right={`+${fN(r.amount)}`} />
+        ))}
+      </RailCard>
+    </div>
   );
 }

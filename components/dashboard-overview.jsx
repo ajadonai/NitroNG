@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from "react";
+import { RailSec, RailCard, RailFact, RailRow, RailLink, RailBtn, RailEmpty } from "./rail";
 import { Modal } from "./ui-primitives";
 import { PlatformIcon } from "./platform-icon";
 import { fN, fD } from "../lib/format";
@@ -279,36 +280,29 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
   const avgQty = orderSummary?.averageQuantity || 0;
   const memberDate = user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "—";
   const wkOrders = orderSummary?.thisWeek || 0;
-
-  const statTiles = [
-    { label: "Top platform", value: topPlatform ? topPlatform.charAt(0).toUpperCase() + topPlatform.slice(1) : "—", iconBg: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg> },
-    { label: "Avg size", value: avgQty > 0 ? avgQty.toLocaleString() : "—", iconBg: dark ? "rgba(165,180,252,.1)" : "rgba(79,70,229,.07)", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#a5b4fc" : "#4f46e5"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg> },
-    { label: "This week", value: wkOrders > 0 ? String(wkOrders) : "0", iconBg: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.06)", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
-    { label: "Member", value: memberDate, iconBg: dark ? "rgba(224,164,88,.08)" : "rgba(217,119,6,.06)", icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#e0a458" : "#d97706"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
-  ];
-
+  const pctOf = (o) => { const qty = o.quantity || 0; if (!qty) return 0; const delivered = o.status === "Completed" ? qty : o.remains != null ? Math.max(0, qty - Math.max(0, o.remains)) : 0; return Math.min(100, Math.round(delivered / qty * 100)); };
   return (
-    <div className="flex flex-col gap-3">
-      <div className="rounded-[14px] px-3.5 bg-t-card-bg" style={{ border: `1px solid ${t.cardBorder}` }}>
-        <div className="text-[10.5px] font-semibold uppercase tracking-[1px] pt-2.5 pb-0.5 text-t-text-muted">Your stats</div>
-        {statTiles.map(({ label, value }, i) => (
-          <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-soft" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}><span>{label === "Avg size" ? "Average order" : label === "Member" ? "Member since" : label}</span><b className="m text-[14px] font-semibold text-t-text">{value}</b></div>
+    <div className="rr">
+      <RailSec>Your stats</RailSec>
+      <RailCard>
+        <RailFact label="Top platform" value={topPlatform ? topPlatform.charAt(0).toUpperCase() + topPlatform.slice(1) : "—"} mono={false} />
+        <RailFact label="Average order" value={avgQty > 0 ? avgQty.toLocaleString() : "—"} />
+        <RailFact label="This week" value={`${wkOrders} order${wkOrders === 1 ? "" : "s"}`} />
+        <RailFact label="Member since" value={memberDate} mono={false} />
+      </RailCard>
+      <RailSec action={activeCount > 0 ? <RailLink onClick={() => setActive("orders")}>View all</RailLink> : null}>Delivering now</RailSec>
+      <RailCard>
+        {activeCount === 0 ? <RailEmpty>Nothing delivering right now.</RailEmpty> : activeOrders.slice(0, 5).map(o => (
+          <RailRow key={o.id} tile={<PlatformIcon platform={o.platform} dark={dark} size={16} />} title={o.service} sub={`${o.id || ""}${o.tier ? ` · ${o.tier}` : ""}`} right={`${pctOf(o)}%`} bar={pctOf(o)} onClick={() => setActive("orders")} />
         ))}
-      </div>
-      <div>
-        <SectionHead action={activeCount > 0 ? <button onClick={() => setActive("orders")} className="text-[12px] font-semibold bg-transparent border-none cursor-pointer font-[inherit] text-accent">View all</button> : null}>Delivering now</SectionHead>
-        <div className="rounded-[14px] overflow-hidden bg-t-card-bg" style={{ border: `1px solid ${t.cardBorder}` }}>
-          {activeCount === 0 && <div className="py-4 px-3.5 text-[13px] text-t-text-muted">Nothing delivering right now.</div>}
-          {activeOrders.slice(0, 5).map((o, i) => <OrderRow key={o.id} o={o} first={i === 0} dark={dark} t={t} onClick={() => setActive("orders")} />)}
-        </div>
-      </div>
-      <div className="rounded-[14px] px-3.5 bg-t-card-bg" style={{ border: `1px solid ${t.cardBorder}` }}>
-        <div className="text-[10.5px] font-semibold uppercase tracking-[1px] pt-2.5 pb-0.5 text-t-text-muted">Referral</div>
-        {[["Your code", <b key="c" className="m text-[14px] font-semibold tracking-[1.5px] text-accent">{user?.refCode || "—"}</b>],["Referrals", <b key="r" className="m text-[14px] font-semibold text-t-text">{user?.refs || 0}</b>],["Earned", <b key="e" className="m text-[14px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(user?.earnings || 0)}</b>]].map(([label, val], i) => (
-          <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-soft" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}><span>{label}</span>{val}</div>
-        ))}
-        <button onClick={() => setActive("referrals")} className="w-full my-2.5 py-2 rounded-lg text-[13px] font-semibold border-none cursor-pointer text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>Invite friends</button>
-      </div>
+      </RailCard>
+      <RailSec>Referral</RailSec>
+      <RailCard>
+        <RailFact label="Your code" value={user?.refCode || "—"} color="var(--t-accent)" />
+        <RailFact label="Referrals" value={user?.refs || 0} />
+        <RailFact label="Earned" value={fN(user?.earnings || 0)} />
+      </RailCard>
+      <RailBtn onClick={() => setActive("referrals")}>Invite friends</RailBtn>
     </div>
   );
 }
