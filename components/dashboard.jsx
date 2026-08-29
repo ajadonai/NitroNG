@@ -1264,16 +1264,15 @@ function DashboardInner({ initialData }) {
                 const isSupportItem = item.id === "support";
                 const isTasksItem = item.id === "tasks";
                 const isActive = active === item.id;
-                const specialClr = isSupportItem ? "#25d366" : isTasksItem ? (dark ? "#60a5fa" : "#2563eb") : null;
+                const specialClr = isSupportItem ? "#25d366" : (isTasksItem || item.id === "resellers") ? (dark ? "#60a5fa" : "#2563eb") : null;
                 return (
                   <Fragment key={item.id}>
-                    {item.first && i > 0 && <div className="h-px my-1 mx-3 bg-t-sidebar-border" />}
-                    {item.first && <div className="dash-nav-eyebrow text-t-text-muted">{item.section}</div>}
-                    <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setLeftOpen(false); return; } setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: isActive ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : specialClr ? (dark ? `${specialClr}1e` : `${specialClr}14`) : "transparent", color: item.soon ? t.textMuted : (isActive ? t.accent : specialClr || t.textSoft), fontWeight: isActive || specialClr ? 600 : 450, opacity: item.soon ? 0.5 : 1, cursor: item.soon ? "default" : "pointer" }}>
-                      <span className="shrink-0" style={{ opacity: isActive || specialClr ? 1 : .55, color: isActive ? (specialClr || t.accent) : specialClr || t.textMuted }}>{I[item.id]}</span>
-                      {item.label}
+                    {item.first && <div className="rail-sec"><span>{item.section}</span></div>}
+                    <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem && socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setLeftOpen(false); return; } setActive(item.id); setLeftOpen(false); }} className={"rail-it" + (isActive ? " on" : "") + (specialClr && !isActive ? " tint" : "") + (item.soon ? " soon" : "")} style={specialClr ? { "--ic": specialClr } : undefined}>
+                      <span className="rail-ii">{I[item.id]}</span>
+                      <span className="rail-il">{item.label}</span>
                       {item.soon && <span className="text-[11px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
-                      {processingCount > 0 && <span className="m dash-nav-badge">{processingCount > 99 ? "99+" : processingCount}</span>}
+                      {processingCount > 0 && <span className="m rail-bd">{processingCount > 99 ? "99+" : processingCount}</span>}
                     </button>
                   </Fragment>
                 );

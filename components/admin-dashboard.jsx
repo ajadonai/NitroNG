@@ -333,6 +333,8 @@ function AdminRightSidebar({ data, dark, t, active, admin }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ MAIN ADMIN SHELL                    ═══ */
 /* ═══════════════════════════════════════════ */
+const ADMIN_PINS = ["overview", "orders", "users", "create-order"];
+
 export default function AdminDashboard({ initialData }) {
   return <ThemeProvider storageKey="nitro-admin-theme"><AdminDashboardInner initialData={initialData} /></ThemeProvider>;
 }
@@ -345,6 +347,22 @@ function AdminDashboardInner({ initialData }) {
   useEffect(() => { try { const saved = localStorage.getItem("nitro-admin-page"); if (saved) setActiveRaw(saved); } catch {} }, []);
 
   const [leftOpen, setLeftOpen] = useState(false);
+  // The rail: one section open at a time (opening another closes the previous), following the page you are on.
+  const sectionOf = (id) => ADMIN_NAV.find(sec => sec.items.some(it => it.id === id))?.section || null;
+  const [openSection, setOpenSection] = useState(() => sectionOf(active));
+  useEffect(() => { const sec = sectionOf(active); if (sec) setOpenSection(sec); }, [active]);
+  const [jump, setJump] = useState("");
+  const jumpRef = useRef(null);
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const tag = (e.target?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select" || e.target?.isContentEditable) return;
+      e.preventDefault(); jumpRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const [admin, setAdmin] = useState(() => {
     if (!initialData) return null;
     const d = initialData;
@@ -807,25 +825,70 @@ function AdminDashboardInner({ initialData }) {
 
       {/* ═══ BODY ═══ */}
       <div className="dash-body">
-        <aside className="dash-left admin-sidebar bg-t-sidebar-bg" style={{ borderRight: `0.5px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined }}>
-          {ADMIN_NAV.map((section, si) => {
+        <aside className="dash-left admin-sidebar rail-adm bg-t-sidebar-bg" style={{ borderRight: `0.5px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined }}>
+          {(() => {
             const ap = admin?.pages;
-            const visibleItems = ap === "*" ? section.items : section.items.filter(item => ap?.includes(item.id));
-            if (visibleItems.length === 0) return null;
-            return (
-            <div key={section.section}>
-              {si > 0 && <div className="h-px my-1 mx-3 bg-t-sidebar-border" />}
-              <div className="adm-nav-section text-t-text-muted">{section.section}</div>
-              {visibleItems.map(item => (
-                <button key={item.id} onClick={() => { setActive(item.id); setLeftOpen(false); }} className="dash-nav-item" style={{ background: active === item.id ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)") : "transparent", color: active === item.id ? t.accent : t.textSoft, fontWeight: active === item.id ? 600 : 450 }}>
-                  <span className="shrink-0" style={{ opacity: active === item.id ? 1 : .55, color: active === item.id ? t.accent : t.textMuted }}>{item.icon}</span>
-                  {item.label}
-                  {item.badge && badgeCounts[item.badge] > 0 && <span className="m dash-nav-badge">{item.badge === 'orders' ? badgeCounts[item.badge] : badgeCounts[item.badge] > 9 ? "9+" : badgeCounts[item.badge]}</span>}
-                </button>
-              ))}
-            </div>
+            const canSee = (id) => ap === "*" || ap?.includes(id);
+            const allItems = ADMIN_NAV.flatMap(sec => sec.items.map(it => ({ ...it, section: sec.section }))).filter(it => canSee(it.id));
+            const go = (id) => { setActive(id); setLeftOpen(false); setJump(""); };
+            const badgeOf = (item) => item.badge && badgeCounts[item.badge] > 0 ? (item.badge === "orders" ? badgeCounts[item.badge] : badgeCounts[item.badge] > 9 ? "9+" : badgeCounts[item.badge]) : null;
+            const CHEV = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>;
+            const row = (item) => (
+              <button key={item.id} type="button" className={"rail-it" + (active === item.id ? " on" : "")} onClick={() => go(item.id)}>
+                <span className="rail-ii">{item.icon}</span>
+                <span className="rail-il">{item.label}</span>
+                {badgeOf(item) != null && <span className="m rail-bd">{badgeOf(item)}</span>}
+              </button>
             );
-          })}
+            const q = jump.trim().toLowerCase();
+            const matches = q ? allItems.filter(it => it.label.toLowerCase().includes(q) || it.id.includes(q)) : [];
+            const pins = ADMIN_PINS.map(id => allItems.find(it => it.id === id)).filter(Boolean);
+            const pinned = new Set(pins.map(it => it.id));
+            return (
+              <>
+                <div className="rail-jump">
+                  <span className="rail-ji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="20" y1="20" x2="16.5" y2="16.5" /></svg></span>
+                  <input ref={jumpRef} value={jump} onChange={e => setJump(e.target.value)} placeholder="Jump to a page" aria-label="Jump to a page"
+                    onKeyDown={e => { if (e.key === "Enter" && matches[0]) go(matches[0].id); if (e.key === "Escape") { setJump(""); e.currentTarget.blur(); } }} />
+                  {!jump && <kbd>/</kbd>}
+                </div>
+                {q ? (
+                  matches.length ? matches.map(row) : <div className="rail-empty">No page called “{jump.trim()}”.</div>
+                ) : (
+                  <>
+                    {pins.length > 0 && (
+                      <div className="rail-pins">
+                        {pins.map(item => (
+                          <button key={item.id} type="button" className={"rail-pin" + (active === item.id ? " on" : "")} onClick={() => go(item.id)}>
+                            <span className="rail-ii">{item.icon}</span>
+                            <span>{item.id === "create-order" ? "Create" : item.label}</span>
+                            {badgeOf(item) != null && <b className="m rail-pb">{badgeOf(item)}</b>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {ADMIN_NAV.map(section => {
+                      const items = section.items.filter(it => canSee(it.id) && !pinned.has(it.id));
+                      if (items.length === 0) return null;
+                      const open = openSection === section.section;
+                      const folded = items.reduce((n, it) => n + (it.badge && badgeCounts[it.badge] > 0 ? Number(badgeCounts[it.badge]) : 0), 0);
+                      return (
+                        <div key={section.section} className={"rail-acc" + (open ? " open" : "")}>
+                          <button type="button" className="rail-ah" onClick={() => setOpenSection(open ? null : section.section)} aria-expanded={open}>
+                            <span className="rail-an">{section.section}</span>
+                            <span className="rail-ac">{items.length}</span>
+                            {!open && folded > 0 && <span className="m rail-bd">{folded > 9 ? "9+" : folded}</span>}
+                            <span className="rail-chev">{CHEV}</span>
+                          </button>
+                          {open && items.map(row)}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </>
+            );
+          })()}
           <div className="flex-1" />
           <div className="dash-sidebar-divider bg-t-sidebar-border" />
           <div className="pt-1 px-3.5 pb-2">
