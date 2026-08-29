@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { FilterDropdown } from "./date-range-picker";
@@ -41,7 +41,16 @@ export default function AdminServicesPage({ dark, t }) {
     return () => { clearInterval(iv); document.removeEventListener("visibilitychange", onVis); };
   }, [fetchServices]);
 
-  const categories = [...new Set(services.map(s => s.category))].filter(Boolean).sort((a, b) => a.localeCompare(b));
+  // Order of things everywhere on this page: the ones we actually use first (by orders), then
+  // the rest A to Z, then names that start with a number, then whatever starts with a symbol.
+  const titles = useMemo(() => new Map(services.map(s => [s.id, serviceDisplay(s.name).title])), [services]);
+  const rank = (name) => /^[a-z]/i.test(name) ? 0 : /^[0-9]/.test(name) ? 1 : 2;
+  const byName = (a, b) => rank(a) - rank(b) || a.localeCompare(b, undefined, { sensitivity: "base" });
+  const categories = useMemo(() => {
+    const orders = {};
+    services.forEach(s => { if (s.category) orders[s.category] = (orders[s.category] || 0) + (s.orders || 0); });
+    return Object.keys(orders).sort((a, b) => (orders[b] > 0 || orders[a] > 0 ? orders[b] - orders[a] : 0) || byName(a, b));
+  }, [services]);
   const providers = [...new Set(services.map(s => s.provider || "mtp"))];
   const sensitive = services.some(s => s.costPer1k != null);
   const activeCount = services.filter(s => s.enabled).length;
@@ -61,8 +70,14 @@ export default function AdminServicesPage({ dark, t }) {
     }
     return true;
   });
-  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
-  const paged = filtered.slice((page - 1) * perPage, page * perPage);
+  const sorted = [...filtered].sort((a, b) => {
+    const ao = a.orders || 0, bo = b.orders || 0;
+    if ((ao > 0) !== (bo > 0)) return ao > 0 ? -1 : 1;
+    if (ao !== bo) return bo - ao;
+    return byName(titles.get(a.id) || "", titles.get(b.id) || "");
+  });
+  const totalPages = Math.max(1, Math.ceil(sorted.length / perPage));
+  const paged = sorted.slice((page - 1) * perPage, page * perPage);
 
   const post = async (body) => {
     const res = await fetch("/api/admin/services", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -183,7 +198,7 @@ export default function AdminServicesPage({ dark, t }) {
         )) : paged.length === 0 ? (
           <div className="rs-empty">{services.length === 0 ? "No services yet. They appear once a provider is synced." : "Nothing matches these filters."}</div>
         ) : paged.map(s => {
-          const d = serviceDisplay(s.name);
+          const d = { title: titles.get(s.id) || s.name, facts: serviceDisplay(s.name).facts };
           const open = expanded === s.id;
           const prov = s.provider || "mtp";
           return (
