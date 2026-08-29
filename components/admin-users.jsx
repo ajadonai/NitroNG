@@ -528,7 +528,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   /* ── Render ───────────────────────────────────── */
 
   const vars = {
-    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
     "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--acbg": dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)", "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)",
     "--ok": dark ? "#6ee7b7" : "#0a7d54", "--okbg": dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828",
@@ -549,6 +549,13 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   useEffect(() => { setTxAll(false); }, [drawerUser?.id]);
   // Below 900px the profile is a sheet over the list rather than a column beside it.
   const [drawerOpenMobile, setDrawerOpenMobile] = useState(false);
+  // A sheet over the list: nothing behind it scrolls or takes taps while it is up.
+  useEffect(() => {
+    if (!(drawerUser && drawerOpenMobile)) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [drawerUser, drawerOpenMobile]);
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 900px)');
     const sync = () => setDrawerOpenMobile(mq.matches);
@@ -758,7 +765,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
           {!loading && totalPages > 1 && (
             <div className="us-pg">
               <span className="us-cnt">{rangeStart.toLocaleString()}–{rangeEnd.toLocaleString()} of {filteredCount.toLocaleString()}</span>
-              <span className="us-row" style={{ flex: '0 0 auto' }}>
+              <span className="us-pgn">
                 <button type="button" className="us-ib" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} aria-label="Previous page"><ChevronLeft /></button>
                 <span className="us-cnt" style={{ alignSelf: 'center', padding: '0 4px' }}>{page} of {totalPages}</span>
                 <button type="button" className="us-ib" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} aria-label="Next page"><ChevronRight /></button>
@@ -845,6 +852,7 @@ const US_CSS = `
 .us-ib{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);font:inherit;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
 .us-ib svg{width:13px;height:13px}.us-ib.wa{color:#25d366}.us-ib:disabled{opacity:.4;cursor:not-allowed}
 .us-pg{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}
+.us-pgn{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap}
 .us-empty{padding:28px 14px;text-align:center;font-size:13px;color:var(--mut)}
 .us-dr{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px;position:sticky;top:14px;min-width:0}
 .us-grab{display:none}

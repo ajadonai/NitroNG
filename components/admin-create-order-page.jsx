@@ -275,8 +275,8 @@ export function AdminCreateOrderPage({ dark, t }) {
     "--bud": dark ? "#e0a458" : "#854F0B", "--budbg": dark ? "#2d2210" : "#fef7ed", "--std": dark ? "#7aa2f7" : "#185FA5", "--stdbg": dark ? "#0f1e30" : "#eef4fb", "--prm": dark ? "#a78bfa" : "#534AB7", "--prmbg": dark ? "#221535" : "#f5eef5",
   };
   const TIER_CLS = { Budget: "bud", Standard: "std", Premium: "prm" };
-  // Gross margin on the sale, the figure the tier chip and the summary both show.
-  const gm = (sell, cost) => sell > 0 ? Math.round((sell - cost) / sell * 100) : 0;
+  // Profit on cost, the figure the tier chip and the summary both show: (sell − cost) ÷ cost.
+  const gm = (sell, cost) => cost > 0 ? Math.round((sell - cost) / cost * 100) : 0;
   const first = user?.name?.split(" ")[0] || "";
   const hourLabel = (h) => { const ap = h >= 12 ? "PM" : "AM"; return `${h === 0 ? 12 : h > 12 ? h - 12 : h}${ap}`; };
   const dayAmounts = hasDripSchedule ? distributeByCurve(qtyNum, effectiveDripDays, dripCurve, dripPause ? dripPauseDay : 0, selectedTier?.service?.min || 50) : [];
@@ -497,7 +497,7 @@ export function AdminCreateOrderPage({ dark, t }) {
               </div>
             </div>
             <div className="co-fld">
-              <label>Tier <em>price per 1k · margin</em></label>
+              <label>Tier <em>price per 1k · profit</em></label>
               {selectedGroup ? (
                 tiers.length === 0 ? <div className="co-hint">No tier is switched on for this service.</div> : (
                   <div className="co-tiers">
@@ -840,7 +840,8 @@ const CO_CSS = `
 @media (max-width:1199px){
   .co-hide{display:none}
   .co-sheet{display:flex}
-  .co-sbar{position:sticky;bottom:12px;z-index:30;display:flex;align-items:center;gap:8px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);box-shadow:0 -8px 24px rgba(0,0,0,.08)}
+  .co-form{padding-bottom:84px}
+  .co-sbar{position:fixed;left:12px;right:12px;bottom:12px;z-index:30;display:flex;align-items:center;gap:8px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);box-shadow:0 -8px 24px rgba(0,0,0,.08)}
   .co-sbar>span{display:flex;flex-direction:column;flex:1;min-width:0}
   .co-sbar>span i{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
   .co-sbar>span b{font-size:20px;font-weight:800;color:var(--ac);letter-spacing:-.02em}
