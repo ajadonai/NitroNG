@@ -95,139 +95,145 @@ const ADMIN_NAV = [
 /* ═══════════════════════════════════════════ */
 /* ═══ ADMIN OVERVIEW                      ═══ */
 /* ═══════════════════════════════════════════ */
-function AdminOverview({ data, dark, t, setActive }) {
-  const { stats, recentOrders, recentUsers } = data;
+function AdminOverview({ data, dark, t, setActive, openOrders }) {
+  const { stats, recentOrders, recentUsers, activity } = data;
+  const s = stats || {};
+  const today = new Date();
+  const pct = (a, b) => (b == null || b === 0) ? null : Math.round((a - b) / b * 100);
+  const cmp = (a, b, what) => { const d = pct(a, b); if (d == null) return { cls: "", text: `${what} · nothing yesterday` }; return { cls: d >= 0 ? "up" : "dn", text: `${d >= 0 ? "↑" : "↓"} ${Math.abs(d)}% on yesterday · ${what}` }; };
+  const sales = cmp(s.revenue || 0, s.revenueYesterday, `${s.ordersToday || 0} order${s.ordersToday === 1 ? "" : "s"}`);
+  const deps = cmp(s.deposits || 0, s.depositsYesterday, "deposits");
+  const nu = s.newUsersToday || 0, nuY = s.newUsersYesterday;
+  const doors = [
+    { n: s.pendingManualCount || 0, label: "Deposits to approve", go: () => setActive("payments") },
+    { n: s.pendingRefillCount || 0, label: s.pendingRefillCount === 1 ? "Refill waiting" : "Refills waiting", go: () => setActive("refills") },
+    { n: s.openIssueCount || 0, label: s.openIssueCount === 1 ? "Open issue" : "Open issues", go: () => setActive("issues") },
+    { n: s.pendingDispatchCount || 0, label: "Orders to dispatch", go: () => openOrders("pending") },
+    { n: s.partialCount || 0, label: "Partial orders", go: () => openOrders("partial") },
+  ];
+  const hours = s.ordersByHour || [];
+  const maxH = Math.max(1, ...hours.map(h => h.n));
+  const peak = hours.reduce((a, b) => (b.n > (a?.n || 0) ? b : a), null);
+  const richest = hours.reduce((a, b) => (b.revenue > (a?.revenue || 0) ? b : a), null);
+  const nowH = today.getHours();
+  const timeOf = (iso) => { const d = new Date(iso); return d.toDateString() === today.toDateString() ? d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
+  const initialsOf = (n) => (n || "?").replace(/\s*\(TG\)\s*$/, "").split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+  const PF = { tiktok: "TT", instagram: "IG", youtube: "YT", facebook: "FB", twitter: "X", x: "X", telegram: "TG", discord: "DC", spotify: "SP", threads: "TH", snapchat: "SC", linkedin: "LI", website: "WEB", traffic: "WEB" };
+  const okStatus = (st) => st === "Completed" ? "ok" : st === "Cancelled" || st === "Failed" ? "bad" : "warn";
+  const vars = {
+    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828",
+  };
   return (
-    <>
+    <div className="ov" style={vars}>
+      <style>{OV_CSS}</style>
       <div className="adm-header">
-        <div className="adm-title text-t-text">Dashboard Overview</div>
-        <div className="adm-subtitle text-t-text-muted">Platform at a glance</div>
-        <div className="page-divider bg-t-card-border" />
-      </div>
-
-      {/* Stat cards */}
-      <div className="adm-stats">
-        {[
-          ["Today's Revenue", fN(stats.revenue || 0), t.green, stats.revenueChange == null ? 'New today' : `${stats.revenueChange}% vs yesterday`],
-          ["Total Users", String(stats.users || 0), t.blue, `${stats.newUsersToday || 0} today`],
-          ["Total Orders", String(stats.orders || 0), t.accent, `${stats.ordersToday || 0} today`],
-          ["Processing", String(stats.processing || 0), t.amber, "Est. 1-2 hrs"],
-          ["Deposits (Today)", fN(stats.deposits || 0), t.green, stats.depositsChange == null ? 'New today' : `${stats.depositsChange}% vs yesterday`],
-        ].map(([label, val, color, sub]) => (
-          <div key={label} className="dash-stat-card" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.85)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <div className="dash-stat-dot" style={{ background: color }} />
-            <div className="dash-stat-label text-t-text-muted">{label}</div>
-            <div className="m dash-stat-value" style={{ color }}>{val}</div>
-            <div className="dash-stat-sub text-t-text-muted">{sub}</div>
+        <div className="adm-header-row">
+          <div>
+            <div className="adm-title" style={{ color: t.text }}>Overview</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>{today.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })} · how today is going.</div>
           </div>
-        ))}
-      </div>
-
-      {/* Two column — Recent Orders + Recent Users */}
-      <div className="adm-grid-2">
-        <div>
-          <div className="rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-              <span className="text-sm font-semibold tracking-wide uppercase text-t-text-muted">Recent orders</span>
-              <button onClick={() => setActive("orders")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit] text-accent">View all →</button>
-            </div>
-            {(() => {
-              const items = [];
-              const batches = {};
-              for (const o of (recentOrders || [])) {
-                if (o.batchId) {
-                  if (!batches[o.batchId]) { batches[o.batchId] = { type: "batch", batchId: o.batchId, orders: [], created: o.created }; items.push(batches[o.batchId]); }
-                  batches[o.batchId].orders.push(o);
-                } else { items.push({ type: "single", order: o, created: o.created }); }
-              }
-              items.sort((a, b) => new Date(b.created) - new Date(a.created));
-              const display = items.slice(0, 5);
-              return display.length > 0 ? display.map((item, i) => {
-                if (item.type === "batch") {
-                  const totalCharge = item.orders.reduce((s, o) => s + (o.charge || 0), 0);
-                  return (
-                    <div key={item.batchId} className="flex items-center py-3 px-[18px] gap-3" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                      <div className="shrink-0 flex items-center justify-center" style={{ width: 36, height: 36, borderRadius: 10, background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.08)" }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[14px] font-medium mb-[2px] text-t-text">{item.batchId} · {item.orders.length} orders</div>
-                        <div className="flex items-center gap-1.5 text-[12px]">
-                          <span className="text-t-text-muted">{item.orders[0]?.user || "user"}</span>
-                          <span className="w-[3px] h-[3px] rounded-full bg-current opacity-35 shrink-0" />
-                          <span className="text-t-text-muted">{item.created ? fD(item.created) : ""}</span>
-                        </div>
-                      </div>
-                      <span className="text-[14px] font-semibold shrink-0" style={{ color: item.orders.every(o => o.status === "Cancelled") ? (dark ? "#fca5a5" : "#dc2626") : item.orders.some(o => o.status === "Partial") ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(totalCharge)}</span>
-                    </div>
-                  );
-                }
-                const o = item.order;
-                return (
-                  <div key={o.id} className="flex items-center py-3 px-[18px] gap-3" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                    <PlatformIcon platform={o.platform} dark={dark} />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[14px] font-medium overflow-hidden text-ellipsis whitespace-nowrap mb-[2px] text-t-text">{o.service}{o.tier ? ` · ${o.tier}` : ""}</div>
-                      <div className="flex items-center gap-1.5 text-[12px]">
-                        <span className="text-t-text-muted">{o.user || "user"}</span>
-                        <span className="w-[3px] h-[3px] rounded-full bg-current opacity-35 shrink-0" />
-                        <span className="text-t-text-muted">{o.created ? fD(o.created) : ""}</span>
-                      </div>
-                    </div>
-                    <span className="text-[14px] font-semibold shrink-0" style={{ color: o.status === "Cancelled" ? (dark ? "#fca5a5" : "#dc2626") : o.status === "Partial" ? (dark ? "#fbbf24" : "#d97706") : t.green }}>{fN(o.charge || 0)}</span>
-                  </div>
-                );
-              }) : null;
-            })() || (
-              <div className="py-8 px-5 text-center">
-                <svg width="36" height="36" viewBox="0 0 64 64" fill="none" className="block mx-auto mb-2.5 opacity-70">
-                  <rect x="12" y="8" width="40" height="48" rx="6" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
-                  <line x1="20" y1="22" x2="44" y2="22" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
-                  <line x1="20" y1="30" x2="38" y2="30" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
-                </svg>
-                <div className="text-sm font-semibold text-t-text-soft">No orders yet</div>
-              </div>
-            )}
-          </div>
+          <span className="ov-live"><i />Live · updates every 20 s</span>
         </div>
-
-        <div>
-          <div className="rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <div className="py-3 px-[18px] flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-              <span className="text-sm font-semibold tracking-wide uppercase text-t-text-muted">New users</span>
-              <button onClick={() => setActive("users")} className="text-xs font-medium bg-transparent border-none cursor-pointer font-[inherit] text-accent">View all →</button>
-            </div>
-            {(recentUsers || []).length > 0 ? (recentUsers || []).slice(0, 5).map((u, i, arr) => (
-              <div key={u.id} className="flex items-center py-3 px-[18px] gap-3" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                <Avatar size={32} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[14px] font-medium text-t-text">{u.name}</div>
-                  <div className="text-[12px] text-t-text-muted">{u.email}</div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="text-[13px] font-semibold text-t-text">{u.orders || 0} orders</div>
-                  <div className="text-[12px] text-t-text-muted">{u.created ? fD(u.created, true) : ""}</div>
-                </div>
-              </div>
-            )) : (
-              <div className="py-8 px-5 text-center">
-                <svg width="36" height="36" viewBox="0 0 64 64" fill="none" className="block mx-auto mb-2.5 opacity-70">
-                  <circle cx="32" cy="22" r="10" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
-                  <path d="M14 52c0-10 8-16 18-16s18 6 18 16" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
-                </svg>
-                <div className="text-sm font-semibold text-t-text-soft">No users yet</div>
-              </div>
-            )}
-          </div>
-        </div>
+        <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
-    </>
+
+      <div className="ov-stats">
+        <div className="ov-stt"><b className="m">{fN(s.revenue || 0)}</b><span>Sales today</span><i className={sales.cls}>{sales.text}</i></div>
+        <div className="ov-stt"><b className="m">{fN(s.deposits || 0)}</b><span>Deposits today</span><i className={deps.cls}>{deps.text}</i></div>
+        <div className="ov-stt"><b className="m">{nu}</b><span>New customers</span><i className={nuY == null ? "" : nu >= nuY ? "up" : "dn"}>{nuY == null ? "" : `${nu >= nuY ? "↑" : "↓"} ${nuY} yesterday · `}{(s.users || 0).toLocaleString()} in all</i></div>
+        <div className="ov-stt"><b className="m">{s.processing || 0}</b><span>Processing</span><i>{s.pendingDispatchCount || 0} waiting to dispatch · {s.partialCount || 0} partial</i></div>
+      </div>
+
+      <div className="ov-needs">
+        {doors.map(d => <button key={d.label} type="button" className={"ov-nd" + (d.n > 0 ? " on" : "")} onClick={d.go}><b className="m">{d.n}</b><span>{d.label}</span></button>)}
+      </div>
+
+      <section className="ov-card">
+        <header><h3>Today by the hour</h3><span className="ov-cnt">{peak && peak.n > 0 ? `orders · busiest at ${String(peak.h).padStart(2, "0")}:00 with ${peak.n}${richest && richest.revenue > 0 ? ` · the ${String(richest.h).padStart(2, "0")}:00 hour brought ${fN(richest.revenue)}` : ""}` : "no orders yet today"}</span></header>
+        <div className="ov-chart">
+          <div className="ov-hbs">{hours.map(h => <div key={h.h} className={"ov-hb" + (h.h === nowH ? " now" : "") + (peak && h.n === peak.n && h.n > 0 ? " peak" : "")} title={`${String(h.h).padStart(2, "0")}:00 · ${h.n} order${h.n === 1 ? "" : "s"} · ${fN(h.revenue)}`}><i style={{ height: `${h.n ? Math.max(3, Math.round(h.n / maxH * 100)) : 0}%` }} /></div>)}</div>
+          <div className="ov-hax m"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>
+        </div>
+      </section>
+
+      <div className="ov-cols">
+        <section className="ov-card">
+          <header><h3>Latest orders</h3><button type="button" className="ov-lnk" onClick={() => setActive("orders")}>All orders ›</button></header>
+          <div className="ov-list">
+            {(recentOrders || []).length === 0 ? <div className="ov-empty">No orders yet.</div> : (recentOrders || []).slice(0, 6).map(o => (
+              <div key={o.id} className="ov-or">
+                <span className="ov-pav">{PF[String(o.platform || "").toLowerCase()] || "•"}</span>
+                <span className="ov-ot"><b className="m">{o.id}</b><i>{o.user || "user"}</i></span>
+                <span className="ov-os"><b>{o.service}{o.tier ? ` · ${o.tier}` : ""}</b><i>{o.batchId ? "part of a batch" : "single order"}</i></span>
+                <b className="m ov-oc">{fN(o.charge || 0)}</b>
+                <span className="ov-st"><i className={"ov-dot " + okStatus(o.status)} />{o.status}</span>
+                <span className="ov-cnt m ov-tm">{o.created ? timeOf(o.created) : ""}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="ov-card">
+          <header><h3>New customers</h3><button type="button" className="ov-lnk" onClick={() => setActive("users")}>All users ›</button></header>
+          <div className="ov-list">
+            {(recentUsers || []).length === 0 ? <div className="ov-empty">No one new yet.</div> : (recentUsers || []).slice(0, 5).map(u => (
+              <div key={u.id} className="ov-ur">
+                <span className="ov-uav">{initialsOf(u.name)}</span>
+                <span className="ov-ut"><b>{u.name}</b><i>{u.orders ? `${u.orders} order${u.orders === 1 ? "" : "s"}` : u.balance ? "funded, no orders yet" : "no orders yet"}</i></span>
+                <b className="m">{fN(u.balance || 0)}</b>
+                <span className="ov-cnt m ov-tm">{u.created ? timeOf(u.created) : ""}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <section className="ov-card">
+        <header><h3>What the team did</h3><button type="button" className="ov-lnk" onClick={() => setActive("activity")}>Logs ›</button></header>
+        <div className="ov-list">
+          {(activity || []).length === 0 ? <div className="ov-empty">Nothing yet today.</div> : (activity || []).slice(0, 6).map((a, i) => (
+            <div key={i} className="ov-ar"><span className="ov-cnt m ov-tm">{a.time ? timeOf(a.time) : ""}</span><span className="ov-aav">{initialsOf(a.detail)}</span><b>{(a.detail || "System").replace(/\s*\(TG\)\s*$/, "")}</b><i>{a.action}</i></div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
 
-/* ═══════════════════════════════════════════ */
-/* ═══ PLACEHOLDER PAGE                    ═══ */
-/* ═══════════════════════════════════════════ */
+const OV_CSS = `
+.ov{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.ov *{box-sizing:border-box}
+.ov .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.ov-live{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--mut);white-space:nowrap}.ov-live i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(10,125,84,.15)}
+.ov-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.ov-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.ov-stt:first-child{border-left:0}
+.ov-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ov-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.ov-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ov-stt i.up{color:var(--ok)}.ov-stt i.dn{color:var(--warn)}
+.ov-needs{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.ov-nd{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--dim);font:inherit;cursor:pointer;text-align:left;transition:transform .15s}.ov-nd:hover{transform:translateY(-1px)}.ov-nd b{font-size:18px;font-weight:800;min-width:28px}.ov-nd span{font-size:12px;font-weight:600}.ov-nd.on{color:var(--ink);border-color:var(--ac)}.ov-nd.on b{color:var(--ac)}
+.ov-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.ov-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.ov-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.ov-cnt{font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-lnk{font:inherit;font-size:12px;font-weight:600;color:var(--ac);background:none;border:0;padding:0;cursor:pointer;white-space:nowrap}
+.ov-chart{padding:14px 16px 10px}.ov-hbs{display:grid;grid-template-columns:repeat(24,1fr);gap:4px;height:110px;align-items:end}.ov-hb{height:100%;display:flex;align-items:flex-end;border-radius:4px;background:var(--rail)}.ov-hb i{display:block;width:100%;background:var(--ac);border-radius:4px;opacity:.55}.ov-hb.peak i{opacity:1}.ov-hb.now i{opacity:.9;outline:2px solid var(--ink);outline-offset:1px}
+.ov-hax{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);margin-top:6px}
+.ov-cols{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;align-items:start}
+.ov-list{display:flex;flex-direction:column}.ov-empty{padding:24px 16px;text-align:center;font-size:13px;color:var(--mut)}
+.ov-or{display:grid;grid-template-columns:34px 130px 1fr 72px 100px 44px;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--rail);font-size:13px}.ov-or:first-child{border-top:0}
+.ov-pav{width:34px;height:34px;border-radius:10px;background:var(--soft);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--mut)}
+.ov-ot,.ov-os,.ov-ut{display:flex;flex-direction:column;min-width:0}.ov-ot b{font-size:12.5px;font-weight:700}.ov-ot i,.ov-os i,.ov-ut i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ov-os b,.ov-ut b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ov-oc{text-align:right;font-weight:700}
+.ov-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.ov-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}.ov-dot.ok{background:var(--ok)}.ov-dot.warn{background:var(--warn)}.ov-dot.bad{background:var(--bad)}
+.ov-ur{display:grid;grid-template-columns:34px 1fr 80px 44px;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--rail);font-size:13px}.ov-ur:first-child{border-top:0}.ov-uav{width:34px;height:34px;border-radius:50%;background:var(--ac);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}.ov-ur>b{text-align:right;font-weight:700}
+.ov-ar{display:grid;grid-template-columns:44px 28px 120px 1fr;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--rail);font-size:13px}.ov-ar:first-child{border-top:0}.ov-aav{width:28px;height:28px;border-radius:50%;background:var(--ac);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700}.ov-ar b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ov-ar i{font-style:normal;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:900px){
+  .ov .adm-header-row{flex-direction:row;align-items:flex-start}.ov-live{font-size:11px}
+  .ov-stats{grid-template-columns:1fr 1fr}.ov-stt:nth-child(3){border-left:0}.ov-stt:nth-child(n+3){border-top:1px solid var(--line)}.ov-stt b{font-size:17px}
+  .ov-needs{grid-template-columns:1fr 1fr}.ov-nd:last-child{grid-column:1 / -1}
+  .ov-hbs{height:90px;gap:2px}.ov-cols{grid-template-columns:1fr}
+  .ov-or{grid-template-columns:34px 1fr auto;grid-template-areas:"pav ot oc" "pav os st";gap:2px 10px}.ov-pav{grid-area:pav;align-self:start}.ov-ot{grid-area:ot}.ov-oc{grid-area:oc}.ov-os{grid-area:os}.ov-or .ov-st{grid-area:st;justify-self:end}.ov-or .ov-tm{display:none}
+  .ov-ur{grid-template-columns:34px 1fr auto}.ov-ur .ov-tm{display:none}
+  .ov-ar{grid-template-columns:28px 1fr auto;grid-template-areas:"av b t" "av i i"}.ov-ar .ov-tm{grid-area:t}.ov-aav{grid-area:av;align-self:start}.ov-ar b{grid-area:b}.ov-ar i{grid-area:i;white-space:normal}
+}
+`;
+
 function PlaceholderPage({ title, subtitle, dark, t }) {
   return (
     <>
@@ -352,6 +358,9 @@ function AdminDashboardInner({ initialData }) {
   const [openSection, setOpenSection] = useState(null);
   const [jump, setJump] = useState("");
   const jumpRef = useRef(null);
+  const [ordersPreset, setOrdersPreset] = useState("all");
+  const openOrders = (f) => { setOrdersPreset(f); setActive("orders"); };
+  useEffect(() => { if (active !== "orders") setOrdersPreset("all"); }, [active]);
   // The avatar drops an account menu on a desktop, like the user side; on a phone it opens Settings.
   const [avOpen, setAvOpen] = useState(false);
   const avRef = useRef(null);
@@ -756,11 +765,11 @@ function AdminDashboardInner({ initialData }) {
     const ap = admin?.pages;
     // Guard: if page not in allowed list, fall back to overview
     if (active !== "overview" && ap !== "*" && Array.isArray(ap) && !ap.includes(active)) {
-      return <AdminOverview data={data} dark={dark} t={t} setActive={setActive} />;
+      return <AdminOverview data={data} dark={dark} t={t} setActive={setActive} openOrders={openOrders} />;
     }
     switch (active) {
-      case "overview": return <AdminOverview data={data} dark={dark} t={t} setActive={setActive} />;
-      case "orders": return <AdminOrdersPage dark={dark} t={t} admin={admin} />;
+      case "overview": return <AdminOverview data={data} dark={dark} t={t} setActive={setActive} openOrders={openOrders} />;
+      case "orders": return <AdminOrdersPage key={ordersPreset} dark={dark} t={t} admin={admin} initialFilter={ordersPreset} />;
       case "users": return <AdminUsersPage dark={dark} t={t} admin={admin} />;
       case "leaderboard": return <AdminLeaderboardPage dark={dark} t={t} />;
       case "tickets": return <AdminTicketsPage dark={dark} t={t} adminName={admin?.name || "Admin"} />;
@@ -788,7 +797,7 @@ function AdminDashboardInner({ initialData }) {
       case "refills": return <AdminRefillsPage dark={dark} t={t} />;
       case "resellers": return <AdminResellersPage dark={dark} t={t} />;
       case "settings": return <AdminSettingsPage admin={admin} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} onLogout={handleLogout} notifPrefs={notifPrefs} updateNotifPref={updateNotifPref} />;
-      default: return <AdminOverview data={data} dark={dark} t={t} setActive={setActive} />;
+      default: return <AdminOverview data={data} dark={dark} t={t} setActive={setActive} openOrders={openOrders} />;
     }
   };
 

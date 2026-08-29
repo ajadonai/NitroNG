@@ -22,6 +22,7 @@ never gets picked up twice. Update this in the same commit as the work.
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-08-30 | Overview rebuilt: today against yesterday, a needs-you strip of doors that open the page pre-filtered, orders by the hour, latest orders, newest customers, what the team did | `9aaffc24` v2.4.44 |
 | 2026-08-29 | Refills is a queue, oldest ask first, Send refill and Reset on the row, facts row and Handled list; phone cards read top to bottom | `8bac61e4` v2.4.43 |
 | 2026-08-29 | Team as a roster with a drawer (Pages, Abilities, Password); the API page is Providers with balance, menu share, orders, connection, Test and Sync per row and a Last sync card; Maintenance says Online/Offline with the one button, time left, a preview and past downtimes; admin avatar drops the account menu | `b35464c2` v2.4.42 |
 | 2026-08-29 | Issues is one triage list, decisions first then newest, red needs a person and amber can wait; provider balances in the facts row; a Checks card (what runs when, what it last found); Handled list; Run all checks now. Logs is a day-grouped timeline with a who-was-busy facts row and a System tab with a severity bar | `6286b08a` v2.4.41 |

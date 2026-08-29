@@ -313,13 +313,13 @@ function groupOrders(orders) {
   return items;
 }
 
-export default function AdminOrdersPage({ dark, t, admin }) {
+export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
   const isSensitive = admin?.role === 'owner' || admin?.role === 'superadmin';
   const confirm = useConfirm();
   const toast = useToast();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState(initialFilter || "all");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState(null);
   const [expandedBatch, setExpandedBatch] = useState(null);
