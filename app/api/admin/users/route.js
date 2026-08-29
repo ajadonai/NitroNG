@@ -181,7 +181,7 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { action, userId, amount, subtype, reason } = body;
+    const { action, userId, amount, subtype, reason, cashRefund } = body;
 
     if (!userId) return Response.json({ error: 'User ID required' }, { status: 400 });
 
@@ -301,11 +301,13 @@ export async function POST(req) {
             method: 'admin',
             status: 'Completed',
             note: reason?.trim() || 'Balance adjustment',
+            // Sent back to their bank: books as money out on Finance, not just a wallet adjustment.
+            ...(cashRefund ? { reference: 'CASH-REFUND' } : {}),
           },
         }),
       ]);
 
-      await logActivity(admin.name, `Debited ₦${Number(amount).toLocaleString()} from ${user.name}${reason ? `: ${reason}` : ''}`, 'user');
+      await logActivity(admin.name, `${cashRefund ? 'Refunded to bank' : 'Debited'} ₦${Number(amount).toLocaleString()} from ${user.name}${reason ? `: ${reason}` : ''}`, 'user');
       return Response.json({ success: true, message: `₦${Number(amount).toLocaleString()} debited from ${user.name}` });
     }
 
