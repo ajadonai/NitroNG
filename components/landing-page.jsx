@@ -10,6 +10,25 @@ import { trackViewContent } from "./capi-tracker";
 import InlineAlert from "./inline-alert";
 import { PublicNavSheet } from "./public-nav-sheet";
 
+// The mobile hero card. Colours come in as CSS variables from the component so it follows the theme.
+const HC_CSS = `
+.hc{border-radius:22px;background:var(--cbg);border:1px solid var(--cline);box-shadow:var(--shadow);color:var(--cink);text-align:left;overflow:hidden;padding-bottom:14px}
+.hc-strip{display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 16px;font-size:12px;color:var(--cmut);background:var(--csoft);border-bottom:1px solid var(--cline)}
+.hc-strip i{width:6px;height:6px;border-radius:50%;background:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.2);flex-shrink:0}.hc-strip b{color:var(--cink);font-weight:700}
+.hc-facts{display:grid;grid-template-columns:1fr 1fr 1fr;margin:14px 16px 12px;border:1px solid var(--cline);border-radius:14px;overflow:hidden}
+.hc-f{display:flex;flex-direction:column;gap:2px;padding:10px;border-left:1px solid var(--cline);min-width:0}.hc-f:first-child{border-left:0}
+.hc-f b{font-size:18px;font-weight:800;letter-spacing:-.01em;font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.hc-f span{font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--cmut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc-f.ac{background:var(--acbg)}.hc-f.ac b{color:#c47d8e}
+.hc-gift{display:flex;align-items:center;gap:10px;margin:0 16px 12px;padding:10px 12px;border-radius:14px;background:var(--acbg)}
+.hc-gi{width:32px;height:32px;border-radius:10px;background:var(--cbg);color:#c47d8e;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}.hc-gi svg{width:16px;height:16px}
+.hc-gift>span:last-child{display:flex;flex-direction:column;line-height:1.25;min-width:0}.hc-gift b{font-size:13px;font-weight:700}.hc-gift i{font-style:normal;font-size:12px;color:var(--cmut)}
+.hc-cta{display:block;margin:0 16px;padding:14px;border-radius:14px;font-size:15px;font-weight:700;text-align:center;color:#fff;background:linear-gradient(135deg,#c47d8e,#a3586b);box-shadow:0 6px 24px rgba(196,125,142,.4);cursor:pointer}
+.hc-login{text-align:center;font-size:13px;color:var(--cmut);margin:12px 16px 0}.hc-login a{color:#c47d8e;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.hc-trust{display:flex;justify-content:center;gap:14px;margin:12px 16px 0;padding-top:12px;border-top:1px solid var(--cline);font-size:11px;color:var(--cdim)}
+.hc-trust span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}.hc-trust svg{width:11px;height:11px}
+`;
+
 const AuthModal = dynamic(() => import("./auth-modal"), { ssr: false });
 const BelowFold = dynamic(() => import('./landing-below-fold'), { ssr: true });
 
@@ -226,29 +245,26 @@ function LandingInner({ initialAuthQuery }){
                 <a href="/pricing" onClick={e=>{e.preventDefault();document.getElementById("pricing")?.scrollIntoView({behavior:"smooth",block:"start"})}} className="hero-secondary-btn py-3.5 px-7 rounded-xl text-[15px] font-medium bg-transparent cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{border:`0.5px solid ${dark?"rgba(255,255,255,.19)":"rgba(255,255,255,.38)"}`,color:dark?"rgba(244,241,237,.7)":"#fff"}}>View pricing</a>
               </div>
 
-              {/* Mobile CTA — auth card with stats */}
+              {/* Mobile CTA — the card: live strip, numbers on rails, promo tile, one button, log in as a line */}
               <div className="fu fd4 hidden max-desktop:!flex max-desktop:flex-col max-desktop:items-center max-desktop:mt-4 max-md:mt-3 w-full max-md:max-w-full relative z-[2]">
-                <div className="w-full max-w-[380px] max-md:max-w-full rounded-[18px] backdrop-blur-[20px]" style={{background:dark?"rgba(17,22,40,0.92)":"rgba(255,255,255,0.92)",border:`1px solid ${dark?"rgba(255,255,255,.12)":"rgba(0,0,0,.08)"}`,boxShadow:dark?"0 20px 60px rgba(0,0,0,0.5)":"0 20px 60px rgba(0,0,0,.16)"}}>
-                  <div className="px-5 pt-4 pb-3 max-md:px-4">
-                    {siteStats.processing!=null&&<div className="flex items-center justify-center gap-1.5 mb-2.5" style={{color:dark?"rgba(255,255,255,.45)":"rgba(0,0,0,.4)"}}><span className="relative flex h-[5px] w-[5px]"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#34d399] opacity-75"/><span className="relative inline-flex rounded-full h-[5px] w-[5px] bg-[#34d399]"/></span><span className="text-[11px] font-medium">Live activity: <span className="m font-semibold" style={{color:dark?"#eae7e2":"#1a1a1a"}}><CountUp value={siteStats.processing}/></span></span></div>}
-                    <div className="flex gap-2 mb-3">
-                      {[[siteStats.orders||"0","Orders placed"],[siteStats.users||"0","Accounts"],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Benchmark"]]:[])].map(([num,label],i)=>
-                        <div key={i} className="flex-1 py-2 rounded-lg text-center" style={{background:dark?"rgba(255,255,255,.06)":"rgba(0,0,0,.03)",border:`1px solid ${dark?"rgba(255,255,255,.08)":"rgba(0,0,0,.06)"}`}}>
-                          <div className="text-[13px] font-bold" style={{color:dark?"#eae7e2":"#1a1a1a"}}><CountUp value={num}/></div>
-                          <div className="text-[11px] font-medium uppercase tracking-[.5px]" style={{color:dark?"rgba(255,255,255,.4)":"rgba(0,0,0,.4)"}}>{label}</div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-center mb-2.5"><span className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-[11px] font-semibold text-accent" style={{background:dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)"}}>🎁 Up to ₦3,000 in free promo credit to give your next post a real push</span></div>
-                    <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="block w-full py-[14px] rounded-xl text-[15px] font-bold border-none cursor-pointer hero-cta-pulse no-underline text-center" style={{background:"linear-gradient(135deg,#c47d8e,#a3586b)",color:"#fff",boxShadow:"0 6px 24px rgba(196,125,142,.4)"}}>Create free account →</a>
-                    <a href="/?login=1" onClick={e=>{e.preventDefault();setModal("login")}} className="block w-full py-[11px] rounded-xl text-[13px] font-semibold cursor-pointer mt-2 no-underline text-center" style={{background:"transparent",border:`1.5px solid ${dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.14)"}`,color:dark?"rgba(255,255,255,.7)":"rgba(0,0,0,.55)"}}>Log in to your account</a>
+                <style>{HC_CSS}</style>
+                <div className="hc w-full max-w-[380px] max-md:max-w-full" style={{"--cbg":dark?"#141930":"#fff","--cink":dark?"#f2efe9":"#1a1a1a","--cmut":dark?"rgba(255,255,255,.5)":"rgba(0,0,0,.45)","--cdim":dark?"rgba(255,255,255,.35)":"rgba(0,0,0,.35)","--cline":dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.08)","--csoft":dark?"rgba(255,255,255,.05)":"rgba(0,0,0,.03)","--acbg":dark?"rgba(196,125,142,.16)":"rgba(196,125,142,.1)","--shadow":dark?"0 20px 60px rgba(0,0,0,.5)":"0 20px 60px rgba(0,0,0,.16)"}}>
+                  {siteStats.processing!=null&&<div className="hc-strip"><i/><span>Live activity: <b><CountUp value={siteStats.processing}/></b></span></div>}
+                  <div className="hc-facts">
+                    {[[siteStats.orders||"0","Orders placed",false],[siteStats.users||"0","Accounts",false],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Delivery benchmark",true]]:[])].map(([num,label,ac],i)=>
+                      <div key={i} className={"hc-f"+(ac?" ac":"")}><b><CountUp value={num}/></b><span>{label}</span></div>
+                    )}
                   </div>
-                  <div className="flex items-center justify-center gap-3 px-5 py-2 max-md:px-4 text-[11px]" style={{background:dark?"rgba(255,255,255,.03)":"rgba(0,0,0,.02)",borderTop:`1px solid ${dark?"rgba(255,255,255,.06)":"rgba(0,0,0,.04)"}`,color:dark?"rgba(255,255,255,.35)":"rgba(0,0,0,.35)"}}>
-                    <span className="inline-flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Trusted by creators</span>
-                    <span className="opacity-30">·</span>
-                    <span className="inline-flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Fast delivery</span>
-                    <span className="opacity-30">·</span>
-                    <span className="inline-flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Human support</span>
+                  <div className="hc-gift">
+                    <span className="hc-gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></span>
+                    <span><b>Up to ₦3,000 in free promo credit</b><i>to give your next post a real push</i></span>
+                  </div>
+                  <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hc-cta hero-cta-pulse no-underline">Create free account →</a>
+                  <div className="hc-login">Already have an account? <a href="/?login=1" onClick={e=>{e.preventDefault();setModal("login")}}>Log in</a></div>
+                  <div className="hc-trust">
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Trusted by creators</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Fast delivery</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Human support</span>
                   </div>
                 </div>
               </div>
