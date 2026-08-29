@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useRef } from "react";
+import { SkelList, Bone } from "./skeleton";
 import { DEFAULT_USD_RATE } from "../lib/markup";
 import { useConfirm } from "./confirm-dialog";
 import InlineAlert from "./inline-alert";
@@ -250,7 +251,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
           <button type="button" className={`mb-tgl${hideOff ? " on" : ""}`} onClick={() => setHideOff(v => !v)}><i /><span>Hide off</span></button>
         </div>
         <div className="mb-list" ref={listRef}>
-          {loading && <div className="mb-empty">Loading the menu…</div>}
+          {loading && <div style={{ padding: "8px 12px" }}><Bone dark={dark} w={160} h={10} style={{ margin: "8px 0 6px" }} /><SkelList dark={dark} rows={4} bare avatar="square" rowH={58} /><Bone dark={dark} w={140} h={10} style={{ margin: "12px 0 6px" }} /><SkelList dark={dark} rows={3} bare avatar="square" rowH={58} /></div>}
           {!loading && sections.length === 0 && <div className="mb-empty">Nothing matches.</div>}
           {sections.map(([plat, gs]) => (
             <div key={plat}>

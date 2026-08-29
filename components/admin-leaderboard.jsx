@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { SkelList } from "./skeleton";
 import { fN, fD } from "../lib/format";
 import { SegPill } from "./seg-pill";
 import { FilterDropdown } from "./date-range-picker";
@@ -235,7 +236,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
         </div>
 
         {/* Table */}
-        {loading ? <div>{[1,2,3,4,5,6].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-12 rounded-lg mb-1.5`} />)}</div> : list.length === 0 ? (
+        {loading ? <SkelList dark={dark} rows={6} bare rowH={52} /> : list.length === 0 ? (
           <div className="py-[60px] px-5 text-center">
             <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
               <rect x="6" y="28" width="14" height="24" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".2" />

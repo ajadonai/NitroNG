@@ -22,6 +22,7 @@ never gets picked up twice. Update this in the same commit as the work.
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-08-30 | Skeleton pass: a shared kit shaped like the pages (facts, toolbar, rows) on both sides; no grey slabs, spinners or Loading… text; Orders and Users dim instead of blanking while paging | `9900fd6e` v2.4.45 |
 | 2026-08-30 | Overview rebuilt: today against yesterday, a needs-you strip of doors that open the page pre-filtered, orders by the hour, latest orders, newest customers, what the team did | `9aaffc24` v2.4.44 |
 | 2026-08-29 | Refills is a queue, oldest ask first, Send refill and Reset on the row, facts row and Handled list; phone cards read top to bottom | `8bac61e4` v2.4.43 |
 | 2026-08-29 | Team as a roster with a drawer (Pages, Abilities, Password); the API page is Providers with balance, menu share, orders, connection, Test and Sync per row and a Last sync card; Maintenance says Online/Offline with the one button, time left, a preview and past downtimes; admin avatar drops the account menu | `b35464c2` v2.4.42 |

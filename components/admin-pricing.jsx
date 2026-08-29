@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from "react";
+import { Bone } from "./skeleton";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 
@@ -189,7 +190,7 @@ export default function AdminPricingPage({ dark, t }) {
             onClick={() => c.id === "rc" ? recalc() : openCard(c.id)}
             onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }}>
             <span className="pr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{ICONS[c.id]}</svg></span>
-            <span className="pr-st"><b>{c.title}</b><i>{!loaded ? "Loading…" : c.id === "rc" && recalcing ? "Repricing…" : c.sub}</i></span>
+            <span className="pr-st"><b>{c.title}</b><i>{!loaded ? <Bone dark={dark} w="62%" h={9} style={{ display: "inline-block", verticalAlign: "middle" }} /> : c.id === "rc" && recalcing ? "Repricing…" : c.sub}</i></span>
             <svg className="pr-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
           </div>
         ))}

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from "react";
+import { Bone } from "./skeleton";
 import { useConfirm } from "./confirm-dialog";
 import InlineAlert from "./inline-alert";
 import { useToast } from "./toast";
@@ -212,7 +213,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         <div>
           <SectionHead>Site</SectionHead>
           <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
-            <Row id="set-emails" first icon={I_MAIL} title="Contact emails" sub={socialLoading ? "Loading…" : (emails.site_email_general || "Not set")} onClick={() => { setEmailMsg(null); setEmailModalOpen(true); }} dark={dark} t={t} />
+            <Row id="set-emails" first icon={I_MAIL} title="Contact emails" sub={socialLoading ? <Bone dark={dark} w={160} h={9} style={{ display: "inline-block", verticalAlign: "middle" }} /> : (emails.site_email_general || "Not set")} onClick={() => { setEmailMsg(null); setEmailModalOpen(true); }} dark={dark} t={t} />
             <Row id="set-social" icon={I_SHARE} title="Social links" sub="Instagram, X, TikTok, WhatsApp, Telegram, the Discord bot" onClick={() => { setSocialMsg(null); setSocialModalOpen(true); }} dark={dark} t={t} />
             <Row id="set-winback" icon={I_GIFT} title="Win-back credits" sub={`Day 30: ${winback.winback30_pct || 0}% · Day 60: ${winback.winback60_pct || 0}% · expire in ${winback.winback_credit_expiry_days || 7} days`} onClick={() => { setWinbackMsg(null); setWinbackModalOpen(true); }} dark={dark} t={t} />
           </div>

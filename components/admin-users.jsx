@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from "react";
+import { SkelList } from "./skeleton";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
@@ -500,10 +501,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   /* ── Skeleton row ─────────────────────────────── */
 
   const Skeleton = () => (
-    <div className="p-4 space-y-1.5">
-      {Array.from({ length: 8 }, (_, i) => (
-        <div key={i} className={`skel-bone ${dark ? 'skel-dark' : 'skel-light'}`} style={{ height: 48, borderRadius: 8 }} />
-      ))}
+    <div className="px-4">
+      <SkelList dark={dark} rows={8} bare rowH={56} />
     </div>
   );
 
@@ -743,7 +742,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
             <span className="r us-sort" onClick={() => toggleSort('joined')}>Joined{sortArrow('joined')}</span>
             <span />
           </div>
-          {loading ? <Skeleton /> : users.length === 0 ? (
+          {loading && users.length === 0 ? <Skeleton /> : users.length === 0 ? (
             <div className="us-empty">{search ? `Nobody matches "${search}".` : 'No accounts here yet.'}</div>
           ) : users.map(u => {
             const name = displayName(u);

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { SkelFacts, SkelList } from "./skeleton";
 import { useToast } from "./toast";
 import { useConfirm } from "./confirm-dialog";
 
@@ -56,7 +57,7 @@ export default function AdminRefillsPage({ dark, t }) {
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {loading ? <>{bone(84)}{bone(200)}</> : <>
+      {loading ? <><SkelFacts dark={dark} /><SkelList dark={dark} rows={3} title avatar="square" rowH={62} /><SkelList dark={dark} rows={3} title avatar={false} rowH={40} /></> : <>
         <div className="rf-stats">
           <div className={"rf-stt" + (facts?.waiting ? " warn" : "")}><b className="m">{facts?.waiting || 0}</b><span>Waiting</span><i>{facts?.waiting ? `oldest asked ${ago(facts.oldestAsk)}` : "nobody waiting"}</i></div>
           <div className="rf-stt"><b className="m">{facts?.asked30 || 0}</b><span>Asked this month</span><i>{facts ? `${facts.sent30} sent, ${facts.waiting} waiting` : ""}</i></div>

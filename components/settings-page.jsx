@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { SkelList, Bone } from "./skeleton";
 import { Modal } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
@@ -206,7 +207,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
           <Row id="set-change-password" first icon={I_LOCK} title="Change password" sub="Keep your account secure" onClick={() => setPwModalOpen(true)} dark={dark} t={t} />
           <Row id="set-notifications" icon={I_BELL} title="Notifications" sub="Orders, promos, email" onClick={() => setNotifModalOpen(true)} dark={dark} t={t} />
-          <Row id="set-active-sessions" icon={I_DEV} title="Active sessions" sub={sessionsLoading ? "Loading..." : `${sessions.length} device${sessions.length !== 1 ? "s" : ""}${sessions.find(x => x.current)?.deviceType ? ` · this ${sessions.find(x => x.current).deviceType}` : ""}`} onClick={() => setSessionsModalOpen(true)} dark={dark} t={t} />
+          <Row id="set-active-sessions" icon={I_DEV} title="Active sessions" sub={sessionsLoading ? <Bone dark={dark} w={140} h={9} style={{ display: "inline-block", verticalAlign: "middle" }} /> : `${sessions.length} device${sessions.length !== 1 ? "s" : ""}${sessions.find(x => x.current)?.deviceType ? ` · this ${sessions.find(x => x.current).deviceType}` : ""}`} onClick={() => setSessionsModalOpen(true)} dark={dark} t={t} />
         </div>
 
         </div>
@@ -322,7 +323,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <SettingsModal open={sessionsModalOpen} onClose={() => setSessionsModalOpen(false)} title="Active sessions" dark={dark} t={t}>
           <div className="text-[13px] mb-4 text-t-text-muted">Devices logged into your account. Max 1 web + 1 mobile.</div>
           {sessionsLoading ? (
-            <div className="text-center text-[13px] py-4 text-t-text-muted">Loading sessions...</div>
+            <SkelList dark={dark} rows={2} bare avatar="square" rowH={56} />
           ) : sessions.length === 0 ? (
             <div className="text-center text-[13px] py-4 text-t-text-muted">No active sessions</div>
           ) : sessions.map((s, i, arr) => (
