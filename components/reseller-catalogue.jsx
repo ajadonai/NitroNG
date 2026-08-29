@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from "react";
+import { RailSec, RailCard } from "./rail";
 import { SkelList } from "./skeleton";
 import { copyText } from '@/lib/clipboard';
 
@@ -44,11 +45,11 @@ function GradeLegendBody({ dark, t }) {
 // sidebar pattern.
 export function ResellerCatalogueSidebar({ dark, t }) {
   return (
-    <div className="flex flex-col gap-0">
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Quality grades</div>
-      <div className="py-2.5 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.02)" }}>
+    <div className="rr">
+      <RailSec>Quality grades</RailSec>
+      <RailCard style={{ padding: "6px 14px" }}>
         <GradeLegendBody dark={dark} t={t} />
-      </div>
+      </RailCard>
     </div>
   );
 }

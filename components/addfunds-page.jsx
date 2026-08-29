@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, Fragment } from "react";
+import { RailSec, RailCard, RailRow, RailStep, RailEmpty } from "./rail";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
@@ -1088,18 +1089,25 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
 /* ═══════════════════════════════════════════ */
 /* ═══ ADD FUNDS RIGHT SIDEBAR             ═══ */
 /* ═══════════════════════════════════════════ */
-export function AddFundsSidebar({ user, txs, dark, t }) {
-  const balance = user?.balance || 0;
-
+export function AddFundsSidebar({ txs, dark }) {
+  const METHOD = { manual: ["BT", "Bank transfer"], crypto: ["CR", "Crypto"], flutterwave: ["CD", "Card"], paystack: ["CD", "Card"], monnify: ["BT", "Bank transfer"], korapay: ["CD", "Card"], alatpay: ["BT", "Bank transfer"] };
+  const STATUS = { Completed: "Cleared", Pending: "Waiting", Failed: "Failed", Rejected: "Rejected", Expired: "Expired", Processing: "Processing" };
+  const deposits = (txs || []).filter(tx => tx.type === "deposit").slice(0, 5);
   return (
-    <div className="flex flex-col gap-0">
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>How It Works</div>
-      {[["1", "Enter amount"], ["2", "Choose payment method"], ["3", "Pay securely"], ["4", "Balance updated instantly"]].map(([num, title]) => (
-        <div key={num} className="flex gap-2.5 mb-2 px-1">
-          <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center text-[13px] font-semibold shrink-0 bg-t-nav-active text-accent">{num}</div>
-          <div className="text-sm font-medium pt-0.5" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.55)" }}>{title}</div>
-        </div>
-      ))}
+    <div className="rr">
+      <RailSec>How it works</RailSec>
+      <RailCard>
+        <RailStep n="1" title="Enter an amount" sub="₦500 or more" />
+        <RailStep n="2" title="Pick how to pay" sub="Bank transfer, card, crypto" />
+        <RailStep n="3" title="Pay" sub="Your balance updates at once" />
+      </RailCard>
+      <RailSec>Recent deposits</RailSec>
+      <RailCard>
+        {deposits.length === 0 ? <RailEmpty>No deposits yet.</RailEmpty> : deposits.map(tx => {
+          const [ini, name] = METHOD[tx.method] || ["DP", tx.method ? tx.method.charAt(0).toUpperCase() + tx.method.slice(1) : "Deposit"];
+          return <RailRow key={tx.id || tx.reference} tile={ini} title={name} sub={`${tx.createdAt || tx.date ? fD(tx.createdAt || tx.date, true) : ""} · ${STATUS[tx.status] || tx.status}`} right={fN(Math.abs(tx.amount || 0))} />;
+        })}
+      </RailCard>
     </div>
   );
 }

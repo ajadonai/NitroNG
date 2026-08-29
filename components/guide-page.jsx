@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { RailSec, RailNote, RailLink } from "./rail";
 
 export default function GuidePage({ dark, t }) {
   const [posts, setPosts] = useState([]);
@@ -93,20 +94,12 @@ export default function GuidePage({ dark, t }) {
 }
 
 // Right sidebar for Guide
-export function GuideSidebar({ dark, t }) {
+export function GuideSidebar() {
   return (
-    <div className="flex flex-col gap-0">
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>About Blog</div>
-      <div className="text-sm leading-[1.7] mb-3 text-t-text-soft">Step-by-step guides and tutorials to help you get the most out of Nitro. New content is added regularly.</div>
-
-      <div className="py-3 px-3.5 rounded-[10px] border" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", borderColor: dark ? "rgba(196,125,142,.19)" : "rgba(196,125,142,.14)" }}>
-        <div className="text-sm font-semibold mb-1 text-t-text">Need more help?</div>
-        <div className="text-[13px] leading-normal mb-2.5 text-t-text-muted">Visit our full blog for more guides, tips, and updates.</div>
-        <a href="/blog" target="_blank" rel="noopener noreferrer" className="text-[13px] font-semibold text-[#c47d8e] no-underline inline-flex items-center gap-1">
-          Visit blog
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        </a>
-      </div>
+    <div className="rr">
+      <RailSec>About the blog</RailSec>
+      <RailNote>Step-by-step guides and tutorials to help you get the most out of Nitro. New ones are added regularly.</RailNote>
+      <RailLink href="/blog">Visit the blog</RailLink>
     </div>
   );
 }

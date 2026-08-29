@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from "react";
+import { RailSec, RailCard, RailRow, RailLink } from "./rail";
 
 const TABS = [
   { id: "spenders", label: "Top Spenders", shortLabel: "Spenders" },
@@ -241,36 +242,21 @@ export default function LeaderboardPage({ dark, t }) {
 }
 
 /* ═══ COMPACT CARD for dashboard home / right sidebar ═══ */
-export function LeaderboardCard({ dark, t, onViewAll }) {
+export function LeaderboardCard({ onViewAll }) {
   const [data, setData] = useState(null);
   useEffect(() => {
-    fetch("/api/leaderboard?period=month")
-      .then(r => r.json())
-      .then(d => setData(d))
-      .catch(() => {});
+    fetch("/api/leaderboard?period=month").then(r => r.json()).then(d => setData(d)).catch(() => {});
   }, []);
-
-  const top3 = data?.spenders?.slice(0, 3) || [];
-  if (top3.length === 0) return null;
-
-  const month = new Date().toLocaleDateString("en-US", { month: "long" });
-  const medals = ["🥇", "🥈", "🥉"];
+  const top = data?.spenders?.slice(0, 5) || [];
+  if (top.length === 0) return null;
+  const month = new Date().toLocaleDateString("en-GB", { month: "long" });
   return (
-    <div className="rounded-[14px] p-4 border" style={{ background: t.cardBg, borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)" }}>
-      <div className="text-xs font-semibold uppercase tracking-[1.5px] mb-3 py-2 px-3 rounded-lg flex items-center gap-2 text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6z"/><path d="M22 21V8h-6v13h6z"/><path d="M15 21V4H9v17h6z"/></svg>
-        <span>Top Spenders · {month}</span>
-      </div>
-      {top3.map((entry, i) => (
-        <div key={i} className="flex items-center gap-2.5 py-1.5">
-          <div className="text-base w-6 text-center">{medals[i]}</div>
-          <div className="text-sm font-medium flex-1 text-t-text">{entry.name}{entry.isYou ? " (You)" : ""}</div>
-          <div className="text-[13px] font-semibold shrink-0" style={{ color: dark ? "#6ee7b7" : "#059669" }}>
-            {entry.orders} order{entry.orders !== 1 ? "s" : ""}
-          </div>
-        </div>
-      ))}
-      {onViewAll && <button onClick={onViewAll} className="block text-center mt-3 text-[13px] font-medium cursor-pointer py-1.5 rounded-lg bg-transparent border-none font-[inherit] w-full transition-all duration-200 hover:-translate-y-px" style={{ color: dark ? "#c47d8e" : "#a3586b" }}>View full leaderboard →</button>}
+    <div className="rr">
+      <RailSec>Top spenders · {month}</RailSec>
+      <RailCard>
+        {top.map((entry, i) => <RailRow key={i} tile={`#${i + 1}`} round={i === 0} title={`${entry.name}${entry.isYou ? " (you)" : ""}`} right={`${entry.orders} order${entry.orders !== 1 ? "s" : ""}`} />)}
+      </RailCard>
+      {onViewAll && <RailLink onClick={onViewAll}>View the full leaderboard</RailLink>}
     </div>
   );
 }

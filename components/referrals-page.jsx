@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { RailSec, RailCard, RailFact, RailStep } from "./rail";
 import { fN, fD } from "../lib/format";
 import { Avatar } from "./avatar";
 import { copyText as copyToClipboard } from '@/lib/clipboard';
@@ -183,43 +184,7 @@ export default function ReferralsPage({ user, dark, t }) {
   );
 }
 
-function HowItWorks({ steps, dark, t }) {
-  return (
-    <>
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>How It Works</div>
-      {steps.map(([num, title, desc]) => (
-        <div key={num} className="flex gap-3 mb-2 px-1">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-semibold shrink-0 bg-t-nav-active text-accent">{num}</div>
-          <div>
-            <div className="text-sm font-semibold mb-px text-t-text">{title}</div>
-            <div className="text-[13px] text-t-text-muted">{desc}</div>
-          </div>
-        </div>
-      ))}
-    </>
-  );
-}
 
-function RewardBreakdown({ rs, dark, t }) {
-  return (
-    <div className="p-3.5 rounded-[10px] bg-t-card-bg" style={{ border: `1px solid ${t.cardBorder}` }}>
-      <div className="flex justify-between py-2" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-        <span className="text-sm text-t-text-muted">You earn</span>
-        <span className="text-sm font-semibold text-accent">{fK(rs.referrer)}</span>
-      </div>
-      <div className="flex justify-between py-2" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-        <span className="text-sm text-t-text-muted">They earn</span>
-        <span className="text-sm font-semibold text-t-green">{fK(rs.invitee)}</span>
-      </div>
-      {rs.minDeposit > 0 && (
-        <div className="flex justify-between py-2">
-          <span className="text-sm text-t-text-muted">Min. deposit to activate</span>
-          <span className="text-sm font-semibold text-t-text">{fK(rs.minDeposit)}</span>
-        </div>
-      )}
-    </div>
-  );
-}
 
 
 /* ═══════════════════════════════════════════ */
@@ -231,37 +196,26 @@ export function ReferralsSidebar({ user, dark, t }) {
   const totalEarnings = user?.earnings || 0;
   const activeRefs = referrals.filter(r => r.status === "Active").length;
   const totalRefs = user?.refs || referrals.length;
-
-  const steps = [
-    ["1", "Share your link", "Send your referral link to friends"],
-    ["2", "They deposit", ref.minDeposit > 0 ? `Your friend deposits ${fK(ref.minDeposit)} or more` : "Your friend makes their first deposit"],
-    ["3", "You both earn", `You get ${fK(ref.referrer)} and they get ${fK(ref.invitee)}`],
-  ];
-
   return (
-    <div className="flex flex-col gap-0">
-      <HowItWorks steps={steps} dark={dark} t={t} />
-
-      <div className="h-px my-3" style={{ background: t.sidebarBorder }} />
-
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Rewards</div>
-      <RewardBreakdown rs={ref} dark={dark} t={t} />
-
-      <div className="h-px my-3" style={{ background: t.sidebarBorder }} />
-
-      <div className="text-[11px] font-semibold uppercase tracking-[1.5px] mb-2 py-1.5 px-2.5 rounded-lg text-t-text-muted" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>Your Performance</div>
-      <div className="p-3.5 rounded-[10px] bg-t-card-bg">
-        {[
-          ["This month", `${Math.min(totalRefs, 3)} referrals`, t.green],
-          ["Total earned", fN(totalEarnings), t.accent],
-          ["Sign-up rate", totalRefs > 0 ? `${Math.round(activeRefs / totalRefs * 100)}%` : "0%", dark ? "#a5b4fc" : "#4f46e5"],
-        ].map(([label, val, color], i, arr) => (
-          <div key={label} className="flex justify-between py-2" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-            <span className="text-sm text-t-text-muted">{label}</span>
-            <span className="text-sm font-semibold" style={{ color }}>{val}</span>
-          </div>
-        ))}
-      </div>
+    <div className="rr">
+      <RailSec>How it works</RailSec>
+      <RailCard>
+        <RailStep n="1" title="Share your link" sub="Send it to friends" />
+        <RailStep n="2" title="They deposit" sub={ref.minDeposit > 0 ? `${fK(ref.minDeposit)} or more` : "Their first deposit"} />
+        <RailStep n="3" title="You both earn" sub={`You get ${fK(ref.referrer)}, they get ${fK(ref.invitee)}`} />
+      </RailCard>
+      <RailSec>Rewards</RailSec>
+      <RailCard>
+        <RailFact label="You get" value={fK(ref.referrer)} color={t.accent} />
+        <RailFact label="They get" value={fK(ref.invitee)} color={dark ? "#6ee7b7" : "#059669"} />
+        {ref.minDeposit > 0 && <RailFact label="Minimum deposit" value={fK(ref.minDeposit)} />}
+      </RailCard>
+      <RailSec>Your performance</RailSec>
+      <RailCard>
+        <RailFact label="Referrals" value={String(totalRefs)} />
+        <RailFact label="Total earned" value={fN(totalEarnings)} color={t.accent} />
+        <RailFact label="Sign-up rate" value={totalRefs > 0 ? `${Math.round(activeRefs / totalRefs * 100)}%` : "0%"} />
+      </RailCard>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useMemo, useCallback, forwardRef } from "react";
+import { RailSec, RailCard, RailStep, RailNote, RailLink } from "./rail";
 import { trackViewContent } from "./capi-tracker";
 import { fN } from "../lib/format";
 import { formatOrderQuantity as fQty, isValidLink, getLinkPlaceholder } from "../lib/order-form-core";
@@ -1848,33 +1849,18 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
 /* ═══════════════════════════════════════════ */
 /* ═══ SERVICES RIGHT SIDEBAR              ═══ */
 /* ═══════════════════════════════════════════ */
-export function ServicesSidebar({ dark, t }) {
+export function ServicesSidebar() {
   return (
-    <div className="flex flex-col gap-3" style={{ fontSize: "103%" }}>
-      <div className="text-[11px] font-semibold uppercase tracking-[1px] py-2 px-3 rounded-lg" style={{ color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>Quick Tips</div>
-
-      <div className="text-[11px] leading-[1.6]" style={{ color: t.textMuted }}>
-        <div className="mb-1">• Set profile to <b style={{ color: t.text }}>public</b> before ordering — no refunds for private profiles</div>
-        <div className="mb-1">• <b style={{ color: t.text }}>Start small</b> — test a Budget tier first</div>
-        <div>• Not sure which tier? Tap the <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"-1px"}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> for a quick breakdown</div>
-      </div>
-
-      <div style={{ height: 1, background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)" }} />
-
-      <div className="py-2 px-2.5 rounded-[10px] border border-solid" style={{ background: dark ? "rgba(74,222,128,.1)" : "rgba(22,163,74,.06)", borderColor: dark ? "rgba(74,222,128,.19)" : "rgba(22,163,74,.14)" }}>
-        <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#4ade80" : "#16a34a" }}>🇳🇬 Nigerian Services</div>
-        <div className="text-[11px] leading-[1.5]" style={{ color: t.textMuted }}>Look for the 🇳🇬 flag! Real local engagement for Naija creators and businesses.</div>
-      </div>
-
-      <div className="py-2 px-2.5 rounded-[10px] border border-solid" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderColor: dark ? "rgba(196,125,142,.19)" : "rgba(196,125,142,.14)" }}>
-        <div className="text-[13px] font-semibold mb-0.5" style={{ color: "#c47d8e" }}>Bulk Orders</div>
-        <div className="text-[11px] leading-[1.5]" style={{ color: t.textMuted }}>Switch to <b style={{ color: t.text }}>Bulk</b> mode to place up to 50 orders in one checkout. Failed orders are retried and refunded automatically.</div>
-      </div>
-
-      <button onClick={() => window.dispatchEvent(new CustomEvent("nitro-order-tour"))} className="py-2.5 px-0 w-full rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] flex items-center justify-center gap-1.5 border border-solid text-[#c47d8e] transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ borderColor: dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)", background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)" }}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        Need a walkthrough?
-      </button>
+    <div className="rr">
+      <RailSec>Before you order</RailSec>
+      <RailCard>
+        <RailStep n="1" title="Profile set to public" sub="No refunds for private profiles" />
+        <RailStep n="2" title="Start small" sub="Test a Budget tier first" />
+        <RailStep n="🇳🇬" title="Flag means Nigerian audience" sub="Real local engagement for Naija accounts" />
+      </RailCard>
+      <RailSec>Bulk</RailSec>
+      <RailNote>Up to 50 orders in one checkout. Anything that fails is retried, then refunded.</RailNote>
+      <RailLink onClick={() => window.dispatchEvent(new CustomEvent("nitro-order-tour"))}>Need a walkthrough?</RailLink>
     </div>
   );
 }
