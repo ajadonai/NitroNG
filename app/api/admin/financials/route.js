@@ -447,12 +447,14 @@ export async function GET(req) {
     const k = (v) => Math.round((v || 0) / 100); // kobo to naira
 
     const sensitive = canSeeSensitive(admin);
+    // Wallet money an admin sent back to a customer's bank. Tagged on the debit itself, so it books as money out.
+    const cashRefundAgg = await prisma.transaction.aggregate({ where: { type: 'admin_debit', status: 'Completed', reference: 'CASH-REFUND', ...txWhere }, _sum: { amount: true }, _count: true });
 
     return Response.json({
 
       // Gross, refunds and net side by side: lib/revenue.js.
 
-      revenue: await getRevenue({ from: txWhere?.createdAt?.gte, to: txWhere?.createdAt?.lt }),
+      revenue: await getRevenue({ from: txWhere?.createdAt?.gte, to: txWhere?.createdAt?.lte ? new Date(txWhere.createdAt.lte.getTime() + 1) : txWhere?.createdAt?.lt }),
       range,
       filters: { platform, tier, provider },
       profitability: {
@@ -478,6 +480,8 @@ export async function GET(req) {
         moneyOut: {
           providerCosts: k(totalCost),
           providerTopups: k(providerTopupAgg._sum.amount),
+          refundedToBank: k(Math.abs(cashRefundAgg._sum.amount || 0)),
+          refundedToBankCount: cashRefundAgg._count || 0,
         },
       } : {}),
       walletObligations: {

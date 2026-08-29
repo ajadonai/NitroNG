@@ -77,12 +77,12 @@ export async function GET(req) {
       // For platform aggregation — get orders with service category
       prisma.order.findMany({
         where: { createdAt: dateFilter, deletedAt: null, status: { notIn: ['Cancelled'] } },
-        select: { charge: true, status: true, quantity: true, remains: true, service: { select: { category: true } } },
+        select: { charge: true, cost: true, status: true, quantity: true, remains: true, service: { select: { category: true } } },
       }),
       // Chart: daily order counts + revenue
       prisma.order.findMany({
         where: { createdAt: dateFilter, deletedAt: null },
-        select: { createdAt: true, charge: true, status: true, quantity: true, remains: true },
+        select: { createdAt: true, charge: true, cost: true, status: true, quantity: true, remains: true },
         orderBy: { createdAt: 'asc' },
       }),
       // Chart: daily deposits
@@ -143,17 +143,44 @@ export async function GET(req) {
       const cat = (o.service?.category || '').toLowerCase();
       if (!PLATFORMS.has(cat)) return;
       const name = cat === 'twitter/x' ? 'Twitter/X' : cat.charAt(0).toUpperCase() + cat.slice(1);
-      if (!platformMap[name]) platformMap[name] = { name, orders: 0, revenue: 0 };
+      if (!platformMap[name]) platformMap[name] = { name, orders: 0, revenue: 0, cost: 0 };
       platformMap[name].orders++;
       platformMap[name].revenue += effCharge(o) / 100;
+      if (o.status !== 'Cancelled') platformMap[name].cost += (o.cost || 0) / 100;
     });
     const topPlatforms = Object.values(platformMap)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5)
-      .map(p => ({ ...p, revenue: Math.round(p.revenue) }));
+      .map(p => ({ ...p, revenue: Math.round(p.revenue), cost: Math.round(p.cost) }));
 
     // Revenue is net of the refunds that actually reverse it: lib/revenue.js.
-    const rev = await getRevenue({ from: dateFilter?.gte, to: dateFilter?.lt });
+    // dateFilter closes with lte on a custom range; getRevenue takes an exclusive end, so hand it the next millisecond.
+    const revTo = dateFilter?.lte ? new Date(dateFilter.lte.getTime() + 1) : dateFilter?.lt;
+    const rev = await getRevenue({ from: dateFilter?.gte, to: revTo });
+
+    // The same figures for the period before this one, so the page can say better or worse.
+    // Only when the range has a start; "all time" has nothing to compare against.
+    let prev = null;
+    if (since) {
+      const end = until || now;
+      const span = end.getTime() - since.getTime();
+      const pFrom = new Date(since.getTime() - span), pTo = since;
+      const pFilter = { gte: pFrom, lt: pTo };
+      const [pRev, pOrders, pDeposits] = await Promise.all([
+        getRevenue({ from: pFrom, to: pTo }),
+        prisma.order.count({ where: { createdAt: pFilter, deletedAt: null, status: { notIn: ['Cancelled'] } } }),
+        prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: pFilter }, _sum: { amount: true } }),
+      ]);
+      prev = { netRevenue: pRev.net, profit: pRev.net - pRev.cost, orders: pOrders, deposits: (pDeposits._sum.amount || 0) / 100 };
+    }
+    const cashRefundAgg = await prisma.transaction.aggregate({ where: { type: 'admin_debit', status: 'Completed', reference: 'CASH-REFUND', createdAt: dateFilter }, _sum: { amount: true }, _count: true });
+    const cashRefunds = Math.abs((cashRefundAgg._sum.amount || 0) / 100);
+    const [byMethodRows, walletAgg] = await Promise.all([
+      prisma.transaction.groupBy({ by: ['method'], where: { type: 'deposit', status: 'Completed', createdAt: dateFilter }, _sum: { amount: true }, _count: true }),
+      prisma.user.aggregate({ where: { balance: { gt: 0 }, status: { not: 'Deleted' } }, _sum: { balance: true }, _count: true }),
+    ]);
+    const depositsByMethod = byMethodRows.map(r => ({ method: r.method || 'other', amount: Math.round((r._sum.amount || 0) / 100), count: r._count })).sort((a, b) => b.amount - a.amount);
+    const walletLiability = { balances: Math.round((walletAgg._sum.balance || 0) / 100), users: walletAgg._count || 0 };
     const grossRevenue = rev.gross;
     const totalRevenue = rev.net;
     const totalCost = rev.cost;
@@ -182,13 +209,13 @@ export async function GET(req) {
     const toDay = (d) => { const w = new Date(new Date(d).getTime() + 60 * 60 * 1000); return w.toISOString().slice(0, 10); };
     chartOrders.forEach(o => {
       const day = toDay(o.createdAt);
-      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, deposits: 0 };
+      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, cost: 0, deposits: 0 };
       dayMap[day].orders++;
-      if (o.status !== 'Cancelled') dayMap[day].revenue += effCharge(o) / 100;
+      if (o.status !== 'Cancelled') { dayMap[day].revenue += effCharge(o) / 100; dayMap[day].cost += (o.cost || 0) / 100; }
     });
     chartDeposits.forEach(tx => {
       const day = toDay(tx.createdAt);
-      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, deposits: 0 };
+      if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, cost: 0, deposits: 0 };
       dayMap[day].deposits += (tx.amount || 0) / 100;
     });
     // Fill in missing days
@@ -197,7 +224,7 @@ export async function GET(req) {
     const d = new Date(chartStart);
     while (d <= now) {
       const key = toDay(d);
-      chartData.push({ date: key, orders: dayMap[key]?.orders || 0, revenue: Math.round(dayMap[key]?.revenue || 0), deposits: Math.round(dayMap[key]?.deposits || 0) });
+      chartData.push({ date: key, orders: dayMap[key]?.orders || 0, revenue: Math.round(dayMap[key]?.revenue || 0), cost: Math.round(dayMap[key]?.cost || 0), deposits: Math.round(dayMap[key]?.deposits || 0) });
       d.setDate(d.getDate() + 1);
     }
 
@@ -226,6 +253,11 @@ export async function GET(req) {
       totalCampaignDiscounts,
       totalLoyaltyDiscounts,
       depositCount: depositAgg._count || 0,
+      prev,
+      cashRefunds,
+      cashRefundCount: cashRefundAgg._count || 0,
+      depositsByMethod,
+      walletLiability,
       chartData,
       byStatus: ordersByStatus.map(s => ({
         status: s.status,
