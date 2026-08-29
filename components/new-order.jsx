@@ -11,6 +11,7 @@ import { cleanLink } from "../lib/clean-link";
 import { OrderForm as ExtractedOrderForm } from "./order-form";
 import { TASKS_ENABLED } from './rewards';
 import { openCardFrame } from '@/lib/expandable-card';
+import { TRAFFIC_COUNTRIES, TRAFFIC_CONTINENTS } from "../lib/traffic-targets";
 import { copyText } from '@/lib/clipboard';
 
 // ── Success-modal promo slides ──
@@ -527,6 +528,14 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const [tiktokDisclaimer, setTiktokDisclaimer] = useState(false);
   const [youtubeDisclaimer, setYoutubeDisclaimer] = useState(false);
   const [duplicateConfirm, setDuplicateConfirm] = useState(null);
+  // Discord members/boosts only deliver into a server the provider's bot is in. The gate sits between
+  // Place order and the provider on every such order; it is never snoozed.
+  const [discordGate, setDiscordGate] = useState(null);   // { dripDays } while the sheet is up
+  const [discordTicked, setDiscordTicked] = useState(false);
+  // Website traffic fails on expectations, not a missing step: where the visitors show, how they arrive,
+  // and a page that opens without a login. Same gate, same tick, every traffic order.
+  const [trafficGate, setTrafficGate] = useState(null);
+  const [trafficTicked, setTrafficTicked] = useState(false);
   const hydratedRef = useRef(false);
   useEffect(() => {
     if (hydratedRef.current) return;
@@ -787,6 +796,23 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   }, [services, selSvc]);
 
   /* Place order */
+  const needsDiscordGate = platform === 'discord' && ['followers', 'engagement'].includes(selSvc?.type || '');
+  const discordBotUrl = socialLinks?.discord_bot_url || 'https://nowon.tools';
+  const needsTrafficGate = (selSvc?.type || '') === 'traffic';
+  const trafficTargetName = (code) => !code || code === 'WW' ? 'Worldwide' : TRAFFIC_CONTINENTS[code] || TRAFFIC_COUNTRIES[code] || code;
+  const trafficReadBack = () => {
+    if (!selTier?.trafficTargeting || !trafficConfig) return null;
+    const via = trafficConfig.trafficType === 'keyword' && trafficConfig.keyword ? `via Google search “${trafficConfig.keyword}”`
+      : trafficConfig.trafficType === 'referrer' && trafficConfig.referrer ? `from ${String(trafficConfig.referrer).replace(/^https?:\/\/(www\.)?/, '')}`
+      : 'direct, no referrer';
+    const device = trafficConfig.device && trafficConfig.device !== 'all' ? trafficConfig.device : 'all devices';
+    return `${trafficTargetName(trafficConfig.country)} · ${device} · ${via}`;
+  };
+  const requestSubmit = (dripDaysArg) => {
+    if (needsDiscordGate) { setDiscordTicked(false); setDiscordGate({ dripDays: dripDaysArg }); return; }
+    if (needsTrafficGate) { setTrafficTicked(false); setTrafficGate({ dripDays: dripDaysArg }); return; }
+    submitOrder(dripDaysArg);
+  };
   const submitOrder = async (dripDaysArg, confirmDuplicate) => {
     if (!selTier?.id || !link || orderLoading) return;
     const shouldRedeem = redeemPoints && rewards?.points?.redeemable;
@@ -806,7 +832,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       }
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
       const walletCharge = (data.order?.charge || 0) - (data.order?.pointsRedeemed || 0);
-      setOrderSuccess({ ...data.order, queued: data.queued, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: cleanLink(`https://${link.trim()}`), balanceAfter: walletCharge > 0 && user?.balance != null ? Math.max(0, user.balance - walletCharge) : (user?.balance ?? null) });
+      setOrderSuccess({ ...data.order, queued: data.queued, discordSetup: needsDiscordGate, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: cleanLink(`https://${link.trim()}`), balanceAfter: walletCharge > 0 && user?.balance != null ? Math.max(0, user.balance - walletCharge) : (user?.balance ?? null) });
       if (typeof window.fbq === "function") fbq("track", "Purchase", { value: data.order?.charge || 0, currency: "NGN", content_name: selSvc?.name || "Order", content_category: platform || "unknown" }, { eventID: data.eventId });
       if (typeof window.gtag === "function") gtag("event", "conversion", { send_to: "AW-18121451903/9P3HCL_TlaMcEP_S_cBD", transaction_id: data.order?.id || "" });
       setLink("");
@@ -1141,6 +1167,12 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                   {orderSuccess.pointsRedeemed > 0 && <div className="rcp-f"><span>Points used</span><b className="m" style={{ color: dark ? "#fbbf24" : "#92400e" }}>₦{orderSuccess.pointsRedeemed.toLocaleString()}</b></div>}
                 </div>
                 {/* Promo carousel: one slide at a time, every slide the same height */}
+                {orderSuccess.discordSetup && (
+                  <a href={discordBotUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 mt-3 py-2.5 px-3 rounded-xl no-underline text-[12.5px] leading-[1.4]" style={{ background: dark ? "rgba(88,101,242,.14)" : "rgba(88,101,242,.08)", color: t.text }}>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "#5865F2" }} />
+                    <span><b style={{ fontWeight: 700 }}>Bot not in the server yet?</b> Add it now, or this order is cancelled — <span style={{ color: "#5865F2", fontWeight: 700 }}>open the bot link</span></span>
+                  </a>
+                )}
                 <div className="rcp-car" onMouseEnter={() => setPromoPaused(true)} onMouseLeave={() => setPromoPaused(false)}
                   onTouchStart={e => { promoTouchX.current = e.touches[0].clientX; setPromoPaused(true); }}
                   onTouchEnd={e => { const sx = promoTouchX.current; promoTouchX.current = null; setPromoPaused(false); if (sx != null) { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 36) setPromoSlide(p => (p + (dx < 0 ? 1 : PROMO_SLIDES.length - 1)) % PROMO_SLIDES.length); } }}>
@@ -1175,7 +1207,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
               </div>
             ) : (
-              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={submitOrder} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} trafficConfig={trafficConfig} setTrafficConfig={setTrafficConfig} socialLinks={socialLinks} />
+              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={requestSubmit} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} trafficConfig={trafficConfig} setTrafficConfig={setTrafficConfig} socialLinks={socialLinks} />
             )}
           </div>
         </div>
@@ -1241,6 +1273,101 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 Nothing to do on your side. You can watch it climb in Orders.
               </div>
               <button onClick={() => { try { localStorage.setItem('nitro_youtube_disclaimer', String(Date.now())); } catch {} setYoutubeDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>Got it</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ WEBSITE TRAFFIC GATE ═══ */}
+      {trafficGate && (
+        <div className="no-modal-overlay flex fixed inset-0 z-50 items-end desktop:items-center justify-center px-3 pb-3 desktop:px-4 desktop:pb-0 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setTrafficGate(null)} style={{ background: "rgba(0,0,0,.5)" }}>
+          <div role="dialog" aria-modal="true" aria-label="Before this traffic order goes out" className="w-full max-w-[400px] rounded-[20px] border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+            <div className="p-[18px] flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: t.accent }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>Before this order goes out</div>
+                  <div className="text-[13px] leading-[1.5] mt-1" style={{ color: t.textMuted }}>Real visitors are sent to your page. Where you count them decides whether you see them.</div>
+                </div>
+              </div>
+              <div className="rounded-xl border border-solid overflow-hidden" style={{ borderColor: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)" }}>
+                {[
+                  ["You will see it in", "Google Analytics", "not on a page counter or your host’s stats"],
+                  ["How it arrives", "Spread through the day", `${Number(qty || 0).toLocaleString()} visitors over about ${selTier?.tier === "Premium" ? "30 days" : "24 hours"}, not all at once`],
+                  ...(trafficReadBack() ? [["This order", trafficReadBack(), "change it on the form if that is not right"]] : []),
+                ].map(([k, v, hint], i) => (
+                  <div key={k} className="flex flex-col gap-0.5 py-2.5 px-3" style={{ borderTop: i ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
+                    <span className="text-[10px] font-bold uppercase tracking-[.7px]" style={{ color: t.textMuted }}>{k}</span>
+                    <b className="text-[13.5px] font-bold leading-[1.3]" style={{ color: t.text }}>{v}</b>
+                    <span className="text-[12px]" style={{ color: t.textSoft }}>{hint}</span>
+                  </div>
+                ))}
+              </div>
+              <label className="flex items-center gap-2.5 py-[11px] px-3 rounded-xl border-[1.5px] border-solid text-[13.5px] font-semibold cursor-pointer select-none" style={{ borderColor: trafficTicked ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), background: trafficTicked ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)") : "transparent", color: t.text }}>
+                <input type="checkbox" checked={trafficTicked} onChange={e => setTrafficTicked(e.target.checked)} className="sr-only" />
+                <span className="w-5 h-5 rounded-md border-[1.5px] border-solid flex items-center justify-center shrink-0" style={{ borderColor: trafficTicked ? t.accent : (dark ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.2)"), background: trafficTicked ? t.accent : "transparent", color: "#fff" }}>
+                  {trafficTicked && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </span>
+                My site is public and opens without a login
+              </label>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setTrafficGate(null)} className="flex-1 py-3 rounded-xl border border-solid text-sm font-semibold cursor-pointer" style={{ background: "transparent", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.15)", color: t.textMuted }}>Back</button>
+                <button type="button" disabled={!trafficTicked || orderLoading} onClick={() => { const d = trafficGate.dripDays; setTrafficGate(null); submitOrder(d); }} className="flex-[1.6] py-3 rounded-xl border-none text-sm font-bold cursor-pointer disabled:cursor-not-allowed transition-opacity" style={{ background: t.accent, color: "#fff", opacity: trafficTicked ? 1 : .4 }}>
+                  {orderLoading ? "Placing…" : "Place order"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ DISCORD BOT GATE ═══ */}
+      {discordGate && (
+        <div className="no-modal-overlay flex fixed inset-0 z-50 items-end desktop:items-center justify-center px-3 pb-3 desktop:px-4 desktop:pb-0 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setDiscordGate(null)} style={{ background: "rgba(0,0,0,.5)" }}>
+          <div role="dialog" aria-modal="true" aria-label="Discord setup before ordering" className="w-full max-w-[400px] rounded-[20px] border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+            <div className="p-[18px] flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(88,101,242,.14)" : "rgba(88,101,242,.08)", color: "#5865F2" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.79 19.79 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.865-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.74 19.74 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.1 13.1 0 01-1.872-.892.077.077 0 01-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.009c.12.099.246.198.373.292a.077.077 0 01-.006.127 12.3 12.3 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.84 19.84 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>Before this order goes out</div>
+                  <div className="text-[13px] leading-[1.5] mt-1" style={{ color: t.textMuted }}>Discord only delivers into a server the bot is in. Without it the order is cancelled and refunded, every time.</div>
+                </div>
+              </div>
+              <a href={discordBotUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-[13px] rounded-xl text-[14.5px] font-bold no-underline" style={{ background: "#5865F2", color: "#fff" }}>
+                Add the bot to your server
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </a>
+              <div className="text-[10.5px] font-bold uppercase tracking-[.9px] mt-0.5" style={{ color: t.textMuted }}>Then make sure</div>
+              <div className="flex flex-col gap-[7px]">
+                {[
+                  <>Verification level is <b style={{ color: t.text, fontWeight: 600 }}>None</b> or <b style={{ color: t.text, fontWeight: 600 }}>Low</b> <span style={{ color: t.textSoft, fontSize: 12 }}>Server Settings → Safety Setup</span></>,
+                  <>Anti-raid bots are <b style={{ color: t.text, fontWeight: 600 }}>off</b></>,
+                  <>The invite link is set to <b style={{ color: t.text, fontWeight: 600 }}>never expire</b></>,
+                  <>Nobody bans or kicks members while it runs</>,
+                ].map((line, i) => (
+                  <div key={i} className="flex gap-2.5 text-[13px] leading-[1.45]" style={{ color: t.textMuted }}>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0 mt-[7px]" style={{ background: "#5865F2" }} />
+                    <span>{line}</span>
+                  </div>
+                ))}
+              </div>
+              <label className="flex items-center gap-2.5 py-[11px] px-3 rounded-xl border-[1.5px] border-solid text-[13.5px] font-semibold cursor-pointer select-none" style={{ borderColor: discordTicked ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), background: discordTicked ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)") : "transparent", color: t.text }}>
+                <input type="checkbox" checked={discordTicked} onChange={e => setDiscordTicked(e.target.checked)} className="sr-only" />
+                <span className="w-5 h-5 rounded-md border-[1.5px] border-solid flex items-center justify-center shrink-0" style={{ borderColor: discordTicked ? t.accent : (dark ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.2)"), background: discordTicked ? t.accent : "transparent", color: "#fff" }}>
+                  {discordTicked && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </span>
+                The bot is in my server
+              </label>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setDiscordGate(null)} className="flex-1 py-3 rounded-xl border border-solid text-sm font-semibold cursor-pointer" style={{ background: "transparent", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.15)", color: t.textMuted }}>Back</button>
+                <button type="button" disabled={!discordTicked || orderLoading} onClick={() => { const d = discordGate.dripDays; setDiscordGate(null); submitOrder(d); }} className="flex-[1.6] py-3 rounded-xl border-none text-sm font-bold cursor-pointer disabled:cursor-not-allowed transition-opacity" style={{ background: t.accent, color: "#fff", opacity: discordTicked ? 1 : .4 }}>
+                  {orderLoading ? "Placing…" : "Place order"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
