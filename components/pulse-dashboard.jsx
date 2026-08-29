@@ -145,10 +145,11 @@ function Month({ data }) {
   const cancelled = (data.byStatus || []).reduce((s, i) => (['Cancelled', 'Failed', 'Rejected'].includes(i.status) ? s + i.count : s), 0);
   const cancelRate = statusTotal > 0 ? Math.round((cancelled / statusTotal) * 100) : 0;
   const d = new Date(); const monthName = d.toLocaleDateString('en-NG', { month: 'long', timeZone: 'Africa/Lagos' }); const day = Number(d.toLocaleDateString('en-NG', { day: 'numeric', timeZone: 'Africa/Lagos' }));
+  // Same grid as always, in an order that keeps relatives side by side: money, then orders, then people and wallets.
   const facts = [
-    ['Revenue', naira(data.monthNetRevenue ?? data.monthRevenue)], ['Cost', naira(data.monthCost)], ['Profit', naira(data.monthProfit)], ['Markup', `${markup}%`], ['Orders', num(data.monthOrders)],
-    ['Avg order', naira(avg)], ['Deposits', naira(data.monthDeposits)], ['Depositors', num(data.monthDepositors)], ['New people', num(data.monthNewUsers)], ['Repeat buyers', `${repeat}%`],
-    ['Bonuses', naira(data.welcomeBonus?.total || 0)], ['Payouts', naira(payouts)], ['Refunds', naira(data.monthRefunds || 0)], ['Cancel rate', `${cancelRate}%`], ['Idle wallets', num(data.idleUsersWithBalance)],
+    ['Revenue', naira(data.monthNetRevenue ?? data.monthRevenue)], ['Cost', naira(data.monthCost)], ['Profit', naira(data.monthProfit)], ['Markup', `${markup}%`], ['Refunds', naira(data.monthRefunds || 0)],
+    ['Orders', num(data.monthOrders)], ['Avg order', naira(avg)], ['Cancel rate', `${cancelRate}%`], ['Repeat buyers', `${repeat}%`], ['New people', num(data.monthNewUsers)],
+    ['Deposits', naira(data.monthDeposits)], ['Depositors', num(data.monthDepositors)], ['Idle wallets', num(data.idleUsersWithBalance)], ['Bonuses', naira(data.welcomeBonus?.total || 0)], ['Payouts', naira(payouts)],
   ];
   return (
     <section className="pl-month">
