@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { requireAdmin, logActivity } from '@/lib/admin';
 import { getPointsBalanceKoboTx, pointsFromKoboExact } from '@/lib/nitro-rewards';
+import { STATUS_TIERS } from '@/lib/nitro-rewards-core';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('rewards');
@@ -49,6 +50,13 @@ export async function GET(req) {
       }),
     ]);
 
+    // Who bought in the period, by the status they held when they bought, with what that status takes off.
+    let ladderRows = [];
+    try { ladderRows = await prisma.order.groupBy({ by: ['nitroStatusAtPurchase'], where: orderWhere, _count: { userId: true } }); } catch { ladderRows = []; }
+    const buyersByStatus = {};
+    for (const r of ladderRows) buyersByStatus[(r.nitroStatusAtPurchase || 'spark').toLowerCase()] = r._count.userId;
+    const statusLadder = STATUS_TIERS.map(t => ({ key: t.key, name: t.name, discountPct: t.discountPct, orders: buyersByStatus[t.key] || 0, color: t.color }));
+
     const byType = {};
     for (const r of totals) {
       byType[r.type] = { kobo: r._sum.pointsKobo || 0, count: r._count };
@@ -68,6 +76,7 @@ export async function GET(req) {
     const netLiabilityChangeKobo = Object.values(byType).reduce((sum, row) => sum + (row.kobo || 0), 0);
 
     return Response.json({
+      statusLadder,
       liability: { kobo: liability._sum.pointsKobo || 0, points: pointsFromKoboExact(liability._sum.pointsKobo || 0) },
       byType,
       cost: {
