@@ -30,7 +30,7 @@ const CSS = `
 }
 `;
 
-export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", onDismiss }) {
+export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", onDismiss, preview = false }) {
   const [dismissed, setDismissed] = useState(new Set());
   const [leaving, setLeaving] = useState(null);
 
@@ -65,7 +65,7 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
     }, 250);
   };
 
-  const visible = (alerts || []).filter(a => !dismissed.has(a.id));
+  const visible = preview ? (alerts || []) : (alerts || []).filter(a => !dismissed.has(a.id));
   if (visible.length === 0) return null;
 
   const alert = visible[0];
@@ -85,7 +85,7 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
     <div
       className={`an${landing ? " an-land" : ""} ${isLeaving ? "animate-[announceOut_.25s_ease_forwards]" : "animate-[announceIn_.35s_cubic-bezier(.34,1.2,.64,1)_both]"}`}
       role="status"
-      style={{ ...vars, ...(landing
+      style={{ ...vars, ...(preview ? { marginBottom: 0 } : landing
         ? { position: "fixed", top: 57, left: 0, right: 0, zIndex: 90, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }
         : { marginBottom: 16 }) }}
     >
@@ -104,7 +104,7 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
         </a>
       )}
       {visible.length > 1 && <span className="an-cnt">1 of {visible.length}</span>}
-      <button type="button" onClick={() => dismiss(alert)} className="an-x" aria-label="Dismiss">
+      <button type="button" onClick={() => { if (!preview) dismiss(alert); }} className="an-x" aria-label="Dismiss" tabIndex={preview ? -1 : 0}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>

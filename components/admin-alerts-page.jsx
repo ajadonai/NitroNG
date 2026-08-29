@@ -1,225 +1,197 @@
 'use client';
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { fD } from "../lib/format";
+import AnnouncementBanner from "./announcement-banner";
+
+// Three things on one page: what is live right now across every audience, a
+// composer that shows the strip exactly as people will see it, and the past
+// notices with a one-tap restore. Several notices can be live at once; the
+// newest shows first. Nothing on a live row is destructive: Take down moves a
+// notice to Past, and Remove lives there, where it means what it says.
+const AUD = { everyone: "Everyone", landing: "Visitors", users: "Users", admin: "Admin" };
+const TYPES = [["info", "Notice"], ["warning", "Heads up"], ["success", "Fixed"], ["urgent", "Urgent"]];
+const EXPIRY = [["never", "When I take it down"], ["6h", "6 h"], ["24h", "24 h"], ["3d", "3 days"]];
+const EXPIRY_MS = { "6h": 6 * 3600e3, "24h": 24 * 3600e3, "3d": 3 * 86400e3 };
+const PLACEHOLDER = "What is affected · what it means for them · what we are doing. e.g. Instagram Followers *Budget* is delivering slower than usual. Orders still go through, just past the estimate.";
+const CH = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
+
+const bold = (msg) => String(msg || "").split(/(\*[^*]+\*)/).map((p, i) => p.startsWith("*") && p.endsWith("*") ? <b key={i}>{p.slice(1, -1)}</b> : p);
+const post = (body) => fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
 export function AdminAlertsPage({ dark, t }) {
   const confirm = useConfirm();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(null);
-  const [newMsg, setNewMsg] = useState("");
-  const [newType, setNewType] = useState("info");
-  const [newActionLabel, setNewActionLabel] = useState("");
-  const [newActionHref, setNewActionHref] = useState("");
   const [saving, setSaving] = useState(false);
+  const [pastShown, setPastShown] = useState(6);
+  const blank = { target: "users", type: "info", message: "", actionLabel: "", actionHref: "", expiry: "never" };
+  const [form, setForm] = useState(blank);
+  const [editing, setEditing] = useState(null);      // alert id being edited, if any
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   useEffect(() => {
     fetch("/api/admin/alerts").then(r => r.json()).then(d => { setAlerts(d.alerts || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  const createAlert = async (target) => {
-    if (!newMsg.trim() || saving) return;
+  const live = useMemo(() => alerts.filter(a => a.active), [alerts]);
+  const past = useMemo(() => alerts.filter(a => !a.active), [alerts]);
+  const liveFor = (target) => live.filter(a => a.target === target || a.target === "everyone" || target === "everyone");
+
+  const submit = async () => {
+    const message = form.message.trim();
+    if (!message || saving) return;
     setSaving(true);
     try {
-      const body = { action: "create", message: newMsg, type: newType, target };
-      if (newActionLabel.trim() && newActionHref.trim()) {
-        body.actionLabel = newActionLabel;
-        body.actionHref = newActionHref;
+      const hasAction = form.actionLabel.trim() && form.actionHref.trim();
+      const expiresAt = EXPIRY_MS[form.expiry] ? new Date(Date.now() + EXPIRY_MS[form.expiry]).toISOString() : null;
+      if (editing) {
+        const res = await post({ action: "update", id: editing, message, type: form.type, target: form.target, actionLabel: hasAction ? form.actionLabel.trim() : null, actionHref: hasAction ? form.actionHref.trim() : null, expiresAt });
+        if (res.ok) setAlerts(prev => prev.map(a => a.id === editing ? { ...a, message, type: form.type, target: form.target, actionLabel: hasAction ? form.actionLabel.trim() : null, actionHref: hasAction ? form.actionHref.trim() : null, expiresAt } : a));
+      } else {
+        const body = { action: "create", message, type: form.type, target: form.target, expiresAt };
+        if (hasAction) { body.actionLabel = form.actionLabel.trim(); body.actionHref = form.actionHref.trim(); }
+        const res = await post(body);
+        const data = await res.json();
+        if (res.ok && data.alert) setAlerts(prev => [{ ...data.alert, expiresAt, created: data.alert.created || new Date().toISOString() }, ...prev]);
       }
-      const res = await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const data = await res.json();
-      if (res.ok && data.alert) {
-        setAlerts(prev => [data.alert, ...prev]);
-        setNewMsg(""); setCreating(null); setNewType("info"); setNewActionLabel(""); setNewActionHref("");
-      }
+      setForm(blank); setEditing(null);
     } catch {}
     setSaving(false);
   };
 
-  const toggleAlert = async (id, active, target) => {
+  const setActive = async (id, active) => {
     try {
-      await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id }) });
-      if (!active) {
-        setAlerts(prev => prev.map(a => a.id === id ? { ...a, active: !active } : a));
-      } else {
-        setAlerts(prev => prev.map(a => a.id === id ? { ...a, active: false } : a));
-      }
+      const res = await post({ action: "toggle", id });
+      if (res.ok) setAlerts(prev => prev.map(a => a.id === id ? { ...a, active } : a));
     } catch {}
   };
-
-  const deleteAlert = async (id) => {
-    try {
-      await fetch("/api/admin/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
-      setAlerts(prev => prev.filter(a => a.id !== id));
-    } catch {}
+  const remove = async (a) => {
+    const ok = await confirm({ title: "Remove notice", message: `Remove "${a.message.slice(0, 60)}${a.message.length > 60 ? "…" : ""}" for good?`, confirmLabel: "Remove", danger: true });
+    if (!ok) return;
+    try { const res = await post({ action: "delete", id: a.id }); if (res.ok) setAlerts(prev => prev.filter(x => x.id !== a.id)); } catch {}
+  };
+  const edit = (a) => {
+    setEditing(a.id);
+    setForm({ target: a.target, type: a.type, message: a.message, actionLabel: a.actionLabel || "", actionHref: a.actionHref || "", expiry: "never" });
+    document.getElementById("aa-composer")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const typeColors = { info: t.accent, warning: dark ? "#fbbf24" : "#d97706", success: dark ? "#6ee7b7" : "#059669", urgent: dark ? "#fca5a5" : "#dc2626" };
-  const typeIcons = {
-    info: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>,
-    warning: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
-    success: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
-    urgent: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+  const vars = {
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
+    "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": dark ? "#e0a0b0" : "#c47d8e", "--ac-bg": dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)",
+    "--warn": dark ? "#fcd34d" : "#b45309", "--warn-bg": dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.09)",
+    "--ok": dark ? "#6ee7b7" : "#0a7d54", "--ok-bg": dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)",
+    "--bad": dark ? "#fca5a5" : "#c62828", "--bad-bg": dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.09)",
+    "--pri": t.accent,
   };
-  const typeSvgs = {
-    info: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>,
-    warning: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
-    success: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
-    urgent: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
-  };
+  const tcls = { info: "t-ac", warning: "t-warn", success: "t-ok", urgent: "t-bad" };
+  const tlabel = Object.fromEntries(TYPES);
+  const previewAlerts = [
+    { id: "preview", message: form.message.trim() || "Your notice will read like this.", type: form.type, actionLabel: form.actionLabel.trim() && form.actionHref.trim() ? form.actionLabel.trim() : null, actionHref: form.actionHref.trim() || null },
+    ...liveFor(form.target).filter(a => a.id !== editing),
+  ];
 
-  const [histPage, setHistPage] = useState({});
-  const getActives = (target) => alerts.filter(a => a.target === target && a.active);
-  const getHistory = (target) => alerts.filter(a => a.target === target && !a.active);
-  const everyoneActive = getActives("everyone")[0];
-
-  const renderSlotCard = (target, title, desc, isOverride) => {
-    const actives = getActives(target);
-    const history = getHistory(target);
-    const isCreating = creating === target;
-    const cardBorder = isOverride ? (dark ? "rgba(251,191,36,.24)" : "rgba(217,119,6,.19)") : t.cardBorder;
-    const cardBg = isOverride ? (dark ? "rgba(251,191,36,.03)" : "rgba(217,119,6,.02)") : (dark ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.85)");
-    const inputBg = dark ? "#131728" : "#fff";
-
-    return (
-        <div key={target} className="set-card" style={{ background: cardBg, border: `0.5px solid ${cardBorder}` }}>
-          <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <div className="set-card-title" style={{ color: isOverride ? (dark ? "#fbbf24" : "#d97706") : t.textMuted }}>{isOverride ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>{" "}</> : ""}{title}</div>
-            <div className="set-card-desc" style={{ color: t.textMuted }}>{desc}</div>
-          </div>
-          <div className="set-card-body">
-
-          {actives.length ? (
-            <>
-              {actives.map(active => (
-                <div key={active.id} className="mb-3">
-
-              <div className="flex items-center gap-2.5 py-3 px-3.5 rounded-[10px] mb-2" style={{
-                background: dark ? `${typeColors[active.type]}15` : `${typeColors[active.type]}08`,
-                border: `1px solid ${dark ? `${typeColors[active.type]}40` : `${typeColors[active.type]}30`}`,
-                borderLeft: `3px solid ${typeColors[active.type]}`,
-              }}>
-                <span className="shrink-0" style={{ color: typeColors[active.type] }}>{typeIcons[active.type] || typeIcons.info}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium" style={{ color: t.text }}>
-                    {active.message.split(/(\*[^*]+\*)/).map((p, i) => p.startsWith('*') && p.endsWith('*') ? <strong key={i}>{p.slice(1, -1)}</strong> : p)}
-                    {active.actionLabel && active.actionHref && <span className="text-xs font-semibold ml-1.5" style={{ color: typeColors[active.type] }}>{active.actionLabel}</span>}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[11px] font-semibold py-0.5 px-2 rounded-md" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.06)", color: dark ? "#6ee7b7" : "#059669" }}>Live</span>
-                    {active.created && <span className="text-[11px]" style={{ color: t.textMuted }}>{fD(active.created)}</span>}
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-1.5 flex-wrap">
-                <button onClick={() => toggleAlert(active.id, true, target)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(251,191,36,.24)" : "rgba(217,119,6,.19)", color: dark ? "#fbbf24" : "#d97706" }}>Pause</button>
-                <button onClick={async () => { const ok = await confirm({ title: "Delete Alert", message: `Delete "${active.message?.slice(0, 50)}..."?`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(active.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
-              </div>
-                </div>
-              ))}
-              <div className={`flex ${history.length > 0 ? "mb-3" : ""}`}>
-                <button onClick={() => { setCreating(target); setNewMsg(""); setNewType("info"); setNewActionLabel(""); setNewActionHref(""); }} className="adm-btn-sm ml-auto" style={{ borderColor: t.cardBorder, color: t.accent }}>+ New</button>
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: t.textMuted }} />
-              <span className="text-[13px]" style={{ color: t.textMuted }}>No live notices</span>
-              <button onClick={() => { setCreating(target); setNewMsg(""); setNewType("info"); setNewActionLabel(""); setNewActionHref(""); }} className="adm-btn-primary ml-auto text-xs py-1.5 px-3.5">+ Create</button>
-            </div>
-          )}
-
-          {isCreating && (
-            <div className="mt-2 pt-3" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-              <textarea value={newMsg} onChange={e => setNewMsg(e.target.value)} placeholder="What is affected · what it means for them · what we are doing. e.g. Instagram Followers *Budget* is delivering slower than usual. Orders still go through, just past the estimate." rows={3} className="w-full py-2.5 px-3.5 rounded-lg border text-sm outline-none resize-y font-[inherit] box-border mb-1.5" style={{ borderColor: t.cardBorder, background: inputBg, color: t.text }} />
-              <div className="text-[11px] mb-3" style={{ color: t.textMuted }}>Wrap text in <code className="py-0.5 px-1 rounded text-[10px]" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>*asterisks*</code> for <strong>bold</strong></div>
-              <div className="flex gap-2 mb-3">
-                <input value={newActionLabel} onChange={e => setNewActionLabel(e.target.value)} placeholder="Link text (optional)" className="flex-1 py-2 px-3 rounded-lg border text-[13px] outline-none font-[inherit] box-border" style={{ borderColor: t.cardBorder, background: inputBg, color: t.text }} />
-                <input value={newActionHref} onChange={e => setNewActionHref(e.target.value)} placeholder="URL, e.g. /services" className="flex-[2] py-2 px-3 rounded-lg border text-[13px] outline-none font-[inherit] box-border" style={{ borderColor: t.cardBorder, background: inputBg, color: t.text }} />
-              </div>
-              <div className="flex gap-1.5 mb-3">
-                {[["info", "Info"], ["success", "Success"], ["warning", "Warning"], ["urgent", "Urgent"]].map(([ty, label]) => (
-                  <button key={ty} onClick={() => setNewType(ty)} className="flex-1 py-2 rounded-lg text-xs font-semibold cursor-pointer border font-[inherit] transition-transform duration-150 hover:-translate-y-px flex items-center justify-center gap-1.5" style={{
-                    borderColor: newType === ty ? typeColors[ty] : t.cardBorder,
-                    background: newType === ty ? (dark ? `${typeColors[ty]}15` : `${typeColors[ty]}08`) : "transparent",
-                    color: newType === ty ? typeColors[ty] : t.textMuted,
-                  }}><span style={{ color: newType === ty ? typeColors[ty] : t.textMuted }}>{typeSvgs[ty]}</span> {label}</button>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => createAlert(target)} disabled={!newMsg.trim() || saving} className="adm-btn-primary flex-1 text-[13px]" style={{ opacity: newMsg.trim() && !saving ? 1 : .4 }}>{saving ? "Creating..." : isOverride ? "Create override" : "Create alert"}</button>
-                <button onClick={() => setCreating(null)} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-              </div>
-            </div>
-          )}
-
-          {history.length > 0 && (() => {
-            const PER_PAGE = 3;
-            const page = histPage[target] || 0;
-            const totalPages = Math.ceil(history.length / PER_PAGE);
-            const slice = history.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
-            return (
-            <>
-              <div className="flex items-center gap-2 mt-3.5 mb-2">
-                <div className="text-[11px] font-semibold tracking-[1.5px] uppercase py-1 px-2 rounded" style={{ color: t.textMuted, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)" }}>History</div>
-                {totalPages > 1 && <span className="text-[11px] ml-auto" style={{ color: t.textMuted }}>{page + 1}/{totalPages}</span>}
-              </div>
-              {slice.map(a => (
-                <div key={a.id} className="flex items-center gap-2 py-2 text-[13px]" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.05)"}` }}>
-                  <span className="shrink-0" style={{ color: typeColors[a.type] || t.textMuted }}>{typeSvgs[a.type] || typeSvgs.info}</span>
-                  <span className="flex-1 truncate" style={{ color: t.textMuted }}>{a.message}</span>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => toggleAlert(a.id, false, target)} className="adm-btn-sm py-[3px] px-2 text-[11px]" style={{ borderColor: t.cardBorder, color: dark ? "#6ee7b7" : "#059669" }}>Reactivate</button>
-                    <button onClick={async () => { const ok = await confirm({ title: "Delete", message: `Delete this alert?`, confirmLabel: "Delete", danger: true }); if (ok) deleteAlert(a.id); }} className="adm-btn-sm py-[3px] px-2 text-[11px]" style={{ borderColor: dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.18)", color: dark ? "#fca5a5" : "#dc2626" }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-end gap-1.5 mt-2">
-                  <button onClick={() => setHistPage(p => ({ ...p, [target]: Math.max(0, page - 1) }))} disabled={page === 0} className="adm-btn-sm py-[3px] px-2 text-[11px]" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page === 0 ? .3 : 1 }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                  </button>
-                  <button onClick={() => setHistPage(p => ({ ...p, [target]: Math.min(totalPages - 1, page + 1) }))} disabled={page >= totalPages - 1} className="adm-btn-sm py-[3px] px-2 text-[11px]" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page >= totalPages - 1 ? .3 : 1 }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-                </div>
-              )}
-            </>
-            );
-          })()}
-          </div>
-        </div>
-    );
-  };
-
-  if (loading) return <><div className="adm-header"><div className="adm-title" style={{ color: t.text }}>Announcements</div><div className="adm-subtitle" style={{ color: t.textMuted }}>Loading...</div><div className="page-divider" style={{ background: t.cardBorder }} /></div><div>{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[60px] rounded-[10px] mb-2`} />)}</div></>;
+  const Row = ({ a, livePane }) => (
+    <div className={`aa-row ${tcls[a.type] || "t-ac"}`}>
+      <div className="aa-top"><span className="aa-dot" /><span className="aa-lbl">{tlabel[a.type] || "Notice"}</span><span className="aa-aud">{AUD[a.target] || a.target}</span><span className="aa-who">{a.createdBy} · {a.created ? fD(a.created) : ""}{a.expiresAt ? ` · comes down ${fD(a.expiresAt)}` : ""}</span></div>
+      <div className="aa-msg">{bold(a.message)}{a.actionLabel && a.actionHref && <a className="aa-act" href={a.actionHref} target="_blank" rel="noopener noreferrer">{a.actionLabel}{CH}</a>}</div>
+      <div className="aa-acts">
+        {livePane
+          ? <><button type="button" className="aa-b" onClick={() => setActive(a.id, false)}>Take down</button><button type="button" className="aa-b" onClick={() => edit(a)}>Edit</button></>
+          : <><button type="button" className="aa-b sm" onClick={() => setActive(a.id, true)}>Restore</button><button type="button" className="aa-b sm danger" onClick={() => remove(a)}>Remove</button></>}
+      </div>
+    </div>
+  );
 
   return (
     <>
       <div className="adm-header">
         <div>
           <div className="adm-title" style={{ color: t.text }}>Announcements</div>
-          <div className="adm-subtitle" style={{ color: t.textMuted }}>Notices for each audience. Several can be live at once; the newest shows first</div>
+          <div className="adm-subtitle" style={{ color: t.textMuted }}>Notices at the top of the site. Several can be live at once; the newest shows first.</div>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
+      <div className="aa" style={vars}>
+        <style>{CSS}</style>
 
-      {everyoneActive && (
-        <div className="text-xs mb-2 flex items-center gap-1.5" style={{ color: dark ? "#fbbf24" : "#d97706" }}>
-          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span> Everyone override is active — individual slot alerts are hidden while this is live.
-        </div>
-      )}
+        <section className="aa-card">
+          <header><h3>Live now</h3><span className="aa-cnt">{loading ? "Loading…" : `${live.length} ${live.length === 1 ? "notice" : "notices"}`}</span></header>
+          {!loading && live.length === 0 && <div className="aa-empty">Nothing is live. Post a notice below and it shows at once.</div>}
+          {live.map(a => <Row key={a.id} a={a} livePane />)}
+        </section>
 
-      <div className="grid grid-cols-2 max-md:grid-cols-1 gap-4">
-        {renderSlotCard("everyone", "Everyone", "Shows to visitors, users and admins, alongside each audience's own notices.", true)}
-        {renderSlotCard("landing", "Landing page", "Shown to visitors on the landing page before they log in.")}
-        {renderSlotCard("users", "Users", "Shown to logged-in users across all dashboard pages.")}
-        {renderSlotCard("admin", "Admin", "Internal notes shown only in the admin panel.")}
+        <section className="aa-card" id="aa-composer">
+          <header><h3>{editing ? "Edit notice" : "Post a notice"}</h3><span className="aa-cnt">Shows at the top of the page for the audience you pick</span></header>
+          <div className="aa-cb">
+            <div className="aa-row2">
+              <div className="aa-fld"><label>Who sees it</label><div className="aa-segs">{Object.entries(AUD).map(([k, v]) => <button type="button" key={k} className={`aa-seg${form.target === k ? " on" : ""}`} onClick={() => set("target", k)}>{v}</button>)}</div></div>
+              <div className="aa-fld"><label>What kind</label><div className="aa-segs aa-types">{TYPES.map(([k, v]) => <button type="button" key={k} className={`aa-seg ${tcls[k]}${form.type === k ? " on" : ""}`} onClick={() => set("type", k)}><i />{v}</button>)}</div></div>
+            </div>
+            <div className="aa-fld">
+              <label>Message</label>
+              <textarea className="aa-ta" rows={3} value={form.message} onChange={e => set("message", e.target.value)} placeholder={PLACEHOLDER} />
+              <span className="aa-hint">What is affected · what it means for them · what we are doing. Wrap a word in *stars* to make it bold.</span>
+            </div>
+            <div className="aa-row2">
+              <div className="aa-fld"><label>Link <em>optional</em></label><div className="aa-inl"><input className="aa-in" value={form.actionLabel} onChange={e => set("actionLabel", e.target.value)} placeholder="Link text" /><input className="aa-in wide" value={form.actionHref} onChange={e => set("actionHref", e.target.value)} placeholder="https://nitro.ng/…" /></div></div>
+              <div className="aa-fld"><label>Comes down</label><div className="aa-segs">{EXPIRY.map(([k, v]) => <button type="button" key={k} className={`aa-seg${form.expiry === k ? " on" : ""}`} onClick={() => set("expiry", k)}>{v}</button>)}</div></div>
+            </div>
+            <div className="aa-fld"><label>How it will look</label><AnnouncementBanner alerts={previewAlerts} dark={dark} mode="dashboard" preview /></div>
+            <div className="aa-foot">
+              <button type="button" className="aa-pri" disabled={!form.message.trim() || saving} onClick={submit}>{saving ? "Saving…" : editing ? "Save changes" : "Post notice"}</button>
+              {editing && <button type="button" className="aa-b" onClick={() => { setEditing(null); setForm(blank); }}>Cancel</button>}
+              <span className="aa-hint">Goes live at once. Live notices stack; the newest shows first.</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="aa-card">
+          <header><h3>Past notices</h3><span className="aa-cnt">Taken down, kept here. Restore brings one back as-is; Remove is for good</span></header>
+          {!loading && past.length === 0 && <div className="aa-empty">No past notices yet.</div>}
+          {past.slice(0, pastShown).map(a => <Row key={a.id} a={a} />)}
+          {past.length > pastShown && <button type="button" className="aa-more" onClick={() => setPastShown(n => n + 12)}>Show {Math.min(12, past.length - pastShown)} more</button>}
+        </section>
       </div>
     </>
   );
 }
 
+const CSS = `
+.aa{display:flex;flex-direction:column;gap:16px;color:var(--ink)}
+.aa *{box-sizing:border-box}
+.aa-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.aa-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}
+.aa-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.aa-cnt{font-size:11.5px;color:var(--dim);text-align:right}
+.aa-empty{padding:18px 16px;font-size:13px;color:var(--dim)}
+.t-ac{--c:var(--ac);--cbg:var(--ac-bg)}.t-warn{--c:var(--warn);--cbg:var(--warn-bg)}.t-ok{--c:var(--ok);--cbg:var(--ok-bg)}.t-bad{--c:var(--bad);--cbg:var(--bad-bg)}
+.aa-dot{width:8px;height:8px;border-radius:50%;background:var(--c);flex-shrink:0;box-shadow:0 0 0 3px var(--cbg)}
+.aa-lbl{font-size:10.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--c);flex-shrink:0}
+.aa-aud{font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);background:var(--soft);border:1px solid var(--line);padding:2px 7px;border-radius:999px}
+.aa-who{font-size:11.5px;color:var(--dim);margin-left:auto;white-space:nowrap}
+.aa-row{padding:12px 16px;border-top:1px solid var(--rail);display:flex;flex-direction:column;gap:8px}.aa-row:first-of-type{border-top:0}
+.aa-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.aa-msg{font-size:13.5px;line-height:1.45;padding-left:16px}.aa-msg b{font-weight:700}
+.aa-act{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;font-weight:700;color:var(--c);white-space:nowrap;text-decoration:none;margin-left:8px}.aa-act svg{width:12px;height:12px}
+.aa-acts{display:flex;gap:6px;padding-left:16px}
+.aa-b{font:inherit;font-size:12px;font-weight:600;padding:6px 11px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}.aa-b.danger{color:var(--bad)}.aa-b.sm{padding:4px 9px;font-size:11.5px}
+.aa-more{display:block;width:100%;padding:10px;border:0;border-top:1px solid var(--rail);background:transparent;color:var(--mut);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.aa-cb{padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px}
+.aa-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.aa-fld{display:flex;flex-direction:column;gap:6px;min-width:0}.aa-fld label{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}.aa-fld label em{font-style:normal;font-weight:500;letter-spacing:0;text-transform:none;color:var(--dim);margin-left:4px}
+.aa-segs{display:flex;gap:4px;padding:3px;border-radius:11px;background:var(--soft);border:1px solid var(--line)}
+.aa-seg{flex:1;font:inherit;font-size:12.5px;font-weight:600;padding:7px 8px;border-radius:8px;border:0;background:transparent;color:var(--mut);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.aa-seg.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.aa-types .aa-seg i{width:7px;height:7px;border-radius:50%;background:var(--c)}.aa-types .aa-seg.on{color:var(--c)}
+.aa-ta{width:100%;min-height:74px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;line-height:1.5;resize:vertical;outline:none}.aa-ta:focus{border-color:var(--pri)}
+.aa-hint{font-size:11.5px;color:var(--dim);line-height:1.45}
+.aa-inl{display:flex;gap:8px}.aa-in{flex:1;min-width:0;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13px;outline:none}.aa-in.wide{flex:2}.aa-in:focus{border-color:var(--pri)}
+.aa-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.aa-pri{font:inherit;font-size:13.5px;font-weight:800;padding:11px 18px;border-radius:11px;border:0;background:var(--pri);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(196,125,142,.28)}.aa-pri:disabled{opacity:.45;cursor:default;box-shadow:none}
+@media (max-width:767px){
+  .aa-row2{grid-template-columns:1fr}.aa-who{margin-left:0;flex-basis:100%}
+  .aa-seg{font-size:12px;padding:7px 5px}
+}
+`;
