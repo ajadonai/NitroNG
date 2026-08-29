@@ -18,7 +18,15 @@ export async function GET() {
 
     const sensitive = canSeeSensitive(admin);
 
+    // How busy each person has been, for the roster. Telegram actions land under "Name (TG)".
+    const actions30 = {};
+    try {
+      const rows = await prisma.activityLog.groupBy({ by: ['adminName'], where: { createdAt: { gte: new Date(Date.now() - 30 * 864e5) } }, _count: true });
+      rows.forEach(r => { const n = String(r.adminName || '').replace(/\s*\(TG\)\s*$/, ''); if (!actions30[n]) actions30[n] = { total: 0, telegram: 0 }; actions30[n].total += r._count; if (/\(TG\)\s*$/.test(r.adminName || '')) actions30[n].telegram += r._count; });
+    } catch {}
+
     return Response.json({
+      actions30,
       admins: admins.map(a => ({
         ...a,
         email: sensitive ? a.email : maskEmail(a.email),

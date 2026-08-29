@@ -231,7 +231,7 @@ const ALL_PAGES = [
   { id:"payments", label:"Payments", g:"Finance" },{ id:"finance", label:"Finance", g:"Finance" },{ id:"financials", label:"Breakdown (Finance)", g:"Finance" },{ id:"rewards", label:"Rewards", g:"Finance" },
   { id:"refills", label:"Refills", g:"Main" },{ id:"outreach", label:"Outreach", g:"Marketing" },
   { id:"crew", label:"Crew", g:"Marketing" },{ id:"promotions", label:"Promotions", g:"Marketing" },{ id:"acquisition", label:"Acquisition", g:"Marketing" },{ id:"changelog", label:"Changelog", g:"Marketing" },{ id:"issues", label:"Issues", g:"Marketing" },{ id:"tasks", label:"Tasks", g:"Marketing" },
-  { id:"alerts", label:"Alerts", g:"System" },{ id:"notifications", label:"Notifications", g:"System" },{ id:"activity", label:"Activity Log", g:"System" },{ id:"team", label:"Team", g:"System" },{ id:"api", label:"API", g:"System" },{ id:"maintenance", label:"Maintenance", g:"System" },{ id:"settings", label:"Settings", g:"System" },
+  { id:"alerts", label:"Alerts", g:"System" },{ id:"notifications", label:"Notifications", g:"System" },{ id:"activity", label:"Logs", g:"System" },{ id:"team", label:"Team", g:"System" },{ id:"api", label:"Providers", g:"System" },{ id:"maintenance", label:"Maintenance", g:"System" },{ id:"settings", label:"Settings", g:"System" },
 ];
 const GRANTABLE_ACTIONS = [
   { id: "orders.dispatch", label: "Dispatch Orders", g: "Orders" },
@@ -271,13 +271,13 @@ const ACTION_GROUPS = [...new Set(GRANTABLE_ACTIONS.map(a => a.g))];
 export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
   const confirm = useConfirm();
   const toast = useToast();
-  const parseActions = (str) => { try { return str ? JSON.parse(str) : []; } catch(e) { return []; } };
+  const parseActions = (str) => { try { return str ? JSON.parse(str) : []; } catch { return []; } };
   const [admins, setAdmins] = useState([]);
+  const [actions30, setActions30] = useState({});
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
-  const [expandedId, setExpandedId] = useState(null);
-  const [permTab, setPermTab] = useState("permissions");
+  const [openId, setOpenId] = useState(null);
+  const [permTab, setPermTab] = useState("pages");
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -287,11 +287,10 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
   const [localActions, setLocalActions] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const reload = () => fetch("/api/admin/team").then(r => r.json()).then(d => setAdmins(d.admins || []));
+  const reload = () => fetch("/api/admin/team").then(r => r.json()).then(d => { setAdmins(d.admins || []); setActions30(d.actions30 || {}); });
   useEffect(() => { reload().finally(() => setLoading(false)); }, []);
-
   const act = async (body) => {
-    setSaving(true); 
+    setSaving(true);
     try {
       const res = await fetch("/api/admin/team", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
@@ -299,252 +298,209 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
       await reload(); setSaving(false); return data;
     } catch { toast.error("Request failed", "Check your connection"); setSaving(false); return false; }
   };
-
   const createAdmin = async () => {
     if (!newName.trim() || !newEmail.trim() || !newPw.trim()) return;
     const ok = await act({ action: "create", name: newName, email: newEmail, password: newPw, role: newRole });
-    if (ok) { setShowAdd(false); setNewName(""); setNewEmail(""); setNewPw(""); toast.success("Admin created", ""); }
+    if (ok) { setShowAdd(false); setNewName(""); setNewEmail(""); setNewPw(""); toast.success("Added", `${newName} can sign in now`); }
   };
-
-  const getEffective = (a) => {
-    if (a.role === "owner" || a.role === "superadmin") return ALL_PAGES.map(p => p.id);
-    return a.customPages || DEFAULT_PAGES[a.role] || [];
-  };
-
+  const fullAccess = (a) => a.role === "owner" || a.role === "superadmin";
+  const effectivePages = (a) => fullAccess(a) ? ALL_PAGES.map(p => p.id) : (a.customPages || DEFAULT_PAGES[a.role] || []);
   const canManage = currentAdmin?.role === "owner" || currentAdmin?.role === "superadmin";
-  const inputCls = "w-full py-2.5 px-3.5 rounded-lg border border-solid text-[15px] outline-none box-border font-[inherit]";
-  const inputStyle = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
-  const cardBg = t.cardBg;
-  const cardBd = `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`;
-  const headerBg = dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)";
-  const headerBorder = `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`;
-  const selectSt = {
-    backgroundColor: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)",
-    border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`,
-    color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)",
-    backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
+  const open = admins.find(a => a.id === openId) || null;
+  const closeDrawer = () => { setOpenId(null); setLocalPages(null); setLocalActions(null); setResetPw(""); setPermTab("pages"); };
+  const openDrawer = (a) => { setOpenId(a.id); setLocalPages(null); setLocalActions(null); setResetPw(""); setPermTab("pages"); };
+  useEffect(() => {
+    if (!open && !showAdd) return;
+    const prev = document.body.style.overflow; document.body.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape") { closeDrawer(); setShowAdd(false); } };
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
+  }, [open, showAdd]);
+  const dirty = localPages !== null || localActions !== null;
+  const saveDrawer = async () => {
+    if (!open) return;
+    let ok = true;
+    if (localPages !== null) ok = await act({ action: "updatePermissions", adminId: open.id, pages: localPages }) && ok;
+    if (localActions !== null) ok = await act({ action: "updateActions", adminId: open.id, actions: localActions }) && ok;
+    if (ok) { toast.success("Saved", `${open.name}'s access updated`); setLocalPages(null); setLocalActions(null); }
   };
 
-  // Stats
-  const roleCounts = {};
-  admins.forEach(a => { roleCounts[a.role] = (roleCounts[a.role] || 0) + 1; });
-  const activeCount = admins.filter(a => a.status === "Active").length;
-
+  const initialsOf = (n) => (n || "?").split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+  const when = (iso) => { if (!iso) return "never"; const d = new Date(iso); const diff = Date.now() - d.getTime(); if (diff < 3600e3) return `${Math.max(1, Math.round(diff / 60e3))} min ago`; if (diff < 86400e3) return `today ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`; if (diff < 7 * 86400e3) return `${Math.round(diff / 86400e3)} days ago`; return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
+  const reachOf = (a) => fullAccess(a) ? "Everything" : `${effectivePages(a).length} pages${a.customPages ? " · custom" : ""}`;
+  const actsOf = (a) => actions30[a.name]?.total || 0;
+  const activeToday = admins.filter(a => new Date(a.lastActive).toDateString() === new Date().toDateString()).length;
+  const quiet = admins.filter(a => Date.now() - new Date(a.lastActive).getTime() > 30 * 864e5);
+  const busiest = [...admins].sort((a, b) => actsOf(b) - actsOf(a)).slice(0, 2);
+  const ROLE_LINE = { owner: "Everything. Only one, cannot be changed.", superadmin: "Everything, including the team and settings.", admin: "Most pages. Pages and abilities can be trimmed or added.", support: "Orders and users. Approving money is a grant.", finance: "Payments and the books. Nothing else.", staff: "Overview, orders, refills, users and outreach." };
+  const roleColor = (r) => (ROLE_INFO[r] || { color: "#6ee7b7" }).color;
+  const vars = {
+    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent, "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828", "--in": dark ? "#131728" : "#fff",
+  };
+  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
+  const pagesShown = open ? (localPages !== null ? localPages : (open.customPages || DEFAULT_PAGES[open.role] || [])) : [];
+  const actionsShown = open ? (localActions !== null ? localActions : parseActions(open.customActions)) : [];
+  const togglePage = (id) => setLocalPages(prev => { const cur = prev !== null ? prev : (open.customPages || DEFAULT_PAGES[open.role] || []); return cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id]; });
+  const toggleAction = (id) => setLocalActions(prev => { const cur = prev !== null ? prev : parseActions(open.customActions); return cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id]; });
+  const editable = open && canManage && open.role !== "owner";
   return (
-    <>
+    <div className="tm" style={vars}>
+      <style>{TM_CSS}</style>
       <div className="adm-header">
-        <div className="flex justify-between items-start">
+        <div className="adm-header-row">
           <div>
             <div className="adm-title" style={{ color: t.text }}>Team</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>{admins.length} members · Manage roles, permissions & passwords</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>Who can sign in to the panel, and what each person can touch.</div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={() => { setShowGuide(!showGuide); if (!showGuide) setShowAdd(false); }} className="adm-btn-sm flex items-center gap-1.5" style={{ borderColor: t.cardBorder, color: t.accent }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              {showGuide ? "Hide Guide" : "Role Guide"}
-            </button>
-            {canManage && <button onClick={() => { setShowAdd(!showAdd); if (!showAdd) setShowGuide(false); }} className="adm-btn-primary flex items-center gap-1.5">
-              {showAdd ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel</> : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Admin</>}
-            </button>}
-          </div>
+          {canManage && <button type="button" className="tm-b pri" onClick={() => setShowAdd(true)}>Add a person</button>}
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {/* Stats */}
-      <div className="adm-stats mt-4">
-        {[
-          ["Total", String(admins.length), t.accent],
-          ["Active", String(activeCount), dark ? "#6ee7b7" : "#059669"],
-          ...Object.entries(roleCounts).map(([role, count]) => [role.charAt(0).toUpperCase() + role.slice(1), String(count), (ROLE_INFO[role] || { color: "#888" }).color]),
-        ].map(([label, val, color]) => (
-          <div key={label} className="dash-stat-card" style={{ background: cardBg, border: cardBd }}>
-            <div className="dash-stat-dot" style={{ background: color }} />
-            <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
-            <div className="m dash-stat-value" style={{ color }}>{val}</div>
-          </div>
-        ))}
-      </div>
+      {loading ? <>{bone(84)}{bone(240)}</> : <>
+        <div className="tm-stats">
+          <div className="tm-stt"><b className="m">{admins.length}</b><span>People</span><i>{activeToday} active today</i></div>
+          {busiest.map(a => <div key={a.id} className="tm-stt"><b className="m">{actsOf(a).toLocaleString()}</b><span>{a.name}, 30 days</span><i>{actions30[a.name]?.telegram ? `${actions30[a.name].telegram} from Telegram` : "on the panel"}</i></div>)}
+          <div className={"tm-stt" + (quiet.length ? " warn" : "")}><b className="m">{quiet.length}</b><span>Quiet {quiet.length === 1 ? "account" : "accounts"}</span><i>{quiet.length ? `${quiet[0].name}, last seen ${when(quiet[0].lastActive)}` : "everyone has been in this month"}</i></div>
+        </div>
 
-      {showGuide && (
-        <div className="adm-card mt-4 rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBd }}>
-          <div className="set-card-header" style={{ background: headerBg, borderBottom: headerBorder }}>
-            <div className="set-card-title" style={{ color: t.textMuted }}>Role Permissions</div>
+        <section className="tm-card">
+          <header><h3>People</h3><span className="tm-cnt">{canManage ? "tap a person to change what they can do" : "tap a person to see what they can do"}</span></header>
+          <div className="tm-list">
+            {admins.map(a => (
+              <div key={a.id} className={"tm-r" + (openId === a.id ? " on" : "") + (a.status === "suspended" ? " off" : "")} role="button" tabIndex={0} onClick={() => openDrawer(a)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDrawer(a); } }}>
+                <span className="tm-n"><span className="tm-av" style={{ background: roleColor(a.role) }}>{initialsOf(a.name)}</span><span className="tm-nt"><b>{a.name}{a.status === "suspended" && <em> · suspended</em>}</b><i>{actsOf(a) ? `${actsOf(a).toLocaleString()} action${actsOf(a) === 1 ? "" : "s"}, 30 days` : "no actions, 30 days"}</i></span></span>
+                <span className="tm-role" style={{ color: roleColor(a.role), borderColor: `${roleColor(a.role)}55` }}>{a.role}</span>
+                <span className="tm-c tm-reach">{reachOf(a)}</span>
+                <span className="tm-c tm-seen">{when(a.lastActive)}</span>
+                <span className="tm-ch">›</span>
+              </div>
+            ))}
           </div>
-          <div className="set-card-body">
-          {Object.entries(ROLE_INFO).map(([role, info], idx, arr) => (
-            <div key={role} className={`flex gap-3 items-center ${idx < arr.length - 1 ? "mb-3 pb-3" : ""}`} style={{ borderBottom: idx < arr.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${info.color}18` }}>
-                {role === "owner" ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={info.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg>
-                : role === "superadmin" ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={info.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                : role === "admin" ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={info.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                : role === "support" ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={info.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={info.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>}
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-[13px] font-semibold capitalize" style={{ color: info.color }}>{role}</span>
-                <div className="text-[13px] leading-normal mt-0.5" style={{ color: t.textMuted }}>{info.desc}</div>
-              </div>
+        </section>
+
+        <section className="tm-card">
+          <header><h3>Roles</h3><span className="tm-cnt">what each role can do out of the box</span></header>
+          <div className="tm-roles">
+            {Object.keys(ROLE_LINE).map(r => <div key={r} className="tm-rr"><span className="tm-role" style={{ color: roleColor(r), borderColor: `${roleColor(r)}55` }}>{r}</span><i>{ROLE_LINE[r]}</i></div>)}
+          </div>
+        </section>
+      </>}
+
+      {open && (
+        <div className="tm-bd" onClick={closeDrawer}>
+          <aside className="tm-dw" role="dialog" aria-modal="true" aria-label={`${open.name}'s access`} onClick={e => e.stopPropagation()}>
+            <div className="tm-dh">
+              <span className="tm-av" style={{ background: roleColor(open.role) }}>{initialsOf(open.name)}</span>
+              <div className="tm-dht"><b>{open.name}</b><i>{open.role} · since {new Date(open.joined || open.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long" })} · last seen {when(open.lastActive)}</i></div>
+              <button type="button" className="tm-b sm" onClick={closeDrawer}>Close</button>
             </div>
-          ))}
-          </div>
+            {editable && (
+              <div className="tm-drow">
+                <label className="tm-lbl">Role</label>
+                <select className="tm-sel" value={open.role} onChange={async e => { const r = e.target.value; const ok = await act({ action: "updateRole", adminId: open.id, role: r }); if (ok) toast.success("Role changed", `${open.name} is now ${r}`); }}>
+                  {[...new Set([open.role, ...ASSIGNABLE_ROLES])].map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+                <button type="button" className="tm-b sm" onClick={async () => { const ok = await act({ action: "toggleStatus", adminId: open.id }); if (ok) toast.success(open.status === "suspended" ? "Reinstated" : "Suspended", open.name); }}>{open.status === "suspended" ? "Reinstate" : "Suspend"}</button>
+              </div>
+            )}
+            <div className="tm-tabs"><SegPill value={permTab} options={[{ value: "pages", label: "Pages" }, { value: "abilities", label: "Abilities" }, ...(editable ? [{ value: "password", label: "Password" }] : [])]} onChange={setPermTab} dark={dark} t={t} /></div>
+            <div className="tm-body">
+              {permTab === "pages" && (fullAccess(open) ? (
+                <div className="tm-sub">{open.role === "owner" ? "The owner" : "A superadmin"} can open every page. Nothing to tick.</div>
+              ) : <>
+                <div className="tm-sub">{editable ? `Tick the pages ${open.name} can open.` : `The pages ${open.name} can open.`}{!open.customPages && ` ${open.role.charAt(0).toUpperCase() + open.role.slice(1)} starts with ${(DEFAULT_PAGES[open.role] || []).length}.`}</div>
+                {PAGE_GROUPS.map(g => (
+                  <div key={g}><h4 className="tm-g">{g}</h4><div className="tm-grid">
+                    {ALL_PAGES.filter(p => p.g === g).map(p => <button key={p.id} type="button" className={"tm-ck" + (pagesShown.includes(p.id) ? " on" : "")} disabled={!editable} onClick={() => togglePage(p.id)}>{p.label}</button>)}
+                  </div></div>
+                ))}
+              </>)}
+              {permTab === "abilities" && (fullAccess(open) ? (
+                <div className="tm-sub">{open.role === "owner" ? "The owner" : "A superadmin"} can do everything. Nothing to grant.</div>
+              ) : <>
+                <div className="tm-sub">Abilities beyond the pages: money, dispatch, and edits that cannot be undone.</div>
+                {ACTION_GROUPS.map(g => (
+                  <div key={g}><h4 className="tm-g">{g}</h4><div className="tm-grid">
+                    {GRANTABLE_ACTIONS.filter(a => a.g === g).map(a => <button key={a.id} type="button" className={"tm-ck" + (actionsShown.includes(a.id) ? " on" : "")} disabled={!editable} onClick={() => toggleAction(a.id)}>{a.label}</button>)}
+                  </div></div>
+                ))}
+              </>)}
+              {permTab === "password" && editable && (
+                <div>
+                  <div className="tm-sub">Set a new password for {open.name}. Tell them in person, not in a message.</div>
+                  <input type="password" className="tm-in" placeholder="At least 6 characters" value={resetPw} onChange={e => setResetPw(e.target.value)} />
+                  <button type="button" className="tm-b" style={{ marginTop: 10 }} disabled={resetPw.length < 6 || saving} onClick={async () => { const ok = await act({ action: "resetPassword", adminId: open.id, newPassword: resetPw }); if (ok) { toast.success("Password set", open.name); setResetPw(""); } }}>Set password</button>
+                </div>
+              )}
+            </div>
+            {editable && (
+              <div className="tm-df">
+                <button type="button" className="tm-b sm" style={{ color: "var(--bad)" }} onClick={async () => { const ok = await confirm({ title: `Remove ${open.name}?`, message: "They will not be able to sign in. Their past actions stay in the logs.", confirmText: "Remove", danger: true }); if (!ok) return; const r = await act({ action: "delete", adminId: open.id }); if (r) { toast.success("Removed", open.name); closeDrawer(); } }}>Remove from team</button>
+                <span className="tm-dfr">
+                  {!fullAccess(open) && open.customPages && <button type="button" className="tm-b sm" onClick={async () => { const ok = await act({ action: "updatePermissions", adminId: open.id, pages: null }); if (ok) { toast.success("Back to default", `${open.role} pages`); setLocalPages(null); } }}>Back to role default</button>}
+                  {!fullAccess(open) && <button type="button" className="tm-b sm pri" disabled={!dirty || saving} onClick={saveDrawer}>{saving ? "Saving…" : "Save"}</button>}
+                </span>
+              </div>
+            )}
+          </aside>
         </div>
       )}
 
       {showAdd && (
-        <div className="adm-card mt-4 rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBd }}>
-          <div className="set-card-header" style={{ background: headerBg, borderBottom: headerBorder }}>
-            <div className="set-card-title" style={{ color: t.textMuted }}>New Admin</div>
-          </div>
-          <div className="set-card-body">
-            <div className="grid grid-cols-2 max-md:grid-cols-1 gap-3 mb-3.5">
-              <div><label className="text-[13px] font-semibold block mb-1" style={{ color: t.textMuted }}>Name</label><input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Full name" className={inputCls} style={inputStyle} /></div>
-              <div><label className="text-[13px] font-semibold block mb-1" style={{ color: t.textMuted }}>Email</label><input value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="admin@nitro.ng" type="email" className={inputCls} style={inputStyle} /></div>
-              <div><label className="text-[13px] font-semibold block mb-1" style={{ color: t.textMuted }}>Password</label><input value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Password" type="password" className={inputCls} style={inputStyle} /></div>
-              <div><label className="text-[13px] font-semibold block mb-1" style={{ color: t.textMuted }}>Role</label>
-                <select value={newRole} onChange={e => setNewRole(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg text-[15px] font-medium appearance-none cursor-pointer font-[inherit] capitalize bg-no-repeat bg-[position:right_10px_center]" style={selectSt}>
-                  {ASSIGNABLE_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-            </div>
-            <button onClick={createAdmin} disabled={saving} className="adm-btn-primary w-full" style={{ opacity: newName && newEmail && newPw && !saving ? 1 : .4 }}>{saving ? "Creating..." : "Create Admin"}</button>
+        <div className="tm-bd center" onClick={() => setShowAdd(false)}>
+          <div className="tm-md" role="dialog" aria-modal="true" aria-label="Add a person" onClick={e => e.stopPropagation()}>
+            <div className="tm-mdh"><b>Add a person</b><button type="button" className="tm-b sm" onClick={() => setShowAdd(false)}>Close</button></div>
+            <label className="tm-lbl">Name</label><input className="tm-in" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Their name" />
+            <label className="tm-lbl">Email</label><input className="tm-in" type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="name@nitro.ng" />
+            <label className="tm-lbl">Password</label><input className="tm-in" type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="At least 6 characters" />
+            <label className="tm-lbl">Role</label><select className="tm-sel" value={newRole} onChange={e => setNewRole(e.target.value)}>{ASSIGNABLE_ROLES.map(r => <option key={r} value={r}>{r}</option>)}</select>
+            <div className="tm-sub" style={{ marginTop: 6 }}>{ROLE_LINE[newRole]}</div>
+            <div className="tm-mdf"><button type="button" className="tm-b" onClick={() => setShowAdd(false)}>Cancel</button><button type="button" className="tm-b pri" disabled={saving || !newName.trim() || !newEmail.trim() || newPw.length < 6} onClick={createAdmin}>{saving ? "Adding…" : "Add"}</button></div>
           </div>
         </div>
       )}
-
-      {/* Members */}
-      <div className="adm-card mt-4 overflow-hidden" style={{ background: cardBg, border: cardBd }}>
-        <div className="set-card-header flex items-center justify-between" style={{ background: headerBg, borderBottom: headerBorder }}>
-          <div className="set-card-title" style={{ color: t.textMuted }}>Members</div>
-          <span className="text-[12px] font-medium" style={{ color: t.textMuted }}>{admins.length} {admins.length === 1 ? "member" : "members"}</span>
-        </div>
-        {loading ? <div className="p-5">{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[52px] rounded-lg mb-1.5`} />)}</div> : admins.map((a, i) => {
-          const owner = a.role === "owner";
-          const ri = ROLE_INFO[a.role] || { color: "#888" };
-          const expanded = expandedId === a.id && !owner && canManage;
-          const hasCustom = a.customPages !== null && !owner && a.role !== "superadmin";
-          const pages = expanded && localPages !== null ? localPages : (a.customPages || DEFAULT_PAGES[a.role] || []);
-
-          return (
-            <div key={a.id} style={{ borderBottom: i < admins.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-              <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => { if (!owner && canManage) { if (expanded) { setExpandedId(null); } else { setExpandedId(a.id); setPermTab("permissions"); setResetPw(""); setLocalPages(null); setLocalActions(null); } } }} className="py-3.5 px-5 flex justify-between items-center gap-3 flex-wrap transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.04)]" style={{ cursor: owner || !canManage ? "default" : "pointer" }}>
-                <div className="flex items-center gap-3 flex-1 min-w-[180px]">
-                  <Avatar size={40} rounded={12} />
-                  <div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[15px] font-semibold" style={{ color: t.text }}>{a.name}</span>
-                      <span className="text-[11px] py-0.5 px-2 rounded-full font-semibold capitalize" style={{ background: `${ri.color}18`, color: ri.color }}>{a.role}</span>
-                      {owner && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e0a458" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg>}
-                      {hasCustom && <span className="text-[11px] py-0.5 px-2 rounded-full font-semibold" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)", color: t.accent }}>custom</span>}
-                      {a.status !== "Active" && <span className="text-[11px] py-0.5 px-2 rounded-full font-semibold" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626" }}>Inactive</span>}
-                    </div>
-                    <div className="text-[13px] mt-0.5" style={{ color: t.textMuted }}>{a.email}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-[13px]" style={{ color: t.textMuted }}>{a.lastActive ? fD(a.lastActive) : "Never"}</span>
-                  {owner ? <span className="text-[12px] italic" style={{ color: t.textMuted }}>Protected</span> : canManage ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" className="transition-transform duration-200" style={{ transform: expanded ? "rotate(180deg)" : "none" }}><polyline points="6 9 12 15 18 9" /></svg> : null}
-                </div>
-              </div>
-
-              {expanded && (
-                <div className="px-5 pb-5 pt-3.5" style={{ background: dark ? "rgba(0,0,0,.24)" : "rgba(0,0,0,.03)", borderLeft: `3px solid ${ri.color}`, borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}` }}>
-                  <div className="mb-4" onClick={e => e.stopPropagation()}>
-                    <SegPill value={permTab} options={[{value: "permissions", label: <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Permissions</>}, {value: "password", label: <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> Password</>}, {value: "role", label: <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Role</>}]} onChange={setPermTab} dark={dark} t={t} />
-                  </div>
-
-                  {permTab === "permissions" && (a.role !== "superadmin" ? (
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-[13px] font-medium" style={{ color: t.textSoft }}>{pages.length} of {ALL_PAGES.length} pages enabled</span>
-                        {(localPages !== null || a.customPages !== null) && <button onClick={e => { e.stopPropagation(); setLocalPages(null); act({ action: "updatePermissions", adminId: a.id, pages: null }).then(() => toast.success("Reset to default", "")); }} className="text-xs bg-none border-none cursor-pointer underline transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted, fontFamily: "inherit" }}>Reset to default</button>}
-                      </div>
-                      {PAGE_GROUPS.map(group => (
-                        <div key={group} className="mb-3.5">
-                          <div className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: t.accent }}>{group}</div>
-                          <div className="grid grid-cols-3 max-md:grid-cols-2 gap-1.5">
-                            {ALL_PAGES.filter(p => p.g === group).map(page => {
-                              const enabled = pages.includes(page.id);
-                              const defEnabled = (DEFAULT_PAGES[a.role] || []).includes(page.id);
-                              const customized = (localPages !== null || a.customPages !== null) && enabled !== defEnabled;
-                              return (
-                                <button key={page.id} onClick={e => { e.stopPropagation(); const next = enabled ? pages.filter(p => p !== page.id) : [...pages, page.id]; setLocalPages(next); }} className="flex items-center gap-1.5 py-2 px-3 rounded-lg border text-left cursor-pointer font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ borderColor: enabled ? t.accent : t.cardBorder, background: enabled ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)") : "transparent" }}>
-                                  <div className="w-3.5 h-3.5 rounded shrink-0 flex items-center justify-center" style={{ border: `1.5px solid ${enabled ? t.accent : t.textMuted}`, background: enabled ? t.accent : "transparent" }}>
-                                    {enabled && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
-                                  </div>
-                                  <span className="text-[13px]" style={{ color: enabled ? t.text : t.textMuted, fontWeight: enabled ? 500 : 400 }}>{page.label}</span>
-                                  {customized && <span className="w-[5px] h-[5px] rounded-full shrink-0" style={{ background: t.accent }} />}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* ═══ ACTION GRANTS ═══ */}
-                      <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
-                        <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: t.textMuted }}>Action Permissions</div>
-                        <div className="text-[12px] mb-3 leading-normal" style={{ color: t.textMuted }}>Grant specific abilities beyond page access.</div>
-                        {ACTION_GROUPS.map(group => (
-                          <div key={group} className="mb-3">
-                            <div className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: t.accent }}>{group}</div>
-                            <div className="grid grid-cols-2 max-md:grid-cols-1 gap-1.5">
-                              {GRANTABLE_ACTIONS.filter(ga => ga.g === group).map(ga => {
-                                const parsed = localActions !== null ? localActions : parseActions(a.customActions);
-                                const on = parsed.includes(ga.id);
-                                return (
-                                  <button key={ga.id} onClick={e => { e.stopPropagation(); const cur = localActions !== null ? localActions : parseActions(a.customActions); setLocalActions(on ? cur.filter(x => x !== ga.id) : [...cur, ga.id]); }} className="flex items-center gap-1.5 py-2 px-3 rounded-lg border text-left cursor-pointer font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ borderColor: on ? t.accent : t.cardBorder, background: on ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)") : "transparent" }}>
-                                    <div className="w-3.5 h-3.5 rounded shrink-0 flex items-center justify-center" style={{ border: `1.5px solid ${on ? t.accent : t.textMuted}`, background: on ? t.accent : "transparent" }}>
-                                      {on && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>}
-                                    </div>
-                                    <span className="text-[13px]" style={{ color: on ? t.text : t.textMuted, fontWeight: on ? 500 : 400 }}>{ga.label}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <button onClick={e => { e.stopPropagation(); const savePages = act({ action: "updatePermissions", adminId: a.id, pages: localPages || pages }); const saveActions = localActions !== null ? act({ action: "updateActions", adminId: a.id, actions: localActions }) : Promise.resolve(true); Promise.all([savePages, saveActions]).then(([p, ac]) => { if (p && ac !== false) { toast.success("Permissions saved", ""); setLocalPages(null); setLocalActions(null); } }); }} disabled={saving} className="adm-btn-primary w-full mt-3" style={{ opacity: saving ? .5 : 1 }}>{saving ? "Saving..." : "Save Permissions"}</button>
-                    </div>
-                  ) : <div className="py-6 text-center text-[13px]" style={{ color: t.textMuted }}>Superadmin has full access. No customization needed.</div>)}
-
-                  {permTab === "password" && (
-                    <div>
-                      <div className="text-sm mb-3.5 leading-relaxed" style={{ color: t.textMuted }}>Set a new password for <strong style={{ color: t.text }}>{a.name}</strong>.</div>
-                      <div className="mb-3.5">
-                        <label className="text-[13px] font-semibold block mb-1" style={{ color: t.textMuted }}>New Password</label>
-                        <input type="password" placeholder="Min. 6 characters" value={resetPw} onChange={e => setResetPw(e.target.value)} onClick={e => e.stopPropagation()} className={inputCls} style={inputStyle} />
-                      </div>
-                      <button onClick={e => { e.stopPropagation(); act({ action: "resetPassword", adminId: a.id, newPassword: resetPw }).then(ok => { if (ok) { toast.success("Password reset", a.name); setResetPw(""); } }); }} disabled={resetPw.length < 6 || saving} className="adm-btn-primary w-full" style={{ opacity: resetPw.length >= 6 && !saving ? 1 : .4 }}>{saving ? "Resetting..." : "Reset Password"}</button>
-                    </div>
-                  )}
-
-                  {permTab === "role" && (
-                    <div>
-                      <div className="text-sm mb-3.5 leading-relaxed" style={{ color: t.textMuted }}>Change <strong style={{ color: t.text }}>{a.name}</strong>'s role. Custom permissions are preserved.</div>
-                      <div className="flex gap-2 mb-4 flex-wrap">
-                        {ASSIGNABLE_ROLES.map(r => {
-                          const ri2 = ROLE_INFO[r]; const active = a.role === r;
-                          return <button key={r} onClick={e => { e.stopPropagation(); act({ action: "updateRole", adminId: a.id, role: r }).then(ok => { if (ok) toast.success("Role updated", `${a.name} is now ${r}`); }); }} className="py-2.5 px-5 rounded-lg border text-sm cursor-pointer capitalize font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ borderColor: active ? ri2.color : t.cardBorder, background: active ? `${ri2.color}15` : "transparent", color: active ? ri2.color : t.textMuted, fontWeight: active ? 600 : 430 }}>{r}</button>;
-                        })}
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={async e => { e.stopPropagation(); const ok = await confirm({ title: a.status === "Active" ? "Deactivate Admin" : "Activate Admin", message: a.status === "Active" ? `Deactivate ${a.name}?` : `Reactivate ${a.name}?`, confirmLabel: a.status === "Active" ? "Deactivate" : "Activate", danger: a.status === "Active" }); if (ok) { const r = await act({ action: "toggleStatus", adminId: a.id }); if (r) toast.success("Status changed", `${a.name} ${r.status === "Active" ? "activated" : "deactivated"}`); } }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: a.status === "Active" ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#6ee7b7" : "#059669") }}>{a.status === "Active" ? "Deactivate" : "Activate"}</button>
-                        <button onClick={async e => { e.stopPropagation(); const ok = await confirm({ title: "Delete Admin", message: `Permanently delete ${a.name}? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) { const r = await act({ action: "delete", adminId: a.id }); if (r) toast.success("Admin deleted", a.name); } }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.18)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </>
+    </div>
   );
 }
+
+const TM_CSS = `
+.tm{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.tm *{box-sizing:border-box}
+.tm .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.tm-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.tm-b:hover{transform:translateY(-1px)}.tm-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.tm-b.sm{height:30px;padding:0 10px;font-size:12px}.tm-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.tm-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.tm-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.tm-stt:first-child{border-left:0}
+.tm-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}.tm-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tm-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tm-stt.warn b{color:var(--warn)}
+.tm-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.tm-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.tm-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.tm-cnt{font-size:11.5px;color:var(--dim)}
+.tm-list{display:flex;flex-direction:column}
+.tm-r{display:grid;grid-template-columns:1fr 110px 140px 110px 20px;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--rail);cursor:pointer;outline:none;text-align:left}.tm-r:first-child{border-top:0}.tm-r.on,.tm-r:hover{background:var(--soft)}.tm-r.off .tm-nt{opacity:.55}
+.tm-n{display:flex;align-items:center;gap:10px;min-width:0}.tm-av{width:34px;height:34px;border-radius:50%;color:#1c1b19;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0}
+.tm-nt{display:flex;flex-direction:column;min-width:0}.tm-nt b{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tm-nt b em{font-style:normal;font-weight:500;color:var(--bad)}.tm-nt i{font-style:normal;font-size:11.5px;color:var(--dim)}
+.tm-role{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;background:var(--soft);border:1px solid var(--line);padding:3px 8px;border-radius:999px;text-align:center;white-space:nowrap}
+.tm-c{font-size:12.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tm-ch{color:var(--dim);font-size:18px;text-align:right}
+.tm-roles{padding:4px 16px 8px}.tm-rr{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--rail)}.tm-rr:first-child{border-top:0}.tm-rr i{font-style:normal;font-size:13px;color:var(--mut)}
+.tm-bd{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.4)}.tm-bd.center{display:flex;align-items:center;justify-content:center;padding:16px}
+.tm-dw{position:absolute;top:0;right:0;bottom:0;width:460px;max-width:100%;background:var(--card);border-left:1px solid var(--line);display:flex;flex-direction:column;box-shadow:-12px 0 30px rgba(0,0,0,.2)}
+.tm-dh{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}.tm-dht{flex:1;display:flex;flex-direction:column;min-width:0}.tm-dht b{font-size:16px;font-weight:700}.tm-dht i{font-style:normal;font-size:12px;color:var(--mut)}
+.tm-drow{display:flex;align-items:center;gap:8px;padding:12px 18px 0}.tm-drow .tm-lbl{margin:0}.tm-drow .tm-sel{flex:1}
+.tm-tabs{padding:14px 18px 0}.tm-sub{font-size:12.5px;color:var(--mut);line-height:1.5;margin:0 0 6px}
+.tm-body{flex:1;overflow:auto;padding:12px 18px 14px}.tm-g{margin:12px 0 6px;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ac);font-weight:700}.tm-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tm-ck{font:inherit;font-size:12.5px;padding:8px 10px;border-radius:9px;border:1px solid var(--line);color:var(--mut);background:none;display:flex;align-items:center;gap:8px;cursor:pointer;text-align:left}.tm-ck::before{content:"";width:14px;height:14px;border-radius:4px;border:1.5px solid var(--line);flex-shrink:0}.tm-ck.on{color:var(--ink);border-color:var(--ac)}.tm-ck.on::before{background:var(--ac);border-color:var(--ac)}.tm-ck:disabled{cursor:default}
+.tm-df{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 18px;border-top:1px solid var(--line);background:var(--soft)}.tm-dfr{display:flex;gap:8px}
+.tm-lbl{display:block;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin:12px 0 6px}
+.tm-in,.tm-sel{width:100%;height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--in);color:var(--ink);font:inherit;font-size:14px;outline:none}.tm-in:focus,.tm-sel:focus{border-color:var(--ac)}
+.tm-md{width:440px;max-width:100%;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px 18px;box-shadow:0 20px 50px rgba(0,0,0,.25)}.tm-mdh{display:flex;justify-content:space-between;align-items:center}.tm-mdh b{font-size:16px;font-weight:700}.tm-mdf{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+@media (max-width:900px){
+  .tm-stats{grid-template-columns:1fr 1fr}.tm-stt:nth-child(3){border-left:0}.tm-stt:nth-child(n+3){border-top:1px solid var(--line)}.tm-stt b{font-size:17px}
+  .tm-r{grid-template-columns:1fr auto 20px;grid-template-areas:"n role ch" "reach seen ch";gap:4px 10px;padding:12px}.tm-n{grid-area:n}.tm-r .tm-role{grid-area:role}.tm-reach{grid-area:reach;padding-left:44px}.tm-seen{grid-area:seen;justify-self:end}.tm-ch{grid-area:ch}
+  .tm-rr{grid-template-columns:1fr;gap:4px}.tm-rr .tm-role{justify-self:start}
+  .tm-dw{width:100%;top:8vh;border-left:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0}
+}
+`;
 
 /* ═══ COUPONS                             ═══ */
 /* ═══════════════════════════════════════════ */
@@ -1078,203 +1034,257 @@ export function AdminMaintenancePage({ dark, t }) {
   const [useCustom, setUseCustom] = useState(false);
   const [customH, setCustomH] = useState("");
   const [customM, setCustomM] = useState("");
+  const [since, setSince] = useState(null);
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [saving, setSaving] = useState(false);
+  const [, setTick] = useState(0);
   const PRESETS = [{ label: "30 min", m: 30 }, { label: "1 hour", m: 60 }, { label: "2 hours", m: 120 }, { label: "6 hours", m: 360 }, { label: "12 hours", m: 720 }, { label: "24 hours", m: 1440 }];
-
   const formatDuration = (mins) => { if (mins < 60) return `~${mins} minutes`; const h = Math.floor(mins / 60); const m = mins % 60; return m ? `~${h}h ${m}m` : `~${h} hour${h > 1 ? "s" : ""}`; };
-
-  useEffect(() => {
-    fetch("/api/admin/maintenance").then(r => r.json()).then(d => { setEnabled(d.enabled || false); if (d.message) setMsg(d.message); if (d.durationMinutes) setDuration(d.durationMinutes); setLoading(false); }).catch(() => setLoading(false));
-  }, []);
-
+  const load = () => fetch("/api/admin/maintenance").then(r => r.json()).then(d => { setEnabled(d.enabled || false); if (d.message) setMsg(d.message); if (d.durationMinutes) { setDuration(d.durationMinutes); if (!PRESETS.some(p => p.m === d.durationMinutes)) { setUseCustom(true); setCustomH(String(Math.floor(d.durationMinutes / 60))); setCustomM(String(d.durationMinutes % 60)); } } setSince(d.since || null); setHistory(d.history || []); setLoading(false); }).catch(() => setLoading(false));
+  useEffect(() => { load(); }, []); // eslint-disable-line
+  useEffect(() => { if (!enabled) return; const id = setInterval(() => setTick(x => x + 1), 30000); return () => clearInterval(id); }, [enabled]);
+  const mins = useCustom ? ((Number(customH) || 0) * 60 + (Number(customM) || 0)) : duration;
   const save = async (newEnabled) => {
     const e = newEnabled !== undefined ? newEnabled : enabled;
-    const mins = useCustom ? ((Number(customH) || 0) * 60 + (Number(customM) || 0)) : duration;
+    setSaving(true);
     try {
       const res = await fetch("/api/admin/maintenance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: e, message: msg, durationMinutes: mins, estimatedReturn: formatDuration(mins) }) });
-      if (res.ok) { if (newEnabled !== undefined) setEnabled(e); }
+      if (res.ok) { if (newEnabled !== undefined) { setEnabled(e); toast.success(e ? "Offline" : "Back online", e ? "Customers see the maintenance page" : "Customers can order and pay again"); } else toast.success("Saved", "The message and time are what customers will see"); load(); }
       else { const d = await res.json().catch(() => ({})); toast.error("Failed", d.error || "Failed to save"); }
     } catch { toast.error("Network error", "Check your connection"); }
+    setSaving(false);
   };
-
+  const flip = async () => {
+    const ok = await confirm({ title: enabled ? "Bring the site back?" : "Take the site offline?", message: enabled ? "Customers can order and pay again straight away." : `Customers will see the maintenance page and cannot order or pay. You are telling them about ${formatDuration(mins).replace("~", "")}.`, confirmText: enabled ? "Bring it back" : "Take it offline", danger: !enabled });
+    if (ok) save(!enabled);
+  };
+  const fmt = (iso) => new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const dateOf = (iso) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const elapsed = since ? Math.round((Date.now() - new Date(since).getTime()) / 60000) : 0;
+  const left = mins - elapsed;
+  const headline = mins < 60 ? `Back in about ${mins} minutes` : mins === 60 ? "Back in about an hour" : mins % 60 === 0 ? `Back in about ${mins / 60} hours` : `Back in about ${Math.floor(mins / 60)}h ${mins % 60}m`;
+  const vars = {
+    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7", "--bg": t.bg || (dark ? "#0b0e1a" : "#e8e2d9"),
+    "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--warnbg": dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)",
+  };
+  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   return (
-    <>
+    <div className="mt" style={vars}>
+      <style>{MT_CSS}</style>
       <div className="adm-header">
-        <div className="adm-title" style={{ color: t.text }}>Maintenance Mode</div>
-        <div className="adm-subtitle" style={{ color: t.textMuted }}>Take the platform offline for updates</div>
+        <div className="adm-header-row">
+          <div>
+            <div className="adm-title" style={{ color: t.text }}>Maintenance</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>Take the site down for a moment, and tell customers when you will be back.</div>
+          </div>
+        </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {loading ? null : (
-        <div className="max-w-[600px] mt-4">
-          {/* Status card */}
-          <div className="rounded-2xl border p-6 mb-5" style={{ background: dark ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.95)", borderColor: t.cardBorder, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.31)" : "0 4px 20px rgba(0,0,0,.08)" }}>
-            <div className="mb-6">
-              <div className="text-base font-semibold mb-1" style={{ color: t.text }}>Platform Status</div>
-              <div className="text-[15px]" style={{ color: t.textMuted }}>{enabled ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Platform is currently offline</> : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> Platform is online and operational</>}</div>
+      {loading ? <>{bone(120)}{bone(320)}</> : <>
+        <section className="mt-card">
+          <header><h3>Right now</h3><span className="mt-cnt">only the owner or a superadmin can flip this</span></header>
+          <div className="mt-body">
+            <div className="mt-now">
+              <div className="mt-nl"><span className={"mt-big" + (enabled ? " off" : "")}>{enabled ? "Offline" : "Online"}</span><span className="mt-sub">{enabled ? "Customers see the maintenance page. Orders and payments are paused." : "Everything is open. Customers can order and pay."}</span></div>
+              <button type="button" className={"mt-b" + (enabled ? " pri" : "")} disabled={saving} onClick={flip}>{enabled ? "Bring it back" : "Take it offline"}</button>
             </div>
+            {enabled && since && <div className="mt-note"><i className="mt-dot" />Offline since {fmt(since)} · you said {formatDuration(mins).replace("~", "~")} · {left > 0 ? `${left} min left` : `${-left} min over`}</div>}
+          </div>
+        </section>
 
-            {/* Duration presets */}
-            <div className="text-[13px] font-semibold uppercase tracking-widest mb-3" style={{ color: t.textMuted }}>Estimated Duration</div>
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              {PRESETS.map(p => {
-                const active = !useCustom && duration === p.m;
-                return (<button key={p.m} onClick={() => { setDuration(p.m); setUseCustom(false); }} className="py-2.5 rounded-[10px] text-sm font-semibold text-center border cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: active ? t.accent : t.cardBorder, background: active ? (dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)") : "transparent", color: active ? t.accent : t.textSoft }}>{p.label}</button>);
-              })}
+        <section className="mt-card">
+          <header><h3>What customers will see</h3><span className="mt-cnt">saved with the switch, or with Save below</span></header>
+          <div className="mt-body">
+            <div className="mt-lbl">How long</div>
+            <div className="mt-presets">
+              {PRESETS.map(p => <button key={p.m} type="button" className={"mt-tg" + (!useCustom && duration === p.m ? " on" : "")} onClick={() => { setDuration(p.m); setUseCustom(false); }}>{p.label}</button>)}
+              <button type="button" className={"mt-tg" + (useCustom ? " on" : "")} onClick={() => setUseCustom(true)}>Custom…</button>
             </div>
-            <button onClick={() => setUseCustom(!useCustom)} className="text-[15px] font-medium bg-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ color: useCustom ? t.accent : t.textSoft, marginBottom: useCustom ? 12 : 0 }}>{useCustom ? "▾ Custom duration" : "▸ Custom duration"}</button>
-            {useCustom && (
-              <div className="flex gap-2.5 items-center">
-                <div className="flex-1"><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Hours</label><input type="number" min="0" max="72" value={customH} onChange={e => setCustomH(e.target.value)} placeholder="0" className="w-full py-2.5 px-3.5 rounded-[10px] border text-base font-semibold outline-none text-center" style={{ background: dark ? "#131728" : "#fff", borderColor: t.cardBorder, color: t.text }} /></div>
-                <span className="text-xl mt-4" style={{ color: t.textMuted }}>:</span>
-                <div className="flex-1"><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Minutes</label><input type="number" min="0" max="59" value={customM} onChange={e => setCustomM(e.target.value)} placeholder="0" className="w-full py-2.5 px-3.5 rounded-[10px] border text-base font-semibold outline-none text-center" style={{ background: dark ? "#131728" : "#fff", borderColor: t.cardBorder, color: t.text }} /></div>
-                <div className="flex-1 text-sm mt-4" style={{ color: t.textMuted }}>= {(Number(customH) || 0) * 60 + (Number(customM) || 0)} min</div>
-              </div>
-            )}
+            {useCustom && <div className="mt-custom"><input type="number" min="0" max="72" value={customH} onChange={e => setCustomH(e.target.value)} placeholder="0" /><span>hours</span><input type="number" min="0" max="59" value={customM} onChange={e => setCustomM(e.target.value)} placeholder="0" /><span>minutes</span></div>}
+            <div className="mt-lbl">Message</div>
+            <textarea className="mt-ta" value={msg} onChange={e => setMsg(e.target.value)} rows={3} />
+            <div className="mt-lbl">Preview</div>
+            <div className="mt-pv"><div className="mt-pvl">NITRO</div><div className="mt-pvh">{headline}</div><div className="mt-pvp">{msg}</div><div className="mt-pvf">Your wallet and orders are safe. Nothing is lost.</div></div>
+            <div className="mt-save"><button type="button" className="mt-b" disabled={saving} onClick={() => save()}>Save</button></div>
           </div>
+        </section>
 
-          {/* Message card */}
-          <div className="rounded-2xl border p-6 mb-5" style={{ background: dark ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.95)", borderColor: t.cardBorder, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.31)" : "0 4px 20px rgba(0,0,0,.08)" }}>
-            <div className="text-[13px] font-semibold uppercase tracking-widest mb-2" style={{ color: t.textMuted }}>Maintenance Message</div>
-            <div className="text-sm mb-2.5" style={{ color: t.textMuted }}>This is what users will see on the maintenance page</div>
-            <textarea value={msg} onChange={e => setMsg(e.target.value)} rows={3} className="w-full py-3 px-3.5 rounded-xl border outline-none text-[15px] font-[inherit] leading-relaxed resize-y" style={{ background: dark ? "#131728" : "#fff", borderColor: t.cardBorder, color: t.text }} />
+        <section className="mt-card">
+          <header><h3>Last times</h3><span className="mt-cnt">when the site was down and for how long</span></header>
+          <div className="mt-hl">
+            {history.length === 0 ? <div className="mt-empty">No downtime recorded yet.</div> : history.map((h, i) => { const m = Math.max(1, Math.round((new Date(h.to) - new Date(h.from)) / 60000)); return (
+              <div key={i} className="mt-hr"><span className="m">{dateOf(h.from)}</span><b>{fmt(h.from)} → {fmt(h.to)}</b><i>{m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`}{h.saidMinutes ? ` · said ${formatDuration(h.saidMinutes)}` : ""}{h.by ? ` · ${h.by}` : ""}</i></div>
+            ); })}
           </div>
-
-          {/* Action */}
-          <button onClick={async () => { const ok = await confirm({ title: enabled ? "Bring Platform Online" : "Take Platform Offline", message: enabled ? "Bring the platform back online for all users?" : "This will take the platform offline. All users will see a maintenance page.", confirmLabel: enabled ? "Go Online" : "Take Offline", danger: !enabled }); if (ok) save(!enabled); }} className="w-full py-3.5 rounded-xl text-base font-semibold border-none cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: enabled ? (dark ? "rgba(110,231,183,.19)" : "rgba(5,150,105,.14)") : `linear-gradient(135deg,#c47d8e,#8b5e6b)`, color: enabled ? t.green : "#fff", boxShadow: enabled ? "none" : "0 4px 16px rgba(196,125,142,.31)" }}>{enabled ? <><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#22c55e" }} /> Bring Platform Online</> : <><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: "#ef4444" }} /> Take Platform Offline</>}</button>
-        </div>
-      )}
-    </>
+        </section>
+      </>}
+    </div>
   );
 }
+
+const MT_CSS = `
+.mt{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.mt *{box-sizing:border-box}
+.mt .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mt-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.mt-b:hover{transform:translateY(-1px)}.mt-b:disabled{opacity:.5;cursor:not-allowed;transform:none}.mt-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.mt-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.mt-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.mt-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.mt-cnt{font-size:11.5px;color:var(--dim)}
+.mt-body{padding:14px 16px 16px}
+.mt-now{display:flex;justify-content:space-between;align-items:center;gap:12px}.mt-nl{display:flex;flex-direction:column;gap:4px;min-width:0}
+.mt-big{font-size:26px;font-weight:800;letter-spacing:-.01em;display:inline-flex;align-items:center;gap:10px}.mt-big::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--ok)}.mt-big.off{color:var(--warn)}.mt-big.off::before{background:var(--warn)}.mt-sub{font-size:13px;color:var(--mut)}
+.mt-note{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--warnbg);font-size:12.5px;display:flex;align-items:center;gap:8px}.mt-dot{width:8px;height:8px;border-radius:50%;background:var(--warn);display:inline-block}
+.mt-lbl{font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin:12px 0 8px}.mt-lbl:first-child{margin-top:0}
+.mt-presets{display:flex;gap:6px;flex-wrap:wrap}.mt-tg{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer}.mt-tg.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.mt-custom{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12.5px;color:var(--mut)}.mt-custom input{width:64px;height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font:inherit;font-size:14px;outline:none}
+.mt-ta{width:100%;font:inherit;font-size:13.5px;line-height:1.5;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--soft);color:var(--ink);outline:none;resize:vertical}.mt-ta:focus{border-color:var(--ac)}
+.mt-pv{border:1px solid var(--line);border-radius:12px;padding:28px 22px;text-align:center;background:var(--bg)}.mt-pvl{font-size:11px;letter-spacing:3px;font-weight:800;color:var(--ac)}.mt-pvh{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;margin-top:10px}.mt-pvp{font-size:14px;color:var(--mut);margin-top:8px;max-width:38ch;margin-left:auto;margin-right:auto;line-height:1.5;white-space:pre-line}.mt-pvf{font-size:12px;color:var(--dim);margin-top:14px}
+.mt-save{display:flex;justify-content:flex-end;margin-top:12px}
+.mt-hl{padding:4px 16px 8px}.mt-empty{padding:20px 0;text-align:center;font-size:13px;color:var(--mut)}.mt-hr{display:grid;grid-template-columns:70px 150px 1fr;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--rail);font-size:13px}.mt-hr:first-child{border-top:0}.mt-hr .m{font-size:12px;color:var(--mut)}.mt-hr b{font-weight:600}.mt-hr i{font-style:normal;color:var(--mut)}
+@media (max-width:900px){
+  .mt-now{flex-direction:column;align-items:stretch}.mt-now .mt-b{width:100%}.mt-big{font-size:22px}.mt-presets .mt-tg{flex:1;text-align:center}.mt-save .mt-b{width:100%}
+  .mt-hr{grid-template-columns:70px 1fr;grid-template-areas:"d b" ". i"}.mt-hr .m{grid-area:d}.mt-hr b{grid-area:b}.mt-hr i{grid-area:i}
+}
+`;
 
 /* ═══════════════════════════════════════════ */
 /* ═══ API MANAGEMENT                      ═══ */
 /* ═══════════════════════════════════════════ */
 export function AdminAPIPage({ dark, t }) {
+  const toast = useToast();
   const PROVIDERS = [
-    { id: "mtp", name: "MoreThanPanel (MTP)", url: "https://morethanpanel.com/api/v2", envKey: "MTP_API_KEY", envUrl: "MTP_API_URL" },
-    { id: "jap", name: "JustAnotherPanel (JAP)", url: "https://justanotherpanel.com/api/v2", envKey: "JAP_API_KEY", envUrl: "JAP_API_URL" },
-    { id: "dao", name: "DaoSMM", url: "https://daosmm.com/api/v2", envKey: "DAOSMM_API_KEY", envUrl: "DAOSMM_API_URL" },
+    { id: "mtp", name: "MoreThanPanel", role: "primary", host: "morethanpanel.com" },
+    { id: "dao", name: "DaoSMM", role: "secondary", host: "daosmm.com" },
+    { id: "jap", name: "JustAnotherPanel", role: "being retired", host: "justanotherpanel.com" },
   ];
-
   const [loading, setLoading] = useState(true);
-  const [svcCounts, setSvcCounts] = useState({});
-  const [envStatus, setEnvStatus] = useState({});
+  const [info, setInfo] = useState({});
   const [testing, setTesting] = useState(null);
   const [syncing, setSyncing] = useState(null);
   const [result, setResult] = useState(null);
-
   const loadData = async () => {
-    try {
-      const [svcsRes, statusRes] = await Promise.all([
-        fetch("/api/admin/services"),
-        fetch("/api/admin/sync"),
-      ]);
-      if (svcsRes.ok) {
-        const d = await svcsRes.json();
-        const counts = {};
-        (d.services || []).forEach(s => { const p = s.provider || "mtp"; counts[p] = (counts[p] || 0) + 1; });
-        setSvcCounts(counts);
-      }
-      if (statusRes.ok) { const d = await statusRes.json(); setEnvStatus(d.status || {}); }
-    } catch {}
+    try { const res = await fetch("/api/admin/sync"); if (res.ok) { const d = await res.json(); setInfo(d.providers || {}); } } catch {}
     setLoading(false);
   };
-
   useEffect(() => { loadData(); }, []);
-
-  const testConnection = async (provider) => {
-    setTesting(provider.id); setResult(null);
+  const testConnection = async (p) => {
+    setTesting(p.id); setResult(null);
     try {
-      const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "test", provider: provider.id }) });
+      const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "test", provider: p.id }) });
       const data = await res.json();
-      if (res.ok) {
-        const usd = parseFloat(data.balance?.balance || 0);
-        let rate = 1600;
-        try { const sr = await fetch("/api/admin/settings"); if (sr.ok) { const sd = await sr.json(); rate = Number(sd.settings?.markup_usd_rate) || 1600; } } catch {}
-        const ngn = Math.round(usd * rate);
-        setResult({ id: provider.id, type: "success", message: `Connected! Provider balance: ₦${ngn.toLocaleString()} (≈$${usd.toFixed(2)} at ₦${rate}/$)` });
-      }
-      else setResult({ id: provider.id, type: "error", message: data.error || "Connection failed" });
-    } catch (e) { setResult({ id: provider.id, type: "error", message: e.message || "Network error" }); }
+      if (res.ok) setResult({ id: p.id, ok: true, message: `Connected. Balance $${parseFloat(data.balance?.balance || 0).toFixed(2)}.` });
+      else setResult({ id: p.id, ok: false, message: data.error || "Connection failed" });
+    } catch (e) { setResult({ id: p.id, ok: false, message: e.message || "Network error" }); }
     setTesting(null);
   };
-
-  const syncServices = async (provider) => {
-    setSyncing(provider.id); setResult(null);
+  const syncServices = async (p) => {
+    setSyncing(p.id); setResult(null);
     try {
-      const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sync", provider: provider.id }) });
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); } catch {
-        setResult({ id: provider.id, type: "error", message: res.status === 504 ? "Sync timed out — try again or upgrade Vercel to Pro" : `Server error (${res.status})` });
-        setSyncing(null); return;
-      }
-      if (res.ok) {
-        setResult({ id: provider.id, type: "success", message: `Synced! ${data.created} new, ${data.updated} updated${data.disabled ? `, ${data.disabled} disabled` : ''}, ${data.skipped} skipped (${data.total} total)` });
-        loadData();
-      } else setResult({ id: provider.id, type: "error", message: data.error || "Sync failed" });
-    } catch (e) { setResult({ id: provider.id, type: "error", message: e.message || "Network error" }); }
-    setSyncing(null);
+      const res = await fetch("/api/admin/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sync", provider: p.id }) });
+      const text = await res.text(); let data;
+      try { data = JSON.parse(text); } catch { setResult({ id: p.id, ok: false, message: res.status === 504 ? "The sync took too long. Try again." : `Server error (${res.status})` }); setSyncing(null); return false; }
+      if (res.ok) { setResult({ id: p.id, ok: true, message: `Synced ${data.total.toLocaleString()} services: ${data.updated} updated${data.disabled ? `, ${data.disabled} disabled` : ""}, ${data.skipped} unchanged.` }); loadData(); return true; }
+      setResult({ id: p.id, ok: false, message: data.error || "Sync failed" });
+    } catch (e) { setResult({ id: p.id, ok: false, message: e.message || "Network error" }); }
+    setSyncing(null); return false;
   };
-
-  if (loading) return <div className="p-6">{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[100px] rounded-[14px] mb-3`} />)}</div>;
-
+  const syncAll = async () => {
+    for (const p of PROVIDERS) { if (info[p.id]?.configured) { const ok = await syncServices(p); if (!ok) break; } }
+    setSyncing(null); toast.success("Catalogues synced", "See each row for what changed");
+  };
+  const connected = PROVIDERS.filter(p => info[p.id]?.configured);
+  const totalBal = PROVIDERS.reduce((n, p) => n + (info[p.id]?.balance || 0), 0);
+  const totalMenu = PROVIDERS.reduce((n, p) => n + (info[p.id]?.menu || 0), 0);
+  const totalCat = PROVIDERS.reduce((n, p) => n + (info[p.id]?.catalogue || 0), 0);
+  const totalOrders = PROVIDERS.reduce((n, p) => n + (info[p.id]?.orders || 0), 0);
+  const top = [...PROVIDERS].sort((a, b) => (info[b.id]?.orders || 0) - (info[a.id]?.orders || 0))[0];
+  const checkedAt = PROVIDERS.map(p => info[p.id]?.checkedAt).find(Boolean);
+  const lastSyncAt = PROVIDERS.map(p => info[p.id]?.lastSync?.at).filter(Boolean).sort().pop();
+  const ago = (iso) => { if (!iso) return null; const diff = Date.now() - new Date(iso).getTime(); if (diff < 3600e3) return `${Math.max(1, Math.round(diff / 60e3))} min ago`; if (diff < 86400e3) return `${new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} today`; return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
+  const vars = {
+    "--card": t.cardBg, "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828",
+  };
+  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
+  const balCls = (b) => b == null ? "" : b < LOW_BALANCE_USD ? "bad" : b < 20 ? "warn" : "ok";
   return (
-    <>
+    <div className="pv" style={vars}>
+      <style>{PV_CSS}</style>
       <div className="adm-header">
-        <div>
-          <div className="adm-title" style={{ color: t.text }}>API Management</div>
-          <div className="adm-subtitle" style={{ color: t.textMuted }}>SMM provider connections · {Object.values(svcCounts).reduce((a, b) => a + b, 0).toLocaleString()} services in database</div>
+        <div className="adm-header-row">
+          <div>
+            <div className="adm-title" style={{ color: t.text }}>Providers</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>The upstream panels the catalogue comes from. Their names never reach a user.</div>
+          </div>
+          <button type="button" className="pv-b" onClick={syncAll} disabled={!!syncing || loading}>{syncing ? "Syncing…" : "Sync all catalogues"}</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      <div className="py-3 px-4 rounded-[10px] mt-4 mb-4 text-sm leading-relaxed" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", border: `1px solid ${dark ? "rgba(196,125,142,.19)" : "rgba(196,125,142,.14)"}`, color: t.textSoft }}>
-        API keys are configured via environment variables for security. Add them in your <strong style={{ color: t.text }}>.env</strong> file locally or in <strong style={{ color: t.text }}>Vercel → Settings → Environment Variables</strong> for production.
-      </div>
+      {loading ? <>{bone(84)}{bone(220)}</> : <>
+        <div className="pv-stats">
+          <div className="pv-stt"><b className="m">${totalBal.toFixed(2)}</b><span>Across providers</span><i>{checkedAt ? `checked ${ago(checkedAt)}` : "not checked yet"}</i></div>
+          <div className="pv-stt"><b className="m">{totalMenu.toLocaleString()}</b><span>Services on the menu</span><i>of {totalCat.toLocaleString()} in the catalogues</i></div>
+          <div className="pv-stt"><b className="m">{totalOrders.toLocaleString()}</b><span>Orders sent</span><i>{totalOrders ? `${Math.round((info[top.id]?.orders || 0) / totalOrders * 100)}% through ${top.name}` : "none yet"}</i></div>
+          <div className="pv-stt"><b className={"m " + (connected.length === PROVIDERS.length ? "ok" : "warn")}>{connected.length} of {PROVIDERS.length}</b><span>Connected</span><i>{lastSyncAt ? `last sync ${ago(lastSyncAt)}` : "no sync recorded yet"}</i></div>
+        </div>
 
-      <div>
-        {PROVIDERS.map((p, i) => {
-          const configured = envStatus[p.id] || false;
-          const pResult = result?.id === p.id ? result : null;
-
-          return (
-            <div key={p.id} className="adm-card mb-3 rounded-[14px]" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.31)" : "0 4px 20px rgba(0,0,0,.08)" }}>
-              <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-                <div className="adm-header-row">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-semibold" style={{ color: t.text }}>{p.name}</span>
-                      <span className="text-xs py-0.5 px-[7px] rounded font-semibold" style={{ background: configured ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)"), color: configured ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fcd34d" : "#d97706") }}>{configured ? "connected" : "not configured"}</span>
-                    </div>
-                    <div className="text-sm mt-1" style={{ color: t.textMuted }}>{p.url || "URL pending"}</div>
-                  </div>
-                  <div className="flex gap-1.5">
-                    {configured && <button onClick={() => testConnection(p)} disabled={testing === p.id} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: dark ? "#a5b4fc" : "#4f46e5", opacity: testing === p.id ? .5 : 1 }}>{testing === p.id ? "Testing..." : "Test"}</button>}
-                    {configured && <button onClick={() => syncServices(p)} disabled={syncing === p.id} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: dark ? "#6ee7b7" : "#059669", opacity: syncing === p.id ? .5 : 1 }}>{syncing === p.id ? "Syncing..." : "Sync Services"}</button>}
-                  </div>
-                </div>
+        <section className="pv-card">
+          <header><h3>Providers</h3><span className="pv-cnt">balances refresh every 30 minutes · catalogues sync nightly</span></header>
+          <div className="pv-list">
+            {PROVIDERS.map(p => { const x = info[p.id] || {}; const r = result?.id === p.id ? result : null; return (
+              <div key={p.id} className="pv-r">
+                <span className="pv-n"><span className="pv-av">{p.id.toUpperCase()}</span><span className="pv-nt"><b>{p.name}</b><i>{p.role}</i></span></span>
+                <span className="pv-c"><b className={"m " + balCls(x.balance)}>{x.balance == null ? "—" : `$${x.balance.toFixed(2)}`}</b><i>balance</i></span>
+                <span className="pv-c"><b>{(x.menu || 0).toLocaleString()} on the menu</b><i>{(x.catalogue || 0).toLocaleString()} in the catalogue</i></span>
+                <span className="pv-c"><b>{(x.orders || 0).toLocaleString()}</b><i>orders to date</i></span>
+                <span className="pv-c"><b><i className={"pv-dot " + (x.configured ? "ok" : "dim")} />{x.configured ? "Connected" : "No key"}</b><i>{x.lastSync?.at ? `synced ${ago(x.lastSync.at)}` : "never synced"}</i></span>
+                <span className="pv-a"><button type="button" className="pv-b sm" disabled={!x.configured || testing === p.id} onClick={() => testConnection(p)}>{testing === p.id ? "Testing…" : "Test"}</button><button type="button" className="pv-b sm" disabled={!x.configured || syncing === p.id} onClick={() => syncServices(p)}>{syncing === p.id ? "Syncing…" : "Sync catalogue"}</button></span>
+                {r && <span className={"pv-res " + (r.ok ? "ok" : "bad")}>{r.message}</span>}
               </div>
-              <div className="set-card-body">
+            ); })}
+          </div>
+        </section>
 
-              {pResult && <InlineAlert type={pResult.type} dark={dark} className="mt-2.5">{pResult.message}</InlineAlert>}
-
-              <div className="grid grid-cols-3 gap-3 text-[13px]">
-                <div><span style={{ color: t.textMuted }}>Env var:</span> <span style={{ color: t.textSoft }}>{p.envKey}</span></div>
-                <div><span style={{ color: t.textMuted }}>Services:</span> <span style={{ color: t.text }}>{(svcCounts[p.id] || 0).toLocaleString()}</span></div>
-                <div><span style={{ color: t.textMuted }}>Priority:</span> <span style={{ color: t.text }}>{i + 1}</span></div>
-              </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </>
+        <section className="pv-card">
+          <header><h3>Last sync</h3><span className="pv-cnt">{lastSyncAt ? `${ago(lastSyncAt)} · nightly, 1 to 3 am` : "nightly, 1 to 3 am"}</span></header>
+          <div className="pv-sl">
+            {PROVIDERS.map(p => { const ls = info[p.id]?.lastSync; return (
+              <div key={p.id} className="pv-sr"><i className={"pv-dot " + (ls ? "ok" : "dim")} /><b>{p.name}</b><i>{ls ? `${(ls.total || 0).toLocaleString()} services · ${ls.updated || 0} prices changed · ${ls.disabled || 0} disabled${ls.created ? ` · ${ls.created} new` : ""}${ls.by && ls.by !== "nightly" ? ` · by ${ls.by}` : ""}` : "nothing recorded yet"}</i><span className="m pv-cnt">{ls ? new Date(ls.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "—"}</span></div>
+            ); })}
+          </div>
+        </section>
+      </>}
+    </div>
   );
 }
+
+const PV_CSS = `
+.pv{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.pv *{box-sizing:border-box}
+.pv .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.pv-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.pv-b:hover{transform:translateY(-1px)}.pv-b:disabled{opacity:.5;cursor:not-allowed;transform:none}.pv-b.sm{height:30px;padding:0 10px;font-size:12px}
+.pv-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.pv-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.pv-stt:first-child{border-left:0}
+.pv-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}.pv-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pv-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-stt b.ok,.pv-c b.ok{color:var(--ok)}.pv-stt b.warn,.pv-c b.warn{color:var(--warn)}.pv-c b.bad{color:var(--bad)}
+.pv-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.pv-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.pv-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.pv-cnt{font-size:11.5px;color:var(--dim)}
+.pv-list{display:flex;flex-direction:column}
+.pv-r{display:grid;grid-template-columns:200px 100px 150px 110px 150px 1fr;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid var(--rail)}.pv-r:first-child{border-top:0}
+.pv-n{display:flex;align-items:center;gap:10px;min-width:0}.pv-av{width:36px;height:36px;border-radius:10px;background:var(--soft);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;letter-spacing:.5px;color:var(--mut);flex-shrink:0}.pv-nt{display:flex;flex-direction:column;min-width:0}.pv-nt b{font-weight:700;font-size:14px}.pv-nt i{font-style:normal;font-size:11.5px;color:var(--dim)}
+.pv-c{display:flex;flex-direction:column;min-width:0}.pv-c b{font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.pv-c i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}.pv-dot.ok{background:var(--ok)}.pv-dot.dim{background:var(--dim)}
+.pv-a{display:flex;gap:6px;justify-content:flex-end}
+.pv-res{grid-column:1 / -1;font-size:12.5px;padding:8px 12px;border-radius:9px;background:var(--soft);color:var(--ok)}.pv-res.bad{color:var(--bad)}
+.pv-sl{padding:4px 16px 8px}.pv-sr{display:grid;grid-template-columns:8px 150px 1fr auto;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--rail);font-size:13px}.pv-sr:first-child{border-top:0}.pv-sr b{font-weight:600}.pv-sr i{font-style:normal;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:900px){
+  .pv-stats{grid-template-columns:1fr 1fr}.pv-stt:nth-child(3){border-left:0}.pv-stt:nth-child(n+3){border-top:1px solid var(--line)}.pv-stt b{font-size:17px}
+  .pv-r{grid-template-columns:1fr 1fr;padding:12px;gap:8px 10px}.pv-n{grid-column:1 / -1}.pv-a{grid-column:1 / -1;justify-content:stretch}.pv-a .pv-b{flex:1}
+  .pv-sr{grid-template-columns:8px 1fr auto;grid-template-areas:"d b t" ". i i"}.pv-sr .pv-dot{grid-area:d}.pv-sr b{grid-area:b}.pv-sr i{grid-area:i;white-space:normal}.pv-sr .pv-cnt{grid-area:t}
+}
+`;
 
 /* ═══════════════════════════════════════════ */
 /* ═══ TRACKING LINKS                      ═══ */
