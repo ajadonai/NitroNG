@@ -16,7 +16,7 @@ const HC_CSS = `
 .hc-strip{display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 16px;font-size:12px;color:var(--cmut);background:var(--csoft);border-bottom:1px solid var(--cline)}
 .hc-strip i{width:6px;height:6px;border-radius:50%;background:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.2);flex-shrink:0}.hc-strip b{color:var(--cink);font-weight:700}
 .hc-facts{display:grid;grid-template-columns:1fr 1fr 1fr;margin:14px 16px 12px;border:1px solid var(--cline);border-radius:14px;overflow:hidden}
-.hc-f{display:flex;flex-direction:column;gap:2px;padding:10px;border-left:1px solid var(--cline);min-width:0}.hc-f:first-child{border-left:0}
+.hc-f{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:10px 6px;border-left:1px solid var(--cline);min-width:0}.hc-f:first-child{border-left:0}
 .hc-f b{font-size:18px;font-weight:800;letter-spacing:-.01em;font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .hc-f span{font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--cmut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hc-f.ac{background:var(--acbg)}.hc-f.ac b{color:#c47d8e}
@@ -251,7 +251,7 @@ function LandingInner({ initialAuthQuery }){
                 <div className="hc w-full max-w-[380px] max-md:max-w-full" style={{"--cbg":dark?"#141930":"#fff","--cink":dark?"#f2efe9":"#1a1a1a","--cmut":dark?"rgba(255,255,255,.5)":"rgba(0,0,0,.45)","--cdim":dark?"rgba(255,255,255,.35)":"rgba(0,0,0,.35)","--cline":dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.08)","--csoft":dark?"rgba(255,255,255,.05)":"rgba(0,0,0,.03)","--acbg":dark?"rgba(196,125,142,.16)":"rgba(196,125,142,.1)","--shadow":dark?"0 20px 60px rgba(0,0,0,.5)":"0 20px 60px rgba(0,0,0,.16)"}}>
                   {siteStats.processing!=null&&<div className="hc-strip"><i/><span>Live activity: <b><CountUp value={siteStats.processing}/></b></span></div>}
                   <div className="hc-facts">
-                    {[[siteStats.orders||"0","Orders placed",false],[siteStats.users||"0","Accounts",false],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Delivery benchmark",true]]:[])].map(([num,label,ac],i)=>
+                    {[[siteStats.orders||"0","Orders",false],[siteStats.users||"0","Accounts",false],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Delivery",true]]:[])].map(([num,label,ac],i)=>
                       <div key={i} className={"hc-f"+(ac?" ac":"")}><b><CountUp value={num}/></b><span>{label}</span></div>
                     )}
                   </div>
