@@ -153,7 +153,7 @@ export function AdminAlertsPage({ dark, t }) {
             </div>
             <div className="aa-fld">
               <label>Message</label>
-              <textarea className="aa-ta" rows={3} value={form.message} onChange={e => set("message", e.target.value)} placeholder={PLACEHOLDER} />
+              <textarea className="aa-ta" rows={6} value={form.message} onChange={e => set("message", e.target.value)} placeholder={PLACEHOLDER} />
               <Hint text="Say what is affected, what it means for them, and what we are doing about it. Put *stars* around a word to make it bold." />
             </div>
             <div className="aa-row2">
@@ -208,7 +208,7 @@ const CSS = `
 .aa-seg{flex:1;font:inherit;font-size:12.5px;font-weight:600;padding:7px 8px;border-radius:8px;border:0;background:transparent;color:var(--mut);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
 .aa-seg.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .aa-types .aa-seg i{width:7px;height:7px;border-radius:50%;background:var(--c)}.aa-types .aa-seg.on{color:var(--c)}
-.aa-ta{width:100%;min-height:74px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;line-height:1.5;resize:vertical;outline:none}.aa-ta:focus{border-color:var(--pri)}
+.aa-ta{width:100%;min-height:150px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;line-height:1.5;resize:vertical;outline:none}.aa-ta:focus{border-color:var(--pri)}
 .aa-hint{font-size:11.5px;color:var(--dim);line-height:1.45}
 .aa-hintw{display:inline-flex;align-items:center;position:relative}.aa-i{display:none}
 .aa-pop{display:none}

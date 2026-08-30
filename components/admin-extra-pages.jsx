@@ -1993,123 +1993,146 @@ export function AdminChangelogPage({ dark, t }) {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ date: new Date().toISOString().slice(0, 10), tag: "new", title: "", description: "" });
   const [saving, setSaving] = useState(false);
-
-  const load = () => fetch("/api/changelog").then(r => r.json()).then(d => { setEntries(d); setLoading(false); }).catch(() => setLoading(false));
+  const [search, setSearch] = useState("");
+  const [tagFilter, setTagFilter] = useState("all");
+  const [page, setPage] = useState(0);
+  const perPage = 10;
+  const load = () => fetch("/api/changelog").then(r => r.json()).then(d => { setEntries(Array.isArray(d) ? d : []); setLoading(false); }).catch(() => setLoading(false));
   useEffect(() => { load(); }, []);
-
   const add = async () => {
-    if (!form.title.trim() || !form.description.trim()) { toast.error("Title and description are required"); return; }
+    if (!form.title.trim() || !form.description.trim()) { toast.error("Needs a title and what changed"); return; }
     setSaving(true);
     try {
       const r = await fetch("/api/changelog", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || "Failed"); }
-      toast.success("Entry added");
+      toast.success("Published", form.title);
       setForm({ date: new Date().toISOString().slice(0, 10), tag: "new", title: "", description: "" });
       setShowAdd(false);
       load();
-    } catch (err) { toast.error(err.message); }
+    } catch (err) { toast.error("Could not publish", err.message); }
     setSaving(false);
   };
-
   const remove = async (id, title) => {
-    const ok = await confirm({ title: "Delete Entry", message: `Delete "${title}" from the changelog?`, confirmLabel: "Delete", danger: true });
+    const ok = await confirm({ title: "Delete this entry?", message: `"${title}" leaves the changelog page. This cannot be undone.`, confirmText: "Delete", danger: true });
     if (!ok) return;
     try {
       const r = await fetch("/api/changelog", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
       if (!r.ok) throw new Error("Failed");
-      toast.success("Entry deleted");
+      toast.success("Deleted", title);
       load();
-    } catch { toast.error("Failed to delete"); }
+    } catch { toast.error("Could not delete"); }
   };
-
-  const tagColors = { new: { bg: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", text: dark ? "#e8acba" : "#a3586b" }, improved: { bg: dark ? "rgba(96,165,250,.12)" : "rgba(37,99,235,.08)", text: dark ? "#93c5fd" : "#2563eb" }, fixed: { bg: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)", text: dark ? "#6ee7b7" : "#059669" } };
-  const inputStyle = { width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)"}`, background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", color: t.text, fontSize: 14, fontFamily: "'Outfit', sans-serif", outline: "none" };
-
+  const TAG = { new: "New", improved: "Improved", fixed: "Fixed" };
+  const dateOf = (iso) => { const d = new Date(iso); return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", ...(d.getFullYear() !== new Date().getFullYear() ? { year: "numeric" } : {}) }); };
+  const daysAgo = (iso) => { const n = Math.round((Date.now() - new Date(iso).getTime()) / 864e5); return n <= 0 ? "today" : n === 1 ? "yesterday" : `${n} days ago`; };
+  const counts = entries.reduce((m, e) => { m[e.tag] = (m[e.tag] || 0) + 1; return m; }, {});
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const thisMonth = entries.filter(e => new Date(e.date) >= monthStart).length;
+  const latest = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+  const shown = entries.filter(e => (tagFilter === "all" || e.tag === tagFilter) && (!search || `${e.title} ${e.description}`.toLowerCase().includes(search.toLowerCase()))).sort((a, b) => new Date(b.date) - new Date(a.date));
+  const pages = Math.max(1, Math.ceil(shown.length / perPage));
+  const paged = shown.slice(page * perPage, (page + 1) * perPage);
+  const vars = {
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent, "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)", "--ok": dark ? "#6ee7b7" : "#0a7d54", "--blue": dark ? "#a5b4fc" : "#4c62c4", "--bad": dark ? "#fca5a5" : "#c62828", "--in": dark ? "#131728" : "#fff",
+  };
   return (
-    <>
-      <div className="flex items-center justify-between gap-4 mb-4">
-        <div>
-          <div className="text-xl font-semibold" style={{ color: t.text }}>Changelog</div>
-          <div className="text-sm mt-0.5" style={{ color: t.textMuted }}>{entries.length} entries</div>
+    <div className="cl" style={vars}>
+      <style>{CL_CSS}</style>
+      <div className="adm-header">
+        <div className="adm-header-row">
+          <div>
+            <div className="adm-title" style={{ color: t.text }}>Changelog</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>What customers read on nitro.ng/changelog.</div>
+          </div>
+          <span className="cl-hb"><a href="/changelog" target="_blank" rel="noopener noreferrer" className="cl-b">View the page</a><button type="button" className="cl-b pri" onClick={() => setShowAdd(true)}>+ New entry</button></span>
         </div>
-        <div className="flex items-center gap-2">
-          <a href="/changelog" target="_blank" rel="noopener noreferrer" className="text-xs font-semibold py-1.5 px-3 rounded-lg no-underline" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textSoft }}>View page</a>
-          <button onClick={() => setShowAdd(!showAdd)} className="text-xs font-semibold py-1.5 px-3 rounded-lg border-none cursor-pointer" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>+ Add entry</button>
-        </div>
+        <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {showAdd && (
-        <div className="rounded-xl p-4 mb-4" style={{ background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
-          <div className="flex gap-3 mb-3">
-            <div className="flex-1">
-              <label className="text-xs font-semibold mb-1 block" style={{ color: t.textMuted }}>Date</label>
-              <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} style={inputStyle} />
-            </div>
-            <div style={{ width: 140 }}>
-              <label className="text-xs font-semibold mb-1 block" style={{ color: t.textMuted }}>Tag</label>
-              <select value={form.tag} onChange={e => setForm({ ...form, tag: e.target.value })} style={{ ...inputStyle, cursor: "pointer" }}>
-                <option value="new">New</option>
-                <option value="improved">Improved</option>
-                <option value="fixed">Fixed</option>
-              </select>
-            </div>
-          </div>
-          <div className="mb-3">
-            <label className="text-xs font-semibold mb-1 block" style={{ color: t.textMuted }}>Title</label>
-            <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. Gradual delivery" style={inputStyle} />
-          </div>
-          <div className="mb-3">
-            <label className="text-xs font-semibold mb-1 block" style={{ color: t.textMuted }}>Description</label>
-            <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="What changed and why it matters to users" rows={3} style={{ ...inputStyle, resize: "vertical" }} />
-          </div>
-          <div className="flex gap-2">
-            <button disabled={saving} onClick={add} className="text-xs font-semibold py-1.5 px-4 rounded-lg border-none cursor-pointer" style={{ background: t.accent, color: "#fff" }}>{saving ? "Saving..." : "Save"}</button>
-            <button onClick={() => setShowAdd(false)} className="text-xs font-semibold py-1.5 px-4 rounded-lg border-none cursor-pointer" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textSoft }}>Cancel</button>
-          </div>
+      {loading ? <><SkelFacts dark={dark} /><SkelBar dark={dark} pills={3} /><SkelList dark={dark} rows={6} title avatar={false} rowH={64} /></> : <>
+        <div className="cl-stats">
+          <div className="cl-stt"><b className="m">{entries.length}</b><span>Entries</span><i>{entries.length ? `since ${dateOf([...entries].sort((a, b) => new Date(a.date) - new Date(b.date))[0].date)}` : "none yet"}</i></div>
+          <div className="cl-stt"><b className="m">{thisMonth}</b><span>This month</span><i>{latest ? `last one ${dateOf(latest.date)}, ${daysAgo(latest.date)}` : "nothing yet"}</i></div>
+          <div className="cl-stt"><b className="m">{counts.new || 0} · {counts.improved || 0} · {counts.fixed || 0}</b><span>New · improved · fixed</span><i>how the entries split</i></div>
+          <div className="cl-stt"><b>{latest ? TAG[latest.tag] || latest.tag : "—"}</b><span>Most recent</span><i>{latest ? latest.title : ""}</i></div>
         </div>
-      )}
+        <div className="cl-bar">
+          <div className="cl-srch"><input value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} placeholder="Search entries" /></div>
+          {[["all", `All ${entries.length}`], ["new", `New ${counts.new || 0}`], ["improved", `Improved ${counts.improved || 0}`], ["fixed", `Fixed ${counts.fixed || 0}`]].map(([v, l]) => <button key={v} type="button" className={"cl-tg" + (tagFilter === v ? " on" : "")} onClick={() => { setTagFilter(v); setPage(0); }}>{l}</button>)}
+        </div>
 
-      {loading ? (
-        <div className="flex flex-col gap-1.5">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="flex items-start gap-3 rounded-xl py-3 px-4" style={{ background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` }}>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[44px] h-[18px] rounded-md`} />
-                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[72px] h-[12px] rounded`} />
-                </div>
-                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[14px] rounded mb-1`} style={{ width: `${55 + i * 10}%` }} />
-                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[80%] h-[12px] rounded`} />
+        <section className={"cl-card cl-composer" + (showAdd ? " open" : "")}>
+          <header onClick={() => setShowAdd(v => !v)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setShowAdd(v => !v); } }} aria-expanded={showAdd}>
+            <h3>New entry</h3><span className="cl-cnt">{showAdd ? "plain words, the way a customer would say it" : "tap to write one"}</span>
+            <svg className="cl-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+          </header>
+          {showAdd && (
+            <div className="cl-form">
+              <div className="cl-two">
+                <label>Date<input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></label>
+                <div><span className="cl-lbl">Kind</span><div className="cl-chips">{Object.entries(TAG).map(([v, l]) => <button key={v} type="button" className={"cl-tg" + (form.tag === v ? " on" : "")} onClick={() => setForm({ ...form, tag: v })}>{l}</button>)}</div></div>
               </div>
+              <label>Title<input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="One line a customer would understand" /></label>
+              <label>What changed<textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={6} placeholder="Say what they can do now, or what stopped being annoying. No jargon." /></label>
+              <div className="cl-ff"><button type="button" className="cl-b" onClick={() => setShowAdd(false)}>Cancel</button><button type="button" className="cl-b pri" disabled={saving || !form.title.trim() || !form.description.trim()} onClick={add}>{saving ? "Publishing…" : "Publish"}</button></div>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1.5">
-          {entries.map(e => {
-            const tc = tagColors[e.tag] || tagColors.new;
-            return (
-              <div key={e.id} className="flex items-start gap-3 rounded-xl py-3 px-4" style={{ background: dark ? "rgba(255,255,255,.04)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` }}>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-semibold py-0.5 px-2 rounded-md" style={{ background: tc.bg, color: tc.text }}>{e.tag}</span>
-                    <span className="text-xs" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>{e.date}</span>
-                  </div>
-                  <div className="text-sm font-semibold" style={{ color: t.text }}>{e.title}</div>
-                  <div className="text-xs mt-0.5 leading-relaxed" style={{ color: t.textSoft }}>{e.description}</div>
-                </div>
-                <button onClick={() => remove(e.id, e.title)} className="shrink-0 bg-transparent border-none cursor-pointer p-1 rounded-md hover:opacity-70" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-                </button>
+          )}
+        </section>
+
+        <section className="cl-card">
+          <header><h3>Entries</h3><span className="cl-cnt">newest first · {shown.length ? `${page * perPage + 1}–${Math.min((page + 1) * perPage, shown.length)} of ${shown.length}` : "none"}</span></header>
+          <div className="cl-list">
+            {paged.length === 0 ? <div className="cl-empty">{entries.length ? "Nothing matches." : "Nothing published yet."}</div> : paged.map(e => (
+              <div key={e.id} className="cl-r">
+                <span className={"cl-ty tag-" + (e.tag || "new")}>{TAG[e.tag] || e.tag}</span>
+                <span className="cl-tt"><b>{e.title}</b><i>{e.description}</i></span>
+                <span className="cl-mid m">{dateOf(e.date)}</span>
+                <span className="cl-acts"><button type="button" className="cl-b sm bad" onClick={() => remove(e.id, e.title)}>Delete</button></span>
               </div>
-            );
-          })}
-        </div>
-      )}
-    </>
+            ))}
+            {pages > 1 && <div className="cl-pg"><span className="cl-cnt">{page + 1} of {pages}</span><span className="cl-pgn"><button type="button" className="cl-ib" disabled={page === 0} onClick={() => setPage(p => p - 1)} aria-label="Previous">‹</button><button type="button" className="cl-ib" disabled={page >= pages - 1} onClick={() => setPage(p => p + 1)} aria-label="Next">›</button></span></div>}
+          </div>
+        </section>
+      </>}
+    </div>
   );
 }
 
+const CL_CSS = `
+.cl{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.cl *{box-sizing:border-box}
+.cl .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.cl-hb{display:flex;gap:8px}
+.cl-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;transition:transform .15s}.cl-b:hover{transform:translateY(-1px)}.cl-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.cl-b.sm{height:30px;padding:0 10px;font-size:12px}.cl-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.cl-b.bad{color:var(--bad)}
+.cl-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.cl-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.cl-stt:first-child{border-left:0}
+.cl-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cl-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.cl-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cl-srch{display:flex;align-items:center;height:36px;padding:0 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);min-width:280px}.cl-srch:focus-within{border-color:var(--acln)}.cl-srch input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:13px;color:var(--ink);outline:none}.cl-srch input::placeholder{color:var(--dim)}
+.cl-tg{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer}.cl-tg.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.cl-cnt{font-size:11.5px;color:var(--dim)}
+.cl-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.cl-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.cl-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}
+.cl-composer>header{cursor:pointer;user-select:none;border-bottom:0;align-items:center}.cl-composer.open>header{border-bottom:1px solid var(--line)}.cl-composer>header:hover{background:var(--soft)}.cl-composer>header .cl-cnt{flex:1}.cl-chev{color:var(--mut);transition:transform .2s;flex-shrink:0}.cl-composer.open .cl-chev{transform:rotate(180deg)}
+.cl-form{padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px}.cl-two{display:grid;grid-template-columns:180px 1fr;gap:12px 16px;align-items:start}
+.cl-form label,.cl-lbl{display:flex;flex-direction:column;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}.cl-lbl{margin-bottom:6px}
+.cl-form input,.cl-form textarea{width:100%;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--in);color:var(--ink);font:inherit;font-size:14px;outline:none;letter-spacing:0;text-transform:none;font-weight:400}.cl-form input{height:40px}.cl-form textarea{min-height:150px;padding:10px 12px;line-height:1.55;resize:vertical}.cl-form input:focus,.cl-form textarea:focus{border-color:var(--ac)}
+.cl-chips{display:flex;gap:6px;flex-wrap:wrap}.cl-ff{display:flex;justify-content:flex-end;gap:8px}
+.cl-list{display:flex;flex-direction:column}.cl-empty{padding:28px 16px;text-align:center;font-size:13px;color:var(--mut)}
+.cl-r{display:grid;grid-template-columns:90px 1fr 70px auto;align-items:start;gap:12px;padding:12px 16px;border-top:1px solid var(--rail);font-size:13px}.cl-r:first-child{border-top:0}
+.cl-ty{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;background:var(--soft);border:1px solid var(--line);padding:3px 8px;border-radius:999px;text-align:center;white-space:nowrap;justify-self:start;margin-top:2px;color:var(--mut)}.cl-ty.tag-new{color:var(--ac);border-color:rgba(196,125,142,.5)}.cl-ty.tag-improved{color:var(--blue);border-color:rgba(76,98,196,.4)}.cl-ty.tag-fixed{color:var(--ok);border-color:rgba(10,125,84,.4)}
+.cl-tt{display:flex;flex-direction:column;gap:3px;min-width:0}.cl-tt b{font-weight:600}.cl-tt i{font-style:normal;font-size:12px;color:var(--mut);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cl-mid{font-size:12px;color:var(--mut);white-space:nowrap;margin-top:3px}.cl-acts{display:flex;gap:6px;justify-content:flex-end}
+.cl-pg{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}.cl-pgn{display:inline-flex;gap:6px}.cl-ib{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:14px;cursor:pointer;padding:0}.cl-ib:disabled{opacity:.35;cursor:not-allowed}
+@media (max-width:900px){
+  .cl-hb{width:100%;flex-direction:column}.cl-hb .cl-b{width:100%}
+  .cl-stats{grid-template-columns:1fr 1fr}.cl-stt:nth-child(3){border-left:0}.cl-stt:nth-child(n+3){border-top:1px solid var(--line)}.cl-stt b{font-size:17px}
+  .cl-srch{width:100%;min-width:0}.cl-bar .cl-tg{flex:1;text-align:center;padding:8px 6px}.cl-two{grid-template-columns:1fr}
+  .cl-r{grid-template-columns:1fr auto;grid-template-areas:"ty d" "tt tt" "acts acts";gap:6px 10px;padding:12px 14px}.cl-r .cl-ty{grid-area:ty}.cl-r .cl-mid{grid-area:d}.cl-r .cl-tt{grid-area:tt}.cl-r .cl-acts{grid-area:acts;justify-content:stretch}.cl-r .cl-acts .cl-b{flex:1}
+}
+`;
 /* ═══════════════════════════════════════════ */
 /* ═══ CREATE ORDER                        ═══ */
 /* ═══════════════════════════════════════════ */

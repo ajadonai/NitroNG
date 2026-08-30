@@ -2,10 +2,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useConfirm } from './confirm-dialog';
 import { useToast } from './toast';
-import InlineAlert from './inline-alert';
-import { PlatformIcon } from './platform-icon';
+import { SegPill } from './seg-pill';
+import { FilterDropdown } from './date-range-picker';
+import { SkelFacts, SkelBar, SkelList } from './skeleton';
 import { proofToLink } from '@/lib/proof-link';
-import { openCardFrame, openCardHeader } from '@/lib/expandable-card';
 const fmt = (n) => Math.abs(n).toLocaleString('en-NG');
 
 const PLATFORMS = [
@@ -22,6 +22,7 @@ const PLATFORMS = [
   { id: 'trustpilot', name: 'Trustpilot' },
   { id: 'blog', name: 'Blog / Web' },
 ];
+const PF_SHORT = { x: 'X', instagram: 'IG', tiktok: 'TT', facebook: 'FB', youtube: 'YT', whatsapp: 'WA', telegram: 'TG', nairaland: 'NL', reddit: 'RD', google: 'G', trustpilot: 'TP', blog: 'BL' };
 
 const CATEGORIES = [
   { id: 'follow', label: 'Follow & Join' },
@@ -44,19 +45,20 @@ const FREQUENCIES = [
   { id: 'monthly', label: 'Monthly' },
 ];
 
-const FREQ_LABEL = { one_time: 'One-time', per_campaign: 'Per campaign', weekly: 'Weekly', monthly: 'Monthly' };
-const CAT_LABEL = { follow: 'Follow & Join', engage: 'Engage & Share', content: 'Original Content', review: 'Reviews' };
+// Plain words for the line under a task title: "Follow · handle · once".
+const CAT_WORD = { follow: 'Follow', engage: 'Engage', content: 'Content', review: 'Review' };
+const PROOF_WORD = { link: 'link', handle: 'handle', phone: 'phone', text: 'text' };
+const FREQ_WORD = { one_time: 'once', per_campaign: 'per campaign', weekly: 'weekly', monthly: 'monthly' };
 
-function fAgo(d) {
-  const ms = Date.now() - new Date(d).getTime();
-  const m = Math.floor(ms / 60000);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const days = Math.floor(h / 24);
-  if (days === 1) return 'Yesterday';
-  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-}
+const SEARCH = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="20" y1="20" x2="16.5" y2="16.5" /></svg>;
+
+const isToday = (d) => new Date(d).toDateString() === new Date().toDateString();
+const hm = (d) => new Date(d).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+const dayOf = (d) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+// HH:MM when it happened today, "26 Aug" otherwise.
+const whenWord = (d) => d ? (isToday(d) ? hm(d) : dayOf(d)) : '—';
+const initials = (n) => (n || '?').split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+const shortLink = (s) => String(s || '').replace(/^https?:\/\/(www\.)?/, '');
 
 const EMPTY_FORM = {
   platform: 'x', title: '', instructions: '', category: 'engage', proofType: 'link',
@@ -65,10 +67,21 @@ const EMPTY_FORM = {
   allowNonDepositors: true, active: true,
 };
 
+const Toggle = ({ on, onClick }) => <button type="button" role="switch" aria-checked={on} className={'tk-sw' + (on ? ' on' : '')} onClick={onClick}><i /></button>;
+
+const CARD_TITLE = { pending: 'Waiting for review', approved: 'Approved', rejected: 'Rejected', all: 'All submissions' };
+const SORT_OPTIONS = [
+  { value: 'date_asc', label: 'Oldest first' },
+  { value: 'date_desc', label: 'Newest first' },
+  { value: 'views_desc', label: 'Most views' },
+  { value: 'reward_desc', label: 'Highest reward' },
+];
+const SORT_WORD = { date_asc: 'oldest first', date_desc: 'newest first', views_desc: 'most views first', reward_desc: 'highest reward first' };
+
 export default function AdminTasksPage({ dark, t }) {
   const confirm = useConfirm();
   const toast = useToast();
-  const [tab, setTab] = useState('tasks');
+  const [tab, setTab] = useState(null); // decided on first load: subs when anything is waiting
   const [tasks, setTasks] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
@@ -82,32 +95,29 @@ export default function AdminTasksPage({ dark, t }) {
   const [subs, setSubs] = useState([]);
   const [subTotal, setSubTotal] = useState(0);
   const [subCounts, setSubCounts] = useState({ all: 0, pending: 0, approved: 0, rejected: 0 });
-  const [fSt, setFSt] = useState('all');
+  const [fSt, setFSt] = useState('pending');
   const [fPlat, setFPlat] = useState('all');
   const [fUser, setFUser] = useState('');
   const [subPage, setSubPage] = useState(1);
   const [subPer, setSubPer] = useState(10);
   const [subSort, setSubSort] = useState('date');
-  const [subDir, setSubDir] = useState('desc');
+  const [subDir, setSubDir] = useState('asc');
   const [subLoading, setSubLoading] = useState(false);
-  const [expanded, setExpanded] = useState({});
-  const toggleExpand = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+  const [subsLoaded, setSubsLoaded] = useState(false);
+  const [busy, setBusy] = useState(null); // submission id with an approve/reject in flight
+  const [reject, setReject] = useState(null); // { sub, reason }
 
-  // Modal
+  // Editor
   const [modal, setModal] = useState(null); // null | { mode: 'create' } | { mode: 'edit', task: {...} }
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
-
-  const cardBg = dark ? 'rgba(255,255,255,.09)' : 'rgba(255,255,255,.85)';
-  const cardBorder = `0.5px solid ${t.cardBorder}`;
-  const inputStyle = { border: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.07)' : '#fff', color: t.text };
 
   const loadTasks = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/tasks');
       const d = await res.json();
       if (d.tasks) setTasks(d.tasks);
-      if (d.stats) setStats(d.stats);
+      if (d.stats) { setStats(d.stats); setTab(prev => prev || (d.stats.pending > 0 ? 'subs' : 'tasks')); }
     } catch { /* ignore */ }
     setLoading(false);
   }, []);
@@ -122,6 +132,7 @@ export default function AdminTasksPage({ dark, t }) {
         setSubs(d.submissions.rows);
         setSubTotal(d.submissions.total);
         setSubCounts(d.submissions.counts);
+        setSubsLoaded(true);
       }
       if (d.stats) setStats(d.stats);
     } catch { /* ignore */ }
@@ -130,6 +141,16 @@ export default function AdminTasksPage({ dark, t }) {
 
   useEffect(() => { loadTasks(); }, [loadTasks]);
   useEffect(() => { if (tab === 'subs') loadSubs(); }, [tab, loadSubs]);
+
+  // Anything over the page owns it: no scrolling behind, Escape closes.
+  const overlay = !!(modal || reject);
+  useEffect(() => {
+    if (!overlay) return;
+    const prev = document.body.style.overflow; document.body.style.overflow = 'hidden';
+    const onKey = (e) => { if (e.key === 'Escape') { setModal(null); setReject(null); } };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [overlay]);
 
   // ── Task CRUD ──
   const openCreate = () => { setForm({ ...EMPTY_FORM }); setModal({ mode: 'create' }); };
@@ -173,466 +194,349 @@ export default function AdminTasksPage({ dark, t }) {
 
   const deleteTask = async () => {
     if (!modal?.task?.id) return;
-    const yes = await confirm?.({ title: 'Delete task?', message: 'This cannot be undone. Tasks with submissions will be deactivated instead.', confirmText: 'Delete', variant: 'danger' });
+    const yes = await confirm?.({ title: 'Delete this task?', message: 'This cannot be undone. A task that already has submissions is turned off instead.', confirmLabel: 'Delete', danger: true });
     if (!yes) return;
     try {
       const res = await fetch('/api/admin/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_task', id: modal.task.id }) });
       const d = await res.json();
-      if (d.ok) { toast?.success?.(d.deactivated ? 'Task deactivated (has submissions)' : 'Task deleted'); setModal(null); loadTasks(); }
+      if (d.ok) { toast?.success?.(d.deactivated ? 'Task turned off (it has submissions)' : 'Task deleted'); setModal(null); loadTasks(); }
     } catch { toast?.error?.('Failed'); }
   };
 
   const toggleTask = async (id, active) => {
     try {
       await fetch('/api/admin/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'toggle_task', id, active }) });
-      setTasks(prev => prev.map(t => t.id === id ? { ...t, active } : t));
-      setStats(prev => ({ ...prev, activeTasks: prev.activeTasks + (active ? 1 : -1) }));
+      setTasks(prev => prev.map(x => x.id === id ? { ...x, active } : x));
+      setStats(prev => ({ ...prev, activeTasks: (prev.activeTasks || 0) + (active ? 1 : -1) }));
     } catch { /* ignore */ }
   };
 
   // ── Submission review ──
   const reviewSub = async (id, action, reason) => {
+    setBusy(id);
     try {
       const res = await fetch('/api/admin/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, id, reason }) });
       const d = await res.json();
       if (d.ok) {
-        toast?.success?.(action === 'approve' ? 'Approved & credited' : 'Rejected');
+        toast?.success?.(action === 'approve' ? 'Approved and credited' : 'Rejected');
         setSubs(prev => prev.map(s => s.id === id ? { ...s, status: action === 'approve' ? 'approved' : 'rejected' } : s));
-        setExpanded(prev => ({ ...prev, [id]: false }));
         loadSubs(); loadTasks();
       }
       else toast?.error?.(d.error || 'Failed');
     } catch { toast?.error?.('Failed'); }
+    setBusy(null);
+  };
+
+  const sendReject = async () => {
+    const r = reject; if (!r) return;
+    setReject(null);
+    await reviewSub(r.sub.id, 'reject', r.reason.trim() || undefined);
   };
 
   // ── Filtered tasks ──
-  const filteredTasks = tasks.filter(t =>
-    (tPlat === 'all' || t.platform === tPlat) &&
-    (tSt === 'all' || (tSt === '1' ? t.active : !t.active)) &&
-    (!tq || t.title.toLowerCase().includes(tq.toLowerCase()))
+  const filteredTasks = tasks.filter(x =>
+    (tPlat === 'all' || x.platform === tPlat) &&
+    (tSt === 'all' || (tSt === '1' ? x.active : !x.active)) &&
+    (!tq || x.title.toLowerCase().includes(tq.toLowerCase()))
   );
-
-  const groupedTasks = CATEGORIES.map(cat => ({
-    ...cat,
-    tasks: filteredTasks.filter(t => t.category === cat.id),
-  })).filter(g => g.tasks.length > 0);
+  const liveTasks = tasks.filter(x => x.active);
 
   // ── Pagination ──
   const totalPages = Math.max(1, Math.ceil(subTotal / subPer));
   const pageStart = subTotal ? (subPage - 1) * subPer + 1 : 0;
   const pageEnd = Math.min(subPage * subPer, subTotal);
 
-  const taskMeta = (t) => {
-    const parts = [FREQ_LABEL[t.frequency] || t.frequency];
-    if (t.maxPerMonth) parts.push(`max ${t.maxPerMonth}/mo`);
-    if (t.minViews) parts.push(`${t.minViews.toLocaleString()}+ views`);
-    if (t.keepDays) parts.push(`live ${t.keepDays}d`);
-    if (t.monthlyCap) parts.push(`cap ${t.monthlyCap}/mo`);
-    parts.push(`proof: ${t.proofType}`);
-    return parts.join(' · ');
+  const waiting = stats.pending || 0;
+  const reviewed30 = (stats.approved30 || 0) + (stats.rejected30 || 0);
+  const taskMeta = (x) => `${CAT_WORD[x.category] || x.category} · ${PROOF_WORD[x.proofType] || x.proofType} · ${FREQ_WORD[x.frequency] || x.frequency}`;
+  const platformOptions = [{ value: 'all', label: 'All platforms' }, ...PLATFORMS.map(p => ({ value: p.id, label: p.name }))];
+
+  const vars = {
+    '--card': dark ? '#141930' : '#ffffff', '--ink': t.text, '--mut': t.textMuted, '--dim': dark ? '#5c6170' : '#a19b93', '--line': t.cardBorder, '--rail': dark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)', '--soft': dark ? '#111634' : '#faf9f7',
+    '--ac': t.accent, '--ok': dark ? '#6ee7b7' : '#0a7d54', '--warn': dark ? '#fcd34d' : '#b45309', '--bad': dark ? '#fca5a5' : '#c62828', '--in': dark ? '#131728' : '#fff', '--blue': dark ? '#a5b4fc' : '#4c62c4',
   };
 
-  if (loading) {
-    const sk = `skel-bone ${dark ? 'skel-dark' : 'skel-light'}`;
-    return (
-      <>
-        <div className="adm-header">
-          <div className="flex items-center justify-between gap-4 mb-1">
-            <div className={`${sk} w-[80px] h-[22px]`} />
-            <div className={`${sk} w-[100px] h-[34px] rounded-[9px]`} />
-          </div>
-          <div className={`${sk} w-[200px] h-[12px] mt-2`} />
-          <div className="page-divider" style={{ background: t.cardBorder }} />
-        </div>
-        <div className="adm-stats mb-6">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="dash-stat-card" style={{ background: dark ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.85)', border: `0.5px solid ${dark ? 'rgba(255,255,255,.16)' : 'rgba(0,0,0,.12)'}` }}>
-              <div className={`${sk} w-[90px] h-[8px] mb-3`} />
-              <div className={`${sk} w-[50px] h-[17px]`} />
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-5 mb-[18px]" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-          <div className={`${sk} w-[60px] h-[14px] mb-2.5`} />
-          <div className={`${sk} w-[90px] h-[14px] mb-2.5`} />
-        </div>
-        <div className="flex gap-2 mb-3.5">
-          <div className={`${sk} w-[210px] h-[34px] rounded-lg`} />
-          <div className={`${sk} w-[120px] h-[34px] rounded-lg`} />
-          <div className={`${sk} w-[120px] h-[34px] rounded-lg`} />
-        </div>
-        <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBorder }}>
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="flex items-center gap-3 px-5 py-3.5" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-              <div className={`${sk} w-[30px] h-[30px] rounded-[10px] shrink-0`} />
-              <div className="flex-1">
-                <div className={`${sk} h-[13px] mb-1.5`} style={{ width: `${40 + i * 10}%` }} />
-                <div className={`${sk} w-[130px] h-[10px]`} />
-              </div>
-              <div className={`${sk} w-[70px] h-[14px] shrink-0`} />
-              <div className={`${sk} w-[32px] h-[18px] rounded-full shrink-0`} />
-            </div>
-          ))}
-        </div>
-      </>
-    );
-  }
-
   return (
-    <>
-      {/* ── Header ── */}
+    <div className="tk" style={vars}>
+      <style>{TK_CSS}</style>
       <div className="adm-header">
-        <div className="flex items-center justify-between gap-4 mb-1">
-          <div className="adm-title" style={{ color: t.text }}>Tasks</div>
-          <button onClick={openCreate} className="inline-flex items-center justify-center gap-1.5 h-[34px] px-4 rounded-[9px] text-[13px] font-semibold border-none cursor-pointer font-[inherit] transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: 'linear-gradient(135deg,#c47d8e,#8b5e6b)', color: '#fff' }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-            New Task
-          </button>
+        <div className="adm-header-row">
+          <div>
+            <div className="adm-title" style={{ color: t.text }}>Tasks</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>Small jobs customers do for a wallet credit.</div>
+          </div>
+          {!loading && (
+            <div className="tk-hr">
+              <SegPill value={tab} options={[{ value: 'subs', label: `Submissions · ${waiting}` }, { value: 'tasks', label: `Tasks · ${tasks.length}` }]} onChange={v => setTab(v)} dark={dark} t={t} />
+            </div>
+          )}
         </div>
-        <div className="adm-subtitle" style={{ color: t.textMuted }}>Platform tasks and submission review</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {/* ── Stats ── */}
-      <div className="adm-stats mb-6">
-        {[
-          ['Pending review', stats.pending ?? '—', '#fbbf24'],
-          [`Approved · ${new Date().toLocaleDateString('en-US', { month: 'long' })}`, stats.approvedMonth ?? '—', t.green],
-          [`Credit issued · ${new Date().toLocaleDateString('en-US', { month: 'long' })}`, `₦${fmt(Math.round((stats.creditMonth || 0) / 100))}`, t.accent, `/ ₦${fmt(Math.round((stats.budget || 0) / 100))}`],
-          ['Active tasks', stats.activeTasks ?? '—', t.blue],
-        ].map(([label, val, color, sub]) => (
-          <div key={label} className="dash-stat-card" style={{ background: dark ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.85)', border: `0.5px solid ${dark ? 'rgba(255,255,255,.16)' : 'rgba(0,0,0,.12)'}` }}>
-            <div className="dash-stat-dot" style={{ background: color }} />
-            <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
-            <div className="m dash-stat-value" style={{ color }}>{val}</div>
-            {sub && <div className="dash-stat-sub" style={{ color: t.textMuted }}>{sub}</div>}
-          </div>
-        ))}
-      </div>
+      {loading ? <><SkelFacts dark={dark} /><SkelBar dark={dark} pills={2} /><SkelList dark={dark} rows={6} title rowH={62} /></> : <>
+        <div className="tk-stats">
+          <div className={'tk-stt' + (waiting > 0 ? ' warn' : '')}><b className="m">{waiting}</b><span>Waiting for review</span><i>{waiting > 0 && stats.oldestPending ? `oldest since ${isToday(stats.oldestPending) ? `${hm(stats.oldestPending)} today` : dayOf(stats.oldestPending)}` : 'nothing waiting'}</i></div>
+          <div className="tk-stt"><b className="m">{stats.approved30 || 0}</b><span>Approved, 30 days</span><i>{`₦${fmt(Math.round((stats.credited30 || 0) / 100))} credited`}</i></div>
+          <div className="tk-stt"><b className="m">{stats.rejected30 || 0}</b><span>Rejected, 30 days</span><i>{reviewed30 ? `${Math.round((stats.rejected30 || 0) / reviewed30 * 100)}% of what was reviewed` : 'nothing reviewed yet'}</i></div>
+          <div className="tk-stt"><b className="m">{liveTasks.length} of {tasks.length}</b><span>Live tasks</span><i>{liveTasks.length ? liveTasks.map(x => x.title).join(', ') : 'none live'}</i></div>
+        </div>
 
-      {/* ── Tabs ── */}
-      <div className="flex gap-5 mb-[18px]" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-        {[
-          { id: 'tasks', label: 'Tasks', count: tasks.length },
-          { id: 'subs', label: 'Submissions', count: subCounts.all || stats.pending || 0 },
-        ].map(tb => (
-          <button key={tb.id} onClick={() => setTab(tb.id)} className="pb-2.5 text-[13.5px] font-semibold -mb-px bg-transparent border-none border-b-2 cursor-pointer font-[inherit]" style={{ color: tab === tb.id ? t.text : t.textMuted, borderBottom: `2px solid ${tab === tb.id ? t.accent : 'transparent'}` }}>
-            {tb.label} <span className="text-[11px] font-medium ml-1" style={{ color: t.textMuted }}>{tb.count}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* ══ TASKS TAB ══ */}
-      {tab === 'tasks' && (
-        <>
-          <div className="flex gap-2 flex-wrap items-center mb-3.5">
-            <div className="relative max-md:flex-[1_1_100%] max-md:order-[-1]">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
-              <input type="text" placeholder="Search tasks" value={tq} onChange={e => setTq(e.target.value)} className="h-[34px] pl-8 pr-3 rounded-lg text-[13px] outline-none max-md:w-full" style={{ ...inputStyle, width: 210 }} />
-            </div>
-            <select value={tPlat} onChange={e => setTPlat(e.target.value)} className="h-[34px] pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none max-md:flex-1" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
-              <option value="all">All platforms</option>
-              {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <select value={tSt} onChange={e => setTSt(e.target.value)} className="h-[34px] pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none max-md:flex-1" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
-              <option value="all">Active & paused</option>
-              <option value="1">Active</option>
-              <option value="0">Paused</option>
-            </select>
-          </div>
-
-          <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBorder }}>
-            {/* List header (desktop) */}
-            <div className="hidden md:grid grid-cols-[46px_minmax(0,1fr)_88px_104px_96px] items-center px-5 py-2.5" style={{ borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>
-              <span className="col-span-2 text-[9.5px] uppercase tracking-[1.1px] font-semibold" style={{ color: t.textMuted }}>Task</span>
-              <span className="text-[9.5px] uppercase tracking-[1.1px] font-semibold text-right" style={{ color: t.textMuted }}>Done</span>
-              <span className="text-[9.5px] uppercase tracking-[1.1px] font-semibold text-right" style={{ color: t.textMuted }}>Reward</span>
-              <span className="text-[9.5px] uppercase tracking-[1.1px] font-semibold text-right" style={{ color: t.textMuted }}>Active</span>
-            </div>
-
-            {groupedTasks.length === 0 && (
-              <div className="text-[10px] uppercase tracking-[1.2px] py-4 px-5 font-semibold" style={{ color: t.textMuted }}>No tasks match.</div>
-            )}
-
-            {groupedTasks.map(group => (
-              <div key={group.id}>
-                <div className="text-[10px] uppercase tracking-[1.2px] font-semibold pt-4 pb-2 px-5" style={{ color: t.textMuted, borderBottom: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.008)' : 'rgba(0,0,0,.02)' }}>
-                  {group.label}<span className="opacity-60 ml-1.5 tracking-normal">· {group.tasks.length}</span>
-                </div>
-                {group.tasks.map(task => (
-                  <div key={task.id} className={`grid grid-cols-[46px_minmax(0,1fr)_88px_104px_96px] max-md:grid-cols-[42px_minmax(0,1fr)_auto_auto] items-center px-5 max-md:px-3.5 py-3 group hover:bg-black/[.015] dark:hover:bg-white/[.015] ${!task.active ? 'opacity-40' : ''}`} style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-                    <PlatformIcon platform={task.platform} size={30} />
-                    <div className="min-w-0 pr-3.5 max-md:pr-2.5">
-                      <div className="text-[13.5px] font-semibold truncate max-md:whitespace-normal" style={{ color: t.text }}>{task.title}</div>
-                      <div className="text-[11.5px] mt-0.5 truncate max-md:whitespace-normal" style={{ color: t.textMuted }}>{taskMeta(task)}</div>
-                    </div>
-                    <div className="text-[12px] text-right font-mono max-md:hidden" style={{ color: t.textSoft }}>{task.doneCount || '—'}</div>
-                    <div className="text-right">
-                      <div className="text-[13.5px] font-semibold font-mono">₦{fmt(task.reward / 100)}</div>
-                      {task.viralBonus && <div className="text-[10px] mt-0.5" style={{ color: t.textMuted }}>+₦{fmt(task.viralAmount / 100)} at {fmt(task.viralThreshold)}</div>}
-                    </div>
-                    <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => openEdit(task)} className="w-7 h-7 rounded-lg inline-flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: t.textMuted }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 3a2.8 2.8 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
-                      </button>
-                      <button onClick={() => toggleTask(task.id, !task.active)} className="relative w-8 h-[18px] rounded-full shrink-0 ml-1.5 transition-colors" style={{ background: task.active ? '#a3586b' : (dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.12)') }}>
-                        <span className="absolute top-[2.5px] left-[2.5px] w-[13px] h-[13px] rounded-full bg-white shadow-sm transition-transform" style={{ transform: task.active ? 'translateX(14px)' : 'translateX(0)', background: task.active ? '#fff' : (dark ? '#7a756f' : '#999') }} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+        {tab === 'subs' ? <>
+          <div className="tk-bar">
+            {['pending', 'approved', 'rejected', 'all'].map(s => (
+              <button key={s} type="button" className={'tk-tg' + (fSt === s ? ' on' : '')} onClick={() => { setFSt(s); setSubPage(1); }}>
+                {s === 'pending' ? 'Waiting' : s === 'all' ? 'All' : s[0].toUpperCase() + s.slice(1)} {subCounts[s] || 0}
+              </button>
             ))}
-          </div>
-        </>
-      )}
-
-      {/* ══ SUBMISSIONS TAB ══ */}
-      {tab === 'subs' && (
-        <>
-          <div className="flex gap-2 flex-wrap items-center mb-3.5">
-            <div className="relative max-md:flex-[1_1_100%] max-md:order-[-1]">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
-              <input type="text" placeholder="Search user" value={fUser} onChange={e => { setFUser(e.target.value); setSubPage(1); }} className="h-[34px] pl-8 pr-3 rounded-lg text-[13px] outline-none max-md:w-full" style={{ ...inputStyle, width: 210 }} />
-            </div>
-            {/* Status segment */}
-            <div className="inline-flex gap-0.5 rounded-[9px] p-[3px] h-[34px] overflow-x-auto" style={{ background: cardBg, border: cardBorder, scrollbarWidth: 'none' }}>
-              {['all', 'pending', 'approved', 'rejected'].map(s => (
-                <button key={s} onClick={() => { setFSt(s); setSubPage(1); }} className="px-3 rounded-md text-[12px] font-semibold whitespace-nowrap" style={{ background: fSt === s ? (dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)') : 'transparent', color: fSt === s ? t.text : t.textMuted }}>
-                  {s[0].toUpperCase() + s.slice(1)}<span className="text-[10.5px] opacity-70 ml-1">{subCounts[s] || 0}</span>
-                </button>
-              ))}
-            </div>
-            <select value={fPlat} onChange={e => { setFPlat(e.target.value); setSubPage(1); }} className="h-[34px] pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
-              <option value="all">All platforms</option>
-              {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-            <select value={`${subSort}_${subDir}`} onChange={e => { const [s, d] = e.target.value.split('_'); setSubSort(s); setSubDir(d); setSubPage(1); }} className="h-[34px] pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none max-md:flex-1" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
-              <option value="date_desc">Newest</option>
-              <option value="date_asc">Oldest</option>
-              <option value="views_desc">Most views</option>
-              <option value="reward_desc">Highest reward</option>
-            </select>
+            <FilterDropdown dark={dark} t={t} value={fPlat} onChange={v => { setFPlat(v); setSubPage(1); }} options={platformOptions} />
+            <FilterDropdown dark={dark} t={t} value={`${subSort}_${subDir}`} onChange={v => { const [s, d] = v.split('_'); setSubSort(s); setSubDir(d); setSubPage(1); }} options={SORT_OPTIONS} />
+            <div className="tk-srch"><span className="tk-si">{SEARCH}</span><input value={fUser} onChange={e => { setFUser(e.target.value); setSubPage(1); }} placeholder="Search by name" /></div>
           </div>
 
-          <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: cardBorder }}>
-            {subs.length === 0 && <div className="px-4 py-8 text-center text-[13px]" style={{ color: t.textMuted }}>{subLoading ? 'Loading...' : 'No submissions'}</div>}
-            {subs.map(s => {
-              const isOpen = expanded[s.id];
-              const link = proofToLink(s.proof, s.task?.platform);
-              return (
-                <div key={s.id} style={isOpen ? openCardFrame(t, dark) : { borderBottom: `1px solid ${t.cardBorder}` }}>
-                  <div onClick={() => toggleExpand(s.id)} className="flex items-center gap-3 px-5 max-md:px-3.5 py-3 cursor-pointer select-none hover:bg-black/[.015] dark:hover:bg-white/[.015]" style={isOpen ? openCardHeader(dark) : undefined}>
-                    <PlatformIcon platform={s.task?.platform} size={28} />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[13.5px] font-semibold truncate" style={{ color: t.text }}>{s.task?.title}</div>
-                      <div className="flex items-center gap-1.5 mt-0.5 text-[11.5px] flex-wrap" style={{ color: t.textMuted }}>
-                        <span>{s.user?.name || 'Unknown'}</span>
-                        <span>·</span>
-                        <span className="font-mono">₦{fmt((s.task?.reward || 0) / 100)}</span>
-                        <span>·</span>
-                        <span>{fAgo(s.createdAt)}</span>
-                      </div>
-                    </div>
-                    <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium shrink-0" style={{ color: t.textSoft }}>
-                      <span className="w-[5px] h-[5px] rounded-full" style={{ background: s.status === 'pending' ? '#fbbf24' : s.status === 'approved' ? '#6ee7b7' : '#fca5a5' }} />
-                      <span className="max-md:hidden">{s.status[0].toUpperCase() + s.status.slice(1)}</span>
-                    </span>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" className="shrink-0 transition-transform" style={{ transform: isOpen ? 'rotate(180deg)' : 'none' }}>
-                      <path d="M6 9l6 6 6-6" />
-                    </svg>
-                  </div>
-                  {isOpen && (
-                    <div className="pb-4 pt-2 pr-5 max-md:pr-3.5 pl-[60px] max-md:pl-3.5" style={{ borderTop: `1px solid ${t.cardBorder}`, background: dark ? 'rgba(255,255,255,.015)' : 'rgba(0,0,0,.015)' }}>
-                      <div className="flex flex-wrap items-start gap-x-6 gap-y-2 text-[12.5px]">
-                        <div>
-                          <div className="text-[9.5px] uppercase tracking-[1.1px] font-semibold mb-1" style={{ color: t.textMuted }}>Proof</div>
-                          {link ? (
-                            <a href={link.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5" style={{ color: t.accent, textDecoration: 'none' }}>
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 14L21 3M15 3h6v6M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /></svg>
-                              {link.label}
-                            </a>
-                          ) : (
-                            <span style={{ color: t.textSoft }}>{s.proof}</span>
-                          )}
-                        </div>
-                        {s.views != null && (
-                          <div>
-                            <div className="text-[9.5px] uppercase tracking-[1.1px] font-semibold mb-1" style={{ color: t.textMuted }}>Views</div>
-                            <span className="font-mono" style={{ color: t.textSoft }}>{fmt(s.views)}</span>
-                          </div>
-                        )}
-                      </div>
-                      {s.status === 'pending' && (
-                        <div className="flex gap-2 mt-3">
-                          <button onClick={(e) => { e.stopPropagation(); reviewSub(s.id, 'reject'); }} className="h-[30px] px-3.5 rounded-lg text-[12px] font-semibold" style={{ border: `1px solid ${t.cardBorder}`, color: t.textSoft }}>Reject</button>
-                          <button onClick={(e) => { e.stopPropagation(); reviewSub(s.id, 'approve'); }} className="h-[30px] px-3.5 rounded-lg text-[12px] font-semibold border-none cursor-pointer font-[inherit]" style={{ background: 'linear-gradient(135deg,#c47d8e,#8b5e6b)', color: '#fff' }}>Approve</button>
-                        </div>
+          {!subsLoaded ? <SkelList dark={dark} rows={6} title rowH={62} /> : (
+            <section className="tk-card" style={{ opacity: subLoading ? .55 : 1 }}>
+              <header><h3>{CARD_TITLE[fSt]}</h3><span className="tk-cnt">{SORT_WORD[`${subSort}_${subDir}`] || 'newest first'} · open the proof before you approve</span></header>
+              <div className="tk-list">
+                {subs.length === 0 ? <div className="tk-empty">{fSt === 'pending' ? 'Nothing is waiting for review.' : 'No submissions match.'}</div> : subs.map(s => {
+                  const link = proofToLink(s.proof, s.task?.platform);
+                  return (
+                    <div key={s.id} className="tk-r sb">
+                      <span className="tk-oav">{initials(s.user?.name)}</span>
+                      <span className="tk-tt"><b>{s.user?.name || 'Unknown'}</b><i>{s.user?.email || '—'}</i></span>
+                      <span className="tk-tt"><b>{s.task?.title || '—'}</b><i className="tk-proof">{link ? <a href={link.url} target="_blank" rel="noopener noreferrer" title={link.url}>{shortLink(s.proof)}</a> : <span>{s.proof || 'no proof'}</span>}</i></span>
+                      <span className="m tk-num">₦{fmt((s.task?.reward || 0) / 100)}</span>
+                      <span className="tk-mid">{whenWord(s.createdAt)}</span>
+                      {s.status === 'pending' ? (
+                        <span className="tk-acts">
+                          <button type="button" className="tk-b sm pri" disabled={busy === s.id} onClick={() => reviewSub(s.id, 'approve')}>{busy === s.id ? 'Working…' : 'Approve'}</button>
+                          <button type="button" className="tk-b sm" disabled={busy === s.id} onClick={() => setReject({ sub: s, reason: '' })}>Reject</button>
+                        </span>
+                      ) : (
+                        <span className="tk-acts tk-rev">
+                          <span className="tk-st"><i className={'tk-dot ' + (s.status === 'approved' ? 'ok' : 'bad')} />{s.status === 'approved' ? 'Approved' : 'Rejected'}</span>
+                          <i>{s.reviewedBy || 'system'}{s.reviewedAt ? ` · ${whenWord(s.reviewedAt)}` : ''}</i>
+                        </span>
                       )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* Pagination */}
-            <div className="flex items-center gap-2.5 px-4 max-md:px-3 py-2.5 flex-wrap" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
-              <span className="text-[11.5px] mr-auto max-md:flex-[1_1_100%] max-md:order-3 max-md:mt-0.5" style={{ color: t.textMuted }}>{pageStart}–{pageEnd} of {subTotal}</span>
-              <div className="flex gap-[3px] items-center max-md:mr-auto">
-                <button disabled={subPage <= 1} onClick={() => setSubPage(p => p - 1)} className="min-w-[27px] h-[27px] px-1.5 rounded-[7px] text-[12px] font-semibold disabled:opacity-30" style={{ color: t.textMuted }}>‹</button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => totalPages <= 7 || p <= 2 || p >= totalPages - 1 || Math.abs(p - subPage) <= 1).map((p, i, arr) => {
-                  const prev = arr[i - 1];
-                  const gap = prev && p - prev > 1;
-                  return [
-                    gap && <span key={`d${p}`} className="text-[11px] px-0.5" style={{ color: t.textMuted }}>…</span>,
-                    <button key={p} onClick={() => setSubPage(p)} className="min-w-[27px] h-[27px] px-1.5 rounded-[7px] text-[12px] font-semibold" style={{ background: p === subPage ? 'rgba(196,125,142,.14)' : 'transparent', color: p === subPage ? t.accent : t.textMuted }}>{p}</button>,
-                  ];
+                  );
                 })}
-                <button disabled={subPage >= totalPages} onClick={() => setSubPage(p => p + 1)} className="min-w-[27px] h-[27px] px-1.5 rounded-[7px] text-[12px] font-semibold disabled:opacity-30" style={{ color: t.textMuted }}>›</button>
               </div>
-              <select value={subPer} onChange={e => { setSubPer(+e.target.value); setSubPage(1); }} className="h-7 text-[11.5px] pl-2.5 pr-6 rounded-lg outline-none appearance-none" style={{ ...inputStyle, background: 'transparent', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}>
-                <option value="10">10 / page</option>
-                <option value="25">25 / page</option>
-                <option value="50">50 / page</option>
-              </select>
-            </div>
+              <div className="tk-pg">
+                <span className="tk-cnt">{pageStart}–{pageEnd} of {subTotal.toLocaleString()}</span>
+                <span className="tk-pgn">
+                  <button type="button" className="tk-ib" disabled={subPage <= 1} onClick={() => setSubPage(p => Math.max(1, p - 1))} aria-label="Previous page">‹</button>
+                  <span className="tk-cnt">{subPage} of {totalPages}</span>
+                  <button type="button" className="tk-ib" disabled={subPage >= totalPages} onClick={() => setSubPage(p => Math.min(totalPages, p + 1))} aria-label="Next page">›</button>
+                  <select className="tk-per" value={subPer} onChange={e => { setSubPer(+e.target.value); setSubPage(1); }} aria-label="Rows per page">
+                    <option value="10">10 a page</option>
+                    <option value="25">25 a page</option>
+                    <option value="50">50 a page</option>
+                  </select>
+                </span>
+              </div>
+            </section>
+          )}
+        </> : <>
+          <div className="tk-bar">
+            <div className="tk-srch"><span className="tk-si">{SEARCH}</span><input value={tq} onChange={e => setTq(e.target.value)} placeholder="Search tasks" /></div>
+            <FilterDropdown dark={dark} t={t} value={tPlat} onChange={setTPlat} options={platformOptions} />
+            <FilterDropdown dark={dark} t={t} value={tSt} onChange={setTSt} options={[{ value: 'all', label: 'Live and off' }, { value: '1', label: 'Live' }, { value: '0', label: 'Off' }]} />
+            <span className="tk-sp" />
+            <button type="button" className="tk-b pri" onClick={openCreate}>+ New task</button>
           </div>
-        </>
+
+          <section className="tk-card">
+            <header><h3>Tasks</h3><span className="tk-cnt">what customers can do · reward · how many did it</span></header>
+            <div className="tk-list">
+              {filteredTasks.length === 0 ? <div className="tk-empty">{tasks.length ? 'No tasks match.' : 'No tasks yet. Add the first one.'}</div> : filteredTasks.map(x => (
+                <div key={x.id} className="tk-r ts">
+                  <span className="tk-pav">{PF_SHORT[x.platform] || '•'}</span>
+                  <span className="tk-tt"><b>{x.title}</b><i>{taskMeta(x)}</i></span>
+                  <span className="m tk-num">₦{fmt(x.reward / 100)}</span>
+                  <span className="m tk-mid">{(x._count?.submissions ?? x.doneCount ?? 0).toLocaleString()} done</span>
+                  <span className="tk-st"><i className={'tk-dot ' + (x.active ? 'ok' : 'dim')} />{x.active ? 'Live' : 'Off'}</span>
+                  <span className="tk-acts">
+                    <button type="button" className="tk-b sm" onClick={() => openEdit(x)}>Edit</button>
+                    <button type="button" className="tk-b sm" onClick={() => toggleTask(x.id, !x.active)}>{x.active ? 'Turn off' : 'Turn on'}</button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>}
+      </>}
+
+      {reject && (
+        <div className="tk-bd" onClick={() => setReject(null)}>
+          <div className="tk-md sm" role="dialog" aria-modal="true" aria-label="Reject this proof" onClick={e => e.stopPropagation()}>
+            <div className="tk-mdh"><b>Reject this proof?</b><button type="button" className="tk-b sm" onClick={() => setReject(null)}>Close</button></div>
+            <p className="tk-mds">{reject.sub.user?.name || 'This customer'} gets nothing for “{reject.sub.task?.title}”. A short reason helps them do it right next time.</p>
+            <label className="tk-lbl" htmlFor="tk-reason">Reason (optional)</label>
+            <textarea id="tk-reason" className="tk-in ta" rows={3} value={reject.reason} onChange={e => setReject(r => ({ ...r, reason: e.target.value }))} placeholder="e.g. the link goes to a different account" autoFocus />
+            <div className="tk-mdf"><button type="button" className="tk-b" onClick={() => setReject(null)}>Cancel</button><button type="button" className="tk-b danger" onClick={sendReject}>Reject</button></div>
+          </div>
+        </div>
       )}
 
-      {/* ══ MODAL ══ */}
       {modal && (
-        <div className="fixed inset-0 z-[1100] backdrop-blur-[4px] flex items-start justify-center overflow-y-auto py-10 px-4 max-md:py-3.5 max-md:px-2.5 animate-[modalFadeIn_.2s_ease]" style={{ background: 'rgba(0,0,0,.45)' }} onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
-          <div className="w-full max-w-[560px] rounded-2xl p-6 max-md:p-4 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? '#0e1120' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`, boxShadow: dark ? '0 20px 60px rgba(0,0,0,.4)' : '0 20px 60px rgba(0,0,0,.1)' }} onClick={e => e.stopPropagation()}>
-            <h2 className="text-[15.5px] font-bold" style={{ color: t.text }}>{modal.mode === 'create' ? 'New Task' : 'Edit Task'}</h2>
-            <p className="text-[12px] mt-0.5 mb-5" style={{ color: t.textMuted }}>Platform, reward, proof, gates and limits — everything lives here.</p>
+        <div className="tk-bd" onClick={() => setModal(null)}>
+          <div className="tk-md" role="dialog" aria-modal="true" aria-label={modal.mode === 'create' ? 'New task' : 'Edit task'} onClick={e => e.stopPropagation()}>
+            <div className="tk-mdh"><b>{modal.mode === 'create' ? 'New task' : 'Edit task'}</b><button type="button" className="tk-b sm" onClick={() => setModal(null)}>Close</button></div>
+            <p className="tk-mds">Platform, reward, proof, gates and limits, all in one place.</p>
 
-            {/* Platform */}
-            <div className="mb-[18px]">
-              <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Platform</label>
-              <div className="flex items-center gap-2.5">
-                <PlatformIcon platform={form.platform} size={28} />
-                <select value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))} className="flex-1 h-9 pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none font-[inherit]" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
-                  {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-              {(form.platform === 'google' || form.platform === 'trustpilot') && (
-                <div className="text-[11px] mt-2 leading-snug" style={{ color: '#fbbf24', opacity: .85 }}>⚠ Paid reviews breach Google / Trustpilot policy — see the proposal doc before enabling.</div>
-              )}
+            <label className="tk-lbl" htmlFor="tk-platform">Platform</label>
+            <div className="tk-row">
+              <span className="tk-pav">{PF_SHORT[form.platform] || '•'}</span>
+              <select id="tk-platform" className="tk-sel" value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))}>
+                {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
             </div>
+            {(form.platform === 'google' || form.platform === 'trustpilot') && (
+              <div className="tk-note warn">Paid reviews breach Google and Trustpilot policy. Read the proposal doc before turning this on.</div>
+            )}
 
-            {/* Title */}
-            <div className="mb-[18px]">
-              <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Task title</label>
-              <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} />
-            </div>
+            <label className="tk-lbl" htmlFor="tk-title">Task title</label>
+            <input id="tk-title" className="tk-in" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Follow us on TikTok" />
 
-            {/* Instructions */}
-            <div className="mb-[18px]">
-              <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Instructions shown to the user</label>
-              <textarea value={form.instructions} onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))} rows={3} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none resize-y leading-relaxed" style={inputStyle} />
-            </div>
+            <label className="tk-lbl" htmlFor="tk-instr">Instructions shown to the customer</label>
+            <textarea id="tk-instr" className="tk-in ta" rows={3} value={form.instructions} onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))} />
 
-            {/* Category + Proof */}
-            <div className="grid grid-cols-2 max-md:grid-cols-1 gap-3.5 mb-[18px]">
+            <div className="tk-two">
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Category</label>
-                <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="w-full h-9 pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
+                <label className="tk-lbl" htmlFor="tk-cat">Category</label>
+                <select id="tk-cat" className="tk-sel" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
                   {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Proof required</label>
-                <select value={form.proofType} onChange={e => setForm(f => ({ ...f, proofType: e.target.value }))} className="w-full h-9 pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
+                <label className="tk-lbl" htmlFor="tk-proof">Proof required</label>
+                <select id="tk-proof" className="tk-sel" value={form.proofType} onChange={e => setForm(f => ({ ...f, proofType: e.target.value }))}>
                   {PROOF_TYPES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
                 </select>
               </div>
             </div>
 
-            {/* Reward + Frequency */}
-            <div className="grid grid-cols-2 max-md:grid-cols-1 gap-3.5 mb-[18px]">
+            <div className="tk-two">
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Reward (credit)</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12.5px]" style={{ color: t.textMuted }}>₦</span>
-                  <input type="number" value={form.reward} onChange={e => setForm(f => ({ ...f, reward: e.target.value }))} className="w-full py-2 pl-6 pr-3 rounded-lg text-[13px] outline-none" style={inputStyle} />
-                </div>
-                <div className="text-[10.5px] mt-1 leading-snug" style={{ color: t.textMuted }}>Spend-only credit · real cost ≈ <span className="font-mono">₦{fmt(Math.round((parseFloat(form.reward) || 0) * 0.375))}</span></div>
+                <label className="tk-lbl" htmlFor="tk-reward">Reward (credit)</label>
+                <div className="tk-money"><span>₦</span><input id="tk-reward" className="tk-in" type="number" value={form.reward} onChange={e => setForm(f => ({ ...f, reward: e.target.value }))} /></div>
+                <div className="tk-note">Spend-only credit · real cost about <span className="m">₦{fmt(Math.round((parseFloat(form.reward) || 0) * 0.375))}</span></div>
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Frequency</label>
-                <select value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))} className="w-full h-9 pl-3 pr-7 rounded-lg text-[13px] outline-none appearance-none" style={{ ...inputStyle, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23757170' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 11px center' }}>
+                <label className="tk-lbl" htmlFor="tk-freq">Frequency</label>
+                <select id="tk-freq" className="tk-sel" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}>
                   {FREQUENCIES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
                 </select>
-                <div className="text-[10.5px] mt-1 leading-snug" style={{ color: t.textMuted }}>Max per user / month: <input type="number" value={form.maxPerMonth} onChange={e => setForm(f => ({ ...f, maxPerMonth: e.target.value }))} className="w-[52px] py-0.5 px-1.5 rounded text-[11px] ml-1 outline-none" style={inputStyle} /></div>
+                <div className="tk-note tk-inline">Max per customer a month <input className="tk-in xs" type="number" value={form.maxPerMonth} onChange={e => setForm(f => ({ ...f, maxPerMonth: e.target.value }))} aria-label="Max per customer a month" /></div>
               </div>
             </div>
 
-            <div className="h-px mb-[18px]" style={{ background: t.cardBorder }} />
+            <div className="tk-hr-line" />
 
-            {/* Requirements */}
-            <div className="mb-[18px]">
-              <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Requirements <span className="normal-case tracking-normal font-medium">— leave 0 for none</span></label>
-              <div className="grid grid-cols-3 max-md:grid-cols-1 gap-3.5">
-                <div><input type="number" value={form.minViews} onChange={e => setForm(f => ({ ...f, minViews: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} /><div className="text-[10.5px] mt-1" style={{ color: t.textMuted }}>Min views</div></div>
-                <div><input type="number" value={form.minFollowers} onChange={e => setForm(f => ({ ...f, minFollowers: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} /><div className="text-[10.5px] mt-1" style={{ color: t.textMuted }}>Min followers</div></div>
-                <div><input type="number" value={form.keepDays} onChange={e => setForm(f => ({ ...f, keepDays: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} /><div className="text-[10.5px] mt-1" style={{ color: t.textMuted }}>Keep live (days)</div></div>
-              </div>
+            <label className="tk-lbl">Requirements <span className="tk-lbl-soft">— leave 0 for none</span></label>
+            <div className="tk-three">
+              <div><input className="tk-in" type="number" value={form.minViews} onChange={e => setForm(f => ({ ...f, minViews: e.target.value }))} aria-label="Min views" /><div className="tk-note">Min views</div></div>
+              <div><input className="tk-in" type="number" value={form.minFollowers} onChange={e => setForm(f => ({ ...f, minFollowers: e.target.value }))} aria-label="Min followers" /><div className="tk-note">Min followers</div></div>
+              <div><input className="tk-in" type="number" value={form.keepDays} onChange={e => setForm(f => ({ ...f, keepDays: e.target.value }))} aria-label="Keep live (days)" /><div className="tk-note">Keep live (days)</div></div>
             </div>
 
-            {/* Monthly cap */}
-            <div className="grid grid-cols-2 max-md:grid-cols-1 gap-3.5 mb-[18px]">
+            <div className="tk-two">
               <div>
-                <label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Monthly approval cap</label>
-                <input type="number" value={form.monthlyCap} onChange={e => setForm(f => ({ ...f, monthlyCap: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} />
-                <div className="text-[10.5px] mt-1" style={{ color: t.textMuted }}>0 = unlimited · global budget still applies</div>
+                <label className="tk-lbl" htmlFor="tk-cap">Monthly approval cap</label>
+                <input id="tk-cap" className="tk-in" type="number" value={form.monthlyCap} onChange={e => setForm(f => ({ ...f, monthlyCap: e.target.value }))} />
+                <div className="tk-note">0 = unlimited · the global budget still applies</div>
               </div>
             </div>
 
-            <div className="h-px mb-1" style={{ background: t.cardBorder }} />
+            <div className="tk-hr-line" />
 
-            {/* Toggles */}
-            <div className="flex items-center justify-between gap-2.5 py-2.5">
-              <div><div className="text-[12.5px] font-semibold" style={{ color: t.text }}>Viral bonus</div><div className="text-[10.5px] mt-0.5" style={{ color: t.textMuted }}>Extra credit if the post crosses a bigger view mark</div></div>
-              <button onClick={() => setForm(f => ({ ...f, viralBonus: !f.viralBonus }))} className="relative w-8 h-[18px] rounded-full shrink-0 ml-1.5 transition-colors" style={{ background: form.viralBonus ? '#a3586b' : (dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.12)') }}>
-                <span className="absolute top-[2.5px] left-[2.5px] w-[13px] h-[13px] rounded-full shadow-sm transition-transform" style={{ transform: form.viralBonus ? 'translateX(14px)' : 'translateX(0)', background: form.viralBonus ? '#fff' : (dark ? '#7a756f' : '#999') }} />
-              </button>
+            <div className="tk-opt">
+              <div><b>Viral bonus</b><i>Extra credit if the post crosses a bigger view mark</i></div>
+              <Toggle on={form.viralBonus} onClick={() => setForm(f => ({ ...f, viralBonus: !f.viralBonus }))} />
             </div>
             {form.viralBonus && (
-              <div className="grid grid-cols-2 max-md:grid-cols-1 gap-3.5 mb-1.5">
-                <div><label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Bonus threshold (views)</label><input type="number" value={form.viralThreshold} onChange={e => setForm(f => ({ ...f, viralThreshold: e.target.value }))} className="w-full py-2 px-3 rounded-lg text-[13px] outline-none" style={inputStyle} /></div>
-                <div><label className="block text-[10px] uppercase tracking-[1.1px] font-semibold mb-1.5" style={{ color: t.textMuted }}>Bonus amount</label><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[12.5px]" style={{ color: t.textMuted }}>₦</span><input type="number" value={form.viralAmount} onChange={e => setForm(f => ({ ...f, viralAmount: e.target.value }))} className="w-full py-2 pl-6 pr-3 rounded-lg text-[13px] outline-none" style={inputStyle} /></div></div>
+              <div className="tk-two">
+                <div><label className="tk-lbl" htmlFor="tk-vth">Bonus threshold (views)</label><input id="tk-vth" className="tk-in" type="number" value={form.viralThreshold} onChange={e => setForm(f => ({ ...f, viralThreshold: e.target.value }))} /></div>
+                <div><label className="tk-lbl" htmlFor="tk-vam">Bonus amount</label><div className="tk-money"><span>₦</span><input id="tk-vam" className="tk-in" type="number" value={form.viralAmount} onChange={e => setForm(f => ({ ...f, viralAmount: e.target.value }))} /></div></div>
               </div>
             )}
 
-            <div className="flex items-center justify-between gap-2.5 py-2.5">
-              <div><div className="text-[12.5px] font-semibold" style={{ color: t.text }}>Allow non-depositors</div><div className="text-[10.5px] mt-0.5" style={{ color: t.textMuted }}>Users with no deposit yet can still earn (₦500 redeem cap)</div></div>
-              <button onClick={() => setForm(f => ({ ...f, allowNonDepositors: !f.allowNonDepositors }))} className="relative w-8 h-[18px] rounded-full shrink-0 ml-1.5 transition-colors" style={{ background: form.allowNonDepositors ? '#a3586b' : (dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.12)') }}>
-                <span className="absolute top-[2.5px] left-[2.5px] w-[13px] h-[13px] rounded-full shadow-sm transition-transform" style={{ transform: form.allowNonDepositors ? 'translateX(14px)' : 'translateX(0)', background: form.allowNonDepositors ? '#fff' : (dark ? '#7a756f' : '#999') }} />
-              </button>
+            <div className="tk-opt">
+              <div><b>Allow non-depositors</b><i>Customers with no deposit yet can still earn (₦500 redeem cap)</i></div>
+              <Toggle on={form.allowNonDepositors} onClick={() => setForm(f => ({ ...f, allowNonDepositors: !f.allowNonDepositors }))} />
             </div>
 
-            <div className="flex items-center justify-between gap-2.5 py-2.5">
-              <div><div className="text-[12.5px] font-semibold" style={{ color: t.text }}>Active</div><div className="text-[10.5px] mt-0.5" style={{ color: t.textMuted }}>Visible on the task page right away</div></div>
-              <button onClick={() => setForm(f => ({ ...f, active: !f.active }))} className="relative w-8 h-[18px] rounded-full shrink-0 ml-1.5 transition-colors" style={{ background: form.active ? '#a3586b' : (dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.12)') }}>
-                <span className="absolute top-[2.5px] left-[2.5px] w-[13px] h-[13px] rounded-full shadow-sm transition-transform" style={{ transform: form.active ? 'translateX(14px)' : 'translateX(0)', background: form.active ? '#fff' : (dark ? '#7a756f' : '#999') }} />
-              </button>
+            <div className="tk-opt">
+              <div><b>Live</b><i>Shown on the task page right away</i></div>
+              <Toggle on={form.active} onClick={() => setForm(f => ({ ...f, active: !f.active }))} />
             </div>
 
-            {/* Footer */}
-            <div className="flex gap-1.5 items-center justify-end pt-4 mt-1" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
-              {modal.mode === 'edit' && <button onClick={deleteTask} className="mr-auto text-[13px] font-semibold" style={{ color: '#fca5a5', opacity: .85 }}>Delete</button>}
-              <button onClick={() => setModal(null)} className="h-[34px] px-4 rounded-[9px] text-[13px] font-semibold" style={{ color: t.textSoft }}>Cancel</button>
-              <button onClick={saveTask} disabled={saving || !form.title.trim()} className="h-[34px] px-4 rounded-[9px] text-[13px] font-semibold border-none cursor-pointer font-[inherit]" style={{ background: 'linear-gradient(135deg,#c47d8e,#8b5e6b)', color: '#fff', opacity: saving || !form.title.trim() ? .5 : 1 }}>{saving ? 'Saving...' : 'Save task'}</button>
+            <div className="tk-mdf">
+              {modal.mode === 'edit' && <button type="button" className="tk-b danger tk-left" onClick={deleteTask}>Delete</button>}
+              <button type="button" className="tk-b" onClick={() => setModal(null)}>Cancel</button>
+              <button type="button" className="tk-b pri" disabled={saving || !form.title.trim()} onClick={saveTask}>{saving ? 'Saving…' : 'Save task'}</button>
             </div>
           </div>
         </div>
       )}
-
-      <style jsx global>{`
-        @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes modalBounceIn { from { transform: translateY(12px) scale(.97); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
-      `}</style>
-    </>
+    </div>
   );
 }
+
+const TK_CSS = `
+.tk{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.tk *{box-sizing:border-box}
+.tk .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.tk-hr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tk-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.tk-b:hover{transform:translateY(-1px)}.tk-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.tk-b.sm{height:30px;padding:0 10px;font-size:12px}.tk-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.tk-b.danger{color:var(--bad)}
+.tk-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.tk-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.tk-stt:first-child{border-left:0}
+.tk-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tk-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.tk-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tk-stt.warn b{color:var(--warn)}
+.tk-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tk-sp{flex:1}
+.tk-srch{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:13px;min-width:240px}.tk-srch:focus-within{border-color:var(--ac)}
+.tk-si{display:inline-flex;width:14px;height:14px;color:var(--dim);flex-shrink:0}.tk-si svg{width:14px;height:14px}.tk-srch input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:13px;color:var(--ink);outline:none}.tk-srch input::placeholder{color:var(--dim)}
+.tk-tg{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer;white-space:nowrap}.tk-tg.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.tk-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:opacity .15s}
+.tk-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.tk-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.tk-cnt{font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk-list{display:flex;flex-direction:column}.tk-empty{padding:28px 16px;text-align:center;font-size:13px;color:var(--mut)}
+.tk-r{display:grid;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--rail);font-size:13px}.tk-r:first-child{border-top:0}
+.tk-r.sb{grid-template-columns:36px 1fr 1.2fr 70px 50px auto}.tk-r.ts{grid-template-columns:34px 1fr 80px 80px 80px auto}
+.tk-oav{width:36px;height:36px;border-radius:50%;background:var(--soft);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--mut);flex-shrink:0}
+.tk-pav{width:34px;height:34px;border-radius:10px;background:var(--soft);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--mut);flex-shrink:0}
+.tk-tt{display:flex;flex-direction:column;min-width:0}.tk-tt b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tk-tt i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk-proof,.tk-proof a{color:var(--blue)}.tk-proof a{text-decoration:none}.tk-proof a:hover{text-decoration:underline}
+.tk-num{text-align:right;font-weight:700}.tk-mid{font-size:12px;color:var(--mut);white-space:nowrap}
+.tk-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.tk-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}.tk-dot.ok{background:var(--ok)}.tk-dot.bad{background:var(--bad)}.tk-dot.dim{background:var(--dim)}
+.tk-acts{display:flex;gap:6px;justify-content:flex-end}.tk-rev{flex-direction:column;align-items:flex-end;gap:2px}.tk-rev i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap}
+.tk-pg{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}.tk-pgn{display:inline-flex;align-items:center;gap:6px}
+.tk-ib{font:inherit;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);display:inline-flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer}.tk-ib:disabled{opacity:.4;cursor:default}
+.tk-per{font:inherit;font-size:11.5px;height:28px;padding:0 8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);margin-left:6px;outline:none}
+.tk-bd{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.4);display:flex;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto}
+.tk-md{width:560px;max-width:100%;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px 18px;box-shadow:0 20px 50px rgba(0,0,0,.25);color:var(--ink)}.tk-md.sm{width:440px}
+.tk-mdh{display:flex;justify-content:space-between;align-items:center}.tk-mdh b{font-size:16px;font-weight:700}.tk-mds{margin:4px 0 0;font-size:12.5px;color:var(--mut);line-height:1.5}.tk-mdf{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}.tk-left{margin-right:auto}
+.tk-lbl{display:block;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin:14px 0 6px}.tk-lbl-soft{text-transform:none;letter-spacing:0;font-weight:500}
+.tk-in,.tk-sel{width:100%;height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--in);color:var(--ink);font:inherit;font-size:14px;outline:none}.tk-in:focus,.tk-sel:focus{border-color:var(--ac)}
+.tk-in.ta{height:auto;padding:9px 12px;resize:vertical;line-height:1.5}.tk-in.xs{width:64px;height:28px;padding:0 8px;font-size:12px;display:inline-block;margin-left:6px}
+.tk-row{display:flex;align-items:center;gap:10px}.tk-row .tk-sel{flex:1}
+.tk-two{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.tk-three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 14px}
+.tk-money{position:relative}.tk-money span{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--mut)}.tk-money .tk-in{padding-left:26px}
+.tk-note{font-size:11px;color:var(--mut);margin-top:6px;line-height:1.5}.tk-note.warn{color:var(--warn)}.tk-inline{display:flex;align-items:center;flex-wrap:wrap}
+.tk-hr-line{height:1px;background:var(--line);margin:16px 0 2px}
+.tk-opt{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--rail)}.tk-hr-line+.tk-opt{border-top:0}.tk-opt b{display:block;font-size:13px;font-weight:600}.tk-opt i{display:block;font-style:normal;font-size:11.5px;color:var(--mut);margin-top:2px}
+.tk-sw{position:relative;width:34px;height:20px;border-radius:999px;border:0;padding:0;background:var(--rail);cursor:pointer;flex-shrink:0;transition:background .15s}.tk-sw i{position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}.tk-sw.on{background:var(--ac)}.tk-sw.on i{transform:translateX(14px);background:#fff}
+@media (max-width:900px){
+  .tk-hr{width:100%}.tk-hr>*{flex:1}
+  .tk-stats{grid-template-columns:1fr 1fr}.tk-stt:nth-child(3){border-left:0}.tk-stt:nth-child(n+3){border-top:1px solid var(--line)}.tk-stt b{font-size:17px}
+  .tk-bar .tk-tg{flex:1;text-align:center;padding:8px 6px}.tk-srch{width:100%;min-width:0}.tk-bar .tk-b.pri{width:100%}.tk-sp{display:none}
+  .tk-r.sb{grid-template-columns:36px 1fr auto;grid-template-areas:"av u r" "av t t" "acts acts acts";gap:6px 10px;padding:12px 14px}
+  .tk-r.sb .tk-oav{grid-area:av;align-self:start}.tk-r.sb .tk-tt:nth-of-type(1){grid-area:u}.tk-r.sb .tk-tt:nth-of-type(2){grid-area:t}.tk-r.sb .tk-tt b,.tk-r.sb .tk-tt i{white-space:normal;word-break:break-word}.tk-r.sb .tk-num{grid-area:r}.tk-r.sb .tk-mid{display:none}
+  .tk-r.sb .tk-acts{grid-area:acts;justify-content:stretch;margin-top:2px}.tk-r.sb .tk-acts .tk-b{flex:1;height:36px}.tk-r.sb .tk-rev{flex-direction:row;align-items:center;justify-content:space-between}
+  .tk-r.ts{grid-template-columns:34px 1fr auto;grid-template-areas:"pav tt r" "pav n st" "acts acts acts";gap:6px 10px;padding:12px 14px}
+  .tk-r.ts .tk-pav{grid-area:pav;align-self:start}.tk-r.ts .tk-tt{grid-area:tt}.tk-r.ts .tk-tt b,.tk-r.ts .tk-tt i{white-space:normal}.tk-r.ts .tk-num{grid-area:r}.tk-r.ts .tk-mid{grid-area:n}.tk-r.ts .tk-st{grid-area:st;justify-self:end}
+  .tk-r.ts .tk-acts{grid-area:acts;justify-content:stretch;margin-top:2px}.tk-r.ts .tk-acts .tk-b{flex:1;height:36px}
+  .tk-pg{flex-wrap:wrap;gap:8px}
+  .tk-bd{padding:12px 10px}.tk-md{padding:14px 14px 16px}.tk-two,.tk-three{grid-template-columns:1fr}
+}
+`;
