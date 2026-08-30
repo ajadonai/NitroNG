@@ -289,7 +289,7 @@ export async function POST(req) {
       if (!feas.feasible) return Response.json({ error: feas.error }, { status: 400 });
       dripSchedule = calculateMultiDayDrip(qty, dripNum, providerMin, new Date(), groupType, platform, dripConfigObj);
     } else if (mode === 'single' && dripEligible && dripCfg && qty >= dripCfg.threshold) {
-      const intraday = calculateIntradayDrip(qty, providerMin, new Date(), groupType, platform);
+      const intraday = calculateIntradayDrip(qty, providerMin, new Date(), groupType, platform, { maxSpanHours: 22 });
       if (intraday) {
         const durationErr = validateIntradayDuration(intraday.dispatches);
         if (durationErr) return Response.json({ error: durationErr }, { status: 400 });

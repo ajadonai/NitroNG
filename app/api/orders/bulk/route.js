@@ -937,7 +937,7 @@ export async function POST(req) {
       const bulkGroupType = (tier.group?.type || '').toLowerCase();
       const bulkPlatform = (service.category || '').toLowerCase();
       const bulkDripCfg = getDripConfig(bulkGroupType, bulkPlatform);
-      const dripSchedule = process.env.NODE_ENV !== 'development' && tier.group?.tags?.includes('drip') && bulkDripCfg && qty >= bulkDripCfg.threshold ? calculateIntradayDrip(qty, service.min || 50, new Date(), bulkGroupType, bulkPlatform) : null;
+      const dripSchedule = process.env.NODE_ENV !== 'development' && tier.group?.tags?.includes('drip') && bulkDripCfg && qty >= bulkDripCfg.threshold ? calculateIntradayDrip(qty, service.min || 50, new Date(), bulkGroupType, bulkPlatform, { maxSpanHours: 22 }) : null;
       if (dripSchedule) {
         const durationErr = validateIntradayDuration(dripSchedule.dispatches);
         if (durationErr) return Response.json({ error: `Row ${i + 1}: ${durationErr}` }, { status: 400 });

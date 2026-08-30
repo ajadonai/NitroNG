@@ -902,3 +902,32 @@ describe('a day holds its own batches', () => {
     expect(capped.dispatches.reduce((s, d) => s + d.quantity, 0)).toBe(4000);
   });
 });
+
+describe('single-day schedule fits inside a day', () => {
+  // 2,800 Facebook followers with no drip days chosen: 14 batches two hours
+  // apart used to span 26 hours and the order was refused with "select at
+  // least 2 days". Capped to a day's budget it sends fewer, larger batches.
+  it('refuses 2,800 followers only when the schedule is uncapped', () => {
+    const uncapped = calculateIntradayDrip(2800, 100, BASE, 'followers', 'facebook');
+    expect(uncapped.dispatches.length).toBe(14);
+    expect(validateIntradayDuration(uncapped.dispatches)).toMatch(/at least 2 days/);
+  });
+  it('fits 2,800 followers into 22 hours with the same total and no batch under the provider minimum', () => {
+    const capped = calculateIntradayDrip(2800, 100, BASE, 'followers', 'facebook', { maxSpanHours: 22 });
+    expect(validateIntradayDuration(capped.dispatches)).toBeNull();
+    expect(totalQty(capped)).toBe(2800);
+    expect(capped.dispatches.length).toBe(12);
+    expect(capped.dispatches.every(d => d.quantity >= 100)).toBe(true);
+    const span = capped.dispatches[capped.dispatches.length - 1].scheduledAt - capped.dispatches[0].scheduledAt;
+    expect(span).toBeLessThan(24 * 60 * 60 * 1000);
+  });
+  it('the order routes pass the cap', () => {
+    const fs = require('fs');
+    for (const f of ['app/api/orders/route.js', 'app/api/orders/bulk/route.js', 'app/api/admin/orders/create/route.js', 'app/api/admin/orders/route.js']) {
+      const src = fs.readFileSync(f, 'utf8');
+      const calls = src.match(/calculateIntradayDrip\([^;]*\)/g) || [];
+      expect(calls.length, f).toBeGreaterThan(0);
+      for (const c of calls) expect(c, f).toContain('maxSpanHours');
+    }
+  });
+});
