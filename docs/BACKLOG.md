@@ -15,9 +15,6 @@ never gets picked up twice. Update this in the same commit as the work.
   payment. **Paused (26 Aug 2026): no staff.** The whole outreach machine is
   off via Admin → Outreach → Pause (`outreach_paused` setting); resume there
   when there is a team again, then pick this up.
-- **Marketing pages not yet remodelled** — Outreach, Crew, Promotions,
-  Acquisition, Changelog, Tasks and Blog still wear the old layout. Mock each
-  before rebuilding; their skeletons are fixed with the rebuild, not before.
 - **Cohort / ops** — anything the nightly cohort check surfaces (see the
   protected routes in CLAUDE.md).
 
@@ -25,6 +22,8 @@ never gets picked up twice. Update this in the same commit as the work.
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-08-30 | Crew rebuilt on the shared frame with a drawer, facts and page-shaped skeletons | `e2a55dd4` v2.4.51 |
+| 2026-08-30 | Rewards, Blog, Email blasts, Promotions, Tracking links and Outreach rebuilt to their mocks with page-shaped skeletons | `2632662d` v2.4.50 |
 | 2026-08-30 | Terms and Refund Policy dated 29 August: unused wallet funds refundable on request (bank or wallet); order refunds stay in the wallet | `c8cbb659` v2.4.49 |
 | 2026-08-30 | Right rail rebuilt as one system on both sides (eyebrow + card, three row kinds), every page rail rewritten to it | `c1fb6302` v2.4.48 |
 | 2026-08-30 | Today starts at Lagos midnight on the server everywhere (Payments facts, Users week/month, outreach day windows) | `fb57fa20` v2.4.47 |
