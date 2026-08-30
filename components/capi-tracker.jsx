@@ -7,7 +7,7 @@ import { isInternalDashboardPath } from '@/lib/internal-dashboard-path';
 function fire(eventName, customData) {
   if (typeof window !== 'undefined' && isInternalDashboardPath(window.location.pathname)) return;
   const eventId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-  if (typeof window !== 'undefined' && window.fbq && hasConsent()) {
+  if (typeof window !== 'undefined' && window.fbq && hasConsent('advertising')) {
     window.fbq('track', eventName, customData || {}, { eventID: eventId });
   }
   fetch('/api/capi/track', {

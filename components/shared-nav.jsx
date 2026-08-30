@@ -241,7 +241,7 @@ export function SharedFooter() {
           {[["Help", "/help"], ["FAQ", "/faq"], ["Contact", "/contact"], ["Terms", "/terms"], ["Privacy", "/privacy"], ["Refund", "/refund"], ["Cookies", "/cookie"]].map(([l, h]) => (
             <a key={l} href={h} className={linkCls} style={{ color: linkColor }}>{l}</a>
           ))}
-          <button onClick={() => window.dispatchEvent(new Event('nitro-cookie-reset'))} className={`${linkCls} bg-transparent border-0 cursor-pointer p-0 text-left`} style={{ color: linkColor }}>Cookie Settings</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('nitro-cookie-settings'))} className={`${linkCls} bg-transparent border-0 cursor-pointer p-0 text-left`} style={{ color: linkColor }}>Cookie settings</button>
         </div>
 
         {/* Get in touch */}
