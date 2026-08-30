@@ -1,130 +1,172 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
-import { ProductScreenshot } from './product-screenshot';
 
-export default function AboutView() {
-  return <ThemeProvider><AboutInner /></ThemeProvider>;
+export default function AboutView({ stats }) {
+  return <ThemeProvider><AboutInner stats={stats} /></ThemeProvider>;
 }
 
-function AboutInner() {
-  const { dark, t } = useTheme();
-  const [stats, setStats] = useState(null);
-  useEffect(() => { fetch('/api/site-info').then(r => r.json()).then(d => setStats(d.stats)).catch(() => {}); }, []);
-  const accent = "#c47d8e";
-  const border = dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)";
-  const cardBg = dark ? "rgba(255,255,255,.06)" : "#fff";
-  const softBg = dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)";
+const SECTIONS = [
+  ['what-we-do', 'What we do'],
+  ['why-nitro-exists', 'Why Nitro exists'],
+  ['how-we-are-different', 'How we are different'],
+  ['company-details', 'Company details'],
+];
+
+const DIFFERENT = [
+  ['Naira-native', 'No dollar conversion. No exchange rate surprises. Every price you see is in Naira.'],
+  ['Never need your password', 'We only use your public profile link. Your accounts stay under your control.'],
+  ['Real support', 'Reach us on WhatsApp anytime. We respond in minutes, not "2-3 business days."'],
+  ['Multiple quality tiers', 'Budget (no refill), Standard (30-day refill), and Premium (lifetime refill). You choose the quality and price point that fits.'],
+];
+
+const DETAILS = [
+  ['Registered name', 'The Nitro Nigeria Limited'],
+  ['RC number', '9514845', true],
+  ['Location', 'Lagos, Nigeria'],
+  ['Founded', '2025'],
+  ['Contact', 'support@nitro.ng'],
+];
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const num = n => (typeof n === 'number' ? n.toLocaleString('en-US') : '—');
+
+function AboutInner({ stats }) {
+  const { t } = useTheme();
+
+  const [active, setActive] = useState(SECTIONS[0][0]);
+  useEffect(() => {
+    const onScroll = () => {
+      let cur = SECTIONS[0][0];
+      for (const [id] of SECTIONS) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= 140) cur = id;
+      }
+      setActive(cur);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const since = stats?.since ? new Date(stats.since) : null;
+  const facts = [
+    [num(stats?.customers), 'Customers', 'verified accounts'],
+    [num(stats?.orders), 'Orders placed', since ? `since ${MONTHS[since.getUTCMonth()]} ${since.getUTCFullYear()}` : 'and counting', true],
+    [num(stats?.platforms), 'Platforms', typeof stats?.services === 'number' ? `${stats.services} services` : '—'],
+    ['RC 9514845', 'Registered', 'The Nitro Nigeria Limited'],
+  ];
+
+  const eyebrow = { fontSize: 10.5, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: t.accent, display: 'block' };
+  const card = { background: t.cardBg, border: `1px solid ${t.cardBorder}` };
+  const h2 = { color: t.text };
 
   return (
-    <>
+    <div className="min-h-dvh flex flex-col font-[Plus Jakarta Sans,system-ui,sans-serif] transition-[background] duration-500" style={{ background: t.bg, color: t.text, '--ab-line': t.cardBorder }}>
+      <style>{AB_CSS}</style>
       <SharedStyles />
-      <div className="min-h-dvh flex flex-col font-[Plus Jakarta Sans,system-ui,sans-serif]" style={{ background: t.bg }}>
-        <SharedNav />
-        <main className="flex-1 py-16 px-6 pb-20 max-w-[1100px] mx-auto w-full">
+      <SharedNav />
+      <div className="flex-1 w-full max-w-[920px] mx-auto px-7 pt-11 pb-14 max-md:px-4 max-md:pt-7 max-md:pb-10 flex flex-col gap-[26px] max-md:gap-5">
 
-          {/* Hero header */}
-          <div className="mb-14 text-center">
-            <span className="text-xs font-semibold tracking-[2px] uppercase block mb-3" style={{ color: accent }}>About</span>
-            <h1 className="text-[clamp(28px,5vw,44px)] font-semibold mb-4 leading-tight" style={{ color: t.text }}>Built in Lagos, <span className="serif italic font-medium text-[clamp(32px,5.5vw,48px)]" style={{ color: accent }}>for Nigeria</span></h1>
-            <p className="text-[15px] leading-[1.7] max-w-[600px] mx-auto" style={{ color: t.textSoft }}>
-              Nitro is a registered Nigerian company helping creators and businesses grow their social media presence — with Naira pricing, fast delivery, and real support.
-            </p>
-          </div>
+        <header className="flex flex-col gap-2.5">
+          <span style={eyebrow}>About</span>
+          <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>Built in Lagos, for Nigeria</h1>
+          <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>Nitro is a content promotion platform for Nigerian creators, businesses and marketers. Naira prices, Nigerian banks, real people on WhatsApp.</p>
+        </header>
 
-          {/* Stats strip */}
-          <section className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-14">
-            {[
-              [stats?.orders || '50K+', 'Orders placed'],
-              [stats?.users || '2.3K', 'Accounts created'],
-              [(stats?.platforms || 35) + '+', 'Service categories'],
-              [stats?.deliveryRate ? stats.deliveryRate + '%' : '98%', 'Delivery benchmark'],
-            ].map(([num, label]) => (
-              <div key={label} className="rounded-2xl p-5 text-center" style={{ background: cardBg, border: `1px solid ${border}` }}>
-                <div className="text-2xl font-bold mb-1" style={{ color: accent }}>{num}</div>
-                <div className="text-[13px]" style={{ color: t.textMuted }}>{label}</div>
-              </div>
+        <div className="ab-stats rounded-[14px]" style={card}>
+          {facts.map(([value, label, sub]) => (
+            <div key={label} className="ab-stt">
+              <b className="m" style={{ color: t.text }}>{value}</b>
+              <span style={{ color: t.muted }}>{label}</span>
+              <i style={{ color: t.muted }}>{sub}</i>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-[220px_1fr] gap-9 items-start max-md:grid-cols-1 max-md:gap-[18px]">
+          <aside className="sticky top-5 flex flex-col gap-0.5 max-md:hidden">
+            <span style={{ ...eyebrow, marginBottom: 8 }}>On this page</span>
+            {SECTIONS.map(([id, h]) => {
+              const on = id === active;
+              return (
+                <a key={id} href={`#${id}`} className="text-[13px] leading-[1.35] px-2.5 py-1.5 no-underline" style={{ color: on ? t.text : t.muted, borderLeft: `2px solid ${on ? t.accent : t.cardBorder}`, fontWeight: on ? 600 : 400 }}>{h}</a>
+              );
+            })}
+          </aside>
+          <details className="md:hidden rounded-xl px-3.5 py-2.5 text-[13px]" style={card}>
+            <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>On this page · {SECTIONS.length} sections</summary>
+            {SECTIONS.map(([id, h]) => (
+              <a key={id} href={`#${id}`} className="block py-1.5 no-underline" style={{ color: t.muted, borderTop: `1px solid ${t.cardBorder}` }}>{h}</a>
             ))}
-          </section>
+          </details>
 
-          {/* Two-column content */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-14">
-            <section>
-              <h2 className="text-lg font-semibold mb-3" style={{ color: t.text }}>What we do</h2>
-              <p className="text-[13px] leading-[1.75] mb-4" style={{ color: t.textSoft }}>
+          <article className="flex flex-col gap-[22px] max-w-[66ch] min-w-0">
+            <section id="what-we-do" className="scroll-mt-24">
+              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>What we do</h2>
+              <p className="m-0 mb-3 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>
                 We make social media growth simple. Whether you're a creator trying to hit your first 10,000 followers, a business building credibility online, or a marketer managing multiple brands — Nitro handles the numbers so you can focus on your content.
               </p>
-              <p className="text-[13px] leading-[1.75]" style={{ color: t.textSoft }}>
+              <p className="m-0 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>
                 We offer 140+ service types across 28 platforms including Instagram, TikTok, YouTube, X, Facebook, Telegram, and Spotify. Every service is priced in Naira with no dollar conversion, no hidden fees, and no password required — just your public profile link.
               </p>
             </section>
 
-            <section>
-              <h2 className="text-lg font-semibold mb-3" style={{ color: t.text }}>Why Nitro exists</h2>
-              <p className="text-[13px] leading-[1.75] mb-4" style={{ color: t.textSoft }}>
+            <section id="why-nitro-exists" className="scroll-mt-24">
+              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>Why Nitro exists</h2>
+              <p className="m-0 mb-3 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>
                 Most SMM panels are built for a global audience — dollar pricing, international payment gateways that reject Nigerian cards, and support teams in different time zones. We built Nitro because Nigerian creators and businesses deserve a growth tool that works for them.
               </p>
-              <p className="text-[13px] leading-[1.75]" style={{ color: t.textSoft }}>
+              <p className="m-0 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>
                 That means Naira pricing from day one. Bank transfers, Flutterwave, and crypto for payments. Support that responds in minutes, not days. And a clean, modern dashboard that doesn't feel like it was built in 2015.
               </p>
             </section>
-          </div>
 
-          {/* Product screenshot */}
-          <div className="mb-14 max-w-[600px] mx-auto">
-            <ProductScreenshot src="/images/nitro-dashboard-nigeria-smm-panel.webp" alt="The Nitro NG dashboard showing wallet balance, active orders and recent activity" dark={dark} />
-          </div>
+            <section id="how-we-are-different" className="scroll-mt-24">
+              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>How we are different</h2>
+              <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
+                {DIFFERENT.map(([title, desc]) => (
+                  <div key={title} className="flex flex-col rounded-xl px-4 py-3.5" style={card}>
+                    <b className="text-[14.5px] font-semibold" style={{ color: t.text }}>{title}</b>
+                    <span className="text-[13px] leading-[1.45]" style={{ color: t.muted }}>{desc}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-          {/* How we're different */}
-          <section className="mb-14">
-            <h2 className="text-lg font-semibold mb-5 text-center" style={{ color: t.text }}>How we're different</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                ['Naira-native', 'No dollar conversion. No exchange rate surprises. Every price you see is in Naira.'],
-                ['Never need your password', 'We only use your public profile link. Your accounts stay under your control.'],
-                ['Automatic refunds', 'If we can\'t deliver, your wallet gets credited automatically. No chasing support for days.'],
-                ['Real support', 'Reach us on WhatsApp anytime. We respond in minutes, not "2-3 business days."'],
-                ['Multiple quality tiers', 'Budget (no refill), Standard (30-day refill), and Premium (lifetime refill). You choose the quality and price point that fits.'],
-                ['Registered business', 'RC 9514845. We\'re a real company, not a WhatsApp-only operation.'],
-              ].map(([title, desc]) => (
-                <div key={title} className="rounded-xl p-5" style={{ background: softBg, border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}` }}>
-                  <div className="text-[13px] font-semibold mb-1.5" style={{ color: t.text }}>{title}</div>
-                  <div className="text-[13px] leading-[1.6]" style={{ color: t.textMuted }}>{desc}</div>
-                </div>
-              ))}
-            </div>
-          </section>
+            <section id="company-details" className="scroll-mt-24">
+              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>Company details</h2>
+              <div className="rounded-[14px] overflow-hidden" style={card}>
+                {DETAILS.map(([label, value, mono], i) => (
+                  <div key={label} className="flex items-center justify-between gap-2.5 px-[18px] py-3.5" style={{ borderTop: i ? `1px solid ${t.cardBorder}` : undefined }}>
+                    <span className="text-[14px]" style={{ color: t.muted }}>{label}</span>
+                    <b className={`text-[15px] font-semibold text-right${mono ? ' m' : ''}`} style={{ color: t.text }}>{value}</b>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </article>
+        </div>
 
-          {/* Company details */}
-          <section className="mb-14 max-w-[600px] mx-auto">
-            <h2 className="text-lg font-semibold mb-4 text-center" style={{ color: t.text }}>Company details</h2>
-            <div className="rounded-2xl overflow-hidden" style={{ background: cardBg, border: `1px solid ${border}` }}>
-              {[
-                ['Registered name', 'The Nitro NG'],
-                ['RC number', '9514845'],
-                ['Location', 'Lagos, Nigeria'],
-                ['Founded', '2025'],
-                ['Contact', 'support@nitro.ng'],
-              ].map(([label, value], i, arr) => (
-                <div key={label} className="flex items-center justify-between py-3.5 px-5" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)"}` : undefined }}>
-                  <span className="text-[13px] font-medium" style={{ color: t.textMuted }}>{label}</span>
-                  <span className="text-[13px] font-semibold" style={{ color: t.text }}>{value}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* CTA */}
-          <div className="p-6 rounded-[14px] text-center" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.14)"}` }}>
-            <p className="text-[15px] mb-1 font-semibold" style={{ color: t.text }}>Ready to grow your socials?</p>
-            <p className="text-sm mb-4" style={{ color: t.textSoft }}>Join thousands of Nigerian creators already using Nitro.</p>
-            <a href="/signup" className="inline-flex items-center gap-2 py-3 px-7 rounded-[10px] bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-semibold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">Create free account</a>
-          </div>
-
-        </main>
-        <SharedFooter />
+        <div className="flex items-center gap-3 rounded-[14px] px-[18px] py-4 max-md:flex-col max-md:items-stretch" style={card}>
+          <span className="flex flex-col gap-0.5">
+            <b className="text-[15px]" style={{ color: t.text }}>Ready to grow your socials?</b>
+            <span className="text-[13px]" style={{ color: t.soft }}>Join the thousands of Nigerian creators already on Nitro.</span>
+          </span>
+          <a href="/signup" className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>Create a free account</a>
+        </div>
       </div>
-    </>
+      <SharedFooter />
+    </div>
   );
 }
+
+const AB_CSS = `
+.ab-stats{display:grid;grid-template-columns:repeat(4,1fr)}
+.ab-stt{padding:12px 16px;border-left:1px solid var(--ab-line);display:flex;flex-direction:column;min-width:0}.ab-stt:first-child{border-left:0}
+.ab-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ab-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-top:2px;white-space:nowrap}
+.ab-stt i{font-style:normal;font-size:11.5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:767px){.ab-stats{grid-template-columns:1fr 1fr}.ab-stt:nth-child(3){border-left:0}.ab-stt:nth-child(n+3){border-top:1px solid var(--ab-line)}.ab-stt b{font-size:17px}}
+`;
