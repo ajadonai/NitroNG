@@ -14,7 +14,9 @@ export async function GET(req) {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [tasks, pendingCount, approvedMonth, creditMonth] = await Promise.all([
+    const d30 = new Date(now.getTime() - 30 * 86400000);
+
+    const [tasks, pendingCount, approvedMonth, creditMonth, oldestPending, approved30, credited30, rejected30] = await Promise.all([
       prisma.task.findMany({
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
         include: { _count: { select: { submissions: true } } },
@@ -22,6 +24,10 @@ export async function GET(req) {
       prisma.taskSubmission.count({ where: { status: 'pending' } }),
       prisma.taskSubmission.count({ where: { status: 'approved', reviewedAt: { gte: monthStart } } }),
       prisma.taskSubmission.aggregate({ where: { status: 'approved', reviewedAt: { gte: monthStart } }, _sum: { creditedAmount: true } }),
+      prisma.taskSubmission.findFirst({ where: { status: 'pending' }, orderBy: { createdAt: 'asc' }, select: { createdAt: true } }),
+      prisma.taskSubmission.count({ where: { status: 'approved', reviewedAt: { gte: d30 } } }),
+      prisma.taskSubmission.aggregate({ where: { status: 'approved', reviewedAt: { gte: d30 } }, _sum: { creditedAmount: true } }),
+      prisma.taskSubmission.count({ where: { status: 'rejected', reviewedAt: { gte: d30 } } }),
     ]);
 
     const taskDoneCounts = await prisma.taskSubmission.groupBy({
@@ -42,6 +48,10 @@ export async function GET(req) {
         creditMonth: creditMonth._sum.creditedAmount || 0,
         budget,
         activeTasks: tasks.filter(t => t.active).length,
+        oldestPending: oldestPending?.createdAt || null,
+        approved30,
+        credited30: credited30._sum.creditedAmount || 0,
+        rejected30,
       },
     };
 
