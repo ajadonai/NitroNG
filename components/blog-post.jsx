@@ -56,14 +56,6 @@ function BlogPostInner({ post, backHref, backLabel, related, prev, next }) {
   const [active, setActive] = useState('');
   const articleRef = useRef(null);
 
-  const catBg = dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.08)";
-  const bodyColor = dark ? "#bbb" : "#333";
-  const metaColor = dark ? "#666" : "#999";
-  const thumbBg = dark ? "#111" : "#eee";
-  const chipBg = dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)";
-  const hair = dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.07)";
-  const cardBg = dark ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.7)";
-
   // Build TOC from rendered h2s, assign anchor ids
   useEffect(() => {
     const hs = Array.from(document.querySelectorAll('.blog-article-body h2'));
@@ -100,157 +92,98 @@ function BlogPostInner({ post, backHref, backLabel, related, prev, next }) {
     if (det) det.removeAttribute('open');
   };
 
+  // One product card inside the text, after the first section, about the platform the piece is about.
+  const PLATFORMS = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['youtube', 'YouTube'], ['facebook', 'Facebook'], ['telegram', 'Telegram'], ['spotify', 'Spotify'], ['twitter', 'X'], [' x ', 'X']];
+  const hay = ` ${post.title} ${post.excerpt || ''} `.toLowerCase();
+  const platform = (PLATFORMS.find(([k]) => hay.includes(k)) || [])[1];
+  const ctaHtml = `<aside class="rd-cta"><span class="rd-ctat"><b>${platform ? `Growing on ${platform}?` : 'Growing an audience?'}</b><i>Followers, likes and views from ₦100, sent gradually. We never ask for a password.</i></span><a class="rd-ctab" href="/signup">Start with a free account</a></aside>`;
+  const parts = (post.content || '').split(/(?=<h2[\s>])/i);
+  const body = parts.length > 2 ? [parts[0], parts[1], ctaHtml, ...parts.slice(2)].join('') : post.content;
+
+  const vars = {
+    "--rbg": t.bg || (dark ? "#080b14" : "#f4f1ed"), "--rtx": t.text, "--rsoft": t.soft || t.textSoft || (dark ? "#a09b95" : "#555250"), "--rmut": t.muted || t.textMuted || (dark ? "#8a8580" : "#757170"),
+    "--rcard": dark ? "#111528" : "#ffffff", "--rline": dark ? "rgba(255,255,255,.12)" : "rgba(28,27,25,.11)", "--rac": "#c47d8e",
+  };
   return (
-    <div className="min-h-screen relative" style={{ background: t.bg, fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+    <div className="rd min-h-screen relative" style={{ ...vars, background: "var(--rbg)", color: "var(--rtx)" }}>
+      <style>{RD_CSS}</style>
       <SharedNav action="back" />
+      <div className="fixed top-0 left-0 right-0 h-[3px] z-[120] pointer-events-none"><div className="h-full" style={{ width: `${pct}%`, background: "var(--rac)", transition: "width .1s linear" }} /></div>
 
-      {/* Reading progress */}
-      <div className="fixed top-0 left-0 right-0 h-[3px] z-[120] pointer-events-none">
-        <div className="h-full rounded-r-full" style={{ width: pct + "%", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", transition: "width .1s linear" }} />
-      </div>
-
-      {/* Desktop share rail with % read */}
-      <div className="hidden lg:flex fixed flex-col gap-2 items-center z-[60]" style={{ left: "max(16px, calc((100vw - 720px) / 2 - 76px))", top: "50%", transform: "translateY(-50%)" }}>
-        <div className="text-[11px] font-bold" style={{ color: "#c47d8e", fontVariantNumeric: "tabular-nums" }}>{pct}%</div>
-        <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1" style={{ color: dark ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.25)" }}>Share</div>
-        <ShareButtons post={post} dark={dark} />
-      </div>
-
-      {/* Desktop table of contents */}
-      {toc.length >= 3 && (
-        <div className="hidden min-[1240px]:block fixed w-[184px] z-[60]" style={{ right: "max(16px, calc((100vw - 720px) / 2 - 216px))", top: "50%", transform: "translateY(-50%)" }}>
-          <div className="text-[11px] font-bold uppercase tracking-[1.4px] mb-2.5" style={{ color: dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.3)" }}>In this piece</div>
-          {toc.map(h => (
-            <a key={h.id} href={'#' + h.id} onClick={e => jump(e, h.id)} className="block text-[13px] leading-[1.4] py-[5px] pl-3 no-underline transition-colors duration-150" style={{ borderLeft: `2px solid ${active === h.id ? "#c47d8e" : hair}`, color: active === h.id ? "#c47d8e" : (dark ? "rgba(255,255,255,.4)" : "rgba(0,0,0,.4)"), fontWeight: active === h.id ? 700 : 500 }}>{h.text}</a>
-          ))}
-        </div>
-      )}
-
-      <article ref={articleRef} className="max-w-[720px] mx-auto" style={{ padding: "clamp(24px,4vw,44px) clamp(16px,3vw,24px) 56px" }}>
-        <div className="flex items-center gap-3 mb-5 flex-wrap">
-          <a href={backHref} className="text-[13px] no-underline font-semibold" style={{ color: t.accent }}>{"←"} {backLabel}</a>
-          <div className="py-[3px] px-2.5 rounded text-[11px] font-semibold uppercase tracking-[1px]" style={{ background: catBg, color: t.accent }}>{post.category}</div>
-        </div>
-
-        <h1 className="font-semibold mb-3" style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "clamp(32px,5vw,52px)", lineHeight: 1.12, letterSpacing: "-0.5px", color: t.text }}>{post.title}</h1>
-        {post.excerpt && <p className="mb-6" style={{ fontSize: "clamp(15px,2vw,18px)", lineHeight: 1.65, color: dark ? "rgba(244,241,237,.55)" : "rgba(28,27,25,.55)", maxWidth: 640 }}>{post.excerpt}</p>}
-
-        <div className="flex items-center gap-3.5 pb-6 flex-wrap" style={{ borderBottom: "1px solid " + t.surfaceBrd }}>
-          <Avatar size={40} />
-          <div>
-            <div className="text-[15px] font-bold" style={{ color: t.text }}>{post.authorName || "Nitro Team"}</div>
-            <div className="text-xs flex items-center gap-2 flex-wrap mt-0.5" style={{ color: metaColor }}>
-              {fD(post.createdAt)}
-              <span className="inline-flex items-center gap-1 py-[2px] px-2 rounded-full text-[11px] font-semibold" style={{ background: chipBg, color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)" }}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>{rt} min read
-              </span>
-              {post.views >= 100 && <span className="inline-flex items-center gap-1 py-[2px] px-2 rounded-full text-[11px] font-semibold" style={{ background: chipBg, color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.5)" }}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>{post.views.toLocaleString()} views
-              </span>}
-            </div>
+      <div className="rd-wrap">
+        <div className="rd-hero">
+          <span className="rd-eye">{post.category} · {rt} min read</span>
+          <h1 className="rd-h1">{post.title}</h1>
+          {post.excerpt && <p className="rd-lede">{post.excerpt}</p>}
+          <div className="rd-by">
+            <Avatar size={34} />
+            <span className="rd-byt"><b>{post.authorName || "Nitro Team"}</b><i>{fD(post.createdAt)}{post.views >= 100 ? ` · ${post.views.toLocaleString()} reads` : ""}</i></span>
+            <span className="rd-share"><ShareButtons post={post} dark={dark} size={32} /></span>
           </div>
         </div>
 
-        {/* Mobile share */}
-        <div className="flex lg:hidden gap-2 mt-4">
-          <ShareButtons post={post} dark={dark} size={32} />
+        {post.thumbnail && <div className="rd-art" style={{ backgroundImage: `url(${post.thumbnail})` }} />}
+
+        <div className="rd-cols">
+          {toc.length >= 3 ? (
+            <>
+              <aside className="rd-toc"><span className="rd-eye">In this article</span>{toc.map(h => <a key={h.id} href={'#' + h.id} onClick={e => jump(e, h.id)} className={active === h.id ? "on" : ""}>{h.text}</a>)}</aside>
+              <details className="rd-tocph"><summary>In this article · {toc.length} parts</summary>{toc.map(h => <a key={h.id} href={'#' + h.id} onClick={e => jump(e, h.id)}>{h.text}</a>)}</details>
+            </>
+          ) : <span className="rd-toc empty" />}
+          <article ref={articleRef} className="rd-body">
+            <div className="blog-article-body" data-theme={dark ? 'dark' : 'light'} dangerouslySetInnerHTML={{ __html: body }} />
+            <div className="rd-end"><span>Found this useful? Pass it on.</span><span className="rd-share"><ShareButtons post={post} dark={dark} size={32} /></span></div>
+            <div className="rd-author"><Avatar size={44} /><span className="rd-byt"><b>Written by {post.authorName || "the Nitro Team"}</b><i>Research and growth notes from the team behind Nigeria's fastest content promotion platform. <a href="https://x.com/TheNitroNG" target="_blank" rel="noopener noreferrer">Follow on X</a></i></span></div>
+          </article>
         </div>
 
-        {/* Hero art */}
-        {post.thumbnail && (
-          <div className="rounded-2xl bg-cover bg-center mt-6 mb-8" style={{ aspectRatio: "16/8.2", backgroundImage: "url(" + post.thumbnail + ")", backgroundColor: thumbBg, boxShadow: dark ? "0 14px 40px rgba(0,0,0,.4)" : "0 14px 40px rgba(28,27,25,.1)" }} />
-        )}
-        {!post.thumbnail && <div className="mt-2 mb-6" />}
-
-        {/* Mobile / narrow TOC */}
-        {toc.length >= 3 && (
-          <details className="min-[1240px]:hidden mb-6 rounded-xl overflow-hidden" style={{ background: cardBg, border: "1px solid " + hair }}>
-            <summary className="list-none cursor-pointer px-4 py-3 text-[13px] font-bold flex items-center justify-between" style={{ color: t.text }}>
-              In this piece
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </summary>
-            {toc.map(h => (
-              <a key={h.id} href={'#' + h.id} onClick={e => jump(e, h.id)} className="block px-4 py-2 text-[13px] no-underline" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.55)", borderTop: "1px solid " + hair }}>{h.text}</a>
-            ))}
-          </details>
-        )}
-
-        <div className="blog-article-body" data-theme={dark ? 'dark' : 'light'} style={{ color: bodyColor }} dangerouslySetInnerHTML={{ __html: post.content }} />
-
-        {/* End share */}
-        <div className="flex items-center gap-2.5 mt-10 py-4 flex-wrap" style={{ borderTop: "1px solid " + t.surfaceBrd, borderBottom: "1px solid " + t.surfaceBrd }}>
-          <span className="text-[13px] font-bold mr-auto" style={{ color: t.text }}>Found this useful? Pass it on.</span>
-          <ShareButtons post={post} dark={dark} size={32} />
-        </div>
-
-        {/* Author card */}
-        <div className="flex items-center gap-4 mt-7 p-5 rounded-2xl" style={{ background: cardBg, border: "1px solid " + hair }}>
-          <Avatar size={48} />
-          <div>
-            <div className="text-[15px] font-bold" style={{ color: t.text }}>Written by {post.authorName || "the Nitro Team"}</div>
-            <div className="text-[13px] leading-[1.6] mt-0.5" style={{ color: dark ? "rgba(244,241,237,.5)" : "rgba(28,27,25,.5)" }}>
-              Research and growth notes from the team behind Nigeria's fastest content promotion platform.{" "}
-              <a href="https://x.com/TheNitroNG" target="_blank" rel="noopener noreferrer" className="no-underline font-bold" style={{ color: t.accent }}>Follow on X {"→"}</a>
-            </div>
-          </div>
-        </div>
-
-        {/* Conversion CTA */}
-        <div className="relative overflow-hidden text-center mt-7 rounded-[18px] px-7 py-8" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff" }}>
-          <div className="absolute rounded-full pointer-events-none" style={{ width: 280, height: 280, left: -90, bottom: -140, background: "rgba(255,255,255,.12)", filter: "blur(40px)" }} />
-          <div className="absolute rounded-full pointer-events-none" style={{ width: 230, height: 230, right: -70, top: -110, background: "rgba(255,255,255,.1)", filter: "blur(36px)" }} />
-          <div className="relative inline-flex mb-3.5 py-[5px] px-3 rounded-full text-[11px] font-bold" style={{ background: "rgba(255,255,255,.18)", border: "1px solid rgba(255,255,255,.25)" }}>{"🎁"} Up to {"₦"}3,000 free promo credit to start</div>
-          <div className="relative font-semibold mb-1.5" style={{ fontFamily: "'Cormorant Garamond',serif", fontStyle: "italic", fontSize: 28 }}>Put this to work.</div>
-          <p className="relative text-[13px] mb-4.5" style={{ opacity: .92, marginBottom: 18 }}>Consistent, affordable momentum wins. That{"’"}s the product.</p>
-          <a href="/signup" className="relative inline-block py-3 px-8 rounded-xl text-[13px] font-extrabold no-underline transition-transform duration-150 hover:-translate-y-0.5" style={{ background: "#fff", color: "#8b4a5e" }}>Create free account</a>
-        </div>
-
-        {/* Prev / next */}
         {(prev || next) && (
-          <div className="grid grid-cols-2 max-[599px]:grid-cols-1 gap-3 mt-7">
-            {prev ? (
-              <a href={`/blog/${prev.slug}`} className="p-4 rounded-[14px] no-underline transition-transform duration-150 hover:-translate-y-0.5" style={{ background: cardBg, border: "1px solid " + hair }}>
-                <div className="text-[11px] font-extrabold uppercase tracking-[1px] mb-1.5" style={{ color: dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)" }}>{"←"} Previous</div>
-                <div className="text-[13px] font-bold leading-[1.4]" style={{ color: t.text }}>{prev.title}</div>
-              </a>
-            ) : <span />}
-            {next && (
-              <a href={`/blog/${next.slug}`} className="p-4 rounded-[14px] no-underline text-right transition-transform duration-150 hover:-translate-y-0.5" style={{ background: cardBg, border: "1px solid " + hair }}>
-                <div className="text-[11px] font-extrabold uppercase tracking-[1px] mb-1.5" style={{ color: dark ? "rgba(255,255,255,.35)" : "rgba(0,0,0,.35)" }}>Next {"→"}</div>
-                <div className="text-[13px] font-bold leading-[1.4]" style={{ color: t.text }}>{next.title}</div>
-              </a>
-            )}
+          <div className="rd-pn">
+            {prev ? <a href={`/blog/${prev.slug}`} className="rd-pnc"><em>Previous</em><b>{prev.title}</b></a> : <span />}
+            {next && <a href={`/blog/${next.slug}`} className="rd-pnc right"><em>Next</em><b>{next.title}</b></a>}
           </div>
         )}
 
-        {/* Related */}
         {related?.length > 0 && (
-          <div className="mt-9 mb-2">
-            <h2 className="text-lg font-semibold mb-4" style={{ color: t.text }}>Related articles</h2>
-            <div className="grid grid-cols-2 max-[599px]:grid-cols-1 gap-4">
-              {related.map(r => (
-                <a key={r.slug} href={`/blog/${r.slug}`} className="no-underline group">
-                  <div className="rounded-xl overflow-hidden flex flex-col h-full transition-[box-shadow,transform] duration-200 group-hover:shadow-[0_6px_20px_rgba(0,0,0,.1)] group-hover:-translate-y-0.5" style={{ background: cardBg, border: "1px solid " + hair }}>
-                    {r.thumbnail ? (
-                      <div className="h-28 shrink-0" style={{ background: `url(${r.thumbnail}) center/cover no-repeat ${thumbBg}` }} />
-                    ) : (
-                      <div className="h-28 shrink-0" style={{ background: dark ? 'linear-gradient(135deg, #2a1a22, #1a1225)' : 'linear-gradient(135deg, #e8d5db, #d4a8b5)' }} />
-                    )}
-                    <div className="p-3.5 flex flex-col flex-1 gap-1">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.8px]" style={{ color: t.accent }}>{r.category}</div>
-                      <div className="text-[13px] font-semibold leading-[1.35] line-clamp-2 flex-1" style={{ color: t.text }}>{r.title}</div>
-                      {r.createdAt && <div className="text-[11px]" style={{ color: metaColor }}>{fD(r.createdAt)}</div>}
-                    </div>
-                  </div>
-                </a>
-              ))}
+          <div className="rd-rel">
+            <span className="rd-eye">Related articles</span>
+            <div className="rd-relg">
+              {related.slice(0, 3).map(r => <a key={r.slug} href={`/blog/${r.slug}`} className="rd-relc"><em>{r.category}</em><b>{r.title}</b>{r.createdAt && <i>{fD(r.createdAt)}</i>}</a>)}
             </div>
           </div>
         )}
 
-        <a href={backHref} className="inline-block mt-6 py-2.5 px-5 rounded-lg text-sm no-underline" style={{ border: "1px solid " + t.surfaceBrd, color: t.muted }}>{"←"} Back to {backLabel.toLowerCase()}</a>
-      </article>
+        <a href={backHref} className="rd-back">← Back to {backLabel.toLowerCase()}</a>
+      </div>
       <SharedFooter />
     </div>
   );
 }
+
+const RD_CSS = `
+.rd-wrap{max-width:920px;margin:0 auto;padding:44px 28px 56px;display:flex;flex-direction:column;gap:26px}
+.rd-eye{font-size:10.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--rac);display:block}
+.rd-hero{display:flex;flex-direction:column;gap:10px}
+.rd-h1{font-family:'Cormorant Garamond',serif;font-size:clamp(34px,4.6vw,52px);font-weight:600;line-height:1.08;letter-spacing:-.01em;margin:0;text-wrap:balance;color:var(--rtx)}
+.rd-lede{font-size:18px;line-height:1.55;color:var(--rsoft);margin:0;max-width:62ch}
+.rd-by{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap}.rd-byt{display:flex;flex-direction:column;min-width:0}.rd-byt b{font-size:13.5px;font-weight:600;color:var(--rtx)}.rd-byt i{font-style:normal;font-size:12px;color:var(--rmut)}.rd-byt i a{color:var(--rac);font-weight:600;text-decoration:none}
+.rd-share{margin-left:auto;display:flex;gap:6px}
+.rd-art{height:320px;border-radius:16px;background-size:cover;background-position:center}
+.rd-cols{display:grid;grid-template-columns:220px 1fr;gap:36px;align-items:start}
+.rd-toc{position:sticky;top:20px;display:flex;flex-direction:column;gap:2px}.rd-toc .rd-eye{margin-bottom:8px}.rd-toc a{font-size:13px;color:var(--rmut);padding:6px 10px;border-left:2px solid var(--rline);line-height:1.35;text-decoration:none}.rd-toc a.on{color:var(--rtx);border-left-color:var(--rac);font-weight:600}
+.rd-tocph{display:none;border:1px solid var(--rline);border-radius:12px;background:var(--rcard);padding:10px 14px;font-size:13px}.rd-tocph summary{font-weight:600;cursor:pointer;list-style:none}.rd-tocph a{display:block;padding:6px 0;color:var(--rmut);border-top:1px solid var(--rline);text-decoration:none}
+.rd-body{max-width:66ch;min-width:0}
+.rd .blog-article-body{font-size:16.5px;line-height:1.75}
+.rd-cta{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:12px;background:var(--rcard);border:1px solid var(--rline);margin:28px 0}.rd-ctat{display:flex;flex-direction:column;min-width:0}.rd-ctat b{font-size:14.5px;font-weight:600;color:var(--rtx)}.rd-ctat i{font-style:normal;font-size:13px;color:var(--rmut);line-height:1.45}
+.rd-ctab{margin-left:auto;flex-shrink:0;display:inline-flex;align-items:center;height:34px;padding:0 12px;border-radius:9px;background:var(--rac);color:#fff;font-size:12.5px;font-weight:600;text-decoration:none;white-space:nowrap}
+.rd-end{display:flex;align-items:center;gap:10px;margin-top:36px;padding:14px 0;border-top:1px solid var(--rline);font-size:13px;font-weight:600;color:var(--rsoft);flex-wrap:wrap}
+.rd-author{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:14px;background:var(--rcard);border:1px solid var(--rline);margin-top:10px}.rd-author .rd-byt i{line-height:1.5;margin-top:2px;white-space:normal}
+.rd-pn{display:grid;grid-template-columns:1fr 1fr;gap:12px}.rd-pnc{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:12px;background:var(--rcard);border:1px solid var(--rline);text-decoration:none}.rd-pnc.right{text-align:right}.rd-pnc em{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--rac)}.rd-pnc b{font-size:13.5px;line-height:1.35;color:var(--rtx);font-weight:600}
+.rd-rel .rd-eye{margin-bottom:10px}.rd-relg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.rd-relc{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:12px;background:var(--rcard);border:1px solid var(--rline);text-decoration:none;transition:transform .15s}.rd-relc:hover{transform:translateY(-2px)}.rd-relc em{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--rac)}.rd-relc b{font-size:14px;line-height:1.35;color:var(--rtx);font-weight:600}.rd-relc i{font-style:normal;font-size:12px;color:var(--rmut)}
+.rd-back{font-size:13px;font-weight:600;color:var(--rac);text-decoration:none}
+@media (max-width:900px){
+  .rd-wrap{padding:28px 16px 40px;gap:20px}.rd-cols{grid-template-columns:1fr;gap:18px}.rd-toc{display:none}.rd-tocph{display:block}.rd-art{height:200px}
+  .rd-cta{flex-direction:column;align-items:stretch}.rd-ctab{margin-left:0;justify-content:center}.rd-relg{grid-template-columns:1fr}.rd-pn{grid-template-columns:1fr}.rd-pnc.right{text-align:left}.rd-share{margin-left:0;width:100%}
+}
+`;
