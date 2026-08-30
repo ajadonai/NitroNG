@@ -499,7 +499,7 @@ export async function patchOrderForSession(session, body, req) {
       const reorderDripCfg = getDripConfig(reorderGroupType, reorderPlatform);
       let reorderDripSchedule = null;
       if (process.env.NODE_ENV !== 'development' && order.tier?.group?.tags?.includes('drip') && reorderDripCfg && order.quantity >= reorderDripCfg.threshold) {
-        const intraday = calculateIntradayDrip(order.quantity, reorderProviderMin, new Date(), reorderGroupType, reorderPlatform);
+        const intraday = calculateIntradayDrip(order.quantity, reorderProviderMin, new Date(), reorderGroupType, reorderPlatform, { maxSpanHours: 22 });
         if (intraday) {
           const durationErr = validateIntradayDuration(intraday.dispatches);
           if (durationErr) return Response.json({ error: durationErr }, { status: 400 });
@@ -942,7 +942,7 @@ export async function createOrderForSession(session, body, req, { source = 'web'
         }
       }
     } else if (dripEligible && !skipDrip && dripCfg && qty >= dripCfg.threshold) {
-      const intraday = calculateIntradayDrip(qty, providerMin, new Date(), groupType, platform);
+      const intraday = calculateIntradayDrip(qty, providerMin, new Date(), groupType, platform, { maxSpanHours: 22 });
       if (intraday) {
         const durationErr = validateIntradayDuration(intraday.dispatches);
         if (durationErr) {

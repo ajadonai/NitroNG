@@ -1156,7 +1156,7 @@ export async function POST(req) {
           redispatchDripDays = dripSchedule ? Math.max(...dripSchedule.dispatches.map(d => d.day)) : 1;
         } else {
           const { calculateIntradayDrip, validateIntradayDuration } = await import('@/lib/drip-feed');
-          const intraday = calculateIntradayDrip(remainingQty, providerMin, new Date(), groupType, platform);
+          const intraday = calculateIntradayDrip(remainingQty, providerMin, new Date(), groupType, platform, { maxSpanHours: 22 });
           if (intraday) {
             const durationErr = validateIntradayDuration(intraday.dispatches);
             if (durationErr) return Response.json({ error: durationErr }, { status: 400 });
