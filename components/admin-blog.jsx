@@ -2,9 +2,13 @@
 import { useState, useEffect } from "react";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
-import { fD } from "../lib/format";
+import { FilterDropdown } from "./date-range-picker";
+import { SkelFacts, SkelList, SkelBar } from "./skeleton";
 
 const CATEGORIES = ["Tutorials", "Tips & Tricks", "Announcements", "Updates", "Guides"];
+const SORTS = [{ value: "new", label: "Newest" }, { value: "old", label: "Oldest" }, { value: "views", label: "Most read" }];
+const SORT_WORD = { new: "newest first", old: "oldest first", views: "most read first" };
+const SEARCH = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="20" y1="20" x2="16.5" y2="16.5" /></svg>;
 
 export default function AdminBlogPage({ dark, t }) {
   const confirm = useConfirm();
@@ -14,7 +18,8 @@ export default function AdminBlogPage({ dark, t }) {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState("all");
-  const [sortNew, setSortNew] = useState(true);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("new");
   const [page, setPage] = useState(0);
   const [perPage, setPerPage] = useState(6);
 
@@ -65,16 +70,21 @@ export default function AdminBlogPage({ dark, t }) {
   const deletePost = async (post) => {
     if (!await confirm({ title: "Delete Post", message: `Delete "${post.title}"? This cannot be undone.`, confirmLabel: "Delete", danger: true })) return;
     const ok = await act({ action: "delete", postId: post.id });
-    if (ok) toast.success("Post deleted", "");
+    if (ok) { setEditing(null); resetForm(); toast.success("Post deleted", ""); }
   };
 
   const quickToggle = async (post, field) => {
     await act({ action: "update", postId: post.id, [field]: !post[field] });
   };
 
+  const vars = {
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent, "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)", "--ok": dark ? "#6ee7b7" : "#0a7d54", "--bad": dark ? "#fca5a5" : "#c62828",
+  };
+
   const inputCls = "w-full box-border py-2.5 px-3.5 rounded-lg text-[15px] outline-none font-[inherit] border";
   const inputSt = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
-  const cardBg = t.cardBg;
+  const cardBg = dark ? "#141930" : "#ffffff";
   const cardBd = `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`;
   const headerBg = dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)";
   const headerBorder = `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`;
@@ -82,22 +92,20 @@ export default function AdminBlogPage({ dark, t }) {
   // ── Editor View ──
   if (editing !== null) {
     return (
-      <>
+      <div className="bl" style={vars}>
+        <style>{BL_CSS}</style>
         <div className="adm-header">
-          <div className="flex justify-between items-center">
+          <div className="adm-header-row">
             <div>
-              <div className="adm-title" style={{ color: t.text }}>{editing === "new" ? "New Post" : "Edit Post"}</div>
-              <div className="adm-subtitle" style={{ color: t.textMuted }}>{editing === "new" ? "Create a new blog post" : `Editing: ${editing.title}`}</div>
+              <div className="adm-title" style={{ color: t.text }}>{editing === "new" ? "New post" : "Edit post"}</div>
+              <div className="adm-subtitle" style={{ color: t.textMuted }}>{editing === "new" ? "Write a post, guide or research piece." : editing.title}</div>
             </div>
-            <button onClick={() => { setEditing(null); resetForm(); }} className="adm-btn-sm flex items-center gap-1.5" style={{ borderColor: t.cardBorder, color: t.textSoft }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-              Back
-            </button>
+            <button type="button" className="bl-b" onClick={() => { setEditing(null); resetForm(); }}>Back to posts</button>
           </div>
           <div className="page-divider" style={{ background: t.cardBorder }} />
         </div>
 
-        <div className="grid grid-cols-[1fr_320px] max-md:grid-cols-1 gap-4 mt-4">
+        <div className="grid grid-cols-[1fr_320px] max-md:grid-cols-1 gap-4">
           {/* ── Left: Content ── */}
           <div className="flex flex-col gap-4">
             {/* Title */}
@@ -171,8 +179,8 @@ export default function AdminBlogPage({ dark, t }) {
                   </label>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={savePost} disabled={saving} className="adm-btn-primary flex-1 text-[13px]" style={{ opacity: title && content && !saving ? 1 : .4 }}>{saving ? "Saving..." : editing === "new" ? "Create Post" : "Save Changes"}</button>
-                  <button onClick={() => { setEditing(null); resetForm(); }} className="adm-btn-sm text-[13px]" style={{ borderColor: t.cardBorder, color: t.textSoft }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                  <button type="button" onClick={savePost} disabled={saving} className="bl-b pri flex-1" style={{ opacity: title && content && !saving ? 1 : .4 }}>{saving ? "Saving…" : editing === "new" ? "Create post" : "Save changes"}</button>
+                  {editing !== "new" && <button type="button" onClick={() => deletePost(editing)} disabled={saving} className="bl-b bad">Delete</button>}
                 </div>
               </div>
             </div>
@@ -205,143 +213,126 @@ export default function AdminBlogPage({ dark, t }) {
             </div>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   // ── List View ──
-  const pubCount = posts.filter(p => p.published).length;
-  const draftCount = posts.filter(p => !p.published).length;
+  const dateOf = (iso) => { const d = new Date(iso); const yr = d.getFullYear() !== new Date().getFullYear(); return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", ...(yr && { year: "numeric" }) }); };
+  const liveCount = posts.filter(p => p.published).length;
+  const draftCount = posts.length - liveCount;
   const guideCount = posts.filter(p => p.showInHowTo).length;
   const totalViews = posts.reduce((s, p) => s + (p.views || 0), 0);
+  const mostRead = posts.reduce((best, p) => (p.views || 0) > (best?.views || 0) ? p : best, null);
 
-  const filtered = (filter === "all" ? posts : filter === "published" ? posts.filter(p => p.published) : filter === "draft" ? posts.filter(p => !p.published) : posts.filter(p => p.showInHowTo)).slice().sort((a, b) => sortNew ? new Date(b.createdAt) - new Date(a.createdAt) : new Date(a.createdAt) - new Date(b.createdAt));
-  const totalPages = Math.ceil(filtered.length / perPage);
+  const q = query.trim().toLowerCase();
+  const filtered = (filter === "all" ? posts : filter === "published" ? posts.filter(p => p.published) : filter === "draft" ? posts.filter(p => !p.published) : posts.filter(p => p.showInHowTo))
+    .filter(p => !q || (p.title || "").toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q) || (p.slug || "").includes(q))
+    .slice().sort((a, b) => sort === "views" ? (b.views || 0) - (a.views || 0) : sort === "old" ? new Date(a.createdAt) - new Date(b.createdAt) : new Date(b.createdAt) - new Date(a.createdAt));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const paged = filtered.slice(page * perPage, (page + 1) * perPage);
+  const from = filtered.length ? page * perPage + 1 : 0;
+  const to = Math.min((page + 1) * perPage, filtered.length);
+  const chips = [["all", "All", posts.length], ["published", "Live", liveCount], ["draft", "Drafts", draftCount], ["guide", "Guide", guideCount]];
 
   return (
-    <>
+    <div className="bl" style={vars}>
+      <style>{BL_CSS}</style>
       <div className="adm-header">
-        <div className="flex justify-between items-start">
+        <div className="adm-header-row">
           <div>
             <div className="adm-title" style={{ color: t.text }}>Blog</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage posts, guides, and announcements</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>Posts, guides and research.</div>
           </div>
-          <button onClick={startNew} className="adm-btn-primary flex items-center gap-1.5">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            New Post
-          </button>
+          <button type="button" className="bl-b pri" onClick={startNew}>+ New post</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {/* Stats */}
-      <div className="adm-stats mt-4">
-        {[
-          ["Published", String(pubCount), dark ? "#6ee7b7" : "#059669"],
-          ["Drafts", String(draftCount), dark ? "#fcd34d" : "#d97706"],
-          ["In Guide", String(guideCount), "#c47d8e"],
-          ["Total Views", String(totalViews), dark ? "#60a5fa" : "#2563eb"],
-        ].map(([label, val, color]) => (
-          <div key={label} className="dash-stat-card" style={{ background: cardBg, border: cardBd }}>
-            <div className="dash-stat-dot" style={{ background: color }} />
-            <div className="dash-stat-label" style={{ color: t.textMuted }}>{label}</div>
-            <div className="m dash-stat-value" style={{ color }}>{val}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Filter pills */}
-      <div className="flex gap-1.5 mt-4 mb-4 flex-wrap">
-        {[["all", `All (${posts.length})`], ["published", `Published (${pubCount})`], ["draft", `Drafts (${draftCount})`], ["guide", `Guide (${guideCount})`]].map(([val, label]) => (
-          <button key={val} onClick={() => { setFilter(val); setPage(0); }} className="py-1.5 px-3.5 rounded-full text-[13px] font-medium cursor-pointer font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ border: `1px solid ${filter === val ? t.accent : t.cardBorder}`, background: filter === val ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.12)") : "transparent", color: filter === val ? t.accent : t.textMuted }}>{label}</button>
-        ))}
-      </div>
-
-      {/* Posts */}
-      <div className="adm-card" style={{ background: cardBg, border: cardBd }}>
-        <div className="set-card-header flex items-center justify-between" style={{ background: headerBg, borderBottom: headerBorder }}>
-          <div className="set-card-title" style={{ color: t.textMuted }}>Posts</div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => { setSortNew(v => !v); setPage(0); }} className="flex items-center gap-1 text-[12px] font-medium cursor-pointer" style={{ color: t.textMuted, background: "none", border: "none", padding: 0, fontFamily: "inherit" }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points={sortNew ? "6 9 12 15 18 9" : "18 15 12 9 6 15"}/></svg>
-              {sortNew ? "Newest first" : "Oldest first"}
-            </button>
-            <span className="text-[12px] font-medium" style={{ color: t.textMuted }}>{filtered.length} {filtered.length === 1 ? "post" : "posts"}</span>
-          </div>
+      {loading ? <><SkelFacts dark={dark} /><SkelBar dark={dark} /><SkelList dark={dark} rows={6} title avatar="square" rowH={62} /></> : <>
+        <div className="bl-stats">
+          <div className="bl-stt"><b className="m">{posts.length}</b><span>Posts</span><i>{liveCount} live · {draftCount} {draftCount === 1 ? "draft" : "drafts"}</i></div>
+          <div className="bl-stt"><b className="m">{guideCount}</b><span>In the guide</span><i>shown on Help</i></div>
+          <div className="bl-stt"><b className="m">{totalViews.toLocaleString()}</b><span>Views</span><i>all time</i></div>
+          <div className="bl-stt"><b className="m">{mostRead?.views ? mostRead.views.toLocaleString() : "—"}</b><span>Most read</span><i title={mostRead?.views ? mostRead.title : undefined}>{mostRead?.views ? mostRead.title : "no views yet"}</i></div>
         </div>
 
-        {loading ? <div className="p-5">{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[72px] rounded-lg mb-2`} />)}</div> : filtered.length === 0 ? (
-          <div className="py-[60px] px-5 text-center">
-            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
-              <rect x="12" y="8" width="40" height="48" rx="6" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
-              <line x1="22" y1="20" x2="42" y2="20" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
-              <line x1="22" y1="28" x2="38" y2="28" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
-              <line x1="22" y1="36" x2="34" y2="36" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
-            </svg>
-            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>{filter === "all" ? "No blog posts yet" : `No ${filter} posts`}</div>
-            <div className="text-sm" style={{ color: t.textMuted }}>{filter === "all" ? "Create your first post to get started" : "Try a different filter"}</div>
-          </div>
-        ) : paged.map((p, i) => (
-          <div key={p.id} className="flex items-center gap-3.5 py-3.5 px-5 max-md:px-4 max-md:flex-col max-md:items-start max-md:gap-2.5" style={{ borderBottom: i < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-            {/* Thumbnail */}
-            {p.thumbnail && (
-              <div className="w-[72px] h-[48px] max-md:w-full max-md:h-[120px] rounded-lg overflow-hidden shrink-0" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)" }}>
-                <img src={p.thumbnail} alt={p.title || "Post thumbnail"} className="w-full h-full object-cover" onError={e => { e.target.parentNode.style.display = "none"; }} />
+        <div className="bl-bar">
+          <div className="bl-srch"><span className="bl-si">{SEARCH}</span><input value={query} onChange={e => { setQuery(e.target.value); setPage(0); }} placeholder="Search" /></div>
+          {chips.map(([val, label, n]) => (
+            <button key={val} type="button" className={"bl-tg" + (filter === val ? " on" : "")} onClick={() => { setFilter(val); setPage(0); }}>{label} {n}</button>
+          ))}
+          <FilterDropdown dark={dark} t={t} value={sort} onChange={v => { setSort(v); setPage(0); }} options={SORTS} />
+        </div>
+
+        <section className="bl-card">
+          <header><h3>Posts</h3><span className="bl-cnt">{SORT_WORD[sort]} · {from}–{to} of {filtered.length}</span></header>
+          <div className="bl-list">
+            {paged.length === 0 ? <div className="bl-empty">{posts.length === 0 ? "No posts yet." : "Nothing matches."}</div> : paged.map(p => (
+              <div key={p.id} className="bl-r">
+                <span className="bl-thumb">{p.thumbnail && <img src={p.thumbnail} alt="" onError={e => { e.target.style.display = "none"; }} />}</span>
+                <span className="bl-tt"><b>{p.title}</b><i>{p.category} · {dateOf(p.createdAt)}{p.showInHowTo ? " · in the guide" : ""}</i></span>
+                <span className="m bl-mid">{(p.views || 0).toLocaleString()} views</span>
+                <span className="bl-st"><i className={"bl-dot " + (p.published ? "ok" : "dim")} />{p.published ? "Live" : "Draft"}</span>
+                <span className="bl-a">
+                  <button type="button" className="bl-b sm" disabled={saving} onClick={() => startEdit(p)}>Edit</button>
+                  <button type="button" className="bl-b sm" disabled={saving} onClick={() => quickToggle(p, "published")}>{p.published ? "Unpublish" : "Publish"}</button>
+                </span>
               </div>
+            ))}
+          </div>
+          <div className="bl-pg">
+            <span className="bl-cnt">{from}–{to} of {filtered.length} ·
+              <select className="bl-pp" value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(0); }}>{[6, 12, 25, 50].map(n => <option key={n} value={n}>{n} per page</option>)}</select>
+            </span>
+            {totalPages > 1 && (
+              <span className="bl-pgn">
+                <button type="button" className="bl-ib" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))} aria-label="Previous page">‹</button>
+                <span className="bl-cnt">{page + 1} of {totalPages}</span>
+                <button type="button" className="bl-ib" disabled={page >= totalPages - 1} onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} aria-label="Next page">›</button>
+              </span>
             )}
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                <span className="text-[15px] font-semibold" style={{ color: t.text }}>{p.title}</span>
-                <span className="text-[11px] py-0.5 px-2 rounded-full font-semibold" style={{ background: p.published ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)"), color: p.published ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fcd34d" : "#d97706") }}>{p.published ? "Live" : "Draft"}</span>
-                {p.showInHowTo && <span className="text-[11px] py-0.5 px-2 rounded-full font-semibold" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", color: "#c47d8e" }}>Guide</span>}
-              </div>
-              <div className="text-[13px]" style={{ color: t.textMuted }}>
-                <span className="font-medium" style={{ color: t.textSoft }}>{p.category}</span>
-                {" · "}{fD(p.createdAt)} · {p.authorName}
-                {p.published && p.views > 0 && <> · <span style={{ color: dark ? "#60a5fa" : "#2563eb" }}>{p.views} views</span></>}
-              </div>
-              {p.excerpt && <div className="text-[13px] mt-1 leading-[1.4]" style={{ color: t.textSoft }}>{p.excerpt.slice(0, 120)}{p.excerpt.length > 120 ? "..." : ""}</div>}
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-1.5 items-center shrink-0 max-md:w-full">
-              <button onClick={() => startEdit(p)} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.accent }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              </button>
-              <button onClick={() => quickToggle(p, "published")} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: p.published ? (dark ? "#fcd34d" : "#d97706") : (dark ? "#6ee7b7" : "#059669") }}>{p.published ? "Unpublish" : "Publish"}</button>
-              <button onClick={() => quickToggle(p, "showInHowTo")} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: p.showInHowTo ? t.textMuted : "#c47d8e" }}>{p.showInHowTo ? "- Guide" : "+ Guide"}</button>
-              <button onClick={() => deletePost(p)} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-              </button>
-            </div>
           </div>
-        ))}
-
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between py-3 px-5" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
-            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page === 0 ? .35 : 1 }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-              Prev
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-[12px]" style={{ color: t.textMuted }}>
-                <span>Show</span>
-                <select value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(0); }} className="py-1 px-1.5 rounded-md text-[12px] font-medium cursor-pointer font-[inherit]" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>
-                  {[6, 12, 25, 50].map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </div>
-              <span className="text-[12px] font-medium" style={{ color: t.textMuted }}>Page {page + 1} of {totalPages}</span>
-            </div>
-            <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page >= totalPages - 1 ? .35 : 1 }}>
-              Next
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          </div>
-        )}
-      </div>
-    </>
+        </section>
+      </>}
+    </div>
   );
 }
+
+const BL_CSS = `
+.bl{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.bl *{box-sizing:border-box}
+.bl .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.bl-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.bl-b:hover{transform:translateY(-1px)}.bl-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.bl-b.sm{height:30px;padding:0 10px;font-size:12px}.bl-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.bl-b.bad{color:var(--bad)}
+.bl-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.bl-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.bl-stt:first-child{border-left:0}
+.bl-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bl-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.bl-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bl-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bl-srch{display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:13px;min-width:260px}.bl-srch:focus-within{border-color:var(--acln)}
+.bl-si{display:inline-flex;width:14px;height:14px;color:var(--dim);flex-shrink:0}.bl-si svg{width:14px;height:14px}.bl-srch input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:13px;color:var(--ink);outline:none}.bl-srch input::placeholder{color:var(--dim)}
+.bl-tg{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer;white-space:nowrap}.bl-tg.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.bl-bar>div:last-child{margin-left:auto}
+.bl-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.bl-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.bl-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.bl-cnt{font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bl-list{display:flex;flex-direction:column}.bl-empty{padding:28px 16px;text-align:center;font-size:13px;color:var(--mut)}
+.bl-r{display:grid;grid-template-columns:44px 1fr 80px 80px auto;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--rail);font-size:13px}.bl-r:first-child{border-top:0}
+.bl-thumb{width:44px;height:34px;border-radius:8px;background:var(--soft);border:1px solid var(--line);overflow:hidden;flex-shrink:0;display:block}.bl-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.bl-tt{display:flex;flex-direction:column;min-width:0}.bl-tt b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bl-tt i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bl-mid{font-size:12px;color:var(--mut);white-space:nowrap}
+.bl-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.bl-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}.bl-dot.ok{background:var(--ok)}.bl-dot.dim{background:var(--dim)}
+.bl-a{display:flex;gap:6px;justify-content:flex-end}
+.bl-pg{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}
+.bl-pp{font:inherit;font-size:12px;color:var(--ac);font-weight:600;background:none;border:0;cursor:pointer;padding:0 0 0 4px}
+.bl-pgn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0}
+.bl-ib{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);font:inherit;font-size:14px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}.bl-ib:disabled{opacity:.4;cursor:not-allowed}
+@media (max-width:900px){
+  .bl-stats{grid-template-columns:1fr 1fr}.bl-stt:nth-child(3){border-left:0}.bl-stt:nth-child(n+3){border-top:1px solid var(--line)}.bl-stt b{font-size:17px}
+  .bl-srch{width:100%;min-width:0}.bl-tg{flex:1;text-align:center;padding:8px 6px}
+  .bl-r{grid-template-columns:44px 1fr;grid-template-areas:"th tt" "th meta" "acts acts";gap:6px 10px;padding:12px 14px}
+  .bl-thumb{grid-area:th;align-self:start}.bl-tt{grid-area:tt}.bl-tt b{white-space:normal}.bl-tt i{white-space:normal}
+  .bl-mid{grid-area:meta}.bl-st{grid-area:meta;justify-self:end}
+  .bl-a{grid-area:acts;justify-content:stretch;margin-top:4px}.bl-a .bl-b{flex:1;height:36px}
+  .bl-pg{flex-wrap:wrap}
+}
+`;
