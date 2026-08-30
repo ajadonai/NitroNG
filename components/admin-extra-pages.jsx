@@ -507,23 +507,18 @@ const TM_CSS = `
 /* ═══════════════════════════════════════════ */
 export function AdminCouponsPage({ dark, t }) {
   const confirm = useConfirm();
+  const toast = useToast();
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(null);
   const [form, setForm] = useState({ code: "", type: "percent", value: "", minOrder: "", maxDeposit: "", maxUses: "", expires: "", newUsersOnly: false });
-
-  // Referral settings
+  const [search, setSearch] = useState("");
   const [refEnabled, setRefEnabled] = useState(true);
   const [refReferrer, setRefReferrer] = useState("500");
   const [refInvitee, setRefInvitee] = useState("500");
   const [refMinDeposit, setRefMinDeposit] = useState("0");
   const [refSaving, setRefSaving] = useState(false);
-  const [refMsg, setRefMsg] = useState(null);
-
-  const [rewardsTab, setRewardsTab] = useState("referrals");
-
-  // Points ledger
+  const [rewardsTab, setRewardsTab] = useState("coupons");
   const [ledger, setLedger] = useState([]);
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [ledgerPage, setLedgerPage] = useState(1);
@@ -535,7 +530,6 @@ export function AdminCouponsPage({ dark, t }) {
   const [ledgerTo, setLedgerTo] = useState('');
   const ledgerTimer = useRef(null);
   const ledgerReqRef = useRef(0);
-
   const fetchLedger = useCallback(async (pg = 1, searchVal, typeVal, fromVal, toVal) => {
     const reqId = ++ledgerReqRef.current;
     setLedgerLoading(true);
@@ -559,7 +553,12 @@ export function AdminCouponsPage({ dark, t }) {
       if (reqId === ledgerReqRef.current) setLedgerLoading(false);
     }
   }, []);
-
+  useEffect(() => {
+    if (rewardsTab !== "ledger") return;
+    if (ledgerTimer.current) clearTimeout(ledgerTimer.current);
+    ledgerTimer.current = setTimeout(() => fetchLedger(1, ledgerSearch, ledgerType, ledgerFrom, ledgerTo), ledgerSearch ? 350 : 0);
+    return () => clearTimeout(ledgerTimer.current);
+  }, [rewardsTab, ledgerSearch, ledgerType, ledgerFrom, ledgerTo, fetchLedger]);
   // Nitro Status tiers — read-only reference, canonical source is lib/nitro-rewards.js
   const NITRO_STATUS_TIERS = [
     { name: 'Spark',  min: 0,        discountPct: 0,   pointEarnPct: 0.5, color: '#6B7280' },
@@ -569,9 +568,9 @@ export function AdminCouponsPage({ dark, t }) {
     { name: 'Apex',   min: 7500000,  discountPct: 3,   pointEarnPct: 1.75, color: '#EC4899' },
     { name: 'Legend', min: 15000000, discountPct: 4,   pointEarnPct: 2,   color: '#EF4444' },
   ];
-
+  const loadCoupons = () => fetch("/api/admin/coupons").then(r => r.json()).then(d => { setCoupons(d.coupons || []); setLoading(false); }).catch(() => setLoading(false));
   useEffect(() => {
-    fetch("/api/admin/coupons").then(r => r.json()).then(d => { setCoupons(d.coupons || []); setLoading(false); }).catch(() => setLoading(false));
+    loadCoupons();
     fetch("/api/admin/settings").then(r => r.json()).then(d => {
       if (!d.settings) return;
       const s = d.settings;
@@ -581,9 +580,8 @@ export function AdminCouponsPage({ dark, t }) {
       if (s.ref_min_deposit) setRefMinDeposit(String(Math.round(Number(s.ref_min_deposit) / 100)));
     });
   }, []);
-
   const saveReferral = async () => {
-    setRefSaving(true); setRefMsg(null);
+    setRefSaving(true);
     try {
       const r = await fetch("/api/admin/settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ settings: {
         ref_enabled: String(refEnabled),
@@ -591,313 +589,199 @@ export function AdminCouponsPage({ dark, t }) {
         ref_invitee_bonus: String(Number(refInvitee || 0) * 100),
         ref_min_deposit: String(Number(refMinDeposit || 0) * 100),
       }}) });
-      setRefMsg(r.ok ? { ok: true, text: "Referral settings saved" } : { text: "Failed to save" });
-    } catch { setRefMsg({ text: "Request failed" }); }
+      if (r.ok) toast.success("Saved", "Referral settings updated"); else toast.error("Failed", "Could not save");
+    } catch { toast.error("Request failed", "Check your connection"); }
     setRefSaving(false);
   };
-
-
   const createCoupon = async () => {
     if (!form.code.trim() || !form.value) return;
     try {
-      const res = await fetch("/api/admin/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", ...form, value: Number(form.value), minOrder: Number(form.minOrder) || 0, maxDeposit: Number(form.maxDeposit) || 0, maxUses: Number(form.maxUses) || 0, newUsersOnly: form.newUsersOnly }) });
-      if (res.ok) { setShowAdd(false); setForm({ code: "", type: "percent", value: "", minOrder: "", maxDeposit: "", maxUses: "", expires: "", newUsersOnly: false }); fetch("/api/admin/coupons").then(r => r.json()).then(d => setCoupons(d.coupons || [])); }
-    } catch {}
+      const res = await fetch("/api/admin/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create", ...form, value: Number(form.value), minOrder: Number(form.minOrder) || 0, maxDeposit: Number(form.maxDeposit) || 0, maxUses: Number(form.maxUses) || 0 }) });
+      if (res.ok) { setShowAdd(false); setForm({ code: "", type: "percent", value: "", minOrder: "", maxDeposit: "", maxUses: "", expires: "", newUsersOnly: false }); loadCoupons(); toast.success("Coupon made", form.code); }
+      else { const d = await res.json().catch(() => ({})); toast.error("Could not make it", d.error || "Check the fields"); }
+    } catch { toast.error("Request failed", "Check your connection"); }
   };
-
-  const deleteCoupon = async (id) => {
+  const toggleCoupon = async (c) => {
     try {
-      await fetch("/api/admin/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id }) });
-      setCoupons(prev => prev.filter(c => c.id !== id));
-    } catch {}
+      const res = await fetch("/api/admin/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "toggle", id: c.id }) });
+      if (res.ok) { loadCoupons(); toast.success(c.enabled ? "Turned off" : "Turned on", c.code); } else toast.error("Failed", "Could not change it");
+    } catch { toast.error("Request failed", "Check your connection"); }
+  };
+  const deleteCoupon = async (c) => {
+    const ok = await confirm({ title: `Delete ${c.code}?`, message: "People can no longer use it. This cannot be undone.", confirmText: "Delete", danger: true });
+    if (!ok) return;
+    try {
+      await fetch("/api/admin/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id: c.id }) });
+      setCoupons(prev => prev.filter(x => x.id !== c.id)); toast.success("Deleted", c.code);
+    } catch { toast.error("Request failed", "Check your connection"); }
   };
 
-  const inputCls = "w-full py-2.5 px-3.5 rounded-lg border border-solid text-[15px] outline-none box-border font-[inherit]";
-  const inputStyle = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
-  const numInputCls = "py-[9px] px-3 rounded-lg border-solid text-[15px] outline-none text-right w-20";
-  const numInput = { background: dark ? "rgba(255,255,255,.12)" : "#fff", borderWidth: "0.5px", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", color: t.text, fontFamily: "'JetBrains Mono',monospace" };
-  const cardBg = dark ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.85)";
-  const cardBd = `0.5px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`;
-  const divBg = dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)";
-
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const expiryOf = (c) => c.expires ? new Date(c.expires + "T23:59:59") : null;
+  const stateOf = (c) => { const exp = expiryOf(c); if (!c.enabled) return ["Off", "dim"]; if (exp && exp < new Date()) return ["Expired", "dim"]; if (c.maxUses && (c.used || 0) >= c.maxUses) return ["Used up", "dim"]; return ["Live", "ok"]; };
+  const whenOf = (c) => { const [st] = stateOf(c); const exp = expiryOf(c); const d = exp ? exp.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : null; if (st === "Expired") return `expired ${d}`; if (st === "Used up") return "used up"; if (st === "Off") return d ? `off · ends ${d}` : "off"; return d ? `ends ${d}` : "no end date"; };
+  const givesOf = (c) => `${c.type === "percent" ? `${c.value}%` : fN(c.value || 0)} bonus on deposit${c.minOrder ? ` · min ${fN(c.minOrder)}` : ""}${c.maxDeposit ? ` · up to ${fN(c.maxDeposit)}` : ""}${c.newUsersOnly ? " · new customers only" : ""}`;
+  const live = coupons.filter(c => stateOf(c)[0] === "Live");
+  const endingSoon = live.filter(c => { const e = expiryOf(c); return e && e - today < 7 * 864e5; });
+  const usedTotal = coupons.reduce((n, c) => n + (c.used || 0), 0);
+  const shown = coupons.filter(c => !search || c.code.toLowerCase().includes(search.toLowerCase()));
+  const typeWord = (ty) => ({ earned_order: "Earned", redeemed_order: "Redeemed", reversed_refund: "Reversed", restored_refund: "Restored", manual_credit: "Manual credit", manual_debit: "Manual debit", opening_balance: "Opening balance" })[ty] || ty.replace(/_/g, " ");
+  const vars = {
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent, "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)", "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828", "--in": dark ? "#131728" : "#fff",
+  };
   return (
-    <>
+    <div className="rw" style={vars}>
+      <style>{RW_CSS}</style>
       <div className="adm-header">
         <div className="adm-header-row">
           <div>
             <div className="adm-title" style={{ color: t.text }}>Rewards</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>Manage referrals, coupons, Nitro Status, and points</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>Coupons, the referral bonus and Nitro points.</div>
           </div>
-          <SegPill value={rewardsTab} options={[{value: "referrals", label: "Referrals"}, {value: "coupons", label: "Coupons"}, {value: "loyalty", label: "Nitro Status"}, {value: "ledger", label: "Points Ledger"}]} onChange={v => { setRewardsTab(v); if (v === 'ledger' && ledger.length === 0 && !ledgerLoading) fetchLedger(1, ledgerSearch, ledgerType, ledgerFrom, ledgerTo); }} dark={dark} t={t} />
+          <SegPill value={rewardsTab} options={[{ value: "coupons", label: "Coupons" }, { value: "referrals", label: "Referral" }, { value: "ledger", label: "Points" }]} onChange={setRewardsTab} dark={dark} t={t} />
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {/* ═══ REFERRAL TAB ═══ */}
-      {rewardsTab === "referrals" && (
-      <div className="adm-card mb-5" style={{ background: cardBg, border: cardBd }}>
-        <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div className="set-card-title" style={{ color: t.textMuted }}>Referral program</div>
+      {rewardsTab === "coupons" && (loading ? <><SkelFacts dark={dark} /><SkelBar dark={dark} pills={1} right /><SkelList dark={dark} rows={4} title avatar={false} rowH={58} /></> : <>
+        <div className="rw-stats">
+          <div className="rw-stt"><b className="m">{live.length}</b><span>Live {live.length === 1 ? "coupon" : "coupons"}</span><i>{live.length ? live.map(c => c.code).slice(0, 2).join(", ") + (live.length > 2 ? "…" : "") : "none running"}</i></div>
+          <div className="rw-stt"><b className="m">{usedTotal}</b><span>Times used</span><i>across {coupons.length} {coupons.length === 1 ? "coupon" : "coupons"}</i></div>
+          <div className={"rw-stt" + (endingSoon.length ? " warn" : "")}><b className="m">{endingSoon.length}</b><span>Ending this week</span><i>{endingSoon.length ? endingSoon.map(c => c.code).join(", ") : "nothing ends soon"}</i></div>
+          <div className="rw-stt"><b className="m">{fN(Number(refReferrer || 0))}</b><span>Referral bonus</span><i>{refEnabled ? `each side · after ${Number(refMinDeposit) > 0 ? fN(Number(refMinDeposit)) + " deposit" : "email check"}` : "referrals are off"}</i></div>
         </div>
-        <div className="set-card-body">
-
-        <div className="py-2.5 px-3.5 rounded-lg text-[13px] leading-relaxed mb-4 border-l-[3px] border-l-[#c47d8e]" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", color: t.textMuted }}>
-          When a user shares their referral code and someone signs up with it, both receive wallet credit after the new user verifies their email.
+        <div className="rw-bar">
+          <div className="rw-srch"><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search codes" /></div>
+          <span className="rw-cnt">{shown.length} {shown.length === 1 ? "coupon" : "coupons"}</span>
+          <button type="button" className={"rw-b" + (showAdd ? "" : " pri")} onClick={() => setShowAdd(v => !v)}>{showAdd ? "Cancel" : "+ New coupon"}</button>
         </div>
-
-        {refMsg && <InlineAlert type={refMsg.ok ? "success" : "error"} dark={dark} className="mb-3">{refMsg.text}</InlineAlert>}
-
-        <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div><div className="text-sm font-medium" style={{ color: t.text }}>Referral program</div><div className="text-xs mt-0.5" style={{ color: t.textSoft }}>Enable or disable the entire system</div></div>
-          <div role="switch" aria-checked={refEnabled} aria-label="Referral program" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => setRefEnabled(!refEnabled)} className="w-[44px] h-6 rounded-xl relative cursor-pointer shrink-0" style={{ background: refEnabled ? "#c47d8e" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)") }}>
-            <div className="w-[18px] h-[18px] rounded-full bg-white absolute top-[3px] transition-[left] duration-200" style={{ left: refEnabled ? 23 : 3 }} />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div><div className="text-sm font-medium" style={{ color: t.text }}>Referrer bonus</div><div className="text-xs mt-0.5" style={{ color: t.textSoft }}>Amount credited to the person who shared the code</div></div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-sm" style={{ color: t.textMuted }}>₦</span>
-            <input value={refReferrer} onChange={e => setRefReferrer(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" className={numInputCls} style={numInput} />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div><div className="text-sm font-medium" style={{ color: t.text }}>New user bonus</div><div className="text-xs mt-0.5" style={{ color: t.textSoft }}>Welcome credit for the person who signed up with a code</div></div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-sm" style={{ color: t.textMuted }}>₦</span>
-            <input value={refInvitee} onChange={e => setRefInvitee(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" className={numInputCls} style={numInput} />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between py-3">
-          <div><div className="text-sm font-medium" style={{ color: t.text }}>Minimum deposit to activate</div><div className="text-xs mt-0.5" style={{ color: t.textSoft }}>New user must deposit this amount before bonuses pay out (0 = immediate)</div></div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-sm" style={{ color: t.textMuted }}>₦</span>
-            <input value={refMinDeposit} onChange={e => setRefMinDeposit(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" className={numInputCls} style={numInput} />
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <button onClick={saveReferral} disabled={refSaving} className="adm-btn-primary" style={{ opacity: refSaving ? .5 : 1 }}>{refSaving ? "Saving..." : "Save Referral Settings"}</button>
-        </div>
-        </div>
-      </div>
-      )}
-
-      {/* ═══ COUPONS TAB ═══ */}
-      {rewardsTab === "coupons" && (
-      <div className="adm-card mb-5" style={{ background: cardBg, border: cardBd }}>
-        <div className="set-card-header flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div>
-            <div className="set-card-title" style={{ color: t.textMuted }}>Coupons</div>
-            <div className="set-card-desc" style={{ color: t.textSoft }}>Promo codes users can apply when funding their wallet</div>
-          </div>
-          <button onClick={() => setShowAdd(!showAdd)} className="adm-btn-sm flex items-center gap-1.5" style={{ borderColor: t.cardBorder, color: t.accent }}>{showAdd ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel</> : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New</>}</button>
-        </div>
-
         {showAdd && (
-          <div className="p-4" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Code</label><input value={form.code} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20) })} placeholder="WELCOME20" className={inputCls} style={inputStyle} /></div>
-              <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Type</label>
-                <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} className="w-full py-[7px] pr-7 pl-2.5 rounded-lg text-[13px] font-medium appearance-none cursor-pointer font-[inherit] bg-no-repeat bg-[position:right_8px_center]" style={{
-                  backgroundColor: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)",
-                  border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`,
-                  color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)",
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
-                }}>
-                  <option value="percent">% Bonus</option>
-                  <option value="fixed">₦ Bonus</option>
-                </select>
-              </div>
-              <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Value</label><input type="number" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} placeholder={form.type === "percent" ? "20" : "500"} className={inputCls} style={inputStyle} /></div>
-              <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Min Deposit (₦)</label><input type="number" value={form.minOrder} onChange={e => setForm({ ...form, minOrder: e.target.value })} placeholder="0" className={inputCls} style={inputStyle} /></div>
-              <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Max Deposit (₦)</label><input type="number" value={form.maxDeposit} onChange={e => setForm({ ...form, maxDeposit: e.target.value })} placeholder="0 = no limit" className={inputCls} style={inputStyle} /></div>
-              <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Max Uses (0 = unlimited)</label><input type="number" value={form.maxUses} onChange={e => setForm({ ...form, maxUses: e.target.value })} placeholder="0" className={inputCls} style={inputStyle} /></div>
-              <div><label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Expires</label><input type="date" value={form.expires} onChange={e => setForm({ ...form, expires: e.target.value })} className={inputCls} style={inputStyle} /></div>
+          <section className="rw-card">
+            <header><h3>New coupon</h3><span className="rw-cnt">a bonus on top of a deposit</span></header>
+            <div className="rw-form">
+              <label>Code<input value={form.code} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20) })} placeholder="WELCOME20" /></label>
+              <label>Bonus<span className="rw-two"><select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}><option value="percent">% of the deposit</option><option value="fixed">₦ fixed</option></select><input type="number" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} placeholder={form.type === "percent" ? "10" : "500"} /></span></label>
+              <label>Minimum deposit (₦)<input type="number" value={form.minOrder} onChange={e => setForm({ ...form, minOrder: e.target.value })} placeholder="0" /></label>
+              <label>Largest deposit it applies to (₦)<input type="number" value={form.maxDeposit} onChange={e => setForm({ ...form, maxDeposit: e.target.value })} placeholder="no cap" /></label>
+              <label>How many uses<input type="number" value={form.maxUses} onChange={e => setForm({ ...form, maxUses: e.target.value })} placeholder="no limit" /></label>
+              <label>Ends on<input type="date" value={form.expires} onChange={e => setForm({ ...form, expires: e.target.value })} /></label>
+              <label className="rw-chk"><input type="checkbox" checked={form.newUsersOnly} onChange={e => setForm({ ...form, newUsersOnly: e.target.checked })} /> New customers only</label>
+              <div className="rw-ff"><button type="button" className="rw-b pri" disabled={!form.code.trim() || !form.value} onClick={createCoupon}>Make coupon</button></div>
             </div>
-            <label className="flex items-center gap-2 mb-3 cursor-pointer select-none">
-              <div role="switch" aria-checked={form.newUsersOnly} tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setForm({ ...form, newUsersOnly: !form.newUsersOnly }); } }} onClick={() => setForm({ ...form, newUsersOnly: !form.newUsersOnly })} className="w-[36px] h-5 rounded-xl relative shrink-0" style={{ background: form.newUsersOnly ? "#c47d8e" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)") }}>
-                <div className="w-[14px] h-[14px] rounded-full bg-white absolute top-[3px] transition-[left] duration-200" style={{ left: form.newUsersOnly ? 19 : 3 }} />
-              </div>
-              <span className="text-[13px]" style={{ color: t.textMuted }}>New users only (first deposit)</span>
-            </label>
-            <button onClick={createCoupon} className="adm-btn-primary" style={{ opacity: form.code && form.value ? 1 : .4 }}>Create Coupon</button>
-          </div>
+          </section>
         )}
+        <section className="rw-card">
+          <header><h3>Coupons</h3><span className="rw-cnt">code · what it gives · uses · state</span></header>
+          <div className="rw-list">
+            {shown.length === 0 ? <div className="rw-empty">{coupons.length ? "No code matches." : "No coupons yet. Make one to give a bonus on deposits."}</div> : shown.map(c => { const [st, cls] = stateOf(c); return (
+              <div key={c.id || c.code} className="rw-cr">
+                <button type="button" className="rw-code m" title="Copy the code" onClick={() => { copyText(c.code); toast.success("Copied", c.code); }}>{c.code}</button>
+                <span className="rw-tt"><b>{givesOf(c)}</b><i>{whenOf(c)}</i></span>
+                <span className="rw-mid m">{c.used || 0} of {c.maxUses || "∞"}</span>
+                <span className="rw-st"><i className={"rw-dot " + cls} />{st}</span>
+                <span className="rw-acts"><button type="button" className="rw-b sm" onClick={() => toggleCoupon(c)}>{c.enabled ? "Turn off" : "Turn on"}</button><button type="button" className="rw-b sm bad" onClick={() => deleteCoupon(c)}>Delete</button></span>
+              </div>
+            ); })}
+          </div>
+        </section>
+      </>)}
 
-        {loading ? (
-          <div>{[1, 2, 3].map(i => (
-            <div key={i} className="adm-list-row flex-wrap gap-2.5" style={{ borderBottom: i < 3 ? `1px solid ${t.cardBorder}` : "none" }}>
-              <div className="flex-1 min-w-[160px]">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[80px] h-[16px] rounded`} />
-                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[60px] h-[14px] rounded`} />
-                </div>
-                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[70%] h-[13px] rounded mt-1`} />
-              </div>
-              <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[52px] h-[30px] rounded-lg`} />
-            </div>
-          ))}</div>
-        ) : coupons.length > 0 ? coupons.map((c, i) => (
-          <div key={c.id || c.code} className="adm-list-row flex-wrap gap-2.5" style={{ borderBottom: i < coupons.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-            <div className="flex-1 min-w-[160px]">
-              <div className="flex items-center gap-2">
-                <span className="m text-base font-semibold" style={{ color: t.accent }}>{c.code}</span>
-                <span className="text-sm font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{c.type === "percent" ? `${c.value}%` : `₦${(c.value || 0).toLocaleString()}`} bonus</span>
-                {c.newUsersOnly && <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(96,165,250,.12)" : "rgba(59,130,246,.08)", color: dark ? "#93c5fd" : "#2563eb" }}>New users</span>}
-                {!c.enabled && <span className="text-[11px] py-0.5 px-1.5 rounded" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", color: t.textMuted }}>Disabled</span>}
-              </div>
-              <div className="text-[13px] mt-0.5" style={{ color: t.textMuted }}>
-                Min: {c.minOrder ? `₦${c.minOrder.toLocaleString()}` : "None"} · Max: {c.maxDeposit ? `₦${c.maxDeposit.toLocaleString()}` : "None"} · Uses: {c.used || 0}/{c.maxUses || "∞"} · {c.expires ? `Exp: ${c.expires}` : "No expiry"}
-              </div>
-            </div>
-            <button onClick={() => { copyText(c.code); setCopiedCode(c.id); setTimeout(() => setCopiedCode(null), 1500); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: copiedCode === c.id ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>{copiedCode === c.id ? "Copied!" : "Copy"}</button>
-            <button onClick={async () => { const ok = await confirm({ title: "Delete Coupon", message: `Delete coupon "${c.code}"? This cannot be undone.`, confirmLabel: "Delete", danger: true }); if (ok) deleteCoupon(c.id); }} className="adm-btn-sm" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+      {rewardsTab === "referrals" && (
+        <section className="rw-card">
+          <header><h3>Referral bonus</h3><span className="rw-cnt">both sides get wallet credit once the new person qualifies</span></header>
+          <div className="rw-set">
+            <div className="rw-sr"><span className="rw-tt"><b>Referrals</b><i>Switch the whole programme on or off</i></span><button type="button" role="switch" aria-checked={refEnabled} className={"rw-tog" + (refEnabled ? "" : " o")} onClick={() => setRefEnabled(v => !v)}><i /></button></div>
+            <div className="rw-sr"><span className="rw-tt"><b>The person who shared</b><i>Credited when their friend qualifies</i></span><span className="rw-money">₦<input value={refReferrer} onChange={e => setRefReferrer(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" /></span></div>
+            <div className="rw-sr"><span className="rw-tt"><b>The person who joined</b><i>Their welcome credit</i></span><span className="rw-money">₦<input value={refInvitee} onChange={e => setRefInvitee(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" /></span></div>
+            <div className="rw-sr"><span className="rw-tt"><b>Deposit needed first</b><i>0 means the credit lands as soon as the email is verified</i></span><span className="rw-money">₦<input value={refMinDeposit} onChange={e => setRefMinDeposit(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" /></span></div>
+            <div className="rw-ff"><button type="button" className="rw-b pri" disabled={refSaving} onClick={saveReferral}>{refSaving ? "Saving…" : "Save"}</button></div>
           </div>
-        )) : (
-          <div className="py-[60px] px-5 text-center">
-            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
-              <rect x="8" y="16" width="48" height="32" rx="6" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
-              <circle cx="32" cy="32" r="6" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
-              <line x1="8" y1="24" x2="24" y2="24" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
-            </svg>
-            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No coupons created yet</div>
-            <div className="text-sm" style={{ color: t.textMuted }}>Create a coupon to offer discounts</div>
-          </div>
-        )}
-      </div>
+        </section>
       )}
 
-      {/* ═══ NITRO STATUS TAB ═══ */}
-      {rewardsTab === "loyalty" && (
-      <div className="adm-card mb-5" style={{ background: cardBg, border: cardBd }}>
-        <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div className="set-card-title" style={{ color: t.textMuted }}>Nitro Status tiers</div>
+      {rewardsTab === "ledger" && <>
+        <div className="rw-bar">
+          <div className="rw-srch"><input value={ledgerSearch} onChange={e => setLedgerSearch(e.target.value)} placeholder="Search by name, email or order" /></div>
+          <FilterDropdown dark={dark} t={t} value={ledgerType} onChange={setLedgerType} options={[{ value: "", label: "All kinds" }, { value: "earned_order", label: "Earned" }, { value: "redeemed_order", label: "Redeemed" }, { value: "reversed_refund", label: "Reversed" }, { value: "restored_refund", label: "Restored" }, { value: "manual_credit", label: "Manual credit" }, { value: "manual_debit", label: "Manual debit" }, { value: "opening_balance", label: "Opening balance" }]} />
+          <input type="date" className="rw-date" value={ledgerFrom} onChange={e => setLedgerFrom(e.target.value)} aria-label="From" />
+          <input type="date" className="rw-date" value={ledgerTo} onChange={e => setLedgerTo(e.target.value)} aria-label="To" />
+          <span className="rw-cnt">{ledgerTotal ? `${ledgerTotal.toLocaleString()} entries` : ""}</span>
         </div>
-        <div className="set-card-body">
-
-        <div className="py-2.5 px-3.5 rounded-lg text-[13px] leading-relaxed mb-4 border-l-[3px] border-l-[#c47d8e]" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", color: t.textMuted }}>
-          Users earn Nitro Status based on eligible lifetime spend. Each tier grants automatic order discounts and a higher point earn rate. Tiers are currently code-defined for launch — admin editing will come in a later phase.
-        </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table className="w-full text-[13px]" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-                {["Tier", "Min. spend", "Discount", "Point earn rate"].map(h => (
-                  <th key={h} className="text-left py-2.5 px-3 font-semibold text-[11px] uppercase tracking-wide" style={{ color: t.textMuted }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {NITRO_STATUS_TIERS.map((tier, idx) => (
-                <tr key={tier.name} style={{ borderBottom: idx < NITRO_STATUS_TIERS.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}` : "none" }}>
-                  <td className="py-2.5 px-3 font-semibold" style={{ color: tier.color }}>
-                    <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ background: tier.color }} />{tier.name}
-                  </td>
-                  <td className="py-2.5 px-3" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>
-                    {tier.min === 0 ? "—" : `₦${tier.min.toLocaleString()}`}
-                  </td>
-                  <td className="py-2.5 px-3" style={{ color: tier.discountPct > 0 ? (dark ? "#6ee7b7" : "#059669") : t.textMuted, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>
-                    {tier.discountPct > 0 ? `${tier.discountPct}%` : "—"}
-                  </td>
-                  <td className="py-2.5 px-3" style={{ color: dark ? "#fbbf24" : "#92400e", fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>
-                    {tier.pointEarnPct}%
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        </div>
-      </div>
-      )}
-
-      {/* ═══ POINTS LEDGER TAB ═══ */}
-      {rewardsTab === "ledger" && (
-      <div className="adm-card mb-5" style={{ background: cardBg, border: cardBd }}>
-        <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div className="set-card-title" style={{ color: t.textMuted }}>Nitro Points Ledger</div>
-          {ledgerTotal > 0 && <span className="text-[12px] font-medium" style={{ color: t.textSoft }}>{ledgerTotal.toLocaleString()} entries</span>}
-        </div>
-        <div className="set-card-body">
-          {/* Filters */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            <input value={ledgerSearch} onChange={e => { const v = e.target.value; setLedgerSearch(v); clearTimeout(ledgerTimer.current); ledgerTimer.current = setTimeout(() => fetchLedger(1, v, ledgerType, ledgerFrom, ledgerTo), 400); }} placeholder="Search user, order, reason…" className={inputCls} style={{ ...inputStyle, flex: '1 1 180px', minWidth: 140 }} />
-            <select value={ledgerType} onChange={e => { const v = e.target.value; setLedgerType(v); fetchLedger(1, ledgerSearch, v, ledgerFrom, ledgerTo); }} className={inputCls} style={{ ...inputStyle, flex: '0 0 150px', minWidth: 120 }}>
-              <option value="">All types</option>
-              <option value="earned_order">Earned</option>
-              <option value="redeemed_order">Redeemed</option>
-              <option value="reversed_refund">Reversed</option>
-              <option value="restored_refund">Restored</option>
-              <option value="manual_credit">Manual credit</option>
-              <option value="manual_debit">Manual debit</option>
-              <option value="opening_balance">Opening balance</option>
-            </select>
-            <input type="date" value={ledgerFrom} onChange={e => { const v = e.target.value; setLedgerFrom(v); fetchLedger(1, ledgerSearch, ledgerType, v, ledgerTo); }} className={inputCls} style={{ ...inputStyle, flex: '0 0 140px', minWidth: 120 }} />
-            <input type="date" value={ledgerTo} onChange={e => { const v = e.target.value; setLedgerTo(v); fetchLedger(1, ledgerSearch, ledgerType, ledgerFrom, v); }} className={inputCls} style={{ ...inputStyle, flex: '0 0 140px', minWidth: 120 }} />
-          </div>
-
-          {/* Table */}
-          {ledgerLoading ? (
-            <div className="space-y-1.5">
-              {[1,2,3,4,5].map(i => <div key={i} className={`skel-bone ${dark ? 'skel-dark' : 'skel-light'}`} style={{ height: 36, borderRadius: 6 }} />)}
-            </div>
-          ) : ledger.length > 0 ? (
-            <div className="rounded-xl overflow-hidden border" style={{ borderColor: dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)' }}>
-              <div className="overflow-x-auto">
-              <table className="w-full text-[12px]" style={{ borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: dark ? 'rgba(196,125,142,.12)' : 'rgba(196,125,142,.06)' }}>
-                    {['Date', 'User', 'Type', 'Points', 'Order', 'Reason/Admin'].map(h => (
-                      <th key={h} className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.textMuted, borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)'}` }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {ledger.map((e, i) => (
-                    <tr key={e.id} style={{ borderBottom: i < ledger.length - 1 ? `1px solid ${dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.04)'}` : 'none' }}>
-                      <td className="py-2 px-3 whitespace-nowrap" style={{ color: t.textSoft }}>{fD(e.createdAt, true)}</td>
-                      <td className="py-2 px-3 max-w-[140px] truncate" style={{ color: t.text }}>{e.userName || e.userEmail || e.userId.slice(0, 8)}</td>
-                      <td className="py-2 px-3">
-                        <span className="text-[10px] py-[2px] px-1.5 rounded font-semibold uppercase tracking-[0.3px]" style={{
-                          background: e.points >= 0 ? (dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.08)') : (dark ? 'rgba(252,165,165,.12)' : 'rgba(220,38,38,.06)'),
-                          color: e.points >= 0 ? t.green : t.red,
-                        }}>{e.type.replace(/_/g, ' ').replace('order', '').replace('refund', '').trim()}</span>
-                      </td>
-                      <td className="py-2 px-3 font-bold whitespace-nowrap" style={{ color: e.points >= 0 ? t.green : t.red, fontFamily: 'JetBrains Mono, monospace' }}>{e.points >= 0 ? '+' : ''}{fPts(e.points)}</td>
-                      <td className="py-2 px-3 whitespace-nowrap" style={{ color: t.textSoft }}>{e.orderRef ? `#${e.orderRef}` : '—'}</td>
-                      <td className="py-2 px-3 max-w-[160px] truncate" style={{ color: t.textSoft }}>{e.adminName ? `[${e.adminName}] ` : ''}{e.reason || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-
-              {/* Pagination */}
-              {ledgerTotalPages > 1 && (
-                <div className="flex items-center justify-between py-2.5 px-3" style={{ borderTop: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)'}` }}>
-                  <span className="text-[11px]" style={{ color: t.textMuted }}>Page {ledgerPage} of {ledgerTotalPages} ({ledgerTotal})</span>
-                  <div className="flex gap-1">
-                    <button onClick={() => fetchLedger(ledgerPage - 1, ledgerSearch, ledgerType, ledgerFrom, ledgerTo)} disabled={ledgerPage <= 1} className="py-1 px-2.5 rounded text-[11px] cursor-pointer font-[inherit] border-none" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)', color: t.textSoft, opacity: ledgerPage <= 1 ? .35 : 1 }}>Prev</button>
-                    <button onClick={() => fetchLedger(ledgerPage + 1, ledgerSearch, ledgerType, ledgerFrom, ledgerTo)} disabled={ledgerPage >= ledgerTotalPages} className="py-1 px-2.5 rounded text-[11px] cursor-pointer font-[inherit] border-none" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)', color: t.textSoft, opacity: ledgerPage >= ledgerTotalPages ? .35 : 1 }}>Next</button>
+        <section className="rw-card">
+          <header><h3>Points</h3><span className="rw-cnt">every point earned, spent or put back</span></header>
+          <div className="rw-list">
+            {ledgerLoading && ledger.length === 0 ? <div style={{ padding: 12 }}><SkelList dark={dark} rows={6} bare rowH={48} /></div> : ledger.length === 0 ? <div className="rw-empty">{ledgerSearch || ledgerType || ledgerFrom || ledgerTo ? "Nothing matches." : "No points moved yet."}</div> : (
+              <div style={{ opacity: ledgerLoading ? .55 : 1, transition: "opacity .2s" }}>
+                <div className="rw-lh"><span>When</span><span>Who</span><span>Kind</span><span className="r">Points</span><span>Order</span><span>Why</span></div>
+                {ledger.map(e => (
+                  <div key={e.id} className="rw-lr">
+                    <span className="rw-mid">{fD(e.createdAt, true)}</span>
+                    <span className="rw-who">{e.userName || e.userEmail || (e.userId || "").slice(0, 8)}</span>
+                    <span className="rw-ty">{typeWord(e.type)}</span>
+                    <b className={"m rw-pts " + (e.points >= 0 ? "ok" : "bad")}>{e.points >= 0 ? "+" : ""}{fPts(e.points)}</b>
+                    <span className="rw-mid m">{e.orderRef ? `#${e.orderRef}` : "—"}</span>
+                    <span className="rw-why">{e.adminName ? `${e.adminName}: ` : ""}{e.reason || "—"}</span>
                   </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="py-8 text-center text-[13px]" style={{ color: t.textMuted }}>{ledgerSearch || ledgerType || ledgerFrom || ledgerTo ? 'No entries match filters' : 'No points ledger entries yet'}</div>
-          )}
-        </div>
-      </div>
-      )}
-    </>
+                ))}
+              </div>
+            )}
+            {ledgerTotalPages > 1 && <div className="rw-pg"><span className="rw-cnt">{ledgerPage} of {ledgerTotalPages}</span><span className="rw-pgn"><button type="button" className="rw-ib" disabled={ledgerPage <= 1} onClick={() => fetchLedger(ledgerPage - 1, ledgerSearch, ledgerType, ledgerFrom, ledgerTo)} aria-label="Previous">‹</button><button type="button" className="rw-ib" disabled={ledgerPage >= ledgerTotalPages} onClick={() => fetchLedger(ledgerPage + 1, ledgerSearch, ledgerType, ledgerFrom, ledgerTo)} aria-label="Next">›</button></span></div>}
+          </div>
+        </section>
+        <section className="rw-card">
+          <header><h3>Status tiers</h3><span className="rw-cnt">what customers get as they spend · set in code</span></header>
+          <div className="rw-list">
+            <div className="rw-lh tiers"><span>Tier</span><span className="r">From</span><span className="r">Discount</span><span className="r">Points earned</span></div>
+            {NITRO_STATUS_TIERS.map(tier => <div key={tier.name} className="rw-lr tiers"><span className="rw-who"><i className="rw-dot" style={{ background: tier.color }} />{tier.name}</span><span className="m r">{tier.min === 0 ? "—" : fN(tier.min)}</span><span className="m r">{tier.discountPct > 0 ? `${tier.discountPct}%` : "—"}</span><span className="m r">{tier.pointEarnPct}%</span></div>)}
+          </div>
+        </section>
+      </>}
+    </div>
   );
 }
 
+const RW_CSS = `
+.rw{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.rw *{box-sizing:border-box}
+.rw .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}.rw .r{text-align:right}
+.rw-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.rw-b:hover{transform:translateY(-1px)}.rw-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.rw-b.sm{height:30px;padding:0 10px;font-size:12px}.rw-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.rw-b.bad{color:var(--bad)}
+.rw-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.rw-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.rw-stt:first-child{border-left:0}
+.rw-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rw-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.rw-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rw-stt.warn b{color:var(--warn)}
+.rw-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rw-srch{display:flex;align-items:center;height:36px;padding:0 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);min-width:280px}.rw-srch:focus-within{border-color:var(--acln)}.rw-srch input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:13px;color:var(--ink);outline:none}.rw-srch input::placeholder{color:var(--dim)}
+.rw-date{height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13px;outline:none}
+.rw-cnt{font-size:12px;color:var(--dim);margin-left:auto}
+.rw-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.rw-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.rw-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.rw-card>header .rw-cnt{margin:0}
+.rw-list{display:flex;flex-direction:column}.rw-empty{padding:28px 16px;text-align:center;font-size:13px;color:var(--mut)}
+.rw-cr{display:grid;grid-template-columns:130px 1fr 70px 100px auto;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--rail);font-size:13px}.rw-cr:first-child{border-top:0}
+.rw-code{font:inherit;font-weight:800;letter-spacing:.5px;font-size:13px;color:var(--ink);background:none;border:0;padding:0;text-align:left;cursor:copy}.rw-code:hover{color:var(--ac)}
+.rw-tt{display:flex;flex-direction:column;min-width:0}.rw-tt b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rw-tt i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rw-mid{font-size:12px;color:var(--mut);white-space:nowrap}.rw-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.rw-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;background:var(--dim)}.rw-dot.ok{background:var(--ok)}.rw-acts{display:flex;gap:6px;justify-content:flex-end}
+.rw-form{padding:14px 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}.rw-form label{display:flex;flex-direction:column;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}.rw-form input,.rw-form select{height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--in);color:var(--ink);font:inherit;font-size:14px;outline:none;width:100%}.rw-form input:focus,.rw-form select:focus{border-color:var(--ac)}.rw-two{display:grid;grid-template-columns:1fr 100px;gap:8px}
+.rw-chk{flex-direction:row !important;align-items:center;text-transform:none !important;letter-spacing:0 !important;font-size:13px !important;font-weight:500 !important;color:var(--ink) !important}.rw-chk input{width:16px !important;height:16px !important;accent-color:var(--ac)}
+.rw-ff{grid-column:1 / -1;display:flex;justify-content:flex-end;padding-top:4px}
+.rw-set{padding:4px 16px 16px}.rw-sr{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--rail)}.rw-sr:first-child{border-top:0}.rw-sr .rw-tt b{white-space:normal}.rw-sr .rw-tt i{white-space:normal}
+.rw-money{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--mut);font-weight:600}.rw-money input{width:96px;height:36px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--in);color:var(--ink);font:inherit;font-family:'JetBrains Mono',monospace;font-size:14px;text-align:right;outline:none}.rw-money input:focus{border-color:var(--ac)}
+.rw-tog{width:38px;height:22px;border-radius:11px;background:var(--ac);position:relative;border:0;padding:0;cursor:pointer;flex-shrink:0}.rw-tog i{position:absolute;top:2px;left:18px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}.rw-tog.o{background:var(--line)}.rw-tog.o i{left:2px}
+.rw-lh{display:grid;grid-template-columns:110px 170px 120px 90px 90px 1fr;gap:12px;padding:0 16px;height:34px;align-items:center;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line)}
+.rw-lr{display:grid;grid-template-columns:110px 170px 120px 90px 90px 1fr;gap:12px;padding:10px 16px;align-items:center;border-top:1px solid var(--rail);font-size:13px}.rw-lr:first-child{border-top:0}
+.rw-lh.tiers,.rw-lr.tiers{grid-template-columns:1fr 140px 110px 130px}
+.rw-who{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-flex;align-items:center;gap:8px}.rw-ty{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);background:var(--soft);border:1px solid var(--line);padding:3px 8px;border-radius:999px;text-align:center;white-space:nowrap;justify-self:start}
+.rw-pts{text-align:right;font-weight:700}.rw-pts.ok{color:var(--ok)}.rw-pts.bad{color:var(--bad)}.rw-why{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rw-pg{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}.rw-pg .rw-cnt{margin:0}.rw-pgn{display:inline-flex;gap:6px}.rw-ib{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:14px;cursor:pointer;padding:0}.rw-ib:disabled{opacity:.35;cursor:not-allowed}
+@media (max-width:900px){
+  .rw-stats{grid-template-columns:1fr 1fr}.rw-stt:nth-child(3){border-left:0}.rw-stt:nth-child(n+3){border-top:1px solid var(--line)}.rw-stt b{font-size:17px}
+  .rw-srch{width:100%;min-width:0}.rw-bar .rw-cnt{display:none}.rw-bar .rw-b{width:100%}.rw-date{flex:1}
+  .rw-cr{grid-template-columns:1fr auto;grid-template-areas:"code st" "tt tt" "mid mid" "acts acts";gap:6px 10px;padding:12px 14px}.rw-cr .rw-code{grid-area:code}.rw-cr .rw-st{grid-area:st}.rw-cr .rw-tt{grid-area:tt}.rw-cr .rw-tt b,.rw-cr .rw-tt i{white-space:normal}.rw-cr .rw-mid{grid-area:mid}.rw-cr .rw-acts{grid-area:acts;justify-content:stretch}.rw-cr .rw-acts .rw-b{flex:1}
+  .rw-form{grid-template-columns:1fr}
+  .rw-lh{display:none}.rw-lr{grid-template-columns:1fr auto;grid-template-areas:"who pts" "ty when" "why why";gap:4px 10px}.rw-lr .rw-who{grid-area:who}.rw-lr .rw-pts{grid-area:pts}.rw-lr .rw-ty{grid-area:ty}.rw-lr .rw-mid:first-child{grid-area:when;justify-self:end}.rw-lr .rw-mid.m{display:none}.rw-lr .rw-why{grid-area:why;white-space:normal}
+  .rw-lr.tiers{grid-template-columns:1fr auto auto auto;grid-template-areas:none}
+}
+`;
 /* ═══════════════════════════════════════════ */
 /* ═══ NOTIFICATIONS                       ═══ */
 /* ═══════════════════════════════════════════ */
@@ -914,20 +798,21 @@ export function AdminNotificationsPage({ dark, t }) {
   const [totalCount, setTotalCount] = useState(0);
   const blastPollRef = useRef(null);
   const blastTimeoutRef = useRef(null);
-
+  const load = () => fetch("/api/admin/notifications").then(r => r.json()).then(d => { setHistory(d.history || []); setPromoCount(d.promoCount || 0); setTotalCount(d.totalCount || 0); setLoading(false); }).catch(() => setLoading(false));
   useEffect(() => {
-    fetch("/api/admin/notifications").then(r => r.json()).then(d => { setHistory(d.history || []); setPromoCount(d.promoCount || 0); setTotalCount(d.totalCount || 0); setLoading(false); }).catch(() => setLoading(false));
+    load();
     return () => { if (blastPollRef.current) clearInterval(blastPollRef.current); if (blastTimeoutRef.current) clearTimeout(blastTimeoutRef.current); };
   }, []);
-
   const send = async () => {
     if (!message.trim() || sending) return;
-    setSending(true); 
+    const ok = await confirm({ title: "Send this email?", message: `It goes to ${target === "all" ? `everyone who allows promo email (${promoCount.toLocaleString()} people)` : target === "active" ? "customers active in the last 30 days" : "customers who joined this week"}. It cannot be recalled.`, confirmText: "Send" });
+    if (!ok) return;
+    setSending(true);
     try {
       const res = await fetch("/api/admin/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subject, message, target }) });
       const data = await res.json();
       if (res.ok) {
-        toast.success("Sending", data.message || "Email blast started");
+        toast.success("Sending", data.message || "The email is going out");
         setSubject(""); setMessage("");
         blastPollRef.current = setInterval(() => {
           fetch("/api/admin/notifications").then(r => r.json()).then(d => {
@@ -947,82 +832,98 @@ export function AdminNotificationsPage({ dark, t }) {
     } catch { toast.error("Request failed", "Check your connection"); }
     setSending(false);
   };
-
-  const inputCls = "w-full py-2.5 px-3.5 rounded-lg border border-solid text-[15px] outline-none box-border font-[inherit]";
-  const inputStyle = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
-
+  const clearHistory = async () => {
+    const ok = await confirm({ title: "Clear the sent list?", message: "The emails themselves are not affected. This cannot be undone.", confirmText: "Clear", danger: true });
+    if (!ok) return;
+    const res = await fetch("/api/admin/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clearHistory: true }) });
+    if (res.ok) { setHistory([]); toast.success("Cleared"); } else toast.error("Failed", "Could not clear");
+  };
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const thisMonth = history.filter(h => h.sentAt && new Date(h.sentAt) >= monthStart);
+  const delivered30 = history.filter(h => h.sentAt && Date.now() - new Date(h.sentAt) < 30 * 864e5).reduce((n, h) => n + (h.sent || 0), 0);
+  const last = history[0];
+  const TARGET = { all: "Everyone", active: "Active, 30 days", new: "New this week" };
+  const statusWord = (h) => h.status === "sending" ? ["Sending", "warn"] : h.status === "failed" ? ["Failed", "bad"] : ["Delivered", "ok"];
+  const timeOf = (iso) => { const d = new Date(iso); return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); };
+  const vars = {
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828", "--in": dark ? "#131728" : "#fff",
+  };
   return (
-    <>
+    <div className="eb" style={vars}>
+      <style>{EB_CSS}</style>
       <div className="adm-header">
-        <div className="adm-title" style={{ color: t.text }}>Email Blasts</div>
-        <div className="adm-subtitle" style={{ color: t.textMuted }}>Send email blasts to users</div>
+        <div className="adm-header-row">
+          <div>
+            <div className="adm-title" style={{ color: t.text }}>Email blasts</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>One email to many customers, from the panel.</div>
+          </div>
+        </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
-
-      {/* Compose */}
-      <div className="adm-card mt-4 mb-5 rounded-[14px]" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, boxShadow: dark ? "0 4px 20px rgba(0,0,0,.31)" : "0 4px 20px rgba(0,0,0,.08)" }}>
-        <div className="set-card-header" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div className="set-card-title" style={{ color: t.textMuted }}>Compose Notification</div>
+      {loading ? <><SkelFacts dark={dark} /><SkelList dark={dark} rows={1} title avatar={false} rowH={300} /><SkelList dark={dark} rows={3} title avatar={false} rowH={52} /></> : <>
+        <div className="eb-stats">
+          <div className="eb-stt"><b className="m">{promoCount.toLocaleString()}</b><span>Can receive</span><i>of {totalCount.toLocaleString()} verified · {(totalCount - promoCount).toLocaleString()} opted out</i></div>
+          <div className="eb-stt"><b className="m">{thisMonth.length}</b><span>Sent this month</span><i>{thisMonth.length ? `${thisMonth.reduce((n, h) => n + (h.sent || 0), 0).toLocaleString()} delivered` : "nothing yet"}</i></div>
+          <div className="eb-stt"><b className="m">{delivered30.toLocaleString()}</b><span>Delivered, 30 days</span><i>across {history.filter(h => h.sentAt && Date.now() - new Date(h.sentAt) < 30 * 864e5).length} emails</i></div>
+          <div className="eb-stt"><b className="m">{last?.sentAt ? timeOf(last.sentAt) : "—"}</b><span>Last sent</span><i>{last ? (last.subject || "no subject") : "never"}</i></div>
         </div>
-        <div className="set-card-body">
-        <div className="mb-3">
-          <label className="text-sm block mb-1" style={{ color: t.textMuted }}>Subject</label>
-          <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Notification subject..." className={inputCls} style={inputStyle} />
-        </div>
-        <div className="mb-3">
-          <label className="text-sm block mb-1" style={{ color: t.textMuted }}>Message</label>
-          <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="Write your message..." rows={3} className={`${inputCls} resize-y leading-normal`} style={inputStyle} />
-        </div>
-        <div className="flex justify-between items-center flex-wrap gap-2.5">
-          <div className="flex gap-1.5 items-center">
-            <label className="text-sm" style={{ color: t.textMuted }}>Send to:</label>
-            <select value={target} onChange={e => setTarget(e.target.value)} className="py-[7px] pr-7 pl-2.5 rounded-lg text-[13px] font-medium appearance-none cursor-pointer font-[inherit] bg-no-repeat bg-[position:right_8px_center]" style={{
-              backgroundColor: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)",
-              border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`,
-              color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.7)",
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='${dark ? "%23666" : "%23999"}' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
-            }}>
-              {["all", "active", "new"].map(tg => <option key={tg} value={tg}>{tg.charAt(0).toUpperCase() + tg.slice(1)} users</option>)}
-            </select>
+        <section className="eb-card">
+          <header><h3>Write one</h3><span className="eb-cnt">goes only to people who allow promo email</span></header>
+          <div className="eb-body">
+            <label className="eb-lbl">Subject</label>
+            <input className="eb-in" value={subject} onChange={e => setSubject(e.target.value)} placeholder="What the email is about" />
+            <label className="eb-lbl">Message</label>
+            <textarea className="eb-in eb-ta" value={message} onChange={e => setMessage(e.target.value)} rows={5} placeholder="Say it the way you would say it on WhatsApp" />
+            <label className="eb-lbl">To</label>
+            <div className="eb-chips">{Object.entries(TARGET).map(([v, l]) => <button key={v} type="button" className={"eb-tg" + (target === v ? " on" : "")} onClick={() => setTarget(v)}>{l}{v === "all" ? ` · ${promoCount.toLocaleString()}` : ""}</button>)}</div>
+            <div className="eb-note">{(totalCount - promoCount).toLocaleString()} people have turned promo email off and will not get it. Sends go out over a few minutes.</div>
+            <div className="eb-ff"><button type="button" className="eb-b pri" disabled={sending || !message.trim()} onClick={send}>{sending ? "Sending…" : target === "all" ? `Send to ${promoCount.toLocaleString()} people` : "Send"}</button></div>
           </div>
-          <button onClick={send} disabled={sending || !message.trim()} className="adm-btn-primary" style={{ opacity: message.trim() && !sending ? 1 : .4 }}>{sending ? "Sending..." : "Send Notification"}</button>
-        </div>
-        <div className="text-[12px] mt-2.5" style={{ color: t.textMuted }}>{promoCount} of {totalCount} users opted in to promotional emails</div>
-        </div>
-      </div>
-
-      {/* History */}
-      <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-        <div className="set-card-header flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div className="set-card-title" style={{ color: t.textMuted }}>Sent history</div>
-          {history.length > 0 && <button onClick={async () => { const ok = await confirm({ title: "Clear History", message: "Clear all notification history? This cannot be undone.", confirmLabel: "Clear", danger: true }); if (ok) { fetch("/api/admin/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clearHistory: true }) }).then(r => r.json()).then(() => setHistory([])).catch(() => {}); } }} className="bg-transparent border-none text-[12px] cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Clear all</button>}
-        </div>
-        {loading ? (
-          <div className="adm-empty">{[1,2,3].map(i => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-11 rounded-md mb-1.5`} />)}</div>
-        ) : history.length > 0 ? history.map((n, i) => (
-          <div key={n.id} className="adm-list-row" style={{ borderBottom: i < history.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-            <div className="flex-1 min-w-0">
-              <div className="text-[15px] font-medium" style={{ color: t.text }}>{n.subject || "Notification"}</div>
-              <div className="text-sm mt-0.5" style={{ color: t.textSoft }}>{n.message}</div>
-              <div className="text-[13px] mt-1" style={{ color: t.textMuted }}>To: {n.target} · {n.recipients ? `${n.sent || 0}/${n.recipients} delivered` : ""} · By: {n.sentBy} · {n.sentAt ? fD(n.sentAt) : ""}</div>
-            </div>
-            <span className="text-xs py-0.5 px-[7px] rounded font-semibold" style={{ background: n.status === "sent" ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)") : n.status === "sending" ? (dark ? "rgba(96,165,250,.1)" : "rgba(59,130,246,.06)") : (dark ? "rgba(252,211,77,.1)" : "rgba(217,119,6,.06)"), color: n.status === "sent" ? t.green : n.status === "sending" ? (dark ? "#60a5fa" : "#2563eb") : t.amber }}>{n.status === "sending" ? "sending..." : n.status}</span>
+        </section>
+        <section className="eb-card">
+          <header><h3>Sent</h3><span className="eb-cnt">{history.length ? <>{history.length} {history.length === 1 ? "email" : "emails"} · <button type="button" className="eb-link" onClick={clearHistory}>clear</button></> : "nothing yet"}</span></header>
+          <div className="eb-list">
+            {history.length === 0 ? <div className="eb-empty">Nothing sent yet. The first one you send shows here with who it went to, how many arrived and who pressed Send.</div> : history.map((h, i) => { const [w, cls] = statusWord(h); return (
+              <div key={i} className="eb-hr">
+                <span className="eb-tt"><b>{h.subject || "(no subject)"}</b><i>{TARGET[h.target] || h.target} · by {h.sentBy || "—"}</i></span>
+                <span className="eb-mid m">{h.recipients ? `${(h.sent || 0).toLocaleString()} of ${h.recipients.toLocaleString()}` : ""}</span>
+                <span className="eb-st"><i className={"eb-dot " + cls} />{w}</span>
+                <span className="eb-mid">{h.sentAt ? timeOf(h.sentAt) : ""}</span>
+              </div>
+            ); })}
           </div>
-        )) : (
-          <div className="py-[60px] px-5 text-center">
-            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
-              <path d="M32 10c-10 0-18 7-18 16v10l-4 6h44l-4-6V26c0-9-8-16-18-16z" stroke={t.accent} strokeWidth="1.5" opacity=".3" strokeLinejoin="round" />
-              <path d="M26 46c0 4 3 6 6 6s6-2 6-6" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
-            </svg>
-            <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No notifications sent yet</div>
-            <div className="text-sm" style={{ color: t.textMuted }}>Send a notification to your users</div>
-          </div>
-        )}
-      </div>
-    </>
+        </section>
+      </>}
+    </div>
   );
 }
 
+const EB_CSS = `
+.eb{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.eb *{box-sizing:border-box}
+.eb .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.eb-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.eb-b:hover{transform:translateY(-1px)}.eb-b:disabled{opacity:.5;cursor:not-allowed;transform:none}.eb-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.eb-link{font:inherit;font-size:inherit;font-weight:600;color:var(--ac);background:none;border:0;padding:0;cursor:pointer}
+.eb-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.eb-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.eb-stt:first-child{border-left:0}
+.eb-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.eb-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.eb-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eb-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.eb-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.eb-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.eb-cnt{font-size:11.5px;color:var(--dim)}
+.eb-body{padding:14px 16px 16px}.eb-lbl{display:block;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin:12px 0 6px}.eb-lbl:first-child{margin-top:0}
+.eb-in{width:100%;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--in);color:var(--ink);font:inherit;font-size:14px;outline:none}.eb-in:focus{border-color:var(--ac)}.eb-ta{height:auto;padding:10px 12px;line-height:1.5;resize:vertical}
+.eb-chips{display:flex;gap:6px;flex-wrap:wrap}.eb-tg{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer}.eb-tg.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.eb-note{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--soft);font-size:12.5px;color:var(--mut)}.eb-ff{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.eb-list{display:flex;flex-direction:column}.eb-empty{padding:28px 16px;text-align:center;font-size:13px;color:var(--mut);line-height:1.5}
+.eb-hr{display:grid;grid-template-columns:1fr 120px 110px 70px;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--rail);font-size:13px}.eb-hr:first-child{border-top:0}
+.eb-tt{display:flex;flex-direction:column;min-width:0}.eb-tt b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.eb-tt i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eb-mid{font-size:12px;color:var(--mut);white-space:nowrap}.eb-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.eb-dot{width:8px;height:8px;border-radius:50%;display:inline-block}.eb-dot.ok{background:var(--ok)}.eb-dot.warn{background:var(--warn)}.eb-dot.bad{background:var(--bad)}
+@media (max-width:900px){
+  .eb-stats{grid-template-columns:1fr 1fr}.eb-stt:nth-child(3){border-left:0}.eb-stt:nth-child(n+3){border-top:1px solid var(--line)}.eb-stt b{font-size:17px}
+  .eb-ff .eb-b{width:100%}.eb-chips .eb-tg{flex:1;text-align:center}
+  .eb-hr{grid-template-columns:1fr auto;grid-template-areas:"tt st" "mid when";gap:4px 10px}.eb-hr .eb-tt{grid-area:tt}.eb-hr .eb-st{grid-area:st}.eb-hr .eb-mid:nth-of-type(1){grid-area:mid}.eb-hr .eb-mid:last-child{grid-area:when;justify-self:end}
+}
+`;
 /* ═══════════════════════════════════════════ */
 /* ═══ MAINTENANCE                         ═══ */
 /* ═══════════════════════════════════════════ */
@@ -1672,7 +1573,6 @@ export function AdminAcquisitionPage({ dark, t }) {
   const [newName, setNewName] = useState("");
   const [newSlug, setNewSlug] = useState("");
   const [saving, setSaving] = useState(false);
-  const [copied, setCopied] = useState(null);
   const [detailLink, setDetailLink] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -1680,15 +1580,9 @@ export function AdminAcquisitionPage({ dark, t }) {
   const [viewFilter, setViewFilter] = useState("active");
   const [archivedCount, setArchivedCount] = useState(0);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const perPage = 10;
-
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://nitro.ng";
-  const cardBg = dark ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.85)";
-  const cardBd = `0.5px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`;
-  const inputCls = "w-full py-2.5 px-3.5 rounded-lg border border-solid text-[15px] outline-none box-border font-[inherit]";
-  const inputStyle = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
-  const rowBorder = { borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` };
-
   const load = () => {
     const params = viewFilter === "archived" ? "?includeArchived=true" : "";
     fetch(`/api/admin/acquisition${params}`).then(r => r.json()).then(d => {
@@ -1700,7 +1594,6 @@ export function AdminAcquisitionPage({ dark, t }) {
     }).catch(() => setLoading(false));
   };
   useEffect(load, [viewFilter]);
-
   const loadAnalytics = useCallback((linkId, r) => {
     setAnalyticsLoading(true);
     fetch(`/api/admin/acquisition/analytics?linkId=${linkId}&range=${r}`)
@@ -1708,17 +1601,22 @@ export function AdminAcquisitionPage({ dark, t }) {
       .then(d => { setAnalytics(d.error ? null : d); setAnalyticsLoading(false); })
       .catch(() => { setAnalytics(null); setAnalyticsLoading(false); });
   }, []);
-
   const openAnalytics = useCallback((link) => {
     setDetailLink(link);
     setRange("7d");
     loadAnalytics(link.id, "7d");
   }, [loadAnalytics]);
-
+  const closeDetail = () => { setDetailLink(null); setAnalytics(null); };
   useEffect(() => {
     if (detailLink) loadAnalytics(detailLink.id, range);
   }, [range]);
-
+  useEffect(() => {
+    if (!detailLink) return;
+    const prev = document.body.style.overflow; document.body.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape") closeDetail(); };
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
+  }, [detailLink]);
   const handleCreate = async () => {
     if (!newName.trim() || !newSlug.trim()) return;
     setSaving(true);
@@ -1729,182 +1627,157 @@ export function AdminAcquisitionPage({ dark, t }) {
       });
       const d = await res.json();
       if (!res.ok) { toast.error(d.error); setSaving(false); return; }
-      toast.success("Link created");
+      toast.success("Link made", `${baseUrl}/go/${newSlug.trim()}`);
       setNewName(""); setNewSlug(""); setShowAdd(false); load();
     } catch { toast.error("Failed"); }
     setSaving(false);
   };
-
   const handleArchive = async (link) => {
     const isArchived = !!link.archivedAt;
     if (!isArchived) {
-      const ok = await confirm(`Archive "${link.name}"?`, "Archived links are hidden from the main list but can be restored anytime.");
+      const ok = await confirm({ title: `Archive ${link.name}?`, message: "It leaves this list but keeps its numbers, and you can bring it back any time.", confirmText: "Archive" });
       if (!ok) return;
     }
     await fetch("/api/admin/acquisition", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: isArchived ? "unarchive" : "archive", id: link.id }),
     });
-    toast.success(isArchived ? "Link restored" : "Link archived");
+    toast.success(isArchived ? "Brought back" : "Archived", link.name);
     load();
   };
-
   const handleDelete = async (link) => {
-    const ok = await confirm(`Delete "${link.name}"?`, link.signups > 0 ? "This link has signups — archive it instead to keep the data." : "This cannot be undone.");
+    const ok = await confirm({ title: `Delete ${link.name}?`, message: link.signups > 0 ? "It has sign-ups. Archive it instead to keep the data." : "This cannot be undone.", confirmText: "Delete", danger: true });
     if (!ok) return;
     const res = await fetch("/api/admin/acquisition", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "delete", id: link.id }),
     });
     const d = await res.json();
-    if (d.soft) toast.info("Link disabled (has signups — use Archive instead)");
-    else toast.success("Link deleted");
+    if (d.soft) toast.info("Disabled instead", "It has sign-ups, so it was switched off rather than deleted");
+    else toast.success("Deleted", link.name);
     load();
   };
-
-  const copyLink = (slug) => {
-    copyText(`${baseUrl}/go/${slug}`);
-    setCopied(slug);
-    setTimeout(() => setCopied(null), 2000);
-  };
-
-  const displayLinks = viewFilter === "archived" ? links.filter(l => l.archivedAt) : links.filter(l => !l.archivedAt);
-  const totalPages = Math.ceil(displayLinks.length / perPage);
+  const copyLink = (slug) => { copyText(`${baseUrl}/go/${slug}`); toast.success("Copied", `${baseUrl}/go/${slug}`); };
+  const displayLinks = (viewFilter === "archived" ? links.filter(l => l.archivedAt) : links.filter(l => !l.archivedAt)).filter(l => !search || l.name.toLowerCase().includes(search.toLowerCase()) || l.slug.toLowerCase().includes(search.toLowerCase()));
+  const totalPages = Math.max(1, Math.ceil(displayLinks.length / perPage));
   const paginatedLinks = displayLinks.slice((page - 1) * perPage, page * perPage);
-
   const totalClicks = displayLinks.reduce((s, l) => s + (l.clicks || 0), 0);
   const totalSignups = displayLinks.reduce((s, l) => s + (l.signups || 0), 0);
   const totalOrders = displayLinks.reduce((s, l) => s + (l.orders || 0), 0);
   const totalRevenue = displayLinks.reduce((s, l) => s + (l.revenue || 0), 0);
-
-  if (loading) {
-    const sk = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
-    return <><div className="adm-header"><div className="adm-title" style={{ color: t.text }}>Tracking Links</div><div className={`${sk} h-4 w-72 rounded mt-2`} /><div className="page-divider" style={{ background: t.cardBorder }} /></div><div className="adm-stats mb-5">{[1,2,3,4,5].map(i => <div key={i} className={`${sk} h-[72px] rounded-xl`} />)}</div><div className={`${sk} h-[52px] rounded-xl mb-3`} />{[1,2,3].map(i => <div key={i} className={`${sk} h-[62px] rounded-[10px] mb-2`} />)}</>;
-  }
-
-  if (detailLink) {
-    return (
-      <>
-        <div className="adm-header">
-          <div className="flex items-center gap-3">
-            <button onClick={() => { setDetailLink(null); setAnalytics(null); }} className="w-8 h-8 rounded-lg flex items-center justify-center border border-solid cursor-pointer transition-all duration-200 hover:-translate-y-px shrink-0" style={{ background: "transparent", borderColor: t.cardBorder, color: t.textMuted }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-            <div className="flex-1 min-w-0">
-              <div className="adm-title" style={{ color: t.text }}>{detailLink.name}</div>
-              <div className="text-[12px] font-mono mt-0.5" style={{ color: t.textMuted }}>{baseUrl}/go/{detailLink.slug}</div>
-            </div>
-          </div>
-          <div className="page-divider" style={{ background: t.cardBorder }} />
-        </div>
-        <LinkAnalyticsDetail link={detailLink} analytics={analytics} analyticsLoading={analyticsLoading} range={range} setRange={setRange} dark={dark} t={t} />
-      </>
-    );
-  }
-
+  const best = [...displayLinks].sort((a, b) => (b.clicks || 0) - (a.clicks || 0))[0];
+  const dateOf = (iso) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const vars = {
+    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent, "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)", "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828", "--in": dark ? "#131728" : "#fff",
+  };
   return (
-    <>
+    <div className="tl" style={vars}>
+      <style>{TL_CSS}</style>
       <div className="adm-header">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="adm-header-row">
           <div>
-            <div className="adm-title" style={{ color: t.text }}>Tracking Links</div>
-            <div className="adm-subtitle" style={{ color: t.textMuted }}>Create tracking links and see who clicks, where they come from, and what they do</div>
+            <div className="adm-title" style={{ color: t.text }}>Tracking links</div>
+            <div className="adm-subtitle" style={{ color: t.textMuted }}>One link per campaign. Who clicked, who signed up, who paid.</div>
           </div>
-          {(links.length > 0 || archivedCount > 0) && (
-            <SegPill value={viewFilter} options={[{ value: "active", label: "Active" }, { value: "archived", label: `Archived${archivedCount > 0 ? ` (${archivedCount})` : ""}` }]} onChange={v => { setViewFilter(v); setPage(1); }} dark={dark} t={t} />
-          )}
+          <SegPill value={viewFilter} options={[{ value: "active", label: `Active${links.filter(l => !l.archivedAt).length && viewFilter === "active" ? ` · ${links.filter(l => !l.archivedAt).length}` : ""}` }, { value: "archived", label: `Archived${archivedCount ? ` · ${archivedCount}` : ""}` }]} onChange={v => { setViewFilter(v); setLoading(true); }} dark={dark} t={t} />
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {/* ═══ Summary Stats ═══ */}
-      {displayLinks.length > 0 && (
-        <div className="adm-stats mb-5">
-          {[
-            ["Total Links", displayLinks.length, t.accent],
-            ["Clicks", totalClicks.toLocaleString(), dark ? "#f59e0b" : "#d97706"],
-            ["Signups", totalSignups.toLocaleString(), dark ? "#a5b4fc" : "#6366f1"],
-            ["Orders", totalOrders.toLocaleString(), dark ? "#6ee7b7" : "#059669"],
-            ["Revenue", fN(totalRevenue / 100), dark ? "#fcd34d" : "#d97706"],
-          ].map(([label, val, color]) => (
-            <div key={label} className="py-3.5 px-4 rounded-xl relative overflow-hidden" style={{ background: cardBg, border: cardBd, borderLeft: `3px solid ${color}` }}>
-              <div className="text-[10px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: t.textMuted }}>{label}</div>
-              <div className="text-xl font-bold" style={{ color }}>{val}</div>
+      {loading ? <><SkelFacts dark={dark} /><SkelBar dark={dark} pills={0} right /><SkelList dark={dark} rows={5} avatar={false} rowH={58} /></> : <>
+        <div className="tl-stats">
+          <div className="tl-stt"><b className="m">{totalClicks.toLocaleString()}</b><span>Clicks</span><i>{viewFilter === "archived" ? "archived links" : "live links"} · unique people</i></div>
+          <div className="tl-stt"><b className="m">{best ? (best.clicks || 0).toLocaleString() : "—"}</b><span>Best link</span><i>{best ? best.name : "no links yet"}</i></div>
+          <div className="tl-stt"><b className="m">{totalSignups.toLocaleString()}</b><span>Sign-ups</span><i>{totalClicks ? `${(totalSignups / totalClicks * 100).toFixed(1)}% of clicks` : "from these links"}</i></div>
+          <div className="tl-stt"><b className="m">{fN(totalRevenue / 100)}</b><span>Sales</span><i>{totalOrders.toLocaleString()} orders from sign-ups</i></div>
+        </div>
+        <div className="tl-bar">
+          <div className="tl-srch"><input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search links" /></div>
+          <span className="tl-cnt">{displayLinks.length} {displayLinks.length === 1 ? "link" : "links"}</span>
+          {canManage && <button type="button" className={"tl-b" + (showAdd ? "" : " pri")} onClick={() => setShowAdd(v => !v)}>{showAdd ? "Cancel" : "+ New link"}</button>}
+        </div>
+        {showAdd && (
+          <section className="tl-card">
+            <header><h3>New link</h3><span className="tl-cnt">the short link is {baseUrl}/go/…</span></header>
+            <div className="tl-form">
+              <label>Campaign name<input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Lagos flyers, September" /></label>
+              <label>Short name<input value={newSlug} onChange={e => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder="e.g. lagos-sept" /></label>
+              <div className="tl-ff"><button type="button" className="tl-b pri" disabled={saving || !newName.trim() || !newSlug.trim()} onClick={handleCreate}>{saving ? "Making…" : "Make link"}</button></div>
             </div>
-          ))}
+          </section>
+        )}
+        <section className="tl-card">
+          <header><h3>Links</h3><span className="tl-cnt">name · clicks · sign-ups · orders · made</span></header>
+          <div className="tl-list">
+            {paginatedLinks.length === 0 ? <div className="tl-empty">{search ? "Nothing matches." : viewFilter === "archived" ? "Nothing archived." : "No links yet. Make one for each place you advertise."}</div> : <>
+              <div className="tl-lh"><span>Link</span><span className="r">Clicks</span><span className="r">Sign-ups</span><span className="r">Orders</span><span>Made</span><span /></div>
+              {paginatedLinks.map(l => (
+                <div key={l.id} className={"tl-r" + (l.archivedAt ? " off" : "")}>
+                  <span className="tl-tt"><b>{l.name}</b><button type="button" className="tl-slug m" onClick={() => copyLink(l.slug)} title="Copy the link">{baseUrl.replace(/^https?:\/\//, "")}/go/{l.slug} ⧉</button></span>
+                  <b className="m r">{(l.clicks || 0).toLocaleString()}</b>
+                  <b className="m r">{(l.signups || 0).toLocaleString()}</b>
+                  <b className="m r">{(l.orders || 0).toLocaleString()}</b>
+                  <span className="tl-mid">{l.createdAt ? dateOf(l.createdAt) : ""}</span>
+                  <span className="tl-acts"><button type="button" className="tl-b sm" onClick={() => openAnalytics(l)}>Analytics</button>{canManage && <button type="button" className="tl-b sm" onClick={() => handleArchive(l)}>{l.archivedAt ? "Bring back" : "Archive"}</button>}{canManage && l.archivedAt && <button type="button" className="tl-b sm bad" onClick={() => handleDelete(l)}>Delete</button>}</span>
+                </div>
+              ))}
+            </>}
+            {totalPages > 1 && <div className="tl-pg"><span className="tl-cnt">{page} of {totalPages}</span><span className="tl-pgn"><button type="button" className="tl-ib" disabled={page <= 1} onClick={() => setPage(p => p - 1)} aria-label="Previous">‹</button><button type="button" className="tl-ib" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} aria-label="Next">›</button></span></div>}
+          </div>
+        </section>
+      </>}
+
+      {detailLink && (
+        <div className="tl-bd" onClick={closeDetail}>
+          <aside className="tl-dw" role="dialog" aria-modal="true" aria-label={`${detailLink.name} analytics`} onClick={e => e.stopPropagation()}>
+            <div className="tl-dh">
+              <div className="tl-dht"><b>{detailLink.name}</b><i className="m">{baseUrl.replace(/^https?:\/\//, "")}/go/{detailLink.slug}</i></div>
+              <SegPill value={range} options={[{ value: "7d", label: "7 days" }, { value: "30d", label: "30 days" }, { value: "all", label: "All" }]} onChange={setRange} dark={dark} t={t} />
+              <button type="button" className="tl-b sm" onClick={closeDetail}>Close</button>
+            </div>
+            <div className="tl-dbody">
+              <LinkAnalyticsDetail link={detailLink} analytics={analytics} analyticsLoading={analyticsLoading} range={range} setRange={setRange} dark={dark} t={t} />
+            </div>
+          </aside>
         </div>
       )}
-
-      {/* ═══ Links Card ═══ */}
-      <div className="adm-card mb-5" style={{ background: cardBg, border: cardBd }}>
-        <div className="set-card-header flex justify-between items-center" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div>
-            <div className="set-card-title" style={{ color: t.textMuted }}>Tracking Links</div>
-            <div className="set-card-desc" style={{ color: t.textSoft }}>Share these URLs in ads, bios, or with influencers</div>
-          </div>
-          {canManage && <button onClick={() => setShowAdd(!showAdd)} className="adm-btn-sm flex items-center gap-1.5" style={{ borderColor: t.cardBorder, color: t.accent }}>{showAdd ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel</> : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New</>}</button>}
-        </div>
-
-        {/* ═══ Create Form ═══ */}
-        {showAdd && (
-          <div className="p-4" style={rowBorder}>
-            <div className="mb-3">
-              <label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Campaign Name</label>
-              <input value={newName} onChange={e => { setNewName(e.target.value); setNewSlug(e.target.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/,'')); }} placeholder="e.g. Davido Promo" className={inputCls} style={inputStyle} />
-            </div>
-            {newName.trim() && (
-              <div className="py-2 px-3 rounded-lg mb-3 text-[13px] font-mono" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)", color: t.textMuted }}>
-                {baseUrl}/go/{newSlug}
-              </div>
-            )}
-            <button onClick={handleCreate} disabled={saving || !newName.trim()} className="adm-btn-primary" style={{ opacity: (saving || !newName.trim()) ? .5 : 1 }}>
-              {saving ? "Creating..." : "Create Link"}
-            </button>
-          </div>
-        )}
-
-        {/* ═══ Info callout ═══ */}
-        <div className="set-card-body">
-          <div className="py-2.5 px-3.5 rounded-lg text-[13px] leading-relaxed mb-4 border-l-[3px] border-l-[#c47d8e]" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", color: t.textMuted }}>
-            Share <span className="font-mono text-[12px]">nitro.ng/go/your-slug</span> in ads, bios, or with influencers. Every click is tracked — device, location, browser, and source — plus signups and revenue.
-          </div>
-
-          {/* ═══ Links List ═══ */}
-          {displayLinks.length > 0 && (
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[12px] font-medium" style={{ color: t.textMuted }}>
-                Showing {displayLinks.length} {viewFilter === "archived" ? "archived " : ""}link{displayLinks.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-          )}
-          {displayLinks.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-sm font-medium mb-1" style={{ color: t.text }}>{viewFilter === "archived" ? "No archived links" : "No links yet"}</div>
-              <div className="text-[13px]" style={{ color: t.textMuted }}>{viewFilter === "archived" ? "Archived links will appear here" : "Click \"+ New\" above to create your first tracking link"}</div>
-            </div>
-          ) : paginatedLinks.map((link, i) => (
-            <LinkAccordion key={link.id} link={link} dark={dark} t={t} baseUrl={baseUrl} copied={copied} copyLink={copyLink} canManage={canManage} handleDelete={handleDelete} handleArchive={handleArchive} onViewAnalytics={openAnalytics} last={i === paginatedLinks.length - 1} rowBorder={rowBorder} />
-          ))}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-3 mt-2" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page === 1 ? .35 : 1 }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                Prev
-              </button>
-              <span className="text-[12px] font-medium" style={{ color: t.textMuted }}>Page {page} of {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="adm-btn-sm flex items-center gap-1" style={{ borderColor: t.cardBorder, color: t.textMuted, opacity: page >= totalPages ? .35 : 1 }}>
-                Next
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+    </div>
   );
 }
 
-
+const TL_CSS = `
+.tl{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
+.tl *{box-sizing:border-box}
+.tl .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}.tl .r{text-align:right}
+.tl-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.tl-b:hover{transform:translateY(-1px)}.tl-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.tl-b.sm{height:30px;padding:0 10px;font-size:12px}.tl-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.tl-b.bad{color:var(--bad)}
+.tl-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.tl-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.tl-stt:first-child{border-left:0}
+.tl-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.tl-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tl-srch{display:flex;align-items:center;height:36px;padding:0 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);min-width:280px}.tl-srch:focus-within{border-color:var(--acln)}.tl-srch input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:13px;color:var(--ink);outline:none}.tl-srch input::placeholder{color:var(--dim)}
+.tl-cnt{font-size:12px;color:var(--dim);margin-left:auto}
+.tl-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.tl-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.tl-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.tl-card>header .tl-cnt{margin:0}
+.tl-form{padding:14px 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}.tl-form label{display:flex;flex-direction:column;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}.tl-form input{height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--in);color:var(--ink);font:inherit;font-size:14px;outline:none;width:100%}.tl-form input:focus{border-color:var(--ac)}.tl-ff{grid-column:1 / -1;display:flex;justify-content:flex-end}
+.tl-list{display:flex;flex-direction:column}.tl-empty{padding:28px 16px;text-align:center;font-size:13px;color:var(--mut)}
+.tl-lh{display:grid;grid-template-columns:1fr 90px 90px 90px 70px 230px;gap:12px;padding:0 16px;height:34px;align-items:center;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line)}
+.tl-r{display:grid;grid-template-columns:1fr 90px 90px 90px 70px 230px;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--rail);font-size:13px}.tl-r:first-of-type{border-top:0}.tl-r.off .tl-tt{opacity:.6}
+.tl-tt{display:flex;flex-direction:column;min-width:0;gap:2px}.tl-tt b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-slug{font:inherit;font-size:11.5px;color:var(--mut);background:none;border:0;padding:0;text-align:left;cursor:copy;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-slug:hover{color:var(--ac)}
+.tl-r b.r{font-weight:700}.tl-mid{font-size:12px;color:var(--mut);white-space:nowrap}.tl-acts{display:flex;gap:6px;justify-content:flex-end}
+.tl-pg{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}.tl-pg .tl-cnt{margin:0}.tl-pgn{display:inline-flex;gap:6px}.tl-ib{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:14px;cursor:pointer;padding:0}.tl-ib:disabled{opacity:.35;cursor:not-allowed}
+.tl-bd{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.4)}
+.tl-dw{position:absolute;top:0;right:0;bottom:0;width:680px;max-width:100%;background:var(--card);border-left:1px solid var(--line);display:flex;flex-direction:column;box-shadow:-12px 0 30px rgba(0,0,0,.2)}
+.tl-dh{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}.tl-dht{flex:1;display:flex;flex-direction:column;min-width:0}.tl-dht b{font-size:16px;font-weight:700}.tl-dht i{font-style:normal;font-size:12px;color:var(--mut)}
+.tl-dbody{flex:1;overflow:auto;padding:14px 18px 20px}
+@media (max-width:900px){
+  .tl-stats{grid-template-columns:1fr 1fr}.tl-stt:nth-child(3){border-left:0}.tl-stt:nth-child(n+3){border-top:1px solid var(--line)}.tl-stt b{font-size:17px}
+  .tl-srch{width:100%;min-width:0}.tl-bar .tl-cnt{display:none}.tl-bar .tl-b{width:100%}.tl-form{grid-template-columns:1fr}
+  .tl-lh{display:none}.tl-r{grid-template-columns:1fr 1fr 1fr;grid-template-areas:"tt tt tt" "c s o" "acts acts acts";gap:6px 10px;padding:12px 14px}.tl-r .tl-tt{grid-area:tt}.tl-r b.r{text-align:left;font-size:14px}.tl-r b.r::after{display:block;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);font-family:Outfit,system-ui,sans-serif}.tl-r b.r:nth-of-type(1)::after{content:"clicks"}.tl-r b.r:nth-of-type(2)::after{content:"sign-ups"}.tl-r b.r:nth-of-type(3)::after{content:"orders"}.tl-r .tl-mid{display:none}.tl-r .tl-acts{grid-area:acts;justify-content:stretch}.tl-r .tl-acts .tl-b{flex:1}
+  .tl-dw{width:100%;top:6vh;border-left:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0}
+}
+`;
 /* ═══════════════════════════════════════════ */
 /* ═══ ADMIN ISSUES PAGE                   ═══ */
 /* ═══════════════════════════════════════════ */
