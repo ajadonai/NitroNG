@@ -1,4 +1,8 @@
+import prisma from '@/lib/prisma';
+import { publicOrderCount } from '@/lib/public-counts';
 import AboutView from '@/components/about-page';
+
+export const revalidate = 3600;
 
 export const metadata = {
   title: 'About | Nigerian Digital Marketing Company',
@@ -12,7 +16,21 @@ export const metadata = {
   },
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  let stats = null;
+  try {
+    const [customers, orders, services, platforms, first] = await Promise.all([
+      prisma.user.count({ where: { emailVerified: true } }),
+      prisma.order.count({ where: { deletedAt: null } }),
+      prisma.serviceGroup.count({ where: { enabled: true } }),
+      prisma.serviceGroup.findMany({ where: { enabled: true }, select: { platform: true }, distinct: ['platform'] }),
+      prisma.order.findFirst({ where: { deletedAt: null }, orderBy: { createdAt: 'asc' }, select: { createdAt: true } }),
+    ]);
+    stats = { customers, orders: publicOrderCount(orders), services, platforms: platforms.length, since: first ? first.createdAt.toISOString() : null };
+  } catch (err) {
+    console.error('[About] Failed to load stats:', err.message);
+  }
+
   const breadcrumb = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -56,7 +74,7 @@ export default function AboutPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusiness) }} />
-      <AboutView />
+      <AboutView stats={stats} />
     </>
   );
 }
