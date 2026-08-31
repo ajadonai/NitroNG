@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { phoneSearchDigits } from '@/lib/phone-search';
 import { watBounds } from '@/lib/format';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail, maskPhone } from '@/lib/admin';
@@ -26,12 +27,14 @@ export async function GET(req) {
     const includeStats = url.searchParams.get('includeStats') === 'true';
 
     // --- Where clauses ---
+    const searchPhone = phoneSearchDigits(search);
     const searchWhere = search ? {
       OR: [
         { name: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
         { deletedName: { contains: search, mode: 'insensitive' } },
         { deletedEmail: { contains: search, mode: 'insensitive' } },
+        ...(searchPhone ? [{ phone: { contains: searchPhone } }] : []),
       ],
     } : {};
 

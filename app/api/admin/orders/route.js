@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { phoneSearchDigits } from '@/lib/phone-search';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canSeeSensitive, canPerformAction, maskEmail, maskPhone } from '@/lib/admin';
 import { sendEmail, walletCreditEmail } from '@/lib/email';
@@ -55,6 +56,7 @@ export async function GET(req) {
     const perPage = Math.min(100, Math.max(10, parseInt(url.searchParams.get('perPage')) || 50));
     const filter = url.searchParams.get('filter') || 'all';
 
+    const searchPhone = phoneSearchDigits(search);
     const searchCondition = search ? {
       OR: [
         { orderId: { contains: search, mode: 'insensitive' } },
@@ -64,6 +66,7 @@ export async function GET(req) {
         { user: { name: { contains: search, mode: 'insensitive' } } },
         { user: { email: { contains: search, mode: 'insensitive' } } },
         { parentOrderId: { contains: search, mode: 'insensitive' } },
+        ...(searchPhone ? [{ user: { phone: { contains: searchPhone } } }] : []),
       ],
     } : null;
 
