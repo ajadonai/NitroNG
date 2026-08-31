@@ -61,7 +61,10 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
   const activeCount = orderSummary?.active ?? activeOrders.length;
   const isNew = (orderSummary?.total ?? orders.length) === 0;
   const lowBal = balance < 500;
-  const primaryAction = isNew
+  const neverPaid = !!user?.welcomeBonusEligible;
+  const primaryAction = neverPaid
+    ? { label: "Get up to ₦3,000 free on your first top-up", sub: "One time, for new accounts", target: "add-funds", gift: true }
+    : isNew
     ? { label: "Place your first order", sub: "Pick a platform and start growing today", target: "services" }
     : lowBal
     ? { label: "Add funds", sub: "Top up your balance to keep the momentum going", target: "add-funds" }
@@ -73,7 +76,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
-  const showNext = isNew;
+  const showNext = isNew || neverPaid;
   const card = { background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` };
   const recent = (() => {
     const items = []; const batches = {};
@@ -133,7 +136,11 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       {/* ── First order nudge: the balance card already carries Top up and New order ── */}
       {showNext && (
         <button onClick={() => setActive(primaryAction.target)} className="w-full flex items-center gap-2.5 rounded-[14px] px-3 py-2.5 mb-4 cursor-pointer text-left font-[inherit] border border-solid" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", borderColor: "rgba(196,125,142,.35)" }}>
-          <span className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0 text-white" style={{ background: t.accent }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          <span className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0 text-white" style={{ background: primaryAction.gift ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : t.accent }}>
+            {primaryAction.gift
+              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>}
+          </span>
           <span className="flex flex-col gap-px flex-1 min-w-0"><b className="text-[13.5px] font-semibold text-t-text">{primaryAction.label}</b><small className="text-[11.5px] text-t-text-muted">{primaryAction.sub}</small></span>
         </button>
       )}
