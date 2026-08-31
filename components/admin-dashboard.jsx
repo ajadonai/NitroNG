@@ -21,6 +21,7 @@ const AdminTicketsPage = dynamic(() => import("./admin-tickets"), { ssr: false }
 const AdminServicesPage = dynamic(() => import("./admin-services"), { ssr: false });
 const AdminServiceGroupsPage = dynamic(() => import("./admin-service-groups"), { ssr: false });
 const AdminPricingPage = dynamic(() => import("./admin-pricing"), { ssr: false });
+const AdminPriceChangesPage = dynamic(() => import("./admin-price-changes").then(m => m.AdminPriceChangesPage), { ssr: false });
 const AdminPaymentsPage = dynamic(() => import("./admin-pages").then(m => m.AdminPaymentsPage), { ssr: false });
 const AdminFinancePage = dynamic(() => import("./admin-pages").then(m => m.AdminFinancePage), { ssr: false });
 const AdminAlertsPage = dynamic(() => import("./admin-alerts-page").then(m => m.AdminAlertsPage), { ssr: false });
@@ -68,6 +69,7 @@ const ADMIN_NAV = [
     { id: "menu-builder", label: "Menu Builder", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> },
     { id: "services", label: "Raw Services", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
     { id: "pricing", label: "Pricing", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> },
+    { id: "price-changes", label: "Price Changes", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> },
   ]},
   { section: "Marketing", items: [
     { id: "promotions", label: "Promotions", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
@@ -734,6 +736,7 @@ function AdminDashboardInner({ initialData }) {
       case "services": return <AdminServicesPage dark={dark} t={t} />;
       case "menu-builder": return <AdminServiceGroupsPage dark={dark} t={t} />;
       case "pricing": return <AdminPricingPage dark={dark} t={t} />;
+      case "price-changes": return <AdminPriceChangesPage dark={dark} t={t} />;
       case "promotions": return <AdminPromotionsPage dark={dark} t={t} />;
       case "blog": return <AdminBlogPage dark={dark} t={t} />;
       case "payments": return <AdminPaymentsPage dark={dark} t={t} />;

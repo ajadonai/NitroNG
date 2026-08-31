@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canSeeSensitive } from '@/lib/admin';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
+import { recordPriceChanges } from '@/lib/price-changes';
 
 export async function GET() {
   const { admin, error } = await requireAdmin('services');
@@ -12,7 +13,7 @@ export async function GET() {
       orderBy: { sortOrder: 'asc' },
       include: {
         tiers: {
-          orderBy: { sortOrder: 'asc' },
+          orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
           include: {
             service: {
               select: { id: true, apiId: true, name: true, category: true, provider: true, costPer1k: true, min: true, max: true, refill: true, avgTime: true, apiType: true },
@@ -225,7 +226,30 @@ export async function POST(req) {
       if (updates.customComments !== undefined) data.customComments = !!updates.customComments;
       if (updates.trafficTargeting !== undefined) data.trafficTargeting = !!updates.trafficTargeting;
 
+      let before = null;
+      if (data.sellPer1k !== undefined) {
+        before = await prisma.serviceTier.findUnique({
+          where: { id: tierIdToUpdate },
+          select: { sellPer1k: true, tier: true, group: { select: { name: true, platform: true } }, service: { select: { provider: true, costPer1k: true } } },
+        });
+      }
       const updated = await prisma.serviceTier.update({ where: { id: tierIdToUpdate }, data });
+      if (before && Number(before.sellPer1k) !== Number(updated.sellPer1k)) {
+        await recordPriceChanges([{
+          tierId: tierIdToUpdate,
+          groupName: before.group?.name || '—',
+          platform: before.group?.platform || '—',
+          tier: updated.tier,
+          provider: before.service?.provider || null,
+          oldSell: Number(before.sellPer1k),
+          newSell: Number(updated.sellPer1k),
+          oldCost: before.service ? Number(before.service.costPer1k) : null,
+          newCost: before.service ? Number(before.service.costPer1k) : null,
+          source: 'manual',
+          actor: admin.name,
+          runId: crypto.randomUUID(),
+        }]);
+      }
       await logActivity(admin.name, `Updated tier ${updated.tier}`, 'service');
       invalidateServiceCatalogue();
       return Response.json({ success: true, tier: updated });
@@ -235,14 +259,24 @@ export async function POST(req) {
       const { tierA, tierB } = body;
       if (!tierA || !tierB) return Response.json({ error: 'Two tier IDs required' }, { status: 400 });
       const [a, b] = await Promise.all([
-        prisma.serviceTier.findUnique({ where: { id: tierA } }),
-        prisma.serviceTier.findUnique({ where: { id: tierB } }),
+        prisma.serviceTier.findUnique({ where: { id: tierA }, select: { id: true, groupId: true } }),
+        prisma.serviceTier.findUnique({ where: { id: tierB }, select: { id: true, groupId: true } }),
       ]);
       if (!a || !b) return Response.json({ error: 'Tier not found' }, { status: 404 });
-      await prisma.$transaction([
-        prisma.serviceTier.update({ where: { id: tierA }, data: { sortOrder: b.sortOrder } }),
-        prisma.serviceTier.update({ where: { id: tierB }, data: { sortOrder: a.sortOrder } }),
-      ]);
+      if (a.groupId !== b.groupId) return Response.json({ error: 'Tiers are in different groups' }, { status: 400 });
+      // Tiers created before ordering shipped all sit at sortOrder 0, and
+      // swapping two equal numbers moves nothing. Renumber the group by its
+      // current display order, swap the two positions, and write the lot.
+      const all = await prisma.serviceTier.findMany({
+        where: { groupId: a.groupId },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+        select: { id: true },
+      });
+      const ids = all.map(x => x.id);
+      const ia = ids.indexOf(tierA);
+      const ib = ids.indexOf(tierB);
+      [ids[ia], ids[ib]] = [ids[ib], ids[ia]];
+      await prisma.$transaction(ids.map((id, i) => prisma.serviceTier.update({ where: { id }, data: { sortOrder: i } })));
       await logActivity(admin.name, `Reordered tiers in group`, 'service');
       invalidateServiceCatalogue();
       return Response.json({ success: true });
@@ -296,13 +330,16 @@ export async function POST(req) {
       const allTiers = await prisma.serviceTier.findMany({
         include: {
           service: { select: { costPer1k: true, provider: true } },
-          group: { select: { nigerian: true } },
+          group: { select: { nigerian: true, name: true, platform: true } },
         },
       });
 
       let updated = 0;
       let skipped = 0;
       const ops = [];
+      const runId = crypto.randomUUID();
+      const usdRate = Number(ms.markup_usd_rate) || null;
+      const priceChanges = [];
 
       for (const t of allTiers) {
         if (!t.service || !t.service.costPer1k || Number(t.service.costPer1k) <= 0) {
@@ -315,6 +352,21 @@ export async function POST(req) {
         if (newSell > 0 && newSell !== Number(t.sellPer1k)) {
           ops.push(prisma.serviceTier.update({ where: { id: t.id }, data: { sellPer1k: newSell } }));
           updated++;
+          priceChanges.push({
+            tierId: t.id,
+            groupName: t.group?.name || '—',
+            platform: t.group?.platform || '—',
+            tier: t.tier,
+            provider: t.service.provider || null,
+            oldSell: Number(t.sellPer1k),
+            newSell,
+            oldCost: Number(t.service.costPer1k),
+            newCost: Number(t.service.costPer1k),
+            usdRate,
+            source: 'reprice',
+            actor: admin.name,
+            runId,
+          });
         }
       }
 
@@ -324,6 +376,7 @@ export async function POST(req) {
           await prisma.$transaction(ops.slice(i, i + 50));
         }
       }
+      await recordPriceChanges(priceChanges);
       await logActivity(admin.name, `Recalculated prices: ${updated} updated, ${skipped} skipped (no cost)`, 'service');
       invalidateServiceCatalogue();
       return Response.json({ success: true, updated, skipped, total: allTiers.length });
