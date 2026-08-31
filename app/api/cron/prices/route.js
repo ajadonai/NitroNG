@@ -6,6 +6,7 @@ import { log } from '@/lib/logger';
 import { getServices, isProviderConfigured } from '@/lib/smm';
 import { calculateTierPrice, getProviderBonus } from '@/lib/markup';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
+import { recordPriceChanges } from '@/lib/price-changes';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -51,12 +52,14 @@ export async function GET(req) {
     // reads, and some of those prices sat a thousandfold below cost.
     const services = await prisma.service.findMany({
       where: { OR: [{ enabled: true }, { providerListedAt: { not: null } }] },
-      select: { id: true, name: true, apiId: true, enabled: true, costPer1k: true, sellPer1k: true, provider: true, category: true, dripfeed: true, apiType: true, tiers: { where: { enabled: true }, select: { id: true, tier: true, sellPer1k: true, pricePinned: true, group: { select: { nigerian: true } } } } },
+      select: { id: true, name: true, apiId: true, enabled: true, costPer1k: true, sellPer1k: true, provider: true, category: true, dripfeed: true, apiType: true, tiers: { where: { enabled: true }, select: { id: true, tier: true, sellPer1k: true, pricePinned: true, group: { select: { nigerian: true, name: true, platform: true } } } } },
     });
 
     const ops = [];
     const losers = [];
     const deadServices = [];
+    const runId = crypto.randomUUID();
+    const priceChanges = [];
 
     for (const s of services) {
       const pid = s.provider || 'mtp';
@@ -91,6 +94,20 @@ export async function GET(req) {
           if (newSell !== Number(t.sellPer1k)) {
             ops.push(prisma.serviceTier.update({ where: { id: t.id }, data: { sellPer1k: newSell } }));
             stats.repriced++;
+            priceChanges.push({
+              tierId: t.id,
+              groupName: t.group?.name || s.name.slice(0, 80),
+              platform: t.group?.platform || s.category,
+              tier: t.tier,
+              provider: pid,
+              oldSell: Number(t.sellPer1k),
+              newSell,
+              oldCost: Number(s.costPer1k),
+              newCost: cost,
+              usdRate,
+              source: 'sync',
+              runId,
+            });
           }
           if (newSell > 0 && newSell < costKobo) {
             losers.push({ service: s.name.slice(0, 50), category: s.category, tier: t.tier, costNaira: Math.round(costKobo / 100), sellNaira: Math.round(newSell / 100), lossPerK: Math.round(costKobo / 100) - Math.round(newSell / 100) });
@@ -166,6 +183,8 @@ export async function GET(req) {
         await prisma.$transaction(ops.slice(i, i + 50));
       }
     }
+
+    await recordPriceChanges(priceChanges);
 
     stats.losers = losers.length;
     stats.dead = deadServices.length;

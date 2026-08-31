@@ -288,6 +288,31 @@ model ServiceTier {
   @@map("service_tiers")
 }
 
+// Written whenever a tier's sell price moves — the daily price sync, the
+// Recalculate action, or a hand edit in Menu Builder — so the Price changes
+// page can show old → new with the cost move behind it. Rows from one run
+// share a runId. Denormalised on purpose: a deleted tier keeps its history.
+model PriceChange {
+  id        String   @id @default(cuid())
+  tierId    String?
+  groupName String
+  platform  String
+  tier      String
+  provider  String?
+  oldSell   BigInt
+  newSell   BigInt
+  oldCost   BigInt? // provider cost in USD cents, before
+  newCost   BigInt? // provider cost in USD cents, after
+  usdRate   Int?
+  source    String // 'sync' | 'reprice' | 'manual'
+  actor     String   @default("System")
+  runId     String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("price_changes")
+}
+
 // ──────────────────────────────────────
 // ORDERS
 // ──────────────────────────────────────
