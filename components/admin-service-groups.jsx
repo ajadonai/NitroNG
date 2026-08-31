@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, useRef } from "react";
+import { Fragment, useState, useEffect, useMemo, useRef } from "react";
 import { SkelList, Bone } from "./skeleton";
 import { DEFAULT_USD_RATE } from "../lib/markup";
 import { useConfirm } from "./confirm-dialog";
@@ -129,6 +129,10 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   const TC = { Budget: "bud", Standard: "std", Premium: "prm" };
   const totalTiers = groups.reduce((a, g) => a + g.tiers.length, 0);
 
+  // SvcList, TierRow and Group close over page state, so they are rendered as
+  // plain calls, never as <JSX/> elements: a nested component gets a new
+  // identity every render, and React then remounts its subtree — which threw
+  // away input focus after each keystroke in the price and search fields.
   const SvcList = ({ onPick, priceKobo }) => (
     <div className="mb-svcs">
       <div className="mb-srch"><span>{SEARCH}</span><input autoFocus value={svcQ} onChange={e => setSvcQ(e.target.value)} placeholder="Search services by name or #id" /></div>
@@ -164,7 +168,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
         <span className="mb-meta">{refill}<em>{ti.speed || "—"}</em></span>
         <button type="button" className={`mb-tog${ti.enabled ? "" : " o"}`} onClick={() => act({ action: "update-tier", tierIdToUpdate: ti.id, enabled: !ti.enabled })} aria-label={ti.enabled ? "Switch tier off" : "Switch tier on"}><i /></button>
         <span className="mb-acts"><button type="button" className="mb-b sm" onClick={() => { setPanel(p === "swap" ? {} : { [ti.id]: "swap" }); setSvcQ(""); }}>Swap</button><button type="button" className="mb-b sm" onClick={() => p === "edit" ? setPanel({}) : startEdit(ti)}>Edit</button></span>
-        {p === "swap" && <div className="mb-panel"><div className="mb-ph">Swap the service behind <b>{g.name} · {ti.tier}</b>. Price stays at {naira(ti.sellPer1k)}; the profit beside each candidate is at that price.</div><SvcList onPick={s => swapTo(ti, s)} priceKobo={Number(ti.sellPer1k)} /></div>}
+        {p === "swap" && <div className="mb-panel"><div className="mb-ph">Swap the service behind <b>{g.name} · {ti.tier}</b>. Price stays at {naira(ti.sellPer1k)}; the profit beside each candidate is at that price.</div>{SvcList({ onPick: s => swapTo(ti, s), priceKobo: Number(ti.sellPer1k) })}</div>}
         {p === "edit" && e && (
           <div className="mb-panel mb-edit">
             <label>Price per 1k <input className="mb-in m" value={e.price} onChange={ev => setEdit({ [ti.id]: { ...e, price: ev.target.value.replace(/[^0-9.]/g, "") } })} /></label>
@@ -196,7 +200,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
         </div>
         {open && (
           <div className="mb-gb">
-            {(hideOff ? tiers.filter(x => x.enabled) : tiers).map(ti => <TierRow key={ti.id} ti={ti} g={g} />)}
+            {(hideOff ? tiers.filter(x => x.enabled) : tiers).map(ti => <Fragment key={ti.id}>{TierRow({ ti, g })}</Fragment>)}
             {addFor === g.id && (
               <div className="mb-panel mb-add">
                 <div className="mb-ph">Add a tier to <b>{g.name}</b>. Leave the price blank and it is set from the markup rules.</div>
@@ -206,7 +210,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                 </div>
                 {addForm.serviceId
                   ? <div className="mb-picked">{(() => { const s = services.find(x => x.id === addForm.serviceId); return s ? <><b className={`mb-prov ${s.provider}`}>{s.provider}</b><span className="mb-sid m">#{s.apiId}</span><span className="mb-sn">{s.name}</span></> : null; })()}<button type="button" className="mb-b sm" onClick={() => setAddForm(f => ({ ...f, serviceId: "" }))}>Change</button></div>
-                  : <SvcList onPick={s => setAddForm(f => ({ ...f, serviceId: s.id }))} priceKobo={addForm.price ? Math.round(Number(addForm.price) * 100) : null} />}
+                  : SvcList({ onPick: s => setAddForm(f => ({ ...f, serviceId: s.id })), priceKobo: addForm.price ? Math.round(Number(addForm.price) * 100) : null })}
                 <div className="mb-acts-r"><button type="button" className="mb-b sm" onClick={() => { setAddFor(null); setSvcQ(""); }}>Cancel</button><button type="button" className="mb-pri sm" disabled={busy || !addForm.serviceId} onClick={() => addTier(g)}>Add tier</button></div>
               </div>
             )}
@@ -262,7 +266,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
           {sections.map(([plat, gs]) => (
             <div key={plat}>
               <div className="mb-sec"><i><PlatformIcon platform={plat} dark={dark} size={13} /></i>{plat}<span>{gs.length} {gs.length === 1 ? "group" : "groups"}</span></div>
-              {gs.map(g => <Group key={g.id} g={g} />)}
+              {gs.map(g => <Fragment key={g.id}>{Group({ g })}</Fragment>)}
             </div>
           ))}
         </div>
