@@ -1,267 +1,326 @@
 "use client";
-import { useState, useEffect } from "react";
-import { copyText } from '@/lib/clipboard';
+// The Pit's shared frame: the CSS variables every page sets on its root, the one
+// stylesheet the shell prints, and the primitives (facts row, card, rows, chips,
+// buttons, modal) the six pages are built from.
+import { useEffect } from "react";
 
-// ── Modal ──
-export function Modal({ open, onClose, title, subtitle, dark, t, children }) {
+// ── CSS variables ──
+// Solid card colour, never a translucent token, so nothing shows through a card.
+export function pitVars(dark, t) {
+  return {
+    "--card": dark ? "#141930" : "#ffffff",
+    "--ink": t.text,
+    "--mut": t.muted,
+    "--dim": dark ? "#5c6170" : "#a19b93",
+    "--line": t.surfaceBrd,
+    "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
+    "--soft": dark ? "#111634" : "#faf9f7",
+    "--ac": t.accent,
+    "--ok": dark ? "#6ee7b7" : "#0a7d54",
+    "--warn": dark ? "#fcd34d" : "#b45309",
+    "--bad": dark ? "#fca5a5" : "#c62828",
+    "--in": dark ? "#131728" : "#ffffff",
+  };
+}
+
+// ── helpers ──
+export function initialsOf(name) {
+  return (name || "?").split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+}
+
+export function ago(iso) {
+  if (!iso) return "—";
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  const d = Math.floor(s / 86400);
+  return d === 1 ? "yesterday" : `${d} days ago`;
+}
+
+export function dateOf(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+export function longDate(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// ── facts row ──
+export function Facts({ children }) {
+  return <div className="pt-stats">{children}</div>;
+}
+
+export function Fact({ value, label, sub, kind, mono = true }) {
+  return (
+    <div className={"pt-stt" + (kind ? " " + kind : "")}>
+      <b className={mono ? "m" : undefined}>{value}</b>
+      <span>{label}</span>
+      <i>{sub}</i>
+    </div>
+  );
+}
+
+// ── card ──
+export function Card({ title, cnt, act, children, className }) {
+  return (
+    <section className={"pt-card" + (className ? " " + className : "")}>
+      <header><h3>{title}</h3>{cnt ? <span className="pt-cnt">{cnt}</span> : null}{act}</header>
+      {children}
+    </section>
+  );
+}
+
+export function Chip({ kind, children }) {
+  return <span className={"pt-ty" + (kind ? " " + kind : "")}>{children}</span>;
+}
+
+export function Empty({ children }) {
+  return <div className="pt-empty">{children}</div>;
+}
+
+// ── modal ──
+// The rule: fixed backdrop that closes on click, page behind locked and inert,
+// Escape closes, the surface is solid, and it is a bottom sheet on phones.
+export function Modal({ open, onClose, title, sub, children, footer, wide }) {
   useEffect(() => {
-    if (open) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
-    return () => { document.body.style.overflow = ""; };
-  }, [open]);
+    if (!open) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
+  }, [open, onClose]);
   if (!open) return null;
   return (
-    <div
-      className="fixed inset-0 z-[1100] backdrop-blur-[4px] flex items-center justify-center p-4 animate-[modalFadeIn_.2s_ease]"
-      style={{ background: "rgba(0,0,0,.45)" }}
-      onClick={onClose}
-    >
-      <div
-        className="w-[90%] max-w-[420px] rounded-2xl overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]"
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: dark ? "#0e1120" : "#fff",
-          border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`,
-          boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)",
-        }}
-      >
-        <div className="py-3 px-5 flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.08)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
-          <div>
-            <div className="text-[13px] font-semibold tracking-[0.3px] uppercase" style={{ color: dark ? "#f5f3f0" : "#1a1917" }}>{title}</div>
-            {subtitle && <div className="text-[11.5px] mt-[2px]" style={{ color: dark ? "#a09b95" : "#555250" }}>{subtitle}</div>}
-          </div>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-md bg-transparent border-none cursor-pointer text-[18px] leading-none" style={{ color: dark ? "#a09b95" : "#555250" }}>×</button>
+    <div className="pt-bd" onClick={onClose}>
+      <div className={"pt-md" + (wide ? " wide" : "")} role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
+        <div className="pt-mdh">
+          <div className="pt-mdt"><b>{title}</b>{sub ? <i>{sub}</i> : null}</div>
+          <button type="button" className="pt-b sm" onClick={onClose}>Close</button>
         </div>
-        <div className="p-5 flex flex-col gap-3">{children}</div>
+        <div className="pt-mdb">{children}</div>
+        {footer ? <div className="pt-mdf">{footer}</div> : null}
       </div>
     </div>
   );
 }
 
-// ── StatCard ──
-export function StatCard({ label, value, caption, captionUp, dark, t }) {
+export function Field({ label, value, onChange, type = "text", placeholder, hint, autoFocus }) {
   return (
-    <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
-      <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
-        <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>{label}</div>
-      </div>
-      <div className="py-[14px] px-[18px]">
-        <div className="m text-[24px] font-semibold tracking-tight" style={{ color: t.text }}>{value}</div>
-        {caption && <div className="text-[11.5px] mt-[4px]" style={{ color: captionUp ? t.green : t.soft }}>{caption}</div>}
-      </div>
-    </div>
+    <>
+      <label className="pt-lbl">{label}</label>
+      <input className="pt-in" type={type} value={value} placeholder={placeholder} autoFocus={autoFocus} onChange={e => onChange(e.target.value)} />
+      {hint ? <div className="pt-hint">{hint}</div> : null}
+    </>
   );
 }
 
-// ── StatusBadge ──
-const STATUS_STYLES = (t, dark) => ({
-  approved: { color: t.green, bg: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)" },
-  held:     { color: dark ? "#fcd34d" : "#b45309", bg: dark ? "rgba(250,204,21,.12)" : "rgba(250,204,21,.08)" },
-  voided:   { color: t.red, bg: dark ? "rgba(239,68,68,.08)" : "rgba(239,68,68,.06)" },
-  pending:  { color: t.soft, bg: t.surface, border: t.surfaceBrd },
-  requested:{ color: dark ? "#fcd34d" : "#b45309", bg: dark ? "rgba(250,204,21,.12)" : "rgba(250,204,21,.08)" },
-  processing:{ color: dark ? "#a5b4fc" : "#4f46e5", bg: dark ? "rgba(165,180,252,.1)" : "rgba(79,70,229,.06)" },
-  completed:{ color: t.green, bg: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)" },
-  paid:     { color: t.green, bg: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)" },
-  rejected: { color: t.red, bg: dark ? "rgba(239,68,68,.08)" : "rgba(239,68,68,.06)" },
-  active:   { color: t.green, bg: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.08)" },
-  suspended:{ color: t.red, bg: dark ? "rgba(239,68,68,.08)" : "rgba(239,68,68,.06)" },
-  invited:  { color: t.soft, bg: t.surface, border: t.surfaceBrd },
-  expired:  { color: dark ? "#fcd34d" : "#b45309", bg: dark ? "rgba(250,204,21,.12)" : "rgba(250,204,21,.08)" },
-});
+// ── tier ──
+// Same steps, same thresholds, same "how many more" arithmetic as before.
+const DEFAULT_TIER_CONFIG = { starter: { rate: 30, min: 0 }, growth: { rate: 40, min: 30 }, pro: { rate: 50, min: 100 }, leadSplit: 40 };
 
-export function StatusBadge({ status, label, dark, t }) {
-  const s = STATUS_STYLES(t, dark)[status] || STATUS_STYLES(t, dark).pending;
-  return (
-    <span className="inline-flex items-center gap-[5px] text-[11px] font-semibold py-1 px-2.5 rounded-full" style={{ color: s.color, background: s.bg, ...(s.border ? { border: `1px solid ${s.border}` } : {}) }}>
-      <span className="w-1.5 h-1.5 rounded-full" style={{ background: "currentColor" }} />
-      {label || status.charAt(0).toUpperCase() + status.slice(1)}
-    </span>
-  );
-}
-
-// ── TierProgress ──
-const TIER_ICONS = {
-  starter: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
-  growth: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
-  pro: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M6 3h12l4 6-10 13L2 9z"/></svg>,
-};
-const DEFAULT_TIER_CONFIG = {
-  starter: { rate: 30, min: 0 },
-  growth: { rate: 40, min: 30 },
-  pro: { rate: 50, min: 100 },
-  leadSplit: 40,
-};
-
-export function TierProgress({ tier, activeCount, tierConfig, links, dark, t }) {
+export function TierProgress({ tier, activeCount, tierConfig }) {
   const cfg = tierConfig || DEFAULT_TIER_CONFIG;
-  const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
-  const currentRate = cfg[tier]?.rate || cfg.starter.rate;
-  const linkCount = links?.length || 0;
-
   const steps = [
-    { key: "starter", label: "Starter", rate: cfg.starter?.rate || 30, min: 0, icon: TIER_ICONS.starter },
-    { key: "growth", label: "Growth", rate: cfg.growth?.rate || 40, min: cfg.growth?.min || 30, icon: TIER_ICONS.growth },
-    { key: "pro", label: "Pro", rate: cfg.pro?.rate || 50, min: cfg.pro?.min || 100, icon: TIER_ICONS.pro },
+    { key: "starter", label: "Starter", rate: cfg.starter?.rate || 30, min: 0 },
+    { key: "growth", label: "Growth", rate: cfg.growth?.rate || 40, min: cfg.growth?.min || 30 },
+    { key: "pro", label: "Pro", rate: cfg.pro?.rate || 50, min: cfg.pro?.min || 100 },
   ];
-  const currentIdx = steps.findIndex(s => s.key === tier);
+  const currentIdx = Math.max(0, steps.findIndex(s => s.key === tier));
   const nextStep = steps[currentIdx + 1] || null;
   const remaining = nextStep ? Math.max(0, nextStep.min - activeCount) : 0;
-
+  const top = steps[steps.length - 1].min || 1;
+  const pct = Math.min(100, Math.max(2, nextStep ? (activeCount / top) * 100 : 100));
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
-      <div className="py-[10px] px-[18px] flex items-center gap-2" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
-        <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>{tierName} Tier</div>
-        <span className="text-[10.5px] font-semibold py-[1px] px-[6px] rounded-md" style={{ color: t.accent, background: t.accentLight }}>{currentRate}%</span>
-        {linkCount > 0 && (
-          <span className="text-[10.5px] font-medium" style={{ color: t.soft }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="inline -mt-px mr-[3px]"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            {linkCount}
+    <section className="pt-card">
+      <header><h3>Your tier</h3><span className="pt-cnt">your rate goes up with paid referrals</span></header>
+      <div className="pt-steps">
+        {steps.map((s, i) => (
+          <span key={s.key} className={"pt-ts" + (i < currentIdx ? " done" : i === currentIdx ? " on" : "")}>
+            <em>{s.label}</em>
+            <b className="m">{s.rate}%</b>
+            <i>{s.min === 0 ? "from your first" : `from ${s.min} paid`}</i>
           </span>
-        )}
-        <span className="relative group ml-auto cursor-help shrink-0">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          <span className="absolute top-full right-0 mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium text-white whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-150 z-10" style={{ background: "rgba(0,0,0,.85)" }}>
-            You earn {currentRate}% of profit on every sale
-          </span>
-        </span>
+        ))}
       </div>
-
-      <div className="py-5 px-5 flex flex-col gap-4">
-        {/* Progress bar */}
-        <div>
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-[12.5px] font-semibold" style={{ color: t.text }}>
-              {nextStep ? `${activeCount} / ${nextStep.min} referrals` : `${activeCount} referrals`}
-            </span>
-            {nextStep && (
-              <span className="text-[11.5px] font-medium" style={{ color: t.accent }}>{remaining} to {nextStep.label}</span>
-            )}
-            {tier === "pro" && (
-              <span className="text-[11.5px] font-medium" style={{ color: t.green }}>Max tier</span>
-            )}
-          </div>
-
-          <div className="relative" style={{ height: 28 }}>
-            <div className="absolute inset-0 rounded-lg overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)" }}>
-              <div className="h-full rounded-lg transition-[width] duration-1000 ease-out" style={{ width: `${Math.max(2, tier === "pro" ? 100 : (activeCount / steps[steps.length - 1].min) * 100)}%`, background: t.grad }} />
-            </div>
-
-            {steps.slice(1).map((s) => {
-              const pos = (s.min / steps[steps.length - 1].min) * 100;
-              const reached = activeCount >= s.min;
-              return (
-                <div key={s.key} className="absolute top-0 bottom-0 flex items-center" style={{ left: `${pos}%`, transform: "translateX(-50%)" }}>
-                  <div className="w-[3px] h-full rounded-full" style={{ background: reached ? "rgba(255,255,255,.4)" : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)") }} />
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="flex mt-2">
-            {steps.map((s, i) => {
-              const reached = i <= currentIdx;
-              const isCurrent = i === currentIdx;
-              return (
-                <div key={s.key} className="flex-1" style={{ textAlign: i === 0 ? "left" : i === steps.length - 1 ? "right" : "center" }}>
-                  <span className="text-[10.5px] font-semibold" style={{ color: isCurrent ? t.accent : reached ? t.soft : t.muted }}>
-                    {s.label} · {s.rate}%
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {linkCount > 0 && <LinkSelector links={links} dark={dark} t={t} />}
+      <div className="pt-tbar"><i style={{ width: `${pct}%` }} /></div>
+      <div className="pt-tnote">
+        <span>{nextStep ? `${remaining} more paid ${remaining === 1 ? "referral" : "referrals"} to ${nextStep.label}.` : "You are on the top tier."}</span>
+        <span className="m">{activeCount} paid so far</span>
       </div>
-    </div>
+    </section>
   );
 }
 
-// ── LinkSelector ──
-function LinkSelector({ links, dark, t }) {
-  const [selected, setSelected] = useState(0);
-  const [copied, setCopied] = useState(false);
-  const slug = links[selected]?.slug;
-  const url = `https://nitro.ng/?via=${slug}`;
-  const multi = links.length > 1;
+// ── the one stylesheet ──
+export const PIT_CSS = `
+.pt{color:var(--ink);min-height:100vh}
+.pt *{box-sizing:border-box}
+.pt .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.pt-wrap{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
 
-  const handleCopy = () => {
-    copyText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+.pt-rail{border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:2px;background:var(--soft);position:sticky;top:0;height:100vh;overflow-y:auto}
+.pt-bhead{display:flex;align-items:flex-start;gap:8px;margin-bottom:14px}
+.pt-bhead .pt-brand{flex:1;min-width:0}
+.pt-brand{font-size:13px;font-weight:800;letter-spacing:2.5px;color:var(--ac);display:flex;flex-direction:column}
+.pt-brand em{font-style:normal;font-size:11px;letter-spacing:.4px;font-weight:600;color:var(--mut);margin-top:2px}
+.pt-sec{display:flex;align-items:center;gap:8px;padding:10px 8px 4px}
+.pt-sec span{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--mut)}
+.pt-sec::after{content:"";flex:1;height:1px;background:var(--line);opacity:.7}
+.pt-it{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;font:inherit;font-size:13.5px;font-weight:500;color:var(--mut);background:none;border:0;width:100%;text-align:left;cursor:pointer;text-decoration:none}
+.pt-it i{width:16px;height:16px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
+.pt-it i svg{width:100%;height:100%;stroke:currentColor}
+.pt-it:hover{color:var(--ink)}
+.pt-it.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.pt-it.on i{color:var(--ac)}
+.pt-foot{margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px 8px;border-top:1px solid var(--line)}
+.pt-foot .pt-tt{flex:1}
+.pt-av{width:32px;height:32px;border-radius:50%;background:var(--ac);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;text-decoration:none}
+.pt-av.sm{width:30px;height:30px;font-size:10.5px}
+.pt-icb{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0}
+.pt-icb svg{width:15px;height:15px;stroke:currentColor}
+.pt-icb:hover{color:var(--ink)}
 
-  return (
-    <div className="relative rounded-xl overflow-visible" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)"}` }}>
-      <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl" style={{ background: t.grad }} />
-      <div className="pl-4 pr-3 py-3 flex flex-col gap-2.5">
-        {multi && (
-          <div className="flex gap-1">
-            {links.map((l, i) => (
-              <button key={l.slug} onClick={() => { setSelected(i); setCopied(false); }}
-                className="py-[4px] px-[10px] rounded-md text-[10.5px] font-semibold border-none cursor-pointer transition-all duration-150"
-                style={{ background: i === selected ? t.grad : "transparent", color: i === selected ? "#fff" : t.muted, fontFamily: "inherit" }}
-              >{l.name}{!l.enabled && " ·off"}</button>
-            ))}
-          </div>
-        )}
-        <div className="flex items-center gap-2.5">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" className="shrink-0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          <span className="m text-[13px] flex-1 truncate">
-            <span style={{ color: t.soft }}>nitro.ng/</span>
-            <span style={{ color: t.accent, fontWeight: 700 }}>?via={slug}</span>
-          </span>
-          <button onClick={handleCopy} className="flex items-center gap-1.5 py-[6px] px-3 rounded-lg text-[11px] font-semibold border-none cursor-pointer shrink-0 transition-all duration-150" style={{ background: copied ? t.green : t.grad, color: "#fff", fontFamily: "inherit" }}>
-            {copied
-              ? <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>Copied</>
-              : <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</>
-            }
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+.pt-main{padding:22px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.pt-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.pt-at{font-size:22px;font-weight:700}
+.pt-as{font-size:13px;color:var(--mut);margin-top:3px}
+.pt-top{display:none}
+.pt-tops{display:flex;align-items:center;gap:10px}
+.pt-dock{display:none}
+
+.pt-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:transform .15s;text-decoration:none}
+.pt-b:hover{transform:translateY(-1px)}
+.pt-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.pt-b.sm{height:30px;padding:0 10px;font-size:12px}
+.pt-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.pt-b.bad{color:var(--bad)}
+.pt-b.full{width:100%}
+.pt-lnk{font:inherit;font-size:12px;font-weight:600;color:var(--ac);background:none;border:0;padding:0;cursor:pointer;text-decoration:none;white-space:nowrap}
+
+.pt-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.pt-card>header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}
+.pt-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}
+.pt-cnt{font-size:11.5px;color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis}
+.pt-card>header .pt-lnk,.pt-card>header .pt-b{margin-left:auto}
+.pt-cb{padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.pt-frow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--rail)}
+.pt-frow:first-child{border-top:0}
+.pt-frow>.pt-tt{flex:1}
+.pt-frow .pt-b{margin-left:auto}
+.pt-note{font-size:12.5px;color:var(--mut);line-height:1.5}
+.pt-err{font-size:12.5px;color:var(--bad);line-height:1.5}
+.pt-empty{padding:28px 16px;text-align:center;font-size:13px;color:var(--mut)}
+
+.pt-list{display:flex;flex-direction:column}
+.pt-r{display:grid;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--rail);font-size:13px;min-width:0}
+.pt-r:first-child{border-top:0}
+.pt-lh{display:grid;gap:12px;padding:0 16px;height:32px;align-items:center;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line)}
+.pt-lh .r{text-align:right}
+.pt-tt{display:flex;flex-direction:column;min-width:0}
+.pt-tt b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-tt i{font-style:normal;font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-cp{font:inherit;font-size:11.5px;color:var(--mut);background:none;border:0;padding:0;cursor:pointer;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-cp:hover{color:var(--ac)}
+.pt-num{text-align:right;font-weight:700;white-space:nowrap}
+.pt-num.ok{color:var(--ok)}
+.pt-num.bad{color:var(--bad)}
+.pt-ty{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut);text-align:center;white-space:nowrap;justify-self:start}
+.pt-ty.ok{color:var(--ok);border-color:var(--ok)}
+.pt-ty.warn{color:var(--warn);border-color:var(--warn)}
+.pt-ty.bad{color:var(--bad);border-color:var(--bad)}
+.pt-ty.dim{color:var(--dim)}
+.pt-acts{display:flex;gap:6px;justify-content:flex-end}
+.pt-c{font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.pt-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.pt-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+.pt-stt:first-child{border-left:0}
+.pt-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-stt b:not(.m){font-size:15px;font-weight:700}
+.pt-stt.ok b{color:var(--ok)}
+.pt-stt.warn b{color:var(--warn)}
+
+.pt-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 16px 8px}
+.pt-ts{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:12px;border:1px solid var(--line)}
+.pt-ts em{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut)}
+.pt-ts b{font-size:19px;font-weight:800}
+.pt-ts i{font-style:normal;font-size:11.5px;color:var(--dim)}
+.pt-ts.done{opacity:.6}
+.pt-ts.on{border-color:var(--ac)}
+.pt-ts.on b{color:var(--ac)}
+.pt-tbar{height:6px;border-radius:3px;background:var(--rail);margin:6px 16px 0;overflow:hidden}
+.pt-tbar i{display:block;height:100%;background:var(--ac);border-radius:3px}
+.pt-tnote{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--mut);padding:8px 16px 14px}
+
+.pt-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pt-srch{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);color:var(--dim);font-size:13px;flex:1;min-width:240px}
+.pt-srch svg{width:15px;height:15px;stroke:currentColor;flex-shrink:0}
+.pt-srch input{flex:1;min-width:0;border:0;background:none;outline:none;font:inherit;font-size:13px;color:var(--ink)}
+.pt-sel{display:inline-flex;align-items:center;height:36px;padding:0 10px;border-radius:10px;background:var(--card);border:1px solid var(--line);font:inherit;font-size:13px;font-weight:600;color:var(--mut);cursor:pointer;outline:none}
+.pt-tg{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:999px;background:var(--card);border:1px solid var(--line);font:inherit;font-size:13px;font-weight:600;color:var(--mut);cursor:pointer}
+.pt-tg.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.pt-bar .pt-cnt{margin-left:auto;white-space:nowrap}
+
+.pt-pg{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}
+.pt-pgn{display:inline-flex;gap:6px;align-items:center}
+.pt-ib{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:14px;cursor:pointer}
+.pt-ib:disabled{opacity:.4;cursor:not-allowed}
+
+.pt-lbl{display:block;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin:12px 0 6px}
+.pt-mdb>.pt-lbl:first-child{margin-top:0}
+.pt-in{width:100%;height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--in);color:var(--ink);font:inherit;font-size:14px;outline:none}
+.pt-in:focus{border-color:var(--ac)}
+.pt-hint{font-size:11.5px;color:var(--dim);margin-top:6px}
+.pt-hint.ok{color:var(--ok)}
+.pt-hint.bad{color:var(--bad)}
+
+.pt-bd{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.pt-md{width:440px;max-width:100%;max-height:92vh;overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px 18px;box-shadow:0 20px 50px rgba(0,0,0,.25);color:var(--ink)}
+.pt-md.wide{width:520px}
+.pt-mdh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px}
+.pt-mdt{display:flex;flex-direction:column;min-width:0}
+.pt-mdt b{font-size:16px;font-weight:700}
+.pt-mdt i{font-style:normal;font-size:12.5px;color:var(--mut);margin-top:2px}
+.pt-mdb{display:flex;flex-direction:column}
+.pt-mdf{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.pt-mdf .pt-err{margin-right:auto;align-self:center}
+
+@media (max-width:900.98px){
+  .pt-wrap{grid-template-columns:1fr;min-height:0}
+  .pt-rail{display:none}
+  .pt-top{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:40}
+  .pt-dock{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:90;border-top:1px solid var(--line);background:var(--card)}
+  .pt-dk{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 0;font:inherit;font-size:10.5px;font-weight:600;color:var(--mut);background:none;border:0;cursor:pointer}
+  .pt-dk i{width:18px;height:18px;display:inline-flex}
+  .pt-dk i svg{width:100%;height:100%;stroke:currentColor}
+  .pt-dk.on{color:var(--ac)}
+  .pt-main{padding:14px 14px 76px;gap:12px}
+  .pt-head{padding-bottom:10px}
+  .pt-at{font-size:19px}
+  .pt-stats{grid-template-columns:1fr 1fr}
+  .pt-stt:nth-child(3){border-left:0}
+  .pt-stt:nth-child(n+3){border-top:1px solid var(--line)}
+  .pt-stt b{font-size:17px}
+  .pt-steps{grid-template-columns:1fr}
+  .pt-tnote{flex-direction:column;gap:2px}
+  .pt-lh{display:none}
+  .pt-r{grid-template-columns:1fr auto;grid-template-areas:"tt num" "ty cnt" "act act";gap:6px 10px;padding:12px 14px}
+  .pt-r .pt-av{display:none}
+  .pt-r .pt-tt{grid-area:tt}
+  .pt-r .pt-num{grid-area:num}
+  .pt-r .pt-ty{grid-area:ty}
+  .pt-r .pt-c{grid-area:cnt;justify-self:end}
+  .pt-r .pt-acts{grid-area:act;justify-content:stretch;margin-top:4px}
+  .pt-r .pt-acts .pt-b{flex:1}
+  .pt-srch{min-width:100%}
+  .pt-bar .pt-cnt{margin-left:0}
+  .pt-bd{align-items:flex-end;padding:0}
+  .pt-md{width:100%;max-width:100%;max-height:92vh;border-radius:16px 16px 0 0;border-bottom:0}
 }
-
-// ── EmptyState ──
-export function EmptyState({ icon, title, subtitle, action, t }) {
-  return (
-    <div className="flex flex-col items-center text-center gap-[9px] py-[38px] px-5">
-      <div className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center" style={{ background: t.accentLight, color: t.accent }}>
-        {icon || <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>}
-      </div>
-      <h4 className="text-[15px] font-semibold" style={{ color: t.text }}>{title}</h4>
-      {subtitle && <p className="text-[12.5px] max-w-[280px]" style={{ color: t.muted }}>{subtitle}</p>}
-      {action}
-    </div>
-  );
-}
-
-// ── ErrorBanner ──
-export function ErrorBanner({ message, onRetry, t }) {
-  return (
-    <div className="flex items-center gap-[10px] py-3 px-[14px] rounded-xl text-[13px]" style={{ color: t.red, background: `${t.red}12`, border: `1px solid ${t.red}` }}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <span className="flex-1">{message}</span>
-      {onRetry && <button onClick={onRetry} className="bg-transparent border-none font-semibold cursor-pointer" style={{ color: t.red }}>Retry</button>}
-    </div>
-  );
-}
-
-// ── Skeleton ──
-export function Skeleton({ w, h = 14, dark, className = "" }) {
-  const a = dark === false ? "rgba(0,0,0,.06)" : "rgba(255,255,255,.07)";
-  const b = dark === false ? "rgba(0,0,0,.1)" : "rgba(255,255,255,.12)";
-  return <div className={`rounded-md ${className}`} style={{ width: w || "100%", height: h, background: `linear-gradient(90deg, ${a} 25%, ${b} 37%, ${a} 63%)`, backgroundSize: "400% 100%", animation: "skel-shimmer 1.8s ease infinite" }} />;
-}
-
-// ── HoldTooltip ──
-export function HoldTooltip({ dark }) {
-  return (
-    <span className="inline-flex items-center justify-center w-[15px] h-[15px] rounded-full text-[10px] italic font-bold cursor-help relative group" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)", color: dark ? "#8a8580" : "#757170" }} title="Earnings are held for 7 days to cover refunds. After that they're approved and payable.">
-      i
-    </span>
-  );
-}
+`;

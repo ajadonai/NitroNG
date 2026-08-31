@@ -1,15 +1,11 @@
 "use client";
 import { useState, useMemo } from "react";
-import { StatusBadge, EmptyState } from "./kit";
+import { Card, Chip, Empty, Fact, Facts, Field, Modal, initialsOf, longDate, pitVars } from "./kit";
 import { useTheme } from "../shared-nav";
 import { useToast } from "../toast";
 import { useHeaderAction } from "./shell";
 import { fN } from "@/lib/format";
 import { copyText } from '@/lib/clipboard';
-
-function fmtDate(d) {
-  return new Date(d).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
-}
 
 export default function TeamPage({ initialData }) {
   const { dark, t } = useTheme();
@@ -104,197 +100,110 @@ export default function TeamPage({ initialData }) {
   const pending = members.filter((m) => m.status === "pending");
 
   useHeaderAction(useMemo(() => (
-    <button
-      onClick={() => { setShowInvite(true); setInviteResult(null); }}
-      className="flex items-center gap-[7px] py-[11px] px-[18px] rounded-[11px] text-[14px] font-semibold border-none cursor-pointer text-white shrink-0"
-      style={{ background: t.grad, fontFamily: "inherit", boxShadow: "0 4px 14px rgba(196,125,142,.28)" }}
-    >
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Invite
-    </button>
-  ), [t.grad]));
+    <button type="button" className="pt-b pri" onClick={() => { setShowInvite(true); setInviteResult(null); setInvError(null); }}>+ Invite someone</button>
+  ), []));
+
+  const earned = approved.reduce((n, m) => n + m.totalEarned, 0);
+  const sales = approved.reduce((n, m) => n + m.commissions, 0);
+  const links = approved.reduce((n, m) => n + m.links, 0);
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="text-[13px]" style={{ color: t.muted }}>{approved.length} active member{approved.length !== 1 ? "s" : ""}</div>
+    <div className="tem" style={pitVars(dark, t)}>
+      <style>{TEM_CSS}</style>
 
-      {/* Invite form / result */}
-      {showInvite && (
-        <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
-          <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
-            <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>
-              {inviteResult ? "Invite Link Ready" : "Invite a Crew Member"}
-            </div>
-            <div className="text-[11px] mt-[2px]" style={{ color: t.soft }}>{inviteResult ? "Share the link to complete registration" : "Add someone to your crew"}</div>
-          </div>
-          <div className="p-[18px]">
-            {inviteResult ? (
-              <div className="flex flex-col gap-3">
-                <div className="text-[13px]" style={{ color: t.text }}>
-                  Invite link for <b>{inviteResult.name}</b>:
-                </div>
-                <div className="flex items-center gap-2 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)", border: `1px solid ${t.surfaceBrd}` }}>
-                  <span className="text-[12px] flex-1 truncate" style={{ color: t.accent }}>{inviteResult.inviteUrl}</span>
-                  <button
-                    onClick={() => copyInvite()}
-                    className="bg-transparent border-none cursor-pointer p-1 flex shrink-0"
-                    style={{ color: copied ? t.green : t.muted }}
-                  >
-                    {copied
-                      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
-                      : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    }
-                  </button>
-                </div>
-                <div className="text-[11.5px]" style={{ color: t.muted }}>This link expires in 7 days. Send it to {inviteResult.name} to complete their registration.</div>
-                <button
-                  onClick={() => { setInviteResult(null); setShowInvite(false); }}
-                  className="self-end py-[7px] px-4 rounded-lg text-[12.5px] font-medium border-none cursor-pointer"
-                  style={{ background: "transparent", color: t.muted, fontFamily: "inherit" }}
-                >
-                  Done
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                <div>
-                  <label className="text-[11.5px] font-medium block mb-1" style={{ color: t.muted }}>Name</label>
-                  <input
-                    value={invName}
-                    onChange={(e) => setInvName(e.target.value)}
-                    placeholder="Full name"
-                    className="w-full py-[9px] px-3 rounded-lg text-[13.5px] bg-transparent outline-none"
-                    style={{ color: t.text, border: `1px solid ${t.surfaceBrd}`, fontFamily: "inherit" }}
-                  />
-                </div>
-                <div>
-                  <label className="text-[11.5px] font-medium block mb-1" style={{ color: t.muted }}>Email</label>
-                  <input
-                    value={invEmail}
-                    onChange={(e) => setInvEmail(e.target.value)}
-                    placeholder="email@example.com"
-                    type="email"
-                    className="w-full py-[9px] px-3 rounded-lg text-[13.5px] bg-transparent outline-none"
-                    style={{ color: t.text, border: `1px solid ${t.surfaceBrd}`, fontFamily: "inherit" }}
-                  />
-                </div>
-                {invError && <div className="text-[12.5px]" style={{ color: t.red }}>{invError}</div>}
-                <div className="flex gap-2 justify-end mt-1">
-                  <button
-                    onClick={() => { setShowInvite(false); setInvName(""); setInvEmail(""); setInvError(null); }}
-                    className="py-[7px] px-4 rounded-lg text-[12.5px] font-medium border-none cursor-pointer"
-                    style={{ background: "transparent", color: t.muted, fontFamily: "inherit" }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleInvite}
-                    disabled={inviting}
-                    className="py-[7px] px-4 rounded-lg text-[12.5px] font-semibold border-none cursor-pointer text-white disabled:opacity-50"
-                    style={{ background: t.grad, fontFamily: "inherit" }}
-                  >
-                    {inviting ? "Sending..." : "Send Invite"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <Facts>
+        <Fact value={String(approved.length)} label="In your crew" sub={pending.length ? `${pending.length} waiting` : "nobody waiting"} kind={pending.length ? "warn" : undefined} />
+        <Fact value={fN(earned)} label="They earned" sub="all time, between them" kind="ok" />
+        <Fact value={sales.toLocaleString()} label="Their sales" sub="orders through their links" />
+        <Fact value={links.toLocaleString()} label="Their links" sub="running for you" />
+      </Facts>
 
-      {/* Pending invites */}
       {pending.length > 0 && (
-        <div className="rounded-[14px] overflow-hidden transition-opacity duration-200" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}`, opacity: refreshing ? 0.6 : 1 }}>
-          <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
-            <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>Pending ({pending.length})</div>
-            <div className="text-[11px] mt-[2px]" style={{ color: t.soft }}>Awaiting approval or registration</div>
-          </div>
-          {pending.map((m, i) => (
-            <div key={m.id} style={{ borderTop: i > 0 ? `1px solid ${t.surfaceBrd}` : undefined }}>
-              <div className="flex items-center gap-3 px-[18px] py-[12px]">
-                <div className="w-8 h-8 rounded-[9px] flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: t.grad }}>
-                  {m.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+        <Card title="Waiting" cnt="send the link again, or take it back">
+          <div className="pt-list" style={{ opacity: refreshing ? 0.6 : 1, transition: "opacity 200ms" }}>
+            {pending.map((m) => (
+              <div key={m.id}>
+                <div className="pt-r tm">
+                  <span className="pt-av sm">{initialsOf(m.name)}</span>
+                  <span className="pt-tt"><b>{m.name}</b><i>{m.email}</i></span>
+                  <Chip kind={m.inviteExpired ? "bad" : m.hasPendingInvite ? "warn" : "dim"}>
+                    {m.inviteExpired ? "Link expired" : m.hasPendingInvite ? "Invited, not joined" : `Asked ${longDate(m.createdAt)}`}
+                  </Chip>
+                  <span className="pt-acts">
+                    <button type="button" className="pt-b sm pri" disabled={actionLoading === m.id} onClick={() => handleResend(m.id)}>Send the link again</button>
+                    <button type="button" className="pt-b sm bad" disabled={actionLoading === m.id} onClick={() => handleRevoke(m.id, m.name)}>Take it back</button>
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium truncate" style={{ color: t.text }}>{m.name}</div>
-                  <div className="text-[11.5px] truncate" style={{ color: t.muted }}>{m.email}</div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => handleResend(m.id)}
-                    disabled={actionLoading === m.id}
-                    className="text-[11px] font-semibold py-[4px] px-[10px] rounded-md border-none cursor-pointer disabled:opacity-50"
-                    style={{ background: t.accentLight, color: t.accent, fontFamily: "inherit" }}
-                  >
-                    Resend
-                  </button>
-                  <button
-                    onClick={() => handleRevoke(m.id, m.name)}
-                    disabled={actionLoading === m.id}
-                    className="text-[11px] font-semibold py-[4px] px-[10px] rounded-md border-none cursor-pointer disabled:opacity-50"
-                    style={{ background: dark ? "rgba(214,48,49,.15)" : "rgba(214,48,49,.08)", color: "#d63031", fontFamily: "inherit" }}
-                  >
-                    Revoke
-                  </button>
-                  <StatusBadge status={m.inviteExpired ? "expired" : m.hasPendingInvite ? "invited" : "pending"} label={m.inviteExpired ? "Expired" : m.hasPendingInvite ? "Invited" : "Pending"} dark={dark} t={t} />
-                </div>
-              </div>
-              {resendResult?.memberId === m.id && (
-                <div className="px-[18px] pb-[12px]">
-                  <div className="flex items-center gap-2 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)", border: `1px solid ${t.surfaceBrd}` }}>
-                    <span className="text-[12px] flex-1 truncate" style={{ color: t.accent }}>{resendResult.inviteUrl}</span>
-                    <button
-                      onClick={() => copyInvite(resendResult.inviteUrl)}
-                      className="bg-transparent border-none cursor-pointer p-1 flex shrink-0"
-                      style={{ color: copied ? t.green : t.muted }}
-                    >
-                      {copied
-                        ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
-                        : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                      }
-                    </button>
+                {resendResult?.memberId === m.id && (
+                  <div className="tem-inv">
+                    <span className="m">{resendResult.inviteUrl}</span>
+                    <button type="button" className="pt-b sm" onClick={() => copyInvite(resendResult.inviteUrl)}>{copied ? "Copied" : "Copy"}</button>
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
 
-      {/* Active members */}
-      {approved.length === 0 && pending.length === 0 ? (
-        <EmptyState
-          title="No crew members yet"
-          subtitle="Invite your first crew member to start building your team."
-          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
-          t={t}
-        />
-      ) : approved.length > 0 && (
-        <div className="rounded-[14px] overflow-hidden transition-opacity duration-200" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}`, opacity: refreshing ? 0.6 : 1 }}>
-          <div className="py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
-            <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>Active Members ({approved.length})</div>
-            <div className="text-[11px] mt-[2px]" style={{ color: t.soft }}>Your approved crew members</div>
+      <Card title="Your crew" cnt="what each one has brought in">
+        {approved.length === 0 ? (
+          <Empty>Nobody in the crew yet. Invite someone and their earnings show up here.</Empty>
+        ) : (
+          <div className="pt-list" style={{ opacity: refreshing ? 0.6 : 1, transition: "opacity 200ms" }}>
+            {approved.map((m) => (
+              <div key={m.id} className="pt-r tm2">
+                <span className="pt-av sm">{initialsOf(m.name)}</span>
+                <span className="pt-tt"><b>{m.name}</b><i>{m.email}</i></span>
+                <Chip kind="ok">{m.tier} {m.commissionRate}%</Chip>
+                <span className="pt-num m tem-sales">{m.commissions.toLocaleString()}</span>
+                <span className="pt-num m ok">{fN(m.totalEarned)}</span>
+              </div>
+            ))}
           </div>
-          {approved.map((m, i) => (
-            <div key={m.id} className="flex items-center gap-3 px-[18px] py-[12px] max-md:flex-wrap" style={{ borderTop: i > 0 ? `1px solid ${t.surfaceBrd}` : undefined }}>
-              <div className="w-8 h-8 rounded-[9px] flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: t.grad }}>
-                {m.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-medium truncate" style={{ color: t.text }}>{m.name}</span>
-                  <span className="text-[10px] font-semibold py-[1px] px-[6px] rounded-md capitalize" style={{ color: t.accent, background: t.accentLight }}>{m.tier}</span>
-                </div>
-                <div className="text-[11.5px] mt-[1px]" style={{ color: t.muted }}>{m.email}</div>
-              </div>
-              <div className="flex items-center gap-4 shrink-0 text-[12px] max-md:w-full max-md:mt-1 max-md:pl-11" style={{ color: t.muted }}>
-                <span><b className="m" style={{ color: t.text }}>{fN(m.totalEarned)}</b> earned</span>
-                <span><b className="m" style={{ color: t.text }}>{m.commissions}</b> sales</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+        )}
+      </Card>
+
+      <Modal
+        open={showInvite}
+        onClose={() => { setShowInvite(false); setInvName(""); setInvEmail(""); setInvError(null); setInviteResult(null); }}
+        title={inviteResult ? "The link is ready" : "Invite someone"}
+        sub={inviteResult ? "Send it to them yourself. It stops working after seven days." : "They get a link to finish signing up."}
+        footer={inviteResult ? (
+          <button type="button" className="pt-b pri" onClick={() => { setInviteResult(null); setShowInvite(false); }}>Done</button>
+        ) : (<>
+          {invError && <span className="pt-err">{invError}</span>}
+          <button type="button" className="pt-b" onClick={() => { setShowInvite(false); setInvName(""); setInvEmail(""); setInvError(null); }}>Cancel</button>
+          <button type="button" className="pt-b pri" disabled={inviting} onClick={handleInvite}>{inviting ? "Sending…" : "Send invite"}</button>
+        </>)}
+      >
+        {inviteResult ? <>
+          <div className="pt-note">The invite link for <b>{inviteResult.name}</b>:</div>
+          <div className="tem-inv" style={{ marginTop: 10 }}>
+            <span className="m">{inviteResult.inviteUrl}</span>
+            <button type="button" className="pt-b sm" onClick={() => copyInvite()}>{copied ? "Copied" : "Copy"}</button>
+          </div>
+        </> : <>
+          <Field label="Name" value={invName} onChange={setInvName} placeholder="Their full name" autoFocus />
+          <Field label="Email" value={invEmail} onChange={setInvEmail} type="email" placeholder="them@example.com" />
+        </>}
+      </Modal>
     </div>
   );
 }
+
+const TEM_CSS = `
+.tem{display:flex;flex-direction:column;gap:14px}
+.tem .pt-list>div+div>.pt-r{border-top:1px solid var(--rail)}
+.tem-inv{display:flex;align-items:center;gap:10px;margin:0 16px 12px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--soft);min-width:0}
+.tem-inv span{flex:1;min-width:0;font-size:12px;color:var(--ac);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pt-md .tem-inv{margin:0}
+@media (min-width:900.99px){
+  .tem .pt-r.tm{grid-template-columns:30px 1fr 160px auto}
+  .tem .pt-r.tm2{grid-template-columns:30px 1fr 120px 70px 100px}
+}
+@media (max-width:900.98px){
+  .tem .pt-r .tem-sales{grid-area:cnt;justify-self:end;font-weight:600;color:var(--mut)}
+  .tem .pt-r .tem-sales::after{content:" sales";font-weight:500}
+}
+`;

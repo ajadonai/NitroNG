@@ -1,19 +1,31 @@
 "use client";
 import { useState, useCallback } from "react";
-import { StatusBadge, Skeleton, ErrorBanner, EmptyState } from "./kit";
+import { Card, Chip, Empty, Fact, Facts, dateOf, initialsOf, pitVars } from "./kit";
+import { SkelBar, SkelFacts, SkelList } from "../skeleton";
 import { useTheme } from "../shared-nav";
 import { fN } from "@/lib/format";
 
-function fmtDate(d) {
-  return new Date(d).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
-}
+// The four states a commission can be in, in the words the crew uses.
+const STATUS = {
+  approved: { label: "Cleared", kind: "ok" },
+  held: { label: "Holding", kind: "warn" },
+  voided: { label: "Reversed", kind: "bad" },
+  pending: { label: "Pending", kind: "dim" },
+};
 
 const FILTERS = [
   { key: "all", label: "All" },
-  { key: "held", label: "Held" },
-  { key: "approved", label: "Approved" },
-  { key: "voided", label: "Voided" },
+  { key: "held", label: "Holding" },
+  { key: "approved", label: "Cleared" },
+  { key: "voided", label: "Reversed" },
 ];
+
+// How many days are left on a held commission before it clears.
+function daysLeft(iso) {
+  if (!iso) return null;
+  const d = Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
+  return d > 0 ? d : 0;
+}
 
 export default function CommissionsPage({ member, initialData }) {
   const { dark, t } = useTheme();
@@ -34,111 +46,86 @@ export default function CommissionsPage({ member, initialData }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const changeFilter = (f) => {
-    setFilter(f);
-    setPage(1);
-    load(f, 1);
-  };
+  const changeFilter = (f) => { setFilter(f); setPage(1); load(f, 1); };
+  const changePage = (p) => { setPage(p); load(filter, p); };
 
-  const changePage = (p) => {
-    setPage(p);
-    load(filter, p);
-  };
-
-  if (error) return <ErrorBanner message={error} onRetry={() => load(filter, page)} t={t} />;
+  const rows = data?.commissions || [];
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* Filter tabs */}
-      <div className="flex gap-[6px] overflow-x-auto">
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => changeFilter(f.key)}
-            className="px-3 py-[6px] rounded-lg text-[12.5px] font-semibold border-none cursor-pointer whitespace-nowrap transition-colors duration-150"
-            style={{
-              background: filter === f.key ? t.accentLight : "transparent",
-              color: filter === f.key ? t.accent : t.muted,
-              fontFamily: "inherit",
-            }}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+    <div className="cms" style={pitVars(dark, t)}>
+      <style>{CMS_CSS}</style>
 
-      {/* List */}
-      {loading && !data ? (
-        <div className="rounded-2xl" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center gap-3 px-5 py-4" style={{ borderTop: i > 1 ? `1px solid ${t.surfaceBrd}` : undefined }}>
-              <div className="flex-1 flex flex-col gap-2"><Skeleton w={140} h={13} dark={dark} /><Skeleton w={90} h={10} dark={dark} /></div>
-              <Skeleton w={70} h={13} dark={dark} />
-            </div>
+      {loading && !data ? <><SkelFacts dark={dark} /><SkelBar dark={dark} search={false} pills={4} /><SkelList dark={dark} rows={6} title rowH={58} /></> : <>
+        <Facts>
+          <Fact value={fN(member?.totalEarned || 0)} label="Earned" sub="all time" />
+          <Fact value={fN(member?.totalPaid || 0)} label="Paid out" sub="already in your bank" kind="ok" />
+          <Fact value={(data?.total || 0).toLocaleString()} label="Commissions" sub={filter === "all" ? "every one of them" : `${FILTERS.find(f => f.key === filter)?.label.toLowerCase()} only`} />
+          <Fact value={`${member?.commissionRate || 0}%`} label="Your rate" sub="of the pot on every order" />
+        </Facts>
+
+        <div className="pt-bar">
+          {FILTERS.map((f) => (
+            <button key={f.key} type="button" className={"pt-tg" + (filter === f.key ? " on" : "")} onClick={() => changeFilter(f.key)}>
+              {f.label}{filter === f.key && data ? <span className="m">{data.total}</span> : null}
+            </button>
           ))}
+          <span className="pt-cnt">{(data?.total || 0).toLocaleString()} {data?.total === 1 ? "commission" : "commissions"}</span>
         </div>
-      ) : data?.commissions?.length === 0 ? (
-        <EmptyState
-          title={filter === "all" ? "No commissions yet" : `No ${filter} commissions`}
-          subtitle={filter === "all" ? "When someone orders through your link, commissions appear here." : "Try a different filter."}
-          icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
-          t={t}
-        />
-      ) : (
-        <>
-          <div className="rounded-2xl overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}`, opacity: loading ? 0.6 : 1, transition: "opacity 150ms" }}>
-            {data.commissions.map((c, i) => (
-              <div key={c.id} className="flex items-center gap-3 px-5 py-[14px] max-md:flex-wrap" style={{ borderTop: i > 0 ? `1px solid ${t.surfaceBrd}` : undefined }}>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="m text-[13px] font-medium" style={{ color: t.text }}>{c.orderId}</span>
-                    {isChief && c.type === "team" && (
-                      <span className="text-[10px] font-semibold py-[1px] px-[6px] rounded-md" style={{ color: t.accent, background: t.accentLight }}>TEAM</span>
-                    )}
-                  </div>
-                  <div className="text-[11.5px] mt-[2px] flex items-center gap-[6px] flex-wrap" style={{ color: t.muted }}>
-                    <span>{fmtDate(c.createdAt)}</span>
-                    <span>·</span>
-                    <span>via {c.slug}</span>
-                    {isChief && c.type === "team" && c.memberName && (
-                      <><span>·</span><span>{c.memberName}</span></>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 shrink-0 max-md:w-full max-md:justify-between max-md:mt-1">
-                  <div className="text-right">
-                    <div className="m text-[13.5px] font-semibold" style={{ color: c.status === "voided" ? t.red : t.green }}>{fN(c.amount)}</div>
-                    <div className="m text-[10.5px] mt-[1px]" style={{ color: t.muted }}>{c.rate}% split · {fN(c.orderCharge)}</div>
-                  </div>
-                  <StatusBadge status={c.status} dark={dark} t={t} />
-                </div>
-              </div>
-            ))}
-          </div>
 
-          {data.pages > 1 && (
-            <div className="flex items-center justify-center gap-2">
-              <button
-                disabled={page <= 1 || loading}
-                onClick={() => changePage(page - 1)}
-                className="px-3 py-[6px] rounded-lg text-[12.5px] font-medium border-none cursor-pointer disabled:opacity-30 disabled:cursor-default"
-                style={{ background: t.surface, color: t.text, border: `1px solid ${t.surfaceBrd}`, fontFamily: "inherit" }}
-              >
-                Prev
-              </button>
-              <span className="text-[12.5px]" style={{ color: t.muted }}>{page} of {data.pages}</span>
-              <button
-                disabled={page >= data.pages || loading}
-                onClick={() => changePage(page + 1)}
-                className="px-3 py-[6px] rounded-lg text-[12.5px] font-medium border-none cursor-pointer disabled:opacity-30 disabled:cursor-default"
-                style={{ background: t.surface, color: t.text, border: `1px solid ${t.surfaceBrd}`, fontFamily: "inherit" }}
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
-      )}
+        {error ? (
+          <Card title="Commissions" cnt="something got in the way">
+            <Empty>
+              {error}
+              <div style={{ marginTop: 12 }}><button type="button" className="pt-b sm" onClick={() => load(filter, page)}>Try again</button></div>
+            </Empty>
+          </Card>
+        ) : (
+          <Card title="Commissions" cnt="newest first · a commission clears seven days after the order">
+            {rows.length === 0 ? (
+              <Empty>{filter === "all" ? "Nothing yet. When someone orders through your link, it lands here." : "Nothing under that filter."}</Empty>
+            ) : <>
+              <div className="pt-list" style={{ opacity: loading ? 0.6 : 1, transition: "opacity 150ms" }}>
+                {rows.map((c) => {
+                  const s = STATUS[c.status] || STATUS.pending;
+                  const left = c.status === "held" ? daysLeft(c.releasesAt) : null;
+                  const who = c.type === "team" && c.memberName ? c.memberName : c.orderId;
+                  return (
+                    <div key={c.id} className="pt-r cm">
+                      <span className="pt-av sm">{c.type === "team" && c.memberName ? initialsOf(c.memberName) : c.slug.slice(0, 2).toUpperCase()}</span>
+                      <span className="pt-tt">
+                        <b>{who}</b>
+                        <i>{c.slug} · order {fN(c.orderCharge)} · {c.rate}%{isChief && c.type === "team" ? " · crew" : ""}</i>
+                      </span>
+                      <Chip kind={s.kind}>{left != null ? `Holding, ${left} ${left === 1 ? "day" : "days"} left` : s.label}</Chip>
+                      <span className={"pt-num m" + (c.status === "voided" ? " bad" : "")}>{c.status === "voided" ? `−${fN(c.amount)}` : fN(c.amount)}</span>
+                      <span className="pt-c">{dateOf(c.createdAt)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {data.pages > 1 && (
+                <div className="pt-pg">
+                  <span className="pt-cnt m">{(page - 1) * 20 + 1}–{(page - 1) * 20 + rows.length} of {data.total.toLocaleString()}</span>
+                  <span className="pt-pgn">
+                    <button type="button" className="pt-ib" disabled={page <= 1 || loading} onClick={() => changePage(page - 1)} aria-label="Previous page">‹</button>
+                    <span className="pt-cnt m">{page} / {data.pages}</span>
+                    <button type="button" className="pt-ib" disabled={page >= data.pages || loading} onClick={() => changePage(page + 1)} aria-label="Next page">›</button>
+                  </span>
+                </div>
+              )}
+            </>}
+          </Card>
+        )}
+      </>}
     </div>
   );
 }
+
+const CMS_CSS = `
+.cms{display:flex;flex-direction:column;gap:14px}
+.cms .pt-tg .m{font-size:11.5px;color:var(--dim)}
+.cms .pt-tg.on .m{color:var(--card);opacity:.75}
+@media (min-width:900.99px){
+  .cms .pt-r.cm{grid-template-columns:30px 1fr 180px 100px 80px}
+}
+`;
