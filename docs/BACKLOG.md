@@ -22,6 +22,8 @@ never gets picked up twice. Update this in the same commit as the work.
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-08-31 | Pulse shows the day's margin as profit on cost beside the profit figure | `7e927581` v2.4.60 |
+| 2026-08-31 | Rewards gets its own page with the tier colours, gold points and the ladder; the two pop-ups stay and link to it; Guide is a searchable reading list; the task editor is two columns with a live preview and folded limits; row actions can no longer be pushed off a card | `20520632` v2.4.59 |
 | 2026-08-30 | Changelog (collapsible composer, proper editor height) and Tasks (submissions first, proof on the row, reject reason) rebuilt with page-shaped skeletons; Announcements composer taller | `ca4494b4` v2.4.53 |
 | 2026-08-30 | Single-day orders no longer refused above ~2,600 followers: the intraday scheduler is capped to a day and sends larger batches (customer, bulk, reorder, admin paths) | `c3ab862a` v2.4.52 |
 | 2026-08-30 | Crew rebuilt on the shared frame with a drawer, facts and page-shaped skeletons | `e2a55dd4` v2.4.51 |

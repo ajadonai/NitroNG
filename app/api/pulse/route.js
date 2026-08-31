@@ -331,6 +331,7 @@ export async function GET(req) {
       depositsChange: pctChange(todayDeposits, yesterdayDeposits),
       ordersChange: pctChange(todayOrderCount, yesterdayOrderCount),
       profitToday: todayRevenue - ((todayCostAgg._sum.cost || 0) - adjToday.cost) / 100,
+      costToday: ((todayCostAgg._sum.cost || 0) - adjToday.cost) / 100,
       profitChange: pctChange(
         todayRevenue - ((todayCostAgg._sum.cost || 0) - adjToday.cost) / 100,
         yesterdayRevenue - ((yesterdayCostAgg._sum.cost || 0) - adjYesterday.cost) / 100

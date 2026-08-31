@@ -49,11 +49,11 @@ function Axis({ nowHour }) {
   return <div className="pl-ax"><span>00:00</span><span>06:00</span><span>12:00</span><span>now · {String(nowHour).padStart(2, '0')}:00</span></div>;
 }
 
-function Figure({ kind, label, value, delta, series, nowHour }) {
+function Figure({ kind, label, value, delta, series, nowHour, note }) {
   return (
     <div className={`pl-tc pl-${kind}`}>
       <div className="pl-tl">{label}<span className="pl-vs"><Delta value={delta} /> vs yesterday</span></div>
-      <div className="pl-val m">{value}</div>
+      <div className="pl-val m">{value}{note ? <span className="pl-note">{note}</span> : null}</div>
       <DayLine values={series} />
       <Axis nowHour={nowHour} />
     </div>
@@ -244,7 +244,7 @@ export default function PulseDashboard() {
       <section className="pl-today">
         <People data={data} />
         <Figure kind="rev" label="Revenue" value={naira(data.revenueToday)} delta={data.revenueChange} series={H.map(h => h.revenue)} nowHour={nowHour} />
-        <Figure kind="pro" label="Profit" value={naira(data.profitToday)} delta={data.profitChange} series={H.map(h => h.profit)} nowHour={nowHour} />
+        <Figure kind="pro" label="Profit" value={naira(data.profitToday)} note={data.costToday > 0 ? `${Math.round((data.profitToday / data.costToday) * 100)}% on cost` : null} delta={data.profitChange} series={H.map(h => h.profit)} nowHour={nowHour} />
         <Figure kind="ord" label="Orders" value={num(data.ordersToday)} delta={data.ordersChange} series={H.map(h => h.orders)} nowHour={nowHour} />
         <Figure kind="dep" label="Deposits" value={naira(data.depositsToday)} delta={data.depositsChange} series={H.map(h => h.deposits)} nowHour={nowHour} />
       </section>
@@ -284,7 +284,7 @@ const CSS = `
 .pl-tl{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mu);font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:6px}
 .pl-vs{letter-spacing:0;text-transform:none;font-weight:500;color:var(--dim);font-size:11px;white-space:nowrap}
 .pl-d{font-weight:700;margin-right:2px}.pl-up{color:var(--ok)}.pl-down{color:var(--bad)}.pl-flat{color:var(--dim)}
-.pl-val{font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1.1;color:var(--tx)}
+.pl-val{font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1.1;color:var(--tx)}.pl-note{font-family:Outfit,system-ui,sans-serif;font-size:12px;font-weight:600;letter-spacing:0;opacity:.55;margin-left:8px;white-space:nowrap}
 .pl-pv{display:flex;align-items:baseline;gap:14px}.pl-ppl .pl-val{font-size:46px}
 .pl-pn{font-size:30px;font-weight:700;color:var(--ok);letter-spacing:-.02em;line-height:1}.pl-pn small{font-family:Outfit,system-ui,sans-serif;font-size:12px;font-weight:500;color:var(--mu);margin-left:6px;letter-spacing:0}
 .pl-sp{width:100%;height:56px;display:block;margin-top:6px}.pl-sp-g{stroke:rgba(255,255,255,.07);stroke-width:1}.pl-sp-a{fill:var(--c);opacity:.16}.pl-sp-l{fill:none;stroke:var(--c);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}.pl-sp-d{fill:var(--c);stroke:var(--sf);stroke-width:2}
