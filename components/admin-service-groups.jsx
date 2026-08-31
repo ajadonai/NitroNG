@@ -147,8 +147,14 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   const TierRow = ({ ti, g }) => {
     const c = costKobo(ti.service); const m = gmPct(Number(ti.sellPer1k), c); const p = panel[ti.id]; const e = edit[ti.id];
     const refill = ti.refill && ti.refillDays > 0 ? (ti.refillDays >= 365 ? "Lifetime" : `${ti.refillDays} days`) : "No refill";
+    const idx = g.tiers.findIndex(x => x.id === ti.id);
+    const move = (dir) => { const other = g.tiers[idx + dir]; if (other && !busy) act({ action: "swap-tier-order", tierA: ti.id, tierB: other.id }); };
     return (
       <div className={`mb-tr${ti.enabled ? "" : " off"}`}>
+        <span className="mb-ord">
+          <button type="button" className="mb-arw" disabled={idx <= 0 || busy} onClick={() => move(-1)} aria-label="Move tier up"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+          <button type="button" className="mb-arw" disabled={idx >= g.tiers.length - 1 || busy} onClick={() => move(1)} aria-label="Move tier down"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        </span>
         <span className={`mb-tchip ${TC[ti.tier] || "std"}`}>{ti.tier}</span>
         <span className="mb-price m">{naira(ti.sellPer1k)}<small>/1k</small>{ti.pricePinned && <i className="mb-lock" title="Pinned: recalculation leaves it alone" />}</span>
         <span className={`mb-gm ${gmCls(m)} m`} title="Profit on cost at today's rate">{m == null ? "—" : `${m}%`}</span>
@@ -166,7 +172,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
             {(g.type || "").toLowerCase().includes("comment") && <label className="mb-chk"><input type="checkbox" checked={e.customComments} onChange={ev => setEdit({ [ti.id]: { ...e, customComments: ev.target.checked } })} /> Custom comments</label>}
             {(g.type || "").toLowerCase().includes("traffic") && <label className="mb-chk"><input type="checkbox" checked={e.trafficTargeting} onChange={ev => setEdit({ [ti.id]: { ...e, trafficTargeting: ev.target.checked } })} /> Traffic targeting</label>}
             <span className="mb-spacer" />
-            <button type="button" className="mb-b sm danger" onClick={async () => { if (await confirm({ title: "Delete tier", message: `Delete the ${ti.tier} tier from "${g.name}"?`, confirmLabel: "Delete", danger: true })) { const ok = await act({ action: "delete-tier", tierId: ti.id }); if (ok) setPanel({}); } }}>Delete tier</button>
+            <button type="button" className="mb-b sm danger" onClick={async () => { if (await confirm({ title: "Delete tier", message: `Delete the ${ti.tier} tier from "${g.name}"?`, confirmLabel: "Delete", danger: true })) { const ok = await act({ action: "delete-tier", tierIdToDelete: ti.id }); if (ok) setPanel({}); } }}>Delete tier</button>
             <button type="button" className="mb-b sm" onClick={() => setPanel({})}>Cancel</button>
             <button type="button" className="mb-pri sm" disabled={busy} onClick={() => saveEdit(ti)}>Save</button>
           </div>
@@ -299,7 +305,11 @@ const CSS = `
 .mb-tog{width:34px;height:20px;border-radius:10px;background:var(--ok);position:relative;flex-shrink:0;display:inline-block;border:0;padding:0;cursor:pointer}.mb-tog i{position:absolute;top:2px;left:16px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}.mb-tog.o{background:var(--line)}.mb-tog.o i{left:2px}
 /* tier rows */
 .mb-gb{background:var(--card)}
-.mb-tr{display:grid;grid-template-columns:86px 120px 52px 1fr 108px 34px auto;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--rail);font-size:12.5px}.mb-tr.off>*:not(.mb-acts):not(.mb-tog):not(.mb-panel){opacity:.5}
+.mb-tr{display:grid;grid-template-columns:22px 86px 120px 52px 1fr 108px 34px auto;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--rail);font-size:12.5px}.mb-tr.off>*:not(.mb-acts):not(.mb-tog):not(.mb-panel):not(.mb-ord){opacity:.5}
+.mb-ord{display:flex;flex-direction:column;gap:2px}
+.mb-arw{display:flex;align-items:center;justify-content:center;width:20px;height:16px;padding:0;border:1px solid var(--line);border-radius:5px;background:var(--card);color:var(--mut);cursor:pointer}
+.mb-arw:hover:not(:disabled){color:var(--ink);background:var(--soft)}
+.mb-arw:disabled{opacity:.3;cursor:default}
 .mb-tchip{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:4px 9px;border-radius:999px;text-align:center}.mb-tchip.bud{background:var(--budbg);color:var(--bud)}.mb-tchip.std{background:var(--stdbg);color:var(--std)}.mb-tchip.prm{background:var(--prmbg);color:var(--prm)}
 .mb-price{font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:5px}.mb-price small{font-size:10px;color:var(--dim);font-weight:500}
 .mb-lock{width:9px;height:11px;border:1.5px solid var(--mut);border-radius:2px;position:relative;display:inline-block}.mb-lock::before{content:"";position:absolute;left:1px;top:-5px;width:4px;height:5px;border:1.5px solid var(--mut);border-bottom:0;border-radius:3px 3px 0 0}
@@ -328,8 +338,9 @@ const CSS = `
   .mb-gh{display:grid;grid-template-columns:auto auto 1fr auto;grid-template-areas:"chev icon name tog" ". pills pills pills";gap:8px 10px;padding:12px}
   .mb-chev{grid-area:chev}.mb-gi{grid-area:icon}.mb-gname{grid-area:name;flex-wrap:wrap}.mb-gh .mb-tog{grid-area:tog}.mb-pills{grid-area:pills;flex-wrap:wrap}
   .mb-gb{padding:8px;display:flex;flex-direction:column;gap:8px}
-  .mb-tr{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"chip price gm" "svc svc svc" "meta meta tog" "acts acts acts" "panel panel panel";gap:8px 10px;padding:11px 12px;border:1px solid var(--line);border-radius:12px}
+  .mb-tr{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"chip price gm" "svc svc svc" "meta meta tog" "ord acts acts" "panel panel panel";gap:8px 10px;padding:11px 12px;border:1px solid var(--line);border-radius:12px}
   .mb-tchip{grid-area:chip}.mb-price{grid-area:price}.mb-gm{grid-area:gm;font-size:13px;text-align:right}.mb-svc-cell{grid-area:svc}.mb-meta{grid-area:meta;flex-direction:row;gap:8px}.mb-tr .mb-tog{grid-area:tog;justify-self:end}.mb-acts{grid-area:acts;padding-top:8px;border-top:1px solid var(--rail);justify-content:flex-end}.mb-panel{grid-area:panel;margin-top:0}
+  .mb-ord{grid-area:ord;flex-direction:row;padding-top:8px}
   .mb-gfoot{flex-wrap:wrap;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--line)}.mb-addt{flex:1;text-align:center}.mb-gacts{width:100%}.mb-gacts .mb-b{flex:1}
 }
 `;
