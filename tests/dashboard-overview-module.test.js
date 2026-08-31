@@ -27,6 +27,12 @@ describe("dashboard overview module boundary", () => {
     expect(overviewSource).toContain("<PlatformIcon");
   });
 
+  it("nudges accounts that never paid toward their first top-up, ahead of the first-order nudge", () => {
+    expect(overviewSource).toContain("const neverPaid = !!user?.welcomeBonusEligible;");
+    expect(overviewSource).toMatch(/neverPaid\s*\?\s*\{ label: "Get up to ₦3,000 free on your first top-up",[^}]*target: "add-funds"/);
+    expect(overviewSource).toContain("const showNext = isNew || neverPaid;");
+  });
+
   it("loads the extracted client module without browser globals", async () => {
     const feature = await import("@/components/dashboard-overview");
 
