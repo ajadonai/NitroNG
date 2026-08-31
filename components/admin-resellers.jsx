@@ -17,6 +17,7 @@ export default function AdminResellersPage({ dark, t }) {
   const [noteDraft, setNoteDraft] = useState({});
   const [rateDraft, setRateDraft] = useState({});
   const [grantOpen, setGrantOpen] = useState(false);
+  const [openId, setOpenId] = useState(null); // userId whose drawer is open
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const searchTimer = useRef(null);
@@ -38,13 +39,13 @@ export default function AdminResellersPage({ dark, t }) {
     return () => clearTimeout(searchTimer.current);
   }, [query, grantOpen, load]);
 
-  // The modal owns the screen while it is up.
+  // The modal or drawer owns the screen while it is up.
   useEffect(() => {
-    if (!grantOpen) return undefined;
+    if (!grantOpen && !openId) return undefined;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [grantOpen]);
+  }, [grantOpen, openId]);
 
   const act = async (userId, action, extra = {}, key = action) => {
     if (busy) return;
@@ -95,7 +96,8 @@ export default function AdminResellersPage({ dark, t }) {
   const bone = (w, h = 12, cls = "") => <i className={`re-bone skel-bone ${dark ? "skel-dark" : "skel-light"} ${cls}`} style={{ width: w, height: h }} />;
   const rows = data ? [...data.resellers.filter(r => r.enabled), ...data.resellers.filter(r => !r.enabled)] : [];
   const sum = data?.summary;
-  const header = <div className="re-rh"><span>Reseller</span><span>Status</span><span>Catalogue</span><span>Rate</span><span className="r">Orders · spend, {data?.windowDays || 90}d</span><span>Why</span><span>Approved</span><span /></div>;
+  const openR = openId ? rows.find(r => r.userId === openId) : null;
+  const header = <div className="re-rh"><span>Reseller</span><span className="r">Orders · spend, {data?.windowDays || 90}d</span><span>Status</span><span /></div>;
 
   return (
     <div className="re" style={vars}>
@@ -124,41 +126,25 @@ export default function AdminResellersPage({ dark, t }) {
         {header}
         {loading ? Array.from({ length: 5 }, (_, i) => (
           <div key={i} className="re-rr sk">
-            <span className="re-un">{bone(34, 34, "av")}<span className="re-unt">{bone(160, 13)}{bone(200, 10)}</span></span>
-            <span>{bone(52)}</span><span>{bone(72, 28)}</span><span>{bone(50, 28)}</span><span className="r">{bone(110)}</span><span>{bone("90%", 28)}</span><span>{bone(60)}</span><span className="re-ra">{bone(58, 26)}</span>
+            <span className="re-un">{bone(34, 34, "av")}<span className="re-unt">{bone(160, 13)}</span></span>
+            <span className="r">{bone(110)}</span><span>{bone(52)}</span><span />
           </div>
         )) : rows.length === 0 ? (
           <div className="re-empty">No resellers yet. Grant access to an account to start.</div>
         ) : rows.map(r => {
           const on = r.enabled;
           return (
-            <div key={r.id} className={"re-rr" + (on ? "" : " off")}>
+            <button type="button" key={r.id} className={"re-rr" + (on ? "" : " off")} onClick={() => setOpenId(r.userId)}>
               <span className="re-un">
                 <span className="re-av">{initials(r.name || r.email)}</span>
                 <span className="re-unt">
-                  <b><span>{r.name || "(no name)"}</span><span className={`re-ch ${r.catalog === "full" ? "full" : "cur"}`}>{r.catalog === "full" ? "Full catalogue" : "Curated"}</span>{r.apiOrders > 0 && <span className="re-ch api">API · {r.apiOrders}</span>}</b>
-                  <i>{r.email}</i>
+                  <b><span>{r.name || r.email}</span><span className={`re-ch ${r.catalog === "full" ? "full" : "cur"}`}>{r.catalog === "full" ? "Full catalogue" : "Curated"}</span>{r.apiOrders > 0 && <span className="re-ch api">API · {r.apiOrders}</span>}</b>
                 </span>
               </span>
-              <span className="re-st"><i className={`re-dot ${on ? "ok" : "bad"}`} />{on ? "Active" : "Revoked"}</span>
-              <span className="re-selw">
-                <select className="re-sel" value={r.catalog} disabled={!on || !!busy} onChange={e => act(r.userId, "catalog", { catalog: e.target.value }, "catalog")}>
-                  <option value="curated">Curated</option><option value="full">Full</option>
-                </select>
-              </span>
-              <input className="re-in m re-rate" value={rateDraft[r.userId] ?? (r.discountPct ?? "")} placeholder={`${data.globalDiscount}%`} disabled={!on || !!busy} inputMode="numeric" aria-label="Discount rate"
-                onChange={e => setRateDraft(p => ({ ...p, [r.userId]: e.target.value.replace(/[^0-9]/g, "") }))}
-                onBlur={() => { const v = rateDraft[r.userId]; if (v === undefined || v === String(r.discountPct ?? "")) return; act(r.userId, "rate", { discountPct: v }, "rate"); }} />
               <span className="r m re-act"><b>{r.recentOrders}</b> · {naira(r.recentSpend)}</span>
-              <input className="re-in re-why" value={noteDraft[r.userId] ?? r.notes ?? ""} placeholder="Why they have it…" disabled={!!busy} aria-label="Reason"
-                onChange={e => setNoteDraft(p => ({ ...p, [r.userId]: e.target.value }))}
-                onBlur={() => { const v = noteDraft[r.userId]; if (v === undefined || v === (r.notes ?? "")) return; act(r.userId, "notes", { notes: v }, "notes"); }} />
-              <span className="re-ap" title={r.approvedBy ? `by ${r.approvedBy}` : ""}>{fmtDate(r.approvedAt)}{r.approvedBy && <i>by {r.approvedBy}</i>}</span>
-              <span className="re-ra">
-                {on ? <button type="button" className="re-b sm danger" disabled={!!busy} onClick={() => revoke(r)}>{busy === r.userId + "revoke" ? "…" : "Revoke"}</button>
-                  : <button type="button" className="re-b sm" disabled={!!busy} onClick={() => restore(r)}>{busy === r.userId + "approve" ? "…" : "Restore"}</button>}
-              </span>
-            </div>
+              <span className="re-st"><i className={`re-dot ${on ? "ok" : "bad"}`} />{on ? "Active" : "Revoked"}</span>
+              <svg className="re-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
           );
         })}
       </div>
@@ -185,6 +171,52 @@ export default function AdminResellersPage({ dark, t }) {
           </div>
         </div>
       )}
+
+      {openR && (
+        <div className="re-ov dr" onClick={() => setOpenId(null)}>
+          <div className="re-dr" onClick={e => e.stopPropagation()} role="dialog" aria-label={`${openR.name || openR.email} — reseller details`}>
+            <div className="re-drh">
+              <span className="re-av lg">{initials(openR.name || openR.email)}</span>
+              <span className="re-unt"><b><span>{openR.name || "(no name)"}</span></b><i>{openR.email}</i></span>
+              <button type="button" className="re-x" onClick={() => setOpenId(null)} aria-label="Close">✕</button>
+            </div>
+            <div className="re-st"><i className={`re-dot ${openR.enabled ? "ok" : "bad"}`} />{openR.enabled ? "Active" : "Revoked"}<span className="re-cnt" style={{ marginLeft: "auto" }}>granted {fmtDate(openR.approvedAt)}{openR.approvedBy ? ` by ${openR.approvedBy}` : ""}</span></div>
+            <div className="re-fld">
+              <label>Catalogue</label>
+              <div className="re-segs">
+                {[["curated", "Curated"], ["full", "Full — API only"]].map(([v, l]) => (
+                  <button type="button" key={v} className={`re-seg${openR.catalog === v ? " on" : ""}`} disabled={!openR.enabled || !!busy} onClick={() => { if (openR.catalog !== v) act(openR.userId, "catalog", { catalog: v }, "catalog"); }}>{l}</button>
+                ))}
+              </div>
+            </div>
+            <div className="re-fld">
+              <label>Personal rate</label>
+              <div className="re-inl">
+                <input className="re-in m re-rate" value={rateDraft[openR.userId] ?? (openR.discountPct ?? "")} placeholder={`${data.globalDiscount}%`} disabled={!openR.enabled || !!busy} inputMode="numeric" aria-label="Discount rate"
+                  onChange={e => setRateDraft(p => ({ ...p, [openR.userId]: e.target.value.replace(/[^0-9]/g, "") }))}
+                  onBlur={() => { const v = rateDraft[openR.userId]; if (v === undefined || v === String(openR.discountPct ?? "")) return; act(openR.userId, "rate", { discountPct: v }, "rate"); }} />
+                <span className="re-cnt">below retail · default is {data.globalDiscount}%</span>
+              </div>
+            </div>
+            <div className="re-fld">
+              <label>Why they have it</label>
+              <input className="re-in re-why" value={noteDraft[openR.userId] ?? openR.notes ?? ""} placeholder="Why they have it…" disabled={!!busy} aria-label="Reason"
+                onChange={e => setNoteDraft(p => ({ ...p, [openR.userId]: e.target.value }))}
+                onBlur={() => { const v = noteDraft[openR.userId]; if (v === undefined || v === (openR.notes ?? "")) return; act(openR.userId, "notes", { notes: v }, "notes"); }} />
+            </div>
+            <div className="re-facts">
+              <div className="re-fact"><span>Orders · {data?.windowDays || 90} days</span><b className="m">{openR.recentOrders} · {naira(openR.recentSpend)}</b></div>
+              <div className="re-fact"><span>Through the API</span><b className="m">{openR.apiOrders || 0} of {openR.recentOrders}</b></div>
+              <div className="re-fact"><span>Granted</span><b>{fmtDate(openR.approvedAt)}{openR.approvedBy ? ` by ${openR.approvedBy}` : ""}</b></div>
+            </div>
+            <div className="re-dra">
+              {openR.enabled
+                ? <button type="button" className="re-b danger" disabled={!!busy} onClick={() => revoke(openR)}>{busy === openR.userId + "revoke" ? "…" : "Revoke access"}</button>
+                : <button type="button" className="re-b" disabled={!!busy} onClick={() => restore(openR)}>{busy === openR.userId + "approve" ? "…" : "Restore access"}</button>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -202,22 +234,20 @@ const CSS = `
 .re-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:3px;min-width:0}.re-stt:first-child{border-left:0}
 .re-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.re-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}.re-stt i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .re-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow-x:auto}
-.re-rh,.re-rr{display:grid;grid-template-columns:minmax(130px,1.3fr) 72px 80px 52px minmax(104px,1.1fr) minmax(0,1fr) 70px 96px;align-items:center;gap:10px;padding:0 14px;min-width:668px}
+.re-rh,.re-rr{display:grid;grid-template-columns:minmax(160px,1fr) minmax(120px,auto) 84px 18px;align-items:center;gap:10px;padding:0 14px}
 .re-rh{height:34px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line);white-space:nowrap}
-.re-rr{padding-top:9px;padding-bottom:9px;border-top:1px solid var(--rail);font-size:13px;min-width:0}.re-rr:hover{background:var(--soft)}.re-rr.sk:hover{background:none}
-.re-rr.off .re-un,.re-rr.off .re-act,.re-rr.off .re-ap,.re-rr.off .re-selw,.re-rr.off .re-rate,.re-rr.off .re-why{opacity:.5;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.re-rr{width:100%;padding-top:10px;padding-bottom:10px;border:0;border-top:1px solid var(--rail);background:transparent;color:var(--ink);font:inherit;font-size:13px;text-align:left;cursor:pointer;min-width:0}.re-rr:hover{background:var(--soft)}.re-rr.sk:hover{background:none}.re-rr.sk{cursor:default}
+.re-rr.off .re-un,.re-rr.off .re-act{opacity:.5;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.re-chev{color:var(--dim);flex-shrink:0}
 .re-av{width:34px;height:34px;border-radius:50%;background:var(--ac);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
 .re-un{display:flex;align-items:center;gap:10px;min-width:0}.re-unt{display:flex;flex-direction:column;gap:2px;min-width:0}
 .re-unt b{display:flex;align-items:center;gap:6px;font-weight:600;min-width:0}.re-unt b>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .re-unt i{font-style:normal;font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .re-ch{font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 6px;border-radius:6px;flex-shrink:0;white-space:nowrap}.re-ch.full{background:var(--acbg);color:var(--ac)}.re-ch.cur{background:var(--soft);color:var(--mut);border:1px solid var(--line)}.re-ch.api{background:var(--bluebg);color:var(--blue)}
 .re-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.re-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}.re-dot.ok{background:var(--ok)}.re-dot.bad{background:var(--bad)}
-.re-selw{position:relative;display:block}.re-sel{width:100%;height:28px;padding:0 22px 0 9px;border-radius:8px;background:var(--card);border:1px solid var(--line);font:inherit;font-size:12px;font-weight:600;color:var(--ink);appearance:none;-webkit-appearance:none;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);background-position:calc(100% - 13px) 11px,calc(100% - 9px) 11px;background-size:4px 4px;background-repeat:no-repeat}.re-sel:disabled{cursor:not-allowed}
-.re-in{height:28px;padding:0 9px;border-radius:8px;border:1px solid var(--line);background:var(--card);font:inherit;font-size:12px;color:var(--ink);outline:none;min-width:0;width:100%}.re-in:focus{border-color:var(--acln)}.re-in::placeholder{color:var(--dim)}.re-in:disabled{cursor:not-allowed}
-.re-rate{text-align:center}.re-why{font-size:12px}
+.re-in{height:34px;padding:0 11px;border-radius:9px;border:1px solid var(--line);background:var(--soft);font:inherit;font-size:12.5px;color:var(--ink);outline:none;min-width:0;width:100%}.re-in:focus{border-color:var(--acln)}.re-in::placeholder{color:var(--dim)}.re-in:disabled{cursor:not-allowed;opacity:.6}
+.re-rate{text-align:center;width:76px;flex-shrink:0}.re-why{font-size:12.5px}
 .re-act{white-space:nowrap;font-size:12.5px}.re-act b{font-weight:700}
-.re-ap{font-size:12px;color:var(--mut);display:flex;flex-direction:column;white-space:nowrap}.re-ap i{font-style:normal;font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis}
-.re-ra{display:flex;justify-content:flex-end}
 .re-empty{padding:40px 14px;text-align:center;font-size:13px;color:var(--mut)}
 .re-bone{display:block;margin:3px 0}.re-bone.av{border-radius:50%;margin:0}
 .re-ov{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -228,19 +258,33 @@ const CSS = `
 .re-srch{display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:13.5px}.re-srch:focus-within{border-color:var(--acln)}
 .re-si{display:inline-flex;width:14px;height:14px;color:var(--dim);flex-shrink:0}.re-si svg{width:14px;height:14px}.re-srch input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:13.5px;color:var(--ink);outline:none}
 .re-grs{border:1px solid var(--line);border-radius:12px;overflow:hidden}.re-gr{display:flex;align-items:center;gap:12px;padding:10px 12px;border-top:1px solid var(--rail);font-size:13px}.re-gr:first-child{border-top:0}.re-gr .re-un{flex:1}.re-gact{font-size:12px}
+.re-ov.dr{align-items:stretch;justify-content:flex-end;padding:0}
+.re-dr{width:400px;max-width:100%;background:var(--card);border-left:1px solid var(--line);box-shadow:-24px 0 60px rgba(0,0,0,.25);padding:18px 20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;color:var(--ink)}
+.re-drh{display:flex;align-items:center;gap:11px}.re-drh .re-unt b{font-size:15px}.re-drh .re-x{margin-left:auto}
+.re-av.lg{width:40px;height:40px;font-size:14px}
+.re-fld{display:flex;flex-direction:column;gap:6px}.re-fld>label{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
+.re-inl{display:flex;align-items:center;gap:10px}
+.re-segs{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.re-seg{flex:1;font:inherit;font-size:12px;font-weight:600;padding:7px 10px;border-radius:7px;border:0;background:transparent;color:var(--mut);cursor:pointer;white-space:nowrap}
+.re-seg.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.re-seg:disabled{cursor:not-allowed;opacity:.6}.re-seg.on:disabled{opacity:1}
+.re-facts{border-top:1px solid var(--line)}
+.re-fact{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px solid var(--rail);font-size:13px}
+.re-fact span{color:var(--mut)}.re-fact b{font-weight:700;text-align:right}
+.re-dra{margin-top:auto;display:flex;gap:8px;padding-top:6px}.re-dra .re-b{flex:1}
 @media (max-width:900px){
   .re-stats{grid-template-columns:1fr 1fr}.re-stt:nth-child(3){border-left:0}.re-stt:nth-child(n+3){border-top:1px solid var(--line)}.re-stt b{font-size:17px}
   .re-rh{display:none}
-  .re-list{background:none;border:0;border-radius:0;overflow:visible;display:flex;flex-direction:column;gap:10px;overflow-x:visible}
-  .re-rr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"un st" "act act" "why why" "ctl ctl";gap:8px 10px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;min-width:0}.re-rr:hover{background:var(--card)}
+  .re-list{background:none;border:0;border-radius:0;display:flex;flex-direction:column;gap:10px}
+  .re-rr{display:grid;grid-template-columns:1fr auto 18px;grid-template-areas:"un st chev" "act act act";gap:6px 10px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;min-width:0}.re-rr:hover{background:var(--card)}
+  .re-un{grid-area:un}.re-st{grid-area:st;justify-self:end;align-self:center}.re-chev{grid-area:chev;align-self:center}
+  .re-act{grid-area:act;text-align:left;font-size:12.5px;padding-left:44px}.re-act::after{content:" · last 90 days";color:var(--dim)}
+  .re-rr.sk{grid-template-areas:"un st chev" "act act act"}
   .re-empty{background:var(--card);border:1px solid var(--line);border-radius:14px}
-  .re-un{grid-area:un}.re-st{grid-area:st;justify-self:end;align-self:start}.re-ap{display:none}
-  .re-act{grid-area:act;text-align:left;font-size:12.5px}.re-act::after{content:" · last 90 days";color:var(--dim)}
-  .re-why{grid-area:why;height:32px}
-  .re-selw,.re-rate,.re-ra{grid-area:ctl}.re-rr{position:relative}
-  .re-rr>.re-selw{width:104px;justify-self:start}.re-rr>.re-rate{width:64px;justify-self:start;margin-left:112px}.re-ra{justify-self:end}
-  .re-rr.sk{grid-template-areas:"un st" "act act" "why why" "ctl ctl"}
   .re-ov{padding:0;align-items:flex-end}.re-md{border-radius:20px 20px 0 0;max-height:92%}
+  .re-ov.dr{align-items:flex-end;justify-content:center}
+  .re-dr{width:100%;max-height:92%;border-left:0;border-top:1px solid var(--line);border-radius:20px 20px 0 0;box-shadow:0 -18px 50px rgba(0,0,0,.3)}
+  .re-dra{margin-top:4px}
   .re-gr{flex-wrap:wrap}.re-gr .re-un{flex-basis:100%}
 }
 `;
