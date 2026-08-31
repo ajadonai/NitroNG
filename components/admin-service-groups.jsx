@@ -299,9 +299,9 @@ const CSS = `
 .mb-gi{width:30px;height:30px;border-radius:9px;background:var(--soft);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
 .mb-gname{display:flex;align-items:center;gap:8px;min-width:0;flex:1}.mb-gname b{font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mb-gtype{font-size:11px;color:var(--dim)}
 .mb-ng{font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:2px 6px;border-radius:999px;background:var(--ngbg);color:var(--ng)}
-.mb-pills{display:flex;gap:5px;flex-shrink:0}.mb-pill{display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:3px 8px 3px 4px;border-radius:999px;border:1px solid var(--line);color:var(--ink);background:var(--card)}
-.mb-pill i{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:Outfit,sans-serif;font-size:9.5px;font-weight:800;font-style:normal;color:#fff}
-.mb-pill.bud i{background:var(--bud)}.mb-pill.std i{background:var(--std)}.mb-pill.prm i{background:var(--prm)}.mb-pill.off{opacity:.45;text-decoration:line-through}.mb-pill.empty{color:var(--dim);font-family:Outfit,sans-serif;font-weight:500;padding:3px 8px}
+.mb-pills{display:flex;gap:5px;flex-shrink:0}.mb-pill{display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px}
+.mb-pill i{font-family:Outfit,sans-serif;font-size:9.5px;font-weight:800;font-style:normal;text-transform:uppercase}
+.mb-pill.bud{background:var(--budbg);color:var(--bud)}.mb-pill.std{background:var(--stdbg);color:var(--std)}.mb-pill.prm{background:var(--prmbg);color:var(--prm)}.mb-pill.off{opacity:.45;text-decoration:line-through}.mb-pill.empty{background:var(--soft);border:1px solid var(--line);color:var(--dim);font-family:Outfit,sans-serif;font-weight:500;padding:3px 8px}
 .mb-tog{width:34px;height:20px;border-radius:10px;background:var(--ok);position:relative;flex-shrink:0;display:inline-block;border:0;padding:0;cursor:pointer}.mb-tog i{position:absolute;top:2px;left:16px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}.mb-tog.o{background:var(--line)}.mb-tog.o i{left:2px}
 /* tier rows */
 .mb-gb{background:var(--card)}
