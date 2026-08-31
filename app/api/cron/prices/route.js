@@ -230,7 +230,7 @@ export async function GET(req) {
         });
         const title = `${danglingTiers.length} menu item${danglingTiers.length > 1 ? 's' : ''} pointing to disabled services`;
         const message = danglingTiers.map(d => `${d.group.name} (${d.tier}) → ${serviceDisplay(d.service.name).title.slice(0, 50)} (${(d.service.provider || '').toUpperCase()} #${d.service.apiId})`).join('\n');
-        const metadata = JSON.stringify({ count: danglingTiers.length, tiers: danglingTiers.map(d => ({ group: d.group.name, platform: d.group.platform, tier: d.tier, service: d.service.name.slice(0, 60), provider: d.service.provider, apiId: d.service.apiId })) });
+        const metadata = JSON.stringify({ count: danglingTiers.length, tiers: danglingTiers.map(d => ({ group: d.group.name, platform: d.group.platform, tier: d.tier, service: serviceDisplay(d.service.name).title.slice(0, 60), provider: d.service.provider, apiId: d.service.apiId })) });
         if (existingIssue) {
           await prisma.adminIssue.update({ where: { id: existingIssue.id }, data: { title, message, metadata, createdAt: new Date() } });
         } else {
