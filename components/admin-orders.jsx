@@ -1039,7 +1039,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
             </div>
 
             <div className="flex gap-2.5">
-              <button onClick={() => setRefundPrompt(null)} className="flex-1 py-3 px-5 rounded-[11px] text-sm font-semibold cursor-pointer transition-all duration-150 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.10)" : "rgba(220,38,38,.06)", border: `1px solid ${dark ? "rgba(252,165,165,.26)" : "rgba(220,38,38,.22)"}`, color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>
+              <button onClick={() => setRefundPrompt(null)} className="flex-1 py-3 px-5 rounded-[11px] text-sm font-semibold cursor-pointer transition-all duration-150 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>Cancel</button>
               <button onClick={doRefund} disabled={refundSending || refundPctOf(refundPercent) <= 0} className="flex-1 py-3 px-5 rounded-[11px] text-sm font-semibold cursor-pointer border-none transition-all duration-150 hover:-translate-y-px" style={{ background: confirmGreen, color: dark ? "#04231a" : "#fff", boxShadow: dark ? "0 8px 22px -10px rgba(16,185,129,.5)" : "0 8px 22px -12px rgba(5,150,105,.55)", opacity: refundSending || refundPctOf(refundPercent) <= 0 ? .5 : 1 }}>{refundSending ? "Processing..." : "Confirm"}</button>
             </div>
           </div>

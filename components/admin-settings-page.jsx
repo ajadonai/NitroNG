@@ -48,7 +48,7 @@ function CleanupRow({ dark, t }) {
   };
   return (
     <Row id="set-cleanup" icon={I_BROOM} title="Clean up stale accounts" sub={info ? `${info.unverifiedTotal || 0} unverified · ${info.staleCount || 0} safe to remove after ${info.cutoffDays || 30} days` : "Unverified accounts that never came back"} dark={dark} t={t}
-      right={<button type="button" onClick={run} disabled={cleaning || !info?.staleCount} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: info?.staleCount ? t.accent : t.textMuted, opacity: cleaning ? .5 : 1 }}>{cleaning ? "Cleaning…" : "Clean up"}</button>} />
+      right={<button type="button" onClick={run} disabled={cleaning || !info?.staleCount} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: info?.staleCount ? (dark ? "#fcd34d" : "#b45309") : t.textMuted, opacity: cleaning ? .5 : 1 }}>{cleaning ? "Cleaning…" : "Clean up"}</button>} />
   );
 }
 

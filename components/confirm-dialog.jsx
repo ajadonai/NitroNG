@@ -70,11 +70,13 @@ export function ConfirmProvider({ children, dark }) {
   const descriptionId = useId();
   const confirmationInputId = useId();
 
-  const confirm = useCallback(({ title, message, body, confirmLabel = "Confirm", confirmColor, danger = false, requireType = null, compact = false }) => {
+  // confirmText is an accepted alias: several call sites always passed it, and
+  // their Delete/Reject dialogs silently fell back to a generic "Confirm".
+  const confirm = useCallback(({ title, message, body, confirmLabel, confirmText, confirmColor, danger = false, requireType = null, compact = false }) => {
     return new Promise((resolve) => {
       triggerRef.current = globalThis.document?.activeElement || null;
       setInput("");
-      setDialog({ title, message, body, confirmLabel, confirmColor, danger, requireType, compact, resolve });
+      setDialog({ title, message, body, confirmLabel: confirmLabel || confirmText || "Confirm", confirmColor, danger, requireType, compact, resolve });
     });
   }, []);
 
@@ -89,6 +91,14 @@ export function ConfirmProvider({ children, dark }) {
     dialog?.resolve(false);
     setDialog(null);
     setInput("");
+  }, [dialog]);
+
+  // The dialog owns the screen while it is up.
+  useEffect(() => {
+    if (!dialog) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
   }, [dialog]);
 
   useEffect(() => {
@@ -194,14 +204,11 @@ export function ConfirmProvider({ children, dark }) {
                 type="button"
                 onClick={handleCancel}
                 className="flex-1 py-3 rounded-[10px] text-[15px] font-semibold cursor-pointer transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[.97]"
-                style={dialog.danger ? {
+                style={{
+                  // Cancel is the safe way out; it is never painted red.
                   background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)",
                   color: dark ? "#a09b95" : "#555250",
                   border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`,
-                } : {
-                  background: dark ? "rgba(252,165,165,.10)" : "rgba(220,38,38,.06)",
-                  color: dark ? "#fca5a5" : "#dc2626",
-                  border: `1px solid ${dark ? "rgba(252,165,165,.26)" : "rgba(220,38,38,.22)"}`,
                 }}
               >Cancel</button>
               <button

@@ -229,11 +229,16 @@ export default function TasksPage({ dark, t }) {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           {filterOpen && (
-            <div className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-[10px] overflow-hidden min-w-[150px] py-1" style={{ background: dark ? '#1a1d2e' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.14)'}`, boxShadow: '0 8px 32px rgba(0,0,0,.18)' }}>
+            <>
+              {/* Invisible backdrop: a tap outside closes the menu without also
+                  activating whatever sits underneath. */}
+              <span className="fixed inset-0 z-40" onClick={() => setFilterOpen(false)} />
+              <div className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-[10px] overflow-hidden min-w-[150px] py-1" style={{ background: dark ? '#1a1d2e' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.14)'}`, boxShadow: '0 8px 32px rgba(0,0,0,.18)' }}>
               {FILTERS.map(f => (
                 <button key={f.key} onClick={() => { setFilter(f.key); setFilterOpen(false); }} className="block w-full text-left py-[7px] px-3 text-[13px] bg-transparent border-none cursor-pointer font-[inherit] whitespace-nowrap" style={{ color: f.key === filter ? accent : t.text, fontWeight: f.key === filter ? 600 : 400 }}>{f.label}</button>
               ))}
-            </div>
+              </div>
+            </>
           )}
         </div>
       </div>
