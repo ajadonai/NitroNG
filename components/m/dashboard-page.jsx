@@ -1,71 +1,101 @@
 "use client";
-import { StatCard, TierProgress, StatusBadge, EmptyState } from "./kit";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Card, Chip, Empty, Fact, Facts, TierProgress, ago, initialsOf, pitVars } from "./kit";
 import { useTheme } from "../shared-nav";
 import { fN } from "@/lib/format";
+import { copyText } from "@/lib/clipboard";
 
-function timeAgo(d) {
-  const s = Math.floor((Date.now() - new Date(d)) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
-}
+// held → still in the seven-day window, approved → cleared, voided → reversed.
+const STATUS = {
+  approved: { label: "Cleared", kind: "ok" },
+  held: { label: "Holding", kind: "warn" },
+  voided: { label: "Reversed", kind: "bad" },
+  pending: { label: "Pending", kind: "dim" },
+};
 
 export default function DashboardPage({ initialData }) {
   const { dark, t } = useTheme();
+  const router = useRouter();
+  const [copied, setCopied] = useState(null);
   const { stats, role, tier, tierConfig, recentCommissions, links } = initialData;
+
+  const copy = (slug) => {
+    copyText(`https://nitro.ng/?via=${slug}`);
+    setCopied(slug);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
   return (
-    <div className="flex flex-col gap-5">
-      <div className="grid grid-cols-4 max-md:grid-cols-2 gap-4">
-        <StatCard label="Total Earned" value={fN(stats.totalEarned)} caption={`${stats.conversions} conversion${stats.conversions !== 1 ? "s" : ""}`} dark={dark} t={t} />
-        <StatCard label="Pending" value={fN(stats.pending)} caption="Held for 7 days" dark={dark} t={t} />
-        <StatCard label="Available" value={fN(stats.availableBalance)} caption="Ready to withdraw" captionUp={stats.availableBalance > 0} dark={dark} t={t} />
-        <StatCard label="Link Clicks" value={stats.clicks.toLocaleString()} caption={`${stats.activeReferrals} paid referral${stats.activeReferrals !== 1 ? "s" : ""}`} dark={dark} t={t} />
-      </div>
+    <div className="dsh" style={pitVars(dark, t)}>
+      <style>{DSH_CSS}</style>
 
-      {role !== "chief" && <TierProgress tier={tier.name} activeCount={stats.activeReferrals} tierConfig={tierConfig} links={links} dark={dark} t={t} />}
+      <Facts>
+        <Fact value={fN(stats.totalEarned)} label="Earned" sub={`all time · ${stats.conversions} ${stats.conversions === 1 ? "commission" : "commissions"}`} />
+        <Fact value={fN(stats.pending)} label="Holding" sub="clears seven days after the order" kind="warn" />
+        <Fact value={fN(stats.availableBalance)} label="Ready to withdraw" sub="request any time" kind="ok" />
+        <Fact value={stats.clicks.toLocaleString()} label="Link clicks" sub={`${stats.activeReferrals} paid ${stats.activeReferrals === 1 ? "referral" : "referrals"}`} />
+      </Facts>
 
-      <div className="rounded-[14px] overflow-hidden" style={{ background: t.surface, border: `1px solid ${t.surfaceBrd}` }}>
-        <div className="flex items-center justify-between py-[10px] px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${t.surfaceBrd}` }}>
-          <div>
-            <div className="text-[12px] font-semibold tracking-[0.3px] uppercase" style={{ color: t.muted }}>Recent Commissions</div>
-            <div className="text-[11px] mt-[2px]" style={{ color: t.soft }}>Your latest referral earnings</div>
-          </div>
-          {recentCommissions.length > 0 && (
-            <a href="/pit/commissions" className="text-[12px] font-medium no-underline" style={{ color: t.accent }}>View all</a>
-          )}
-        </div>
+      {role !== "chief" && <TierProgress tier={tier.name} activeCount={stats.activeReferrals} tierConfig={tierConfig} />}
+
+      <Card
+        title="Recent commissions"
+        cnt="the last few · seven-day hold before they clear"
+        act={recentCommissions.length > 0 ? <a href="/pit/commissions" onClick={(e) => { e.preventDefault(); router.push("/pit/commissions"); }} className="pt-lnk">All commissions ›</a> : null}
+      >
         {recentCommissions.length === 0 ? (
-          <EmptyState
-            title="No commissions yet"
-            subtitle="Share your link to start earning."
-            icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
-            t={t}
-          />
+          <Empty>Nothing yet. Share a link and the first one lands here.</Empty>
         ) : (
-          <div>
-            {recentCommissions.map((c) => (
-              <div key={c.id} className="flex items-center gap-3 px-[18px] py-3" style={{ borderTop: `1px solid ${t.surfaceBrd}` }}>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="m text-[13px] font-medium truncate" style={{ color: t.text }}>{c.orderId}</span>
-                    {c.type === "team" && (
-                      <span className="text-[10px] font-semibold py-[1px] px-[6px] rounded-md" style={{ color: t.accent, background: t.accentLight }}>TEAM</span>
-                    )}
-                  </div>
-                  <div className="text-[11.5px] mt-[2px]" style={{ color: t.muted }}>
-                    {c.type === "team" && c.memberName ? `${c.memberName} · ` : ""}{timeAgo(c.createdAt)}
-                  </div>
+          <div className="pt-list">
+            {recentCommissions.map((c) => {
+              const s = STATUS[c.status] || STATUS.pending;
+              const who = c.type === "team" && c.memberName ? c.memberName : c.orderId;
+              return (
+                <div key={c.id} className="pt-r cm">
+                  <span className="pt-av sm">{c.type === "team" && c.memberName ? initialsOf(c.memberName) : c.slug.slice(0, 2).toUpperCase()}</span>
+                  <span className="pt-tt"><b>{who}</b><i>{c.slug} · order {fN(c.orderCharge)}</i></span>
+                  <Chip kind={s.kind}>{s.label}</Chip>
+                  <span className={"pt-num m" + (c.status === "voided" ? " bad" : "")}>{fN(c.amount)}</span>
+                  <span className="pt-c">{ago(c.createdAt)}</span>
                 </div>
-                <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                  <span className="m text-[13.5px] font-semibold" style={{ color: t.green }}>{fN(c.amount)}</span>
-                  <StatusBadge status={c.status} dark={dark} t={t} />
-                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
+      <Card
+        title="Your links"
+        cnt="tap a link to copy it"
+        act={role === "chief" ? <a href="/pit/links" onClick={(e) => { e.preventDefault(); router.push("/pit/links"); }} className="pt-lnk">All links ›</a> : null}
+      >
+        {links.length === 0 ? (
+          <Empty>No link yet. Your chief hands you one.</Empty>
+        ) : (
+          <div className="pt-list">
+            {links.map((l) => (
+              <div key={l.slug} className="pt-r lk">
+                <span className="pt-tt">
+                  <b>{l.slug}</b>
+                  <button type="button" className="pt-cp m" onClick={() => copy(l.slug)}>
+                    {copied === l.slug ? "Copied" : `nitro.ng/?via=${l.slug} ⧉`}
+                  </button>
+                </span>
+                <Chip kind={l.enabled ? "ok" : "dim"}>{l.enabled ? "Live" : "Paused"}</Chip>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
+
+const DSH_CSS = `
+.dsh{display:flex;flex-direction:column;gap:14px}
+@media (min-width:900.99px){
+  .dsh .pt-r.cm{grid-template-columns:30px 1fr 110px 90px 80px}
+  .dsh .pt-r.lk{grid-template-columns:1fr 70px}
+}
+`;
