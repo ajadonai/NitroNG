@@ -208,7 +208,7 @@ const GUIDE_CSS = `
 .gp-grp{display:flex;flex-direction:column;gap:10px}
 .gp-kicker{font-size:10px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--ac)}
 .gp-gg{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.gp-gcard{display:flex;gap:14px;padding:14px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:inherit;transition:transform .15s}
+.gp-gcard{display:flex;align-items:center;gap:14px;padding:14px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:inherit;transition:transform .15s}
 .gp-gcard:hover{transform:translateY(-1px)}
 .gp-thumb{width:76px;height:68px;border-radius:12px;flex-shrink:0;object-fit:cover;background:var(--rail)}
 .gp-gt{display:flex;flex-direction:column;gap:3px;min-width:0}
