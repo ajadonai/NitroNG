@@ -187,6 +187,30 @@ export default function ReferralsPage({ user, dark, t }) {
 
 
 
+/* The phone's compact rewards card under the three steps; the desktop rail
+ * carries the same facts. v2.4.48's rail rework deleted this definition but
+ * left the usage above, so the page crashed on render. */
+function RewardBreakdown({ rs, t }) {
+  return (
+    <div className="p-3.5 rounded-[10px] mt-2 bg-t-card-bg" style={{ border: `1px solid ${t.cardBorder}` }}>
+      <div className="flex justify-between py-2" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+        <span className="text-sm text-t-text-muted">You earn</span>
+        <span className="text-sm font-semibold text-accent">{fK(rs.referrer)}</span>
+      </div>
+      <div className="flex justify-between py-2" style={{ borderBottom: rs.minDeposit > 0 ? `1px solid ${t.cardBorder}` : "none" }}>
+        <span className="text-sm text-t-text-muted">They earn</span>
+        <span className="text-sm font-semibold text-t-green">{fK(rs.invitee)}</span>
+      </div>
+      {rs.minDeposit > 0 && (
+        <div className="flex justify-between py-2">
+          <span className="text-sm text-t-text-muted">Min. deposit to activate</span>
+          <span className="text-sm font-semibold text-t-text">{fK(rs.minDeposit)}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════ */
 /* ═══ REFERRALS RIGHT SIDEBAR             ═══ */
 /* ═══════════════════════════════════════════ */
