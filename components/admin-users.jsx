@@ -839,8 +839,8 @@ const US_CSS = `
 .us-count{margin-left:auto;font-size:12px}
 .us-bb{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:var(--acbg);border:1px solid var(--line);font-size:13px;flex-wrap:wrap}.us-bb b{margin-right:4px}
 .us-cols{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
-.us-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
-.us-uh,.us-ur{display:grid;grid-template-columns:22px minmax(0,1fr) 90px 94px 58px 76px auto;align-items:center;gap:12px;padding:0 14px}
+.us-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow-x:auto;min-width:0}
+.us-uh,.us-ur{display:grid;grid-template-columns:22px minmax(0,1fr) 90px 94px 58px 76px 96px;min-width:568px;align-items:center;gap:12px;padding:0 14px}
 .us-uh{height:34px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line)}
 .us-uh .r{text-align:right}.us-sort{cursor:pointer;user-select:none}
 .us-ur{padding-top:9px;padding-bottom:9px;border-top:1px solid var(--rail);font-size:13px;min-width:0;cursor:pointer}.us-ur:hover{background:var(--soft)}.us-ur.sel{background:var(--acbg)}
@@ -897,7 +897,7 @@ const US_CSS = `
   .us-stats{grid-template-columns:1fr 1fr}.us-stt:nth-child(3){border-left:0}.us-stt:nth-child(n+3){border-top:1px solid var(--line)}.us-stt b{font-size:17px}
   .us-srch{width:100%;min-width:0}.us-count{display:none}
   .us-uh{display:none}
-  .us-ur{display:flex;align-items:center;gap:10px;padding:10px 12px}
+  .us-list{overflow-x:visible}.us-ur{display:flex;align-items:center;gap:10px;padding:10px 12px;min-width:0}
   .us-ur>span:first-child,.us-ord,.us-jn,.us-ra,.us-st{display:none}.us-un{flex:1}.us-bal{flex-shrink:0;font-size:13px}
   .us-unt i{display:flex;align-items:center;gap:6px}
   .us-unt i::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);flex-shrink:0}.us-ur.banned .us-unt i::before{background:var(--bad)}
