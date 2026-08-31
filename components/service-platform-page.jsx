@@ -1,190 +1,323 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { trackViewContent } from './capi-tracker';
-import { ProductScreenshot } from './product-screenshot';
+import { AskCard, PinkButton, priceRange, eyebrowStyle, cardStyle } from './platform-card';
+
+// ── The reading layout shared by the two service templates ──
+// Same 920px column, eyebrow, Cormorant H1, sticky contents and opaque cards as
+// the legal pages and the blog post. Exported so the type page reuses them
+// rather than growing a second copy.
+
+export function Crumbs({ items }) {
+  const { t } = useTheme();
+  return (
+    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-[12px]" style={{ color: t.muted }}>
+      {items.map(({ label, href }, i) => (
+        <span key={label} className="flex items-center gap-1.5">
+          {i > 0 && <i className="not-italic opacity-50" aria-hidden="true">›</i>}
+          {href
+            ? <a href={href} className="font-semibold no-underline" style={{ color: t.accent }}>{label}</a>
+            : <span aria-current="page">{label}</span>}
+        </span>
+      ))}
+    </nav>
+  );
+}
+
+// Sticky list on a desktop, a <details> under 768px. Same markup shape as
+// LegalLayout so both surfaces behave identically.
+export function Contents({ items }) {
+  const { t } = useTheme();
+  const key = items.map(i => i.id).join('|');
+  const [active, setActive] = useState(items[0]?.id);
+
+  useEffect(() => {
+    const ids = key ? key.split('|') : [];
+    const onScroll = () => {
+      let cur = ids[0];
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= 140) cur = id;
+      }
+      setActive(cur);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [key]);
+
+  const eyebrow = eyebrowStyle(t);
+  return (
+    <>
+      <aside className="sticky top-5 flex flex-col gap-0.5 max-md:hidden">
+        <span style={{ ...eyebrow, marginBottom: 8 }}>On this page</span>
+        {items.map(({ id, label }) => {
+          const on = id === active;
+          return (
+            <a key={id} href={`#${id}`} className="text-[13px] leading-[1.35] px-2.5 py-1.5 no-underline" style={{ color: on ? t.text : t.muted, borderLeft: `2px solid ${on ? t.accent : t.cardBorder}`, fontWeight: on ? 600 : 400 }}>{label}</a>
+          );
+        })}
+      </aside>
+      <details className="md:hidden rounded-xl px-3.5 py-2.5 text-[13px]" style={cardStyle(t)}>
+        <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>On this page · {items.length} {items.length === 1 ? 'section' : 'sections'}</summary>
+        {items.map(({ id, label }) => (
+          <a key={id} href={`#${id}`} className="block py-1.5 no-underline" style={{ color: t.muted, borderTop: `1px solid ${t.cardBorder}` }}>{label}</a>
+        ))}
+      </details>
+    </>
+  );
+}
+
+export function Section({ id, title, children }) {
+  const { t } = useTheme();
+  return (
+    <section id={id} className="scroll-mt-24">
+      <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={{ color: t.text }}>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+export function Paras({ items }) {
+  const { t } = useTheme();
+  return (
+    <div className="flex flex-col gap-3">
+      {items.map((p, i) => <p key={i} className="m-0 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>{p}</p>)}
+    </div>
+  );
+}
+
+// Two-column plain tiles. `note` is optional — a tile with only a title is fine.
+export function Tiles({ items }) {
+  const { t } = useTheme();
+  return (
+    <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
+      {items.map(({ title, note }) => (
+        <span key={title} className="flex flex-col gap-1 rounded-xl px-4 py-3.5" style={cardStyle(t)}>
+          <b className="text-[14.5px] font-semibold leading-[1.35]" style={{ color: t.text }}>{title}</b>
+          {note && <i className="not-italic text-[13px] leading-[1.45]" style={{ color: t.muted }}>{note}</i>}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// Copy in the database uses markdown links; render them rather than printing
+// the brackets. Everything else stays plain text.
+function linkify(text, accent) {
+  const re = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+  const out = [];
+  let last = 0;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    out.push(<a key={m.index} href={m[2]} className="font-semibold no-underline" style={{ color: accent }}>{m[1]}</a>);
+    last = m.index + m[0].length;
+  }
+  if (!out.length) return text;
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
+// One open at a time.
+export function Accordion({ items }) {
+  const { t } = useTheme();
+  const [open, setOpen] = useState(0);
+  return (
+    <div className="rounded-[14px] overflow-hidden" style={cardStyle(t)}>
+      {items.map(({ q, a }, i) => (
+        <div key={q} style={{ borderTop: i === 0 ? 'none' : `1px solid ${t.cardBorder}` }}>
+          <button
+            type="button"
+            onClick={() => setOpen(open === i ? -1 : i)}
+            aria-expanded={open === i}
+            className="w-full flex items-center justify-between gap-2.5 px-[18px] py-3.5 text-left bg-transparent border-0"
+          >
+            <b className="text-[15px] font-semibold" style={{ color: open === i ? t.accent : t.text }}>{q}</b>
+            <i className="not-italic text-[18px] leading-none shrink-0" style={{ color: t.muted }} aria-hidden="true">{open === i ? '−' : '+'}</i>
+          </button>
+          {open === i && (
+            <p className="m-0 px-[18px] pb-3.5 text-[14.5px] leading-[1.65] max-w-[66ch]" style={{ color: t.soft }}>{linkify(a, t.accent)}</p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// The numbered rows, in one card, same frame as the accordion.
+export function Steps({ items }) {
+  const { t } = useTheme();
+  return (
+    <div className="rounded-[14px] overflow-hidden" style={cardStyle(t)}>
+      {items.map(([num, title, desc], i) => (
+        <div key={num} className="flex flex-col gap-0.5 px-[18px] py-3.5" style={{ borderTop: i === 0 ? 'none' : `1px solid ${t.cardBorder}` }}>
+          <b className="flex items-center text-[14.5px] font-semibold" style={{ color: t.text }}>
+            <span className="inline-flex w-[22px] h-[22px] mr-2 rounded-full items-center justify-center text-[11px] font-extrabold shrink-0" style={{ background: 'rgba(196,125,142,.14)', color: t.accent }}>{num}</span>
+            {title}
+          </b>
+          <i className="not-italic text-[12.5px] leading-[1.45]" style={{ color: t.muted }}>{desc}</i>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const SECTION_LABEL = { services: 'Services', pricing: 'Pricing', quality: 'Quality', reviews: 'Reviews', blog: 'Blog', help: 'Help' };
+export function sectionOf(href) {
+  const seg = String(href || '').split('/').filter(Boolean)[0] || '';
+  return SECTION_LABEL[seg] || (seg ? seg[0].toUpperCase() + seg.slice(1) : 'Nitro');
+}
+
+export function RelatedTiles({ items }) {
+  const { t } = useTheme();
+  if (!items.length) return null;
+  return (
+    <div>
+      <span style={{ ...eyebrowStyle(t), marginBottom: 10 }}>Related</span>
+      <div className="grid grid-cols-3 gap-3 max-md:grid-cols-1">
+        {items.map(({ href, label, note }) => (
+          <a key={href} href={href} className="flex flex-col gap-1 rounded-xl px-4 py-3.5 no-underline transition-transform duration-200 hover:-translate-y-px" style={cardStyle(t)}>
+            <em className="not-italic text-[10.5px] font-bold uppercase tracking-[1.2px]" style={{ color: t.accent }}>{note || sectionOf(href)}</em>
+            <b className="text-[14px] leading-[1.35] font-semibold" style={{ color: t.text }}>{label}</b>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function PageShell({ children }) {
+  const { t } = useTheme();
+  return (
+    <>
+      <SharedStyles />
+      <div className="min-h-dvh flex flex-col font-[Plus Jakarta Sans,system-ui,sans-serif] transition-[background] duration-500" style={{ background: t.bg, color: t.text }}>
+        <SharedNav />
+        <div className="flex-1 w-full max-w-[920px] mx-auto px-7 pt-11 pb-14 max-md:px-4 max-md:pt-7 max-md:pb-10 flex flex-col gap-[26px] max-md:gap-5">
+          {children}
+        </div>
+        <SharedFooter />
+      </div>
+    </>
+  );
+}
+
+// ── The platform template ──
+
+// The sub-line under a service name, built from the row's own numbers. The
+// wording matches the pricing page so the two surfaces read the same.
+function serviceNote(s) {
+  const n = `${s.tiers} ${s.tiers === 1 ? 'tier' : 'tiers'}`;
+  const parts = [n];
+  if (s.refill) parts.push(s.tiers >= 3 ? 'refill on Standard and Premium' : 'refill');
+  if (s.nigerian) parts.push('Nigerian accounts');
+  return parts.join(' · ');
+}
 
 export default function ServicePlatformView({ platform, services, copy, nextPlatform, relatedLinks }) {
   return <ThemeProvider><ServicePlatformInner platform={platform} services={services} copy={copy} nextPlatform={nextPlatform} relatedLinks={relatedLinks} /></ThemeProvider>;
 }
 
-function ServicePlatformInner({ platform, services, copy, nextPlatform, relatedLinks }) {
-  const { dark, t } = useTheme();
-  const accent = "#c47d8e";
-  const border = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)";
-  const cardBg = dark ? "rgba(255,255,255,.05)" : "#fff";
+function ServicePlatformInner({ platform, services = [], copy = {}, nextPlatform, relatedLinks = [] }) {
+  const { t } = useTheme();
+  const card = cardStyle(t);
+  const eyebrow = eyebrowStyle(t);
 
   useEffect(() => { trackViewContent({ content_name: `services-${platform.toLowerCase()}`, content_type: 'service_page' }); }, [platform]);
 
+  const article = /^[aeiou]/i.test(platform) || platform === 'X' ? 'an' : 'a';
+  const steps = [
+    ['1', 'Create a free account', 'Sign up in seconds — no card required. Just an email or Google account.'],
+    ['2', 'Fund your wallet', 'Add funds via bank transfer, card, or crypto. Minimum ₦1,000.'],
+    ['3', 'Place your order', `Choose ${article} ${platform} service, paste your link, pick a tier, and confirm. Results start within minutes.`],
+  ];
+
+  const hasGet = copy.whatYouGet?.length > 0;
+  const hasWhy = copy.whySection?.length > 0;
+  const hasFaq = copy.faq?.length > 0;
+
+  const toc = [
+    hasGet && { id: 'what-you-can-get', label: 'What you can get' },
+    { id: 'how-to-buy', label: 'How to buy' },
+    hasWhy && { id: 'why-nitro', label: 'Why Nitro' },
+    hasFaq && { id: 'questions', label: 'Questions' },
+  ].filter(Boolean);
+
+  // whatYouGet is a flat list of sentences; where one carries an em dash the
+  // half after it is the tile's note.
+  const tiles = (copy.whatYouGet || []).map(line => {
+    const i = line.indexOf(' — ');
+    return i === -1 ? { title: line } : { title: line.slice(0, i), note: line.slice(i + 3) };
+  });
+
+  const related = [
+    ...relatedLinks.map(({ href, label }) => ({ href, label })),
+    ...(nextPlatform ? [{ href: `/services/${nextPlatform.slug}`, label: `Browse ${nextPlatform.name} services`, note: 'Next platform' }] : []),
+  ];
+
   return (
-    <>
-      <SharedStyles />
-      <div className="min-h-dvh flex flex-col font-[Plus Jakarta Sans,system-ui,sans-serif]" style={{ background: t.bg }}>
-        <SharedNav />
+    <PageShell>
+      <Crumbs items={[{ label: 'Services', href: '/services' }, { label: platform }]} />
 
-        {/* Hero */}
-        <div className="text-center pt-14 pb-10 max-md:pt-10 max-md:pb-8 px-6 max-w-[700px] mx-auto">
-          <span className="text-xs font-semibold tracking-[2px] uppercase block mb-3" style={{ color: accent }}>{platform} Services</span>
-          <h1 className="text-[clamp(26px,5vw,40px)] font-semibold mb-4 leading-tight" style={{ color: t.text }}>
-            {copy.h1}
-          </h1>
-          <p className="text-[15px] leading-relaxed max-w-[520px] mx-auto" style={{ color: t.textSoft }}>
-            {copy.heroDesc}
-          </p>
+      <header className="flex flex-col gap-2.5">
+        <span style={eyebrow}>{platform} · {services.length} {services.length === 1 ? 'service' : 'services'}</span>
+        <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>{copy.h1}</h1>
+        {copy.heroDesc && <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>{copy.heroDesc}</p>}
+      </header>
+
+      {services.length > 0 && (
+        <div>
+          <div className="rounded-[14px] overflow-hidden" style={card}>
+            <div className="flex items-baseline justify-between gap-2.5 px-[18px] py-3" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+              <b className="text-[15px] font-semibold" style={{ color: t.text }}>{platform} services and prices</b>
+              <span className="text-[12px] text-right" style={{ color: t.muted }}>per 1,000</span>
+            </div>
+            {services.map((s, i) => (
+              <div key={s.type} className="flex items-center justify-between gap-2.5 px-[18px] py-3.5" style={{ borderTop: i === 0 ? 'none' : `1px solid ${t.cardBorder}` }}>
+                <span className="flex flex-col min-w-0">
+                  <b className="text-[15px] font-semibold" style={{ color: t.text }}>{s.type}</b>
+                  <span className="text-[12px]" style={{ color: t.muted }}>{serviceNote(s)}</span>
+                </span>
+                <b className="m shrink-0 text-[14px] font-semibold whitespace-nowrap" style={{ color: t.text, fontVariantNumeric: 'tabular-nums' }}>{priceRange(s.minPrice, s.maxPrice)}</b>
+              </div>
+            ))}
+          </div>
+          <div className="mt-2.5">
+            <PinkButton href="/signup" full>Start growing on {platform}</PinkButton>
+          </div>
         </div>
+      )}
 
-        <main className="flex-1 px-6 pb-20 max-w-[900px] mx-auto w-full">
-
-          {/* What you can get */}
-          {copy.whatYouGet?.length > 0 && (
-            <section className="mb-10">
-              <h2 className="text-lg font-semibold mb-4" style={{ color: t.text }}>What you can get</h2>
-              <ul className="space-y-2.5 list-none p-0 m-0">
-                {copy.whatYouGet.map((item, i) => (
-                  <li key={i} className="flex items-start gap-3 text-[13px] leading-[1.6]" style={{ color: t.textSoft }}>
-                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: accent }} />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-[13px] mt-4 leading-[1.6]" style={{ color: t.textMuted }}>
-                Every service comes in Budget, Standard or Premium. Budget has no refill. Standard carries refill for 30 days. Premium carries refill for the life of the order on services marked refill included.
-              </p>
-            </section>
+      <div className="grid grid-cols-[220px_1fr] gap-9 items-start max-md:grid-cols-1 max-md:gap-[18px]">
+        <Contents items={toc} />
+        <article className="flex flex-col gap-[22px] max-w-[66ch] min-w-0">
+          {hasGet && (
+            <Section id="what-you-can-get" title="What you can get">
+              <Tiles items={tiles} />
+            </Section>
           )}
-
-          {/* New order screenshot */}
-          <div className="mb-10 max-w-[540px] mx-auto">
-            <ProductScreenshot src="/images/nitro-place-order-instagram-naira.webp" alt="Placing an Instagram order on Nitro showing Naira prices and Nigerian targeted services" dark={dark} />
-          </div>
-
-          {/* Price table */}
-          <section className="mb-12">
-            <h2 className="text-lg font-semibold mb-4" style={{ color: t.text }}>{platform} services and pricing</h2>
-            <div className="rounded-2xl overflow-hidden" style={{ background: cardBg, border: `1.5px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}` }}>
-              <div className="py-3 px-6 max-md:px-4 flex items-center gap-2 text-[11px] font-medium" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.03)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}`, color: t.textMuted }}>
-                <span className="flex-1">Service</span>
-                <span className="w-[120px] text-right max-md:w-[100px]">Price per 1K</span>
-              </div>
-              <div className="divide-y" style={{ borderColor: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }}>
-                {services.map(s => (
-                  <div key={s.type} className="flex items-center justify-between py-4 px-6 max-md:px-4 max-md:py-3" style={s.nigerian ? { background: dark ? "rgba(74,222,128,.06)" : "rgba(22,163,74,.04)" } : undefined}>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[15px] max-md:text-[13px] font-medium" style={{ color: s.nigerian ? (dark ? "#4ade80" : "#16a34a") : t.text }}>{s.type}</div>
-                      <div className="flex items-center gap-3 mt-0.5 text-[11px] max-md:text-[11px]" style={{ color: t.textMuted }}>
-                        {s.tiers > 1 && <span className="inline-flex items-center gap-1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>{s.tiers} tiers</span>}
-                        {s.refill && <span className="inline-flex items-center gap-1 text-green-500"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>Refill</span>}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0 ml-4">
-                      {s.minPrice >= 100000 ? (
-                        <>
-                          <div className="text-[15px] max-md:text-[13px] font-bold" style={{ color: accent }}>
-                            {s.minPrice === s.maxPrice ? `₦${(s.minPrice / 1000).toLocaleString()}` : `₦${(s.minPrice / 1000).toLocaleString()} – ${(s.maxPrice / 1000).toLocaleString()}`}
-                          </div>
-                          <div className="text-[11px]" style={{ color: t.textMuted }}>per unit</div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="text-[15px] max-md:text-[13px] font-bold" style={{ color: accent }}>
-                            {s.minPrice === s.maxPrice ? `₦${s.minPrice.toLocaleString()}` : `₦${s.minPrice.toLocaleString()} – ${s.maxPrice.toLocaleString()}`}
-                          </div>
-                          <div className="text-[11px]" style={{ color: t.textMuted }}>per 1,000</div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="py-3 px-6 max-md:px-4 text-center" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}`, background: dark ? "rgba(255,255,255,.02)" : "rgba(0,0,0,.01)" }}>
-                <a href="/signup" className="inline-flex items-center gap-2 py-2.5 px-6 rounded-[10px] bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[13px] font-semibold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">
-                  Start growing on {platform}
-                </a>
-              </div>
-            </div>
-            <div className="mt-3 py-3 px-4 rounded-xl flex items-start gap-3" style={{ background: dark ? "rgba(251,191,36,.06)" : "rgba(251,191,36,.06)", border: `1px solid ${dark ? "rgba(251,191,36,.16)" : "rgba(217,119,6,.12)"}` }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 018.91 14"/></svg>
-              <div className="text-[11px] leading-[1.55]" style={{ color: t.textSoft }}><strong style={{ color: t.text }}>Budget</strong> is great for a quick boost but has no refill. <strong style={{ color: t.text }}>Standard</strong> includes a 30-day refill, and <strong style={{ color: t.text }}>Premium</strong> comes with lifetime refill.</div>
-            </div>
-          </section>
-
-          {/* How it works */}
-          <section className="mb-12">
-            <h2 className="text-lg font-semibold mb-5" style={{ color: t.text }}>How to buy {platform} {copy.mainService || 'services'} on Nitro</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                ['1', 'Create a free account', 'Sign up in seconds — no card required. Just an email or Google account.'],
-                ['2', 'Fund your wallet', 'Add funds via bank transfer, card, or crypto. Minimum ₦1,000.'],
-                ['3', 'Place your order', `Choose ${/^[aeiou]/i.test(platform) || platform === 'X' ? 'an' : 'a'} ${platform} service, paste your link, pick a tier, and confirm. Results start within minutes.`],
-              ].map(([num, title, desc]) => (
-                <div key={num} className="p-5 rounded-xl" style={{ background: cardBg, border: `1px solid ${border}` }}>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold mb-3" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: accent }}>{num}</div>
-                  <div className="text-[13px] font-semibold mb-1" style={{ color: t.text }}>{title}</div>
-                  <div className="text-[13px] leading-[1.6]" style={{ color: t.textMuted }}>{desc}</div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Why Nitro */}
-          {copy.whySection && (
-            <section className="mb-12">
-              <h2 className="text-lg font-semibold mb-4" style={{ color: t.text }}>Why use Nitro for {platform}</h2>
-              <div className="text-[13px] leading-[1.75] space-y-3" style={{ color: t.textSoft }}>
-                {copy.whySection.map((p, i) => <p key={i}>{p}</p>)}
-              </div>
-            </section>
+          <Section id="how-to-buy" title={`How to buy ${platform} ${copy.mainService || 'services'} on Nitro`}>
+            <Steps items={steps} />
+          </Section>
+          {hasWhy && (
+            <Section id="why-nitro" title={`Why use Nitro for ${platform}`}>
+              <Paras items={copy.whySection} />
+            </Section>
           )}
-
-          {/* FAQ */}
-          {copy.faq?.length > 0 && (
-            <section className="mb-12">
-              <h2 className="text-lg font-semibold mb-5" style={{ color: t.text }}>Frequently asked questions</h2>
-              <div className="flex flex-col gap-3">
-                {copy.faq.map(({ q, a }) => (
-                  <div key={q} className="rounded-xl p-5" style={{ background: cardBg, border: `1px solid ${border}` }}>
-                    <div className="text-[13px] font-semibold mb-1.5" style={{ color: t.text }}>{q}</div>
-                    <div className="text-[13px] leading-[1.65]" style={{ color: t.textMuted }}>{a}</div>
-                  </div>
-                ))}
-              </div>
-            </section>
+          {hasFaq && (
+            <Section id="questions" title="Frequently asked questions">
+              <Accordion items={copy.faq} />
+            </Section>
           )}
-
-          {/* Related links + next platform */}
-          <section className="mb-12">
-            <h2 className="text-lg font-semibold mb-4" style={{ color: t.text }}>Related</h2>
-            <div className="flex flex-col gap-2.5">
-              {relatedLinks?.map(({ href, label }) => (
-                <a key={href} href={href} className="flex items-center gap-3 py-3.5 px-5 rounded-xl no-underline transition-colors duration-150" style={{ background: cardBg, border: `1px solid ${border}`, color: t.text }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                  <span className="text-[13px] font-medium">{label}</span>
-                </a>
-              ))}
-              {nextPlatform && (
-                <a href={`/services/${nextPlatform.slug}`} className="flex items-center justify-between py-3.5 px-5 rounded-xl no-underline transition-colors duration-150" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)"}`, color: t.text }}>
-                  <span className="text-[13px] font-medium">Browse {nextPlatform.name} services</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                </a>
-              )}
-            </div>
-          </section>
-
-          {/* Bottom CTA */}
-          <div className="p-8 max-md:p-6 rounded-2xl text-center" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)"}` }}>
-            <h2 className="text-xl max-md:text-lg font-semibold mb-2" style={{ color: t.text }}>Ready to grow on {platform}?</h2>
-            <p className="text-sm mb-5 max-w-[400px] mx-auto" style={{ color: t.textSoft }}>Create a free account, fund your wallet with as little as ₦1,000, and place your first order in under a minute.</p>
-            <a href="/signup" className="inline-flex items-center gap-2 py-3.5 px-8 rounded-xl bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">Create free account</a>
-          </div>
-
-          {/* Payment methods */}
-          <div className="mt-6 text-center text-[11px] leading-[1.6]" style={{ color: t.textMuted }}>
-            We accept bank transfer, debit/credit card, and crypto. Works with Opay, Palmpay, Kuda, Moniepoint, and all Nigerian banks.
-          </div>
-        </main>
-        <SharedFooter />
+        </article>
       </div>
-    </>
+
+      <RelatedTiles items={related} />
+
+      <AskCard title="Not sure which tier?" body="Start with Budget on a small order and move up. Or ask us on WhatsApp." />
+    </PageShell>
   );
 }
