@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { notFound } from 'next/navigation';
-import BlogPostView from '@/components/blog-post';
+import HelpArticle from '@/components/help-article';
 import { getLiveValues, injectLiveValues } from '@/lib/blog-values';
 import { renderBlogContent, serializeJsonLd } from '@/lib/blog-rendering';
 
@@ -32,9 +32,15 @@ export async function generateMetadata({ params }) {
 
 export default async function HelpArticlePage({ params }) {
   const { slug } = await params;
-  const [post, liveValues] = await Promise.all([
+  const [post, liveValues, related] = await Promise.all([
     prisma.blogPost.findFirst({ where: { slug, published: true, category: 'Help' } }),
     getLiveValues(),
+    prisma.blogPost.findMany({
+      where: { published: true, category: 'Help', slug: { not: slug } },
+      orderBy: { sortOrder: 'asc' },
+      take: 3,
+      select: { title: true, slug: true, excerpt: true },
+    }).catch(() => []),
   ]);
   if (!post) notFound();
 
@@ -59,7 +65,7 @@ export default async function HelpArticlePage({ params }) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumb) }} />
-      <BlogPostView post={serialized} backHref="/help" backLabel="Help" />
+      <HelpArticle post={serialized} related={related} />
     </>
   );
 }
