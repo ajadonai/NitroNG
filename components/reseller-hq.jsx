@@ -73,6 +73,14 @@ function Styles({ dark, t }) {
       .rhq-keystrip code{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;padding:7px 10px;border-radius:9px;background:${dark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.05)'};color:${t.text};flex:1;min-width:0;white-space:normal;word-break:break-all;line-height:1.5}.rhq-kb{display:flex;gap:6px;flex-wrap:wrap}
       @media (max-width:768px){.rhq-keystrip code{flex-basis:100%}.rhq-keystrip .rhq-kb{flex-basis:100%}}
       .rhq-kmeta{font-size:11px;color:${muted};padding:10px 0 2px;display:flex;flex-wrap:wrap;gap:4px 10px}.rhq-kmeta b{color:${t.text}}
+      .rhq-stats{display:grid;grid-template-columns:1fr 1fr;border:1px solid ${hair};border-radius:14px;background:${panel};overflow:hidden;margin-top:14px}
+      .rhq-stt{padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0;border-top:1px solid ${hair}}
+      .rhq-stt:nth-child(-n+2){border-top:0}.rhq-stt:nth-child(even){border-left:1px solid ${hair}}
+      .rhq-stt b{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;font-size:17px;font-weight:800;letter-spacing:-.01em;color:${t.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .rhq-stt b.ok{color:${dark ? '#6ee7b7' : '#059669'}}
+      .rhq-stt span{font-size:9.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:${muted}}
+      .rhq-stt i{font-style:normal;font-size:10.5px;color:${muted};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      @media (min-width:768px){.rhq-stats{grid-template-columns:repeat(4,1fr)}.rhq-stt{border-top:0}.rhq-stt:nth-child(even){border-left:0}.rhq-stt+.rhq-stt{border-left:1px solid ${hair}}}
       .rhq-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
       .rhq-rates{border:1px solid ${hair};border-radius:14px;overflow:hidden;background:${panel}}.rhq-rate{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid ${hair};font-size:12.5px;color:${t.text}}.rhq-rate:first-child{border-top:none}.rhq-rate b{font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700;white-space:nowrap}.rhq-rate s{color:${muted};font-weight:500;margin-right:8px;font-size:11px}
       .rhq-faq{border:1px solid ${hair};border-radius:14px;overflow:hidden;background:${panel}}.rhq-faq-item{border-top:1px solid ${hair}}.rhq-faq-item:first-child{border-top:none}.rhq-faq-btn{padding:13px 16px;font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;list-style:none;color:${t.text}}.rhq-faq-btn::-webkit-details-marker{display:none}.rhq-faq-chev{color:${muted};transform:rotate(90deg);transition:.2s;flex-shrink:0}details[open] .rhq-faq-chev{transform:rotate(-90deg)}.rhq-faq-ans{padding:0 16px 13px;font-size:12px;color:${muted};line-height:1.65}
@@ -165,8 +173,10 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
   const [rates, setRates] = useState([]);
   const [rotating, setRotating] = useState(false);
   const [wholesale, setWholesale] = useState(false);
+  const [stats, setStats] = useState(null);
   useEffect(() => {
     fetch('/api/reseller/key').then(r => r.ok ? r.json() : null).then(d => { if (d?.apiKey) { setKey(d.apiKey); setCatalog(d.catalog || 'curated'); setWholesale(!!d.wholesale); } }).catch(() => {});
+    fetch('/api/reseller/stats').then(r => r.ok ? r.json() : null).then(d => { if (d && !d.error) setStats(d); }).catch(() => {});
     fetch('/api/reseller/catalogue?view=curated').then(r => r.ok ? r.json() : null).then(d => {
       const rows = [];
       for (const g of d?.groups || []) for (const tier of g.tiers || []) if (rows.length < 3 && tier.retail && tier.price && tier.retail > tier.price) rows.push([`${g.name} · ${tier.tier}`, tier.retail, tier.price]);
@@ -193,6 +203,14 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
     <div>
       <Styles dark={dark} t={t} />
       <div className="rhq-phead"><div><span className="rhq-pill">Reseller HQ</span><h1 className="rhq-h1" style={{ fontSize: 22, margin: '8px 0 2px' }}>{wholesale ? 'Wholesale is on.' : 'Your API is ready.'}</h1><p>{wholesale ? 'Everything you need, in one place.' : 'Retail prices today. Wholesale is one message away.'}</p></div><span className="rhq-badge-sm big">{wholesale ? (full ? 'FULL CATALOGUE' : 'WHOLESALE') : 'RETAIL'}</span></div>
+      {wholesale && stats && (
+        <div className="rhq-stats">
+          <div className="rhq-stt"><b>{stats.orders.toLocaleString()}</b><span>Orders · {stats.windowDays} days</span><i>{stats.apiOrders.toLocaleString()} through the API</i></div>
+          <div className="rhq-stt"><b>₦{stats.spend.toLocaleString()}</b><span>Spend</span><i>last {stats.windowDays} days</i></div>
+          <div className="rhq-stt"><b className="ok">₦{stats.saved.toLocaleString()}</b><span>Saved vs retail</span><i>your rate: −{stats.discount}%</i></div>
+          <div className="rhq-stt"><b>₦{stats.balance.toLocaleString()}</b><span>Wallet</span><i>tops up like any account</i></div>
+        </div>
+      )}
       <div className="rhq-keystrip">
         <span className="rhq-kicon">{I(P.key, 14)}</span><span className="rhq-klabel">API key</span>
         <code className="m">{key ? (shown ? key : masked) : <Bone dark={dark} w={220} h={12} style={{ display: "inline-block", verticalAlign: "middle", maxWidth: "100%" }} />}</code>
@@ -203,14 +221,14 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
         </span>
       </div>
       <div className="rhq-kmeta"><span>Base URL <b className="m">https://nitro.ng/api/v2</b></span><span>60 requests a minute</span><span>Rotating stops the old key at once</span></div>
-      <SecHead label="Quick start" sub="Three calls and you are selling" />
-      <Steps items={[['Add Nitro as a provider', 'Set the API URL to nitro.ng/api/v2 in your panel and paste your key.'], ['Pull the services', 'Your panel calls services and gets your catalogue, your prices, our IDs.'], ['Place an order', 'add with a service ID, link and quantity. Track it with status.']]} />
-      <div className="rhq-acts"><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="rhq-btn-p blue">{I(P.book, 13)} Read the docs</a><button type="button" className="rhq-btn-g" onClick={() => onNavigate?.('catalogue')}>Browse the catalogue</button></div>
       {!wholesale && <>
         <SecHead label="Wholesale" sub="By approval, one message" />
         <div className="rhq-feat"><span className="rhq-feat-ico accent">{I(P.chart, 15)}</span><span><h4>Lower rates on the same key</h4><p>Tell us about your business on WhatsApp. Once we switch your account, every services call returns wholesale and every add is charged at it. Nothing to re-map.</p></span></div>
         <div className="rhq-acts"><a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-p wa">{WA_ICON}Message us for wholesale</a></div>
       </>}
+      <SecHead label="Quick start" sub="Three calls and you are selling" />
+      <Steps items={[['Add Nitro as a provider', 'Set the API URL to nitro.ng/api/v2 in your panel and paste your key.'], ['Pull the services', 'Your panel calls services and gets your catalogue, your prices, our IDs.'], ['Place an order', 'add with a service ID, link and quantity. Track it with status.']]} />
+      <div className="rhq-acts"><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="rhq-btn-p blue">{I(P.book, 13)} Read the docs</a><button type="button" className="rhq-btn-g" onClick={() => onNavigate?.('catalogue')}>Browse the catalogue</button></div>
       <SecHead label="Your catalogue" sub={full ? 'Curated and the full list' : wholesale ? 'Curated today, full on request' : 'Curated, at retail'} />
       <Catalogues full={full} waLink={waLink} />
       {wholesale && !full && <div className="rhq-acts"><a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-g" style={{ color: dark ? '#4ade80' : '#16a34a' }}>{WA_ICON} Ask for the full list</a></div>}
