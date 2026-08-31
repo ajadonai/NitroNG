@@ -246,7 +246,7 @@ export async function POST(req) {
     const provider = order.service?.provider || 'mtp';
     const providerLabel = getProviderName(provider);
 
-    const actionKey = { cancel: 'orders.cancel', refill: 'orders.refill', reset_refill: 'orders.reset_refill', check: 'orders.check', refund: 'orders.refund', retry: 'orders.retry', update_link: 'orders.update_link', dispatch: 'orders.dispatch', redispatch: 'orders.redispatch', reset_drip: 'orders.reset_drip' }[action];
+    const actionKey = { cancel: 'orders.cancel', refill: 'orders.refill', reset_refill: 'orders.reset_refill', check: 'orders.check', refund: 'orders.refund', retry: 'orders.retry', update_link: 'orders.update_link', dispatch: 'orders.dispatch', redispatch: 'orders.redispatch', reset_drip: 'orders.reset_drip', link_batch: 'orders.dispatch', requeue_batch: 'orders.dispatch' }[action];
     if (actionKey && !canPerformAction(admin, actionKey)) {
       return Response.json({ error: 'You do not have permission for this action' }, { status: 403 });
     }
@@ -862,8 +862,8 @@ export async function POST(req) {
             : `We lost track of batch ${candidate.batch} while checking it with ${fullOrder.provider || 'the provider'}`;
           return Response.json({
             error: `${why}, so we cannot tell whether they received it. Dispatching again risks sending it twice and paying twice. `
-              + `Search your ${fullOrder.provider || 'provider'} dashboard for this order: if it is running, leave it alone. `
-              + `If it is not there, use Reset.`,
+              + `Search your ${fullOrder.provider || 'provider'} dashboard for this order: if it is running, use Link on the batch to attach its order number. `
+              + `If it is not there, use Reconcile.`,
           }, { status: 409 });
         }
 
@@ -1472,6 +1472,55 @@ export async function POST(req) {
       return Response.json({ success: true, message: `Batch ${dispatch.batch} cleared. You can now Reset or Dispatch it.` });
     }
 
+    // Reconcile's sibling: the admin checked the provider dashboard and the
+    // order IS there. Linking attaches its number so the batch resumes the
+    // normal verified path instead of staying stuck.
+    if (action === 'link_batch') {
+      const { dispatchId, providerOrderId } = body;
+      if (!dispatchId) return Response.json({ error: 'Dispatch ID required' }, { status: 400 });
+      const provRef = String(providerOrderId || '').trim();
+      if (!/^[A-Za-z0-9-]{1,32}$/.test(provRef)) return Response.json({ error: 'Enter the provider order number' }, { status: 400 });
+
+      const dispatch = await prisma.dripDispatch.findUnique({ where: { id: dispatchId } });
+      if (!dispatch || dispatch.orderId !== order.id) return Response.json({ error: 'Dispatch not found' }, { status: 404 });
+      if (dispatch.status !== 'failed' || !String(dispatch.lastError || '').startsWith('[TIMEOUT]') || dispatch.apiOrderId) {
+        return Response.json({ error: 'Only a timed-out batch with no provider order can be linked' }, { status: 400 });
+      }
+      const dup = await prisma.dripDispatch.findFirst({ where: { orderId: dispatch.orderId, apiOrderId: provRef } });
+      if (dup) return Response.json({ error: `Provider order ${provRef} is already on batch ${dup.batch}` }, { status: 400 });
+
+      // The number must exist at the provider before we trust it.
+      const prov = order.service?.provider || 'mtp';
+      let providerState;
+      try {
+        providerState = await checkOrder(prov, provRef);
+      } catch (err) {
+        return Response.json({ error: `${getProviderName(prov)} did not confirm order ${provRef}: ${err.message}` }, { status: 502 });
+      }
+      if (!providerState || providerState.status === undefined) {
+        return Response.json({ error: `${getProviderName(prov)} returned no status for ${provRef}` }, { status: 502 });
+      }
+
+      const linked = await prisma.$transaction(async (tx) => {
+        const parentRows = await tx.$queryRaw`SELECT "id", "status", "deletedAt" FROM "orders" WHERE "id" = ${dispatch.orderId} FOR UPDATE`;
+        const p = parentRows[0];
+        if (!p || !['Pending', 'Processing'].includes(p.status) || p.deletedAt) return false;
+        const r = await tx.dripDispatch.updateMany({
+          where: { id: dispatch.id, status: 'failed', apiOrderId: null },
+          data: { apiOrderId: provRef, status: 'processing', lastError: null },
+        });
+        if (r.count === 0) return false;
+        await tx.order.updateMany({
+          where: { id: dispatch.orderId, status: { in: ['Pending', 'Processing'] }, deletedAt: null },
+          data: { status: 'Processing', dripDelivered: { increment: 1 }, queuedBehind: null, lastError: null },
+        });
+        return true;
+      });
+      if (!linked) return Response.json({ error: 'Batch state changed before it could be linked' }, { status: 409 });
+      await logActivity(admin.name, `Linked ${order.orderId} day ${dispatch.day} batch ${dispatch.batch} → ${provRef} (${providerState.status || 'found'} at ${getProviderName(prov)})`, 'order');
+      return Response.json({ success: true, message: `Batch ${dispatch.batch} linked to ${provRef} — ${providerState.status || 'found'} at the provider. The status checker takes it from here.` });
+    }
+
     if (action === 'reset_drip') {
       const { dispatchId, quantity } = body;
       if (!dispatchId) return Response.json({ error: 'Dispatch ID required' }, { status: 400 });
@@ -1516,9 +1565,8 @@ export async function POST(req) {
         if (srcError.startsWith('[TIMEOUT]') || srcError.startsWith('[VERIFY_STALE]')) {
           return {
             error: `Batch ${source.batch} timed out, so we cannot tell whether the provider received it. `
-              + `Resetting now risks sending it twice. Search the provider dashboard for this order first. `
-              + `If it is genuinely not there, a developer needs to clear the flag before Reset will work \u{2014} `
-              + `there is no button for that yet.`,
+              + `Resetting now risks sending it twice. Search the provider dashboard for this order first: `
+              + `if it is running, use Link to attach its order number; if it is not there, use Reconcile.`,
             code: 400,
           };
         }

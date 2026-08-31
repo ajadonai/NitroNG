@@ -87,6 +87,9 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
   const [resetTarget, setResetTarget] = useState(null);
   const [resetQty, setResetQty] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
+  const [linkTarget, setLinkTarget] = useState(null);
+  const [linkRef, setLinkRef] = useState("");
+  const [linkLoading, setLinkLoading] = useState(false);
   const toast = useToast();
   const confirm = useConfirm();
   const allIds = dispatches.filter(d => d.apiOrderId).map(d => d.apiOrderId);
@@ -111,7 +114,7 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
   return (
     <div className="mt-2 mb-2 rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.14)"}` }}>
       <div role="button" tabIndex={0} aria-expanded={open} onClick={() => setOpen(v => !v)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(v => !v); } }} className="flex items-center justify-between py-2 px-2.5 cursor-pointer" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.accent }}>Drip · {doneCount}/{dispatches.length} batches · {dayKeys.length} days{cfgParts.length > 0 ? ` · ${cfgParts.join(" · ")}` : ""}</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.accent }}>Drip · {doneCount}/{dispatches.length} batches · {dayKeys.length} day{dayKeys.length === 1 ? "" : "s"}{cfgParts.length > 0 ? ` · ${cfgParts.join(" · ")}` : ""}</span>
         <CopyAllIds ids={allIds} dark={dark} />
       </div>
       {open && dayKeys.map(day => {
@@ -149,21 +152,27 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
                       {d.error?.startsWith('reset:') && <span className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent }}>retry</span>}
                       {d.apiOrderId ? <CopyId value={d.apiOrderId} dark={dark} size="sm" /> : <span style={{ color: t.textMuted }}>—</span>}
                       {/* A timed-out batch blocks Reset and Dispatch alike, since we cannot
-                          tell whether the provider took it. Reconcile is how an admin records
-                          having checked the provider dashboard and found it absent. */}
+                          tell whether the provider took it. The admin checks the provider
+                          dashboard and answers either way: Link attaches the order that IS
+                          there; Reconcile records that it is NOT. */}
                       {(d.error?.startsWith("[TIMEOUT]") || d.error?.startsWith("[VERIFY_STALE]")) ? (
-                        <button onClick={async () => {
-                          const ok = await confirm({
-                            title: "Confirm with provider",
-                            message: `Batch #${d.batch} timed out, so we cannot tell whether the provider received it.\n\nOnly continue if you have searched the provider dashboard and this order is NOT there. If it is there, cancel and let it run — resetting would send it twice.`,
-                            confirmLabel: "It's not there",
-                          });
-                          if (!ok) return;
-                          const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reconcile_drip", orderId, dispatchId: d.id }) });
-                          const data = await res.json().catch(() => ({}));
-                          if (res.ok) { toast.success(data.message || "Batch cleared"); onRefresh?.(); }
-                          else toast.error(data.error || "Could not reconcile");
-                        }} className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>Reconcile</button>
+                        <>
+                          {d.error?.startsWith("[TIMEOUT]") && !d.apiOrderId && (
+                            <button onClick={() => { setLinkTarget(d); setLinkRef(""); }} className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.08)", color: dark ? "#6ee7b7" : "#059669" }}>Link</button>
+                          )}
+                          <button onClick={async () => {
+                            const ok = await confirm({
+                              title: "Confirm with provider",
+                              message: `Batch #${d.batch} timed out, so we cannot tell whether the provider received it.\n\nOnly continue if you have searched the provider dashboard and this order is NOT there. If it is there, use Link instead — resetting would send it twice.`,
+                              confirmLabel: "It's not there",
+                            });
+                            if (!ok) return;
+                            const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reconcile_drip", orderId, dispatchId: d.id }) });
+                            const data = await res.json().catch(() => ({}));
+                            if (res.ok) { toast.success(data.message || "Batch cleared"); onRefresh?.(); }
+                            else toast.error(data.error || "Could not reconcile");
+                          }} className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>Reconcile</button>
+                        </>
                       ) : (bPartial || bFailed) && <button onClick={() => { setResetTarget(d); setResetQty(String(d.remains != null ? d.remains : d.qty)); }} className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent }}>Reset</button>}
                       <span className="ml-auto shrink-0" style={{ color: t.textMuted }}>{d.scheduled ? new Date(d.scheduled).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", ...(dripConfig?.timezone ? { timeZone: dripConfig.timezone } : {}) }) : ""}</span>
                     </div>
@@ -202,6 +211,33 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
                 setResetTarget(null);
               }} className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer border-none" style={{ background: t.accent, color: "#fff", opacity: resetLoading || !resetQty || Number(resetQty) < 1 || Number(resetQty) > resetTarget.qty ? 0.4 : 1 }}>
                 {resetLoading ? "Resetting…" : "Reset"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {linkTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => { if (!linkLoading) setLinkTarget(null); }}>
+          <div onClick={e => e.stopPropagation()} className="rounded-xl p-5 w-[340px]" style={{ background: dark ? "#1a1a1a" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+            <div className="text-[14px] font-semibold mb-1" style={{ color: t.text }}>Link Batch #{linkTarget.batch}</div>
+            <div className="text-[12px] mb-3" style={{ color: t.textMuted }}>
+              You found this batch running on the provider dashboard. Paste its order number — we confirm it with the provider before linking, then the status checker takes over.
+            </div>
+            <label className="block text-[11px] font-semibold mb-1" style={{ color: t.textMuted }}>Provider order number</label>
+            <input value={linkRef} onChange={e => setLinkRef(e.target.value.replace(/[^A-Za-z0-9-]/g, ""))} placeholder="e.g. 4667427" className="w-full rounded-lg py-2 px-3 text-[13px] mb-3 border-none outline-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.text }} />
+            <div className="flex gap-2">
+              <button disabled={linkLoading} onClick={() => setLinkTarget(null)} className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted }}>Cancel</button>
+              <button disabled={linkLoading || !linkRef.trim()} onClick={async () => {
+                setLinkLoading(true);
+                try {
+                  const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "link_batch", orderId, dispatchId: linkTarget.id, providerOrderId: linkRef.trim() }) });
+                  const data = await res.json();
+                  if (data.success) { toast?.success?.(data.message || "Batch linked"); onRefresh?.(); setLinkTarget(null); }
+                  else toast?.error?.(data.error || "Could not link");
+                } catch { toast?.error?.("Could not link"); }
+                setLinkLoading(false);
+              }} className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(110,231,183,.9)" : "#059669", color: dark ? "#0a2416" : "#fff", opacity: linkLoading || !linkRef.trim() ? 0.4 : 1 }}>
+                {linkLoading ? "Linking…" : "Link batch"}
               </button>
             </div>
           </div>
