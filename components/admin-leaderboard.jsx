@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from "react";
 import { RailSec, RailCard, RailRow, RailEmpty } from "./rail";
+import { useBodyScrollLock } from "./ui-primitives";
 import { SkelList } from "./skeleton";
 import { fN, fD } from "../lib/format";
 import { SegPill } from "./seg-pill";
@@ -26,6 +27,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
   const [rewardMsg, setRewardMsg] = useState(null);
   const [selected, setSelected] = useState(new Set());
   const [massModal, setMassModal] = useState(false);
+  useBodyScrollLock(!!rewardModal || massModal);
   const [massAmount, setMassAmount] = useState("");
   const [massNote, setMassNote] = useState("");
   const [massLoading, setMassLoading] = useState(false);

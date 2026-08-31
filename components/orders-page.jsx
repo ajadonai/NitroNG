@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, Fragment } from "react";
 import { RailSec, RailCard, RailFact, RailRow, RailNote, RailEmpty } from "./rail";
+import { useBodyScrollLock } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
@@ -219,7 +220,7 @@ function DotMenu({ items, dark, t, loading }) {
         {loading ? <NitroLoader size={14} mono ariaHidden /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>}
       </button>
       {open && (
-        <div className="fixed min-w-[160px] rounded-lg overflow-hidden shadow-lg" style={{ top: posRef.current.top, right: posRef.current.right, zIndex: 60, background: dark ? "#1e1e1e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"}` }}>
+        <div className="fixed min-w-[160px] rounded-lg overflow-hidden shadow-lg" style={{ top: posRef.current.top, right: posRef.current.right, zIndex: 60, background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"}` }}>
           {filtered.map((item, i) => (
             <button key={i} onPointerDown={(e) => { e.stopPropagation(); setOpen(false); item.action(); }} className="w-full text-left py-2.5 px-3.5 text-[13px] font-medium border-none cursor-pointer bg-transparent block" style={{ color: item.danger ? (dark ? "#fca5a5" : "#dc2626") : t.textSoft, borderBottom: i < filtered.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.1)"}` : "none", touchAction: "none" }}>{item.label}</button>
           ))}
@@ -628,6 +629,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
   const [dateRange, setDateRange] = useState(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [viewComments, setViewComments] = useState(null);
+  useBodyScrollLock(!!viewComments);
   const toast = useToast();
   const fetchAbortRef = useRef(null);
 
@@ -885,7 +887,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       {viewComments && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={() => setViewComments(null)}>
           <div className="absolute inset-0 bg-black/55" />
-          <div className="relative w-full max-w-md rounded-xl shadow-xl overflow-hidden" style={{ background: dark ? "#252320" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} onClick={e => e.stopPropagation()}>
+          <div className="relative w-full max-w-md rounded-xl shadow-xl overflow-hidden" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
               <div className="flex items-center gap-2">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>

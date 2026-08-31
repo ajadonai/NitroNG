@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from "react";
 import { SkelFacts, SkelList } from "./skeleton";
+import { useBodyScrollLock } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
@@ -27,6 +28,7 @@ export function AdminPaymentsPage({ dark, t }) {
   const [saving, setSaving] = useState(false);
   
   const [addModal, setAddModal] = useState(false);
+  useBodyScrollLock(!!configuring || addModal);
   const [newGw, setNewGw] = useState({ id: "", name: "", desc: "" });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Pending");

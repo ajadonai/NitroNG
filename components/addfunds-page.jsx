@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, Fragment } from "react";
 import { RailSec, RailCard, RailRow, RailStep, RailEmpty } from "./rail";
+import { useBodyScrollLock } from "./ui-primitives";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
@@ -221,6 +222,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
   /* Manual bank transfer modal */
   const [manualModal, setManualModal] = useState(null);
+  useBodyScrollLock(!!cryptoModal || !!manualModal || !!confirmModal);
   const [manualRef, setManualRef] = useState("");
   const [manualSubmitting, setManualSubmitting] = useState(false);
   const [manualDone, setManualDone] = useState(false);

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from "react";
 import { RailSec, RailCard } from "./rail";
+import { useBodyScrollLock } from "./ui-primitives";
 import { SkelList } from "./skeleton";
 import { copyText } from '@/lib/clipboard';
 
@@ -69,6 +70,7 @@ export default function ResellerCataloguePage({ dark, t }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
   const [drawer, setDrawer] = useState(null);
+  useBodyScrollLock(!!drawer);
   const [copied, setCopied] = useState(false);
 
   // Escape closes the drawer. Without it a keyboard user can open the panel and
