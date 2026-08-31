@@ -310,7 +310,7 @@ export default function AdminPromotionsPage({ dark, t }) {
                     <button type="button" className="pro-b sm" disabled={!!busy} onClick={() => { setEditing(c); setShowAdd(false); }}>Edit</button>
                     {canActivate && <button type="button" className="pro-b sm pri" disabled={!!busy} onClick={() => doAction('activate', c.id, type)}>{busy === c.id + 'activate' ? '…' : 'Activate'}</button>}
                     {canPause && <button type="button" className="pro-b sm" disabled={!!busy} onClick={() => doAction('pause', c.id, type)}>{busy === c.id + 'pause' ? '…' : 'Pause'}</button>}
-                    <button type="button" className="pro-b sm" disabled={!!busy} onClick={() => askDelete(c, type)}>Delete</button>
+                    <button type="button" className="pro-b sm bad" disabled={!!busy} onClick={() => askDelete(c, type)}>Delete</button>
                   </span>}
                 </div>
               );
@@ -327,7 +327,7 @@ const PRO_CSS = `
 .pro *{box-sizing:border-box}
 .pro .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .pro-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.pro-b:hover{transform:translateY(-1px)}.pro-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.pro-b.sm{height:30px;padding:0 10px;font-size:12px}.pro-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.pro-b.sm{height:30px;padding:0 10px;font-size:12px}.pro-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.pro-b.bad{color:var(--bad)}
 .pro-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .pro-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.pro-stt:first-child{border-left:0}
 .pro-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pro-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.pro-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

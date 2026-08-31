@@ -1894,7 +1894,7 @@ export function AdminIssuesPage({ dark, t }) {
                   <span className="is-ty">{kindOf(i)}</span>
                   <span className="is-when">{when(i.createdAt)}</span>
                   <span className="is-acts">
-                    {canAct(i) ? <><button type="button" className="is-b sm pri" disabled={resolving === i.id} onClick={() => act(i.id, "resolve")}>{resolving === i.id ? "…" : yes}</button><button type="button" className="is-b sm" disabled={resolving === i.id} onClick={() => act(i.id, "ignore")}>{no}</button></> : <span className="is-dimc">owner decides</span>}
+                    {canAct(i) ? <><button type="button" className="is-b sm pri" disabled={resolving === i.id} onClick={() => act(i.id, "resolve")}>{resolving === i.id ? "…" : yes}</button><button type="button" className={`is-b sm${no === "Reject" ? " bad" : ""}`} disabled={resolving === i.id} onClick={() => act(i.id, "ignore")}>{no}</button></> : <span className="is-dimc">owner decides</span>}
                   </span>
                 </div>
               );
@@ -1949,7 +1949,11 @@ const IS_CSS = `
 .is *{box-sizing:border-box}
 .is .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .is-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.is-b:hover{transform:translateY(-1px)}.is-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.is-b.sm{height:30px;padding:0 10px;font-size:12px}.is-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.is-b.sm{height:30px;padding:0 10px;font-size:12px}
+/* Resolve/Approve is the good outcome — green, never the accent, which sits
+ * next to red on this page and made the safe action read dangerous. */
+.is-b.pri{background:var(--ok);color:var(--card);border-color:var(--ok)}
+.is-b.bad{color:var(--bad)}
 .is-link{font:inherit;font-size:inherit;font-weight:600;color:var(--ac);background:none;border:0;cursor:pointer;padding:0}
 .is-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .is-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.is-stt:first-child{border-left:0}

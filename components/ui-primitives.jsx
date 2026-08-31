@@ -32,8 +32,12 @@ export function Modal({ open, onClose, title, children, dark, maxWidth = 480, la
     const onKey = e => { if (e.key === "Escape") onClose?.(); };
     window.addEventListener("keydown", onKey);
     panelRef.current?.focus();
+    // The modal owns the screen while it is up.
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
       // Returning focus matters most for keyboard users, who would otherwise be
       // dropped back at the top of the document.
       if (restoreRef.current instanceof HTMLElement) restoreRef.current.focus();

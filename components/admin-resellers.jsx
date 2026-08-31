@@ -212,7 +212,7 @@ export default function AdminResellersPage({ dark, t }) {
             <div className="re-dra">
               {openR.enabled
                 ? <button type="button" className="re-b danger" disabled={!!busy} onClick={() => revoke(openR)}>{busy === openR.userId + "revoke" ? "…" : "Revoke access"}</button>
-                : <button type="button" className="re-b" disabled={!!busy} onClick={() => restore(openR)}>{busy === openR.userId + "approve" ? "…" : "Restore access"}</button>}
+                : <button type="button" className="re-b ok" disabled={!!busy} onClick={() => restore(openR)}>{busy === openR.userId + "approve" ? "…" : "Restore access"}</button>}
             </div>
           </div>
         </div>
@@ -227,7 +227,7 @@ const CSS = `
 .re .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .re .r{text-align:right}
 .re-b{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;transition:transform .15s}
-.re-b:hover{transform:translateY(-1px)}.re-b.sm{padding:5px 9px;font-size:11.5px}.re-b.danger{color:var(--bad)}.re-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.re-b:hover{transform:translateY(-1px)}.re-b.sm{padding:5px 9px;font-size:11.5px}.re-b.danger{color:var(--bad)}.re-b.ok{color:var(--ok)}.re-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .re-pri{font:inherit;font-size:12.5px;font-weight:800;padding:8px 16px;border-radius:9px;border:0;background:var(--ac);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(196,125,142,.28);white-space:nowrap;flex-shrink:0;transition:transform .15s}.re-pri:hover{transform:translateY(-1px)}
 .re-cnt{font-size:11.5px;color:var(--dim);white-space:nowrap}
 .re-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}

@@ -562,7 +562,7 @@ export function AdminCrewPage({ dark, t }) {
 
               <div className="cw-df">
                 {isPending && <>
-                  <button type="button" className="cw-b sm pri" disabled={busy === dm.id} onClick={() => confirmAct("approve")}>Approve</button>
+                  <button type="button" className="cw-b sm ok" disabled={busy === dm.id} onClick={() => confirmAct("approve")}>Approve</button>
                   <button type="button" className="cw-b sm bad" disabled={busy === dm.id} onClick={() => confirmAct("reject")}>Reject</button>
                 </>}
                 {!isPending && whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="cw-b sm">WhatsApp</a>}
