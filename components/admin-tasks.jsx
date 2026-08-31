@@ -67,7 +67,25 @@ const EMPTY_FORM = {
   allowNonDepositors: true, active: true,
 };
 
-const Toggle = ({ on, onClick }) => <button type="button" role="switch" aria-checked={on} className={'tk-sw' + (on ? ' on' : '')} onClick={onClick}><i /></button>;
+const Toggle = ({ on, onClick, label }) => <button type="button" role="switch" aria-checked={on} aria-label={label} className={'tk-sw' + (on ? ' on' : '')} onClick={onClick}><i /></button>;
+
+// The words the customer's own task card uses — see components/tasks-page.jsx.
+const bandOf = (rewardKobo) => rewardKobo <= 10000 ? 'Follow and join' : rewardKobo <= 25000 ? 'Share' : 'Write and recommend';
+const PROOF_PH = {
+  x: '@yourhandle', instagram: '@yourhandle', tiktok: '@yourhandle',
+  telegram: '@yourusername', facebook: 'Your profile name',
+  youtube: 'Your channel name', whatsapp: '2348012345678',
+  nairaland: 'yourusername', reddit: 'u/yourusername',
+  google: 'Your Google name', trustpilot: 'Your Trustpilot name', blog: 'yourname',
+};
+const proofPlaceholder = (proofType, platform) =>
+  (proofType === 'link' || proofType === 'screenshot') ? 'https://...' : (PROOF_PH[platform] || '@yourhandle');
+
+// Anything in here means the task is gated, so the section opens on edit.
+const hasLimits = (f) => [f.minViews, f.minFollowers, f.keepDays, f.monthlyCap, f.maxPerMonth].some(v => (parseInt(v) || 0) > 0) || !!f.viralBonus || !f.allowNonDepositors;
+
+const CHEV = <svg className="tk-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>;
+const CLOSE = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>;
 
 const CARD_TITLE = { pending: 'Waiting for review', approved: 'Approved', rejected: 'Rejected', all: 'All submissions' };
 const SORT_OPTIONS = [
@@ -111,6 +129,7 @@ export default function AdminTasksPage({ dark, t }) {
   const [modal, setModal] = useState(null); // null | { mode: 'create' } | { mode: 'edit', task: {...} }
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
+  const [limitsOpen, setLimitsOpen] = useState(false);
 
   const loadTasks = useCallback(async () => {
     try {
@@ -153,8 +172,9 @@ export default function AdminTasksPage({ dark, t }) {
   }, [overlay]);
 
   // ── Task CRUD ──
-  const openCreate = () => { setForm({ ...EMPTY_FORM }); setModal({ mode: 'create' }); };
+  const openCreate = () => { setForm({ ...EMPTY_FORM }); setLimitsOpen(false); setModal({ mode: 'create' }); };
   const openEdit = (task) => {
+    setLimitsOpen(hasLimits(task));
     setForm({
       platform: task.platform, title: task.title, instructions: task.instructions,
       category: task.category, proofType: task.proofType, reward: task.reward / 100,
@@ -250,6 +270,24 @@ export default function AdminTasksPage({ dark, t }) {
   const reviewed30 = (stats.approved30 || 0) + (stats.rejected30 || 0);
   const taskMeta = (x) => `${CAT_WORD[x.category] || x.category} · ${PROOF_WORD[x.proofType] || x.proofType} · ${FREQ_WORD[x.frequency] || x.frequency}`;
   const platformOptions = [{ value: 'all', label: 'All platforms' }, ...PLATFORMS.map(p => ({ value: p.id, label: p.name }))];
+
+  // ── What the editor works out from the form as it is typed ──
+  const rewardNaira = parseFloat(form.reward) || 0;
+  const realCost = Math.round(rewardNaira * 0.375);
+  const cost200 = Math.round(rewardNaira * 200 * 0.375);
+  const doneCount = modal?.mode === 'edit' ? (modal.task?._count?.submissions ?? modal.task?.doneCount ?? 0) : 0;
+  const previewBlank = !form.title.trim() && !form.instructions.trim();
+  const num = (v) => parseInt(v) || 0;
+  const limitBits = [
+    num(form.minViews) && `${fmt(num(form.minViews))}+ views`,
+    num(form.minFollowers) && `${fmt(num(form.minFollowers))}+ followers`,
+    num(form.keepDays) && `kept up ${fmt(num(form.keepDays))} days`,
+    num(form.monthlyCap) && `${fmt(num(form.monthlyCap))} approvals a month`,
+    num(form.maxPerMonth) && `${fmt(num(form.maxPerMonth))} a customer a month`,
+    form.viralBonus && 'viral bonus',
+    !form.allowNonDepositors && 'depositors only',
+  ].filter(Boolean);
+  const limitSummary = limitBits.length ? limitBits.join(' · ') : 'nothing set — anyone can do it, once';
 
   const vars = {
     '--card': dark ? '#141930' : '#ffffff', '--ink': t.text, '--mut': t.textMuted, '--dim': dark ? '#5c6170' : '#a19b93', '--line': t.cardBorder, '--rail': dark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)', '--soft': dark ? '#111634' : '#faf9f7',
@@ -380,102 +418,160 @@ export default function AdminTasksPage({ dark, t }) {
       )}
 
       {modal && (
-        <div className="tk-bd" onClick={() => setModal(null)}>
-          <div className="tk-md" role="dialog" aria-modal="true" aria-label={modal.mode === 'create' ? 'New task' : 'Edit task'} onClick={e => e.stopPropagation()}>
-            <div className="tk-mdh"><b>{modal.mode === 'create' ? 'New task' : 'Edit task'}</b><button type="button" className="tk-b sm" onClick={() => setModal(null)}>Close</button></div>
-            <p className="tk-mds">Platform, reward, proof, gates and limits, all in one place.</p>
+        <div className="tk-bd tk-sheet" onClick={() => setModal(null)}>
+          <div className="tk-md tk-em" role="dialog" aria-modal="true" aria-label={modal.mode === 'create' ? 'New task' : 'Edit task'} onClick={e => e.stopPropagation()}>
 
-            <label className="tk-lbl" htmlFor="tk-platform">Platform</label>
-            <div className="tk-row">
-              <span className="tk-pav">{PF_SHORT[form.platform] || '•'}</span>
-              <select id="tk-platform" className="tk-sel" value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))}>
-                {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-            {(form.platform === 'google' || form.platform === 'trustpilot') && (
-              <div className="tk-note warn">Paid reviews breach Google and Trustpilot policy. Read the proposal doc before turning this on.</div>
-            )}
-
-            <label className="tk-lbl" htmlFor="tk-title">Task title</label>
-            <input id="tk-title" className="tk-in" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Follow us on TikTok" />
-
-            <label className="tk-lbl" htmlFor="tk-instr">Instructions shown to the customer</label>
-            <textarea id="tk-instr" className="tk-in ta" rows={3} value={form.instructions} onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))} />
-
-            <div className="tk-two">
+            <div className="tk-emh">
               <div>
-                <label className="tk-lbl" htmlFor="tk-cat">Category</label>
-                <select id="tk-cat" className="tk-sel" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                  {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-                </select>
+                <b>{modal.mode === 'create' ? 'New task' : 'Edit task'}</b>
+                {modal.mode === 'create'
+                  ? <i>It goes live only when you switch it on.</i>
+                  : doneCount > 0 && <i>{doneCount.toLocaleString()} {doneCount === 1 ? 'person has' : 'people have'} done this one. Changes do not affect what they already earned.</i>}
               </div>
-              <div>
-                <label className="tk-lbl" htmlFor="tk-proof">Proof required</label>
-                <select id="tk-proof" className="tk-sel" value={form.proofType} onChange={e => setForm(f => ({ ...f, proofType: e.target.value }))}>
-                  {PROOF_TYPES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-                </select>
+              <span className="tk-hsw">
+                <Toggle on={form.active} label="Live" onClick={() => setForm(f => ({ ...f, active: !f.active }))} />
+                <em>{form.active ? 'Live' : 'Off'}</em>
+              </span>
+              <button type="button" className="tk-x" onClick={() => setModal(null)} aria-label="Close">{CLOSE}</button>
+            </div>
+
+            <div className="tk-emb">
+              {/* Left: the task itself */}
+              <div className="tk-col">
+                <span className="tk-kick">The task</span>
+
+                <div className="tk-fl">
+                  <label htmlFor="tk-platform">Platform</label>
+                  <span className="tk-pf">
+                    <span className="tk-tile">{PF_SHORT[form.platform] || '•'}</span>
+                    <select id="tk-platform" className="tk-sel" value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))}>
+                      {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </span>
+                </div>
+                {(form.platform === 'google' || form.platform === 'trustpilot') && (
+                  <div className="tk-note warn">Paid reviews breach Google and Trustpilot policy. Read the proposal doc before turning this on.</div>
+                )}
+
+                <div className="tk-fl">
+                  <label htmlFor="tk-title">Title</label>
+                  <input id="tk-title" className="tk-in" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Follow us on TikTok" />
+                  <span className="tk-hint">The line the customer reads first</span>
+                </div>
+
+                <div className="tk-fl">
+                  <label htmlFor="tk-instr">What they must do</label>
+                  <textarea id="tk-instr" className="tk-in ta" rows={3} value={form.instructions} onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))} />
+                </div>
+
+                <div className="tk-r2">
+                  <div className="tk-fl">
+                    <label htmlFor="tk-proof">Proof they send</label>
+                    <select id="tk-proof" className="tk-sel" value={form.proofType} onChange={e => setForm(f => ({ ...f, proofType: e.target.value }))}>
+                      {PROOF_TYPES.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="tk-fl">
+                    <label htmlFor="tk-cat">Category</label>
+                    <select id="tk-cat" className="tk-sel" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+                      {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <span className="tk-kick mt">The money</span>
+                <div className="tk-r2">
+                  <div className="tk-fl">
+                    <label htmlFor="tk-reward">Reward</label>
+                    <div className="tk-money"><span>₦</span><input id="tk-reward" className="tk-in" type="number" value={form.reward} onChange={e => setForm(f => ({ ...f, reward: e.target.value }))} /></div>
+                    <span className="tk-hint">Spend-only credit</span>
+                  </div>
+                  <div className="tk-fl">
+                    <label htmlFor="tk-freq">How often</label>
+                    <select id="tk-freq" className="tk-sel" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}>
+                      {FREQUENCIES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: the card as the customer will read it, and what it costs */}
+              <div className="tk-pv">
+                <span className="tk-kick">What the customer sees</span>
+                {previewBlank ? (
+                  <>
+                    <div className="tk-pvc blank"><span className="tk-sk a" /><span className="tk-sk b" /><span className="tk-sk c" /></div>
+                    <p className="tk-pvnote">Fill in the title and reward and this fills in with it.</p>
+                  </>
+                ) : (
+                  <div className="tk-pvc">
+                    <div className="tk-pvh">
+                      <span className="tk-pvt">{PF_SHORT[form.platform] || '•'}</span>
+                      <span className="tk-pvn"><b>{form.title || 'Untitled task'}</b><i>{bandOf(Math.round(rewardNaira * 100))}</i></span>
+                      <span className="m tk-pvp">₦{fmt(rewardNaira)}</span>
+                    </div>
+                    {form.instructions.trim() && <p className="tk-pvi">{form.instructions}</p>}
+                    <div className="tk-pvf">
+                      <span className="tk-pvin">{proofPlaceholder(form.proofType, form.platform)}</span>
+                      <span className="tk-pvb">Submit</span>
+                    </div>
+                  </div>
+                )}
+                <div className="tk-cost">
+                  <span className="tk-cl"><i>Face value</i><b className="m">₦{fmt(rewardNaira)}</b></span>
+                  <span className="tk-cl"><i>What it actually costs us</i><b className="m">₦{fmt(realCost)}</b></span>
+                  <span className="tk-cl"><i>If 200 people do it</i><b className="m">₦{fmt(cost200)}</b></span>
+                </div>
+              </div>
+
+              {/* Under both: everything that is usually left alone */}
+              <div className={'tk-more' + (limitsOpen ? ' open' : '')}>
+                <button type="button" className="tk-mh" aria-expanded={limitsOpen} onClick={() => setLimitsOpen(v => !v)}>
+                  <b>Limits and gates</b><span className="tk-hint">{limitSummary}</span>{CHEV}
+                </button>
+                {limitsOpen && (
+                  <div className="tk-mb">
+                    <div className="tk-r3">
+                      <div className="tk-fl"><label htmlFor="tk-mv">Min views</label><input id="tk-mv" className="tk-in" type="number" value={form.minViews} onChange={e => setForm(f => ({ ...f, minViews: e.target.value }))} /></div>
+                      <div className="tk-fl"><label htmlFor="tk-mf">Min followers</label><input id="tk-mf" className="tk-in" type="number" value={form.minFollowers} onChange={e => setForm(f => ({ ...f, minFollowers: e.target.value }))} /></div>
+                      <div className="tk-fl"><label htmlFor="tk-kd">Keep live (days)</label><input id="tk-kd" className="tk-in" type="number" value={form.keepDays} onChange={e => setForm(f => ({ ...f, keepDays: e.target.value }))} /></div>
+                    </div>
+                    <div className="tk-r2">
+                      <div className="tk-fl">
+                        <label htmlFor="tk-cap">Approvals a month</label>
+                        <input id="tk-cap" className="tk-in" type="number" value={form.monthlyCap} onChange={e => setForm(f => ({ ...f, monthlyCap: e.target.value }))} />
+                        <span className="tk-hint">0 means no cap of its own</span>
+                      </div>
+                      <div className="tk-fl">
+                        <label htmlFor="tk-mpm">Max per customer a month</label>
+                        <input id="tk-mpm" className="tk-in" type="number" value={form.maxPerMonth} onChange={e => setForm(f => ({ ...f, maxPerMonth: e.target.value }))} />
+                      </div>
+                    </div>
+
+                    <div className="tk-tog">
+                      <span className="tk-tt2"><b>Viral bonus</b><i>Extra credit if the post passes a bigger view mark</i></span>
+                      <Toggle on={form.viralBonus} label="Viral bonus" onClick={() => setForm(f => ({ ...f, viralBonus: !f.viralBonus }))} />
+                    </div>
+                    {form.viralBonus && (
+                      <div className="tk-r2">
+                        <div className="tk-fl"><label htmlFor="tk-vth">Bonus threshold (views)</label><input id="tk-vth" className="tk-in" type="number" value={form.viralThreshold} onChange={e => setForm(f => ({ ...f, viralThreshold: e.target.value }))} /></div>
+                        <div className="tk-fl"><label htmlFor="tk-vam">Bonus amount</label><div className="tk-money"><span>₦</span><input id="tk-vam" className="tk-in" type="number" value={form.viralAmount} onChange={e => setForm(f => ({ ...f, viralAmount: e.target.value }))} /></div></div>
+                      </div>
+                    )}
+
+                    <div className="tk-tog">
+                      <span className="tk-tt2"><b>Open to customers who never deposited</b><i>Off means only paying customers can do it</i></span>
+                      <Toggle on={form.allowNonDepositors} label="Open to customers who never deposited" onClick={() => setForm(f => ({ ...f, allowNonDepositors: !f.allowNonDepositors }))} />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="tk-two">
-              <div>
-                <label className="tk-lbl" htmlFor="tk-reward">Reward (credit)</label>
-                <div className="tk-money"><span>₦</span><input id="tk-reward" className="tk-in" type="number" value={form.reward} onChange={e => setForm(f => ({ ...f, reward: e.target.value }))} /></div>
-                <div className="tk-note">Spend-only credit · real cost about <span className="m">₦{fmt(Math.round((parseFloat(form.reward) || 0) * 0.375))}</span></div>
-              </div>
-              <div>
-                <label className="tk-lbl" htmlFor="tk-freq">Frequency</label>
-                <select id="tk-freq" className="tk-sel" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}>
-                  {FREQUENCIES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-                </select>
-                <div className="tk-note tk-inline">Max per customer a month <input className="tk-in xs" type="number" value={form.maxPerMonth} onChange={e => setForm(f => ({ ...f, maxPerMonth: e.target.value }))} aria-label="Max per customer a month" /></div>
-              </div>
-            </div>
-
-            <div className="tk-hr-line" />
-
-            <label className="tk-lbl">Requirements <span className="tk-lbl-soft">— leave 0 for none</span></label>
-            <div className="tk-three">
-              <div><input className="tk-in" type="number" value={form.minViews} onChange={e => setForm(f => ({ ...f, minViews: e.target.value }))} aria-label="Min views" /><div className="tk-note">Min views</div></div>
-              <div><input className="tk-in" type="number" value={form.minFollowers} onChange={e => setForm(f => ({ ...f, minFollowers: e.target.value }))} aria-label="Min followers" /><div className="tk-note">Min followers</div></div>
-              <div><input className="tk-in" type="number" value={form.keepDays} onChange={e => setForm(f => ({ ...f, keepDays: e.target.value }))} aria-label="Keep live (days)" /><div className="tk-note">Keep live (days)</div></div>
-            </div>
-
-            <div className="tk-two">
-              <div>
-                <label className="tk-lbl" htmlFor="tk-cap">Monthly approval cap</label>
-                <input id="tk-cap" className="tk-in" type="number" value={form.monthlyCap} onChange={e => setForm(f => ({ ...f, monthlyCap: e.target.value }))} />
-                <div className="tk-note">0 = unlimited · the global budget still applies</div>
-              </div>
-            </div>
-
-            <div className="tk-hr-line" />
-
-            <div className="tk-opt">
-              <div><b>Viral bonus</b><i>Extra credit if the post crosses a bigger view mark</i></div>
-              <Toggle on={form.viralBonus} onClick={() => setForm(f => ({ ...f, viralBonus: !f.viralBonus }))} />
-            </div>
-            {form.viralBonus && (
-              <div className="tk-two">
-                <div><label className="tk-lbl" htmlFor="tk-vth">Bonus threshold (views)</label><input id="tk-vth" className="tk-in" type="number" value={form.viralThreshold} onChange={e => setForm(f => ({ ...f, viralThreshold: e.target.value }))} /></div>
-                <div><label className="tk-lbl" htmlFor="tk-vam">Bonus amount</label><div className="tk-money"><span>₦</span><input id="tk-vam" className="tk-in" type="number" value={form.viralAmount} onChange={e => setForm(f => ({ ...f, viralAmount: e.target.value }))} /></div></div>
-              </div>
-            )}
-
-            <div className="tk-opt">
-              <div><b>Allow non-depositors</b><i>Customers with no deposit yet can still earn (₦500 redeem cap)</i></div>
-              <Toggle on={form.allowNonDepositors} onClick={() => setForm(f => ({ ...f, allowNonDepositors: !f.allowNonDepositors }))} />
-            </div>
-
-            <div className="tk-opt">
-              <div><b>Live</b><i>Shown on the task page right away</i></div>
-              <Toggle on={form.active} onClick={() => setForm(f => ({ ...f, active: !f.active }))} />
-            </div>
-
-            <div className="tk-mdf">
-              {modal.mode === 'edit' && <button type="button" className="tk-b danger tk-left" onClick={deleteTask}>Delete</button>}
+            <div className="tk-emf">
               <button type="button" className="tk-b" onClick={() => setModal(null)}>Cancel</button>
-              <button type="button" className="tk-b pri" disabled={saving || !form.title.trim()} onClick={saveTask}>{saving ? 'Saving…' : 'Save task'}</button>
+              {modal.mode === 'edit' && <button type="button" className="tk-b danger tk-left" onClick={deleteTask}>Delete</button>}
+              <button type="button" className="tk-b pri" disabled={saving || !form.title.trim()} onClick={saveTask}>{saving ? 'Saving…' : modal.mode === 'create' ? 'Create task' : 'Save changes'}</button>
             </div>
           </div>
         </div>
@@ -516,16 +612,62 @@ const TK_CSS = `
 .tk-bd{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.4);display:flex;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto}
 .tk-md{width:560px;max-width:100%;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px 18px;box-shadow:0 20px 50px rgba(0,0,0,.25);color:var(--ink)}.tk-md.sm{width:440px}
 .tk-mdh{display:flex;justify-content:space-between;align-items:center}.tk-mdh b{font-size:16px;font-weight:700}.tk-mds{margin:4px 0 0;font-size:12.5px;color:var(--mut);line-height:1.5}.tk-mdf{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}.tk-left{margin-right:auto}
-.tk-lbl{display:block;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin:14px 0 6px}.tk-lbl-soft{text-transform:none;letter-spacing:0;font-weight:500}
+.tk-lbl{display:block;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin:14px 0 6px}
 .tk-in,.tk-sel{width:100%;height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--in);color:var(--ink);font:inherit;font-size:14px;outline:none}.tk-in:focus,.tk-sel:focus{border-color:var(--ac)}
-.tk-in.ta{height:auto;padding:9px 12px;resize:vertical;line-height:1.5}.tk-in.xs{width:64px;height:28px;padding:0 8px;font-size:12px;display:inline-block;margin-left:6px}
-.tk-row{display:flex;align-items:center;gap:10px}.tk-row .tk-sel{flex:1}
-.tk-two{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.tk-three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 14px}
+.tk-in.ta{height:auto;min-height:74px;padding:9px 12px;resize:vertical;line-height:1.5}
 .tk-money{position:relative}.tk-money span{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--mut)}.tk-money .tk-in{padding-left:26px}
-.tk-note{font-size:11px;color:var(--mut);margin-top:6px;line-height:1.5}.tk-note.warn{color:var(--warn)}.tk-inline{display:flex;align-items:center;flex-wrap:wrap}
-.tk-hr-line{height:1px;background:var(--line);margin:16px 0 2px}
-.tk-opt{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--rail)}.tk-hr-line+.tk-opt{border-top:0}.tk-opt b{display:block;font-size:13px;font-weight:600}.tk-opt i{display:block;font-style:normal;font-size:11.5px;color:var(--mut);margin-top:2px}
-.tk-sw{position:relative;width:34px;height:20px;border-radius:999px;border:0;padding:0;background:var(--rail);cursor:pointer;flex-shrink:0;transition:background .15s}.tk-sw i{position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}.tk-sw.on{background:var(--ac)}.tk-sw.on i{transform:translateX(14px);background:#fff}
+.tk-note{font-size:11px;color:var(--mut);line-height:1.5}.tk-note.warn{color:var(--warn)}
+.tk-sw{position:relative;width:34px;height:20px;border-radius:999px;border:0;padding:0;background:var(--rail);cursor:pointer;flex-shrink:0;transition:background .15s}.tk-sw i{position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}.tk-sw.on{background:var(--ok)}.tk-sw.on i{transform:translateX(14px);background:#fff}
+/* ── The task editor ── */
+.tk-md.tk-em{width:860px;padding:0;border-radius:20px;max-height:calc(100vh - 64px);display:flex;flex-direction:column;overflow:hidden}
+.tk-emh{display:flex;align-items:center;gap:14px;padding:16px 22px;border-bottom:1px solid var(--line)}
+.tk-emh>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.tk-emh b{font-size:19px;font-weight:700;line-height:1.15}
+.tk-emh i{font-style:normal;font-size:12.5px;color:var(--mut);line-height:1.4}
+.tk-hsw{display:inline-flex;align-items:center;gap:8px;flex-shrink:0}
+.tk-hsw em{font-style:normal;font-size:11px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--mut)}
+.tk-x{font:inherit;width:30px;height:30px;border-radius:9px;border:0;background:none;color:var(--dim);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}.tk-x:hover{background:var(--rail);color:var(--ink)}
+.tk-emb{flex:1;min-height:0;overflow:auto;padding:20px 22px;display:grid;grid-template-columns:1fr 300px;grid-template-areas:"form pv" "more more";gap:16px 26px;align-items:start}
+.tk-col{grid-area:form;display:flex;flex-direction:column;gap:12px;min-width:0}
+.tk-kick{font-size:10px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--ac)}
+.tk-kick.mt{margin-top:6px}
+.tk-fl{display:flex;flex-direction:column;gap:5px;min-width:0}
+.tk-fl>label{font-size:11.5px;font-weight:650;color:var(--mut)}
+.tk-hint{font-size:11.5px;color:var(--dim)}
+.tk-r2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tk-r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.tk-pf{position:relative;display:flex;align-items:center}
+.tk-pf .tk-sel{padding-left:44px}
+.tk-tile{position:absolute;left:9px;width:26px;height:26px;border-radius:8px;background:var(--rail);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--mut);pointer-events:none}
+.tk-pv{grid-area:pv;position:sticky;top:0;display:flex;flex-direction:column;gap:9px;min-width:0}
+.tk-pvc{background:var(--soft);border:1px solid var(--line);border-radius:15px;padding:14px}
+.tk-pvc.blank{display:flex;flex-direction:column;gap:9px}
+.tk-pvh{display:flex;align-items:center;gap:11px}
+.tk-pvt{width:34px;height:34px;border-radius:10px;background:var(--card);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--mut);flex-shrink:0}
+.tk-pvn{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.tk-pvn b{font-size:14px;font-weight:650;line-height:1.3;word-break:break-word}.tk-pvn i{font-style:normal;font-size:11.5px;color:var(--mut)}
+.tk-pvp{font-size:14px;font-weight:700;color:var(--ok);flex-shrink:0}
+.tk-pvi{font-size:12.5px;line-height:1.5;color:var(--mut);margin:11px 0 0;white-space:pre-wrap}
+.tk-pvf{display:flex;gap:8px;margin-top:11px}
+.tk-pvin{flex:1;min-width:0;display:flex;align-items:center;height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:13px;color:var(--dim);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.tk-pvb{display:inline-flex;align-items:center;justify-content:center;height:34px;padding:0 14px;border-radius:10px;background:var(--ac);color:#fff;font-size:12.5px;font-weight:700;flex-shrink:0}
+.tk-sk{display:block;height:11px;border-radius:5px;background:var(--rail)}.tk-sk.a{width:60%;height:15px}.tk-sk.b{width:100%}.tk-sk.c{width:75%}
+.tk-pvnote{margin:0;font-size:11.5px;color:var(--dim)}
+.tk-cost{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:13px;overflow:hidden}
+.tk-cl{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 13px;border-top:1px solid var(--rail);font-size:12.5px}
+.tk-cl:first-child{border-top:0}.tk-cl i{font-style:normal;color:var(--mut)}.tk-cl b{font-weight:700}
+.tk-more{grid-area:more;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.tk-mh{font:inherit;width:100%;display:flex;align-items:center;gap:10px;padding:13px 16px;background:var(--soft);border:0;color:var(--ink);cursor:pointer;text-align:left}
+.tk-mh b{font-size:13px;font-weight:700;flex-shrink:0}
+.tk-mh .tk-hint{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tk-chev{color:var(--dim);flex-shrink:0;transition:transform .2s}
+.tk-more.open .tk-chev{transform:rotate(180deg)}
+.tk-more.open .tk-mh{border-bottom:1px solid var(--line)}
+.tk-mb{padding:16px;display:flex;flex-direction:column;gap:13px}
+.tk-tog{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:12px;border:1px solid var(--line)}
+.tk-tt2{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.tk-tt2 b{font-size:13.5px;font-weight:650}.tk-tt2 i{font-style:normal;font-size:12px;color:var(--mut);line-height:1.4}
+.tk-emf{display:flex;justify-content:flex-end;gap:9px;padding:14px 22px;border-top:1px solid var(--line);background:var(--soft)}
 @media (max-width:900px){
   .tk-hr{width:100%}.tk-hr>*{flex:1}
   .tk-stats{grid-template-columns:1fr 1fr}.tk-stt:nth-child(3){border-left:0}.tk-stt:nth-child(n+3){border-top:1px solid var(--line)}.tk-stt b{font-size:17px}
@@ -537,6 +679,13 @@ const TK_CSS = `
   .tk-r.ts .tk-pav{grid-area:pav;align-self:start}.tk-r.ts .tk-tt{grid-area:tt}.tk-r.ts .tk-tt b,.tk-r.ts .tk-tt i{white-space:normal}.tk-r.ts .tk-num{grid-area:r}.tk-r.ts .tk-mid{grid-area:n}.tk-r.ts .tk-st{grid-area:st;justify-self:end}
   .tk-r.ts .tk-acts{grid-area:acts;justify-content:stretch;margin-top:2px}.tk-r.ts .tk-acts .tk-b{flex:1;height:36px}
   .tk-pg{flex-wrap:wrap;gap:8px}
-  .tk-bd{padding:12px 10px}.tk-md{padding:14px 14px 16px}.tk-two,.tk-three{grid-template-columns:1fr}
+  .tk-bd{padding:12px 10px}.tk-md{padding:14px 14px 16px}
+  .tk-bd.tk-sheet{padding:0;align-items:flex-end}
+  .tk-md.tk-em{width:100%;max-height:92vh;border-radius:20px 20px 0 0}
+  .tk-emh,.tk-emb,.tk-emf{padding-left:16px;padding-right:16px}
+  .tk-emb{grid-template-columns:1fr;grid-template-areas:"form" "more" "pv"}
+  .tk-pv{position:static}
+  .tk-r2,.tk-r3{grid-template-columns:1fr}
+  .tk-emf{flex-direction:column-reverse}.tk-emf .tk-b{width:100%;height:42px}.tk-emf .tk-left{margin-right:0}
 }
 `;

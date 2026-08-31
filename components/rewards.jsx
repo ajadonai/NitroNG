@@ -1,14 +1,13 @@
 'use client';
-import { useState } from 'react';
 import { Modal } from './ui-primitives';
+import { SkelFacts, SkelList } from './skeleton';
 // ─────────────────────────────────────────────────────────────────
 // Nitro Rewards UI — Nitro Status + Nitro Points + Tasks strip,
 // detail modals, and the Wallet compact card.
 // Design reference: Marketing mockup "Nitro Rewards Phase 1 Home Cards"
 // (approved by Trip, 11 Jul 2026).
 //
-// DATA IS MOCKED for now: replace getRewards() with the real
-// /api/rewards payload when the backend ships. Shape is locked:
+// Data comes from /api/rewards. Shape is locked:
 //   rewards.status { key,name,eligibleSpend,currentMin,nextName,nextMin,
 //                    remainingToNext,progressPct,discountPct,pointEarnPct }
 //   rewards.points { balance,valueNaira,minRedeem,redeemable,neededToRedeem }
@@ -29,42 +28,6 @@ export const STATUS_TIERS = [
   { key: 'legend', name: 'Legend', min: 15000000, minLabel: '₦15m+',   discountPct: 4,   pointEarnPct: 2,    color: '#fbbf24' },
 ];
 
-// MOCK — replace with API data. progressPct = share of the NEXT tier's
-// minimum already spent (absolute). Switch to tier-span if Trip prefers:
-// (eligibleSpend - currentMin) / (nextMin - currentMin) * 100
-export function getRewards() {
-  const eligibleSpend = 750000;
-  const current = STATUS_TIERS[2];
-  const next = STATUS_TIERS[3];
-  return {
-    status: {
-      key: current.key,
-      name: current.name,
-      eligibleSpend,
-      currentMin: current.min,
-      nextName: next.name,
-      nextMin: next.min,
-      remainingToNext: next.min - eligibleSpend,
-      progressPct: Math.min(100, Math.round((eligibleSpend / next.min) * 1000) / 10),
-      discountPct: current.discountPct,
-      pointEarnPct: current.pointEarnPct,
-    },
-    points: {
-      balance: 8450,
-      valueNaira: 8450,
-      minRedeem: 2000,
-      redeemable: true,
-      neededToRedeem: 0,
-    },
-    tasks: { available: 2, topReward: 500 },
-    history: [
-      { kind: 'earned',   label: 'Earned',   ref: '#NTR-2475', refType: 'order',  pts: 125 },
-      { kind: 'spent',    label: 'Spent',    ref: '#NTR-2480', refType: 'order',  pts: -5000 },
-      { kind: 'reversed', label: 'Reversed', ref: '#NTR-2440', refType: 'refund', pts: -50 },
-    ],
-  };
-}
-
 export const WHATSAPP_CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q';
 
 // Compact naira for tight strip lines: ₦2.43m, ₦100k. Full figures live in modals.
@@ -72,6 +35,11 @@ export function fmtCompactNaira(n) {
   if (n >= 1000000) return `₦${parseFloat((n / 1000000).toFixed(2))}m`;
   if (n >= 1000) return `₦${parseFloat((n / 1000).toFixed(1))}k`;
   return `₦${n.toLocaleString()}`;
+}
+
+function fmtHistDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
 function fmtPoints(n) {
@@ -144,6 +112,207 @@ export function RewardsStrip({ rewards, dark, t, onStatus, onPoints, onTasks }) 
   );
 }
 
+/* ── REWARDS: the page ── */
+
+const KICKER = 'text-[10px] font-bold uppercase tracking-[1.6px]';
+
+const railLine = (dark) => (dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.055)');
+const trackBg = (dark) => (dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.055)');
+
+function CardHead({ t, title, hint }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2.5 py-[15px] px-5 max-md:px-4" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+      <div className="text-[13px] font-bold" style={{ color: t.text }}>{title}</div>
+      {hint && <div className="text-[11.5px]" style={{ color: t.textMuted }}>{hint}</div>}
+    </div>
+  );
+}
+
+function RewardsPageSkeleton({ dark }) {
+  return (
+    <div className="flex flex-col gap-3.5">
+      <SkelFacts dark={dark} n={2} />
+      <div className="grid grid-cols-[1fr_1.3fr] max-md:grid-cols-1 gap-3.5">
+        <SkelList dark={dark} rows={2} header={false} avatar="square" rowH={64} />
+        <SkelList dark={dark} rows={3} header={false} avatar="square" rowH={64} />
+      </div>
+      <SkelList dark={dark} rows={6} title header={false} avatar={false} rowH={52} />
+      <SkelList dark={dark} rows={5} title header={false} avatar={false} rowH={58} />
+    </div>
+  );
+}
+
+// The whole page in the tier's colour: the rule at the top runs from where you
+// are into where you are going, and the ladder repeats that in miniature.
+export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
+  if (!rewards) return <RewardsPageSkeleton dark={dark} />;
+  const { status, points, tasks, history } = rewards;
+  const curIdx = Math.max(0, STATUS_TIERS.findIndex(ti => ti.key === status.key));
+  const curTier = STATUS_TIERS[curIdx];
+  const nextTier = curIdx < STATUS_TIERS.length - 1 ? STATUS_TIERS[curIdx + 1] : null;
+  const heroClr = curTier.key === 'spark' ? '#c47d8e' : curTier.color;
+  const nextClr = nextTier ? nextTier.color : heroClr;
+  const gold = dark ? '#fbbf24' : '#d97706';
+  const green = dark ? '#6ee7b7' : '#059669';
+  const amber = dark ? '#fbbf24' : '#b45309';
+  const red = dark ? '#fca5a5' : '#c62828';
+  const rail = railLine(dark);
+  const card = { background: t.cardBg, border: `1px solid ${t.cardBorder}` };
+  const showTasks = TASKS_ENABLED && !!tasks;
+  const rows = history || [];
+
+  return (
+    <>
+      <div className="pb-3.5 max-md:pb-3">
+        <div className="serif text-[32px] max-md:text-[26px] font-semibold leading-none tracking-[-.015em]" style={{ color: t.text }}>Rewards</div>
+        <div className="text-[13px] mt-1.5" style={{ color: t.textMuted }}>What using Nitro gives you back.</div>
+      </div>
+
+      {/* ── Status hero ── */}
+      <div className="relative rounded-[20px] overflow-hidden mb-3.5" style={card}>
+        <div className="absolute left-0 right-0 top-0 h-[5px]" style={{ background: `linear-gradient(90deg, ${heroClr}, ${nextClr})` }} />
+        <div className="flex items-start justify-between gap-5 pt-[26px] px-[26px] pb-5 max-md:flex-col max-md:gap-3 max-md:pt-[22px] max-md:px-5 max-md:pb-[18px]" style={{ background: `linear-gradient(135deg, ${heroClr}${dark ? '2b' : '24'}, transparent 66%)` }}>
+          <div className="flex flex-col items-start min-w-0">
+            <ChipIcon gradient={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} shadow={`0 3px 10px ${heroClr}55`} size={34} radius={10}><CrownGlyph s={17} /></ChipIcon>
+            <div className={`${KICKER} mt-3`} style={{ color: t.textMuted }}>Nitro Status</div>
+            <div className="serif text-[58px] max-md:text-[46px] font-semibold leading-[.92] tracking-[-.025em] mt-1.5" style={{ color: heroClr }}>{status.name}</div>
+            <p className="text-[14px] leading-[1.55] mt-3 mb-0 max-w-[52ch]" style={{ color: t.textMuted }}>
+              {status.discountPct > 0 && <><b className="m text-[15px] font-bold" style={{ color: t.text }}>{status.discountPct}%</b> off every order · </>}
+              <b className="m text-[15px] font-bold" style={{ color: t.text }}>{status.pointEarnPct}%</b> of what you spend comes back as points
+            </p>
+          </div>
+          {nextTier && (
+            <span className="text-[11.5px] font-bold rounded-full py-1.5 px-3 shrink-0 whitespace-nowrap" style={{ color: nextClr, background: `${nextClr}${dark ? '2b' : '26'}` }}>Next: {nextTier.name}</span>
+          )}
+        </div>
+        <div className="px-[26px] pb-[22px] max-md:px-5 max-md:pb-5">
+          {nextTier && (
+            <div className="h-[9px] rounded-[5px] overflow-hidden" style={{ background: trackBg(dark) }}>
+              <div className="h-full rounded-[5px]" style={{ width: `${Math.max(3, Math.min(100, status.progressPct))}%`, background: `linear-gradient(90deg, ${heroClr}, ${nextClr})` }} />
+            </div>
+          )}
+          <div className="flex justify-between gap-3 mt-[11px] text-[12.5px] max-md:flex-col max-md:gap-[3px]" style={{ color: t.textMuted }}>
+            <span><b className="m text-[14.5px] font-bold" style={{ color: t.text }}>{fmtCompactNaira(status.eligibleSpend)}</b> counted so far</span>
+            {nextTier && <span><b className="m text-[14.5px] font-bold" style={{ color: t.text }}>{fmtCompactNaira(status.remainingToNext)}</b> to {nextTier.name}</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Points (gold) and Tasks (blue) ── */}
+      <div className={`grid gap-3.5 mb-3.5 items-stretch ${showTasks ? 'grid-cols-[1fr_1.3fr] max-md:grid-cols-1' : 'grid-cols-1'}`}>
+        <div className="relative rounded-[18px] overflow-hidden flex flex-col p-[22px] max-md:p-5" style={card}>
+          <div className="absolute left-0 right-0 top-0 h-1" style={{ background: 'linear-gradient(90deg,#fbbf24,#d97706)' }} />
+          <div className="flex items-center gap-[11px]">
+            <ChipIcon gradient="linear-gradient(135deg,#fbbf24,#d97706)" shadow="0 3px 10px rgba(217,119,6,.35)" size={30} radius={9}><CoinGlyph s={15} /></ChipIcon>
+            <span className={KICKER} style={{ color: t.textMuted }}>Nitro Points</span>
+          </div>
+          <b className="m text-[52px] max-md:text-[44px] font-extrabold leading-none tracking-[-.045em] mt-4 mb-1" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{points.balance.toLocaleString()}</b>
+          <span className="text-[12.5px]" style={{ color: t.textMuted }}>worth ₦{points.valueNaira.toLocaleString()} off your next order</span>
+          {points.redeemable ? (
+            <button onClick={onUsePoints} className="w-full h-10 mt-[18px] border-none rounded-xl text-white text-[13px] font-bold font-[inherit] cursor-pointer transition-transform duration-150 hover:-translate-y-px" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', boxShadow: '0 4px 14px rgba(217,119,6,.32)' }}>
+              Use them on an order
+            </button>
+          ) : (
+            <div className="rounded-xl py-3 px-3.5 mt-[18px]" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${t.cardBorder}` }}>
+              <div className="text-[11.5px]" style={{ color: t.textSoft }}>Earn <b style={{ color: gold }}>{points.neededToRedeem.toLocaleString()} more</b> points to start spending</div>
+              <div className="h-1 rounded-full overflow-hidden mt-2" style={{ background: trackBg(dark) }}>
+                <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round(points.balance / points.minRedeem * 100))}%`, background: gold }} />
+              </div>
+            </div>
+          )}
+          <p className="text-[11.5px] leading-[1.5] mt-3 mb-0" style={{ color: t.textMuted }}>Earned on every completed order. Spend from {points.minRedeem.toLocaleString()} points.</p>
+        </div>
+
+        {showTasks && (
+          <div className="relative rounded-[18px] overflow-hidden flex flex-col" style={card}>
+            <div className="absolute left-0 right-0 top-0 h-1" style={{ background: 'linear-gradient(90deg,#60a5fa,#2563eb)' }} />
+            <div className="flex items-center gap-[11px] py-4 px-[18px]" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+              <ChipIcon gradient="linear-gradient(135deg,#60a5fa,#2563eb)" shadow="0 3px 10px rgba(37,99,235,.32)" size={30} radius={9}><TaskGlyph s={15} /></ChipIcon>
+              <span className={KICKER} style={{ color: t.textMuted }}>Earn without spending</span>
+              <span className="ml-auto"><CellLink t={t} onClick={() => setActive?.('tasks')}>All tasks</CellLink></span>
+            </div>
+            {/* The payload carries the first few open tasks; the count is the fallback. */}
+            <div className="flex items-center gap-3 py-[13px] px-[18px]">
+              {tasks.available > 0 ? (
+                <>
+                  <span className="flex flex-col gap-0.5 flex-1 min-w-0">
+                    <b className="text-[13.5px] font-semibold" style={{ color: t.text }}>{tasks.available} task{tasks.available === 1 ? '' : 's'} open</b>
+                    <i className="not-italic text-[12px]" style={{ color: t.textMuted }}>Follow, share or review — the credit lands once we check it.</i>
+                  </span>
+                  <b className="m text-[13.5px] font-bold whitespace-nowrap" style={{ color: green }}>up to ₦{tasks.topReward.toLocaleString()}</b>
+                  <button onClick={() => setActive?.('tasks')} className="h-[31px] px-3 rounded-[10px] text-[12px] font-semibold font-[inherit] cursor-pointer" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, color: t.text }}>Do it</button>
+                </>
+              ) : (
+                <span className="flex flex-col gap-0.5">
+                  <b className="text-[13.5px] font-semibold" style={{ color: t.text }}>No tasks open right now</b>
+                  <i className="not-italic text-[12px]" style={{ color: t.textMuted }}>New ones land every few weeks.</i>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Status ladder ── */}
+      <div className="rounded-[18px] overflow-hidden mb-3.5" style={card}>
+        <CardHead t={t} title="Status ladder" hint="spend more, pay less, earn faster" />
+        <div className="flex items-center gap-3.5 py-2.5 px-5 max-md:hidden text-[10px] font-bold uppercase tracking-[1.1px]" style={{ borderBottom: `1px solid ${t.cardBorder}`, color: t.textMuted }}>
+          <span className="w-[26px] shrink-0" />
+          <span className="flex-1 min-w-0">Tier</span>
+          <span className="flex-1 min-w-0">Reach it at</span>
+          <span className="w-[100px] text-right shrink-0">Discount</span>
+          <span className="w-[100px] text-right shrink-0">Points back</span>
+        </div>
+        <div className="flex flex-col py-0.5">
+          {STATUS_TIERS.map((tier, idx) => {
+            const isNow = idx === curIdx;
+            return (
+              <div key={tier.key} className="flex items-center gap-3.5 py-3 px-5 max-md:px-4" style={{ opacity: idx < curIdx ? 0.42 : 1, background: isNow ? `${tier.color}${dark ? '1a' : '17'}` : 'transparent' }}>
+                <span className="relative w-[26px] shrink-0 self-stretch flex items-center justify-center">
+                  <span className="w-[13px] h-[13px] rounded-full" style={{ background: tier.color, boxShadow: `0 0 0 4px ${tier.color}2e` }} />
+                  {idx < STATUS_TIERS.length - 1 && <span className="absolute left-1/2 w-[2px] -translate-x-1/2" style={{ top: 'calc(50% + 9px)', bottom: -13, background: rail }} />}
+                </span>
+                <div className="flex-1 min-w-0 flex items-center gap-3.5 max-md:flex-col max-md:items-start max-md:gap-[3px]">
+                  <span className="flex-1 min-w-0 flex items-center gap-2.5 max-md:w-full">
+                    <b className="text-[15px]" style={{ color: tier.color, fontWeight: isNow ? 750 : 600 }}>{tier.name}</b>
+                    {isNow && <span className="text-[9.5px] font-bold uppercase tracking-[.9px] rounded-full py-[3px] px-[9px] whitespace-nowrap text-white" style={{ background: tier.color }}>You are here</span>}
+                  </span>
+                  <span className="flex-1 min-w-0 truncate text-[13px] max-md:text-[12px]" style={{ color: t.textMuted }}>{tier.min === 0 ? 'Your first order' : `₦${tier.min.toLocaleString()} spent`}</span>
+                </div>
+                <div className="flex items-center gap-3.5 shrink-0 max-md:flex-col max-md:items-end max-md:gap-[3px]">
+                  <span className="m w-[100px] max-md:w-auto text-right text-[14.5px] font-bold" style={{ color: t.text }}>{tier.discountPct > 0 ? `${tier.discountPct}%` : '—'}</span>
+                  <span className="m w-[100px] max-md:w-auto text-right text-[14.5px] max-md:text-[12.5px] font-bold" style={{ color: t.text }}>{tier.pointEarnPct}%</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Points history — the latest entries the API returns, unpaged ── */}
+      <div className="rounded-[18px] overflow-hidden" style={card}>
+        <CardHead t={t} title="Points history" hint={rows.length ? `${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}` : null} />
+        {rows.length ? rows.map((h, i) => {
+          const kind = h.kind === 'spent' ? 'spent' : h.kind === 'reversed' ? 'reversed' : 'earned';
+          const clr = kind === 'earned' ? green : kind === 'spent' ? amber : red;
+          return (
+            <div key={i} className="flex items-center gap-3 py-3 px-5 max-md:px-4" style={{ borderTop: i ? `1px solid ${rail}` : 'none' }}>
+              <span className="text-[9.5px] font-bold uppercase tracking-[.9px] rounded-full py-1 w-[82px] max-md:w-[70px] text-center shrink-0" style={{ background: `${clr}${dark ? '26' : '1f'}`, color: clr }}>{kind}</span>
+              <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+                <b className="text-[13.5px] font-semibold truncate" style={{ color: t.text }}>{h.detail || h.label}</b>
+                <i className="m not-italic text-[11px] truncate" style={{ color: t.textMuted }}>{h.ref}{h.at ? ` · ${fmtHistDate(h.at)}` : ''}</i>
+              </span>
+              <b className="m text-[14px] font-bold text-right whitespace-nowrap" style={{ color: clr }}>{h.pts > 0 ? '+' : ''}{fmtPoints(h.pts)}</b>
+            </div>
+          );
+        }) : (
+          <div className="text-[12px] py-7 text-center" style={{ color: t.textMuted }}>Points activity will appear here after your first order.</div>
+        )}
+      </div>
+    </>
+  );
+}
+
 /* ── HOME: channel lane ── */
 
 export function ChannelLane({ dark, t, socialLinks }) {
@@ -203,8 +372,8 @@ export function ChannelLane({ dark, t, socialLinks }) {
 function ModalShell({ open, onClose, dark, t, title, children }) {
   return (
     <Modal open={open} onClose={onClose} dark={dark} maxWidth={420} title={title} bare>
-      <div className="py-4 px-5 flex items-center justify-between shrink-0" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.06)', borderBottom: `1px solid ${dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.1)'}` }}>
-        <div className="text-[15px] font-semibold" style={{ color: t.text }}>{title}</div>
+      <div className="py-4 px-5 flex items-center justify-between shrink-0" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+        <div className="serif text-[21px] font-semibold leading-none" style={{ color: t.text }}>{title}</div>
         <button onClick={onClose} aria-label="Close" className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent" style={{ borderColor: dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)', color: t.textSoft }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
@@ -214,169 +383,152 @@ function ModalShell({ open, onClose, dark, t, title, children }) {
   );
 }
 
+/* ── the link both pop-ups end with ── */
+
+function SeeAllLink({ t, onClick }) {
+  return (
+    <button onClick={onClick} className="block w-full bg-transparent border-none cursor-pointer font-[inherit] text-[12.5px] font-semibold text-center pt-4 hover:underline" style={{ color: t.accent }}>
+      See everything in Rewards ›
+    </button>
+  );
+}
+
 /* ── Nitro Status modal ── */
 
-export function StatusModal({ open, onClose, rewards, dark, t }) {
-  const [expanded, setExpanded] = useState(null);
+export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
   if (!open || !rewards) return null;
   const { status } = rewards;
-  const curIdx = STATUS_TIERS.findIndex(ti => ti.key === status.key);
-  const curTier = STATUS_TIERS[curIdx] || STATUS_TIERS[0];
+  const curIdx = Math.max(0, STATUS_TIERS.findIndex(ti => ti.key === status.key));
+  const curTier = STATUS_TIERS[curIdx];
   const nextTier = curIdx < STATUS_TIERS.length - 1 ? STATUS_TIERS[curIdx + 1] : null;
-  const heroColor = curTier.key === 'spark' ? '#c47d8e' : curTier.color;
-  const barColor = nextTier ? nextTier.color : curTier.color;
+  const heroClr = curTier.key === 'spark' ? '#c47d8e' : curTier.color;
+  const nextClr = nextTier ? nextTier.color : heroClr;
+  const rail = railLine(dark);
   return (
     <ModalShell open={open} onClose={onClose} dark={dark} t={t} title="Nitro Status">
-      <div className="rounded-xl p-3.5" style={{ background: `${heroColor}${dark ? '14' : '0a'}`, border: `1px solid ${heroColor}${dark ? '33' : '20'}` }}>
-        <div className="flex items-center gap-3">
-          <div className="w-[42px] h-[42px] rounded-xl flex items-center justify-center shrink-0" style={{ background: `${heroColor}30`, boxShadow: `0 4px 12px ${heroColor}25` }}>
-            <CrownGlyph s={20} color={heroColor} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[18px] font-extrabold leading-none" style={{ color: heroColor }}>{status.name}</div>
-            <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>
-              {status.discountPct > 0 ? <><span style={{ color: heroColor, fontWeight: 600 }}>{status.discountPct}% off</span> · </> : ''}{status.pointEarnPct}% points on every order
-            </div>
+      <div className="flex items-center gap-3.5 rounded-[15px] p-4" style={{ background: `${heroClr}${dark ? '1a' : '12'}`, border: `1px solid ${heroClr}${dark ? '40' : '33'}` }}>
+        <ChipIcon gradient={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} shadow={`0 4px 12px ${heroClr}45`} size={40} radius={11}><CrownGlyph s={19} /></ChipIcon>
+        <div className="flex flex-col gap-[3px] min-w-0">
+          <div className="serif text-[30px] font-semibold leading-none" style={{ color: heroClr }}>{status.name}</div>
+          <div className="text-[12.5px]" style={{ color: t.textMuted }}>
+            {status.discountPct > 0 && <><b className="m font-bold" style={{ color: t.text }}>{status.discountPct}%</b> off · </>}
+            <b className="m font-bold" style={{ color: t.text }}>{status.pointEarnPct}%</b> points on every order
           </div>
         </div>
       </div>
 
-      {status.nextName && (
-        <div className="mt-4">
-          <div className="flex justify-between items-baseline text-[11px] font-bold uppercase tracking-[.6px] mb-1.5" style={{ color: t.textMuted }}>
-            <span>Progress to <span style={{ color: barColor, fontWeight: 700 }}>{status.nextName}</span></span>
-            <span className="normal-case font-semibold tracking-normal" style={{ color: barColor }}>{fmtCompactNaira(status.remainingToNext)} to go</span>
+      {nextTier && (
+        <div className="flex flex-col gap-2 mt-3.5">
+          <div className="flex items-baseline justify-between gap-3 text-[12.5px]" style={{ color: t.textMuted }}>
+            <span>Progress to <b style={{ color: nextClr }}>{nextTier.name}</b></span>
+            <span className="m font-bold whitespace-nowrap" style={{ color: t.text }}>{fmtCompactNaira(status.remainingToNext)} to go</span>
           </div>
-          <div className="h-[7px] rounded-full overflow-hidden" style={{ background: dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.06)' }}>
-            <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${Math.max(3, status.progressPct)}%`, background: `linear-gradient(90deg, ${heroColor}, ${barColor})` }} />
+          <div className="h-[9px] rounded-[5px] overflow-hidden" style={{ background: trackBg(dark) }}>
+            <div className="h-full rounded-[5px] transition-[width] duration-500" style={{ width: `${Math.max(3, Math.min(100, status.progressPct))}%`, background: `linear-gradient(90deg, ${heroClr}, ${nextClr})` }} />
           </div>
-          <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>
-            <span className="font-semibold" style={{ color: t.text }}>{fmtCompactNaira(status.eligibleSpend)}</span> of {fmtCompactNaira(status.nextMin)}
+          <div className="text-[12px]" style={{ color: t.textMuted }}>
+            <b className="m font-bold" style={{ color: t.text }}>₦{status.eligibleSpend.toLocaleString()}</b> of <span className="m">₦{status.nextMin.toLocaleString()}</span>
           </div>
         </div>
       )}
 
-      <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.06)'}` }}>
-        <div className="text-[11px] mb-3 leading-relaxed" style={{ color: t.textSoft }}>
-          Spend more to unlock higher tiers with bigger discounts and more points back.
-        </div>
-        {STATUS_TIERS.map((tier, idx) => {
-          const cur = tier.key === status.key;
-          const passed = STATUS_TIERS.indexOf(curTier) > idx;
-          const isOpen = expanded === tier.key;
-          return (
-            <button key={tier.key} onClick={() => setExpanded(isOpen ? null : tier.key)} className="w-full text-left bg-transparent border border-solid rounded-[10px] mb-[5px] cursor-pointer font-[inherit] transition-all duration-150 overflow-hidden" style={{ borderColor: cur ? `${tier.color}55` : (dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.06)'), background: cur ? `${tier.color}${dark ? '14' : '0a'}` : (dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.02)') }}>
-              <div className="flex items-center gap-2.5 py-[7px] px-3">
-                <div className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: tier.color }} />
-                <span className="text-[13px] flex-1" style={{ color: tier.color, fontWeight: cur ? 700 : 600 }}>{tier.name}</span>
-                {cur && <span className="text-[11px] font-extrabold uppercase tracking-[.5px] rounded-full px-[6px] py-[1.5px] shrink-0" style={{ background: heroColor, color: '#fff' }}>You</span>}
-                {passed && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={tier.color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>}
-                <span className="text-[11px] font-medium" style={{ color: t.textMuted }}>{tier.minLabel}</span>
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={tier.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ opacity: .6, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-              {isOpen && (
-                <div className="px-3 pb-2.5 pt-1 flex gap-2 text-[11px]" style={{ borderTop: `1px solid ${tier.color}20` }}>
-                  <div className="flex-1 rounded-lg py-2 px-2.5" style={{ background: `${tier.color}${dark ? '12' : '08'}` }}>
-                    <div style={{ color: t.textMuted }}>Discount</div>
-                    <div className="text-[13px] font-bold mt-0.5" style={{ color: tier.discountPct > 0 ? tier.color : t.textMuted }}>{tier.discountPct > 0 ? `${tier.discountPct}% off` : '—'}</div>
-                  </div>
-                  <div className="flex-1 rounded-lg py-2 px-2.5" style={{ background: `${tier.color}${dark ? '12' : '08'}` }}>
-                    <div style={{ color: t.textMuted }}>Points back</div>
-                    <div className="text-[13px] font-bold mt-0.5" style={{ color: tier.color }}>{tier.pointEarnPct}%</div>
-                  </div>
-                </div>
-              )}
-            </button>
-          );
-        })}
+      <p className="text-[12.5px] leading-[1.55] mt-3.5 mb-0" style={{ color: t.textSoft }}>
+        Spend more to unlock higher tiers — bigger discounts, more points back.
+      </p>
+
+      <div className="flex flex-col rounded-[14px] overflow-hidden mt-3.5" style={{ border: `1px solid ${t.cardBorder}` }}>
+        {STATUS_TIERS.map((tier, idx) => (
+          <div key={tier.key} className="flex items-center gap-2.5 py-[9px] px-[13px] text-[12.5px]" style={{ borderTop: idx ? `1px solid ${rail}` : 'none', opacity: idx < curIdx ? 0.42 : 1, background: idx === curIdx ? `${tier.color}${dark ? '1a' : '17'}` : 'transparent' }}>
+            <span className="w-[9px] h-[9px] rounded-full shrink-0" style={{ background: tier.color }} />
+            <b className="font-bold" style={{ color: tier.color }}>{tier.name}</b>
+            <span className="ml-auto text-[11.5px] shrink-0" style={{ color: t.textMuted }}>{tier.minLabel}</span>
+            <span className="m text-[11.5px] font-bold whitespace-nowrap shrink-0" style={{ color: t.text }}>{tier.discountPct > 0 ? `${tier.discountPct}%` : '—'} off</span>
+            <span className="m text-[11.5px] font-bold whitespace-nowrap shrink-0" style={{ color: t.text }}>{tier.pointEarnPct}% back</span>
+          </div>
+        ))}
       </div>
+
+      {setActive && <SeeAllLink t={t} onClick={() => { onClose?.(); setActive('rewards'); }} />}
     </ModalShell>
   );
 }
 
 /* ── Nitro Points modal ── */
 
-export function PointsModal({ open, onClose, rewards, dark, t, onUse }) {
+export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive }) {
   if (!open || !rewards) return null;
   const { points, history, status } = rewards;
-  const brd = dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.06)';
   const gold = dark ? '#fbbf24' : '#d97706';
-  const greenClr = dark ? '#6ee7b7' : '#059669';
-  const redClr = dark ? '#fca5a5' : '#dc2626';
+  const green = dark ? '#6ee7b7' : '#059669';
+  const amber = dark ? '#fbbf24' : '#b45309';
+  const red = dark ? '#fca5a5' : '#c62828';
+  const recent = (history || []).slice(0, 3);
   return (
     <ModalShell open={open} onClose={onClose} dark={dark} t={t} title="Nitro Points">
-      <div className="rounded-xl p-4" style={{ background: dark ? 'rgba(251,191,36,.08)' : 'rgba(251,191,36,.06)', border: `1px solid ${dark ? 'rgba(251,191,36,.18)' : 'rgba(217,119,6,.12)'}` }}>
-        <div className="flex items-center gap-3">
-          <ChipIcon gradient="linear-gradient(135deg,#fbbf24,#d97706)" shadow="0 5px 12px rgba(217,119,6,.3)" size={40} radius={11}><CoinGlyph s={19} /></ChipIcon>
-          <div className="flex-1 min-w-0">
-            <div className="m text-[22px] font-extrabold leading-none" style={{ color: gold }}>{points.balance.toLocaleString()} <span className="text-[13px]">pts</span></div>
-            <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>
-              ≈ ₦{points.valueNaira.toLocaleString()} · 1 pt = ₦1
-            </div>
+      <div className="flex items-center gap-3.5 rounded-[15px] p-4" style={{ background: dark ? 'rgba(251,191,36,.09)' : 'rgba(251,191,36,.1)', border: `1px solid ${dark ? 'rgba(251,191,36,.28)' : 'rgba(217,119,6,.22)'}` }}>
+        <ChipIcon gradient="linear-gradient(135deg,#fbbf24,#d97706)" shadow="0 5px 12px rgba(217,119,6,.3)" size={40} radius={11}><CoinGlyph s={19} /></ChipIcon>
+        <div className="flex flex-col gap-[3px] min-w-0">
+          <div className="m text-[29px] font-extrabold leading-none tracking-[-.03em]" style={{ color: gold }}>
+            {points.balance.toLocaleString()} <span className="text-[14px] font-bold">pts</span>
           </div>
+          <div className="text-[12.5px]" style={{ color: t.textMuted }}>≈ ₦{points.valueNaira.toLocaleString()} · 1 point = ₦1</div>
         </div>
       </div>
 
-      <div className="text-[11px] mt-3.5 leading-relaxed" style={{ color: t.textSoft }}>
-        Every order earns you points. Once you hit {points.minRedeem.toLocaleString()}, use them like cash on your next purchase — 1 point = ₦1.
+      <p className="text-[12.5px] leading-[1.55] mt-3.5 mb-0" style={{ color: t.textSoft }}>
+        Every order earns points. Once you reach {points.minRedeem.toLocaleString()} you can spend them like cash on your next order.
+      </p>
+
+      <div className="grid grid-cols-2 gap-2.5 mt-3.5">
+        <div className="flex flex-col rounded-[13px] py-3 px-3.5" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${t.cardBorder}` }}>
+          <span className={KICKER} style={{ color: t.textMuted }}>Earn rate</span>
+          <b className="m text-[21px] font-extrabold tracking-[-.02em] mt-[3px]" style={{ color: gold }}>{status?.pointEarnPct ?? 0.5}%</b>
+          <span className="text-[11.5px]" style={{ color: t.textMuted }}>of every order</span>
+        </div>
+        <div className="flex flex-col rounded-[13px] py-3 px-3.5" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${t.cardBorder}` }}>
+          <span className={KICKER} style={{ color: t.textMuted }}>Minimum to spend</span>
+          <b className="m text-[21px] font-extrabold tracking-[-.02em] mt-[3px]" style={{ color: t.text }}>{points.minRedeem.toLocaleString()}</b>
+          <span className="text-[11.5px]" style={{ color: t.textMuted }}>points</span>
+        </div>
       </div>
 
-      <div className="mt-3.5 grid grid-cols-2 gap-2">
-        <div className="rounded-lg py-2.5 px-3" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${brd}` }}>
-          <div className="text-[11px] font-bold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>Earn rate</div>
-          <div className="text-[13px] font-bold mt-1" style={{ color: gold }}>{status?.pointEarnPct || 0.5}%</div>
-          <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>of every order</div>
-        </div>
-        <div className="rounded-lg py-2.5 px-3" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${brd}` }}>
-          <div className="text-[11px] font-bold uppercase tracking-[.5px]" style={{ color: t.textMuted }}>Min. redeem</div>
-          <div className="text-[13px] font-bold mt-1" style={{ color: t.text }}>{points.minRedeem.toLocaleString()}</div>
-          <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>points to spend</div>
-        </div>
-      </div>
-
-      <div className="mt-4">
+      <div className="mt-3.5">
         {points.redeemable ? (
-          <button onClick={onUse} className="block w-full border-none rounded-xl text-white text-[13px] font-bold font-[inherit] py-[12px] px-4 cursor-pointer transition-transform duration-150 hover:-translate-y-px" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', boxShadow: '0 4px 12px rgba(217,119,6,.25)' }}>
+          <button onClick={onUse} className="block w-full h-11 border-none rounded-xl text-white text-[13px] font-bold font-[inherit] cursor-pointer transition-transform duration-150 hover:-translate-y-px" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', boxShadow: '0 4px 14px rgba(217,119,6,.32)' }}>
             Use on next order
           </button>
         ) : (
-          <div className="rounded-lg py-3 px-3.5 text-center" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${brd}` }}>
-            <div className="text-[11px]" style={{ color: t.textSoft }}>
+          <div className="rounded-xl py-3 px-3.5 text-center" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${t.cardBorder}` }}>
+            <div className="text-[11.5px]" style={{ color: t.textSoft }}>
               Earn <b style={{ color: gold }}>{points.neededToRedeem.toLocaleString()} more</b> points to start spending
             </div>
-            <div className="h-1 rounded-full overflow-hidden mt-2" style={{ background: dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.06)' }}>
+            <div className="h-1 rounded-full overflow-hidden mt-2" style={{ background: trackBg(dark) }}>
               <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round(points.balance / points.minRedeem * 100))}%`, background: gold }} />
             </div>
           </div>
         )}
       </div>
 
-      <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${brd}` }}>
-        <div className="text-[11px] font-bold uppercase tracking-[.7px] mb-2" style={{ color: t.textMuted }}>Recent activity</div>
-        {history && history.length > 0 ? history.map((h, i) => {
-          const isPositive = h.pts > 0;
+      <div className="flex flex-col gap-[7px] mt-4">
+        <span className={KICKER} style={{ color: t.textMuted }}>Recent</span>
+        {recent.length ? recent.map((h, i) => {
+          const kind = h.kind === 'spent' ? 'spent' : h.kind === 'reversed' ? 'reversed' : 'earned';
+          const clr = kind === 'earned' ? green : kind === 'spent' ? amber : red;
           return (
-            <div key={i} className="flex items-center gap-2.5 py-2 px-1" style={{ borderTop: i > 0 ? `1px solid ${brd}` : 'none' }}>
-              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0" style={{ background: isPositive ? `${greenClr}18` : `${redClr}18` }}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={isPositive ? greenClr : redClr} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  {isPositive ? <><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 5 19 12"/></> : <><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></>}
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[11px] font-medium truncate" style={{ color: t.text }}>{h.label}</div>
-                <div className="text-[11px]" style={{ color: t.textMuted }}>{h.ref}</div>
-              </div>
-              <div className="m text-[11px] font-bold whitespace-nowrap" style={{ color: isPositive ? greenClr : redClr }}>
-                {isPositive ? '+' : ''}{fmtPoints(h.pts)}
-              </div>
+            <div key={i} className="flex items-center gap-2.5 text-[12.5px]">
+              <span className="text-[9.5px] font-bold uppercase tracking-[.9px] rounded-full py-1 w-[78px] text-center shrink-0" style={{ background: `${clr}${dark ? '26' : '1f'}`, color: clr }}>{kind}</span>
+              <span className="flex-1 min-w-0 truncate" style={{ color: t.textMuted }}>{h.label} <span className="m">{h.ref}</span></span>
+              <b className="m font-bold whitespace-nowrap" style={{ color: clr }}>{h.pts > 0 ? '+' : ''}{fmtPoints(h.pts)}</b>
             </div>
           );
         }) : (
-          <div className="text-[11px] py-3 text-center rounded-lg" style={{ color: t.textMuted, background: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.02)' }}>
+          <div className="text-[12px] py-3 text-center rounded-lg" style={{ color: t.textMuted, background: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.02)' }}>
             Points activity will appear here after your first order.
           </div>
         )}
       </div>
+
+      {setActive && <SeeAllLink t={t} onClick={() => { onClose?.(); setActive('rewards'); }} />}
     </ModalShell>
   );
 }

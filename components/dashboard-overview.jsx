@@ -204,8 +204,8 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       </div>
 
       {/* ── Rewards modals ── */}
-      <StatusModal open={statusOpen} onClose={() => setStatusOpen(false)} rewards={rewards} dark={dark} t={t} />
-      <PointsModal open={pointsOpen} onClose={() => setPointsOpen(false)} rewards={rewards} dark={dark} t={t} onUse={() => { setPointsOpen(false); setActive("services"); }} />
+      <StatusModal open={statusOpen} onClose={() => setStatusOpen(false)} rewards={rewards} dark={dark} t={t} setActive={setActive} />
+      <PointsModal open={pointsOpen} onClose={() => setPointsOpen(false)} rewards={rewards} dark={dark} t={t} onUse={() => { setPointsOpen(false); setActive("services"); }} setActive={setActive} />
 
       {/* Tutorial popup */}
       {tutorialOpen && (

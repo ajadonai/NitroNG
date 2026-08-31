@@ -202,10 +202,10 @@ const CSS = `
 .re-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:3px;min-width:0}.re-stt:first-child{border-left:0}
 .re-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.re-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}.re-stt i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .re-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.re-rh,.re-rr{display:grid;grid-template-columns:minmax(210px,1.3fr) 82px 92px 62px 140px minmax(120px,1fr) 78px 70px;align-items:center;gap:10px;padding:0 14px}
+.re-rh,.re-rr{display:grid;grid-template-columns:minmax(150px,1.3fr) 76px 86px 56px minmax(120px,1.1fr) minmax(0,1fr) 74px auto;align-items:center;gap:10px;padding:0 14px}
 .re-rh{height:34px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line);white-space:nowrap}
 .re-rr{padding-top:9px;padding-bottom:9px;border-top:1px solid var(--rail);font-size:13px;min-width:0}.re-rr:hover{background:var(--soft)}.re-rr.sk:hover{background:none}
-.re-rr.off .re-un,.re-rr.off .re-act,.re-rr.off .re-ap,.re-rr.off .re-selw,.re-rr.off .re-rate,.re-rr.off .re-why{opacity:.5}
+.re-rr.off .re-un,.re-rr.off .re-act,.re-rr.off .re-ap,.re-rr.off .re-selw,.re-rr.off .re-rate,.re-rr.off .re-why{opacity:.5;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .re-av{width:34px;height:34px;border-radius:50%;background:var(--ac);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
 .re-un{display:flex;align-items:center;gap:10px;min-width:0}.re-unt{display:flex;flex-direction:column;gap:2px;min-width:0}
 .re-unt b{display:flex;align-items:center;gap:6px;font-weight:600;min-width:0}.re-unt b>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

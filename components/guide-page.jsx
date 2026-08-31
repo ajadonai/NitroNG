@@ -1,10 +1,48 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { RailSec, RailNote, RailLink } from "./rail";
+import { SkelBar, SkelList } from "./skeleton";
+
+// Topics a guide can land in, in the order they are shown.
+const TOPICS = ["Getting started", "Ordering", "Money", "Account"];
+
+// First list whose words appear in the title or slug wins, so a new guide
+// falls somewhere sensible without anyone editing this file.
+const TOPIC_WORDS = [
+  ["Getting started", ["getting started", "first order", "get started", "start here", "sign up", "signup", "create an account", "how nitro works", "beginner", "60 seconds", "right link", "copy your"]],
+  ["Money", ["fund", "wallet", "deposit", "payment", "price", "naira", "refund", "coupon", "referral", "bonus", "money", "top up", "topup", "invoice", "withdraw", "leaderboard", "reward", "points"]],
+  ["Ordering", ["order", "status", "tier", "refill", "deliver", "drop", "cancel", "partial", "link", "speed", "service", "track", "bulk"]],
+  ["Account", ["account", "password", "log in", "login", "security", "profile", "settings", "email", "notification", "delete", "api key"]],
+];
+
+function topicOf({ title = "", slug = "" }) {
+  const hay = ` ${title} ${String(slug).replace(/-/g, " ")} `.toLowerCase();
+  for (const [topic, words] of TOPIC_WORDS) if (words.some(w => hay.includes(w))) return topic;
+  return "Getting started";
+}
+
+// The list endpoint sends the excerpt but not the body, so length is estimated
+// from how much summary a guide needed — a minute for every 30 characters of it,
+// held between 2 and 9. If a body ever comes back, it wins.
+function readMinutes(p) {
+  if (p.content) {
+    const words = String(p.content).replace(/<[^>]+>/g, " ").trim().split(/\s+/).length;
+    return Math.max(1, Math.round(words / 200));
+  }
+  return Math.min(9, Math.max(2, Math.round((p.excerpt || p.title || "").length / 30)));
+}
+
+// A thumbnail colour per card so the grid is not a row of grey boxes.
+const RAMP = ["#60a5fa", "#a78bfa", "#fbbf24", "#f472b6", "#5fd0dc", "#34d399"];
+
+const SEARCH_ICON = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>;
 
 export default function GuidePage({ dark, t }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [topic, setTopic] = useState("All");
+  const [waLink, setWaLink] = useState(null);
 
   useEffect(() => {
     fetch("/api/blog?howto=true")
@@ -14,84 +52,182 @@ export default function GuidePage({ dark, t }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const fD = (d) => new Date(d).toLocaleDateString("en-NG", { month: "short", day: "numeric", year: "numeric" });
+  // The same WhatsApp number the legal pages read, with /contact as the fallback.
+  useEffect(() => {
+    fetch("/api/settings").then(r => r.ok ? r.json() : {}).then(d => {
+      const num = d?.settings?.social_whatsapp_support;
+      if (num) setWaLink(`https://wa.me/${num.replace(/\D/g, "")}`);
+    }).catch(() => {});
+  }, []);
+
+  const all = useMemo(() => posts.map((p, i) => ({
+    ...p, topic: topicOf(p), minutes: readMinutes(p), colour: RAMP[i % RAMP.length],
+  })), [posts]);
+
+  const topics = useMemo(() => TOPICS.filter(name => all.some(p => p.topic === name)), [all]);
+
+  const q = query.trim().toLowerCase();
+  const browsing = !q && topic === "All";
+  const starters = browsing ? all.slice(0, 3) : [];
+  const pool = (browsing ? all.slice(3) : all)
+    .filter(p => topic === "All" || p.topic === topic)
+    .filter(p => !q || `${p.title} ${p.excerpt || ""}`.toLowerCase().includes(q));
+  const groups = topics.map(name => [name, pool.filter(p => p.topic === name)]).filter(([, items]) => items.length);
+
+  const vars = {
+    "--card": "var(--t-card-bg)", "--ink": t.text, "--mut": t.textMuted,
+    "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder,
+    "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
+    "--bg": t.bg, "--ac": t.accent,
+  };
 
   return (
-    <>
-      <div className="svc-header">
-        <div className="svc-title text-t-text">Blog</div>
-        <div className="svc-subtitle text-t-text-muted">Step-by-step guides and tutorials</div>
-        <div className="page-divider bg-t-card-border" />
+    <div className="gp" style={vars}>
+      <style>{GUIDE_CSS}</style>
+
+      <div className="gp-head">
+        <div>
+          <div className="gp-title">Guide</div>
+          <div className="gp-sub">How to get the most out of Nitro.</div>
+        </div>
+        <a className="gp-btn" href="/blog" target="_blank" rel="noopener noreferrer">Open the blog</a>
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3.5">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="rounded-[14px] overflow-hidden" style={{ border: `1px solid ${t.cardBorder}` }}>
-              <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[140px]`} style={{ borderRadius: 0 }} />
-              <div className="p-3.5">
-                <div className="flex gap-1.5 mb-2">
-                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[60px] h-[18px] rounded`} />
-                  <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[70px] h-[14px]`} />
-                </div>
-                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[16px] mb-1.5`} style={{ width: `${65 + i * 8}%` }} />
-                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[80%] h-[12px] mb-1`} />
-                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[60%] h-[12px]`} />
-                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} w-[70px] h-[13px] mt-4`} />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : posts.length === 0 ? (
-        <div className="p-10 text-center">
-          <div className="mb-4 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity=".4"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></div>
-          <div className="text-base font-semibold mb-1.5 text-t-text">Tutorials coming soon</div>
-          <div className="text-sm mb-4 text-t-text-muted">We're working on guides to help you get the most out of Nitro.</div>
-          <a href="/blog" target="_blank" rel="noopener noreferrer" className="text-sm font-semibold no-underline inline-flex items-center gap-1 text-accent">
-            Visit our blog
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          </a>
+        <>
+          <SkelBar dark={dark} pills={3} />
+          <SkelList dark={dark} rows={3} title rowH={58} />
+          <SkelList dark={dark} rows={2} title avatar="square" rowH={92} />
+          <SkelList dark={dark} rows={2} title avatar="square" rowH={92} />
+        </>
+      ) : all.length === 0 ? (
+        <div className="gp-empty">
+          <b>Guides are on the way</b>
+          <span>Short walkthroughs on ordering, money and delivery are being written. Until they land, WhatsApp is faster.</span>
         </div>
       ) : (
         <>
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3.5">
-          {posts.map(p => (
-            <a key={p.id} href={`/blog/${p.slug}`} target="_blank" rel="noopener noreferrer" className="rounded-[14px] border border-t-card-border bg-t-card-bg overflow-hidden flex flex-col no-underline transition-[border-color] duration-200 hover:brightness-[1.02]">
-              {/* Thumbnail */}
-              {p.thumbnail ? (
-                <div className="h-[140px] flex-shrink-0 flex items-center justify-center" style={{ background: dark ? "rgba(26,15,20,.6)" : "rgba(26,15,20,.06)", borderBottom: `1px solid ${t.cardBorder}` }}>
-                  <img src={p.thumbnail} alt={p.title || "Guide thumbnail"} className="w-full h-full object-contain" />
-                </div>
-              ) : (
-                <div className="h-[140px] flex-shrink-0 flex items-center justify-center" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", borderBottom: `1px solid ${t.cardBorder}` }}>
-                  <span className="opacity-30">{p.category === "Tutorials" ? <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg> : p.category === "Tips & Tricks" ? <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg> : p.category === "Announcements" ? <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> : <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>}</span>
-                </div>
-              )}
-
-              <div className="p-3.5 flex flex-col flex-1">
-                <div className="flex gap-1.5 mb-2">
-                  <span className="text-[11px] font-semibold text-[#c47d8e] py-0.5 px-2 rounded" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>{p.category}</span>
-                  <span className="text-[11px] text-t-text-muted">{fD(p.createdAt)}</span>
-                </div>
-                <h3 className="text-base font-semibold mb-1.5 leading-[1.4] m-0 text-t-text">{p.title}</h3>
-                {p.excerpt && <p className="text-[13px] leading-normal m-0 text-t-text-muted">{p.excerpt}</p>}
-
-                <div className="mt-auto pt-2.5 text-[13px] font-medium text-accent">Read more →</div>
+          <div className="gp-bar">
+            <label className="gp-srch">
+              <span className="gp-si">{SEARCH_ICON}</span>
+              <input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search the guides" aria-label="Search the guides" />
+            </label>
+            {topics.length > 1 && (
+              <div className="gp-chips">
+                {["All", ...topics].map(name => (
+                  <button key={name} type="button" aria-pressed={topic === name} className={"gp-chip" + (topic === name ? " on" : "")} onClick={() => setTopic(name)}>
+                    {name === "All" ? `All ${all.length}` : name}
+                  </button>
+                ))}
               </div>
-            </a>
+            )}
+          </div>
+
+          {starters.length > 0 && (
+            <section className="gp-card">
+              <header><h3>Start here</h3><span className="gp-hint">answers most first questions</span></header>
+              <div className="gp-rows">
+                {starters.map((p, i) => (
+                  <a key={p.id} className="gp-row" href={`/blog/${p.slug}`} target="_blank" rel="noopener noreferrer">
+                    <span className="gp-num">{i + 1}</span>
+                    <span className="gp-rt"><b>{p.title}</b>{p.excerpt && <i>{p.excerpt}</i>}</span>
+                    <span className="gp-when">{p.minutes} min</span>
+                    <i className="gp-chev" aria-hidden="true">›</i>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {groups.length === 0 && starters.length === 0 && (
+            <p className="gp-none">Nothing matches that. Try another word, or ask us on WhatsApp below.</p>
+          )}
+
+          {groups.map(([name, items]) => (
+            <div key={name} className="gp-grp">
+              <span className="gp-kicker">{name}</span>
+              <div className="gp-gg">
+                {items.map(p => (
+                  <a key={p.id} className="gp-gcard" href={`/blog/${p.slug}`} target="_blank" rel="noopener noreferrer">
+                    {p.thumbnail
+                      ? <img className="gp-thumb" src={p.thumbnail} alt="" />
+                      : <span className="gp-thumb" style={{ background: `linear-gradient(135deg, ${p.colour}8c, ${p.colour}24)` }} />}
+                    <span className="gp-gt">
+                      <b>{p.title}</b>
+                      {p.excerpt && <i>{p.excerpt}</i>}
+                      <em>{p.minutes} min read</em>
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
           ))}
-        </div>
-        <div className="mt-5 text-center">
-          <a href="/blog" target="_blank" rel="noopener noreferrer" className="text-sm font-semibold no-underline inline-flex items-center gap-1 text-accent">
-            View all posts on our blog
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          </a>
-        </div>
         </>
       )}
-    </>
+
+      <div className="gp-ask">
+        <span className="gp-rt"><b>Still stuck?</b><i>WhatsApp us — faster than reading, most of the time.</i></span>
+        <a className="gp-btn pri" href={waLink || "/contact"} target={waLink ? "_blank" : undefined} rel={waLink ? "noopener noreferrer" : undefined}>WhatsApp us</a>
+      </div>
+    </div>
   );
 }
+
+const GUIDE_CSS = `
+.gp{display:flex;flex-direction:column;gap:16px;color:var(--ink)}
+.gp *{box-sizing:border-box}
+.gp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.gp-title{font-size:22px;font-weight:600;margin-bottom:2px}
+.gp-sub{font-size:15px;color:var(--mut)}
+.gp-btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:13px;font-weight:650;white-space:nowrap;text-decoration:none;transition:transform .15s}
+.gp-btn:hover{transform:translateY(-1px)}
+.gp-btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.gp-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.gp-srch{flex:1;min-width:240px;display:flex;align-items:center;gap:9px;height:42px;padding:0 15px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+.gp-srch:focus-within{border-color:var(--ac)}
+.gp-si{display:inline-flex;color:var(--dim);flex-shrink:0}
+.gp-srch input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:13.5px;color:var(--ink);outline:none}
+.gp-srch input::placeholder{color:var(--dim)}
+.gp-chips{display:flex;gap:6px;flex-wrap:wrap}
+.gp-chip{font:inherit;font-size:12.5px;font-weight:650;padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer;white-space:nowrap}
+.gp-chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.gp-card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.gp-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:15px 20px;border-bottom:1px solid var(--line)}
+.gp-card h3{margin:0;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut)}
+.gp-hint{font-size:11.5px;color:var(--dim)}
+.gp-rows{display:flex;flex-direction:column}
+.gp-row{display:flex;align-items:center;gap:14px;padding:13px 20px;border-top:1px solid var(--rail);text-decoration:none;color:inherit}
+.gp-row:first-child{border-top:0}
+.gp-row:hover{background:var(--rail)}
+.gp-num{width:28px;height:28px;border-radius:50%;background:rgba(196,125,142,.15);color:var(--ac);font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.gp-rt{display:flex;flex-direction:column;min-width:0;flex:1;gap:2px}
+.gp-rt b{font-size:13.5px;font-weight:650;line-height:1.3}
+.gp-rt i{font-style:normal;font-size:12px;color:var(--mut);line-height:1.35}
+.gp-when{font-size:12px;color:var(--dim);white-space:nowrap}
+.gp-chev{font-style:normal;color:var(--dim);font-size:17px}
+.gp-grp{display:flex;flex-direction:column;gap:10px}
+.gp-kicker{font-size:10px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--ac)}
+.gp-gg{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.gp-gcard{display:flex;gap:14px;padding:14px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:inherit;transition:transform .15s}
+.gp-gcard:hover{transform:translateY(-1px)}
+.gp-thumb{width:76px;height:68px;border-radius:12px;flex-shrink:0;object-fit:cover;background:var(--rail)}
+.gp-gt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.gp-gt b{font-size:14px;font-weight:650;line-height:1.28}
+.gp-gt i{font-style:normal;font-size:12px;color:var(--mut);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gp-gt em{font-style:normal;font-size:11px;color:var(--dim);margin-top:auto;padding-top:4px}
+.gp-none{margin:0;font-size:13px;color:var(--mut)}
+.gp-empty{display:flex;flex-direction:column;gap:5px;padding:28px 20px;text-align:center;border-radius:18px;background:var(--card);border:1px solid var(--line)}
+.gp-empty b{font-size:15px;font-weight:650}
+.gp-empty span{font-size:13px;color:var(--mut);line-height:1.5}
+.gp-ask{display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:18px;background:var(--card);border:1px solid var(--line)}
+@media (max-width:900px){
+  .gp-head{flex-direction:column}.gp-head .gp-btn{width:100%}
+  .gp-srch{min-width:0;width:100%}
+  .gp-chips{width:100%}.gp-chip{flex:1;text-align:center}
+  .gp-gg{grid-template-columns:1fr}
+  .gp-ask{flex-direction:column;align-items:stretch}.gp-ask .gp-btn{width:100%}
+}
+`;
 
 // Right sidebar for Guide
 export function GuideSidebar() {

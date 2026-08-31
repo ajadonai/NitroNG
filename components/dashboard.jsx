@@ -115,6 +115,7 @@ const ResellerCataloguePage = dynamic(() => import("./reseller-catalogue"), { ss
 const ResellerCatalogueSidebar = dynamic(() => import("./reseller-catalogue").then(m => m.ResellerCatalogueSidebar), { ssr: false });
 const ResellerLabSidebar = dynamic(() => import("./reseller-hq").then(m => m.ResellerHQSidebar), { ssr: false });
 const TasksPage = dynamic(() => import("./tasks-page").then(m => m.default), { ssr: false });
+const RewardsPage = dynamic(() => import("./rewards").then(m => m.RewardsPage), { ssr: false });
 
 /* ═══════════════════════════════════════════ */
 /* ═══ SVG ICONS                          ═══ */
@@ -133,6 +134,7 @@ const I = {
   settings: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
   earn: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15.5 9.5c0-1.38-1.57-2.5-3.5-2.5s-3.5 1.12-3.5 2.5S10.07 12 12 12s3.5 1.12 3.5 2.5-1.57 2.5-3.5 2.5-3.5-1.12-3.5-2.5"/></svg>,
   tasks: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>,
+  rewards: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-1.5 10h-15L3 8z"/></svg>,
   catalogue: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/><line x1="6" y1="8" x2="9" y2="8"/><line x1="6" y1="12" x2="9" y2="12"/></svg>,
   resellers: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 13h6"/></svg>,
   changelog: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>,
@@ -150,6 +152,7 @@ const NAV_ITEMS = [
   { id: "guide", label: "Blog" },
   { id: "changelog", label: "What's New", href: "/changelog" },
   { id: "referrals", label: "Referrals" },
+  { id: "rewards", label: "Rewards" },
   { id: "tasks", label: "Tasks" },
   { id: "support", label: "Support" },
   { id: "settings", label: "Settings" },
@@ -164,6 +167,7 @@ const BOTTOM_TABS = [
 ];
 const MORE_ITEMS = [
   { id: "referrals", label: "Referrals" },
+  { id: "rewards", label: "Rewards" },
   { id: "tasks", label: "Tasks" },
   { id: "guide", label: "Blog" },
   { id: "changelog", label: "What's New", href: "/changelog" },
@@ -671,6 +675,7 @@ function DashboardInner({ initialData }) {
   const isEarn = active === "earn";
   const isLab = active === "lab";
   const isTasks = active === "tasks";
+  const isRewards = active === "rewards";
   const noHasOrder = noSelSvc && noSelTier;
 
   // Trigger order tour on first visit to services page
@@ -1162,6 +1167,8 @@ function DashboardInner({ initialData }) {
         return <WaitlistPage feature="cleanup" dark={dark} t={t} />;
       case "tasks":
         return <TasksPage dark={dark} t={t} />;
+      case "rewards":
+        return <RewardsPage rewards={rewards} dark={dark} t={t} setActive={setActive} onUsePoints={() => setActive("services")} />;
       case "lab":
         return <ResellerLabPage dark={dark} t={t} onNavigate={setActive} socialLinks={socialLinks} />;
       case "catalogue":
@@ -1269,7 +1276,7 @@ function DashboardInner({ initialData }) {
                 const hq = { id: "lab", label: isReseller ? "Reseller HQ" : "API access" };
                 const sections = [
                   ["Order", [byId.overview, byId.services, byId.orders]],
-                  ["Money", [byId["add-funds"], byId.tasks]],
+                  ["Money", [byId["add-funds"], byId.rewards, byId.tasks]],
                   ["Browse", [browse, hq, byId.guide]],
                   ["Help", [byId.support]],
                 ];
@@ -1327,7 +1334,7 @@ function DashboardInner({ initialData }) {
               <span className="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 m text-center" style={{ background: activePromotion.bannerColor || '#10b981', color: '#fff' }}>{activePromotion.discountPercent}% OFF{activePromotion.maxDiscountPerOrder ? <><br /><span className="font-medium opacity-90" style={{ fontSize: 11 }}>up to ₦{(activePromotion.maxDiscountPerOrder / 100).toLocaleString()}</span></> : ''}</span>
             </div>
           )}
-          {active !== "overview" && !isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && !isLab && !isTasks && active !== "catalogue" && <div className="pb-6 max-md:pb-4">
+          {active !== "overview" && !isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && !isLab && !isTasks && !isRewards && active !== "catalogue" && <div className="pb-6 max-md:pb-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Welcome back, {firstName}</div>
@@ -1422,7 +1429,7 @@ function DashboardInner({ initialData }) {
             const hq = { id: "lab", label: isReseller ? "Reseller HQ" : "API access" };
             const sec = (id, label) => ({ id, section: label, header: true });
             return [
-              sec("sec-money", "Money"), byId.referrals, byId.tasks,
+              sec("sec-money", "Money"), byId.referrals, byId.rewards, byId.tasks,
               sec("sec-browse", "Browse"), browse, hq, byId.guide, byId.changelog,
               sec("sec-account", "Account"), byId.support, byId.settings,
               byId.logout,

@@ -334,7 +334,7 @@ const PM_CSS = `
 .pm-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.pm-b:hover{transform:translateY(-1px)}.pm-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .pm-b.sm{height:30px;padding:0 10px;font-size:12px}.pm-b.ok{color:var(--ok);border-color:var(--ok);background:var(--okbg)}.pm-b.bad{color:var(--bad)}
 .pm-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.pm-lh,.pm-dr{display:grid;grid-template-columns:minmax(190px,1.2fr) 190px 150px 96px 56px 96px 150px;align-items:center;gap:12px;padding:0 14px}
+.pm-lh,.pm-dr{display:grid;grid-template-columns:minmax(150px,1.3fr) minmax(0,1fr) minmax(110px,.9fr) 90px 50px 90px auto;align-items:center;gap:12px;padding:0 14px}
 .pm-lh{height:34px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line)}
 .pm-dr{padding-top:9px;padding-bottom:9px;border-top:1px solid var(--rail);font-size:13px;min-width:0}.pm-dr.pend{background:var(--warnbg)}.pm-dr.sk{display:block}
 .pm-un{display:flex;align-items:center;gap:10px;min-width:0}.pm-av{width:34px;height:34px;border-radius:50%;background:var(--ac);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
