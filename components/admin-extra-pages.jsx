@@ -1174,9 +1174,9 @@ const PV_CSS = `
 .pv-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .pv-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.pv-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.pv-cnt{font-size:11.5px;color:var(--dim)}
 .pv-list{display:flex;flex-direction:column}
-.pv-r{display:grid;grid-template-columns:200px 100px 150px 110px 150px 1fr;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid var(--rail)}.pv-r:first-child{border-top:0}
+.pv-r{display:grid;grid-template-columns:minmax(140px,1.1fr) 92px minmax(0,1.2fr) 100px minmax(120px,1fr) auto;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid var(--rail)}.pv-r:first-child{border-top:0}
 .pv-n{display:flex;align-items:center;gap:10px;min-width:0}.pv-av{width:36px;height:36px;border-radius:10px;background:var(--soft);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;letter-spacing:.5px;color:var(--mut);flex-shrink:0}.pv-nt{display:flex;flex-direction:column;min-width:0}.pv-nt b{font-weight:700;font-size:14px}.pv-nt i{font-style:normal;font-size:11.5px;color:var(--dim)}
-.pv-c{display:flex;flex-direction:column;min-width:0}.pv-c b{font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.pv-c i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-c{display:flex;flex-direction:column;min-width:0}.pv-c b{font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pv-c i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pv-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}.pv-dot.ok{background:var(--ok)}.pv-dot.dim{background:var(--dim)}
 .pv-a{display:flex;gap:6px;justify-content:flex-end}
 .pv-res{grid-column:1 / -1;font-size:12.5px;padding:8px 12px;border-radius:9px;background:var(--soft);color:var(--ok)}.pv-res.bad{color:var(--bad)}

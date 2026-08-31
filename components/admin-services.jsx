@@ -303,7 +303,7 @@ const CSS = `
 .rs-x{width:18px;height:18px;border-radius:50%;border:0;background:var(--rail);color:var(--mut);font-size:10px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .rs-cnt{font-size:12px;color:var(--dim)}.rs-count{margin-left:auto}
 .rs-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.rs-sh,.rs-sr{display:grid;grid-template-columns:minmax(240px,1fr) 100px 90px 70px 120px 44px 20px;align-items:center;gap:12px;padding:0 14px}
+.rs-sh,.rs-sr{display:grid;grid-template-columns:minmax(0,1fr) 92px 84px 64px 112px 40px 18px;align-items:center;gap:12px;padding:0 14px}
 .rs-sh{height:34px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line)}.rs .r{text-align:right}
 .rs-sr{padding-top:9px;padding-bottom:9px;border-top:1px solid var(--rail);font-size:13px;min-width:0;cursor:pointer;outline:none}.rs-sr:hover{background:var(--soft)}.rs-sr.open{background:var(--acbg)}.rs-sr:focus-visible{box-shadow:inset 0 0 0 2px var(--acln)}
 .rs-sr.off .rs-sn b,.rs-sr.off .rs-cost,.rs-sr.off .rs-ord,.rs-sr.off .rs-rng,.rs-sr.off .rs-cat{opacity:.55}

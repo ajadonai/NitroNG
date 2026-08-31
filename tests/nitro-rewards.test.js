@@ -379,9 +379,9 @@ describe('getRewardsPayload', () => {
     });
     const r = await getRewardsPayload('user1');
 
-    expect(r.history[0]).toEqual({ kind: 'earned', label: 'Earned', ref: '#NTR-2475', refType: 'order', pts: 125 });
-    expect(r.history[1]).toEqual({ kind: 'spent', label: 'Spent', ref: '#NTR-2480', refType: 'order', pts: -5000 });
-    expect(r.history[2]).toEqual({ kind: 'earned', label: 'Credit', ref: 'Goodwill', refType: 'admin', pts: 100 });
+    expect(r.history[0]).toEqual({ kind: 'earned', label: 'Earned', detail: 'An order', ref: '#NTR-2475', refType: 'order', at: null, pts: 125 });
+    expect(r.history[1]).toEqual({ kind: 'spent', label: 'Spent', detail: 'An order', ref: '#NTR-2480', refType: 'order', at: null, pts: -5000 });
+    expect(r.history[2]).toEqual({ kind: 'earned', label: 'Credit', detail: 'Goodwill', ref: 'Goodwill', refType: 'admin', at: null, pts: 100 });
   });
 
   it('preserves exact signed points in history entries', async () => {
