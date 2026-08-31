@@ -710,7 +710,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
       <div className="us-bar">
         <div className="us-srch">
           <SearchIcon color="currentColor" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or email" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, email or phone" />
           {search && <button type="button" className="us-x" onClick={() => setSearch('')} aria-label="Clear search"><XIcon /></button>}
         </div>
         <FilterDropdown dark={dark} t={t} value={tab} onChange={(v) => { setTab(v); setPage(1); }} options={TABS.map(tb => ({ value: tb.id, label: `${tb.id === 'all' ? 'All users' : tb.label}${tabCounts[tb.id] != null ? ` (${tabCounts[tb.id].toLocaleString()})` : ''}` }))} />
