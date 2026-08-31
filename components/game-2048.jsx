@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { initGame, move, canMove, hasWon, spawnTile } from '@/lib/game-engine';
+import { useBodyScrollLock } from './ui-primitives';
 
 const TILE_COLORS = {
   0: { bg: 'transparent', text: 'transparent', border: 'transparent' },
@@ -50,6 +51,7 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
   const [startTime, setStartTime] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  useBodyScrollLock(showHelp);
   const rngRef = useRef(null);
   const touchRef = useRef(null);
 
@@ -254,7 +256,7 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
       {/* How to play modal */}
       {showHelp && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={(e) => { if (e.target === e.currentTarget) setShowHelp(false); }}>
-          <div className="relative overflow-hidden" style={{ background: dark ? '#1a1f32' : '#fff', borderRadius: 20, padding: '28px 24px', maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,.35)' }}>
+          <div className="relative overflow-hidden" style={{ background: dark ? '#141930' : '#fff', borderRadius: 20, padding: '28px 24px', maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,.35)' }}>
             {/* Decorative accent glow */}
             <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full opacity-15 blur-2xl" style={{ background: t.accent }} />
 

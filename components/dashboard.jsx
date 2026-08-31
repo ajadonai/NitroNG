@@ -439,7 +439,7 @@ function DashboardInner({ initialData }) {
   useEffect(() => { if (notifReadAllAt) { try { localStorage.setItem("nitro-notif-readall-at", notifReadAllAt.toISOString()); } catch {} } }, [notifReadAllAt]);
 
   // Scroll lock when sidebar or notification panel is open (mobile/tablet)
-  useEffect(() => { document.body.style.overflow = leftOpen || notifOpen ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [leftOpen, notifOpen]);
+  useEffect(() => { document.body.style.overflow = leftOpen || notifOpen || moreOpen ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [leftOpen, notifOpen, moreOpen]);
 
   // Sync theme preference to server when it changes (skip initial mount)
   const themeSyncedRef = useRef(false);

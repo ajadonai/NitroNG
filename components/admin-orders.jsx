@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from "react";
 import { SkelList } from "./skeleton";
+import { useBodyScrollLock } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
@@ -90,6 +91,7 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
   const [linkTarget, setLinkTarget] = useState(null);
   const [linkRef, setLinkRef] = useState("");
   const [linkLoading, setLinkLoading] = useState(false);
+  useBodyScrollLock(!!resetTarget || !!linkTarget);
   const toast = useToast();
   const confirm = useConfirm();
   const allIds = dispatches.filter(d => d.apiOrderId).map(d => d.apiOrderId);
@@ -189,8 +191,8 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
         );
       })}
       {resetTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => { if (!resetLoading) setResetTarget(null); }}>
-          <div onClick={e => e.stopPropagation()} className="rounded-xl p-5 w-[320px]" style={{ background: dark ? "#1a1a1a" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-[6px]" style={{ background: "rgba(0,0,0,.55)" }} onClick={() => { if (!resetLoading) setResetTarget(null); }}>
+          <div onClick={e => e.stopPropagation()} className="rounded-xl p-5 w-[320px]" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
             <div className="text-[14px] font-semibold mb-1" style={{ color: t.text }}>Reset Batch #{resetTarget.batch}</div>
             <div className="text-[12px] mb-3" style={{ color: t.textMuted }}>
               Original: {resetTarget.qty} · Delivered: {resetTarget.qty - (resetTarget.remains ?? 0)} · Remaining: {resetTarget.remains ?? resetTarget.qty}
@@ -217,8 +219,8 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
         </div>
       )}
       {linkTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => { if (!linkLoading) setLinkTarget(null); }}>
-          <div onClick={e => e.stopPropagation()} className="rounded-xl p-5 w-[340px]" style={{ background: dark ? "#1a1a1a" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-[6px]" style={{ background: "rgba(0,0,0,.55)" }} onClick={() => { if (!linkLoading) setLinkTarget(null); }}>
+          <div onClick={e => e.stopPropagation()} className="rounded-xl p-5 w-[340px]" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
             <div className="text-[14px] font-semibold mb-1" style={{ color: t.text }}>Link Batch #{linkTarget.batch}</div>
             <div className="text-[12px] mb-3" style={{ color: t.textMuted }}>
               You found this batch running on the provider dashboard. Paste its order number — we confirm it with the provider before linking, then the status checker takes over.
@@ -578,6 +580,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
   const [refundPrompt, setRefundPrompt] = useState(null);
   const [viewComments, setViewComments] = useState(null);
   const [refundPercent, setRefundPercent] = useState(25);
+  useBodyScrollLock(!!cancelPrompt || !!redispatchPrompt || !!editLinkPrompt || !!refundPrompt || !!viewComments);
   const [refundSending, setRefundSending] = useState(false);
   const openRefund = (o) => { setRefundPrompt(o); setRefundPercent(25); };
   const doRefund = async () => {
@@ -976,8 +979,8 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
       </div>
 
       {cancelPrompt && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => setCancelPrompt(null)}>
-          <div className="w-full max-w-[400px] mx-4 rounded-xl p-5" style={{ background: dark ? "#1e1e1e" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-[6px]" style={{ background: "rgba(0,0,0,.55)" }} onClick={() => setCancelPrompt(null)}>
+          <div className="w-full max-w-[400px] mx-4 rounded-xl p-5" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
             <div className="text-[15px] font-semibold mb-1" style={{ color: t.text }}>Cancel order {cancelPrompt.id}</div>
             <div className="text-[12px] mb-4" style={{ color: t.textMuted }}>Customer: {cancelPrompt.user} · Charged: {fN(cancelPrompt.charge)}</div>
             <div className="mb-4">
@@ -1003,7 +1006,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
         const confirmGreen = dark ? "#10b981" : "#059669";
         return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: dark ? "rgba(4,6,12,.55)" : "rgba(20,20,28,.42)", backdropFilter: "blur(3px)" }} onClick={() => setRefundPrompt(null)}>
-          <div className="w-full max-w-[400px] mx-4 rounded-[20px] p-[26px]" style={{ background: dark ? "#0f1322" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}`, boxShadow: dark ? "0 30px 70px -20px rgba(0,0,0,.7)" : "0 30px 70px -24px rgba(0,0,0,.34)" }} onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-[400px] mx-4 rounded-[20px] p-[26px]" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}`, boxShadow: dark ? "0 30px 70px -20px rgba(0,0,0,.7)" : "0 30px 70px -24px rgba(0,0,0,.34)" }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-1">
               <span className="w-[34px] h-[34px] rounded-[11px] grid place-items-center shrink-0" style={{ background: amberBg, color: amber }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>
@@ -1051,8 +1054,8 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
         const rd = redispatchPrompt;
         const hasSwap = rd.tierServiceApiId && rd.tierServiceApiId !== rd.serviceApiId;
         return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => setRedispatchPrompt(null)}>
-          <div className="w-full max-w-[400px] mx-4 rounded-xl p-5" style={{ background: dark ? "#1e1e1e" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-[6px]" style={{ background: "rgba(0,0,0,.55)" }} onClick={() => setRedispatchPrompt(null)}>
+          <div className="w-full max-w-[400px] mx-4 rounded-xl p-5" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
             <div className="text-[15px] font-semibold mb-1" style={{ color: t.text }}>Re-dispatch {rd.id}</div>
             <div className="text-[12px] mb-4" style={{ color: t.textMuted }}>Customer: {rd.user} · Qty: {(rd.quantity || 0).toLocaleString()}</div>
             <div className="mb-4">
@@ -1076,8 +1079,8 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
       })()}
 
       {editLinkPrompt && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.5)" }} onClick={() => setEditLinkPrompt(null)}>
-          <div className="w-full max-w-[400px] mx-4 rounded-xl p-5" style={{ background: dark ? "#1e1e1e" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-[6px]" style={{ background: "rgba(0,0,0,.55)" }} onClick={() => setEditLinkPrompt(null)}>
+          <div className="w-full max-w-[400px] mx-4 rounded-xl p-5" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
             <div className="text-[15px] font-semibold mb-1" style={{ color: t.text }}>Edit Link — {editLinkPrompt.id}</div>
             <div className="text-[12px] mb-4" style={{ color: t.textMuted }}>Tracking params will be stripped automatically.</div>
             <div className="mb-4">
@@ -1093,9 +1096,9 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
       )}
 
       {viewComments && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={() => setViewComments(null)}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setViewComments(null)}>
           <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.55)" }} />
-          <div className="relative w-full max-w-md rounded-xl shadow-xl overflow-hidden" style={{ background: dark ? "#252320" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} onClick={e => e.stopPropagation()}>
+          <div className="relative w-full max-w-md rounded-xl shadow-xl overflow-hidden" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
               <div className="flex items-center gap-2">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>

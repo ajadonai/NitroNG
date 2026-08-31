@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useMemo, useCallback, forwardRef } from "react";
 import { RailSec, RailCard, RailStep, RailNote, RailLink } from "./rail";
+import { useBodyScrollLock } from "./ui-primitives";
 import { trackViewContent } from "./capi-tracker";
 import { fN } from "../lib/format";
 import { formatOrderQuantity as fQty, isValidLink, getLinkPlaceholder } from "../lib/order-form-core";
@@ -536,6 +537,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   // Website traffic fails on expectations, not a missing step: where the visitors show, how they arrive,
   // and a page that opens without a login. Same gate, same tick, every traffic order.
   const [trafficGate, setTrafficGate] = useState(null);
+  useBodyScrollLock(orderModal || tiktokDisclaimer || youtubeDisclaimer || !!duplicateConfirm || !!discordGate || !!trafficGate);
   const [trafficTicked, setTrafficTicked] = useState(false);
   const hydratedRef = useRef(false);
   useEffect(() => {

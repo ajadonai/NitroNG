@@ -21,6 +21,17 @@ export const FOCUS_RING = "outline-none focus-visible:ring-2 focus-visible:ring-
  * moves into the panel on open and returns where it came from on close, and
  * scrolling inside it does not drag the page behind.
  */
+/** Anything that owns the screen locks the page behind it. One hook so every
+ * hand-rolled overlay stops re-implementing (or forgetting) the same effect. */
+export function useBodyScrollLock(locked) {
+  useEffect(() => {
+    if (!locked) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [locked]);
+}
+
 export function Modal({ open, onClose, title, children, dark, maxWidth = 480, labelledBy, variant = "dialog", bare = false }) {
   const sheet = variant === "sheet";
   const panelRef = useRef(null);
