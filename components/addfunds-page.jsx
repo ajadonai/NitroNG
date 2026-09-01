@@ -747,7 +747,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       </div>
       {/* ═══ CRYPTO PAYMENT MODAL ═══ */}
       {cryptoModal && (
-        <div onClick={() => { if (cryptoIsTerminal) { stopCryptoPolling(); setCryptoModal(null); } }} onKeyDown={e=>{if(e.key==='Escape'&&cryptoIsTerminal){stopCryptoPolling();setCryptoModal(null)}}} className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45 overflow-y-auto">
+        <div onClick={() => { if (cryptoIsTerminal) { stopCryptoPolling(); setCryptoModal(null); } }} onKeyDown={e=>{if(e.key==='Escape'&&cryptoIsTerminal){stopCryptoPolling();setCryptoModal(null)}}} className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45 overflow-y-auto">
           <div role="dialog" aria-modal="true" aria-label="Crypto payment" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] my-auto" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             {cryptoPresentation.kind === "credited" ? (
               <>
@@ -818,7 +818,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
       {/* ═══ MANUAL BANK TRANSFER MODAL ═══ */}
       {manualModal && (
-        <div onClick={() => { if (manualDone) setManualModal(null); }} onKeyDown={e=>{if(e.key==='Escape'&&manualDone)setManualModal(null)}} className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45 overflow-y-auto">
+        <div onClick={() => { if (manualDone) setManualModal(null); }} onKeyDown={e=>{if(e.key==='Escape'&&manualDone)setManualModal(null)}} className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45 overflow-y-auto">
           <div role="dialog" aria-modal="true" aria-label="Bank transfer" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] my-auto" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             {manualDone ? (
               <>
@@ -912,7 +912,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
       {/* ═══ CONFIRM PAYMENT MODAL ═══ */}
       {confirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45" onClick={() => !confirmLoading && setConfirmModal(null)}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45" onClick={() => !confirmLoading && setConfirmModal(null)}>
           <div className="w-full max-w-[420px] rounded-2xl overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }} onClick={e => e.stopPropagation()}>
             <div className="h-1.5" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }} />
             <div className="p-5">
