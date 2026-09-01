@@ -892,7 +892,15 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   .dash-bottom-tab.primary .dash-bottom-icon { width: 40px; height: 40px; border-radius: 50%; background: #c47d8e; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(196,125,142,.4); margin-top: -10px; }
   .dash-bottom-tab.primary .dash-bottom-icon svg { width: 20px; height: 20px; stroke: #fff; }
   .dash-bottom-tab.primary .dash-bottom-label { font-size: 10.5px; font-weight: 700; }
+  /* New Order keeps its raised circle and never takes the pill: that highlight
+     is the language of the flat tabs, and a rounded rectangle behind a circle
+     fights its shape. It still has to answer "am I here?", so the active state
+     is a halo that echoes the circle instead. */
   .dash-bottom-tab.primary.active { background: transparent; }
+  .dash-bottom-tab.primary.active::before { content: none; }
+  .dash-bottom-tab.primary.active .dash-bottom-icon {
+    box-shadow: 0 8px 20px rgba(196,125,142,.4), 0 0 0 4px rgba(196,125,142,.24);
+  }
   .dash-bottom-nav :is(button):focus-visible { outline: 2px solid #c47d8e; outline-offset: -2px; }
   .dash-dock.chat:focus-within { border-color: rgba(196,125,142,.55) !important; }
   .dash-main { padding-bottom: 104px !important; }
