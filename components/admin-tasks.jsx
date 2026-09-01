@@ -135,9 +135,12 @@ export default function AdminTasksPage({ dark, t }) {
     try {
       const res = await fetch('/api/admin/tasks');
       const d = await res.json();
+      // An empty page with no explanation is how a refused request used to
+      // look — say why instead.
+      if (!res.ok) { toast?.error?.('Could not load tasks', d.error || `The server refused (${res.status}).`); setLoading(false); return; }
       if (d.tasks) setTasks(d.tasks);
       if (d.stats) { setStats(d.stats); setTab(prev => prev || (d.stats.pending > 0 ? 'subs' : 'tasks')); }
-    } catch { /* ignore */ }
+    } catch { toast?.error?.('Could not load tasks', 'Check your connection and try again.'); }
     setLoading(false);
   }, []);
 
@@ -188,7 +191,7 @@ export default function AdminTasksPage({ dark, t }) {
   };
 
   const saveTask = async () => {
-    if (!form.title.trim()) return;
+    if (!form.title.trim()) { toast?.warning?.('Give it a title', 'A task needs a name before it can be saved.'); return; }
     setSaving(true);
     try {
       const body = {
@@ -223,12 +226,24 @@ export default function AdminTasksPage({ dark, t }) {
     } catch { toast?.error?.('Failed'); }
   };
 
+  // This used to flip the row and swallow every error, so a write the server
+  // refused (a view-only account, a dropped request) still looked like it had
+  // worked until the page was reloaded. It now only moves once the server says
+  // it moved, and says so out loud when it did not.
   const toggleTask = async (id, active) => {
     try {
-      await fetch('/api/admin/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'toggle_task', id, active }) });
+      const res = await fetch('/api/admin/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'toggle_task', id, active }) });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || !d.ok) {
+        toast?.error?.(active ? 'Could not turn it on' : 'Could not turn it off', d.error || `The server refused (${res.status}).`);
+        return;
+      }
       setTasks(prev => prev.map(x => x.id === id ? { ...x, active } : x));
       setStats(prev => ({ ...prev, activeTasks: (prev.activeTasks || 0) + (active ? 1 : -1) }));
-    } catch { /* ignore */ }
+      toast?.success?.(active ? 'Task is live' : 'Task turned off');
+    } catch {
+      toast?.error?.('Request failed', 'Check your connection and try again.');
+    }
   };
 
   // ── Submission review ──
