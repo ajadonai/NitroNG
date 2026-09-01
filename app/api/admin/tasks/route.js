@@ -126,7 +126,7 @@ export async function POST(req) {
           active: params.active !== false,
         },
       });
-      await logActivity(admin, `Created task: ${task.title}`, 'tasks');
+      await logActivity(admin?.name || admin?.email || 'Admin', `Created task: ${task.title}`, 'tasks');
       return Response.json({ ok: true, task });
     }
 
@@ -144,7 +144,7 @@ export async function POST(req) {
         if (data[key] !== undefined) updates[key] = !!data[key];
       }
       const task = await prisma.task.update({ where: { id }, data: updates });
-      await logActivity(admin, `Updated task: ${task.title}`, 'tasks');
+      await logActivity(admin?.name || admin?.email || 'Admin', `Updated task: ${task.title}`, 'tasks');
       return Response.json({ ok: true, task });
     }
 
@@ -154,11 +154,11 @@ export async function POST(req) {
       const subCount = await prisma.taskSubmission.count({ where: { taskId: id } });
       if (subCount > 0) {
         await prisma.task.update({ where: { id }, data: { active: false } });
-        await logActivity(admin, `Deactivated task (has ${subCount} submissions)`, 'tasks');
+        await logActivity(admin?.name || admin?.email || 'Admin', `Deactivated task (has ${subCount} submissions)`, 'tasks');
         return Response.json({ ok: true, deactivated: true });
       }
       await prisma.task.delete({ where: { id } });
-      await logActivity(admin, 'Deleted task', 'tasks');
+      await logActivity(admin?.name || admin?.email || 'Admin', 'Deleted task', 'tasks');
       return Response.json({ ok: true });
     }
 
@@ -206,7 +206,7 @@ export async function POST(req) {
         );
       }
       await prisma.$transaction(ops);
-      await logActivity(admin, `Bulk approved ${subs.length} task submissions`, 'tasks');
+      await logActivity(admin?.name || admin?.email || 'Admin', `Bulk approved ${subs.length} task submissions`, 'tasks');
       return Response.json({ ok: true, count: subs.length });
     }
 

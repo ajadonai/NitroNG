@@ -8,7 +8,7 @@ export async function GET() {
   const user = await getCurrentUser();
   if (!user) return error('Unauthorized', 401);
 
-  const [tasks, submissions, budgetRow, creditMonth] = await Promise.all([
+  const [tasks, submissions, budgetRow, creditMonth, hasDeposited] = await Promise.all([
     prisma.task.findMany({
       where: { active: true },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
@@ -24,6 +24,11 @@ export async function GET() {
         reviewedAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
       },
       _sum: { creditedAmount: true },
+    }),
+    // Depositors-only tasks say so on the card rather than only at submit.
+    prisma.transaction.findFirst({
+      where: { userId: user.id, type: 'deposit', status: 'Completed' },
+      select: { id: true },
     }),
   ]);
 
@@ -64,6 +69,7 @@ export async function GET() {
       else if (sub.status === 'rejected') userStatus = 'rejected';
       else if (sub.status === 'pending') userStatus = 'pending';
     }
+    if (userStatus === 'open' && t.allowNonDepositors === false && !hasDeposited) userStatus = 'depositors_only';
     if (userStatus === 'open' && poolExhausted) userStatus = 'exhausted';
 
     return {
@@ -100,6 +106,17 @@ export async function POST(req) {
 
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task || !task.active) return error('Task not found or inactive', 404);
+
+  // "Open to customers who never deposited" was stored on the task and read by
+  // nothing, so turning it off changed no behaviour at all. Enforce it here,
+  // where the submission is actually made.
+  if (task.allowNonDepositors === false) {
+    const paid = await prisma.transaction.findFirst({
+      where: { userId: user.id, type: 'deposit', status: 'Completed' },
+      select: { id: true },
+    });
+    if (!paid) return error('This one is for customers who have funded their wallet. Add funds and it opens up.', 403);
+  }
 
   const normalizedProof = proof.trim().toLowerCase().replace(/^@/, '');
 

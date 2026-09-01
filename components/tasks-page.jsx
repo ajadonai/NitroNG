@@ -282,17 +282,19 @@ function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSub
   const isPending = task.userStatus === 'pending';
   const isRejected = task.userStatus === 'rejected';
   const isExhausted = task.userStatus === 'exhausted';
-  const dimmed = isDone || isExhausted;
+  // The task is real but this account has not funded a wallet yet.
+  const isDepositorsOnly = task.userStatus === 'depositors_only';
+  const dimmed = isDone || isExhausted || isDepositorsOnly;
   const chipStyle = isDone
     ? { background: dark ? 'rgba(110,231,183,.12)' : '#ecfdf5', color: green }
     : isPending
     ? { background: dark ? 'rgba(165,180,252,.14)' : '#eef2ff', color: dark ? '#a5b4fc' : '#4f46e5' }
     : isRejected
     ? { background: dark ? 'rgba(253,186,116,.14)' : '#fff7ed', color: dark ? '#fdba74' : '#c2410c' }
-    : isExhausted
+    : isExhausted || isDepositorsOnly
     ? { background: innerBg, color: t.textMuted }
     : { background: dark ? 'rgba(196,125,142,.13)' : 'rgba(196,125,142,.12)', color: accent, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 };
-  const chipLabel = isDone ? 'Done' : isPending ? 'In review' : isRejected ? 'Rejected' : isExhausted ? 'Pool full' : fmtNaira(task.reward);
+  const chipLabel = isDone ? 'Done' : isPending ? 'In review' : isRejected ? 'Rejected' : isExhausted ? 'Pool full' : isDepositorsOnly ? 'Customers only' : fmtNaira(task.reward);
   const freq = task.frequency === 'daily' ? 'daily' : task.frequency === 'weekly' ? 'weekly' : task.frequency === 'monthly' ? 'monthly' : 'once';
   const SectionHead = ({ children, first: f }) => <div className={`text-[10.5px] font-semibold uppercase tracking-[1px] pb-1.5 ${f ? '' : 'mt-3 pt-3 border-t border-solid'}`} style={{ color: t.textMuted, borderColor: border }}>{children}</div>;
   return (
@@ -312,6 +314,7 @@ function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSub
           {isDone && <div className="pt-3 text-[12.5px] leading-[1.5]" style={{ color: green }}>You earned {fmtNaira(task.reward)} credit from this task. It is in your wallet, spend-only, valid for 30 days.</div>}
           {isPending && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-soft">We are checking your proof. The credit lands as soon as it clears.</div>}
           {isExhausted && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-muted">The reward pool for this month is full. Check back next month.</div>}
+          {isDepositorsOnly && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-muted">This one is for customers who have funded their wallet. Add funds and it opens up.</div>}
           {isRejected && <div className="pt-3 text-[12.5px] leading-[1.5]" style={{ color: dark ? '#fdba74' : '#c2410c' }}>{task.rejectionReason || 'Your proof did not match. Do the task again and resend it.'}</div>}
 
           {(task.userStatus === 'open' || isRejected) && (

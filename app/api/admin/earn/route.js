@@ -142,7 +142,7 @@ export async function POST(req) {
         );
       }
       await prisma.$transaction(ops);
-      await logActivity(admin, `Processed game rewards for ${monthKey} — ${topScores.length} winners`, 'earn');
+      await logActivity(admin?.name || admin?.email || 'Admin', `Processed game rewards for ${monthKey} — ${topScores.length} winners`, 'earn');
       return Response.json({ ok: true, winners: topScores.length });
     }
 
@@ -161,7 +161,7 @@ export async function POST(req) {
         }));
       }
       await prisma.$transaction(ops);
-      await logActivity(admin, 'Updated earn settings', 'earn');
+      await logActivity(admin?.name || admin?.email || 'Admin', 'Updated earn settings', 'earn');
       return Response.json({ ok: true });
     }
 
