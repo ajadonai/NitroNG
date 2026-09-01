@@ -49,3 +49,6 @@ yarn-error.log*
 .github/agents/
 .github/hooks/
 .github/skills/
+
+# Impeccable design hook: shared suppressions are tracked, per-machine cache is not
+.impeccable/hook.cache.json
