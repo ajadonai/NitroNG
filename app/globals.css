@@ -864,7 +864,8 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
     -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
   }
   .dash-bottom-tab {
-    flex: 1; min-width: 0; height: 50px; padding: 0 4px; border-radius: 14px;
+    position: relative;
+    flex: 1; min-width: 0; height: 50px; padding: 0 4px; border-radius: 999px;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
     background: none; border: none; cursor: pointer; font-family: inherit;
     transition: none !important;
@@ -874,7 +875,17 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   .dash-bottom-icon { height: 22px; display: flex; align-items: center; color: inherit; transition: none !important; }
   .dash-bottom-icon svg { stroke: currentColor; transition: none !important; }
   .dash-bottom-label { font-size: 10.5px; font-weight: 500; letter-spacing: 0.2px; color: inherit; white-space: nowrap; line-height: 1; transition: none !important; }
-  .dash-bottom-tab.active { color: #c47d8e !important; background: rgba(196,125,142,.1); }
+  /* The bar is a pill, so its highlight is one too — a rounded rectangle the
+     full height of the tab collided with the bar's own curve at the ends, and
+     on Home it broke past the edge. Painting it on a pseudo-element keeps the
+     50px tap target while the pill it draws is inset to 44px, leaving the same
+     8px of clearance on every side as the bar's cap. */
+  .dash-bottom-tab.active { color: #c47d8e !important; }
+  .dash-bottom-tab.active::before {
+    content: ''; position: absolute; inset: 3px 2px;
+    border-radius: 999px; background: rgba(196,125,142,.1);
+  }
+  .dash-bottom-tab .dash-bottom-icon, .dash-bottom-tab .dash-bottom-label { position: relative; }
   .dash-bottom-tab.active .dash-bottom-label { font-weight: 600; }
   /* New Order: the loudest thing in the dock, and named like everything else */
   .dash-bottom-tab.primary { color: #c47d8e !important; gap: 4px; }
