@@ -8,6 +8,7 @@ import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonu
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { PointsModal } from "./rewards";
 import NitroLoader from "./nitro-loader";
+import { ManualTransferSheet } from "./manual-transfer-sheet";
 import { PAYMENT_STATES, isCreditedPaymentResult, paymentStateFromTransactionStatus } from "../lib/payment-state";
 import {
   creditedCryptoPaymentStatus,
@@ -816,96 +817,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         </div>
       )}
 
-      {/* ═══ MANUAL BANK TRANSFER MODAL ═══ */}
-      {manualModal && (
-        <div onClick={() => { if (manualDone) setManualModal(null); }} onKeyDown={e=>{if(e.key==='Escape'&&manualDone)setManualModal(null)}} className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45 overflow-y-auto">
-          <div role="dialog" aria-modal="true" aria-label="Bank transfer" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] my-auto" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
-            {manualDone ? (
-              <>
-                <div className="text-center py-5">
-                  <div className="mb-3 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-                  <div className="text-lg font-semibold mb-1.5 text-t-text">Transfer Submitted</div>
-                  <div className="text-sm leading-normal text-t-text-muted">We'll verify your payment and credit your wallet. This may take 15-60 minutes during business hours.</div>
-                </div>
-                <div className="flex max-md:flex-col gap-3">
-                  <button onClick={() => setManualModal(null)} className="flex-1 py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Done</button>
-                  {onPlaceOrder && <button onClick={() => { setManualModal(null); onPlaceOrder(); }} className="flex-1 py-3 rounded-[10px] border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)] font-[inherit]">Place an order</button>}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="text-base font-semibold mb-1 text-t-text">{manualStep === "confirm" ? "Confirm Transfer" : "Bank Transfer"}</div>
-                <div className="text-[13px] mb-2 text-t-text-muted">{manualStep === "confirm" ? "Enter the name on the bank account you sent from" : "Transfer this exact amount to the account below"}</div>
-
-                {manualStep === "details" ? (
-                  <>
-                    <div className="flex items-center justify-between py-2 px-3 rounded-lg mb-2.5" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.1)"}` }}>
-                      <span className="m text-lg font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(manualModal.amount)}</span>
-                      <button onClick={() => copyText(String(manualModal.amount))} className="py-[3px] px-2.5 rounded-md bg-transparent text-[11px] font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ border: `1px solid ${dark ? "rgba(110,231,183,.3)" : "rgba(5,150,105,.2)"}`, color: dark ? "#6ee7b7" : "#059669", fontFamily: "inherit" }}>Copy</button>
-                    </div>
-
-                    <div className="rounded-xl mb-3 overflow-hidden" style={{ border: `1px solid ${t.cardBorder}` }}>
-                      <div className="p-3.5" style={{ background: dark ? "rgba(255,255,255,.04)" : "transparent" }}>
-                        <div className="mb-2.5">
-                          <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5 text-t-text-muted">Bank</div>
-                          <div className="text-[15px] font-semibold text-t-text">{manualModal.bankName}</div>
-                        </div>
-                        <div className="mb-2.5">
-                          <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5 text-t-text-muted">Account Number</div>
-                          <div className="flex items-center gap-2">
-                            <span className="m text-lg font-bold tracking-[1px] text-t-text">{manualModal.accountNumber}</span>
-                            <button onClick={() => copyText(manualModal.accountNumber)} className="py-[3px] px-2.5 rounded-md bg-transparent text-[11px] font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent font-[inherit]" style={{ border: `1px solid ${t.accent}` }}>Copy</button>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-0.5 text-t-text-muted">Account Name</div>
-                          <div className="text-[15px] font-semibold text-t-text">{manualModal.accountName}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="py-2 px-3 rounded-lg mb-3.5 text-xs leading-normal" style={{ background: dark ? "rgba(251,191,36,.06)" : "rgba(217,119,6,.04)", border: `1px solid ${dark ? "rgba(251,191,36,.14)" : "rgba(217,119,6,.1)"}`, color: dark ? "#fbbf24" : "#d97706" }}>
-                      Verification takes 15-60 minutes during business hours.
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button onClick={async () => { try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: manualModal.reference }) }); } catch {} setManualModal(null); onRefresh?.(); }} className="flex-1 py-2.5 rounded-lg bg-transparent text-sm font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text-muted font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Cancel</button>
-                      <button onClick={() => setManualStep("confirm")} className="flex-1 py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)] font-[inherit]">Sent</button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="mb-3">
-                      <label className="text-[11px] font-semibold uppercase tracking-[1px] mb-1.5 block text-t-text-muted">Sender / Account Name</label>
-                      <input type="text" aria-label="Sender account name" value={manualRef} onChange={e => setManualRef(e.target.value)} placeholder="e.g. John Doe" autoFocus className="w-full py-2.5 px-3.5 rounded-lg text-sm font-medium outline-none text-t-text font-[inherit] transition-[border-color] duration-200" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", border: `1.5px solid ${manualRef.trim().length >= 3 ? (dark ? "rgba(110,231,183,.4)" : "rgba(5,150,105,.3)") : t.cardBorder}` }} />
-                      <div className="text-[11px] mt-1.5 text-t-text-muted">The name on the bank account you transferred from</div>
-                    </div>
-
-                    <div className="py-2 px-3 rounded-lg mb-3 flex items-center justify-between" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)", border: `1px solid ${t.cardBorder}` }}>
-                      <span className="text-xs text-t-text-muted">Amount</span>
-                      <span className="m text-sm font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(manualModal.amount)}</span>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button onClick={() => setManualStep("details")} className="flex-1 py-2.5 rounded-lg bg-transparent text-sm font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text-muted font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Back</button>
-                      <button onClick={async () => {
-                        if (manualRef.trim().length < 3) { toast.warning("Name required", "Enter the name on the account you sent from"); return; }
-                        setManualSubmitting(true);
-                        try {
-                          const res = await fetch("/api/payments/manual", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: manualModal.reference, senderRef: manualRef.trim() }) });
-                          if (res.ok) setManualDone(true);
-                          else { const d = await res.json(); toast.error("Failed", d.error || "Something went wrong"); }
-                        } catch { toast.error("Network error", "Check your connection"); }
-                        setManualSubmitting(false);
-                      }} disabled={manualSubmitting || manualRef.trim().length < 3} className="flex-1 py-2.5 rounded-lg border-none text-white text-sm font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ fontFamily: "inherit", opacity: manualSubmitting || manualRef.trim().length < 3 ? .5 : 1, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>{manualSubmitting ? "Submitting..." : "Confirm"}</button>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      {/* ═══ MANUAL BANK TRANSFER SHEET ═══ */}
+      <ManualTransferSheet manualModal={manualModal} setManualModal={setManualModal} manualStep={manualStep} setManualStep={setManualStep} manualRef={manualRef} setManualRef={setManualRef} manualSubmitting={manualSubmitting} setManualSubmitting={setManualSubmitting} manualDone={manualDone} setManualDone={setManualDone} dark={dark} t={t} onPlaceOrder={onPlaceOrder} onRefresh={onRefresh} />
 
       {/* ═══ WALLET HISTORY ═══ */}
       <WalletHistory txs={txs} initialTotal={transactionsTotal} walletSummary={walletSummary} dark={dark} t={t} onRefresh={onRefresh} setConfirmModal={setConfirmModal} setSenderName={setSenderName} />

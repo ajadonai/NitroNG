@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { reportOperationalFailure } from '@/lib/monitoring';
 import { finalizeDueAccountDeletions } from '@/lib/account-deletion';
+import { MANUAL_UNCONFIRMED_TTL_MS } from '@/lib/transaction-history';
 
 // Cleanup cron: expires stale deposits, processes scheduled user deletions
 // GET /api/cron/cleanup
@@ -16,17 +17,23 @@ export async function GET(req) {
   }
 
   try {
-    // Auto-expire manual deposits: 10 min if user never confirmed, 24 hrs if unprocessed by admin
-    const abandonedCutoff = new Date(Date.now() - 60 * 60 * 1000);
-    const unprocessedCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const { count: expiredAbandoned } = await prisma.transaction.deleteMany({
+    // Retire stale manual deposits after a day. These are records of money a
+    // customer may well have sent, so they are marked, never deleted: a deleted
+    // row leaves support nothing to match a payment against, and took the
+    // customer's "I've sent it" button with it.
+    const abandonedCutoff = new Date(Date.now() - MANUAL_UNCONFIRMED_TTL_MS);
+    const { count: expiredAbandoned } = await prisma.transaction.updateMany({
       where: { type: 'deposit', method: 'manual', status: 'Pending', note: { contains: '[awaiting_confirmation]' }, createdAt: { lt: abandonedCutoff } },
+      data: { status: 'Expired' },
     });
-    const { count: expiredUnprocessed } = await prisma.transaction.deleteMany({
-      where: { type: 'deposit', method: 'manual', status: 'Pending', note: { contains: '[user_confirmed' }, createdAt: { lt: unprocessedCutoff } },
+    // A customer who pressed "I've sent it" and is still waiting a day later is
+    // an admin backlog, not litter: leave it Pending and visible on Payments.
+    const stillWaiting = await prisma.transaction.count({
+      where: { type: 'deposit', method: 'manual', status: 'Pending', note: { contains: '[user_confirmed' }, createdAt: { lt: abandonedCutoff } },
     });
-    const expiredManual = expiredAbandoned + expiredUnprocessed;
-    if (expiredManual > 0) log.info('Cleanup', `Deleted ${expiredAbandoned} abandoned + ${expiredUnprocessed} unprocessed manual deposits`);
+    if (expiredAbandoned > 0) log.info('Cleanup', `Expired ${expiredAbandoned} unconfirmed manual deposits`);
+    if (stillWaiting > 0) log.warn('Cleanup', `${stillWaiting} confirmed manual deposits still unprocessed after 24h`);
+    const expiredManual = expiredAbandoned;
 
     // Clear expired password reset tokens
     const { count: clearedTokens } = await prisma.user.updateMany({
