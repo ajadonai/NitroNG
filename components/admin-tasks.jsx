@@ -363,7 +363,7 @@ export default function AdminTasksPage({ dark, t }) {
                       {s.status === 'pending' ? (
                         <span className="tk-acts">
                           <button type="button" className="tk-b sm ok" disabled={busy === s.id} onClick={() => reviewSub(s.id, 'approve')}>{busy === s.id ? 'Working…' : 'Approve'}</button>
-                          <button type="button" className="tk-b sm" disabled={busy === s.id} onClick={() => setReject({ sub: s, reason: '' })}>Reject</button>
+                          <button type="button" className="tk-b sm danger" disabled={busy === s.id} onClick={() => setReject({ sub: s, reason: '' })}>Reject</button>
                         </span>
                       ) : (
                         <span className="tk-acts tk-rev">
@@ -411,7 +411,7 @@ export default function AdminTasksPage({ dark, t }) {
                   <span className="tk-st"><i className={'tk-dot ' + (x.active ? 'ok' : 'dim')} />{x.active ? 'Live' : 'Off'}</span>
                   <span className="tk-acts">
                     <button type="button" className="tk-b sm" onClick={() => openEdit(x)}>Edit</button>
-                    <button type="button" className="tk-b sm" onClick={() => toggleTask(x.id, !x.active)}>{x.active ? 'Turn off' : 'Turn on'}</button>
+                    <button type="button" className={`tk-b sm ${x.active ? 'warn' : 'ok'}`} onClick={() => toggleTask(x.id, !x.active)}>{x.active ? 'Turn off' : 'Turn on'}</button>
                   </span>
                 </div>
               ))}
@@ -601,7 +601,11 @@ const TK_CSS = `
 .tk .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .tk-hr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .tk-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.tk-b:hover{transform:translateY(-1px)}.tk-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.tk-b.sm{height:30px;padding:0 10px;font-size:12px}.tk-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.tk-b.danger{color:var(--bad)}.tk-b.ok{color:var(--ok)}
+/* Actions say what they do: turning a task on is the good outcome, turning it
+ * off withdraws something customers can see (consequential but reversible, so
+ * amber rather than red), and red stays for Delete and Reject. Edit is neutral
+ * because it decides nothing on its own. */
+.tk-b.sm{height:30px;padding:0 10px;font-size:12px}.tk-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.tk-b.danger{color:var(--bad)}.tk-b.ok{color:var(--ok)}.tk-b.warn{color:var(--warn)}
 .tk-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .tk-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.tk-stt:first-child{border-left:0}
 .tk-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tk-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.tk-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tk-stt.warn b{color:var(--warn)}
