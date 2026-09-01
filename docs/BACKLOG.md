@@ -5,6 +5,37 @@ never gets picked up twice. Update this in the same commit as the work.
 
 ## Open
 
+- **Deposit bonus ladder cut — watching, revert if it bites** (1 Sep 2026,
+  `v2.4.78`). Every rung was halved to test how much of the ladder's pull is
+  the money itself:
+
+  | Deposit | Was | Now |
+  | --- | --- | --- |
+  | ₦2,500+ | ₦500 (20%) | **₦250 (10%)** |
+  | ₦5,000+ | ₦1,200 (24%) | **₦600 (12%)** |
+  | ₦10,000+ | ₦3,000 (30%) | **₦1,500 (15%)** |
+
+  **To put it back:** restore those three numbers in `lib/welcome-bonus.js` —
+  `TIERS` (in kobo: 50000 / 120000 / 300000), `BONUS_PRESETS`, `bonusForNaira`
+  and `nextBonusTier` — then run
+  `grep -rn "up to ₦1,500" lib components` and set the copy back to
+  "up to ₦3,000" everywhere it appears (12 files: emails, landing page, auth
+  modal, order form, order tour, add funds, dashboard nudge, Lagos page, FAQ
+  answers in `service-type-meta.js`, and the assistant's `lib/ify/knowledge.js`
+  tier list). Nothing else moves; there is no migration and no setting.
+
+  **What to watch, and the numbers before the cut** (90 days to 1 Sep): first
+  deposits clustered hard on the thresholds — **₦2,500: 529 people, ₦5,000:
+  374, ₦10,000: 106**, against only 26 at ₦3,000 and 10 at ₦4,000, with 271 at
+  the ₦1,000 minimum and 444 (29%) depositing under ₦2,500 at all. Bonus paid
+  was ₦1,159,400 face value over the quarter (~₦143k/month, ~₦53k/month real
+  at the 37% provider cost of spend-only credit) against ₦5.6M gross profit
+  from those same customers. **The tell that it bit:** the ₦2,500 spike
+  collapsing toward ₦1,000. Rerun the clustering query after two weeks — if
+  the median first deposit falls or the ₦1,000 bucket swells past ~35%, the
+  ₦2,500 rung is the one to restore first (it does the activation work; the
+  ₦10,000 rung is the safest to leave cut).
+
 - **Cash referrals — launch checklist** (built dark in v2.4.75; flip
   `cash_referrals_enabled` to `'true'` to go live): admin payouts page (the
   API at `/api/admin/referral-payouts` already lists/completes/rejects), the

@@ -280,7 +280,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
           {eligible && (
             <div className="flex items-center gap-2 rounded-lg py-2 px-3 mb-3" style={{ background: greenBg, border: `1px solid ${greenBorder}` }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
-              <span className="text-[11px] font-semibold" style={{ color: green }}>Up to ₦3,000 free on your first deposit</span>
+              <span className="text-[11px] font-semibold" style={{ color: green }}>Up to ₦1,500 free on your first deposit</span>
             </div>
           )}
           <div className="flex flex-col gap-2.5">

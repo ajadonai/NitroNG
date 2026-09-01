@@ -370,7 +370,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           {short && welcomeBonusEligible && (
             <div className="rounded-xl p-3.5" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.12)"}` }}>
               <div className="text-[13px] font-semibold mb-1" style={{ color: t.text }}>Almost there — add funds to place this order</div>
-              <div className="text-[11px] mb-2.5" style={{ color: t.textMuted }}>Your first deposit gets up to ₦3,000 free to spend.</div>
+              <div className="text-[11px] mb-2.5" style={{ color: t.textMuted }}>Your first deposit gets up to ₦1,500 free to spend.</div>
               {(() => {
                 const needed = price - balance;
                 const tier = BONUS_PRESETS.find(p => p.amount >= needed) || BONUS_PRESETS[BONUS_PRESETS.length - 1];

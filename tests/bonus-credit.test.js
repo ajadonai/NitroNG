@@ -401,10 +401,10 @@ describe('applyWelcomeBonus', () => {
 
     const result = await applyWelcomeBonus(db, 'user1', 250000);
 
-    expect(result).toBe(50000);
+    expect(result).toBe(25000);
     expect(db.user.update).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: 'user1' },
-      data: { balance: { increment: 50000 } },
+      data: { balance: { increment: 25000 } },
     }));
     expect(db.transaction.create).toHaveBeenCalled();
     expect(db.alert.create).not.toHaveBeenCalled();
@@ -434,7 +434,7 @@ describe('applyWelcomeBonus', () => {
 
     const result = await applyWelcomeBonus(db, 'user4', 1000000);
 
-    expect(result).toBe(300000);
+    expect(result).toBe(150000);
     expect(db.user.count).not.toHaveBeenCalled();
     expect(db.user.update).toHaveBeenCalled();
   });
@@ -448,7 +448,7 @@ describe('applyWelcomeBonus', () => {
 
     const result = await applyWelcomeBonus(db, 'user5', 500000);
 
-    expect(result).toBe(120000);
+    expect(result).toBe(60000);
     expect(db.user.count).not.toHaveBeenCalled();
   });
 
@@ -465,7 +465,7 @@ describe('applyWelcomeBonus', () => {
 
     const result = await applyWelcomeBonus(db, 'user6', 250000);
 
-    expect(result).toBe(50000);
+    expect(result).toBe(25000);
     expect(db.user.count).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({
         signupIp: '1.2.3.4',
@@ -486,10 +486,10 @@ describe('applyWelcomeBonus', () => {
 
     const result = await applyWelcomeBonus(db, 'user7', 1000000);
 
-    expect(result).toBe(300000);
+    expect(result).toBe(150000);
     expect(db.user.update).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: 'user7' },
-      data: { balance: { increment: 300000 } },
+      data: { balance: { increment: 150000 } },
     }));
     expect(db.transaction.create).toHaveBeenCalled();
   });
@@ -531,6 +531,6 @@ describe('applyWelcomeBonus', () => {
 
     const result = await applyWelcomeBonus(db, 'user10', 250000);
 
-    expect(result).toBe(50000);
+    expect(result).toBe(25000);
   });
 });

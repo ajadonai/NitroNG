@@ -264,11 +264,11 @@ describe('finalizeDeposit', () => {
       finalized: true,
       depositAmount: 500_000,
       couponBonus: 30_000,
-      welcomeBonus: 120_000,
+      welcomeBonus: 60_000,
       inviteeBonus: 0,
-      totalUserCredit: 650_000,
+      totalUserCredit: 590_000,
     });
-    expect(state.users[0].balance).toBe(651_000);
+    expect(state.users[0].balance).toBe(591_000);
     expect(state.users[0].firstDepositBonusPaid).toBe(true);
     expect(state.coupons[0].used).toBe(1);
     expect(state.transactions.find(row => row.id === 'one').status).toBe('Completed');
@@ -298,12 +298,12 @@ describe('finalizeDeposit', () => {
 
     expect(result).toMatchObject({
       finalized: true,
-      welcomeBonus: 120_000,
+      welcomeBonus: 60_000,
       referrerBonus: 70_000,
       inviteeBonus: 0,
-      totalUserCredit: 620_000,
+      totalUserCredit: 560_000,
     });
-    expect(state.users.find(row => row.id === 'user-1').balance).toBe(620_000);
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(560_000);
     expect(state.users.find(row => row.id === 'referrer').balance).toBe(70_000);
     const referralRows = state.transactions.filter(row => row.type === 'referral');
     expect(referralRows).toHaveLength(2);
@@ -395,10 +395,10 @@ describe('finalizeDeposit', () => {
       referralWithheldReason: 'referrer_ineligible',
       referrerBonus: 0,
       inviteeBonus: 0,
-      welcomeBonus: 120_000,
-      totalUserCredit: 620_000,
+      welcomeBonus: 60_000,
+      totalUserCredit: 560_000,
     });
-    expect(state.users.find(row => row.id === 'user-1').balance).toBe(620_000);
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(560_000);
     expect(state.users.find(row => row.id === 'ineligible').balance).toBe(0);
     expect(state.transactions.filter(row => row.type === 'referral')).toHaveLength(0);
   });
@@ -428,10 +428,10 @@ describe('finalizeDeposit', () => {
       referralWithheldReason: 'referrer_eligibility_changed',
       referrerBonus: 0,
       inviteeBonus: 0,
-      welcomeBonus: 120_000,
-      totalUserCredit: 620_000,
+      welcomeBonus: 60_000,
+      totalUserCredit: 560_000,
     });
-    expect(state.users.find(row => row.id === 'user-1').balance).toBe(620_000);
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(560_000);
     expect(state.users.find(row => row.id === 'racing').balance).toBe(0);
     expect(state.transactions.filter(row => row.type === 'referral')).toHaveLength(0);
   });
@@ -580,10 +580,10 @@ describe('finalizeDeposit', () => {
       finalized: true,
       referralPaid: false,
       referralWithheldReason: 'same_ip',
-      welcomeBonus: 120_000,
-      totalUserCredit: 620_000,
+      welcomeBonus: 60_000,
+      totalUserCredit: 560_000,
     });
-    expect(state.users.find(row => row.id === 'user-1').balance).toBe(620_000);
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(560_000);
     expect(state.users.find(row => row.id === 'same-ip-referrer').balance).toBe(0);
     expect(state.transactions.filter(row => row.type === 'referral')).toHaveLength(0);
   });
