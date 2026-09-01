@@ -37,7 +37,7 @@ const LOCAL = [
   ['Naira pricing, no conversion', 'Every service is priced in Naira. When you deposit ₦5,000, you get ₦5,000 in your wallet. No dollar conversion, no exchange rate markup, no surprises on your bank statement.'],
   ['Your bank, your wallet', 'Pay by bank transfer from any Nigerian bank, debit or credit card, USSD, or wallets like Opay, PalmPay, Kuda, Moniepoint and VBank. All through Flutterwave. Crypto is also accepted.'],
   ['WhatsApp support in your timezone', 'Our support line is on WhatsApp. Response is fastest between 9 AM and 10 PM WAT, seven days a week. You are not waiting for a ticket system to route you to someone in another country.'],
-  ['₦1,000 minimum deposit', 'You do not need to convert dollars or meet a high minimum. Deposit ₦1,000 and you can start ordering. First deposit of ₦2,500 or more earns up to ₦3,000 in free promotion credit.'],
+  ['₦1,000 minimum deposit', 'You do not need to convert dollars or meet a high minimum. Deposit ₦1,000 and you can start ordering. First deposit of ₦2,500 or more earns up to ₦1,500 in free promotion credit.'],
   ['Services across 28 platforms', 'Instagram, TikTok, YouTube, Facebook, X, Telegram, Spotify, Audiomack, Boomplay, and 19 more. Music promotion for Nigerian artists on local platforms is something most international panels do not offer.'],
 ];
 

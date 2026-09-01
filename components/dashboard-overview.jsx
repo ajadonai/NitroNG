@@ -63,7 +63,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
   const lowBal = balance < 500;
   const neverPaid = !!user?.welcomeBonusEligible;
   const primaryAction = neverPaid
-    ? { label: "Get up to ₦3,000 free on your first top-up", sub: "One time, for new accounts", target: "add-funds", gift: true }
+    ? { label: "Get up to ₦1,500 free on your first top-up", sub: "One time, for new accounts", target: "add-funds", gift: true }
     : isNew
     ? { label: "Place your first order", sub: "Pick a platform and start growing today", target: "services" }
     : lowBal

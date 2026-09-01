@@ -449,7 +449,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           </div>
           <div>
             <div className="text-[13px] font-semibold text-accent">Welcome bonus</div>
-            <div className="text-[13px] mt-0.5 text-t-text-soft leading-[1.45]">Your first deposit earns up to ₦3,000 free. The more you add, the bigger the bonus.</div>
+            <div className="text-[13px] mt-0.5 text-t-text-soft leading-[1.45]">Your first deposit earns up to ₦1,500 free. The more you add, the bigger the bonus.</div>
           </div>
         </div>
       )}
