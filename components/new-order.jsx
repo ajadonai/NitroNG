@@ -800,7 +800,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
   /* Place order */
   const needsDiscordGate = platform === 'discord' && ['followers', 'engagement'].includes(selSvc?.type || '');
-  const discordBotUrl = socialLinks?.discord_bot_url || 'https://nowon.tools';
+  const discordBotUrl = (selTier?.tier === 'Premium' && socialLinks?.discord_bot_url_premium)
+    || socialLinks?.discord_bot_url || 'https://nowon.tools';
   const needsTrafficGate = (selSvc?.type || '') === 'traffic';
   const trafficTargetName = (code) => !code || code === 'WW' ? 'Worldwide' : TRAFFIC_CONTINENTS[code] || TRAFFIC_COUNTRIES[code] || code;
   const trafficReadBack = () => {

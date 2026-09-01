@@ -8,7 +8,7 @@ const mockPrisma = {
   resellerProfile: { findUnique: vi.fn() },
   resellerServiceMap: { findUnique: vi.fn(), findMany: vi.fn() },
   service: { findMany: vi.fn() },
-  setting: { findUnique: vi.fn() },
+  setting: { findUnique: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
   order: { findMany: vi.fn(), findFirst: vi.fn() },
   user: { findUnique: vi.fn() },
 };

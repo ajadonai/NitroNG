@@ -8,6 +8,9 @@ const PUBLIC_KEYS = [
   'social_whatsapp_support', 'social_whatsapp_channel', 'social_telegram_support',
   'site_email_general', 'site_email_support',
   'ref_referrer_bonus', 'ref_invitee_bonus', 'ref_min_deposit',
+  // The Discord order steps link these on the user side; without them here the
+  // admin-edited bot links never reached customers and the hardcoded fallback ran.
+  'discord_bot_url', 'discord_bot_url_premium',
 ];
 
 export async function GET() {

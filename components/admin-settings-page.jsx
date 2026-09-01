@@ -58,7 +58,7 @@ const I_GIFT = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strok
 const I_BROOM = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 3l-7 7M4 21l6-6M9 15l-3-3 6-6 3 3z"/><path d="M4 21h5l2-2-5-5-2 2z"/></svg>;
 
 export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, setDark, onLogout, notifPrefs, updateNotifPref }) {
-  const [social, setSocial] = useState({ social_instagram: "", social_twitter: "", social_whatsapp_support: "", social_whatsapp_channel: "", social_telegram_support: "", social_tiktok: "", discord_bot_url: "" });
+  const [social, setSocial] = useState({ social_instagram: "", social_twitter: "", social_whatsapp_support: "", social_whatsapp_channel: "", social_telegram_support: "", social_tiktok: "", discord_bot_url: "", discord_bot_url_premium: "" });
   const [emails, setEmails] = useState({ site_email_general: "", site_email_support: "" });
   const [socialLoading, setSocialLoading] = useState(true);
   const [socialSaving, setSocialSaving] = useState(false);
@@ -79,7 +79,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
       if (d.settings) {
         // Filtering on the social_ prefix alone would drop discord_bot_url, which
         // shares this form and save path — it would save and then reload blank.
-        setSocial(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("social_") || k === "discord_bot_url")) }));
+        setSocial(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("social_") || k.startsWith("discord_bot_url"))) }));
         setEmails(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("site_email_"))) }));
         setWinback(prev => ({ ...prev, ...Object.fromEntries(Object.entries(d.settings).filter(([k]) => k.startsWith("winback"))) }));
       }
@@ -296,7 +296,8 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
           ["social_whatsapp_support", "WhatsApp Number", "2348012345678", "Any format — spaces, dashes, + prefix all stripped automatically"],
           ["social_whatsapp_channel", "WhatsApp Channel URL", "https://whatsapp.com/channel/...", "Full URL to your WhatsApp channel page"],
           ["social_telegram_support", "Telegram Handle", "TheNitroNG", "Handle, @handle, or full URL — all work"],
-          ["discord_bot_url", "Discord Bot Link", "https://nowon.tools", "Shown in the Discord order setup steps. Providers change this bot without notice — update it here when it changes."],
+          ["discord_bot_url", "Discord Bot Link — Standard", "https://nowon.tools", "Shown in the Discord order setup steps for Standard tiers. Providers change this bot without notice — update it here when it changes."],
+          ["discord_bot_url_premium", "Discord Bot Link — Premium", "https://ysecret.com.br/apple", "The Premium tiers use a different provider bot. Leave blank to use the Standard link."],
         ].map(([key, label, placeholder, hint]) => (
           <div key={key} className="mb-3">
             <label className="text-sm block mb-0.5" style={{ color: t.textMuted }}>{label}</label>

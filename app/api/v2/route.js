@@ -103,8 +103,10 @@ async function listServices(terms) {
     select: { apiId: true, tierId: true },
   });
   const idByTier = Object.fromEntries(tierMaps.map(m => [m.tierId, m.apiId]));
-  const botSetting = await prisma.setting.findUnique({ where: { key: 'discord_bot_url' } }).catch(() => null);
-  const botUrl = botSetting?.value || 'https://nowon.tools';
+  const botSettings = await prisma.setting.findMany({ where: { key: { in: ['discord_bot_url', 'discord_bot_url_premium'] } } }).catch(() => []);
+  const botMap = Object.fromEntries(botSettings.map(s => [s.key, s.value]));
+  const botUrl = botMap.discord_bot_url || 'https://nowon.tools';
+  const botUrlPremium = botMap.discord_bot_url_premium || botUrl;
   for (const g of catalogue.groups) {
     for (const t of g.tiers) {
       const apiId = idByTier[t.id];
@@ -119,7 +121,7 @@ async function listServices(terms) {
         max: t.max,
         refill: !!t.refill,
         cancel: false,
-        description: describeTier(g, t, { botUrl }),
+        description: describeTier(g, t, { botUrl: t.tier === 'Premium' ? botUrlPremium : botUrl }),
       });
     }
   }
