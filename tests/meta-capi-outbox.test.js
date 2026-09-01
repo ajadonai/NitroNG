@@ -32,6 +32,7 @@ const {
 } = await import('@/lib/meta-capi.js');
 
 const originalToken = process.env.META_CAPI_TOKEN;
+const originalAllowDev = process.env.META_CAPI_ALLOW_DEV;
 
 function queued(overrides = {}) {
   return {
@@ -57,12 +58,17 @@ function queued(overrides = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.META_CAPI_TOKEN = 'test-token';
+  // Delivery is off outside production; these tests are exercising the
+  // transport itself, so they opt in the same way a developer would.
+  process.env.META_CAPI_ALLOW_DEV = '1';
   mocks.reportOperationalFailure.mockReturnValue(true);
 });
 
 afterAll(() => {
   if (originalToken === undefined) delete process.env.META_CAPI_TOKEN;
   else process.env.META_CAPI_TOKEN = originalToken;
+  if (originalAllowDev === undefined) delete process.env.META_CAPI_ALLOW_DEV;
+  else process.env.META_CAPI_ALLOW_DEV = originalAllowDev;
 });
 
 describe('Meta CAPI strict transport', () => {
