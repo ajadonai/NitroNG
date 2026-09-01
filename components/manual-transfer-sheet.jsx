@@ -52,8 +52,8 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
           <>
             <div className="flex items-start gap-2.5">
               <div className="min-w-0 flex-1">
-                <div className="text-[17px] max-[380px]:text-[15.5px] font-bold leading-tight text-t-text">Send {fN(manualModal.amount)}</div>
-                <div className="text-[12.5px] leading-relaxed mt-1 text-t-text-muted">Transfer the exact amount from your bank app, then come back and tell us.</div>
+                <div className="text-[17px] max-[380px]:text-[15.5px] font-bold leading-tight text-t-text">Bank transfer</div>
+                <div className="text-[12.5px] leading-relaxed mt-1 text-t-text-muted">Send the exact amount, then tell us.</div>
               </div>
               <button onClick={() => setManualModal(null)} aria-label="Close" className="w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0 cursor-pointer text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${t.cardBorder}` }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
@@ -62,7 +62,7 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
 
             <div className="flex items-center justify-between gap-2.5 py-3 px-3.5 rounded-[13px]" style={{ background: dark ? "rgba(110,231,183,.09)" : "rgba(5,150,105,.07)", border: `1px solid ${dark ? "rgba(110,231,183,.32)" : "rgba(5,150,105,.28)"}` }}>
               <div className="min-w-0">
-                <div className="text-[10px] font-extrabold uppercase tracking-[.9px] text-t-text-muted">Exact amount</div>
+                <div className="text-[10px] font-extrabold uppercase tracking-[.9px] text-t-text-muted">Send exactly</div>
                 <div className="m text-2xl max-[380px]:text-xl font-extrabold leading-tight mt-0.5" style={{ color: dark ? "#6ee7b7" : "#059669", letterSpacing: "-.02em" }}>{fN(manualModal.amount)}</div>
               </div>
               <button onClick={() => { copyText(String(manualModal.amount)); toast.success("Amount copied"); }} className="h-8 px-3 rounded-[9px] text-xs font-bold cursor-pointer shrink-0 inline-flex items-center gap-1.5 text-t-text" style={{ background: dark ? "rgba(255,255,255,.06)" : "#fff", border: `1px solid ${t.cardBorder}` }}>
@@ -92,9 +92,9 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
 
             <div className="flex flex-col gap-1.5">
               {[
-                [<>Open your bank app and send <b className="font-semibold text-t-text">exactly {fN(manualModal.amount)}</b> to the account above.</>, "1"],
-                [<>Come back here and press <b className="font-semibold text-t-text">I&apos;ve sent it</b>.</>, "2"],
-                [<>We confirm and credit your wallet, usually within an hour.</>, "3"],
+                [<>Send that exact amount to the account above.</>, "1"],
+                [<>Come back and press <b className="font-semibold text-t-text">I&apos;ve sent it</b>.</>, "2"],
+                [<>We credit your wallet, usually within an hour.</>, "3"],
               ].map(([body, n]) => (
                 <div key={n} className="flex items-start gap-2.5 text-[12.5px] leading-snug text-t-text-muted">
                   <span className="w-[18px] h-[18px] rounded-md inline-flex items-center justify-center text-[10px] font-extrabold shrink-0 mt-px" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: t.accent }}>{n}</span>
@@ -105,7 +105,7 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
 
             <div className="flex items-start gap-2.5 py-2.5 px-3 rounded-[11px] text-[12px] leading-relaxed" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)", border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></svg>
-              <span>Take your time. This transfer stays here until you tell us it&apos;s sent — even if you close the app.</span>
+              <span>Take your time — this stays here until you tell us it&apos;s sent.</span>
             </div>
 
             <button onClick={() => setManualStep("confirm")} className="h-11 rounded-xl border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-bold cursor-pointer">I&apos;ve sent it</button>
