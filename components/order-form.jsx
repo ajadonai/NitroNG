@@ -179,8 +179,10 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
       {selTier && platform === "discord" && (selSvc?.type === "followers" || selSvc?.type === "engagement") && (() => {
         // Admin-editable: the bot changes without warning and used to require a
         // code change, which meant customers followed a dead link until someone
-        // noticed. Settings → Discord bot link.
-        const botUrl = socialLinks?.discord_bot_url || "https://nowon.tools";
+        // noticed. Settings → Discord bot links; Premium tiers run on a
+        // different provider bot than Standard.
+        const botUrl = (selTier?.tier === "Premium" && socialLinks?.discord_bot_url_premium)
+          || socialLinks?.discord_bot_url || "https://nowon.tools";
         return (
           <div className="mx-5 max-md:mx-3.5 mt-3 rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(88,101,242,.25)" : "rgba(88,101,242,.18)"}`, background: dark ? "rgba(88,101,242,.06)" : "rgba(88,101,242,.04)" }}>
             <button type="button" onClick={() => setDiscordOpen(o => !o)} className="w-full flex items-center justify-between gap-2 py-2.5 px-3 border-0 cursor-pointer" style={{ background: "transparent", color: dark ? "#818cf8" : "#5865F2" }}>
