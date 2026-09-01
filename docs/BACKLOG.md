@@ -5,6 +5,16 @@ never gets picked up twice. Update this in the same commit as the work.
 
 ## Open
 
+- **Cash referrals — launch checklist** (built dark in v2.4.75; flip
+  `cash_referrals_enabled` to `'true'` to go live): admin payouts page (the
+  API at `/api/admin/referral-payouts` already lists/completes/rejects), the
+  referrer "your cash is on hold" email (the wallet email correctly stays
+  silent in cash mode), void-on-refund for reversed deposits, Terms update for
+  cash payouts, and Trip's sign-off on the four numbers (₦500 cash / ₦600
+  wallet / ₦2,500 gate / ₦5,000 min · 7-day hold — all settings:
+  `ref_cash_amount`, `ref_cash_wallet_amount`, `ref_cash_min_payout`,
+  `ref_cash_hold_days`).
+
 - **Reseller API follow-ups** (v2 of the API, not started): drip-feed and
   multi-day parameters, webhooks, per-key IP allowlists. Brief:
   `docs/v2/reseller_api_brief.md`.
