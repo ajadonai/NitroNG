@@ -885,7 +885,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       <Pagination total={total} page={oPage} setPage={setOPage} perPage={perPage} setPerPage={setPerPage} t={t} />
 
       {viewComments && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={() => setViewComments(null)}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setViewComments(null)}>
           <div className="absolute inset-0 bg-black/55" />
           <div className="relative w-full max-w-md rounded-xl shadow-xl overflow-hidden" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>

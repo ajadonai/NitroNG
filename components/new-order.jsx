@@ -1139,7 +1139,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* Order modal — single mode only */}
       {orderMode === "single" && (orderModal || orderSuccess) && hasOrder && (
-        <div className="no-modal-overlay flex fixed inset-0 z-[95] items-end justify-center desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); setRedeemPoints(false); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null);setRedeemPoints(false);}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
+        <div className="no-modal-overlay flex fixed inset-0 z-[200] items-end justify-center desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); setRedeemPoints(false); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null);setRedeemPoints(false);}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
           <div role="dialog" aria-modal="true" aria-label="Order summary" className={`w-full overflow-y-auto border border-solid max-h-[calc(100dvh-84px)] desktop:max-h-[90vh] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] ${orderSuccess ? "rounded-t-[26px] desktop:rounded-[26px] desktop:max-w-[460px]" : "rounded-t-[22px] desktop:rounded-[22px] desktop:max-w-[440px]"}`} onClick={e => e.stopPropagation()} style={{ background: orderSuccess ? successChrome.card : (dark ? "#0e1120" : "#fff"), borderColor: orderSuccess ? "transparent" : (dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"), boxShadow: orderSuccess ? "0 30px 80px rgba(20,10,14,.35)" : (dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)") }}>
             {orderSuccess ? (
               <div className="rcp" style={{ "--card": successChrome.card, "--ink": successChrome.text, "--mut": successChrome.muted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": successChrome.hair, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7", "--ac": t.accent, "--ok": successChrome.money }}>
@@ -1218,7 +1218,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* ═══ TIKTOK DISCLAIMER ═══ */}
       {tiktokDisclaimer && (
-        <div className="no-modal-overlay flex fixed inset-0 z-50 items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} style={{ background: "rgba(0,0,0,.45)" }}>
+        <div className="no-modal-overlay flex fixed inset-0 z-[200] items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} style={{ background: "rgba(0,0,0,.45)" }}>
           <div role="dialog" aria-modal="true" aria-label="TikTok service notice" className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="py-5 px-5">
               <div className="flex items-center gap-2.5 mb-3">
@@ -1256,7 +1256,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* ═══ YOUTUBE DISCLAIMER ═══ */}
       {youtubeDisclaimer && (
-        <div className="no-modal-overlay flex fixed inset-0 z-50 items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { try { localStorage.setItem('nitro_youtube_disclaimer', String(Date.now())); } catch {} setYoutubeDisclaimer(false); }} style={{ background: "rgba(0,0,0,.45)" }}>
+        <div className="no-modal-overlay flex fixed inset-0 z-[200] items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { try { localStorage.setItem('nitro_youtube_disclaimer', String(Date.now())); } catch {} setYoutubeDisclaimer(false); }} style={{ background: "rgba(0,0,0,.45)" }}>
           <div role="dialog" aria-modal="true" aria-label="YouTube subscriber notice" className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="py-5 px-5">
               <div className="flex items-center gap-2.5 mb-3">
@@ -1283,7 +1283,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* ═══ WEBSITE TRAFFIC GATE ═══ */}
       {trafficGate && (
-        <div className="no-modal-overlay flex fixed inset-0 z-50 items-end desktop:items-center justify-center px-3 pb-3 desktop:px-4 desktop:pb-0 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setTrafficGate(null)} style={{ background: "rgba(0,0,0,.5)" }}>
+        <div className="no-modal-overlay flex fixed inset-0 z-[200] items-end desktop:items-center justify-center px-3 pb-[max(12px,env(safe-area-inset-bottom))] desktop:px-4 desktop:pb-0 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setTrafficGate(null)} style={{ background: "rgba(0,0,0,.5)" }}>
           <div role="dialog" aria-modal="true" aria-label="Before this traffic order goes out" className="w-full max-w-[400px] rounded-[20px] border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="p-[18px] flex flex-col gap-3">
               <div className="flex items-center gap-3">
@@ -1328,7 +1328,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* ═══ DISCORD BOT GATE ═══ */}
       {discordGate && (
-        <div className="no-modal-overlay flex fixed inset-0 z-50 items-end desktop:items-center justify-center px-3 pb-3 desktop:px-4 desktop:pb-0 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setDiscordGate(null)} style={{ background: "rgba(0,0,0,.5)" }}>
+        <div className="no-modal-overlay flex fixed inset-0 z-[200] items-end desktop:items-center justify-center px-3 pb-[max(12px,env(safe-area-inset-bottom))] desktop:px-4 desktop:pb-0 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setDiscordGate(null)} style={{ background: "rgba(0,0,0,.5)" }}>
           <div role="dialog" aria-modal="true" aria-label="Discord setup before ordering" className="w-full max-w-[400px] rounded-[20px] border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="p-[18px] flex flex-col gap-3">
               <div className="flex items-center gap-3">
@@ -1377,7 +1377,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       )}
 
       {duplicateConfirm && (
-        <div className="no-modal-overlay flex fixed inset-0 z-50 items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setDuplicateConfirm(null)} style={{ background: "rgba(0,0,0,.45)" }}>
+        <div className="no-modal-overlay flex fixed inset-0 z-[200] items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setDuplicateConfirm(null)} style={{ background: "rgba(0,0,0,.45)" }}>
           <div role="dialog" aria-modal="true" aria-label="Duplicate order confirmation" className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#0e1120" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="py-5 px-5">
               <div className="flex items-center gap-2.5 mb-3">
