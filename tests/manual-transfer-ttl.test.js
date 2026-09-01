@@ -28,6 +28,24 @@ describe('unconfirmed bank transfers', () => {
     expect(cleanup).not.toMatch(/deleteMany\([\s\S]{0,400}?user_confirmed/);
   });
 
+  it('uses the same day everywhere a transfer can be retired', () => {
+    // Three places had their own clock; the resume path silently failed the
+    // customer's row and issued a new reference their money was not going to.
+    const route = read('app/api/payments/manual/route.js');
+    expect(route).toContain('MANUAL_UNCONFIRMED_TTL_MS');
+    expect(route).not.toMatch(/expiryMs\s*=\s*confirmed\s*\?[^;]*30 \* 60 \* 1000/);
+  });
+
+  it('shows the amount once on the details step, in the field you can copy', () => {
+    const sheet = read('components/manual-transfer-sheet.jsx');
+    const details = sheet.slice(sheet.indexOf('Bank transfer</div>'), sheet.indexOf('Who sent it?'));
+    expect(details.match(/fN\(manualModal\.amount\)/g) || []).toHaveLength(1);
+  });
+
+  it('always shows who the account belongs to', () => {
+    expect(read('components/manual-transfer-sheet.jsx')).toContain('{manualModal.accountName}');
+  });
+
   it('keeps the confirm sheet on the one modal layer, above the mobile dock', () => {
     const sheet = read('components/manual-transfer-sheet.jsx');
     expect(sheet).toContain('aria-label="Bank transfer"');

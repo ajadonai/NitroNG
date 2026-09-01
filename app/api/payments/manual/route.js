@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { tgManualPending } from '@/lib/telegram';
 import { parseFbCookies } from '@/lib/meta-capi';
+import { MANUAL_UNCONFIRMED_TTL_MS } from '@/lib/transaction-history';
 
 // POST — create a manual transfer request (returns bank details + creates pending tx)
 export async function POST(req) {
@@ -44,7 +45,11 @@ export async function POST(req) {
     if (existingPending) {
       const ageMs = Date.now() - new Date(existingPending.createdAt).getTime();
       const confirmed = existingPending.note?.includes('[user_confirmed');
-      const expiryMs = confirmed ? 6 * 60 * 60 * 1000 : 30 * 60 * 1000;
+      // The same day the sweepers allow. At 30 minutes, a customer who came
+      // back after a slow bank transfer had their pending row failed and was
+      // handed a brand new reference — while their money was already on its
+      // way to the old one.
+      const expiryMs = confirmed ? 6 * 60 * 60 * 1000 : MANUAL_UNCONFIRMED_TTL_MS;
       if (ageMs > expiryMs) {
         await prisma.transaction.update({ where: { id: existingPending.id }, data: { status: 'Failed', note: existingPending.note + ' [expired]' } });
       } else {
