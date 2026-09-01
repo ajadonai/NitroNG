@@ -4,6 +4,19 @@ import { RailSec, RailCard, RailFact, RailStep } from "./rail";
 import { fN, fD } from "../lib/format";
 import { Avatar } from "./avatar";
 import { copyText as copyToClipboard } from '@/lib/clipboard';
+import CashReferralsPage from "./referrals-cash-page";
+
+/** While cash_referrals_enabled is off the API answers { enabled: false } and
+ * everyone keeps seeing the classic page below. Flip the setting and this
+ * hook swaps in the cash programme without a deploy. */
+function useCashReferrals() {
+  const [cash, setCash] = useState(null);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    fetch("/api/referrals/cash").then(r => r.ok ? r.json() : null).then(d => { if (d) setCash(d); }).catch(() => {});
+  }, [tick]);
+  return [cash?.enabled ? cash : null, () => setTick(n => n + 1)];
+}
 
 function useRefSettings() {
   const [s, setS] = useState({ referrer: 50000, invitee: 50000, minDeposit: 0 });
@@ -30,10 +43,13 @@ export default function ReferralsPage({ user, dark, t }) {
   const [copied, setCopied] = useState(null);
   const [page, setPage] = useState(1);
   const ref = useRefSettings();
+  const [cash, refreshCash] = useCashReferrals();
 
   /* Per-page from shared localStorage */
   const [perPage, setPerPage] = useState(10);
   useEffect(() => { try { const s = localStorage.getItem("nitro-per-page"); if (s) setPerPage(Number(s)); } catch {} }, []);
+
+  if (cash) return <CashReferralsPage data={cash} dark={dark} t={t} onRefresh={refreshCash} />;
 
   const refCode = user?.refCode || "—";
   const refLink = `https://nitro.ng/?ref=${refCode}`;

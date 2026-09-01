@@ -995,6 +995,48 @@ model AffiliatePayout {
 }
 
 // ──────────────────────────────────────
+// CASH REFERRALS
+// ──────────────────────────────────────
+// Real-money referral earnings: created when a referred friend's first
+// qualifying deposit lands (behind the cash_referrals_enabled setting), held
+// for the refund window, then payable to a bank account or convertible to
+// wallet credit. Mirrors the Pit's held→releases→paid commission shape.
+
+model ReferralEarning {
+  id         String    @id @default(cuid())
+  referrerId String
+  referredId String
+  amount     Int // kobo
+  status     String    @default("held") // 'held' (available once releasesAt passes) | 'requested' | 'paid' | 'credited' | 'voided'
+  releasesAt DateTime
+  payoutId   String?
+  voidedAt   DateTime?
+  voidReason String?
+  createdAt  DateTime  @default(now())
+
+  @@unique([referredId])
+  @@index([referrerId, status])
+  @@map("referral_earnings")
+}
+
+model ReferralPayout {
+  id              String    @id @default(cuid())
+  userId          String
+  amount          Int // kobo
+  status          String    @default("pending") // 'pending' | 'processing' | 'completed' | 'rejected'
+  reference       String?
+  bankName        String?
+  bankAccountNo   String?
+  bankAccountName String?
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@map("referral_payouts")
+}
+
+// ──────────────────────────────────────
 // Provider Top-ups
 // ──────────────────────────────────────
 model ProviderTopup {
