@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(.34, 1.56, .64, 1)",
+        "createdAt": "2026-08-31T19:08:48.998Z",
+        "reason": "Pre-existing app-wide modalBounceIn standard used across all Nitro modals; not introduced by this edit — changing the motion idiom is a separate design decision for Trip"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "app/globals.css"
+        ],
+        "createdAt": "2026-09-01T16:07:14.427Z",
+        "reason": "Pre-existing .hero-shimmer sweep animation on the landing hero, not a decorative gradient heading; untouched by the bottom-nav work — restyling it is a separate call for Trip"
+      }
+    ]
+  }
+}
