@@ -3,7 +3,7 @@ import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
 import { getBonusInfo } from '@/lib/bonus-credit';
-import { serializeTransaction, transactionHistoryCutoff } from '@/lib/transaction-history';
+import { serializeTransaction, transactionHistoryCutoff, MANUAL_UNCONFIRMED_TTL_MS } from '@/lib/transaction-history';
 import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 
 const ORDER_INCLUDE = {
@@ -179,14 +179,21 @@ export async function GET() {
         data: { status: 'Expired' },
       });
     } catch {}
-    // Expire unconfirmed manual transfers older than 30 minutes
+    // Retire unconfirmed manual transfers after a full day, and retire them —
+    // never delete. At 30 minutes this ran while the customer was still queueing
+    // at their bank: they came back to find the pending row, and with it the
+    // "I've sent it" button, gone, having already sent real money. Expiring
+    // keeps the record, so support can still match a payment that turns up.
     try {
       const staleManual = await prisma.transaction.findMany({
-        where: { userId: user.id, status: 'Pending', type: 'deposit', method: 'manual', createdAt: { lt: new Date(Date.now() - 30 * 60 * 1000) } },
+        where: { userId: user.id, status: 'Pending', type: 'deposit', method: 'manual', createdAt: { lt: new Date(Date.now() - MANUAL_UNCONFIRMED_TTL_MS) } },
+        select: { id: true, note: true },
       });
-      const unconfirmedIds = staleManual.filter(tx => tx.note?.includes('[awaiting_confirmation]')).map(tx => tx.id);
-      if (unconfirmedIds.length) {
-        await prisma.transaction.deleteMany({ where: { id: { in: unconfirmedIds } } });
+      for (const tx of staleManual.filter(t => t.note?.includes('[awaiting_confirmation]'))) {
+        await prisma.transaction.update({
+          where: { id: tx.id },
+          data: { status: 'Expired', note: tx.note.replace('[awaiting_confirmation]', '[expired_unconfirmed]') },
+        });
       }
     } catch {}
 
