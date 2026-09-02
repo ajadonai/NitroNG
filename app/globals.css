@@ -703,9 +703,13 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .adm-filters select, select[style*="appearance"] { text-align: center; text-align-last: center; }
 .adm-filter-pill { padding: 5px 14px; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; background: none; font-family: inherit; }
 .adm-search { width: 100%; padding: 10px 14px; border-radius: 10px; border-width: 1px; border-style: solid; font-size: 14px; font-family: inherit; outline: none; margin-bottom: 16px; box-sizing: border-box; }
-.adm-btn-sm { padding: 5px 12px; border-radius: 6px; border-width: 1px; border-style: solid; font-size: 14px; font-weight: 600; cursor: pointer; background: none; font-family: inherit; transition: transform .15s; }
+/* The shared admin buttons, on the same standard the rebuilt pages set for
+   themselves (re-pri, tk-b): 9px radius, heavier primary with the soft accent
+   shadow. Menu Builder's header wore the old flat 6/8px-radius versions long
+   after every rebuilt page had moved on. */
+.adm-btn-sm { padding: 6px 12px; border-radius: 9px; border-width: 1px; border-style: solid; font-size: 12.5px; font-weight: 600; cursor: pointer; background: none; font-family: inherit; transition: transform .15s; white-space: nowrap; }
 .adm-btn-sm:hover { transform: translateY(-1px); }
-.adm-btn-primary { padding: 10px 24px; border-radius: 8px; background: linear-gradient(135deg, #c47d8e, #8b5e6b); color: #fff; font-size: 15px; font-weight: 600; border: none; cursor: pointer; font-family: inherit; transition: transform .15s; }
+.adm-btn-primary { padding: 9px 16px; border-radius: 9px; background: linear-gradient(135deg, #c47d8e, #8b5e6b); color: #fff; font-size: 13px; font-weight: 800; border: none; cursor: pointer; font-family: inherit; box-shadow: 0 8px 22px rgba(196,125,142,.28); transition: transform .15s; white-space: nowrap; }
 .adm-btn-primary:hover { transform: translateY(-1px); }
 .adm-pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; flex-wrap: wrap; gap: 10px; }
 
@@ -717,7 +721,7 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   .adm-list-row { padding: 12px 14px; }
   .adm-deposit-row { padding: 12px !important; }
   .adm-btn-sm { padding: 5px 10px; font-size: 12px; }
-  .adm-btn-primary { padding: 8px 18px; font-size: 14px; }
+  .adm-btn-primary { padding: 8px 14px; font-size: 12.5px; }
   .adm-detail-grid { grid-template-columns: 1fr 1fr; }
 }
 
