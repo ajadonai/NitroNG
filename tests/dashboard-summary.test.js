@@ -193,7 +193,7 @@ describe('GET /api/dashboard — bounded rows with exact summaries', () => {
 
     expect(prisma.setting.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.setting.findMany).toHaveBeenCalledWith({
-      where: { key: { in: ['ref_min_deposit', 'tos_version'] } },
+      where: { key: { in: ['ref_min_deposit', 'tos_version', 'topup_bonus_enabled', 'topup_bonus_rungs', 'topup_bonus_expiry_days'] } },
       select: { key: true, value: true },
     });
     expect(body.currentTosVersion).toBe('2026-07');

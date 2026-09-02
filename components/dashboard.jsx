@@ -966,6 +966,7 @@ function DashboardInner({ initialData }) {
             reference: data.reference || ref,
             message: data.message || "Payment successful!",
             welcomeBonus: data.welcomeBonus || 0,
+            topupBonus: data.topupBonus || 0,
           });
           if (data.eventId && typeof window.fbq === "function") {
             window.fbq("track", "AddPaymentInfo", { value: data.amount, currency: "NGN" }, { eventID: data.eventId });

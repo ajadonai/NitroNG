@@ -176,6 +176,9 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       if (paymentStatus.welcomeBonus > 0) {
         setTimeout(() => toast.success("🎁 Welcome bonus!", `₦${Number(paymentStatus.welcomeBonus).toLocaleString()} bonus added to your wallet`), 1500);
       }
+      if (paymentStatus.topupBonus > 0) {
+        setTimeout(() => toast.success("🎉 Top-up bonus unlocked!", `₦${Number(paymentStatus.topupBonus).toLocaleString()} added to your wallet`), 1500);
+      }
       // A completed credit only needs to survive long enough to show once.
       // Consuming it prevents success from replaying when this page remounts.
       setPaymentStatus?.(null);
@@ -437,12 +440,57 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   };
 
   const welcomeEligible = user?.welcomeBonusEligible;
+  const topup = !welcomeEligible ? user?.topupBonus : null;
   const cryptoPresentation = cryptoPaymentPresentation(cryptoResult || { status: cryptoStatus });
   const cryptoIsTerminal = cryptoPresentation.kind !== "pending";
 
   /* ── Shared sub-components ── */
+  const okColor = dark ? "#6ee7b7" : "#059669";
   const amountInput = (
     <>
+      {topup && (() => {
+        const fillPct = Math.min(100, (topup.total / topup.max) * 100);
+        const fmtK = kobo => `₦${Math.round(kobo / 100000)}k`;
+        const fN2 = kobo => `₦${(kobo / 100).toLocaleString()}`;
+        const allDone = !topup.next;
+        return (
+          <div className="rounded-xl p-4 mb-4" style={{ background: dark ? 'rgba(196,125,142,.08)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.22)' : 'rgba(196,125,142,.18)'}` }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(196,125,142,.18)' : 'rgba(196,125,142,.12)' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              </div>
+              <div className="text-[13px] font-semibold text-accent">Top-up bonus</div>
+              <span className="ml-auto text-[10px] font-bold uppercase tracking-[.06em] py-[3px] px-2 rounded-full text-t-text-muted" style={{ background: dark ? 'rgba(255,255,255,.06)' : '#fff', border: `1px solid ${t.cardBorder}` }}>{topup.month}</span>
+            </div>
+            <div className="flex items-baseline gap-2 mt-3 flex-wrap">
+              <b className="m text-[24px] font-bold text-t-text">{fN2(topup.total)}</b>
+              <span className="text-[12.5px] text-t-text-muted">topped up this month</span>
+            </div>
+            <div className="relative mt-2.5 pb-10">
+              <div className="relative h-[9px] rounded-[5px]" style={{ background: dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)' }}>
+                <span className="absolute top-0 bottom-0 left-0 rounded-[5px]" style={{ width: `${fillPct}%`, background: allDone ? okColor : t.accent }} />
+                {topup.rungs.slice(0, -1).map(r => (
+                  <span key={r.min} className="absolute -top-1 -bottom-1 w-[2px] rounded-[1px] opacity-50" style={{ left: `${(r.min / topup.max) * 100}%`, background: dark ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.35)' }} />
+                ))}
+              </div>
+              {topup.rungs.map((r, i) => {
+                const last = i === topup.rungs.length - 1;
+                return (
+                  <div key={r.min} className={`absolute top-[18px] leading-[1.3] ${last ? 'right-0 text-right' : 'text-center -translate-x-1/2'}`} style={last ? undefined : { left: `${(r.min / topup.max) * 100}%` }}>
+                    <b className="block text-[12.5px] font-bold" style={{ color: r.unlocked ? okColor : t.text }}>{fN2(r.prize)}{r.unlocked ? " ✓" : ""}</b>
+                    <span className="block text-[10.5px] font-semibold text-t-text-muted mt-px">{fmtK(r.min)}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="text-[13px] leading-[1.5] text-t-text-soft">
+              {allDone
+                ? <>All unlocked this month — <b style={{ color: okColor }}>{fN2(topup.unlockedAmount)}</b> earned. Fresh ladder on the 1st.</>
+                : <>{topup.unlockedAmount > 0 && <><b style={{ color: okColor }}>{fN2(topup.unlockedAmount)} unlocked</b> · </>}<b className="m text-t-text">{fN2(topup.next.toGo)}</b> more unlocks <b className="text-accent">{fN2(topup.next.prize)}</b>.</>}
+            </div>
+          </div>
+        );
+      })()}
       {welcomeEligible && (
         <div className="flex items-center gap-3 rounded-xl p-3.5 mb-4" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.06)', border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.15)'}` }}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(196,125,142,.18)' : 'rgba(196,125,142,.12)' }}>
@@ -517,6 +565,31 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add ₦{diff.toLocaleString()} more</button> and get <strong className="text-accent">₦{nt.bonus.toLocaleString()} free</strong> instead of ₦{cur.toLocaleString()}.</>
                 : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add ₦{diff.toLocaleString()} more</button> to unlock your <strong className="text-accent">₦{nt.bonus.toLocaleString()} welcome bonus</strong>.</>
               }
+            </span>
+          </div>
+        );
+      })()}
+      {topup && topup.next && numAmount >= 1000 && (() => {
+        const projected = topup.total + numAmount * 100;
+        const prize = (topup.next.prize / 100).toLocaleString();
+        if (projected >= topup.next.min) {
+          return (
+            <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(110,231,183,.06)' : 'rgba(5,150,105,.04)', border: `1px solid ${dark ? 'rgba(110,231,183,.14)' : 'rgba(5,150,105,.1)'}` }}>
+              <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.08)' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={okColor} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </div>
+              <span className="text-[13px] font-semibold" style={{ color: okColor }}>This deposit unlocks your ₦{prize} top-up bonus</span>
+            </div>
+          );
+        }
+        const fullAdd = Math.ceil((topup.next.min - topup.total) / 100);
+        return (
+          <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(196,125,142,.06)' : 'rgba(196,125,142,.04)', border: `1px solid ${dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.1)'}` }}>
+            <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.08)' }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            </div>
+            <span className="text-[13px] font-medium text-t-text-soft">
+              This takes you to <strong className="m">₦{(projected / 100).toLocaleString()}</strong> of ₦{(topup.next.min / 100).toLocaleString()} — <button onClick={() => setAmount(String(fullAdd))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>deposit ₦{fullAdd.toLocaleString()}</button> to unlock <strong className="text-accent">₦{prize}</strong>.
             </span>
           </div>
         );

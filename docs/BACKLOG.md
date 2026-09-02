@@ -46,6 +46,20 @@ never gets picked up twice. Update this in the same commit as the work.
   `ref_cash_amount`, `ref_cash_wallet_amount`, `ref_cash_min_payout`,
   `ref_cash_hold_days`).
 
+- **Monthly top-up bonus — launch checklist** (built dark in v2.4.89; set
+  `topup_bonus_enabled` to `'true'` to go live): the instant-unlock ladder —
+  cross ₦30k in a Lagos calendar month → ₦1,500, ₦60k → +₦2,700, ₦100k →
+  +₦5,800 (cumulative 5%/7%/10%), paid inside `finalizeDeposit` as spend-only
+  BonusCredit (`source 'topup_month'`, 30-day expiry), first-ever deposit and
+  resellers excluded, one award per user/month/rung via transaction
+  idempotencyKey `topup:YYYY-MM:r<minKobo>`. The wallet card, amount nudge and
+  unlock toast render only when the flag is on. Settings:
+  `topup_bonus_rungs` (JSON `[{min,prize}]` kobo), `topup_bonus_expiry_days`.
+  Before flipping: Trip signs off the rungs, decide whether the deposit email
+  mentions the prize (Telegram already counts it in the bonus total), and
+  watch the monthly cost against the ~₦45k face estimate. Design notes:
+  mock artifact 7adc3631, backend brief artifact 5b60a686.
+
 - **Reseller API follow-ups** (v2 of the API, not started): drip-feed and
   multi-day parameters, webhooks, per-key IP allowlists. Brief:
   `docs/v2/reseller_api_brief.md`.

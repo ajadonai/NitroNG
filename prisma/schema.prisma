@@ -1084,7 +1084,7 @@ model ChangelogEntry {
 model BonusCredit {
   id              String    @id @default(cuid())
   userId          String
-  source          String // 'welcome_bonus' | 'winback' | 'campaign'
+  source          String // 'welcome_bonus' | 'winback' | 'campaign' | 'task' | 'topup_month'
   amountGranted   Int
   amountRemaining Int
   grantedAt       DateTime  @default(now())

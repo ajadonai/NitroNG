@@ -156,6 +156,7 @@ export async function POST(req) {
       amount: amountKobo / 100,
       bonus: couponBonus / 100,
       welcomeBonus: welcomeBonus / 100,
+      topupBonus: (finalization?.topupBonus || 0) / 100,
       total: totalCredit / 100,
     });
   } catch (error) {

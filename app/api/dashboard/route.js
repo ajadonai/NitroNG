@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
 import { getBonusInfo } from '@/lib/bonus-credit';
+import { getTopupProgress } from '@/lib/topup-bonus';
 import { serializeTransaction, transactionHistoryCutoff, MANUAL_UNCONFIRMED_TTL_MS } from '@/lib/transaction-history';
 import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 
@@ -133,7 +134,7 @@ export async function GET() {
     const dashboardSettingsPromise = (async () => {
       try {
         return await prisma.setting.findMany({
-          where: { key: { in: ['ref_min_deposit', 'tos_version'] } },
+          where: { key: { in: ['ref_min_deposit', 'tos_version', 'topup_bonus_enabled', 'topup_bonus_rungs', 'topup_bonus_expiry_days'] } },
           select: { key: true, value: true },
         });
       } catch (e) {
@@ -318,6 +319,10 @@ export async function GET() {
 
     const tc = (s) => s ? s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()) : '';
     const bonusCredit = await getBonusInfo(prisma, user.id);
+    let topupBonus = null;
+    try {
+      topupBonus = await getTopupProgress(prisma, user.id, { settingRows: await dashboardSettingsPromise });
+    } catch {}
 
     return ok({
       user: {
@@ -345,6 +350,7 @@ export async function GET() {
         orderTourCompleted: user.orderTourCompleted,
         welcomeBonusEligible: !user.firstDepositBonusPaid,
         bonusCredit: bonusCredit || null,
+        topupBonus,
       },
       orders: orders.map(serializeOrder),
       activeOrders: activeOrders.map(serializeOrder),
