@@ -15,6 +15,7 @@ const prisma = {
   priceChange: {
     createMany: vi.fn().mockResolvedValue({ count: 0 }),
   },
+  setting: { findMany: vi.fn().mockResolvedValue([]) },
 };
 
 vi.mock('next/cache', () => ({ unstable_cache: fn => fn, revalidateTag: vi.fn() }));
@@ -66,6 +67,26 @@ describe('swap-tier-order', () => {
     const res = await mutation({ action: 'swap-tier-order', tierA: 'a', tierB: 'b' });
     expect(res.status).toBe(400);
     expect(prisma.serviceTier.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('recalculate-prices honours pins', () => {
+  it('never touches a pinned tier and says how many it held', async () => {
+    // The nightly sync always skipped pins; the button silently overwrote
+    // them — five live pinned prices were flattened before this guard.
+    prisma.setting.findMany.mockResolvedValue([]);
+    prisma.serviceTier.findMany.mockResolvedValue([
+      { id: 'pinned', tier: 'Premium', sellPer1k: 800000n, pricePinned: true, service: { costPer1k: 100, provider: 'mtp' }, group: { nigerian: false, name: 'G', platform: 'P' } },
+      { id: 'free', tier: 'Budget', sellPer1k: 1n, pricePinned: false, service: { costPer1k: 100, provider: 'mtp' }, group: { nigerian: false, name: 'G', platform: 'P' } },
+    ]);
+
+    const res = await mutation({ action: 'recalculate-prices' });
+    expect(res.status).toBe(200);
+    const d = await res.json();
+    expect(d.pinnedHeld).toBe(1);
+    const touched = prisma.serviceTier.update.mock.calls.map(([arg]) => arg.where.id);
+    expect(touched).not.toContain('pinned');
+    expect(touched).toContain('free');
   });
 });
 

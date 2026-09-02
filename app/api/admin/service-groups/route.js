@@ -336,12 +336,20 @@ export async function POST(req) {
 
       let updated = 0;
       let skipped = 0;
+      let pinnedHeld = 0;
       const ops = [];
       const runId = crypto.randomUUID();
       const usdRate = Number(ms.markup_usd_rate) || null;
       const priceChanges = [];
 
       for (const t of allTiers) {
+        // A pinned price means a human decided it and nothing recalculates it.
+        // The nightly sync has always honoured this; the button now does too —
+        // it used to silently overwrite every pin in the menu.
+        if (t.pricePinned) {
+          pinnedHeld++;
+          continue;
+        }
         if (!t.service || !t.service.costPer1k || Number(t.service.costPer1k) <= 0) {
           skipped++;
           continue;
@@ -377,9 +385,9 @@ export async function POST(req) {
         }
       }
       await recordPriceChanges(priceChanges);
-      await logActivity(admin.name, `Recalculated prices: ${updated} updated, ${skipped} skipped (no cost)`, 'service');
+      await logActivity(admin.name, `Recalculated prices: ${updated} updated, ${skipped} skipped (no cost), ${pinnedHeld} pinned held`, 'service');
       invalidateServiceCatalogue();
-      return Response.json({ success: true, updated, skipped, total: allTiers.length });
+      return Response.json({ success: true, updated, skipped, pinnedHeld, total: allTiers.length });
     }
 
     if (action === 'duplicate-group') {
