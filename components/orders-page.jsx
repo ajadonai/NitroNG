@@ -5,7 +5,7 @@ import { useBodyScrollLock } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
-import { fN, fD } from "../lib/format";
+import { fN, fD, fT } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { NotSureHelp } from "./new-order";
 import NitroLoader from "./nitro-loader";
@@ -507,7 +507,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
         <div className="min-w-0 flex-1">
           <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{batch.batchId}</div>
           <div className="text-[11px] desktop:text-xs font-medium mt-0.5 text-accent">{batch.orders.length} order{batch.orders.length !== 1 ? "s" : ""}</div>
-          {batch.created && <div className="text-[11px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fD(batch.created, true)}</div>}
+          {batch.created && <div className="text-[11px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fT(batch.created)}</div>}
         </div>
         <div className="text-right shrink-0 flex items-center gap-1.5">
           {(batchSt === "Processing") && <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: sClr("Processing", dark) }} />}
@@ -545,7 +545,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical] text-t-text">{o.service}</div>
                   {o.tier && <div className="text-[11px] desktop:text-[11px] font-medium mt-0.5 text-accent">{o.tier}</div>}
-                  {o.created && <div className="text-[11px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fD(o.created, true)}</div>}
+                  {o.created && <div className="text-[11px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fT(o.created)}</div>}
                   {expandedOrder !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
                 <div className="text-right shrink-0">
@@ -849,7 +849,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap desktop:whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical] text-t-text">{o.service}</div>
                   {o.tier && <div className="text-[11px] desktop:text-xs font-medium mt-0.5 text-accent">{o.tier}</div>}
-                  {o.created && <div className="text-[11px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fD(o.created, true)}</div>}
+                  {o.created && <div className="text-[11px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fT(o.created)}</div>}
                   {expanded !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
                 <div className="text-right shrink-0 flex items-center gap-1.5">
