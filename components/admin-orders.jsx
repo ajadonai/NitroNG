@@ -665,7 +665,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                   <div className="min-w-0 flex-1">
                     <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{batch.batchId} <span className="text-[11px] desktop:text-xs font-normal" style={{ color: t.textMuted }}>{batch.orders[0]?.user}</span></div>
                     <div className="text-[11px] desktop:text-xs font-medium mt-0.5" style={{ color: t.accent }}>{batch.orders.length} order{batch.orders.length !== 1 ? "s" : ""}</div>
-                    {batch.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fD(batch.created, true)}</div>}
+                    {batch.created && <div className="text-[10px] desktop:text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fT(batch.created)}</div>}
                   </div>
                   <div className="text-right shrink-0 flex items-center gap-1.5">
                     {(batchSt === "Processing") && <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: sClr("Processing", dark) }} />}
@@ -698,7 +698,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                               </div>
                             )}
                             <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5 flex-wrap" style={{ color: t.textMuted }}>
-                              <span>{o.created ? fD(o.created, true) : ""}</span>
+                              <span>{o.created ? fT(o.created) : ""}</span>
                               <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
                               <span>{o.user}<AccountTag reseller={o.isReseller} api={o.source === "api"} dark={dark} className="ml-1.5" /></span>
                             </div>
@@ -828,7 +828,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                     </div>
                   )}
                   <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5 flex-wrap" style={{ color: t.textMuted }}>
-                    <span>{o.created ? fD(o.created, true) : ""}</span>
+                    <span>{o.created ? fT(o.created) : ""}</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
                     <span>{o.user}<AccountTag reseller={o.isReseller} api={o.source === "api"} dark={dark} className="ml-1.5" /></span>
                   </div>

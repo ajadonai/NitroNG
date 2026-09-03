@@ -40,7 +40,18 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   const [addForm, setAddForm] = useState({ tier: "Standard", serviceId: "", price: "" });
   const [openIds, setOpenIds] = useState(() => { try { return new Set(JSON.parse(localStorage.getItem("nitro_mb_open") || "[]")); } catch { return new Set(); } });
   const persistOpen = (next) => { setOpenIds(next); try { localStorage.setItem("nitro_mb_open", JSON.stringify([...next])); } catch {} };
-  const toggleGroup = (id) => { const n = new Set(openIds); n.has(id) ? n.delete(id) : n.add(id); persistOpen(n); };
+  // While a search or filter is active every match opens itself so results are
+  // visible — but the header must still collapse on click. It used to ignore
+  // clicks entirely in that state, which read as "the dropdown is broken".
+  const [filterClosed, setFilterClosed] = useState(() => new Set());
+  const toggleGroup = (id) => {
+    if (search !== "" || platFilter !== "all" || ngFilter) {
+      setFilterClosed(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+      return;
+    }
+    const n = new Set(openIds); n.has(id) ? n.delete(id) : n.add(id); persistOpen(n);
+  };
+  useEffect(() => { setFilterClosed(new Set()); }, [search, platFilter, ngFilter]);
   const listRef = useRef(null);
 
   const load = async () => {
@@ -72,7 +83,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
 
   const platforms = useMemo(() => [...new Set(groups.map(g => g.platform))].sort((a, b) => a.localeCompare(b)), [groups]);
   const filtersActive = search !== "" || platFilter !== "all" || ngFilter;
-  const isOpen = (g) => filtersActive || openIds.has(g.id);
+  const isOpen = (g) => filtersActive ? !filterClosed.has(g.id) : openIds.has(g.id);
   const filtered = useMemo(() => {
     let g = groups;
     if (platFilter !== "all") g = g.filter(x => x.platform === platFilter);
