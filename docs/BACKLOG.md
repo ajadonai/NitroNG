@@ -69,6 +69,46 @@ never gets picked up twice. Update this in the same commit as the work.
   coverage reads high but the Purchase score is still 7.5, suspect
   normalisation. No metric comparisons across the 4 Sep boundary.
 
+- **International Nitro — parked design, agreed 4 Sep 2026** (build nothing
+  until Trip reopens it): Nigerians keep the cheaper Nitro; foreigners pay a
+  premium. The mechanism is **one padded exchange rate, not a second price
+  list**: the wallet and the whole catalogue stay in naira forever, and a
+  foreign-currency deposit (Flutterwave USD, and the crypto rail) credits the
+  wallet at Nitro's own sell rate set below mid-market — market ₦1,529/$,
+  credit at e.g. ₦1,300/$ ≈ +17% — so the premium follows the **payment
+  currency**, not nationality or IP, needs no detection, and extends to
+  GHS/KES/GBP as the same % over mid-market. One admin setting (fx sell rate
+  or premium %); "≈ $" display prices are computed at the padded rate so what
+  foreigners see is what they pay. **Premium % is undecided** — the ~15–20%
+  above is a placeholder for Trip to set. The signup gate lives at
+  `app/api/auth/signup/route.js:45` (rejects anything not `[789]`+9 digits):
+  opening it means generic E.164 (8–15 digits with country code), strict NG
+  validation kept for local-looking numbers, plus touches to `check-phone`,
+  the auth modal's +234 UI, and admin phone search; wa.me links, phone
+  uniqueness and the CAPI hasher already handle foreign numbers. **Sequence
+  when reopened:** 1) open the phone gate (small — it is also the demand
+  meter), 2) "≈ $" at the padded rate on pricing/order/add-funds (small),
+  3) Flutterwave USD collection crediting naira at the padded rate (medium),
+  4) never multi-currency wallets.
+
+- **Landing redesign v2 — parked, Trip not yet impressed** (4 Sep 2026): the
+  full build lives on local branch `landing-v2-wip` (commit `d1838b9f`, never
+  pushed); the design mock is artifact `213efb73`. What it contains: a
+  one-viewport fold (sticky nav with centred links and announcement bar above,
+  hero with a working order-starter widget priced from `/api/pricing`, platform
+  marquee, clean stat band), Why Nitro with the five feature cards and both
+  product screenshots, priced platform list, three steps, pricing cards,
+  resellers section with the Emeka quote, single blush pull-quote, plum closer,
+  existing footer; fully theme-tokenised (light and dark verified), trust line,
+  gift-icon CTA, height-stepped fold, no em dashes in copy, honest platform
+  count (`uniquePlatforms`, fixing the old 152+ groups-as-platforms bug).
+  Standing taste notes from the rounds: no duplicated stats or CTAs, bare-number
+  stat band not cards, icons not text and positioned in true empty zones,
+  hamburger only below desktop, login prominent but not oversized, sections must
+  not blend (alternating surfaces), richness over minimalism below the fold.
+  Next session: either iterate on the branch or restart the design; the current
+  production landing is untouched.
+
 - **Reseller API follow-ups** (v2 of the API, not started): drip-feed and
   multi-day parameters, webhooks, per-key IP allowlists. Brief:
   `docs/v2/reseller_api_brief.md`.
