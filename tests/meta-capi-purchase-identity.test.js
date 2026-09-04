@@ -39,6 +39,12 @@ describe('Purchase user_data completeness', () => {
     expect(ph('08031234567')).toBe(hex('2348031234567'));
   });
 
+  it('never forces 234 onto a number that already carries a foreign country code', () => {
+    const ph = phone => buildMetaEvent('Purchase', { eventId: 'e', phone }).user_data.ph[0];
+    expect(ph('+44 7911 123456')).toBe(hex('447911123456'));
+    expect(ph('+1 415 555 2671')).toBe(hex('14155552671'));
+  });
+
   it('builds _fbc from a landing fbclid in Meta format', () => {
     expect(buildFbcValue('IwAR2xyz', 1725000000000)).toBe('fb.1.1725000000000.IwAR2xyz');
   });
