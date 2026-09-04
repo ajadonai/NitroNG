@@ -60,6 +60,15 @@ never gets picked up twice. Update this in the same commit as the work.
   watch the monthly cost against the ~₦45k face estimate. Design notes:
   mock artifact 7adc3631, backend brief artifact 5b60a686.
 
+- **Scale ladder gate — measure from the database, not Meta** (note, 4 Sep 2026):
+  the CAPI identity fix (v2.4.99) will make cost-per-order and ROAS look better
+  from 4 Sep for measurement reasons alone — Meta correctly claiming orders it
+  already drove. The Lagos ₦30,000 → ₦39,000 budget step stays gated on cost
+  per new customer under ₦1,600 measured from **real signup counts in the DB**,
+  not Meta-attributed orders. Match-quality verification ~8 Sep: if phone
+  coverage reads high but the Purchase score is still 7.5, suspect
+  normalisation. No metric comparisons across the 4 Sep boundary.
+
 - **Reseller API follow-ups** (v2 of the API, not started): drip-feed and
   multi-day parameters, webhooks, per-key IP allowlists. Brief:
   `docs/v2/reseller_api_brief.md`.

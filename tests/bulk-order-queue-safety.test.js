@@ -93,6 +93,8 @@ vi.mock('@/lib/drip-feed', () => ({
   validateIntradayDuration: () => null,
 }));
 vi.mock('@/lib/meta-capi', () => ({
+  loadStoredCapiIdentity: vi.fn(async () => ({})),
+  persistFbTouch: vi.fn(async () => {}),
   enqueueMetaEvent: (...args) => mocks.enqueueMetaEvent(...args),
   parseFbCookies: vi.fn(() => ({ fbp: null, fbc: null })),
   scheduleQueuedMetaEventDelivery: (...args) => mocks.scheduleQueuedMetaEventDelivery(...args),

@@ -28,8 +28,28 @@ export function hasConsent(category) {
   return !!(c && c[category]);
 }
 
+/** Meta's _fbc format: fb.1.<set-time ms>.<click id>. Sent to CAPI raw, never hashed. */
+export function buildFbcValue(fbclid, nowMs = Date.now()) {
+  return `fb.1.${nowMs}.${fbclid}`;
+}
+
+/**
+ * The pixel normally writes _fbc from ?fbclid — but when it is blocked or slow
+ * the click id is lost and server Purchase events can never carry fbc. Capture
+ * it first-party on landing, before the pixel loads.
+ */
+function ensureFbcFromClick() {
+  try {
+    const fbclid = new URLSearchParams(window.location.search).get('fbclid');
+    if (!fbclid) return;
+    if (document.cookie.split('; ').some(c => c.startsWith('_fbc='))) return;
+    document.cookie = `_fbc=${encodeURIComponent(buildFbcValue(fbclid))}; path=/; max-age=${90 * 86400}; SameSite=Lax`;
+  } catch {}
+}
+
 export function initPixel() {
   if (typeof window === 'undefined' || window.fbq || isInternalDashboardPath(window.location.pathname)) return;
+  ensureFbcFromClick();
   !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
   window.fbq('init','27456534517306114');
   window.fbq('track','PageView');

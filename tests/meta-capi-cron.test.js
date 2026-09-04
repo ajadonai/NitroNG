@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/prisma', () => ({ default: { name: 'mock-db' } }));
 vi.mock('@/lib/meta-capi', () => ({
+  loadStoredCapiIdentity: vi.fn(async () => ({})),
+  persistFbTouch: vi.fn(async () => {}),
   processMetaCapiOutbox: (...args) => mocks.processMetaCapiOutbox(...args),
 }));
 vi.mock('@/lib/monitoring', () => ({

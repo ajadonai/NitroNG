@@ -24,7 +24,9 @@ vi.mock('@/lib/rate-limit', () => ({
   rateLimitUnavailable: vi.fn(() => Response.json({ error: 'unavailable' }, { status: 503 })),
   tooManyRequests: vi.fn(() => Response.json({ error: 'limited' }, { status: 429 })),
 }));
-vi.mock('@/lib/meta-capi', () => ({ parseFbCookies: vi.fn(() => ({})) }));
+vi.mock('@/lib/meta-capi', () => ({
+  loadStoredCapiIdentity: vi.fn(async () => ({})),
+  persistFbTouch: vi.fn(async () => {}), parseFbCookies: vi.fn(() => ({})) }));
 
 const { POST } = await import('@/app/api/payments/initialize/route');
 

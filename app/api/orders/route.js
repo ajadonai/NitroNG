@@ -6,7 +6,7 @@ import { placeOrder, checkOrder } from '@/lib/smm';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility, validateIntradayDuration } from '@/lib/drip-feed';
-import { cancelQueuedMetaEvent, enqueueMetaEvent, parseFbCookies, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
+import { cancelQueuedMetaEvent, enqueueMetaEvent, loadStoredCapiIdentity, parseFbCookies, persistFbTouch, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
 import { tgNewOrder, tgOutreachAlert, tgRefundAlert } from '@/lib/telegram';
 import { sendOutreach as ifySendOutreach } from '@/lib/ify/outreach';
 import { voidCommissions } from '@/lib/commissions';
@@ -20,18 +20,18 @@ import { lockOrderSettlementAccount } from '@/lib/account-deletion';
 
 export const maxDuration = 60;
 
-function buildPurchaseEvent(req, { eventId, eventTime, email, phone, externalId, valueKobo }) {
+function buildPurchaseEvent(req, { eventId, eventTime, email, phone, externalId, valueKobo, stored = {} }) {
   const { fbp, fbc } = parseFbCookies(req.headers.get('cookie'));
   return {
     eventId,
     eventTime,
     email,
-    phone,
+    phone: phone || stored.phone,
     externalId,
     clientIp: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip'),
     userAgent: req.headers.get('user-agent'),
-    fbp,
-    fbc,
+    fbp: fbp || stored.lastFbp,
+    fbc: fbc || stored.lastFbc,
     sourceUrl: req.headers.get('referer'),
     customData: { value: valueKobo / 100, currency: 'NGN' },
   };
@@ -555,6 +555,8 @@ export async function patchOrderForSession(session, body, req) {
             note: `Reorder ${newOrderId} — ${reorderOffer.serviceName}${reorderOffer.tierLabel ? ` (${reorderOffer.tierLabel})` : ''} x${order.quantity.toLocaleString()}${reorderDiscountParts.length > 0 ? ` (${reorderDiscountParts.join(', ')})` : ''}`,
           },
         });
+        const stored = await loadStoredCapiIdentity(tx, session.id);
+        await persistFbTouch(tx, session.id, parseFbCookies(req.headers.get('cookie')), stored);
         await enqueueMetaEvent(tx, 'Purchase', buildPurchaseEvent(req, {
           eventId: reorderEventId,
           eventTime: created.createdAt,
@@ -562,6 +564,7 @@ export async function patchOrderForSession(session, body, req) {
           phone: user.phone,
           externalId: session.id,
           valueKobo: charge,
+          stored,
         }));
         return created;
       });
@@ -1038,14 +1041,17 @@ export async function createOrderForSession(session, body, req, { source = 'web'
               note: `Order ${orderId} — ${tierName} x${qty.toLocaleString()}${discountParts.length > 0 ? ` (${discountParts.join(', ')})` : ''}`,
             },
           });
+          const stored = await loadStoredCapiIdentity(tx, session.id);
+          await persistFbTouch(tx, session.id, parseFbCookies(req.headers.get('cookie')), stored);
           await enqueueMetaEvent(tx, 'Purchase', {
             ...buildPurchaseEvent(req, {
               eventId,
               eventTime: order.createdAt,
               email: session.email,
-              phone: session.phone,
+              phone: stored.phone,
               externalId: session.id,
               valueKobo: charge,
+              stored,
             }),
             // Provider rejection can still unwind this checkout. Keep the
             // durable row out of cron's lease window until that short path ends.

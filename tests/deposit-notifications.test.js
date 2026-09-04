@@ -14,7 +14,9 @@ const mocks = vi.hoisted(() => ({
   warn: vi.fn(),
 }));
 
-vi.mock('@/lib/meta-capi', () => ({ trackDeposit: mocks.trackDeposit }));
+vi.mock('@/lib/meta-capi', () => ({
+  loadStoredCapiIdentity: vi.fn(async () => ({})),
+  persistFbTouch: vi.fn(async () => {}), trackDeposit: mocks.trackDeposit }));
 vi.mock('@/lib/telegram', () => ({
   tgPayment: mocks.tgPayment,
   tgBonusWithheld: mocks.tgBonusWithheld,
