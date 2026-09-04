@@ -69,6 +69,28 @@ never gets picked up twice. Update this in the same commit as the work.
   coverage reads high but the Purchase score is still 7.5, suspect
   normalisation. No metric comparisons across the 4 Sep boundary.
 
+- **International Nitro — parked design, agreed 4 Sep 2026** (build nothing
+  until Trip reopens it): Nigerians keep the cheaper Nitro; foreigners pay a
+  premium. The mechanism is **one padded exchange rate, not a second price
+  list**: the wallet and the whole catalogue stay in naira forever, and a
+  foreign-currency deposit (Flutterwave USD, and the crypto rail) credits the
+  wallet at Nitro's own sell rate set below mid-market — market ₦1,529/$,
+  credit at e.g. ₦1,300/$ ≈ +17% — so the premium follows the **payment
+  currency**, not nationality or IP, needs no detection, and extends to
+  GHS/KES/GBP as the same % over mid-market. One admin setting (fx sell rate
+  or premium %); "≈ $" display prices are computed at the padded rate so what
+  foreigners see is what they pay. **Premium % is undecided** — the ~15–20%
+  above is a placeholder for Trip to set. The signup gate lives at
+  `app/api/auth/signup/route.js:45` (rejects anything not `[789]`+9 digits):
+  opening it means generic E.164 (8–15 digits with country code), strict NG
+  validation kept for local-looking numbers, plus touches to `check-phone`,
+  the auth modal's +234 UI, and admin phone search; wa.me links, phone
+  uniqueness and the CAPI hasher already handle foreign numbers. **Sequence
+  when reopened:** 1) open the phone gate (small — it is also the demand
+  meter), 2) "≈ $" at the padded rate on pricing/order/add-funds (small),
+  3) Flutterwave USD collection crediting naira at the padded rate (medium),
+  4) never multi-currency wallets.
+
 - **Reseller API follow-ups** (v2 of the API, not started): drip-feed and
   multi-day parameters, webhooks, per-key IP allowlists. Brief:
   `docs/v2/reseller_api_brief.md`.
