@@ -32,8 +32,35 @@ export function useBodyScrollLock(locked) {
   }, [locked]);
 }
 
-export function Modal({ open, onClose, title, children, dark, maxWidth = 480, labelledBy, variant = "dialog", bare = false }) {
+// Intent tints for the header icon chip. Accent for ordinary actions, red for
+// destructive ones, green for good news — same semantics as buttons sitewide.
+const INTENT_CHIP = {
+  accent: dk => dk ? { background: "rgba(196,125,142,.16)", color: "#c47d8e" } : { background: "rgba(196,125,142,.09)", color: "#c47d8e" },
+  danger: dk => dk ? { background: "rgba(252,165,165,.12)", color: "#fca5a5" } : { background: "rgba(220,38,38,.07)", color: "#dc2626" },
+  success: dk => dk ? { background: "rgba(110,231,183,.12)", color: "#6ee7b7" } : { background: "rgba(5,150,105,.09)", color: "#059669" },
+};
+
+/** Modal action button in the shared semantic colours. */
+export function ModalBtn({ kind = "quiet", dark, className = "", style: styleOverride, ...props }) {
+  const style = kind === "primary" ? { background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", border: "none", boxShadow: "0 8px 22px rgba(196,125,142,.28)" }
+    : kind === "danger" ? { background: "#dc2626", color: "#fff", border: "none" }
+    : kind === "success" ? { background: dark ? "#10b981" : "#059669", color: "#fff", border: "none" }
+    : { background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", color: dark ? "#8b90a0" : "#757170", border: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)"}` };
+  return (
+    <button
+      type="button"
+      className={`font-[inherit] text-[13px] py-[9px] px-4 rounded-[10px] cursor-pointer whitespace-nowrap ${kind === "quiet" ? "font-bold" : "font-extrabold"} transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[.97] disabled:opacity-45 disabled:cursor-default ${FOCUS_RING} ${className}`}
+      style={{ ...style, ...styleOverride }}
+      {...props}
+    />
+  );
+}
+
+export function Modal({ open, onClose, title, subtitle, icon, intent = "accent", footer, children, dark, maxWidth = 480, labelledBy, variant = "dialog", bare = false }) {
   const sheet = variant === "sheet";
+  // The full anatomy — icon chip, title, subtitle, X, footer — renders when a
+  // dialog passes a title without `bare`. Bare callers keep their own layout.
+  const headered = !sheet && !bare && !!title;
   const panelRef = useRef(null);
   const restoreRef = useRef(null);
 
@@ -56,10 +83,13 @@ export function Modal({ open, onClose, title, children, dark, maxWidth = 480, la
   }, [open, onClose]);
 
   if (!open) return null;
+  const ink = dark ? "#f2efe9" : "#1c1b19";
+  const mut = dark ? "#8b90a0" : "#757170";
+  const line = dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)";
   return (
-    <div className={sheet ? "fixed inset-0 z-[300]" : "fixed inset-0 z-[300] flex items-center justify-center p-4"}>
+    <div className={sheet ? "fixed inset-0 z-[300]" : "fixed inset-0 z-[300] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-[6px]"}>
       <button type="button" aria-label="Close dialog" onClick={onClose}
-        className="absolute inset-0 border-none cursor-default" style={{ background: "rgba(0,0,0,.5)" }} />
+        className="absolute inset-0 border-none cursor-default" style={{ background: "rgba(0,0,0,.55)" }} />
       <div
         ref={panelRef}
         tabIndex={-1}
@@ -69,15 +99,36 @@ export function Modal({ open, onClose, title, children, dark, maxWidth = 480, la
         aria-labelledby={labelledBy}
         className={sheet
           ? `absolute inset-0 w-full h-full overflow-y-auto flex flex-col ${FOCUS_RING}`
-          : `relative w-full rounded-2xl max-h-[85vh] ${bare ? "overflow-hidden flex flex-col" : "p-5 overflow-y-auto"} ${FOCUS_RING}`}
+          : `relative w-full rounded-t-2xl rounded-b-none md:rounded-2xl max-h-[85vh] ${bare || headered ? "overflow-hidden flex flex-col" : "p-5 overflow-y-auto"} ${FOCUS_RING}`}
         style={{
           maxWidth: sheet ? undefined : maxWidth,
           overscrollBehavior: "contain",
-          background: dark ? "#16121a" : "#fdfcfb",
+          background: dark ? "#131728" : "#fff",
           border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`,
+          boxShadow: "0 24px 60px rgba(0,0,0,.25)",
         }}
       >
-        {children}
+        {headered ? (
+          <>
+            <div className="md:hidden w-[38px] h-1 rounded-sm mx-auto mt-2.5 shrink-0" style={{ background: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.14)" }} />
+            <div className="flex items-start gap-3 p-4 pb-0 shrink-0">
+              {icon && (
+                <span className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={(INTENT_CHIP[intent] || INTENT_CHIP.accent)(dark)}>
+                  {icon}
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="text-[15px] font-bold leading-tight" style={{ color: ink }}>{title}</div>
+                {subtitle && <div className="text-[12.5px] mt-0.5 leading-relaxed" style={{ color: mut }}>{subtitle}</div>}
+              </div>
+              <button type="button" onClick={onClose} aria-label="Close" className={`w-[30px] h-[30px] rounded-[9px] flex items-center justify-center shrink-0 cursor-pointer ${FOCUS_RING}`} style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${line}`, color: mut }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div className="px-4 py-3.5 overflow-y-auto min-h-0" style={{ color: ink }}>{children}</div>
+            {footer && <div className="flex flex-col-reverse md:flex-row gap-2 md:justify-end px-4 pb-4 pt-0.5 shrink-0">{footer}</div>}
+          </>
+        ) : children}
       </div>
     </div>
   );
