@@ -214,6 +214,7 @@ function serviceNote(s) {
   const parts = [n];
   if (s.refill) parts.push(s.tiers >= 3 ? 'refill on Standard and Premium' : 'refill');
   if (s.nigerian) parts.push('Nigerian accounts');
+  if (s.name?.includes('🇺🇸')) parts.push('American accounts');
   return parts.join(' · ');
 }
 
