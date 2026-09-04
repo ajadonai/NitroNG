@@ -136,6 +136,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
     "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828",
     "--bud": dark ? "#e0a458" : "#854F0B", "--budbg": dark ? "#2d2210" : "#fef7ed", "--std": dark ? "#7aa2f7" : "#185FA5", "--stdbg": dark ? "#0f1e30" : "#eef4fb", "--prm": dark ? "#a78bfa" : "#534AB7", "--prmbg": dark ? "#221535" : "#f5eef5",
     "--ng": dark ? "#4ade80" : "#16a34a", "--ngbg": dark ? "rgba(74,222,128,.12)" : "rgba(22,163,74,.1)",
+    "--us": dark ? "#f87171" : "#dc2626", "--usbg": dark ? "rgba(248,113,113,.13)" : "rgba(220,38,38,.09)",
   };
   const TC = { Budget: "bud", Standard: "std", Premium: "prm" };
   const totalTiers = groups.reduce((a, g) => a + g.tiers.length, 0);
@@ -205,7 +206,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
         <div className="mb-gh" role="button" tabIndex={0} onClick={() => toggleGroup(g.id)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleGroup(g.id); } }} aria-expanded={open} style={open ? openCardHeader(dark) : undefined}>
           <span className={`mb-chev${open ? " up" : ""}`} />
           <span className="mb-gi"><PlatformIcon platform={g.platform} dark={dark} size={30} /></span>
-          <span className="mb-gname"><b>{g.name}</b>{g.nigerian && <span className="mb-ng">NG</span>}<span className="mb-gtype">{g.type}</span></span>
+          <span className="mb-gname"><b>{g.name}</b>{g.nigerian && <span className="mb-ng">NG</span>}{g.name.includes('🇺🇸') && <span className="mb-us">US</span>}<span className="mb-gtype">{g.type}</span></span>
           <span className="mb-pills">{(hideOff ? tiers.filter(x => x.enabled) : tiers).map(ti => <span key={ti.id} className={`mb-pill ${TC[ti.tier] || "std"}${ti.enabled ? "" : " off"}`}><i>{ti.tier[0]}</i>{naira(ti.sellPer1k)}</span>)}{tiers.length === 0 && <span className="mb-pill empty">No tiers</span>}</span>
           <button type="button" className={`mb-tog${g.enabled ? "" : " o"}`} onClick={e => { e.stopPropagation(); act({ action: "update-group", groupId: g.id, enabled: !g.enabled }); }} aria-label={g.enabled ? "Switch group off" : "Switch group on"}><i /></button>
         </div>
@@ -314,6 +315,7 @@ const CSS = `
 .mb-gi{width:30px;height:30px;border-radius:9px;background:var(--soft);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
 .mb-gname{display:flex;align-items:center;gap:8px;min-width:0;flex:1}.mb-gname b{font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mb-gtype{font-size:11px;color:var(--dim)}
 .mb-ng{font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:2px 6px;border-radius:999px;background:var(--ngbg);color:var(--ng)}
+.mb-us{font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:2px 6px;border-radius:999px;background:var(--usbg);color:var(--us)}
 .mb-pills{display:flex;gap:5px;flex-shrink:0}.mb-pill{display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px}
 .mb-pill i{font-family:Outfit,sans-serif;font-size:9.5px;font-weight:800;font-style:normal;text-transform:uppercase}
 .mb-pill.bud{background:var(--budbg);color:var(--bud)}.mb-pill.std{background:var(--stdbg);color:var(--std)}.mb-pill.prm{background:var(--prmbg);color:var(--prm)}.mb-pill.off{opacity:.45;text-decoration:line-through}.mb-pill.empty{background:var(--soft);border:1px solid var(--line);color:var(--dim);font-family:Outfit,sans-serif;font-weight:500;padding:3px 8px}

@@ -293,7 +293,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
   const lowestPrice = Math.min(...svc.tiers.map(ti => ti.price));
   const lowestPer = svc.tiers.find(ti => ti.price === lowestPrice)?.per || "1K";
   const activeTier = isSel && selTier ? selTier : null;
-  const accent = svc.isPackage ? { light: "#1d4ed8", dark: "#60a5fa", bgL: "#eff6ff", bgD: "rgba(59,130,246,.12)", selBgL: "#dbeafe", selBgD: "#111d3a", shadow: "59,130,246" } : svc.ng ? { light: "#16a34a", dark: "#4ade80", bgL: "#e8f5ee", bgD: "rgba(30,80,60,.24)", selBgL: "#d0f0db", selBgD: "#122a1c", shadow: "22,163,74" } : null;
+  const accent = svc.isPackage ? { light: "#1d4ed8", dark: "#60a5fa", bgL: "#eff6ff", bgD: "rgba(59,130,246,.12)", selBgL: "#dbeafe", selBgD: "#111d3a", shadow: "59,130,246" } : svc.ng ? { light: "#16a34a", dark: "#4ade80", bgL: "#e8f5ee", bgD: "rgba(30,80,60,.24)", selBgL: "#d0f0db", selBgD: "#122a1c", shadow: "22,163,74" } : svc.us ? { light: "#dc2626", dark: "#f87171", bgL: "#fdeeee", bgD: "rgba(80,30,32,.24)", selBgL: "#fadada", selBgD: "#2a1216", shadow: "220,38,38" } : null;
   const handlePickTier = (tier, e) => { setExplOpen(false); onPickTier(tier, e); };
   const s = activeTier ? TS[activeTier.tier] : null;
   return (
@@ -653,6 +653,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           name: g.name,
           type: g.type?.toLowerCase() || "standard",
           ng: g.nigerian,
+          us: g.name.includes('🇺🇸'),
           description: g.description || (isReelViews ? 'For video/reel posts only — does not work on photo posts.' : null),
           isPackage: pkg,
           tiers: g.tiers.map(tier => ({
