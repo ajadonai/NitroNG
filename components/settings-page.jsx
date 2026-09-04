@@ -10,16 +10,10 @@ import { SITE } from "../lib/site";
 import { Avatar } from "./avatar";
 import { copyText } from '@/lib/clipboard';
 
-function SettingsModal({ open, onClose, title, dark, t, children }) {
+function SettingsModal({ open, onClose, title, subtitle, icon, dark, t, children }) {
   return (
-    <Modal open={open} onClose={onClose} dark={dark} maxWidth={480} title={title} bare>
-      <div className="flex items-center justify-between py-4 px-5 shrink-0" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
-        <div className="text-[15px] font-bold text-t-text">{title}</div>
-        <button onClick={onClose} aria-label="Close" className="border-none cursor-pointer p-1 bg-transparent text-t-text-muted">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <div className="px-5 py-4 overflow-y-auto min-h-0">{children}</div>
+    <Modal open={open} onClose={onClose} dark={dark} maxWidth={480} title={title} subtitle={subtitle} icon={icon}>
+      {children}
     </Modal>
   );
 }
@@ -286,7 +280,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
 
         </div>
         {/* ── PASSWORD MODAL ── */}
-        <SettingsModal open={pwModalOpen} onClose={() => setPwModalOpen(false)} title="Change password" dark={dark} t={t}>
+        <SettingsModal open={pwModalOpen} onClose={() => setPwModalOpen(false)} title="Change password" subtitle="Keep your account secure" icon={I_LOCK} dark={dark} t={t}>
           <div className="mb-3">
             <label htmlFor="pw-current" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">Current password</label>
             <input type="password" id="pw-current" autoComplete="current-password" value={curPw} onChange={e => setCurPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
@@ -303,7 +297,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         </SettingsModal>
 
         {/* ── NOTIFICATIONS MODAL ── */}
-        <SettingsModal open={notifModalOpen} onClose={() => setNotifModalOpen(false)} title="Notifications" dark={dark} t={t}>
+        <SettingsModal open={notifModalOpen} onClose={() => setNotifModalOpen(false)} title="Notifications" subtitle="Orders, promos, email" icon={I_BELL} dark={dark} t={t}>
           <div className="text-[13px] mb-4 text-t-text-muted">Control what alerts you receive.</div>
           {[
             ["Order updates", "Get notified when orders complete or fail", notifOrders, setNotifOrders, "notifOrders"],
@@ -321,7 +315,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         </SettingsModal>
 
         {/* ── SESSIONS MODAL ── */}
-        <SettingsModal open={sessionsModalOpen} onClose={() => setSessionsModalOpen(false)} title="Active sessions" dark={dark} t={t}>
+        <SettingsModal open={sessionsModalOpen} onClose={() => setSessionsModalOpen(false)} title="Active sessions" subtitle="Devices signed in to your account" icon={I_DEV} dark={dark} t={t}>
           <div className="text-[13px] mb-4 text-t-text-muted">Devices logged into your account. Max 1 web + 1 mobile.</div>
           {sessionsLoading ? (
             <SkelList dark={dark} rows={2} bare avatar="square" rowH={56} />

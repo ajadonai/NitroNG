@@ -885,21 +885,10 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       <Pagination total={total} page={oPage} setPage={setOPage} perPage={perPage} setPerPage={setPerPage} t={t} />
 
       {viewComments && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setViewComments(null)}>
-          <div className="absolute inset-0 bg-black/55" />
-          <div className="relative w-full max-w-md rounded-xl shadow-xl overflow-hidden" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
-              <div className="flex items-center gap-2">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                <span className="text-[13px] font-semibold text-t-text">Submitted comments</span>
-              </div>
-              <button onClick={() => setViewComments(null)} className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer border-none text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-            </div>
-            <div className="px-4 py-3 max-h-[60vh] overflow-y-auto">
-              <pre className="m-0 text-[13px] leading-[1.65] whitespace-pre-wrap break-words text-t-text-soft font-[inherit]">{viewComments}</pre>
-            </div>
-          </div>
-        </div>
+        <Modal open onClose={() => setViewComments(null)} dark={dark} maxWidth={448} title="Submitted comments"
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>}>
+          <pre className="m-0 text-[13px] leading-[1.65] whitespace-pre-wrap break-words text-t-text-soft font-[inherit]">{viewComments}</pre>
+        </Modal>
       )}
     </>
   );

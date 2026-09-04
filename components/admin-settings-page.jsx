@@ -2,29 +2,19 @@
 import { useEffect, useState } from "react";
 import { Bone } from "./skeleton";
 import { useConfirm } from "./confirm-dialog";
+import { Modal } from "./ui-primitives";
 import InlineAlert from "./inline-alert";
 import { useToast } from "./toast";
 import { SITE } from "../lib/site";
 import { SettingsRow as Row, SettingsSectionHead as SectionHead, I_LOCK, I_BELL, I_PULSE, I_OUT, I_CHEV, I_SUN, I_MOON, I_AUTO } from "./settings-page";
 
-function SettingsModal({ open, onClose, title, dark, t, children }) {
-  useEffect(() => {
-    if (open) document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, [open]);
-  if (!open) return null;
+// The shared Modal primitive carries the reference anatomy now — this wrapper
+// only keeps the page's historical call signature.
+function SettingsModal({ open, onClose, title, subtitle, icon, dark, t, children }) {
   return (
-    <div onClick={onClose} className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.55)", backdropFilter: "blur(6px)" }}>
-      <div onClick={e => e.stopPropagation()} className="w-full max-w-[480px] mx-4 rounded-2xl" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, boxShadow: "0 24px 48px rgba(0,0,0,.35)", maxHeight: "85vh", overflowY: "auto" }}>
-        <div className="flex items-center justify-between py-4 px-5" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="text-[16px] font-bold" style={{ color: t.text }}>{title}</div>
-          <button onClick={onClose} className="border-none cursor-pointer p-1" style={{ background: "none", color: t.textMuted }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <div className="px-5 py-4">{children}</div>
-      </div>
-    </div>
+    <Modal open={open} onClose={onClose} dark={dark} maxWidth={480} title={title} subtitle={subtitle} icon={icon}>
+      {children}
+    </Modal>
   );
 }
 
@@ -253,7 +243,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         <button onClick={saveProfile} disabled={profileSaving} className="adm-btn-primary" style={{ opacity: profileSaving ? .5 : 1 }}>{profileSaving ? "Saving…" : "Save changes"}</button>
       </SettingsModal>
 
-      <SettingsModal open={pwModalOpen} onClose={() => setPwModalOpen(false)} title="Change password" dark={dark} t={t}>
+      <SettingsModal open={pwModalOpen} onClose={() => setPwModalOpen(false)} title="Change password" subtitle="Your admin login" icon={I_LOCK} dark={dark} t={t}>
         {admPwMsg && <InlineAlert type={admPwMsg.type} dark={dark} className="mb-3">{admPwMsg.text}</InlineAlert>}
         <div className="mb-3">
           <label className="text-sm block mb-1" style={{ color: t.textMuted }}>Current Password</label>
@@ -345,7 +335,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         <button onClick={saveWinback} disabled={winbackSaving} className="adm-btn-primary" style={{ opacity: winbackSaving ? .5 : 1 }}>{winbackSaving ? "Saving..." : "Save Win-back Settings"}</button>
       </SettingsModal>
 
-      <SettingsModal open={notifModalOpen} onClose={() => setNotifModalOpen(false)} title="Notifications" dark={dark} t={t}>
+      <SettingsModal open={notifModalOpen} onClose={() => setNotifModalOpen(false)} title="Notifications" subtitle="What the team gets pinged about" icon={I_BELL} dark={dark} t={t}>
         <div className="text-[13px] mb-4" style={{ color: t.textMuted }}>Choose which events trigger alerts for you.</div>
         {notifPrefs && updateNotifPref ? (
           <div className="flex flex-col gap-3">

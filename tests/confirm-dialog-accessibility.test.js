@@ -109,7 +109,7 @@ describe('shared confirmation dialog accessibility wiring', () => {
     expect(source).toContain('aria-labelledby={titleId}');
     expect(source).toContain('aria-describedby={descriptionId}');
     expect(source).toContain('<h2 id={titleId}');
-    expect(source).toContain('<div id={descriptionId}>');
+    expect(source).toContain('<div id={descriptionId}');
   });
 
   it('starts on the safe action, supports Escape and restores the invoking control', () => {
@@ -123,6 +123,11 @@ describe('shared confirmation dialog accessibility wiring', () => {
   it('labels typed confirmation input and prevents dialog buttons submitting a parent form', () => {
     expect(source).toContain('<label htmlFor={confirmationInputId}');
     expect(source).toContain('id={confirmationInputId}');
-    expect(source.match(/type="button"/g)).toHaveLength(2);
+    // The action buttons are ModalBtn, which hardcodes type="button" in
+    // ui-primitives; the header X sets it explicitly here.
+    expect(source).toContain('type="button"');
+    expect(source).toContain('<ModalBtn');
+    const primitives = readFileSync('components/ui-primitives.jsx', 'utf8');
+    expect(primitives).toMatch(/function ModalBtn[\s\S]*?type="button"/);
   });
 });
