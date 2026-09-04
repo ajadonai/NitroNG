@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { SkelList } from "./skeleton";
 import { fN } from "../lib/format";
+import { Modal } from "./ui-primitives";
 
 // A daily feed of what moved the menu's prices: each day is one card, newest
 // first, and inside it the runs that caused the moves — the daily sync, a
@@ -35,18 +36,11 @@ function DetailModal({ change, onClose, dark, t }) {
     </div>
   );
   return (
-    <div onClick={onClose} className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: "rgba(0,0,0,.55)", backdropFilter: "blur(6px)" }}>
-      <div onClick={e => e.stopPropagation()} className="w-full max-w-[440px] mx-4 rounded-2xl" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, boxShadow: "0 24px 48px rgba(0,0,0,.35)", maxHeight: "85vh", overflowY: "auto" }}>
-        <div className="flex items-center justify-between py-4 px-5" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="min-w-0">
-            <div className="text-[15px] font-bold truncate" style={{ color: t.text }}>{change.groupName} — {change.tier}</div>
-            <div className="text-[12px] mt-0.5" style={{ color: t.textMuted }}>{SRC_LABEL[change.source] || change.source}{change.actor && change.actor !== "System" ? ` by ${change.actor}` : ""} · {dayLabel(change.createdAt)}, {timeOf(change.createdAt)}</div>
-          </div>
-          <button onClick={onClose} className="border-none cursor-pointer p-1 shrink-0" style={{ background: "none", color: t.textMuted }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-        <div className="px-5 py-2 pb-4">
+    <Modal open onClose={onClose} dark={dark} maxWidth={440}
+      title={`${change.groupName} — ${change.tier}`}
+      subtitle={`${SRC_LABEL[change.source] || change.source}${change.actor && change.actor !== "System" ? ` by ${change.actor}` : ""} · ${dayLabel(change.createdAt)}, ${timeOf(change.createdAt)}`}
+      icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}>
+      <div>
           <Fact label="Price on the site">
             <span className="m">{naira(change.oldSell)} → {naira(change.newSell)}</span>{" "}
             <em className="not-italic" style={{ color: p >= 0 ? (dark ? "#fcd34d" : "#b45309") : (dark ? "#6ee7b7" : "#0a7d54") }}>{fPct(p)}</em>
@@ -60,9 +54,8 @@ function DetailModal({ change, onClose, dark, t }) {
           {change.usdRate ? <Fact label="Rate used"><span className="m">$1 = ₦{change.usdRate.toLocaleString()}</span></Fact> : null}
           <Fact label="Platform">{change.platform}</Fact>
           {change.source === "manual" && <Fact label="How it moved">Price set by hand in Menu Builder</Fact>}
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

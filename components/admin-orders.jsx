@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from "react";
 import { SkelList } from "./skeleton";
-import { useBodyScrollLock } from "./ui-primitives";
+import { Modal, ModalBtn, useBodyScrollLock } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
@@ -237,59 +237,52 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
         </div>
       </>)}
       {resetTarget && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-[6px]" style={{ background: "rgba(0,0,0,.55)" }} onClick={() => { if (!resetLoading) setResetTarget(null); }}>
-          <div onClick={e => e.stopPropagation()} className="rounded-xl p-5 w-[320px]" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
-            <div className="text-[14px] font-semibold mb-1" style={{ color: t.text }}>Reset Batch #{resetTarget.batch}</div>
-            <div className="text-[12px] mb-3" style={{ color: t.textMuted }}>
-              Original: {resetTarget.qty} · Delivered: {resetTarget.qty - (resetTarget.remains ?? 0)} · Remaining: {resetTarget.remains ?? resetTarget.qty}
-            </div>
-            <label className="block text-[11px] font-semibold mb-1" style={{ color: t.textMuted }}>Quantity to re-dispatch</label>
-            <input type="number" min={1} max={resetTarget.qty} value={resetQty} onChange={e => setResetQty(e.target.value)} className="w-full rounded-lg py-2 px-3 text-[13px] mb-3 border-none outline-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.text }} />
-            {Number(resetQty) > resetTarget.qty && <div className="text-[11px] mb-2" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Cannot exceed original batch size ({resetTarget.qty})</div>}
-            <div className="flex gap-2">
-              <button disabled={resetLoading} onClick={() => setResetTarget(null)} className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted }}>Cancel</button>
-              <button disabled={resetLoading || !resetQty || Number(resetQty) < 1 || Number(resetQty) > resetTarget.qty} onClick={async () => {
-                setResetLoading(true);
-                try {
-                  const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reset_drip", orderId, dispatchId: resetTarget.id, quantity: Number(resetQty) }) });
-                  const data = await res.json();
-                  if (data.success) { toast?.success?.(data.message || "Bulk reset"); onRefresh?.(); } else { toast?.error?.(data.error || "Reset failed"); }
-                } catch { toast?.error?.("Reset failed"); }
-                setResetLoading(false);
-                setResetTarget(null);
-              }} className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer border-none" style={{ background: t.accent, color: "#fff", opacity: resetLoading || !resetQty || Number(resetQty) < 1 || Number(resetQty) > resetTarget.qty ? 0.4 : 1 }}>
-                {resetLoading ? "Resetting…" : "Reset"}
-              </button>
-            </div>
+        <Modal open onClose={() => { if (!resetLoading) setResetTarget(null); }} dark={dark} maxWidth={400}
+          title={`Reset batch #${resetTarget.batch}`} subtitle="Re-dispatches the undelivered part as a fresh batch."
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>}
+          footer={<>
+            <ModalBtn kind="quiet" dark={dark} disabled={resetLoading} onClick={() => setResetTarget(null)}>Cancel</ModalBtn>
+            <ModalBtn kind="primary" dark={dark} disabled={resetLoading || !resetQty || Number(resetQty) < 1 || Number(resetQty) > resetTarget.qty} onClick={async () => {
+              setResetLoading(true);
+              try {
+                const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reset_drip", orderId, dispatchId: resetTarget.id, quantity: Number(resetQty) }) });
+                const data = await res.json();
+                if (data.success) { toast?.success?.(data.message || "Bulk reset"); onRefresh?.(); } else { toast?.error?.(data.error || "Reset failed"); }
+              } catch { toast?.error?.("Reset failed"); }
+              setResetLoading(false);
+              setResetTarget(null);
+            }}>{resetLoading ? "Resetting…" : "Reset batch"}</ModalBtn>
+          </>}>
+          <div className="flex gap-4 py-2.5 px-3 rounded-[11px] mb-3" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
+            {[["Original", resetTarget.qty], ["Delivered", resetTarget.qty - (resetTarget.remains ?? 0)], ["Remaining", resetTarget.remains ?? resetTarget.qty]].map(([k, v]) => (
+              <div key={k}><span className="block text-[11px]" style={{ color: t.textMuted }}>{k}</span><b className="m block text-[14px] font-bold" style={{ color: t.text }}>{Number(v).toLocaleString()}</b></div>
+            ))}
           </div>
-        </div>
+          <label className="block text-[11px] font-extrabold uppercase tracking-[.8px] mb-1.5" style={{ color: t.textMuted }}>Quantity to re-dispatch</label>
+          <input type="number" min={1} max={resetTarget.qty} value={resetQty} onChange={e => setResetQty(e.target.value)} className="m w-full h-10 rounded-[10px] px-3 text-[14px] outline-none" style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)"}`, color: t.text }} />
+          {Number(resetQty) > resetTarget.qty && <div className="text-[11.5px] mt-2" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>Cannot exceed original batch size ({resetTarget.qty})</div>}
+        </Modal>
       )}
       {linkTarget && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-[6px]" style={{ background: "rgba(0,0,0,.55)" }} onClick={() => { if (!linkLoading) setLinkTarget(null); }}>
-          <div onClick={e => e.stopPropagation()} className="rounded-xl p-5 w-[340px]" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
-            <div className="text-[14px] font-semibold mb-1" style={{ color: t.text }}>Link Batch #{linkTarget.batch}</div>
-            <div className="text-[12px] mb-3" style={{ color: t.textMuted }}>
-              You found this batch running on the provider dashboard. Paste its order number — we confirm it with the provider before linking, then the status checker takes over.
-            </div>
-            <label className="block text-[11px] font-semibold mb-1" style={{ color: t.textMuted }}>Provider order number</label>
-            <input value={linkRef} onChange={e => setLinkRef(e.target.value.replace(/[^A-Za-z0-9-]/g, ""))} placeholder="e.g. 4667427" className="w-full rounded-lg py-2 px-3 text-[13px] mb-3 border-none outline-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.text }} />
-            <div className="flex gap-2">
-              <button disabled={linkLoading} onClick={() => setLinkTarget(null)} className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: t.textMuted }}>Cancel</button>
-              <button disabled={linkLoading || !linkRef.trim()} onClick={async () => {
-                setLinkLoading(true);
-                try {
-                  const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "link_batch", orderId, dispatchId: linkTarget.id, providerOrderId: linkRef.trim() }) });
-                  const data = await res.json();
-                  if (data.success) { toast?.success?.(data.message || "Batch linked"); onRefresh?.(); setLinkTarget(null); }
-                  else toast?.error?.(data.error || "Could not link");
-                } catch { toast?.error?.("Could not link"); }
-                setLinkLoading(false);
-              }} className="flex-1 py-2 rounded-lg text-[12px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(110,231,183,.9)" : "#059669", color: dark ? "#0a2416" : "#fff", opacity: linkLoading || !linkRef.trim() ? 0.4 : 1 }}>
-                {linkLoading ? "Linking…" : "Link batch"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <Modal open onClose={() => { if (!linkLoading) setLinkTarget(null); }} dark={dark} maxWidth={400} intent="success"
+          title={`Link batch #${linkTarget.batch}`} subtitle="You found this batch on the provider dashboard — we confirm it with the provider before linking, then the status checker takes over."
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>}
+          footer={<>
+            <ModalBtn kind="quiet" dark={dark} disabled={linkLoading} onClick={() => setLinkTarget(null)}>Cancel</ModalBtn>
+            <ModalBtn kind="success" dark={dark} disabled={linkLoading || !linkRef.trim()} onClick={async () => {
+              setLinkLoading(true);
+              try {
+                const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "link_batch", orderId, dispatchId: linkTarget.id, providerOrderId: linkRef.trim() }) });
+                const data = await res.json();
+                if (data.success) { toast?.success?.(data.message || "Batch linked"); onRefresh?.(); setLinkTarget(null); }
+                else toast?.error?.(data.error || "Could not link");
+              } catch { toast?.error?.("Could not link"); }
+              setLinkLoading(false);
+            }}>{linkLoading ? "Linking…" : "Link batch"}</ModalBtn>
+          </>}>
+          <label className="block text-[11px] font-extrabold uppercase tracking-[.8px] mb-1.5" style={{ color: t.textMuted }}>Provider order number</label>
+          <input value={linkRef} onChange={e => setLinkRef(e.target.value.replace(/[^A-Za-z0-9-]/g, ""))} placeholder="e.g. 4667427" className="m w-full h-10 rounded-[10px] px-3 text-[14px] outline-none" style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)"}`, color: t.text }} />
+        </Modal>
       )}
     </div>
   );
@@ -1025,20 +1018,16 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
       </div>
 
       {cancelPrompt && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-[6px]" style={{ background: "rgba(0,0,0,.55)" }} onClick={() => setCancelPrompt(null)}>
-          <div className="w-full max-w-[400px] mx-4 rounded-xl p-5" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
-            <div className="text-[15px] font-semibold mb-1" style={{ color: t.text }}>Cancel order {cancelPrompt.id}</div>
-            <div className="text-[12px] mb-4" style={{ color: t.textMuted }}>Customer: {cancelPrompt.user} · Charged: {fN(cancelPrompt.charge)}</div>
-            <div className="mb-4">
-              <label className="text-[11px] uppercase tracking-[1px] block mb-1.5" style={{ color: t.textMuted }}>Reason (optional)</label>
-              <textarea value={cancelNote} onChange={e => setCancelNote(e.target.value)} rows={3} className="w-full rounded-lg py-2.5 px-3 text-sm outline-none resize-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.text, fontFamily: "inherit" }} placeholder="e.g. Wrong link format, user requested..." autoFocus />
-            </div>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setCancelPrompt(null)} className="py-2 px-4 rounded-lg text-sm font-medium cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textSoft }}>Back</button>
-              <button onClick={doCancel} disabled={cancelSending} className="py-2 px-4 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.12)", color: dark ? "#fca5a5" : "#dc2626", opacity: cancelSending ? .5 : 1 }}>{cancelSending ? "Cancelling..." : "Cancel Order"}</button>
-            </div>
-          </div>
-        </div>
+        <Modal open onClose={() => setCancelPrompt(null)} dark={dark} maxWidth={400} intent="danger"
+          title={`Cancel order ${cancelPrompt.id}`} subtitle={`${cancelPrompt.user} · charged ${fN(cancelPrompt.charge)}`}
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>}
+          footer={<>
+            <ModalBtn kind="quiet" dark={dark} onClick={() => setCancelPrompt(null)}>Back</ModalBtn>
+            <ModalBtn kind="danger" dark={dark} disabled={cancelSending} onClick={doCancel}>{cancelSending ? "Cancelling…" : "Cancel order"}</ModalBtn>
+          </>}>
+          <label className="block text-[11px] font-extrabold uppercase tracking-[.8px] mb-1.5" style={{ color: t.textMuted }}>Reason (optional)</label>
+          <textarea value={cancelNote} onChange={e => setCancelNote(e.target.value)} rows={3} className="w-full rounded-[10px] py-2.5 px-3 text-sm outline-none resize-none" style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)"}`, color: t.text, fontFamily: "inherit" }} placeholder="e.g. Wrong link format, user requested..." />
+        </Modal>
       )}
 
       {refundPrompt && (() => {
@@ -1051,15 +1040,13 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
         const optBrd = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.10)";
         const confirmGreen = dark ? "#10b981" : "#059669";
         return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ background: dark ? "rgba(4,6,12,.55)" : "rgba(20,20,28,.42)", backdropFilter: "blur(3px)" }} onClick={() => setRefundPrompt(null)}>
-          <div className="w-full max-w-[400px] mx-4 rounded-[20px] p-[26px]" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}`, boxShadow: dark ? "0 30px 70px -20px rgba(0,0,0,.7)" : "0 30px 70px -24px rgba(0,0,0,.34)" }} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-1">
-              <span className="w-[34px] h-[34px] rounded-[11px] grid place-items-center shrink-0" style={{ background: amberBg, color: amber }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>
-              </span>
-              <div className="text-[18px] font-semibold" style={{ color: t.text, letterSpacing: "-.2px" }}>Refund order <span className="font-mono">{refundPrompt.id}</span></div>
-            </div>
-            <div className="text-[13.5px] mb-5" style={{ color: t.textMuted, marginLeft: 46 }}>{refundPrompt.user} · Charged <span className="font-semibold font-mono" style={{ color: t.textSoft }}>{fN(refundPrompt.charge)}</span></div>
+        <Modal open onClose={() => setRefundPrompt(null)} dark={dark} maxWidth={400} intent="warn"
+          title={`Refund order ${refundPrompt.id}`} subtitle={`${refundPrompt.user} · charged ${fN(refundPrompt.charge)}`}
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>}
+          footer={<>
+            <ModalBtn kind="quiet" dark={dark} onClick={() => setRefundPrompt(null)}>Cancel</ModalBtn>
+            <ModalBtn kind="success" dark={dark} disabled={refundSending || refundPctOf(refundPercent) <= 0} onClick={doRefund}>{refundSending ? "Processing…" : "Confirm refund"}</ModalBtn>
+          </>}>
 
             {alreadyRefunded > 0 && (
               <div className="text-[12px] py-2 px-3 rounded-[14px] mb-4 flex items-center gap-1.5" style={{ background: amberBg, border: `1px solid ${amberBrd}`, color: amber }}>
@@ -1087,12 +1074,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
               <div className="font-mono text-[30px] font-bold leading-none" style={{ color: amber, letterSpacing: "-.5px" }}>{fN(refundPctOf(refundPercent))}</div>
             </div>
 
-            <div className="flex gap-2.5">
-              <button onClick={() => setRefundPrompt(null)} className="flex-1 py-3 px-5 rounded-[11px] text-sm font-semibold cursor-pointer transition-all duration-150 hover:-translate-y-px" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>Cancel</button>
-              <button onClick={doRefund} disabled={refundSending || refundPctOf(refundPercent) <= 0} className="flex-1 py-3 px-5 rounded-[11px] text-sm font-semibold cursor-pointer border-none transition-all duration-150 hover:-translate-y-px" style={{ background: confirmGreen, color: dark ? "#04231a" : "#fff", boxShadow: dark ? "0 8px 22px -10px rgba(16,185,129,.5)" : "0 8px 22px -12px rgba(5,150,105,.55)", opacity: refundSending || refundPctOf(refundPercent) <= 0 ? .5 : 1 }}>{refundSending ? "Processing..." : "Confirm"}</button>
-            </div>
-          </div>
-        </div>
+        </Modal>
         );
       })()}
 
@@ -1100,10 +1082,13 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
         const rd = redispatchPrompt;
         const hasSwap = rd.tierServiceApiId && rd.tierServiceApiId !== rd.serviceApiId;
         return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-[6px]" style={{ background: "rgba(0,0,0,.55)" }} onClick={() => setRedispatchPrompt(null)}>
-          <div className="w-full max-w-[400px] mx-4 rounded-xl p-5" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
-            <div className="text-[15px] font-semibold mb-1" style={{ color: t.text }}>Re-dispatch {rd.id}</div>
-            <div className="text-[12px] mb-4" style={{ color: t.textMuted }}>Customer: {rd.user} · Qty: {(rd.quantity || 0).toLocaleString()}</div>
+        <Modal open onClose={() => setRedispatchPrompt(null)} dark={dark} maxWidth={400} intent="warn"
+          title={`Re-dispatch ${rd.id}`} subtitle={`${rd.user} · quantity ${(rd.quantity || 0).toLocaleString()}`}
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>}
+          footer={<>
+            <ModalBtn kind="quiet" dark={dark} onClick={() => setRedispatchPrompt(null)}>Cancel</ModalBtn>
+            <ModalBtn kind="warn" dark={dark} disabled={redispatchSending || !redispatchLink.trim()} onClick={doRedispatch}>{redispatchSending ? "Dispatching…" : "Re-dispatch"}</ModalBtn>
+          </>}>
             <div className="mb-4">
               <label className="text-[11px] uppercase tracking-[1px] block mb-1.5" style={{ color: t.textMuted }}>Link</label>
               <input type="url" value={redispatchLink} onChange={e => setRedispatchLink(e.target.value)} className="w-full rounded-lg py-2.5 px-3 text-sm outline-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.text, fontFamily: "inherit" }} placeholder="https://..." autoFocus />
@@ -1115,48 +1100,28 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                 <div className="flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>Service <span className="font-mono font-semibold">{rd.serviceApiId}</span> → <span className="font-mono font-semibold">{rd.tierServiceApiId}</span></div>
               )}
             </div>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setRedispatchPrompt(null)} className="py-2 px-4 rounded-lg text-sm font-medium cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textSoft }}>Cancel</button>
-              <button onClick={doRedispatch} disabled={redispatchSending || !redispatchLink.trim()} className="py-2 px-4 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,211,77,.2)" : "rgba(217,119,6,.12)", color: dark ? "#fcd34d" : "#d97706", opacity: redispatchSending || !redispatchLink.trim() ? .5 : 1 }}>{redispatchSending ? "Dispatching..." : "Re-dispatch"}</button>
-            </div>
-          </div>
-        </div>
+        </Modal>
         );
       })()}
 
       {editLinkPrompt && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-[6px]" style={{ background: "rgba(0,0,0,.55)" }} onClick={() => setEditLinkPrompt(null)}>
-          <div className="w-full max-w-[400px] mx-4 rounded-xl p-5" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${t.cardBorder}` }} onClick={e => e.stopPropagation()}>
-            <div className="text-[15px] font-semibold mb-1" style={{ color: t.text }}>Edit Link — {editLinkPrompt.id}</div>
-            <div className="text-[12px] mb-4" style={{ color: t.textMuted }}>Tracking params will be stripped automatically.</div>
-            <div className="mb-4">
-              <label className="text-[11px] uppercase tracking-[1px] block mb-1.5" style={{ color: t.textMuted }}>Link</label>
-              <input type="url" value={editLinkValue} onChange={e => setEditLinkValue(e.target.value)} className="w-full rounded-lg py-2.5 px-3 text-sm outline-none" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.text, fontFamily: "inherit" }} placeholder="https://..." autoFocus />
-            </div>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setEditLinkPrompt(null)} className="py-2 px-4 rounded-lg text-sm font-medium cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textSoft }}>Cancel</button>
-              <button onClick={doEditLink} disabled={editLinkSending || !editLinkValue.trim()} className="py-2 px-4 rounded-lg text-sm font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)", color: dark ? "#e8a0b2" : "#c47d8e", opacity: editLinkSending || !editLinkValue.trim() ? .5 : 1 }}>{editLinkSending ? "Saving..." : "Save Link"}</button>
-            </div>
-          </div>
-        </div>
+        <Modal open onClose={() => setEditLinkPrompt(null)} dark={dark} maxWidth={400}
+          title={`Edit link — ${editLinkPrompt.id}`} subtitle="Tracking params are stripped automatically."
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>}
+          footer={<>
+            <ModalBtn kind="quiet" dark={dark} onClick={() => setEditLinkPrompt(null)}>Cancel</ModalBtn>
+            <ModalBtn kind="primary" dark={dark} disabled={editLinkSending || !editLinkValue.trim()} onClick={doEditLink}>{editLinkSending ? "Saving…" : "Save link"}</ModalBtn>
+          </>}>
+          <label className="block text-[11px] font-extrabold uppercase tracking-[.8px] mb-1.5" style={{ color: t.textMuted }}>Link</label>
+          <input type="url" value={editLinkValue} onChange={e => setEditLinkValue(e.target.value)} className="w-full h-10 rounded-[10px] px-3 text-sm outline-none" style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)"}`, color: t.text, fontFamily: "inherit" }} placeholder="https://..." />
+        </Modal>
       )}
 
       {viewComments && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setViewComments(null)}>
-          <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.55)" }} />
-          <div className="relative w-full max-w-md rounded-xl shadow-xl overflow-hidden" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
-              <div className="flex items-center gap-2">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                <span className="text-[13px] font-semibold" style={{ color: t.text }}>Submitted comments</span>
-              </div>
-              <button onClick={() => setViewComments(null)} className="w-7 h-7 rounded-lg flex items-center justify-center cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-            </div>
-            <div className="px-4 py-3 max-h-[60vh] overflow-y-auto">
-              <pre className="m-0 text-[13px] leading-[1.65] whitespace-pre-wrap break-words" style={{ color: t.textSoft, fontFamily: "inherit" }}>{viewComments}</pre>
-            </div>
-          </div>
-        </div>
+        <Modal open onClose={() => setViewComments(null)} dark={dark} maxWidth={448} title="Submitted comments"
+          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>}>
+          <pre className="m-0 text-[13px] leading-[1.65] whitespace-pre-wrap break-words" style={{ color: t.textSoft, fontFamily: "inherit" }}>{viewComments}</pre>
+        </Modal>
       )}
 
     </>

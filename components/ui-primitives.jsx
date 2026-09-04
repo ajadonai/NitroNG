@@ -38,6 +38,7 @@ const INTENT_CHIP = {
   accent: dk => dk ? { background: "rgba(196,125,142,.16)", color: "#c47d8e" } : { background: "rgba(196,125,142,.09)", color: "#c47d8e" },
   danger: dk => dk ? { background: "rgba(252,165,165,.12)", color: "#fca5a5" } : { background: "rgba(220,38,38,.07)", color: "#dc2626" },
   success: dk => dk ? { background: "rgba(110,231,183,.12)", color: "#6ee7b7" } : { background: "rgba(5,150,105,.09)", color: "#059669" },
+  warn: dk => dk ? { background: "rgba(251,191,36,.12)", color: "#fcd34d" } : { background: "rgba(217,119,6,.08)", color: "#b45309" },
 };
 
 /** Modal action button in the shared semantic colours. */
@@ -45,6 +46,7 @@ export function ModalBtn({ kind = "quiet", dark, className = "", style: styleOve
   const style = kind === "primary" ? { background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", border: "none", boxShadow: "0 8px 22px rgba(196,125,142,.28)" }
     : kind === "danger" ? { background: "#dc2626", color: "#fff", border: "none" }
     : kind === "success" ? { background: dark ? "#10b981" : "#059669", color: "#fff", border: "none" }
+    : kind === "warn" ? { background: "#d97706", color: "#fff", border: "none" }
     : { background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", color: dark ? "#8b90a0" : "#757170", border: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)"}` };
   return (
     <button
