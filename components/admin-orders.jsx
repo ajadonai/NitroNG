@@ -83,8 +83,8 @@ function CopyAllIds({ ids, dark }) {
 }
 
 function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
-  const [openDays, setOpenDays] = useState({});
   const [open, setOpen] = useState(false);
+  const [selDay, setSelDay] = useState(null);
   const [resetTarget, setResetTarget] = useState(null);
   const [resetQty, setResetQty] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
@@ -94,6 +94,8 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
   useBodyScrollLock(!!resetTarget || !!linkTarget);
   const toast = useToast();
   const confirm = useConfirm();
+
+  const tz = dripConfig?.timezone;
   const allIds = dispatches.filter(d => d.apiOrderId).map(d => d.apiOrderId);
   const doneCount = dispatches.filter(d => d.status === "completed" || d.status === "partial").length;
   const days = {};
@@ -102,94 +104,138 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
     if (!days[day]) days[day] = [];
     days[day].push(d);
   }
-  const dayKeys = Object.keys(days).sort((a, b) => a - b);
-  const toggleDay = (day) => setOpenDays(prev => ({ ...prev, [day]: !prev[day] }));
-  const statusLabel = (s) => s === "completed" ? "Completed" : s === "processing" ? "Processing" : s === "failed" ? "Failed" : s === "partial" ? "Partial" : "Pending";
+  const maxDay = Math.max(...Object.keys(days).map(Number));
+  const fmtDayDate = (batches) => batches?.[0]?.scheduled ? new Date(batches[0].scheduled).toLocaleDateString("en-GB", { day: "numeric", month: "short", ...(tz ? { timeZone: tz } : {}) }) : "";
+  const todayStr = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", ...(tz ? { timeZone: tz } : {}) });
+  const dayDone = (b) => b.filter(d => d.status === "completed" || d.status === "partial").length;
+  const isTimedOut = (d) => d.error?.startsWith("[TIMEOUT]") || d.error?.startsWith("[VERIFY_STALE]");
+  const statusLabel = (d) => isTimedOut(d) ? "Timed out" : d.status === "completed" ? "Completed" : (d.status === "processing" || d.status === "dispatching") ? "Processing" : d.status === "failed" ? "Failed" : d.status === "partial" ? "Partial" : "Queued";
+  // The day shown when the card opens: today's if the drip runs today,
+  // otherwise the first day with work left, otherwise the last day.
+  const defaultDay = (() => {
+    for (let n = 1; n <= maxDay; n++) if (days[n] && fmtDayDate(days[n]) === todayStr) return n;
+    for (let n = 1; n <= maxDay; n++) if (days[n] && dayDone(days[n]) < days[n].length) return n;
+    return maxDay;
+  })();
+  const shownDay = selDay && days[selDay] ? selDay : defaultDay;
+  const shownBatches = days[shownDay] || [];
+  const shownIds = shownBatches.filter(d => d.apiOrderId).map(d => d.apiOrderId);
   const cfgParts = [];
   if (dripConfig) {
-    if (dripConfig.curve && dripConfig.curve !== "even") cfgParts.push(dripConfig.curve);
-    if (dripConfig.window) cfgParts.push(`${dripConfig.window.startHour}:00–${dripConfig.window.endHour}:00`);
-    if (dripConfig.pauseDay) cfgParts.push(`pause d${dripConfig.pauseDay}`);
-    if (dripConfig.timezone) cfgParts.push(dripConfig.timezone.split("/").pop());
+    if (dripConfig.curve && dripConfig.curve !== "even") cfgParts.push(dripConfig.curve.charAt(0).toUpperCase() + dripConfig.curve.slice(1));
+    if (dripConfig.window) cfgParts.push(`${dripConfig.window.startHour}:00\u2013${dripConfig.window.endHour}:00`);
+    if (tz) cfgParts.push(`${tz.split("/").pop().replace(/_/g, " ")} time`);
   }
+  const segColor = (d) => d.status === "completed" ? (dark ? "#6ee7b7" : "#059669") : d.status === "partial" ? (dark ? "#fbbf24" : "#d97706") : d.status === "failed" ? (dark ? "#fca5a5" : "#dc2626") : (d.status === "processing" || d.status === "dispatching") ? t.accent : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)");
+  const line = dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)";
 
   return (
-    <div className="mt-2 mb-2 rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.14)"}` }}>
-      <div role="button" tabIndex={0} aria-expanded={open} onClick={() => setOpen(v => !v)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(v => !v); } }} className="flex items-center justify-between py-2 px-2.5 cursor-pointer" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.5px]" style={{ color: t.accent }}>Drip · {doneCount}/{dispatches.length} batches · {dayKeys.length} day{dayKeys.length === 1 ? "" : "s"}{cfgParts.length > 0 ? ` · ${cfgParts.join(" · ")}` : ""}</span>
-        <CopyAllIds ids={allIds} dark={dark} />
+    <div className="mt-2 mb-2 rounded-xl overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.2)"}` }}>
+      {/* Header — collapsed it carries a mini bar, one segment per batch */}
+      <div role="button" tabIndex={0} aria-expanded={open} onClick={() => setOpen(v => !v)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(v => !v); } }} className="flex items-center gap-2.5 py-2.5 px-3 cursor-pointer" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>
+        <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.16)" : "#fff", border: `1px solid ${dark ? "rgba(196,125,142,.3)" : "rgba(196,125,142,.25)"}`, color: t.accent }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a7 7 0 007-7c0-4-7-13-7-13S5 11 5 15a7 7 0 007 7z"/></svg>
+        </span>
+        <span className="min-w-0 shrink-0">
+          <span className="block text-[12.5px] font-bold leading-tight" style={{ color: t.text }}>Drip delivery</span>
+          <span className="block text-[11px] mt-px" style={{ color: t.textMuted }}>{doneCount} of {dispatches.length} batches sent · day {defaultDay} of {maxDay}</span>
+        </span>
+        {!open ? (
+          <span className="flex-1 flex gap-[3px] min-w-[60px] mx-1" aria-hidden>
+            {dispatches.map((d, i) => <i key={d.id || i} className="flex-1 h-[6px] rounded-[3px] min-w-[2px]" style={{ background: segColor(d) }} />)}
+          </span>
+        ) : <span className="flex-1" />}
+        <span onClick={e => e.stopPropagation()} className="shrink-0"><CopyAllIds ids={allIds} dark={dark} /></span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform" style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}><polyline points="6 9 12 15 18 9"/></svg>
       </div>
-      {open && dayKeys.map(day => {
-        const batches = days[day];
-        const dayIds = batches.filter(d => d.apiOrderId).map(d => d.apiOrderId);
-        const dayDone = batches.filter(d => d.status === "completed" || d.status === "partial").length;
-        const isOpen = openDays[day];
-        const dayDate = batches[0]?.scheduled ? new Date(batches[0].scheduled).toLocaleDateString("en-GB", { day: "numeric", month: "short", ...(dripConfig?.timezone ? { timeZone: dripConfig.timezone } : {}) }) : "";
-        return (
-          <div key={day}>
-            <div onClick={() => toggleDay(day)} className="w-full flex items-center gap-2 py-1.5 px-2.5 text-[11px] cursor-pointer" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}`, color: t.text }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform" style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}><polyline points="9 18 15 12 9 6"/></svg>
-              <span className="font-semibold">Day {day}</span>
-              {dayDate && <span style={{ color: t.textMuted }}>{dayDate}</span>}
-              <span className="py-0.5 px-1.5 rounded text-[10px] font-semibold" style={{ background: dayDone === batches.length ? (dark ? "#0a2416" : "#ecfdf5") : (dark ? "rgba(250,204,21,.08)" : "#fffbeb"), color: dayDone === batches.length ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fcd34d" : "#d97706") }}>{dayDone}/{batches.length}</span>
-              <span className="ml-auto flex items-center gap-1.5">
-                {dayIds.length > 0 && dayKeys.length > 1 && <CopyAllIds ids={dayIds} dark={dark} />}
+      {open && (<>
+        {/* Day strip — a chip per day; a day the curve skips shows as Pause */}
+        <div className="flex gap-1.5 py-2.5 px-3 overflow-x-auto" style={{ borderTop: `1px solid ${line}`, background: dark ? "rgba(0,0,0,.12)" : "#fff" }}>
+          {Array.from({ length: maxDay }, (_, i) => i + 1).map(n => {
+            const b = days[n];
+            if (!b) return (
+              <span key={n} className="shrink-0 rounded-[9px] py-1.5 px-2.5 opacity-50" style={{ border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.09)"}` }}>
+                <b className="block text-[11px] font-extrabold" style={{ color: t.text }}>Day {n}</b>
+                <span className="block text-[10px]" style={{ color: t.textMuted }}>Pause</span>
               </span>
-            </div>
-            {isOpen && (
-              <div style={{ background: dark ? "rgba(0,0,0,.15)" : "rgba(0,0,0,.02)" }}>
-                {batches.map((d, i) => {
-                  const bDone = d.status === "completed";
-                  const bProcessing = d.status === "processing" || d.status === "dispatching";
-                  const bPartial = d.status === "partial";
-                  const bFailed = d.status === "failed";
-                  const bPending = d.status === "pending";
-                  const barColor = bDone ? (dark ? "#6ee7b7" : "#059669") : bPartial ? (dark ? "#fbbf24" : "#d97706") : bFailed ? (dark ? "#fca5a5" : "#dc2626") : "#c47d8e";
-                  return (
-                  <div key={d.id || i} className="py-2 px-2.5 pl-7" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.03)"}` }}>
-                    <div className="flex items-center gap-2 text-[11px]">
-                      <span className="shrink-0 w-5 text-center font-semibold" style={{ color: t.textMuted }}>#{d.batch}</span>
-                      <span className="shrink-0 w-12 font-semibold" style={{ color: t.text }}>{d.qty?.toLocaleString()}</span>
-                      <span className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold" style={{ background: sBg(statusLabel(d.status), dark), color: sClr(statusLabel(d.status), dark) }}>{d.status}</span>
-                      {d.error?.startsWith('reset:') && <span className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent }}>retry</span>}
-                      {d.apiOrderId ? <CopyId value={d.apiOrderId} dark={dark} size="sm" /> : <span style={{ color: t.textMuted }}>—</span>}
-                      {/* A timed-out batch blocks Reset and Dispatch alike, since we cannot
-                          tell whether the provider took it. The admin checks the provider
-                          dashboard and answers either way: Link attaches the order that IS
-                          there; Reconcile records that it is NOT. */}
-                      {(d.error?.startsWith("[TIMEOUT]") || d.error?.startsWith("[VERIFY_STALE]")) ? (
-                        <>
-                          {d.error?.startsWith("[TIMEOUT]") && !d.apiOrderId && (
-                            <button onClick={() => { setLinkTarget(d); setLinkRef(""); }} className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.08)", color: dark ? "#6ee7b7" : "#059669" }}>Link</button>
-                          )}
-                          <button onClick={async () => {
-                            const ok = await confirm({
-                              title: "Confirm with provider",
-                              message: `Batch #${d.batch} timed out, so we cannot tell whether the provider received it.\n\nOnly continue if you have searched the provider dashboard and this order is NOT there. If it is there, use Link instead — resetting would send it twice.`,
-                              confirmLabel: "It's not there",
-                            });
-                            if (!ok) return;
-                            const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reconcile_drip", orderId, dispatchId: d.id }) });
-                            const data = await res.json().catch(() => ({}));
-                            if (res.ok) { toast.success(data.message || "Batch cleared"); onRefresh?.(); }
-                            else toast.error(data.error || "Could not reconcile");
-                          }} className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>Reconcile</button>
-                        </>
-                      ) : (bPartial || bFailed) && <button onClick={() => { setResetTarget(d); setResetQty(String(d.remains != null ? d.remains : d.qty)); }} className="shrink-0 py-0.5 px-1.5 rounded text-[10px] font-semibold cursor-pointer border-none" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent }}>Reset</button>}
-                      <span className="ml-auto shrink-0" style={{ color: t.textMuted }}>{d.scheduled ? new Date(d.scheduled).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", ...(dripConfig?.timezone ? { timeZone: dripConfig.timezone } : {}) }) : ""}</span>
-                    </div>
-                    {!bPending && (
-                      <div className="mt-1.5 ml-7 h-1 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)" }}>
-                        <div className="h-full rounded-full" style={{ width: bProcessing ? "60%" : bDone ? "100%" : bPartial ? `${d.qty && d.remains != null ? Math.round(((d.qty - d.remains) / d.qty) * 100) : 50}%` : "100%", background: barColor, ...(bProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />
-                      </div>
-                    )}
-                  </div>);
-                })}
-              </div>
-            )}
+            );
+            const done = dayDone(b), all = done === b.length, today = fmtDayDate(b) === todayStr, queued = b.every(d => d.status === "pending"), sel = n === shownDay;
+            return (
+              <button key={n} type="button" onClick={() => setSelDay(n)} className="shrink-0 rounded-[9px] py-1.5 px-2.5 text-left cursor-pointer border-0" style={{
+                border: `1px solid ${all ? (dark ? "rgba(110,231,183,.35)" : "rgba(5,150,105,.3)") : today ? (dark ? "rgba(196,125,142,.45)" : "rgba(196,125,142,.4)") : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.09)")}`,
+                background: all ? (dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.05)") : today ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)") : "transparent",
+                boxShadow: sel ? `0 0 0 2px ${dark ? "rgba(196,125,142,.35)" : "rgba(196,125,142,.3)"}` : "none",
+              }}>
+                <b className="block text-[11px] font-extrabold" style={{ color: t.text }}>Day {n}</b>
+                <span className="block text-[10px]" style={{ color: t.textMuted }}>{today ? "Today" : fmtDayDate(b)}</span>
+                <em className="block not-italic text-[10.5px] font-bold mt-1" style={{ color: all ? (dark ? "#6ee7b7" : "#059669") : today ? t.accent : t.textMuted }}>{all ? `${done}/${b.length} \u2713` : queued ? `${b.length} queued` : `${done}/${b.length}`}</em>
+              </button>
+            );
+          })}
+        </div>
+        {cfgParts.length > 0 && (
+          <div className="flex gap-1.5 flex-wrap px-3 pb-2.5" style={{ background: dark ? "rgba(0,0,0,.12)" : "#fff" }}>
+            {cfgParts.map(p => <span key={p} className="text-[10px] font-bold py-[2px] px-2 rounded-full" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}`, color: t.textMuted }}>{p}</span>)}
           </div>
-        );
-      })}
+        )}
+        {/* The selected day's batches */}
+        <div className="flex items-center gap-2 py-2 px-3 text-[11.5px]" style={{ borderTop: `1px solid ${line}`, background: dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)" }}>
+          <b style={{ color: t.text }}>Day {shownDay}</b>
+          <span style={{ color: t.textMuted }}>{fmtDayDate(shownBatches) === todayStr ? "Today" : fmtDayDate(shownBatches)}</span>
+          <span className="py-0.5 px-2 rounded-full text-[10px] font-extrabold" style={{ background: dayDone(shownBatches) === shownBatches.length ? (dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)") : (dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.07)"), color: dayDone(shownBatches) === shownBatches.length ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fcd34d" : "#d97706") }}>{dayDone(shownBatches)}/{shownBatches.length} sent</span>
+          {shownIds.length > 0 && maxDay > 1 && <span className="ml-auto" onClick={e => e.stopPropagation()}><CopyAllIds ids={shownIds} dark={dark} /></span>}
+        </div>
+        <div style={{ background: dark ? "rgba(0,0,0,.12)" : "#fff" }}>
+          {shownBatches.map((d, i) => {
+            const bDone = d.status === "completed";
+            const bProcessing = d.status === "processing" || d.status === "dispatching";
+            const bPartial = d.status === "partial";
+            const bFailed = d.status === "failed";
+            const bPending = d.status === "pending";
+            const label = statusLabel(d);
+            const barColor = bDone ? (dark ? "#6ee7b7" : "#059669") : bPartial ? (dark ? "#fbbf24" : "#d97706") : bFailed ? (dark ? "#fca5a5" : "#dc2626") : "#c47d8e";
+            return (
+            <div key={d.id || i} className="py-2 px-3" style={{ borderTop: `1px solid ${line}` }}>
+              <div className="flex items-center gap-2 text-[11.5px] flex-wrap">
+                <span className="m shrink-0 w-6 font-bold" style={{ color: dark ? "#5c6170" : "#a19b93" }}>#{d.batch}</span>
+                <span className="m shrink-0 w-14 font-bold" style={{ color: t.text }}>{d.qty?.toLocaleString()}</span>
+                <span className="shrink-0 py-0.5 px-2 rounded-full text-[10px] font-extrabold" style={label === "Timed out" ? { background: dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" } : { background: sBg(label, dark), color: sClr(label, dark) }}>{label}</span>
+                {d.error?.startsWith('reset:') && <span className="shrink-0 py-0.5 px-2 rounded-full text-[10px] font-extrabold" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent }}>Retry</span>}
+                {d.apiOrderId ? <CopyId value={d.apiOrderId} dark={dark} size="sm" /> : <span style={{ color: t.textMuted }}>—</span>}
+                {/* A timed-out batch blocks Reset and Dispatch alike, since we cannot
+                    tell whether the provider took it. The admin checks the provider
+                    dashboard and answers either way: Link attaches the order that IS
+                    there; Reconcile records that it is NOT. */}
+                {isTimedOut(d) ? (
+                  <>
+                    {d.error?.startsWith("[TIMEOUT]") && !d.apiOrderId && (
+                      <button onClick={() => { setLinkTarget(d); setLinkRef(""); }} className="shrink-0 py-1 px-2.5 rounded-lg text-[10.5px] font-extrabold cursor-pointer border-none" style={{ background: dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.08)", color: dark ? "#6ee7b7" : "#059669" }}>Link</button>
+                    )}
+                    <button onClick={async () => {
+                      const ok = await confirm({
+                        title: "Confirm with provider",
+                        message: `Batch #${d.batch} timed out, so we cannot tell whether the provider received it.\n\nOnly continue if you have searched the provider dashboard and this order is NOT there. If it is there, use Link instead \u2014 resetting would send it twice.`,
+                        confirmLabel: "It's not there",
+                      });
+                      if (!ok) return;
+                      const res = await fetch("/api/admin/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reconcile_drip", orderId, dispatchId: d.id }) });
+                      const data = await res.json().catch(() => ({}));
+                      if (res.ok) { toast.success(data.message || "Batch cleared"); onRefresh?.(); }
+                      else toast.error(data.error || "Could not reconcile");
+                    }} className="shrink-0 py-1 px-2.5 rounded-lg text-[10.5px] font-extrabold cursor-pointer border-none" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fcd34d" : "#d97706" }}>Reconcile</button>
+                  </>
+                ) : (bPartial || bFailed) && <button onClick={() => { setResetTarget(d); setResetQty(String(d.remains != null ? d.remains : d.qty)); }} className="shrink-0 py-1 px-2.5 rounded-lg text-[10.5px] font-extrabold cursor-pointer border-none" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)", color: t.accent }}>Reset</button>}
+                <span className="m ml-auto shrink-0" style={{ color: t.textMuted }}>{d.scheduled ? new Date(d.scheduled).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", ...(tz ? { timeZone: tz } : {}) }) : ""}</span>
+              </div>
+              {!bPending && (
+                <div className="mt-1.5 ml-8 h-[3px] rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)" }}>
+                  <div className="h-full rounded-full" style={{ width: bProcessing ? "60%" : bDone ? "100%" : bPartial ? `${d.qty && d.remains != null ? Math.round(((d.qty - d.remains) / d.qty) * 100) : 50}%` : "100%", background: barColor, ...(bProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />
+                </div>
+              )}
+            </div>);
+          })}
+        </div>
+      </>)}
       {resetTarget && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center backdrop-blur-[6px]" style={{ background: "rgba(0,0,0,.55)" }} onClick={() => { if (!resetLoading) setResetTarget(null); }}>
           <div onClick={e => e.stopPropagation()} className="rounded-xl p-5 w-[320px]" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
