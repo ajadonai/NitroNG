@@ -91,6 +91,24 @@ never gets picked up twice. Update this in the same commit as the work.
   3) Flutterwave USD collection crediting naira at the padded rate (medium),
   4) never multi-currency wallets.
 
+- **Landing redesign v2 — parked, Trip not yet impressed** (4 Sep 2026): the
+  full build lives on local branch `landing-v2-wip` (commit `d1838b9f`, never
+  pushed); the design mock is artifact `213efb73`. What it contains: a
+  one-viewport fold (sticky nav with centred links and announcement bar above,
+  hero with a working order-starter widget priced from `/api/pricing`, platform
+  marquee, clean stat band), Why Nitro with the five feature cards and both
+  product screenshots, priced platform list, three steps, pricing cards,
+  resellers section with the Emeka quote, single blush pull-quote, plum closer,
+  existing footer; fully theme-tokenised (light and dark verified), trust line,
+  gift-icon CTA, height-stepped fold, no em dashes in copy, honest platform
+  count (`uniquePlatforms`, fixing the old 152+ groups-as-platforms bug).
+  Standing taste notes from the rounds: no duplicated stats or CTAs, bare-number
+  stat band not cards, icons not text and positioned in true empty zones,
+  hamburger only below desktop, login prominent but not oversized, sections must
+  not blend (alternating surfaces), richness over minimalism below the fold.
+  Next session: either iterate on the branch or restart the design; the current
+  production landing is untouched.
+
 - **Reseller API follow-ups** (v2 of the API, not started): drip-feed and
   multi-day parameters, webhooks, per-key IP allowlists. Brief:
   `docs/v2/reseller_api_brief.md`.
