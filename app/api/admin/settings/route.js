@@ -17,7 +17,7 @@ const ALLOWED_KEYS = new Set([
   'discord_bot_url', 'discord_bot_url_premium',
   'outreach_paused',
   'social_instagram', 'social_twitter',
-  'social_whatsapp_support', 'social_whatsapp_channel', 'social_telegram_support',
+  'social_whatsapp_support', 'social_whatsapp_reseller', 'social_whatsapp_channel', 'social_telegram_support',
   'site_email_general', 'site_email_support',
   'notification_history',
   'winback30_pct', 'winback30_min_naira', 'winback30_cap_naira',
