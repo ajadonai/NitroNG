@@ -860,7 +860,11 @@ const US_CSS = `
 .us-pg{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}
 .us-pgn{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap}
 .us-empty{padding:28px 14px;text-align:center;font-size:13px;color:var(--mut)}
-.us-dr{background:var(--card);border-left:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:14px;position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);z-index:999;overflow:auto;box-shadow:-12px 0 40px rgba(0,0,0,.2);min-width:0}
+.us-dr{background:var(--card);border-left:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:14px;position:fixed;top:0;right:0;bottom:0;height:100dvh;width:min(440px,100%);z-index:999;overflow:auto;box-shadow:-12px 0 40px rgba(0,0,0,.2);min-width:0}
+/* A scroll container swallows its own bottom padding once content overflows, and
+   mobile browser chrome eats the last rows of a bottom-anchored drawer — this
+   spacer keeps the transactions pagination reachable at the end of the scroll. */
+.us-dr::after{content:"";display:block;flex-shrink:0;height:28px}
 .us-grab{display:none}
 .us-dh{display:flex;align-items:center;gap:12px;min-width:0}
 .us-dn{display:flex;flex-direction:column;min-width:0;flex:1}.us-dn b{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
