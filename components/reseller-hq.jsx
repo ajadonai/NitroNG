@@ -128,7 +128,7 @@ function ProspectInner() {
   const [waNum, setWaNum] = useState(FALLBACK_WA);
   useEffect(() => {
     fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(d => {
-      const n = d.settings?.social_whatsapp_support?.replace(/\D/g, '');
+      const n = (d.settings?.social_whatsapp_reseller || d.settings?.social_whatsapp_support)?.replace(/\D/g, '');
       if (n) setWaNum(n);
     }).catch(() => {});
   }, []);
@@ -183,7 +183,7 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
       setRates(rows);
     }).catch(() => {});
   }, []);
-  const waNum = (socialLinks?.social_whatsapp_support || FALLBACK_WA).replace(/\D/g, '');
+  const waNum = (socialLinks?.social_whatsapp_reseller || socialLinks?.social_whatsapp_support || FALLBACK_WA).replace(/\D/g, '');
   const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(wholesale ? WA_FULL : WA_TEXT)}`;
   const masked = key ? `${key.slice(0, 8)}${'•'.repeat(12)}${key.slice(-4)}` : '';
   const copyKey = () => { if (!key) return; try { copyText(key); toast.success('API key copied'); } catch {} };

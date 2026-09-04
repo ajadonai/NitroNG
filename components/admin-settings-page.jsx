@@ -58,7 +58,7 @@ const I_GIFT = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strok
 const I_BROOM = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 3l-7 7M4 21l6-6M9 15l-3-3 6-6 3 3z"/><path d="M4 21h5l2-2-5-5-2 2z"/></svg>;
 
 export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, setDark, onLogout, notifPrefs, updateNotifPref }) {
-  const [social, setSocial] = useState({ social_instagram: "", social_twitter: "", social_whatsapp_support: "", social_whatsapp_channel: "", social_telegram_support: "", social_tiktok: "", discord_bot_url: "", discord_bot_url_premium: "" });
+  const [social, setSocial] = useState({ social_instagram: "", social_twitter: "", social_whatsapp_support: "", social_whatsapp_reseller: "", social_whatsapp_channel: "", social_telegram_support: "", social_tiktok: "", discord_bot_url: "", discord_bot_url_premium: "" });
   const [emails, setEmails] = useState({ site_email_general: "", site_email_support: "" });
   const [socialLoading, setSocialLoading] = useState(true);
   const [socialSaving, setSocialSaving] = useState(false);
@@ -293,7 +293,8 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
           ["social_instagram", "Instagram Handle", "Nitro.ng", "Handle, @handle, or full URL — all work"],
           ["social_twitter", "X / Twitter Handle", "TheNitroNG", "Handle, @handle, or full URL — all work"],
           ["social_tiktok", "TikTok Handle", "nitro.ng", "Handle, @handle, or full URL — all work"],
-          ["social_whatsapp_support", "WhatsApp Number", "2348012345678", "Any format — spaces, dashes, + prefix all stripped automatically"],
+          ["social_whatsapp_support", "WhatsApp Number", "2348012345678", "The general support line (Dash). Every customer-facing WhatsApp button uses this. Any format — spaces, dashes, + prefix all stripped automatically"],
+          ["social_whatsapp_reseller", "Reseller WhatsApp Number", "2348012345678", "Reseller HQ and reseller pages message this number instead. Leave blank and they use the main WhatsApp number"],
           ["social_whatsapp_channel", "WhatsApp Channel URL", "https://whatsapp.com/channel/...", "Full URL to your WhatsApp channel page"],
           ["social_telegram_support", "Telegram Handle", "TheNitroNG", "Handle, @handle, or full URL — all work"],
           ["discord_bot_url", "Discord Bot Link — Standard", "https://nowon.tools", "Shown in the Discord order setup steps for Standard tiers. Providers change this bot without notice — update it here when it changes."],
