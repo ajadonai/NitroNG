@@ -10,7 +10,7 @@ import { sendEmail, batchPlacementEmail } from '@/lib/email';
 import { getWhatsAppChannelUrl } from '@/lib/settings';
 import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, getDripConfig, validateIntradayDuration } from '@/lib/drip-feed';
-import { enqueueMetaEvent, parseFbCookies, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
+import { enqueueMetaEvent, loadStoredCapiIdentity, parseFbCookies, persistFbTouch, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
 import { tgNewOrder, tgOutreachAlert, tgRefundAlert } from '@/lib/telegram';
 import { sendOutreach as ifySendOutreach } from '@/lib/ify/outreach';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
@@ -65,18 +65,18 @@ async function nextBatchId() {
 
 export const maxDuration = 60;
 
-function buildPurchaseEvent(req, { eventId, eventTime, email, phone, externalId, valueKobo }) {
+function buildPurchaseEvent(req, { eventId, eventTime, email, phone, externalId, valueKobo, stored = {} }) {
   const { fbp, fbc } = parseFbCookies(req.headers.get('cookie'));
   return {
     eventId,
     eventTime,
     email,
-    phone,
+    phone: phone || stored.phone,
     externalId,
     clientIp: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip'),
     userAgent: req.headers.get('user-agent'),
-    fbp,
-    fbc,
+    fbp: fbp || stored.lastFbp,
+    fbc: fbc || stored.lastFbc,
     sourceUrl: req.headers.get('referer'),
     customData: { value: valueKobo / 100, currency: 'NGN' },
   };
@@ -736,13 +736,16 @@ export async function PATCH(req) {
           data: { userId: session.id, type: 'order', amount: -totalCharge, method: 'wallet', status: 'Completed', reference: newBatchId, note: `Reorder from ${batchId} — ${orderData.length} orders` },
         });
 
+        const stored = await loadStoredCapiIdentity(tx, session.id);
+        await persistFbTouch(tx, session.id, parseFbCookies(req.headers.get('cookie')), stored);
         await enqueueMetaEvent(tx, 'Purchase', buildPurchaseEvent(req, {
           eventId: `purchase_${newBatchId}`,
           eventTime: createdOrders[0].createdAt,
           email: session.email,
-          phone: session.phone,
+          phone: stored.phone,
           externalId: session.id,
           valueKobo: totalCharge,
+          stored,
         }));
 
         return { createdOrders, totalCharge };
@@ -1079,13 +1082,16 @@ export async function POST(req) {
       const eventId = batchId
         ? `purchase_${batchId}`
         : `purchase_${createdOrders[0].orderId}`;
+      const stored = await loadStoredCapiIdentity(tx, session.id);
+      await persistFbTouch(tx, session.id, parseFbCookies(req.headers.get('cookie')), stored);
       await enqueueMetaEvent(tx, 'Purchase', buildPurchaseEvent(req, {
         eventId,
         eventTime: createdOrders[0].createdAt,
         email: session.email,
-        phone: session.phone,
+        phone: stored.phone,
         externalId: session.id,
         valueKobo: totalCharge,
+        stored,
       }));
 
       return { createdOrders, totalCharge, nitroTier, eventId };

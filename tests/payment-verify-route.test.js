@@ -31,7 +31,9 @@ vi.mock('@/lib/flutterwave-payment', () => ({
 vi.mock('@/lib/deposit-notifications', () => ({
   notifyDepositFinalized: mocks.notifyDepositFinalized,
 }));
-vi.mock('@/lib/meta-capi', () => ({ parseFbCookies: mocks.parseFbCookies }));
+vi.mock('@/lib/meta-capi', () => ({
+  loadStoredCapiIdentity: vi.fn(async () => ({})),
+  persistFbTouch: vi.fn(async () => {}), parseFbCookies: mocks.parseFbCookies }));
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: mocks.rateLimit }));
 vi.mock('@/lib/logger', () => ({
   log: { warn: mocks.warn, error: mocks.error, info: mocks.info },

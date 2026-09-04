@@ -25,7 +25,9 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/auth', () => ({ getCurrentUser: mocks.getCurrentUser }));
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: mocks.rateLimit }));
-vi.mock('@/lib/meta-capi', () => ({ parseFbCookies: mocks.parseFbCookies }));
+vi.mock('@/lib/meta-capi', () => ({
+  loadStoredCapiIdentity: vi.fn(async () => ({})),
+  persistFbTouch: vi.fn(async () => {}), parseFbCookies: mocks.parseFbCookies }));
 vi.mock('@/lib/logger', () => ({
   log: { warn: mocks.warn, error: mocks.error, info: mocks.info },
 }));

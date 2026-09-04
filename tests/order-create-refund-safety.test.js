@@ -155,6 +155,8 @@ vi.mock('@/lib/bonus-credit', () => ({
   restoreBonusForRefund: vi.fn(),
 }));
 vi.mock('@/lib/meta-capi', () => ({
+  loadStoredCapiIdentity: vi.fn(async () => ({})),
+  persistFbTouch: vi.fn(async () => {}),
   cancelQueuedMetaEvent: (...args) => mocks.cancelQueuedMetaEvent(...args),
   enqueueMetaEvent: (...args) => mocks.enqueueMetaEvent(...args),
   parseFbCookies: vi.fn(() => ({})),

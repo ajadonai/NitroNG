@@ -17,6 +17,8 @@ vi.mock('@/lib/promotions', () => ({ getActivePromotion: vi.fn(), applyPromotion
 vi.mock('@/lib/clean-link', () => ({ cleanLink: value => value }));
 vi.mock('@/lib/drip-feed', () => ({ calculateIntradayDrip: vi.fn(), calculateMultiDayDrip: vi.fn(), getDripConfig: vi.fn(), validateIntradayDuration: () => null }));
 vi.mock('@/lib/meta-capi', () => ({
+  loadStoredCapiIdentity: vi.fn(async () => ({})),
+  persistFbTouch: vi.fn(async () => {}),
   cancelQueuedMetaEvent: vi.fn(),
   enqueueMetaEvent: vi.fn(),
   parseFbCookies: vi.fn(() => ({})),

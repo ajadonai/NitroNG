@@ -87,6 +87,8 @@ vi.mock('@/lib/account-deletion', () => ({
   lockOrderSettlementAccount: (...args) => mocks.lockOrderSettlementAccount(...args),
 }));
 vi.mock('@/lib/meta-capi', () => ({
+  loadStoredCapiIdentity: vi.fn(async () => ({})),
+  persistFbTouch: vi.fn(async () => {}),
   enqueueMetaEvent: (...args) => mocks.enqueueMetaEvent(...args),
   scheduleQueuedMetaEventDelivery: (...args) => mocks.scheduleQueuedMetaEventDelivery(...args),
 }));
