@@ -459,8 +459,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             : '0 20px 60px rgba(0,0,0,.1)',
         }}
       >
-        {elevated && <div className="md:hidden flex items-center gap-2.5 -mt-6 -mx-8 mb-[18px] py-3.5 px-[22px] text-white" style={{ background: 'linear-gradient(135deg,#c47d8e,#a3586b)' }}>
-          <span className="h-6 px-2.5 rounded-[7px] inline-flex items-center" style={{ background: 'rgba(255,255,255,.18)' }}><NitroWordmark height={10} color="#fff" /></span>
+        {elevated && <div className="md:hidden flex items-center justify-center -mt-6 -mx-8 mb-[18px] py-3.5 px-[22px] text-white text-center" style={{ background: 'linear-gradient(135deg,#c47d8e,#a3586b)' }}>
           <span className="text-[12.5px] font-semibold" style={{ opacity: .92 }}>{mode === 'signup' ? '🎁 ₦1,500 free credit on your first deposit' : 'Welcome back'}</span>
         </div>}
         {/* Close button */}
@@ -516,24 +515,22 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                   : 'Step 2 of 2 — Set your password'}
         </p>
 
-        {/* Error bar */}
-        <div className="h-9 mb-0.5 flex items-center">
-          {error ? (
-            <div
-              role="alert"
-              aria-live="assertive"
-              aria-atomic="true"
-              className="w-full px-3 py-2 rounded-lg text-[13px] leading-tight"
-              style={{
-                background: dark ? 'rgba(220,38,38,0.1)' : '#fef2f2',
-                border: `1px solid ${dark ? 'rgba(220,38,38,.28)' : '#fecaca'}`,
-                color: dark ? '#fca5a5' : '#dc2626',
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {error}
-            </div>
-          ) : null}
-        </div>
+        {/* Error bar — rendered only while there is an error, so idle modals carry no reserved gap */}
+        {error && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+            className="w-full px-3 py-2 rounded-lg text-[13px] leading-tight mb-3"
+            style={{
+              background: dark ? 'rgba(220,38,38,0.1)' : '#fef2f2',
+              border: `1px solid ${dark ? 'rgba(220,38,38,.28)' : '#fecaca'}`,
+              color: dark ? '#fca5a5' : '#dc2626',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {error}
+          </div>
+        )}
 
         <form onSubmit={handleAuthSubmit} noValidate>
 
@@ -744,7 +741,6 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
         {/* ====== SIGNUP STEP 1 ====== */}
         {mode === 'signup' && step === 1 && (
           <>
-            <div className="text-center mb-3"><span className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-[11px] font-semibold" style={{background:dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)",color:t.accent}}>🎁 Get up to ₦1,500 free on your first deposit</span></div>
             {/* Google button */}
             <button
               type="button"
