@@ -8,7 +8,7 @@ import { SITE } from "../lib/site";
 import AnnouncementBanner from "./announcement-banner";
 import { trackViewContent } from "./capi-tracker";
 import InlineAlert from "./inline-alert";
-import { PublicNavSheet } from "./public-nav-sheet";
+import { PublicNavSheet, SHEET_LINKS } from "./public-nav-sheet";
 
 // The mobile hero card. Colours come in as CSS variables from the component so it follows the theme.
 const HC_CSS = `
@@ -32,14 +32,6 @@ const HC_CSS = `
 
 // v3 hero: aurora, rings, rolling word, icon arc, stats strip and marquee.
 const HERO_WORDS = ["music","brand","page","business","church","content"];
-const V3_SHEET_LINKS = [
-  { label: "Tiers", href: "#tiers", hint: "Budget · Standard · Premium" },
-  { label: "Why curated", href: "#curated", hint: "what we filter out", em: "curated" },
-  { label: "How it works", href: "#how", hint: "3 steps" },
-  { label: "Reviews", href: "#reviews", hint: "4.9★" },
-  { label: "Resellers", href: "/resellers", hint: "wholesale", sub: true },
-  { label: "Blog", href: "/blog", sub: true },
-];
 const LV3_CSS = `
 .lv3-ring{position:absolute;border-radius:50%;border:1px solid;animation:lv3spin 90s linear infinite}
 .lv3-ring-dash{border-style:dashed;animation-duration:130s;animation-direction:reverse}
@@ -249,7 +241,7 @@ function LandingInner({ initialAuthQuery }){
             <button type="button" onClick={()=>setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="desktop:hidden w-9 h-9 rounded-lg border-none cursor-pointer flex items-center justify-center" style={{background:"rgba(255,255,255,.14)",color:"#fff"}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><button onClick={()=>setModal("signup")} className="nav-signup-btn max-desktop:!hidden py-[7px] px-5 rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{background:"#fff",color:"#1a1a1a"}}>Get started</button>
           </div>
       </nav>
-      <PublicNavSheet open={navOpen} onClose={()=>setNavOpen(false)} dark={dark} toggleTheme={toggleTheme} links={V3_SHEET_LINKS} liveCount={siteStats.processing} onLogin={()=>{setNavOpen(false);setModal("login")}} onSignup={()=>{setNavOpen(false);setModal("signup")}} />
+      <PublicNavSheet open={navOpen} onClose={()=>setNavOpen(false)} dark={dark} links={SHEET_LINKS} liveCount={siteStats.processing} onLogin={()=>{setNavOpen(false);setModal("login")}} onSignup={()=>{setNavOpen(false);setModal("signup")}} />
 
       <div ref={scrollRef} className="snap-container flex-1 overflow-y-auto overflow-x-hidden relative max-desktop:flex-none max-desktop:overflow-y-visible max-desktop:overflow-x-clip">
 
