@@ -390,9 +390,9 @@ function LandingInner({ initialAuthQuery }){
           </div>
         </section>
 
-        {/* Stats strip + platform marquee (desktop/tablet) */}
-        <div className="max-md:hidden lv3-strip">
-          <div className="grid grid-cols-4 max-desktop:grid-cols-2" style={{background:dark?"#131728":"#fff",borderBottom:`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`}}>
+        {/* Stats strip (desktop/tablet — the phone hero card already carries the stats) + platform marquee (all viewports) */}
+        <div className="lv3-strip">
+          <div className="max-md:hidden grid grid-cols-4 max-desktop:grid-cols-2" style={{background:dark?"#131728":"#fff",borderBottom:`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`}}>
             {[[siteStats.orders||"0","Orders placed",false],[siteStats.users||"0","Accounts created",false],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Delivery benchmark",false]]:[]),...(siteStats.processing!=null?[[siteStats.processing,"Delivering right now",true]]:[])].map(([v,l,g],i,arr)=>
               <div key={l} className="lv3-stat py-7 px-12 max-desktop:py-[22px] max-desktop:px-8" style={{borderRight:i<arr.length-1?`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`:"none"}}>
                 <div className="m text-[30px] font-bold -tracking-[1px] leading-none" style={{color:g?(dark?"#34d399":"#059669"):t.text}}><CountUp value={v}/></div>
