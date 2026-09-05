@@ -1160,21 +1160,32 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .nitro-sky.lg .knob { width: 26px; height: 26px; }
 .nitro-sky .sun, .nitro-sky .moon { position: absolute; inset: 0; border-radius: 50%; transition: opacity .45s ease, transform .55s ease; }
 .nitro-sky .sun { background: radial-gradient(circle at 38% 34%, #ffe9a8, #f8c145 62%, #eda63a); box-shadow: 0 0 10px rgba(248,193,69,.75); }
-.nitro-sky .moon { background: radial-gradient(circle at 40% 36%, #fbf6ec, #e4dccc 68%, #cfc6b4); box-shadow: 0 0 8px rgba(244,240,225,.4); opacity: 0; transform: rotate(-90deg); }
-.nitro-sky .moon i { position: absolute; border-radius: 50%; background: rgba(0,0,0,.09); }
-.nitro-sky .moon .m1 { width: 5px; height: 5px; top: 5px; left: 11px; }
-.nitro-sky .moon .m2 { width: 3px; height: 3px; top: 12px; left: 5px; }
-.nitro-sky .moon .m3 { width: 2.5px; height: 2.5px; top: 14px; left: 13px; }
+/* A crescent, carved with an inset shadow so it reads as a moon at any size. */
+.nitro-sky .moon { background: transparent; box-shadow: inset -6px -2px 0 0 #f4efe2, 0 0 8px rgba(244,240,225,.45); opacity: 0; transform: rotate(-70deg) scale(.6); }
+.nitro-sky.lg .moon { box-shadow: inset -7px -2px 0 0 #f4efe2, 0 0 9px rgba(244,240,225,.45); }
+.nitro-sky .moon i { display: none; }
 .nitro-sky.night .sky-d { opacity: 0; }
 .nitro-sky.night .sky-n { opacity: 1; }
 .nitro-sky.night .cl { opacity: 0; transform: translateX(8px); }
 .nitro-sky.night .st { opacity: 1; }
 .nitro-sky.night .knob { transform: translateX(28px); }
 .nitro-sky.lg.night .knob { transform: translateX(32px); }
-.nitro-sky.night .sun { opacity: 0; transform: rotate(90deg); }
-.nitro-sky.night .moon { opacity: 1; transform: rotate(0); }
+.nitro-sky.night .sun { opacity: 0; transform: rotate(70deg) scale(.6); }
+.nitro-sky.night .moon { opacity: 1; transform: rotate(0) scale(1); }
 .nitro-sky:focus-visible { outline: 2px solid var(--t-accent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
   .nitro-sky * { transition-duration: .01s !important; animation: none !important; }
   .nitro-atmo::before { transition: none; }
+}
+
+/* Theme switch: a fast, symmetric crossfade so day and night dissolve into one
+   another. Both snapshots share the timing, so there is no flash mid-swap. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 360ms;
+  animation-timing-function: ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none; }
 }

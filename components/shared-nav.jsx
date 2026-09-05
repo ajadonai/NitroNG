@@ -60,7 +60,6 @@ export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
   }, [themeMode]);
 
   const toggleTheme = useCallback(() => {
-    const goingDark = !dark;
     const apply = () => {
       setDark(d => {
         const next = !d;
@@ -71,28 +70,13 @@ export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
       });
     };
 
-    if (!document.startViewTransition) { apply(); return; }
-
-    const wash = document.createElement("div");
-    wash.style.cssText = `position:fixed;inset:0;z-index:99999;pointer-events:none;opacity:0;background:${goingDark ? "radial-gradient(ellipse at 50% 30%,rgba(52,24,44,.5),rgba(12,8,20,.32))" : "radial-gradient(ellipse at 50% 30%,rgba(251,191,36,.18),rgba(240,180,120,.08))"};transition:opacity 400ms ease;`;
-    document.body.appendChild(wash);
-    requestAnimationFrame(() => { wash.style.opacity = "1"; });
-
-    setTimeout(() => {
-      const transition = document.startViewTransition(apply);
-      transition.ready.then(() => {
-        document.documentElement.animate(
-          { opacity: [0, 1] },
-          { duration: 700, easing: "ease-in-out", pseudoElement: "::view-transition-new(root)" }
-        );
-      }).catch(() => {});
-
-      setTimeout(() => {
-        wash.style.opacity = "0";
-        setTimeout(() => wash.remove(), 450);
-      }, 350);
-    }, 250);
-  }, [storageKey, dark]);
+    // A single view-transition crossfade of the whole page: it fires on the
+    // click (no staged delay) and finishes fast, so day and night dissolve into
+    // one another instead of stepping. Timing lives in .nitro-vt in globals.css.
+    const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (!document.startViewTransition || reduce) { apply(); return; }
+    document.startViewTransition(apply);
+  }, [storageKey]);
 
   const t = useMemo(() => ({
     bg: "var(--t-bg)",
