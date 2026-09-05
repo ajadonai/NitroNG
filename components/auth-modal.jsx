@@ -459,21 +459,27 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             : '0 20px 60px rgba(0,0,0,.1)',
         }}
       >
-        {elevated && <div className="md:hidden flex items-center justify-center -mt-6 -mx-8 mb-[18px] py-3.5 px-[22px] text-white text-center" style={{ background: 'linear-gradient(135deg,#c47d8e,#a3586b)' }}>
+        {elevated && <div className="md:hidden relative flex items-center justify-center -mt-6 -mx-8 mb-[18px] py-3.5 px-[52px] text-white text-center" style={{ background: 'linear-gradient(135deg,#c47d8e,#a3586b)' }}>
           <span className="text-[12.5px] font-semibold" style={{ opacity: .92 }}>{mode === 'signup' ? '🎁 ₦1,500 free credit on your first deposit' : 'Welcome back'}</span>
+          <button
+            type="button"
+            aria-label="Close authentication dialog"
+            onClick={onClose}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center leading-none text-white transition-opacity duration-150 hover:opacity-80"
+            style={{ background: 'rgba(255,255,255,.18)' }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>}
-        {/* Close button */}
+        {/* Close button — quiet ghost circle; on the elevated phone layout the bar above carries its own close */}
         <button
           type="button"
           aria-label="Close authentication dialog"
           onClick={onClose}
-          className="auth-close absolute top-3.5 right-3.5 w-8 h-8 rounded-lg flex items-center justify-center text-base font-semibold leading-none"
+          className={`auth-close absolute top-3.5 right-3.5 w-8 h-8 rounded-full flex items-center justify-center leading-none transition-opacity duration-150 hover:opacity-70 ${elevated ? 'max-md:hidden' : ''}`}
           style={{
-            background: dark
-              ? 'rgba(255,255,255,.09)'
-              : 'rgba(0,0,0,.04)',
-            border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`,
-            color: dark ? '#c47d8e' : '#1c1b19',
+            background: dark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.05)',
+            color: dark ? '#b7b3ad' : '#6d6a66',
           }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
