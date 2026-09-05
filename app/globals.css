@@ -1194,3 +1194,22 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   ::view-transition-old(root),
   ::view-transition-new(root) { animation: none; }
 }
+
+/* ── Theme pill: the three-mode (Auto / Light / Dark) control, styled like the
+   sky toggle. A highlight springs under the active mode, the active icon glows
+   in its own colour, and the rose ring wraps it on any surface. ── */
+.theme-pill { position: relative; display: inline-flex; padding: 3px; border-radius: 99px; background: rgba(0,0,0,.05); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.38), 0 0 0 1.5px rgba(196,125,142,.55), 0 3px 9px rgba(0,0,0,.12); }
+.dark .theme-pill { background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.32), 0 0 0 1.5px rgba(232,180,196,.5), 0 3px 10px rgba(0,0,0,.3); }
+.theme-pill .tp-hl { position: absolute; top: 3px; left: 3px; width: 32px; height: 28px; border-radius: 99px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.14); transition: transform .42s cubic-bezier(.34,1.42,.5,1); z-index: 1; }
+.dark .theme-pill .tp-hl { background: #241a33; box-shadow: 0 1px 5px rgba(0,0,0,.4); }
+.theme-pill[data-m="auto"] .tp-hl { transform: translateX(0); }
+.theme-pill[data-m="day"] .tp-hl { transform: translateX(32px); }
+.theme-pill[data-m="night"] .tp-hl { transform: translateX(64px); }
+.theme-pill .tp-seg { position: relative; z-index: 2; width: 32px; height: 28px; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #9a938f; transition: color .3s; padding: 0; }
+.dark .theme-pill .tp-seg { color: #8a8397; }
+.theme-pill .tp-seg svg { width: 15px; height: 15px; }
+.theme-pill[data-m="auto"] .tp-auto { color: #c97f92; filter: drop-shadow(0 0 4px rgba(201,127,146,.55)); }
+.theme-pill[data-m="day"] .tp-day { color: #eaa32e; filter: drop-shadow(0 0 5px rgba(248,180,60,.7)); }
+.theme-pill[data-m="night"] .tp-night { color: #8ea2e8; filter: drop-shadow(0 0 5px rgba(150,170,240,.7)); }
+.dark .theme-pill[data-m="night"] .tp-night { color: #aab8f2; }
+@media (prefers-reduced-motion: reduce) { .theme-pill .tp-hl { transition: none; } }

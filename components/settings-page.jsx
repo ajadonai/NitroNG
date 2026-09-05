@@ -9,6 +9,7 @@ import { fN } from "../lib/format";
 import { SITE } from "../lib/site";
 import { Avatar } from "./avatar";
 import { copyText } from '@/lib/clipboard';
+import { ThemePill } from "./shared-nav";
 
 function SettingsModal({ open, onClose, title, subtitle, icon, dark, t, children }) {
   return (
@@ -164,9 +165,6 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
 
   const card = { background: t.cardBg, border: `1px solid ${t.cardBorder}` };
   const copyCode = () => { if (!user?.refCode) return; try { copyText(user.refCode); toast.success("Copied", user.refCode); } catch {} };
-  const themeBtn = (id, label, icon) => (
-    <button key={id} onClick={() => applyTheme(id)} aria-pressed={themeMode === id} className="inline-flex items-center gap-1 h-[26px] px-2.5 rounded-full border-none font-[inherit] text-[11.5px] font-semibold cursor-pointer" style={themeMode === id ? { background: dark ? "#1a1329" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.12)" } : { background: "transparent", color: t.textMuted }}>{icon}{label}</button>
-  );
   return (
     <>
       <div className="pb-3.5 max-md:pb-2">
@@ -211,7 +209,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <SectionHead>Appearance</SectionHead>
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
           <Row id="set-theme" first icon={dark ? I_MOON : I_SUN} title="Theme" sub={themeMode === "auto" ? "Auto: light 6:30am to 6:30pm, dark otherwise" : "Choose how Nitro looks"} dark={dark} t={t}
-            right={<span className="inline-flex p-[3px] rounded-full" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", border: `1px solid ${t.cardBorder}` }}>{themeBtn("auto", "Auto", I_AUTO)}{themeBtn("day", "Light", I_SUN)}{themeBtn("night", "Dark", I_MOON)}</span>} />
+            right={<ThemePill mode={themeMode} onMode={applyTheme} />} />
         </div>
 
         </div>
