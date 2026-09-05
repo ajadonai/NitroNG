@@ -76,7 +76,7 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
   const isLeaving = leaving === alert.id;
   const vars = {
     "--c": T.c[i], "--cbg": T.bg[i],
-    "--card": dark ? "#141930" : "#ffffff", "--ink": dark ? "#f2efe9" : "#1c1b19",
+    "--card": dark ? "#171126" : "#ffffff", "--ink": dark ? "#f2efe9" : "#1c1b19",
     "--dim": dark ? "#5c6170" : "#a19b93", "--line": dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)", "--soft": dark ? "#111634" : "#faf9f7",
   };
   const landing = mode === "landing";

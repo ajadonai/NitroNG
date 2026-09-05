@@ -192,7 +192,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
   const green = dark ? "#6ee7b7" : "#059669";
   const greenBg = dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.06)";
   const greenBorder = dark ? "rgba(110,231,183,.2)" : "rgba(5,150,105,.15)";
-  const bg = dark ? "#161b2e" : "#ffffff";
+  const bg = dark ? "#1a1329" : "#ffffff";
   const border = dark ? "rgba(196,125,142,.22)" : "rgba(0,0,0,.1)";
   const text = dark ? "#f5f3f0" : "#1c1b19";
   const sub = dark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.5)";

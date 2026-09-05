@@ -8,21 +8,21 @@
 
 /* ── Auto-switching theme tokens ── */
 :root {
-  --t-bg: #e8e2d9;
-  --t-text: #1c1b19;
+  --t-bg: #efe8e0;
+  --t-text: #201b19;
   --t-soft: #555250;
-  --t-muted: #757170;
-  --t-accent: #c47d8e;
-  --t-grad: linear-gradient(135deg, #c47d8e, #a3586b);
-  --t-green: #059669;
+  --t-muted: #7a726e;
+  --t-accent: #c97f92;
+  --t-grad: linear-gradient(135deg, #c97f92, #9b5266);
+  --t-green: #0a8f66;
   --t-red: #dc2626;
   --t-surface: rgba(255,255,255,.6);
   --t-surface-brd: rgba(0,0,0,.1);
   --t-surface-border: rgba(0,0,0,.18);
-  --t-sidebar-bg: rgba(232,226,217,.95);
+  --t-sidebar-bg: rgba(239,232,224,.95);
   --t-input-bg: #fff;
   --t-input-border: rgba(0,0,0,.18);
-  --t-btn-primary: linear-gradient(135deg, #c47d8e, #a3586b);
+  --t-btn-primary: linear-gradient(135deg, #c97f92, #9b5266);
   --t-overlay: rgba(0,0,0,.3);
   --t-hero-bg: linear-gradient(135deg, #c47d8e 0%, #a3586b 50%, #8b4a5e 100%);
   --t-hero-text: #fff;
@@ -34,26 +34,29 @@
   --t-text-soft: #555250;
   --t-text-muted: #757170;
   --t-accent-light: rgba(196,125,142,.08);
-  --t-card-bg: #ffffff;
-  --t-card-border: rgba(28,27,25,.11);
-  --t-nav-active: rgba(196,125,142,.08);
-  --t-sidebar-border: rgba(0,0,0,.18);
+  --t-card-bg: #fffdfb;
+  --t-card-border: rgba(139,74,94,.13);
+  --t-nav-active: rgba(201,127,146,.08);
+  --t-sidebar-border: rgba(139,74,94,.16);
 }
 .dark {
-  --t-bg: #070911;
-  --t-text: #f5f3f0;
-  --t-soft: #a09b95;
-  --t-muted: #8a8580;
-  --t-green: #6ee7b7;
+  --t-bg: #0c0814;
+  --t-text: #f6f1ee;
+  --t-soft: #a49da4;
+  --t-muted: #948d99;
+  --t-accent: #e3a4b5;
+  --t-grad: linear-gradient(135deg, #d08fa0, #9b5266);
+  --t-green: #4be284;
   --t-red: #fca5a5;
   --t-surface: rgba(255,255,255,.07);
-  --t-surface-brd: rgba(255,255,255,.12);
-  --t-surface-border: rgba(255,255,255,.18);
-  --t-sidebar-bg: rgba(14,17,34,.95);
-  --t-input-bg: #131728;
+  --t-surface-brd: rgba(232,180,196,.12);
+  --t-surface-border: rgba(232,180,196,.18);
+  --t-sidebar-bg: rgba(18,12,30,.95);
+  --t-input-bg: #160f22;
+  --t-btn-primary: linear-gradient(135deg, #d08fa0, #9b5266);
   --t-input-border: rgba(255,255,255,.18);
   --t-overlay: rgba(0,0,0,.6);
-  --t-hero-bg: #090c15;
+  --t-hero-bg: #0d0916;
   --t-hero-text: #f5f3f0;
   --t-hero-soft: #a09b95;
   --t-hero-muted: #8a8580;
@@ -63,18 +66,18 @@
   --t-text-soft: #a09b95;
   --t-text-muted: #8a8580;
   --t-accent-light: rgba(196,125,142,.12);
-  --t-card-bg: #141930;
-  --t-card-border: rgba(255,255,255,.15);
-  --t-nav-active: rgba(196,125,142,.12);
-  --t-sidebar-border: rgba(255,255,255,.18);
+  --t-card-bg: #171126;
+  --t-card-border: rgba(232,180,196,.15);
+  --t-nav-active: rgba(211,143,160,.12);
+  --t-sidebar-border: rgba(232,180,196,.18);
 }
 /* Dashboard-specific overrides */
-.user-dash { --t-sidebar-bg: #eceae5; }
-.dark .user-dash { --t-sidebar-bg: #0e1122; }
+.user-dash { --t-sidebar-bg: #f0e9e2; }
+.dark .user-dash { --t-sidebar-bg: #120c1e; }
 
 @theme {
-  --color-accent: #c47d8e;
-  --color-accent-dark: #a3586b;
+  --color-accent: var(--t-accent);
+  --color-accent-dark: #9b5266;
   --color-t-bg: var(--t-bg);
   --color-t-text: var(--t-text);
   --color-t-soft: var(--t-soft);
@@ -1115,3 +1118,63 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .rr-leg { display: flex; gap: 14px; padding: 10px 14px; font-size: 12px; font-weight: 600; color: var(--t-text-muted); }
 .rr-leg > span { display: inline-flex; align-items: center; gap: 6px; }
 .rr-leg i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+/* ── Theme atmosphere: a faint aurora at the top of every page and a whisper of grain.
+     Fixed, pointer-transparent, under all modals (z 300+) and sheets (z 88+). ── */
+.nitro-atmo {
+  position: fixed; inset: 0; pointer-events: none; z-index: 58;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.028'/%3E%3C/svg%3E");
+}
+.nitro-atmo::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 260px;
+  background:
+    radial-gradient(60% 120% at 15% 0%, rgba(201,127,146,.10), transparent 60%),
+    radial-gradient(50% 100% at 85% 0%, rgba(240,180,120,.08), transparent 60%);
+  transition: opacity .6s ease;
+}
+.dark .nitro-atmo::before {
+  background:
+    radial-gradient(60% 120% at 15% 0%, rgba(201,127,146,.13), transparent 60%),
+    radial-gradient(50% 100% at 85% 0%, rgba(99,102,241,.10), transparent 60%);
+}
+
+/* ── The theme toggle is a tiny sky: sun and clouds by day, moon and stars by night. ── */
+.nitro-sky { position: relative; width: 56px; height: 28px; border-radius: 99px; border: none; cursor: pointer; overflow: hidden; padding: 0; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,.16), inset 0 0 0 1px rgba(255,255,255,.3); }
+.nitro-sky.lg { width: 64px; height: 32px; }
+.nitro-sky .sky-d, .nitro-sky .sky-n { position: absolute; inset: 0; transition: opacity .55s ease; }
+.nitro-sky .sky-d { background: linear-gradient(180deg, #8ec9ef, #d9ecf7); }
+.nitro-sky .sky-n { background: linear-gradient(180deg, #191642, #0d0b26); opacity: 0; }
+.nitro-sky .cl { position: absolute; border-radius: 99px; background: rgba(255,255,255,.85); transition: opacity .5s, transform .7s ease; }
+.nitro-sky .cl::before { content: ""; position: absolute; border-radius: 50%; background: inherit; }
+.nitro-sky .c1 { width: 17px; height: 6px; top: 16px; left: 30px; }
+.nitro-sky .c1::before { width: 8px; height: 8px; top: -4px; left: 4px; }
+.nitro-sky .c2 { width: 11px; height: 4px; top: 6px; left: 40px; opacity: .7; }
+.nitro-sky .c2::before { width: 5px; height: 5px; top: -2.5px; left: 3px; }
+.nitro-sky .st { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; opacity: 0; transition: opacity .5s; animation: nitroTwinkle 2.1s ease-in-out infinite; }
+.nitro-sky .s1 { top: 7px; left: 32px; }
+.nitro-sky .s2 { top: 16px; left: 42px; animation-delay: .5s; }
+.nitro-sky .s3 { top: 10px; left: 49px; animation-delay: 1.1s; }
+.nitro-sky .s4 { top: 20px; left: 35px; animation-delay: 1.6s; }
+@keyframes nitroTwinkle { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.7); } }
+.nitro-sky .knob { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; transition: transform .55s cubic-bezier(.34,1.46,.54,1); }
+.nitro-sky.lg .knob { width: 26px; height: 26px; }
+.nitro-sky .sun, .nitro-sky .moon { position: absolute; inset: 0; border-radius: 50%; transition: opacity .45s ease, transform .55s ease; }
+.nitro-sky .sun { background: radial-gradient(circle at 38% 34%, #ffe9a8, #f8c145 62%, #eda63a); box-shadow: 0 0 10px rgba(248,193,69,.75); }
+.nitro-sky .moon { background: radial-gradient(circle at 40% 36%, #fbf6ec, #e4dccc 68%, #cfc6b4); box-shadow: 0 0 8px rgba(244,240,225,.4); opacity: 0; transform: rotate(-90deg); }
+.nitro-sky .moon i { position: absolute; border-radius: 50%; background: rgba(0,0,0,.09); }
+.nitro-sky .moon .m1 { width: 5px; height: 5px; top: 5px; left: 11px; }
+.nitro-sky .moon .m2 { width: 3px; height: 3px; top: 12px; left: 5px; }
+.nitro-sky .moon .m3 { width: 2.5px; height: 2.5px; top: 14px; left: 13px; }
+.nitro-sky.night .sky-d { opacity: 0; }
+.nitro-sky.night .sky-n { opacity: 1; }
+.nitro-sky.night .cl { opacity: 0; transform: translateX(8px); }
+.nitro-sky.night .st { opacity: 1; }
+.nitro-sky.night .knob { transform: translateX(28px); }
+.nitro-sky.lg.night .knob { transform: translateX(32px); }
+.nitro-sky.night .sun { opacity: 0; transform: rotate(90deg); }
+.nitro-sky.night .moon { opacity: 1; transform: rotate(0); }
+.nitro-sky:focus-visible { outline: 2px solid var(--t-accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .nitro-sky * { transition-duration: .01s !important; animation: none !important; }
+  .nitro-atmo::before { transition: none; }
+}

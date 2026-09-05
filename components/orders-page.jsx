@@ -220,7 +220,7 @@ function DotMenu({ items, dark, t, loading }) {
         {loading ? <NitroLoader size={14} mono ariaHidden /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>}
       </button>
       {open && (
-        <div className="fixed min-w-[160px] rounded-lg overflow-hidden shadow-lg" style={{ top: posRef.current.top, right: posRef.current.right, zIndex: 60, background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"}` }}>
+        <div className="fixed min-w-[160px] rounded-lg overflow-hidden shadow-lg" style={{ top: posRef.current.top, right: posRef.current.right, zIndex: 60, background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"}` }}>
           {filtered.map((item, i) => (
             <button key={i} onPointerDown={(e) => { e.stopPropagation(); setOpen(false); item.action(); }} className="w-full text-left py-2.5 px-3.5 text-[13px] font-medium border-none cursor-pointer bg-transparent block" style={{ color: item.danger ? (dark ? "#fca5a5" : "#dc2626") : t.textSoft, borderBottom: i < filtered.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.1)"}` : "none", touchAction: "none" }}>{item.label}</button>
           ))}
@@ -786,7 +786,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: sumOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }}><path d="m6 9 6 6 6-6"/></svg>
             </button>
             {sumOpen && (
-              <div id="orders-summary" className="absolute right-0 top-11 z-20 w-[250px] rounded-2xl px-3.5 py-1" style={{ background: dark ? "#161b2e" : "#fff", border: `1px solid ${t.cardBorder}`, boxShadow: "0 18px 44px rgba(0,0,0,.18)" }}>
+              <div id="orders-summary" className="absolute right-0 top-11 z-20 w-[250px] rounded-2xl px-3.5 py-1" style={{ background: dark ? "#1a1329" : "#fff", border: `1px solid ${t.cardBorder}`, boxShadow: "0 18px 44px rgba(0,0,0,.18)" }}>
                 <SummaryRows orderSummary={orderSummary} dark={dark} t={t} />
               </div>
             )}

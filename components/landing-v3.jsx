@@ -222,7 +222,7 @@ function LandingInner({ initialAuthQuery }){
     ...baseT,
     bgAlt:dark?"#0f1322":"#e6e3dc",
     logoGrad:"linear-gradient(135deg,#c47d8e,#8b5e6b)",
-    heroBg:dark?"linear-gradient(135deg,#0e1122 0%,#0a0f1e 40%,#0d0a18 100%)":"linear-gradient(135deg,#c47d8e 0%,#a3586b 40%,#8b4a5e 100%)",
+    heroBg:dark?"linear-gradient(135deg,#120c1e 0%,#0a0f1e 40%,#0d0a18 100%)":"linear-gradient(135deg,#c47d8e 0%,#a3586b 40%,#8b4a5e 100%)",
     heroText:dark?"#eae7e2":"#fff",heroSoft:dark?"#b0aca8":"rgba(255,255,255,.85)",heroMuted:dark?"#7d7974":"rgba(255,255,255,.55)",
     heroGlass:dark?"rgba(15,19,35,.5)":"rgba(255,255,255,.16)",heroGlassBrd:dark?"rgba(255,255,255,.12)":"rgba(255,255,255,.2)",
     heroAccentBadge:dark?"rgba(196,125,142,.15)":"rgba(255,255,255,.15)",
@@ -235,7 +235,7 @@ function LandingInner({ initialAuthQuery }){
       `}</style>
 
       {/* ═══ NAVBAR — outside snap container ═══ */}
-      <nav className="main-nav relative px-8 max-desktop:px-7 max-md:px-3.5 h-14 max-md:h-[52px] flex items-center justify-between shrink-0 z-[100] max-desktop:sticky max-desktop:top-0" style={{background:dark?"#0e1122":scrolled?"rgba(139,74,94,.98)":"rgba(163,88,107,.96)",borderBottom:`0.5px solid ${dark?"rgba(255,255,255,.16)":"rgba(255,255,255,.24)"}`,transition:"background 1.2s ease"}}>
+      <nav className="main-nav relative px-8 max-desktop:px-7 max-md:px-3.5 h-14 max-md:h-[52px] flex items-center justify-between shrink-0 z-[100] max-desktop:sticky max-desktop:top-0" style={{background:dark?"#120c1e":scrolled?"rgba(139,74,94,.98)":"rgba(163,88,107,.96)",borderBottom:`0.5px solid ${dark?"rgba(255,255,255,.16)":"rgba(255,255,255,.24)"}`,transition:"background 1.2s ease"}}>
           <button onClick={()=>{scrollRef.current?.scrollTo({top:0,behavior:"smooth"});window.scrollTo({top:0,behavior:"smooth"});}} className="nav-brand flex items-center gap-2.5 bg-transparent p-0">
             <span className="md:hidden w-[30px] h-[30px] rounded-lg flex items-center justify-center" style={{background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",boxShadow:"0 2px 8px rgba(196,125,142,.3)"}}><svg width="12" height="13" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></span>
             <span className="max-md:hidden h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
@@ -289,7 +289,7 @@ function LandingInner({ initialAuthQuery }){
               {/* Mobile hero card: the live format (strip, facts, gift, CTA, log in, trust) */}
               <div className="fu fd4 hidden max-desktop:!flex max-desktop:flex-col max-desktop:items-center max-desktop:mt-4 max-md:mt-3 w-full max-md:max-w-full relative z-[2]">
                 <style>{HC_CSS}</style>
-                <div className="hc w-full max-w-[380px] max-md:max-w-full" style={{"--cbg":dark?"#141930":"#fff","--cink":dark?"#f2efe9":"#1a1a1a","--cmut":dark?"rgba(255,255,255,.5)":"rgba(0,0,0,.45)","--cdim":dark?"rgba(255,255,255,.35)":"rgba(0,0,0,.35)","--cline":dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.08)","--csoft":dark?"rgba(255,255,255,.05)":"rgba(0,0,0,.03)","--acbg":dark?"rgba(196,125,142,.16)":"rgba(196,125,142,.1)","--shadow":dark?"0 20px 60px rgba(0,0,0,.5)":"0 20px 60px rgba(0,0,0,.16)"}}>
+                <div className="hc w-full max-w-[380px] max-md:max-w-full" style={{"--cbg":dark?"#171126":"#fff","--cink":dark?"#f2efe9":"#1a1a1a","--cmut":dark?"rgba(255,255,255,.5)":"rgba(0,0,0,.45)","--cdim":dark?"rgba(255,255,255,.35)":"rgba(0,0,0,.35)","--cline":dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.08)","--csoft":dark?"rgba(255,255,255,.05)":"rgba(0,0,0,.03)","--acbg":dark?"rgba(196,125,142,.16)":"rgba(196,125,142,.1)","--shadow":dark?"0 20px 60px rgba(0,0,0,.5)":"0 20px 60px rgba(0,0,0,.16)"}}>
                   {siteStats.processing!=null&&<div className="hc-strip"><i/><span>Live activity: <b><CountUp value={siteStats.processing}/></b></span></div>}
                   <div className="hc-facts">
                     {[[siteStats.orders||"0","Orders",false],[siteStats.users||"0","Accounts",false],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Delivery",true]]:[])].map(([num,label,ac],i)=>
@@ -327,7 +327,7 @@ function LandingInner({ initialAuthQuery }){
 
             {/* RIGHT — Auth card (desktop) */}
             <div className="w-full max-w-[400px] justify-self-end max-desktop:hidden">
-              <form onSubmit={handleHeroAuthSubmit} noValidate className="fu fd2 rounded-[20px] pt-[26px] px-[26px] pb-[22px] relative z-[2]" style={{background:dark?"#131728":"#fff",border:`1px solid ${dark?"rgba(255,255,255,.14)":"rgba(0,0,0,.09)"}`,boxShadow:"0 30px 80px rgba(0,0,0,.26)"}}>
+              <form onSubmit={handleHeroAuthSubmit} noValidate className="fu fd2 rounded-[20px] pt-[26px] px-[26px] pb-[22px] relative z-[2]" style={{background:dark?"#160f22":"#fff",border:`1px solid ${dark?"rgba(255,255,255,.14)":"rgba(0,0,0,.09)"}`,boxShadow:"0 30px 80px rgba(0,0,0,.26)"}}>
                 <h2 className="text-[22px] font-semibold text-center mb-[3px] text-t-text">{heroAuth==="login"?"Let's run it up":heroAuth==="forgot"?"Forgot password?":(heroSignupStep===1?"Create your free account":"Secure Your Account")}</h2>
                 <p className="text-[15px] text-center mb-4 font-medium text-t-text-soft">{heroAuth==="login"?"Log in and start boosting":heroAuth==="forgot"?"Enter your email for a reset link":(heroSignupStep===1?"Free to join, no card needed.":"Step 2 of 2. Set your password")}</p>
                 {heroAuth==="signup"&&heroSignupStep===1&&<div className="text-center mb-3"><span className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-[11px] font-semibold text-accent" style={{background:dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)"}}>🎁 Get up to ₦1,500 free on your first deposit</span></div>}
@@ -392,7 +392,7 @@ function LandingInner({ initialAuthQuery }){
 
         {/* Stats strip (desktop/tablet — the phone hero card already carries the stats) + platform marquee (all viewports) */}
         <div className="lv3-strip">
-          <div className="max-md:hidden grid grid-cols-4 max-desktop:grid-cols-2" style={{background:dark?"#131728":"#fff",borderBottom:`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`}}>
+          <div className="max-md:hidden grid grid-cols-4 max-desktop:grid-cols-2" style={{background:dark?"#160f22":"#fff",borderBottom:`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`}}>
             {[[siteStats.orders||"0","Orders placed",false],[siteStats.users||"0","Accounts created",false],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Delivery benchmark",false]]:[]),...(siteStats.processing!=null?[[siteStats.processing,"Delivering right now",true]]:[])].map(([v,l,g],i,arr)=>
               <div key={l} className="lv3-stat py-7 px-12 max-desktop:py-[22px] max-desktop:px-8" style={{borderRight:i<arr.length-1?`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`:"none"}}>
                 <div className="m text-[30px] font-bold -tracking-[1px] leading-none" style={{color:g?(dark?"#34d399":"#059669"):t.text}}><CountUp value={v}/></div>

@@ -159,7 +159,7 @@ export function OgCard({ platform, service, price } = {}) {
   if (platform) {
     const headline = service ? `${platform} ${service}` : `${platform} Services`;
     return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: 'linear-gradient(135deg,#0a0d18 0%,#111627 50%,#0e1122 100%)', fontFamily: 'Jakarta', overflow: 'hidden' }}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: 'linear-gradient(135deg,#0a0d18 0%,#111627 50%,#120c1e 100%)', fontFamily: 'Jakarta', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', left: 0, top: 0, width: 1200, height: 630, backgroundImage: 'radial-gradient(circle, rgba(255,255,255,.04) 1.6px, transparent 1.6px)', backgroundSize: '30px 30px', display: 'flex' }} />
         <div style={{ position: 'absolute', left: 630, top: -60, width: 700, height: 700, borderRadius: 350, background: 'radial-gradient(circle, rgba(196,125,142,.14) 0%, rgba(196,125,142,0) 65%)', display: 'flex' }} />
         <div style={{ position: 'absolute', left: -120, top: 360, width: 480, height: 480, borderRadius: 240, background: 'radial-gradient(circle, rgba(99,102,241,.09) 0%, rgba(99,102,241,0) 65%)', display: 'flex' }} />
@@ -187,7 +187,7 @@ export function OgCard({ platform, service, price } = {}) {
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: 'linear-gradient(135deg,#0a0d18 0%,#111627 50%,#0e1122 100%)', fontFamily: 'Jakarta', overflow: 'hidden' }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: 'linear-gradient(135deg,#0a0d18 0%,#111627 50%,#120c1e 100%)', fontFamily: 'Jakarta', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: 1200, height: 630, backgroundImage: 'radial-gradient(circle, rgba(255,255,255,.04) 1.6px, transparent 1.6px)', backgroundSize: '30px 30px', display: 'flex' }} />
       <div style={{ position: 'absolute', left: 630, top: -60, width: 700, height: 700, borderRadius: 350, background: 'radial-gradient(circle, rgba(196,125,142,.14) 0%, rgba(196,125,142,0) 65%)', display: 'flex' }} />
       <div style={{ position: 'absolute', left: -120, top: 360, width: 480, height: 480, borderRadius: 240, background: 'radial-gradient(circle, rgba(99,102,241,.09) 0%, rgba(99,102,241,0) 65%)', display: 'flex' }} />

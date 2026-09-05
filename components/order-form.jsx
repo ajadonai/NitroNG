@@ -213,7 +213,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         {dripStep === 1 ? (<>
         <div className="mb-3" data-tour="no-link-input">
           <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{linkLabel}</label>
-          <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${linkError ? (dark ? "#f87171" : "#dc2626") : !link.trim() ? t.accent : dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)"}`, background: !link.trim() ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)") : (dark ? "#131728" : "#fff") }}>
+          <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${linkError ? (dark ? "#f87171" : "#dc2626") : !link.trim() ? t.accent : dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)"}`, background: !link.trim() ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)") : (dark ? "#160f22" : "#fff") }}>
             <span className="inline-flex items-center px-3 text-sm font-semibold shrink-0 select-none" style={{ borderRight: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>https://</span>
             <input type="url" inputMode="url" aria-label={linkLabel} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
           </div>
@@ -243,7 +243,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             </div>
             <div className="mb-2.5">
               <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[5px]" style={{ color: t.textMuted }}>Country <span className="font-normal normal-case tracking-normal">(where the visitors come from)</span></label>
-              <select disabled={orderLoading} value={trafficConfig.country} onChange={e => setTrafficConfig(c => ({ ...c, country: e.target.value }))} className="w-full py-2 px-3 rounded-lg border border-solid text-[13px] outline-none box-border font-[inherit] disabled:opacity-50 cursor-pointer" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text }}>
+              <select disabled={orderLoading} value={trafficConfig.country} onChange={e => setTrafficConfig(c => ({ ...c, country: e.target.value }))} className="w-full py-2 px-3 rounded-lg border border-solid text-[13px] outline-none box-border font-[inherit] disabled:opacity-50 cursor-pointer" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#160f22" : "#fff", color: t.text }}>
                 <option value="">Choose a target…</option>
                 <option value="WW">Worldwide</option>
                 <optgroup label="Continent">
@@ -273,14 +273,14 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             {trafficConfig.trafficType === 'keyword' && (
               <div>
                 <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[5px]" style={{ color: t.textMuted }}>Google Keyword</label>
-                <input type="text" disabled={orderLoading} placeholder="best smm panel nigeria" value={trafficConfig.keyword} onChange={e => setTrafficConfig(c => ({ ...c, keyword: e.target.value }))} className="w-full py-2 px-3 rounded-lg border border-solid text-[13px] outline-none box-border font-[inherit] disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text }} />
+                <input type="text" disabled={orderLoading} placeholder="best smm panel nigeria" value={trafficConfig.keyword} onChange={e => setTrafficConfig(c => ({ ...c, keyword: e.target.value }))} className="w-full py-2 px-3 rounded-lg border border-solid text-[13px] outline-none box-border font-[inherit] disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#160f22" : "#fff", color: t.text }} />
                 <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>Max 5 keywords, separated by commas</div>
               </div>
             )}
             {trafficConfig.trafficType === 'referrer' && (
               <div>
                 <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[5px]" style={{ color: t.textMuted }}>Referrer URL</label>
-                <input type="url" disabled={orderLoading} placeholder="https://instagram.com" value={trafficConfig.referrer} onChange={e => setTrafficConfig(c => ({ ...c, referrer: e.target.value }))} className="w-full py-2 px-3 rounded-lg border border-solid text-[13px] outline-none box-border font-[inherit] disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text }} />
+                <input type="url" disabled={orderLoading} placeholder="https://instagram.com" value={trafficConfig.referrer} onChange={e => setTrafficConfig(c => ({ ...c, referrer: e.target.value }))} className="w-full py-2 px-3 rounded-lg border border-solid text-[13px] outline-none box-border font-[inherit] disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#160f22" : "#fff", color: t.text }} />
               </div>
             )}
           </div>
@@ -288,14 +288,14 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         {showComments && (
           <div className="mb-3.5">
             <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{isReview ? "Reviews" : "Comments"} <span className="font-normal normal-case tracking-normal text-[11px]">({needsComments ? "required, one per line" : "optional, one per line"})</span></label>
-            <textarea disabled={orderLoading} placeholder={isReview ? "Great service, highly recommend!\nFast delivery and excellent quality\nBest experience I've had, 5 stars" : "Great content!\nLove this post!\nAmazing work, keep it up\nThis is fire"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
+            <textarea disabled={orderLoading} placeholder={isReview ? "Great service, highly recommend!\nFast delivery and excellent quality\nBest experience I've had, 5 stars" : "Great content!\nLove this post!\nAmazing work, keep it up\nThis is fire"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#160f22" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
             <div className="text-[11px] mt-1" style={{ color: commentShort ? (dark ? "#fca5a5" : "#dc2626") : (isCustomComment && commentLines > 0 && qtyNum > commentLines && !commentShort) ? (dark ? "#fcd34d" : "#b45309") : t.textMuted }}>{commentShort ? `Need at least ${minCommentLines} unique ${isReview ? "reviews" : "comments"} — you have ${commentLines}` : (isCustomComment && commentLines > 0 && qtyNum > commentLines) ? `${commentLines} unique ${isReview ? "reviews" : "comments"} · will rotate to fill ${qtyNum} quantity` : commentLines > 0 ? `${commentLines} ${isReview ? "reviews" : "comments"} entered · we'll cycle through them` : needsComments ? `Enter at least ${minCommentLines} unique comments, one per line` : `Leave empty to use provider's comments`}</div>
           </div>
         )}
         {needsUsernames && (
           <div className="mb-3.5">
             <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>Usernames to mention <span className="font-normal normal-case tracking-normal text-[11px]">(one per line, without @)</span></label>
-            <textarea disabled={orderLoading} placeholder={"username1\nusername2\nusername3"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
+            <textarea disabled={orderLoading} placeholder={"username1\nusername2\nusername3"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#160f22" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
             <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{(comments || "").split("\n").filter(l => l.trim()).length} usernames entered</div>
           </div>
         )}
@@ -313,7 +313,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         {needsKeywords && (
           <div className="mb-3.5">
             <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>Search Keywords <span className="font-normal normal-case tracking-normal text-[11px]">(required, one per line)</span></label>
-            <textarea disabled={orderLoading} placeholder={"best nigerian services\nnigeria social media growth\nbuy instagram followers nigeria"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={3} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#131728" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
+            <textarea disabled={orderLoading} placeholder={"best nigerian services\nnigeria social media growth\nbuy instagram followers nigeria"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={3} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#160f22" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
             <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{(comments || "").split("\n").filter(l => l.trim()).length || 0} keywords entered</div>
           </div>
         )}
@@ -322,7 +322,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <label className="text-[11px] tracking-[0.5px] uppercase font-semibold" style={{ color: t.textMuted }}>Quantity</label>
             {!isPackage && <span className="text-[11px]" style={{ color: t.textMuted }}>min {formatOrderQuantity(minQty)} · max {formatOrderQuantity(maxQty)}</span>}
           </div>
-          <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${qtyOutOfRange ? (dark ? "rgba(220,38,38,.4)" : "rgba(220,38,38,.38)") : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)")}`, background: dark ? "#131728" : "#fff" }}>
+          <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${qtyOutOfRange ? (dark ? "rgba(220,38,38,.4)" : "rgba(220,38,38,.38)") : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)")}`, background: dark ? "#160f22" : "#fff" }}>
             <input type="number" aria-label="Quantity" disabled={orderLoading || isPackage} value={qty} onChange={e => setQty(e.target.value === "" ? "" : e.target.value)} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
             {isPackage && <span className="inline-flex items-center px-3 text-[11px] font-semibold shrink-0 select-none whitespace-nowrap" style={{ borderLeft: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: t.textMuted }}>fixed</span>}
           </div>

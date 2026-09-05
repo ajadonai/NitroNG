@@ -62,7 +62,7 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
         <div className="text-[16px] font-bold text-t-text">Invite a friend, get paid actual cash.</div>
         <div className="text-[13px] mt-1 leading-relaxed text-t-text-muted">They deposit {fN(250000)} or more, you earn {fN(data.amount)} — to your bank, not just your wallet. They still get their welcome bonus too.</div>
         <div className="flex gap-2 mt-3">
-          <div className="m flex-1 min-w-0 py-2 px-3 rounded-[10px] text-[13px] overflow-hidden text-ellipsis whitespace-nowrap text-t-text-soft" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${t.cardBorder}` }}>{link}</div>
+          <div className="m flex-1 min-w-0 py-2 px-3 rounded-[10px] text-[13px] overflow-hidden text-ellipsis whitespace-nowrap text-t-text-soft" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${t.cardBorder}` }}>{link}</div>
           <button onClick={copy} className="py-2 px-3.5 rounded-[10px] text-[13px] font-semibold cursor-pointer whitespace-nowrap shrink-0 border-none text-white" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>{copied ? "Copied" : "Copy link"}</button>
         </div>
       </div>
@@ -99,9 +99,9 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
               </div>
               {overLine && (
                 <div className="grid grid-cols-1 desktop:grid-cols-3 gap-2">
-                  <input value={bank.bankName} onChange={e => setBank(b => ({ ...b, bankName: e.target.value }))} placeholder="Bank (e.g. Opay)" className="h-[38px] px-3 rounded-[10px] text-[13px] outline-none text-t-text" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${t.cardBorder}` }} />
-                  <input value={bank.bankAccountNo} onChange={e => setBank(b => ({ ...b, bankAccountNo: e.target.value.replace(/\D/g, "").slice(0, 10) }))} placeholder="Account number" inputMode="numeric" className="m h-[38px] px-3 rounded-[10px] text-[13px] outline-none text-t-text" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${t.cardBorder}` }} />
-                  <input value={bank.bankAccountName} onChange={e => setBank(b => ({ ...b, bankAccountName: e.target.value }))} placeholder="Account name" className="h-[38px] px-3 rounded-[10px] text-[13px] outline-none text-t-text" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${t.cardBorder}` }} />
+                  <input value={bank.bankName} onChange={e => setBank(b => ({ ...b, bankName: e.target.value }))} placeholder="Bank (e.g. Opay)" className="h-[38px] px-3 rounded-[10px] text-[13px] outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${t.cardBorder}` }} />
+                  <input value={bank.bankAccountNo} onChange={e => setBank(b => ({ ...b, bankAccountNo: e.target.value.replace(/\D/g, "").slice(0, 10) }))} placeholder="Account number" inputMode="numeric" className="m h-[38px] px-3 rounded-[10px] text-[13px] outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${t.cardBorder}` }} />
+                  <input value={bank.bankAccountName} onChange={e => setBank(b => ({ ...b, bankAccountName: e.target.value }))} placeholder="Account name" className="h-[38px] px-3 rounded-[10px] text-[13px] outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${t.cardBorder}` }} />
                 </div>
               )}
               <button disabled={busy || !overLine || (overLine && (!bank.bankName || bank.bankAccountNo.length !== 10 || !bank.bankAccountName))} onClick={() => act({ action: "payout", ...bank }, "Cash-out requested")} className="h-[42px] rounded-xl text-[13.5px] font-semibold border-none cursor-pointer text-white disabled:cursor-default" style={{ background: overLine ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"), color: overLine ? "#fff" : t.textMuted, opacity: busy ? .6 : 1 }}>

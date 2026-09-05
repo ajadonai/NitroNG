@@ -52,13 +52,13 @@ export default function AdminLogin(){
   };
 
   const t={
-    heroBg:dark?"linear-gradient(145deg,#0e1122 0%,#0a0f1e 40%,#0d0a18 100%)":"linear-gradient(135deg,#c47d8e 0%,#a3586b 40%,#8b4a5e 100%)",
+    heroBg:dark?"linear-gradient(145deg,#120c1e 0%,#0a0f1e 40%,#0d0a18 100%)":"linear-gradient(135deg,#c47d8e 0%,#a3586b 40%,#8b4a5e 100%)",
     panelBg:dark?"linear-gradient(160deg,#0a0816 0%,#12091e 50%,#0d0618 100%)":"linear-gradient(160deg,#b36b7d 0%,#9b5068 50%,#7d3e52 100%)",
     text:dark?"#eae7e2":"#1c1b19",textSoft:dark?"#8a8680":"#888580",textMuted:dark?"#555250":"#b0ada8",
     accent:"#c47d8e",
     cardBg:dark?"rgba(17,22,40,0.95)":"rgba(255,255,255,0.95)",
     cardBorder:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.12)",
-    inputBg:dark?"#131728":"#fff",inputBorder:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.18)",
+    inputBg:dark?"#160f22":"#fff",inputBorder:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.18)",
     accentLight:dark?"rgba(196,125,142,.12)":"rgba(196,125,142,.08)",
     btnPrimary:"linear-gradient(135deg,#c47d8e,#a3586b)",
     red:dark?"#fca5a5":"#dc2626",

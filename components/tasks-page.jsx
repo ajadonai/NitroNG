@@ -196,7 +196,7 @@ export default function TasksPage({ dark, t }) {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: sumOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="m6 9 6 6 6-6"/></svg>
           </button>
           {sumOpen && (
-            <div className="absolute right-0 top-11 z-20 w-[240px] rounded-2xl px-3.5 py-1" style={{ background: dark ? '#161b2e' : '#fff', border: `1px solid ${border}`, boxShadow: '0 18px 44px rgba(0,0,0,.18)' }}>
+            <div className="absolute right-0 top-11 z-20 w-[240px] rounded-2xl px-3.5 py-1" style={{ background: dark ? '#1a1329' : '#fff', border: `1px solid ${border}`, boxShadow: '0 18px 44px rgba(0,0,0,.18)' }}>
               {[['Earned', fmtNaira(stats.earned || 0), green], ['In review', String(stats.pending || 0), dark ? '#a5b4fc' : '#4f46e5'], ['Open tasks', String(openCount), t.text], ['Credit expires', `${stats.expiryDays || 30} days`, t.text]].map(([label, val, color], i) => (
                 <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-soft" style={{ borderTop: i > 0 ? `1px solid ${border}` : 'none' }}><span>{label}</span><b className="m text-[15px] font-semibold" style={{ color }}>{val}</b></div>
               ))}

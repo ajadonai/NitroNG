@@ -130,7 +130,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
   const pick = (q) => { setQFade(true); setTimeout(() => { setQi(q); setQFade(false); }, 180); };
   const wa = socialLinks?.social_whatsapp_support ? `https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}` : null;
   const waChannel = socialLinks?.social_whatsapp_channel || "https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q";
-  const panel = dark ? "#131728" : "#fff";
+  const panel = dark ? "#160f22" : "#fff";
   const brd = dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.09)";
   const hair = dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.07)";
   const soft = dark ? "rgba(244,241,237,.58)" : "rgba(28,27,25,.58)";

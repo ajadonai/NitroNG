@@ -113,7 +113,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
   const rewardCount = data?.rewards?.length || 0;
 
   const inpCls = "w-full py-[9px] px-3 rounded-lg text-[13px] outline-none font-[inherit]";
-  const inp = { border: `1px solid ${t.cardBorder}`, background: dark ? "#131728" : "#fff", color: t.text };
+  const inp = { border: `1px solid ${t.cardBorder}`, background: dark ? "#160f22" : "#fff", color: t.text };
   const smBtnCls = "py-1.5 px-3 rounded-lg text-[11px] font-medium cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px";
   const smBtn = { border: `1px solid ${t.cardBorder}`, background: "none", color: t.textSoft };
   const gradBtnCls = "py-[6px] px-4 rounded-lg border-none text-xs font-semibold cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px";
@@ -123,7 +123,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
   const modalOvrCls = "fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]";
   const modalOvr = { background: "rgba(0,0,0,.45)" };
   const modalBoxCls = "rounded-2xl p-6 w-full max-w-[420px] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]";
-  const modalBox = { background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" };
+  const modalBox = { background: dark ? "#140d1e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" };
   const accentHdr = { background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.10)" };
   const cardBg = { background: t.cardBg };
 

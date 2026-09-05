@@ -151,7 +151,7 @@ export default function AdminPricingPage({ dark, t }) {
   const floorNote = simCost >= s.floorCeiling ? `Not checked, cost is above ${naira(s.floorCeiling)}` : kept >= s.floorPct ? `Passed · ${kept}% kept` : `Raised to keep ${s.floorPct}%`;
 
   const vars = {
-    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
+    "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
     "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--acbg": dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)", "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)",
     "--ok": dark ? "#6ee7b7" : "#0a7d54", "--bad": dark ? "#fca5a5" : "#c62828", "--badbg": dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)",

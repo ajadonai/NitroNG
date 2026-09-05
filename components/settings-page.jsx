@@ -165,7 +165,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
   const card = { background: t.cardBg, border: `1px solid ${t.cardBorder}` };
   const copyCode = () => { if (!user?.refCode) return; try { copyText(user.refCode); toast.success("Copied", user.refCode); } catch {} };
   const themeBtn = (id, label, icon) => (
-    <button key={id} onClick={() => applyTheme(id)} aria-pressed={themeMode === id} className="inline-flex items-center gap-1 h-[26px] px-2.5 rounded-full border-none font-[inherit] text-[11.5px] font-semibold cursor-pointer" style={themeMode === id ? { background: dark ? "#161b2e" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.12)" } : { background: "transparent", color: t.textMuted }}>{icon}{label}</button>
+    <button key={id} onClick={() => applyTheme(id)} aria-pressed={themeMode === id} className="inline-flex items-center gap-1 h-[26px] px-2.5 rounded-full border-none font-[inherit] text-[11.5px] font-semibold cursor-pointer" style={themeMode === id ? { background: dark ? "#1a1329" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.12)" } : { background: "transparent", color: t.textMuted }}>{icon}{label}</button>
   );
   return (
     <>
@@ -254,7 +254,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
               <div className="mt-3">
                 <label htmlFor="delete-account-password" className="block text-[13px] mb-1.5 text-t-text-muted">Enter your password to confirm</label>
                 <div className="flex gap-2 flex-wrap max-md:flex-wrap">
-                  <input type="password" id="delete-account-password" autoComplete="current-password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder="Your password" className="flex-1 min-w-40 py-2.5 px-3.5 rounded-lg text-sm outline-none text-t-text" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)"}` }} />
+                  <input type="password" id="delete-account-password" autoComplete="current-password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder="Your password" className="flex-1 min-w-40 py-2.5 px-3.5 rounded-lg text-sm outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)"}` }} />
                   <button onClick={async () => {
                     if (!deletePassword) return;
                     const ok = await confirm({ title: "Delete Your Account", message: "Your account will be scheduled for deletion in 30 days. During this period you cannot log in or sign up with this email. Contact support@nitro.ng before the deadline to cancel. After 30 days, your personal details will be permanently removed and the account cannot be restored. Financial records required for legal and accounting purposes are retained without your contact details.", confirmLabel: "Delete Account", danger: true, requireType: "DELETE" });
