@@ -1,13 +1,25 @@
 "use client";
 import { Modal } from "./ui-primitives";
 
-// The public site's primary links, in one place so the landing bar, SharedNav
-// and the mobile sheet cannot drift apart.
+// The public site's primary links for the desktop top nav, in one place so the
+// landing bar and SharedNav cannot drift apart.
 export const PUBLIC_LINKS = [
   { label: "Services", href: "/services", hint: "30+ platforms" },
   { label: "Pricing", href: "/pricing", hint: "per 1,000" },
   { label: "Resellers", href: "/resellers", hint: "wholesale" },
   { label: "Blog", href: "/blog" },
+];
+
+// The mobile hamburger list — the same everywhere so the sheet reads identically
+// on the landing page and on every other public page. Section links use root
+// hashes so they scroll in place on the landing and navigate home from elsewhere.
+export const SHEET_LINKS = [
+  { label: "Tiers", href: "/#tiers", hint: "Budget · Standard · Premium" },
+  { label: "Why curated", href: "/#curated", hint: "what we filter out", em: "curated" },
+  { label: "How it works", href: "/#how", hint: "3 steps" },
+  { label: "Reviews", href: "/#reviews", hint: "4.9★" },
+  { label: "Resellers", href: "/resellers", hint: "wholesale", sub: true },
+  { label: "Blog", href: "/blog", sub: true },
 ];
 
 const SHEET_CSS = `
@@ -27,7 +39,15 @@ const SHEET_CSS = `
  * Links may carry { sub: true } to step down to the smaller tier (page links
  * vs section links) and { em: "word" } to set that word in the italic rose serif.
  */
-export function PublicNavSheet({ open, onClose, dark, onLogin, onSignup, links = PUBLIC_LINKS, liveCount = null }) {
+export function PublicNavSheet({ open, onClose, dark, onLogin, onSignup, links = SHEET_LINKS, liveCount = null }) {
+  // A section link scrolls in place when its target exists on this page (the
+  // landing), and otherwise navigates home to that section.
+  const go = (href) => (e) => {
+    const id = href.includes("#") ? href.split("#")[1] : null;
+    const el = id && typeof document !== "undefined" && document.getElementById(id);
+    if (el) { e.preventDefault(); el.scrollIntoView({ behavior: "smooth", block: "start" }); }
+    onClose();
+  };
   return (
     <Modal open={open} onClose={onClose} title="Menu" dark={dark} variant="sheet">
       <style>{SHEET_CSS}</style>
@@ -49,7 +69,7 @@ export function PublicNavSheet({ open, onClose, dark, onLogin, onSignup, links =
 
           <nav aria-label="Primary" className="mt-3.5 flex flex-col">
             {links.map((l, i) => (
-              <a key={l.href} href={l.href} onClick={onClose}
+              <a key={l.href} href={l.href} onClick={go(l.href)}
                 className="pns-l flex items-baseline justify-between gap-3 no-underline"
                 style={{ animationDelay: `${i * 40}ms`, color: "#f6ecee", padding: l.sub ? "10px 0" : "13px 0", borderBottom: i < links.length - 1 ? "1px solid rgba(246,217,222,.1)" : "none" }}>
                 <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 500, letterSpacing: "-.5px", lineHeight: 1.05, fontSize: l.sub ? 22 : 36, color: l.sub ? "rgba(246,236,238,.78)" : "#f6ecee" }}>

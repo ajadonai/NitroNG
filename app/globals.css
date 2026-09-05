@@ -1139,12 +1139,11 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 }
 
 /* ── The theme toggle is a tiny sky: sun and clouds by day, moon and stars by night. ── */
-/* A rose-tinted outer ring on every viewport and both themes, so the pill is
-   always outlined — on cream, on the dark night page, and on the always-dark
-   mobile hamburger sheet (where the site theme may still be light). Plus an
-   inner white highlight for the sky's edge. */
-.nitro-sky { position: relative; width: 56px; height: 28px; border-radius: 99px; border: none; cursor: pointer; overflow: hidden; padding: 0; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,.18), inset 0 0 0 1.5px rgba(255,255,255,.38), 0 0 0 1.5px rgba(196,125,142,.55); }
-.dark .nitro-sky { box-shadow: 0 4px 14px rgba(0,0,0,.35), inset 0 0 0 1.5px rgba(255,255,255,.32), 0 0 0 1.5px rgba(232,180,196,.5); }
+/* A two-tone ring so the pill is always outlined on ANY background — a white
+   hug (visible on the rose hero and on dark pages) plus a dark hairline just
+   outside it (visible on cream and white). A single-colour ring cannot do this:
+   a rose ring vanishes on the rose landing hero. Same on both themes. */
+.nitro-sky { position: relative; width: 56px; height: 28px; border-radius: 99px; border: none; cursor: pointer; overflow: hidden; padding: 0; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,.2), inset 0 0 0 1.5px rgba(255,255,255,.4), 0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(0,0,0,.2); }
 .nitro-sky.lg { width: 64px; height: 32px; }
 .nitro-sky .sky-d, .nitro-sky .sky-n { position: absolute; inset: 0; transition: opacity .55s ease; }
 .nitro-sky .sky-d { background: linear-gradient(180deg, #8ec9ef, #d9ecf7); }
@@ -1198,10 +1197,12 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 /* ── Theme pill: the three-mode (Auto / Light / Dark) control, styled like the
    sky toggle. A highlight springs under the active mode, the active icon glows
    in its own colour, and the rose ring wraps it on any surface. ── */
-.theme-pill { position: relative; display: inline-flex; padding: 3px; border-radius: 99px; background: rgba(0,0,0,.05); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.38), 0 0 0 1.5px rgba(196,125,142,.55), 0 3px 9px rgba(0,0,0,.12); }
-.dark .theme-pill { background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.32), 0 0 0 1.5px rgba(232,180,196,.5), 0 3px 10px rgba(0,0,0,.3); }
+.theme-pill { position: relative; display: inline-flex; padding: 3px; border-radius: 99px; background: rgba(0,0,0,.05); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.4), 0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(0,0,0,.18), 0 3px 9px rgba(0,0,0,.12); }
+.dark .theme-pill { background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3), 0 0 0 1.5px rgba(232,180,196,.5), 0 3px 10px rgba(0,0,0,.3); }
 .theme-pill .tp-hl { position: absolute; top: 3px; left: 3px; width: 32px; height: 28px; border-radius: 99px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.14); transition: transform .42s cubic-bezier(.34,1.42,.5,1); z-index: 1; }
-.dark .theme-pill .tp-hl { background: #241a33; box-shadow: 0 1px 5px rgba(0,0,0,.4); }
+/* The active highlight must read against the dark menu, so it is a distinctly
+   lighter plum with its own soft edge. */
+.dark .theme-pill .tp-hl { background: #3d2c4d; box-shadow: 0 1px 6px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.14); }
 .theme-pill[data-m="auto"] .tp-hl { transform: translateX(0); }
 .theme-pill[data-m="day"] .tp-hl { transform: translateX(32px); }
 .theme-pill[data-m="night"] .tp-hl { transform: translateX(64px); }
