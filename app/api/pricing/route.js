@@ -64,7 +64,21 @@ export async function GET() {
           })),
       }));
 
-    return Response.json({ platforms });
+    // The landing's tier cards anchor on the flagship product: Instagram
+    // Followers, one price per tier. Naira per 1k, formatted.
+    let heroTiers = null;
+    try {
+      const hero = await prisma.serviceGroup.findFirst({
+        where: { name: 'Instagram Followers', platform: 'Instagram', enabled: true },
+        include: { tiers: { where: { enabled: true }, select: { tier: true, sellPer1k: true } } },
+      });
+      if (hero?.tiers?.length) {
+        heroTiers = {};
+        for (const ti of hero.tiers) heroTiers[ti.tier] = `₦${Math.round(Number(ti.sellPer1k) / 100).toLocaleString()}`;
+      }
+    } catch {}
+
+    return Response.json({ platforms, heroTiers });
   } catch (err) {
     return Response.json({ platforms: [] });
   }

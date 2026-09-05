@@ -59,7 +59,7 @@ const BF_CSS = `
 @media (prefers-reduced-motion:reduce){.lv3-veq i{animation:none}}
 `;
 
-export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socialLinks, scrollRoot }) {
+export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socialLinks, scrollRoot, pricingData }) {
   const wrapRef = useRef(null);
   const [qi, setQi] = useState(0);
   const [qFade, setQFade] = useState(false);
@@ -113,7 +113,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
             {["Naira pricing, no FX markup","Starts in under 60 seconds","Live order tracking","Real humans on WhatsApp"].map(x => <span key={x} className="inline-flex items-center gap-[7px] text-[13.5px]" style={{ color: soft }}><span style={{ color: "#c47d8e" }}><Check/></span>{x}</span>)}
           </div>
           <div data-reveal="3" className="grid grid-cols-3 max-desktop:grid-cols-2 max-md:grid-cols-1 gap-[18px] items-stretch">
-            {TIERS.map(tier => { const s = TIER_STYLE[tier.name]; const tc = dark ? s.textDark : s.text, tbg = dark ? s.bgDark : s.bg, tb = dark ? s.brdDark : s.brd; return (
+            {TIERS.map(tier => { const livePrice = pricingData?.heroTiers?.[tier.name]; const s = TIER_STYLE[tier.name]; const tc = dark ? s.textDark : s.text, tbg = dark ? s.bgDark : s.bg, tb = dark ? s.brdDark : s.brd; return (
               <div key={tier.name} className={"lv3-tcard" + (tier.name === "Budget" ? " max-desktop:col-span-2 max-md:col-span-1" : "")} style={{ "--tg": s.grad, background: panel, border: tier.pop ? `1.5px solid ${tb}` : `1px solid ${brd}` }}>
                 <div className="flex items-center justify-between gap-2.5 mb-3.5">
                   <span className="text-[11px] font-extrabold tracking-[2px] uppercase" style={{ color: muted }}>Tier</span>
@@ -123,7 +123,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
                   <span className="w-8 h-8 rounded-[10px] inline-flex items-center justify-center shrink-0 text-white" style={{ background: s.grad }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{TIER_ICON[tier.name]}</svg></span>{tier.name}
                 </h3>
                 <div className="text-sm mt-1.5 min-h-[22px]" style={{ color: soft }}>{tier.tfor}</div>
-                <div className="flex items-baseline gap-1.5 mt-[18px]"><b className="m text-[34px] font-extrabold -tracking-[1.5px]" style={{ color: tc }}>{tier.price}</b><span className="text-[13px]" style={{ color: muted }}>/ 1,000 · from</span></div>
+                <div className="flex items-baseline gap-1.5 mt-[18px]"><b className="m text-[34px] font-extrabold -tracking-[1.5px]" style={{ color: tc }}>{livePrice || tier.price}</b><span className="text-[13px]" style={{ color: muted }}>/ 1,000 Instagram followers</span></div>
                 <div className="h-px my-[20px] mb-4" style={{ background: hair }}/>
                 <ul className="list-none p-0 m-0 flex flex-col gap-[11px] flex-1">
                   {tier.li.map(([k, x]) => <li key={x} className="flex gap-2.5 text-sm leading-[1.5]" style={{ color: k === "no" ? muted : text }}><span className="mt-[3px]" style={{ color: k === "no" ? muted : tc }}>{k === "no" ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="6" y1="12" x2="18" y2="12"/></svg> : <Check size={15}/>}</span><span>{x}</span></li>)}
