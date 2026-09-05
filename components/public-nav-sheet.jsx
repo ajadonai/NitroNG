@@ -31,7 +31,7 @@ export function PublicNavSheet({ open, onClose, dark, toggleTheme, onLogin, onSi
         </div>
         <nav aria-label="Primary" className="mt-3 flex flex-col">
           {links.map(l => (
-            <a key={l.href} href={l.href}
+            <a key={l.href} href={l.href} onClick={onClose}
               className="flex items-baseline justify-between py-3 no-underline serif"
               style={{ color: ink, borderBottom: `1px solid ${line}`, fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 34, fontWeight: 500 }}>
               {l.label}

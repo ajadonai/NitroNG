@@ -32,6 +32,14 @@ const HC_CSS = `
 
 // v3 hero: aurora, rings, rolling word, icon arc, stats strip and marquee.
 const HERO_WORDS = ["music","brand","page","business","church","content"];
+const V3_SHEET_LINKS = [
+  { label: "Tiers", href: "#tiers", hint: "Budget · Standard · Premium" },
+  { label: "Why curated", href: "#curated" },
+  { label: "How it works", href: "#how" },
+  { label: "Reviews", href: "#reviews" },
+  { label: "Resellers", href: "/resellers", hint: "wholesale" },
+  { label: "Blog", href: "/blog" },
+];
 const LV3_CSS = `
 .lv3-ring{position:absolute;border-radius:50%;border:1px solid;animation:lv3spin 90s linear infinite}
 .lv3-ring-dash{border-style:dashed;animation-duration:130s;animation-direction:reverse}
@@ -52,6 +60,25 @@ const LV3_CSS = `
 .lv3-mq{display:flex;width:max-content;animation:lv3mq 50s linear infinite}
 .lv3-mq:hover{animation-play-state:paused}
 @keyframes lv3mq{to{transform:translateX(-50%)}}
+.lv3-fold{display:flex;flex-direction:column}
+@media (min-width:1200px){
+  .lv3-fold{height:calc(100dvh - 56px);overflow:hidden}
+  .lv3-fold #hero{flex:1;min-height:0}
+  .lv3-fold .lv3-strip{flex-shrink:0}
+}
+/* iPad Pro landscape and small desktops: the arc column breathes less */
+@media (min-width:1200px) and (max-width:1365px){
+  .lv3-arc{height:330px}
+  .lv3-ficon{width:44px;height:44px;border-radius:13px}
+  .lv3-ficon svg{width:18px;height:18px}
+  .lv3-ficon-sm{width:38px;height:38px}
+  .lv3-ficon-sm svg{width:13px;height:13px}
+}
+/* shorter desktop viewports: the hero interior compresses so the strip stays in frame */
+@media (min-width:1200px) and (max-height:820px){
+  .lv3-fold #hero .lv3-grid{padding-top:24px;padding-bottom:20px}
+  .lv3-fold .lv3-strip .lv3-stat{padding-top:16px;padding-bottom:16px}
+}
 @media (prefers-reduced-motion:reduce){.lv3-ring,.lv3-aur,.lv3-ficon,.lv3-mq{animation:none!important}.lv3-roller>span{transition:none}}
 `;
 
@@ -185,7 +212,9 @@ function LandingInner({ initialAuthQuery }){
   },[modal]);
   useEffect(()=>{
     const el=scrollRef.current;if(!el)return;
-    const onScroll=()=>{const sections=sectionIds.map(id=>document.getElementById(id)).filter(Boolean);const st=el.scrollTop;let c=0,min=Infinity;sections.forEach((s,i)=>{const d=Math.abs(s.offsetTop-st);if(d<min){min=d;c=i;}});currentSec.current=c;setActiveSection(c);};
+    // offsetTop is useless here: the below-fold sections live inside positioned
+    // wrappers, so it reads 0 for all of them. Measure against the container.
+    const onScroll=()=>{const top=el.getBoundingClientRect().top;const sections=sectionIds.map(id=>document.getElementById(id)).filter(Boolean);let c=0,min=Infinity;sections.forEach((s,i)=>{const d=Math.abs(s.getBoundingClientRect().top-top);if(d<min){min=d;c=i;}});currentSec.current=c;setActiveSection(c);};
     el.addEventListener("scroll",onScroll,{passive:true});return()=>el.removeEventListener("scroll",onScroll);
   },[]);
 
@@ -206,29 +235,30 @@ function LandingInner({ initialAuthQuery }){
       `}</style>
 
       {/* ═══ NAVBAR — outside snap container ═══ */}
-      <nav className="main-nav px-8 max-desktop:px-7 max-md:px-3.5 h-14 max-md:h-[52px] flex items-center justify-between shrink-0 z-[100] max-desktop:sticky max-desktop:top-0" style={{background:dark?"#0e1122":scrolled?"rgba(139,74,94,.98)":"rgba(163,88,107,.96)",borderBottom:`0.5px solid ${dark?"rgba(255,255,255,.16)":"rgba(255,255,255,.24)"}`,transition:"background 1.2s ease"}}>
+      <nav className="main-nav relative px-8 max-desktop:px-7 max-md:px-3.5 h-14 max-md:h-[52px] flex items-center justify-between shrink-0 z-[100] max-desktop:sticky max-desktop:top-0" style={{background:dark?"#0e1122":scrolled?"rgba(139,74,94,.98)":"rgba(163,88,107,.96)",borderBottom:`0.5px solid ${dark?"rgba(255,255,255,.16)":"rgba(255,255,255,.24)"}`,transition:"background 1.2s ease"}}>
           <button onClick={()=>{scrollRef.current?.scrollTo({top:0,behavior:"smooth"});window.scrollTo({top:0,behavior:"smooth"});}} className="nav-brand flex items-center gap-2.5 bg-transparent p-0">
             <span className="md:hidden w-[30px] h-[30px] rounded-lg flex items-center justify-center" style={{background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",boxShadow:"0 2px 8px rgba(196,125,142,.3)"}}><svg width="12" height="13" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></span>
             <span className="max-md:hidden h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
           </button>
+          <div className="max-desktop:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1 items-center">
+              {[["Tiers","tiers"],["Why curated","curated"],["How it works","how"],["Reviews","reviews"]].map(([l,id])=><button key={l} onClick={()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"})} className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{color:"rgba(255,255,255,.75)"}}>{l}</button>)}<a href="/resellers" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:"rgba(255,255,255,.75)"}}>Resellers</a><a href="/blog" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:"rgba(255,255,255,.75)"}}>Blog</a>
+          </div>
           <div className="nav-right flex items-center gap-2.5">
-            <div className="flex max-desktop:hidden gap-1 items-center mr-1.5">
-              {[["Tiers","tiers"],["Why curated","curated"],["How it works","how"],["Reviews","reviews"]].map(([l,id])=><button key={l} onClick={()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"})} className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{color:dark?"rgba(255,255,255,.75)":"rgba(255,255,255,.75)"}}>{l}</button>)}<a href="/resellers" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:dark?"rgba(255,255,255,.75)":"rgba(255,255,255,.75)"}}>Resellers</a><a href="/blog" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:dark?"rgba(255,255,255,.75)":"rgba(255,255,255,.75)"}}>Blog</a>
-            </div>
             <ThemeToggle dark={dark} onToggle={toggleTheme} />
             <button onClick={()=>setModal("login")} className="nav-login-btn py-[7px] px-5 rounded-lg text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{background:dark?"rgba(255,255,255,.16)":"rgba(255,255,255,.19)",border:`0.5px solid ${dark?"rgba(255,255,255,.18)":"rgba(255,255,255,.28)"}`,color:dark?"rgba(255,255,255,.8)":"#fff"}}>Log in</button>
             <button type="button" onClick={()=>setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="desktop:hidden w-9 h-9 rounded-lg border-none cursor-pointer flex items-center justify-center" style={{background:"rgba(255,255,255,.14)",color:"#fff"}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><button onClick={()=>setModal("signup")} className="nav-signup-btn max-desktop:!hidden py-[7px] px-5 rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{background:"#fff",color:"#1a1a1a"}}>Get started</button>
           </div>
       </nav>
-      <PublicNavSheet open={navOpen} onClose={()=>setNavOpen(false)} dark={dark} toggleTheme={toggleTheme} onLogin={()=>{setNavOpen(false);setModal("login")}} onSignup={()=>{setNavOpen(false);setModal("signup")}} />
+      <PublicNavSheet open={navOpen} onClose={()=>setNavOpen(false)} dark={dark} toggleTheme={toggleTheme} links={V3_SHEET_LINKS} onLogin={()=>{setNavOpen(false);setModal("login")}} onSignup={()=>{setNavOpen(false);setModal("signup")}} />
 
       <div ref={scrollRef} className="snap-container flex-1 overflow-y-auto overflow-x-hidden relative max-desktop:flex-none max-desktop:overflow-y-visible max-desktop:overflow-x-clip">
 
         {/* Site-wide announcement banner */}
         <AnnouncementBanner alerts={siteAlerts} dark={dark} mode="landing" />
 
-        {/* ━━━ HERO (v3) ━━━ */}
-        <section id="hero" className="snap-section overflow-hidden relative flex flex-col" style={{background:t.heroBg}}>
+        {/* ━━━ HERO (v3): on desktop the fold holds hero + stats + marquee in one viewport ━━━ */}
+        <div className="lv3-fold snap-section">
+        <section id="hero" className="overflow-hidden relative flex flex-col" style={{background:t.heroBg}}>
           <style>{LV3_CSS}</style>
 
           {/* Living background: warm aurora, slow rings, grain */}
@@ -241,17 +271,17 @@ function LandingInner({ initialAuthQuery }){
             <div className="lv3-grain-h"/>
           </div>
 
-          <div className={`grid grid-cols-[1.1fr_96px_.9fr] max-desktop:grid-cols-1 gap-x-[18px] max-desktop:gap-y-[30px] items-center pt-14 pb-12 max-desktop:pt-6 max-desktop:pb-4 max-md:pb-2 px-[60px] max-desktop:px-10 max-md:px-5 max-w-[1200px] mx-auto w-full relative z-[1] flex-1 max-desktop:text-center max-desktop:min-h-0 ${siteAlerts.length > 0 ? "max-md:pt-[50px]" : "max-md:pt-2"}`}>
+          <div className={`lv3-grid grid grid-cols-[1.1fr_96px_.9fr] max-desktop:grid-cols-1 gap-x-[18px] max-desktop:gap-y-[30px] items-center pt-14 pb-12 max-desktop:pt-6 max-desktop:pb-4 max-md:pb-2 px-[60px] max-desktop:px-10 max-md:px-5 max-w-[1200px] mx-auto w-full relative z-[1] flex-1 max-desktop:text-center max-desktop:min-h-0 ${siteAlerts.length > 0 ? "max-md:pt-[50px]" : "max-md:pt-2"}`}>
             {/* LEFT */}
             <div className="text-left relative z-[1] max-desktop:text-center max-desktop:flex max-desktop:flex-col max-desktop:items-center">
               <div className="fu text-[11px] font-bold tracking-[3px] uppercase mb-[22px] max-md:mb-3.5" style={{color:dark?t.accent:"rgba(255,255,255,.72)"}}>Nigeria's social growth engine</div>
               <h1 className="fu fd1 text-[clamp(40px,5vw,66px)] max-md:text-[clamp(34px,9vw,44px)] font-semibold leading-[1.02] -tracking-[2.2px] max-md:-tracking-[1.2px]" style={{color:t.heroText}}>
                 Your <span className="lv3-roller" aria-live="polite">{HERO_WORDS.map((w,i)=><span key={w} className={i===word?"on":i===((word+HERO_WORDS.length-1)%HERO_WORDS.length)?"out":""} style={{color:dark?t.accent:"#fff"}} aria-hidden={i!==word}>{w}</span>)}</span><br/>deserves a bigger audience.
               </h1>
-              <p className="fu fd2 text-[clamp(15px,1.3vw,17.5px)] max-md:text-[14px] leading-[1.65] max-w-[520px] max-desktop:mx-auto mt-6 mb-7 max-md:mt-4 max-md:mb-4" style={{color:t.heroSoft}}>Followers, likes and views for Instagram, TikTok, YouTube and {siteStats.platforms?`${siteStats.platforms}+`:"25+"} more platforms. Paid in naira, delivered in minutes, tested before you ever see it, and real people on WhatsApp when you need them.</p>
+              <p className="fu fd2 text-[clamp(15px,1.3vw,17.5px)] max-md:text-[14px] leading-[1.65] max-w-[520px] max-desktop:mx-auto mt-6 mb-7 max-md:mt-4 max-md:mb-4" style={{color:t.heroSoft}}>Followers, likes and views for Instagram, TikTok, YouTube and {siteStats.uniquePlatforms?`${siteStats.uniquePlatforms}+`:"25+"} more platforms. Paid in naira, delivered in minutes, tested before you ever see it, and real people on WhatsApp when you need them.</p>
 
               {/* CTAs — desktop/tablet */}
-              <div className="fu fd3 flex gap-[18px] items-center flex-wrap max-desktop:justify-center max-md:!hidden">
+              <div className="fu fd3 flex gap-[18px] items-center flex-wrap max-desktop:!hidden">
                 <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hero-cta-btn inline-flex items-center gap-2 py-[15px] px-[26px] rounded-xl text-[15px] font-bold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(0,0,0,.22)]" style={{background:dark?"linear-gradient(135deg,#c47d8e,#8b5e6b)":"#fff",color:dark?"#fff":"#1a1a1a"}}>🎁 Start with ₦1,500 free credit →</a>
                 <a href="/pricing" onClick={e=>{e.preventDefault();document.getElementById("tiers")?.scrollIntoView({behavior:"smooth",block:"start"})}} className="text-[15px] font-semibold no-underline pb-0.5" style={{color:dark?t.text:"#fff",borderBottom:`1.5px solid ${dark?"rgba(255,255,255,.2)":"rgba(255,255,255,.5)"}`}}>See the tiers</a>
               </div>
@@ -288,7 +318,7 @@ function LandingInner({ initialAuthQuery }){
             </div>
 
             {/* ARC — floating platform icons on their own column, desktop only */}
-            <div className="lv3-arc max-desktop:hidden" aria-hidden="true">
+            <div className="lv3-arc max-desktop:!hidden" aria-hidden="true">
               <div className="lv3-ficon" style={{transform:"translateX(-10px)",animationDelay:"0s"}}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></div>
               <div className="lv3-ficon" style={{transform:"translateX(14px)",animationDelay:"1.4s"}}><svg width="20" height="22" viewBox="0 0 448 512" fill="currentColor"><path d="M448 209.91a210.06 210.06 0 01-122.77-39.25v178.72A162.55 162.55 0 11185 188.31v89.89a74.62 74.62 0 1052.23 71.18V0h88a121 121 0 00122.77 121.33z"/></svg></div>
               <div className="lv3-ficon" style={{transform:"translateX(-4px)",animationDelay:"2.8s"}}><svg width="24" height="17" viewBox="0 0 576 512" fill="currentColor"><path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/></svg></div>
@@ -361,10 +391,10 @@ function LandingInner({ initialAuthQuery }){
         </section>
 
         {/* Stats strip + platform marquee (desktop/tablet) */}
-        <div className="max-md:hidden">
+        <div className="max-md:hidden lv3-strip">
           <div className="grid grid-cols-4 max-desktop:grid-cols-2" style={{background:dark?"#131728":"#fff",borderBottom:`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`}}>
             {[[siteStats.orders||"0","Orders placed",false],[siteStats.users||"0","Accounts created",false],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Delivery benchmark",false]]:[]),...(siteStats.processing!=null?[[siteStats.processing,"Delivering right now",true]]:[])].map(([v,l,g],i,arr)=>
-              <div key={l} className="py-7 px-12 max-desktop:py-[22px] max-desktop:px-8" style={{borderRight:i<arr.length-1?`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`:"none"}}>
+              <div key={l} className="lv3-stat py-7 px-12 max-desktop:py-[22px] max-desktop:px-8" style={{borderRight:i<arr.length-1?`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`:"none"}}>
                 <div className="m text-[30px] font-bold -tracking-[1px] leading-none" style={{color:g?(dark?"#34d399":"#059669"):t.text}}><CountUp value={v}/></div>
                 <div className="text-[10.5px] font-bold tracking-[2px] uppercase mt-2.5" style={{color:dark?"rgba(244,241,237,.36)":"rgba(28,27,25,.42)"}}>{l}</div>
               </div>
@@ -374,8 +404,7 @@ function LandingInner({ initialAuthQuery }){
             <div className="lv3-mq">{[0,1].map(rep=><div key={rep} className="flex">{["Instagram","TikTok","YouTube","X / Twitter","WhatsApp","Spotify","Telegram","Facebook","Snapchat","Twitch","LinkedIn","Threads","Discord","Audiomack","Boomplay"].map((p,i)=><span key={p} className="text-xs font-extrabold tracking-[3px] uppercase px-[34px] whitespace-nowrap" style={{color:(i+1)%3===0?"#f2b866":"rgba(255,255,255,.78)"}}>{p}</span>)}</div>)}</div>
           </div>
         </div>
-
-
+        </div>
 
         <BelowFold t={t} dark={dark} setModal={setModal} siteStats={siteStats} socialLinks={socialLinks} scrollRoot={scrollRef} pricingData={pricingData} />
 
