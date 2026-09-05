@@ -56,7 +56,50 @@ const BF_CSS = `
 @keyframes lv3eq{0%,100%{height:5px}50%{height:14px}}
 .lv3-qdot{width:6px;height:6px;border-radius:99px;opacity:.4;padding:0;transition:.3s;border:none}
 .lv3-qdot.on{opacity:1;background:#c47d8e!important;width:22px}
-@media (prefers-reduced-motion:reduce){.lv3-veq i{animation:none}}
+/* ── footer: statement, channel card, columns, ghost wordmark ── */
+.lv3-ft{position:relative;overflow:hidden;color:#f6ecee}
+.lv3-ft-ghost{position:absolute;left:50%;bottom:-.34em;transform:translateX(-50%);font-size:290px;font-weight:800;letter-spacing:-.04em;line-height:1;color:transparent;-webkit-text-stroke:1px rgba(246,217,222,.09);pointer-events:none;user-select:none;white-space:nowrap}
+.lv3-ft-in{position:relative;z-index:2;max-width:1200px;margin:0 auto;padding:0 60px}
+.lv3-ft-head{display:flex;align-items:center;justify-content:space-between;gap:48px;padding:56px 0 44px;border-bottom:1px solid rgba(246,217,222,.12)}
+.lv3-ft-stmt{font-size:38px;font-weight:600;letter-spacing:-.02em;line-height:1.12;max-width:15ch}
+.lv3-ft-stmt em{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;color:#e8a0b2}
+.lv3-chan{flex-shrink:0;display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(246,217,222,.14);max-width:400px;text-decoration:none;color:inherit;transition:transform .2s,border-color .2s}
+.lv3-chan:hover{transform:translateY(-2px);border-color:rgba(246,217,222,.3)}
+.lv3-chan-i{width:42px;height:42px;border-radius:13px;background:rgba(37,211,102,.14);border:1px solid rgba(37,211,102,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#4be284}
+.lv3-chan b{display:block;font-size:14px;font-weight:700}
+.lv3-chan i{display:block;font-style:normal;font-size:12px;color:rgba(246,236,238,.55);margin-top:2px;line-height:1.5}
+.lv3-chan-btn{flex-shrink:0;background:#25d366;color:#06220f;font-size:12.5px;font-weight:800;padding:10px 16px;border-radius:10px;white-space:nowrap}
+.lv3-ft-cols{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:48px;padding:44px 0 52px}
+.lv3-ft-brand p{font-size:13px;line-height:1.7;color:rgba(246,236,238,.5);max-width:26ch;margin:14px 0 0}
+.lv3-ft-status{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:7px 12px;border-radius:999px;background:rgba(75,226,132,.08);border:1px solid rgba(75,226,132,.22);font-size:11.5px;font-weight:700;color:#4be284;text-decoration:none}
+.lv3-ft-status i{width:7px;height:7px;border-radius:50%;background:#4be284;animation:lv3pulse 2.2s ease-out infinite}
+@keyframes lv3pulse{0%{box-shadow:0 0 0 0 rgba(75,226,132,.35)}80%,100%{box-shadow:0 0 0 6px rgba(75,226,132,0)}}
+.lv3-ft-soc{width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.06);border:1px solid rgba(246,217,222,.16);display:flex;align-items:center;justify-content:center;color:rgba(246,236,238,.75);text-decoration:none;transition:transform .2s,color .2s}
+.lv3-ft-soc:hover{transform:translateY(-2px);color:#fff}
+.lv3-ft-h4{font-size:10.5px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:rgba(246,236,238,.4);margin:4px 0 16px}
+.lv3-ft-l{display:block;font-size:13.5px;font-weight:500;color:rgba(246,236,238,.72);text-decoration:none;padding:5px 0;transition:color .2s;cursor:pointer;background:none;border:none;text-align:left;font-family:inherit}
+.lv3-ft-l:hover{color:#fff}
+.lv3-ft-base{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0 26px;border-top:1px solid rgba(246,217,222,.12);font-size:11.5px;color:rgba(246,236,238,.4)}
+@media (max-width:1199px){
+  .lv3-ft-in{padding:0 40px}
+  .lv3-ft-head{flex-wrap:wrap;padding:46px 0 36px}
+  .lv3-ft-stmt{font-size:32px}
+  .lv3-ft-cols{grid-template-columns:1fr 1fr 1fr;gap:36px;padding:36px 0 44px}
+  .lv3-ft-brand{grid-column:1/-1}
+  .lv3-ft-ghost{font-size:190px}
+}
+@media (max-width:767px){
+  .lv3-ft-in{padding:0 20px}
+  .lv3-ft-head{flex-direction:column;align-items:stretch;gap:22px;padding:40px 0 30px}
+  .lv3-ft-stmt{font-size:27px;max-width:none;text-align:center;margin:0 auto}
+  .lv3-chan{max-width:none}
+  .lv3-chan-btn{padding:10px 13px}
+  .lv3-ft-cols{grid-template-columns:1fr 1fr;gap:28px 20px;padding:32px 0 40px}
+  .lv3-ft-contact{grid-column:1/-1}
+  .lv3-ft-ghost{font-size:120px;bottom:-.3em}
+  .lv3-ft-base{flex-direction:column;gap:8px;text-align:center;padding-bottom:22px}
+}
+@media (prefers-reduced-motion:reduce){.lv3-veq i{animation:none}.lv3-ft-status i{animation:none}}
 `;
 
 export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socialLinks, scrollRoot, pricingData }) {
@@ -86,6 +129,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
 
   const pick = (q) => { setQFade(true); setTimeout(() => { setQi(q); setQFade(false); }, 180); };
   const wa = socialLinks?.social_whatsapp_support ? `https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}` : null;
+  const waChannel = socialLinks?.social_whatsapp_channel || "https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q";
   const panel = dark ? "#131728" : "#fff";
   const brd = dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.09)";
   const hair = dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.07)";
@@ -281,50 +325,61 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
           </div>
         </div>
 
-          <footer className="py-10 px-12 max-desktop:!py-9 max-desktop:!px-10 max-md:!py-8 max-md:!px-5 pb-6 max-desktop:!pb-6 max-md:!pb-5 relative" style={{background:dark?"#030508":"#dedad4"}}>
-            {/* 4-column grid */}
-            <div className="grid grid-cols-[1.8fr_1fr_1fr_1fr] max-desktop:grid-cols-3 max-md:grid-cols-2 gap-8 max-desktop:gap-7 max-md:gap-x-4 max-md:gap-y-7 mb-8">
-              {/* Brand */}
-              <div className="max-desktop:col-span-full">
-                <div className="flex items-center gap-2.5 mb-3">
-                  <div className="w-7 h-7 rounded-[7px] flex items-center justify-center" style={{background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",boxShadow:"0 2px 8px rgba(196,125,142,.25)"}}><svg width="11" height="12" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></div>
-                  <span className="text-base font-bold tracking-[2px]" style={{color:t.text}}>NITRO</span>
-                </div>
-                <p className="text-[13px] leading-[1.7] max-w-[260px] mb-5" style={{color:dark?"rgba(244,241,237,.45)":"rgba(28,27,25,.5)"}}>We handle the promotion so you can focus on content. {siteStats.platforms?`${siteStats.platforms}+`:"140+"} service types, Naira pricing, fast delivery.</p>
-                <div className="flex gap-2.5">
-                  <a href={`https://x.com/${(socialLinks.social_twitter||"TheNitroNG").replace(/^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="s6-sico w-10 h-10 rounded-[10px] flex items-center justify-center no-underline transition-transform duration-200 hover:-translate-y-px" style={{background:dark?"rgba(255,255,255,.10)":"rgba(0,0,0,.06)",border:`0.5px solid ${dark?"rgba(255,255,255,.14)":"rgba(0,0,0,.1)"}`,color:dark?"rgba(244,241,237,.5)":"rgba(28,27,25,.45)"}}><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
-                  <a href={`https://instagram.com/${(socialLinks.social_instagram||"Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="s6-sico w-10 h-10 rounded-[10px] flex items-center justify-center no-underline transition-transform duration-200 hover:-translate-y-px" style={{background:dark?"rgba(225,48,108,.08)":"rgba(225,48,108,.06)",border:`0.5px solid ${dark?"rgba(225,48,108,.18)":"rgba(225,48,108,.14)"}`}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
-                  {socialLinks.social_whatsapp_support&&<a href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="s6-sico w-10 h-10 rounded-[10px] flex items-center justify-center no-underline transition-transform duration-200 hover:-translate-y-px" style={{background:dark?"rgba(37,211,102,.08)":"rgba(37,211,102,.06)",border:`0.5px solid ${dark?"rgba(37,211,102,.18)":"rgba(37,211,102,.14)"}`}}><svg width="14" height="14" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>}
-                  {socialLinks.social_telegram_support&&<a href={`https://t.me/${socialLinks.social_telegram_support.replace(/^(https?:\/\/)?(t\.me\/)?@?/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="Telegram" className="s6-sico w-10 h-10 rounded-[10px] flex items-center justify-center no-underline transition-transform duration-200 hover:-translate-y-px" style={{background:dark?"rgba(0,136,204,.08)":"rgba(0,136,204,.06)",border:`0.5px solid ${dark?"rgba(0,136,204,.18)":"rgba(0,136,204,.14)"}`}}><svg width="14" height="14" viewBox="0 0 24 24" fill="#0088cc"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></a>}
-                </div>
-              </div>
-              {/* Product */}
-              <div>
-                <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{color:dark?"rgba(244,241,237,.4)":"rgba(28,27,25,.45)"}}>Product</div>
-                {[["Pricing","/pricing","tiers"],["Services","/services"],["About","/about"],["Blog","/blog"],["What's New","/changelog"]].map(([l,h,scrollId])=><a key={l} href={h} className="s6-footer-link block text-[13px] font-medium py-[5px] no-underline transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}} {...(scrollId?{onClick:e=>{e.preventDefault();document.getElementById(scrollId)?.scrollIntoView({behavior:"smooth",block:"start"})}}:{})}>{l}</a>)}
-              </div>
-              {/* Company */}
-              <div>
-                <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{color:dark?"rgba(244,241,237,.4)":"rgba(28,27,25,.45)"}}>Company</div>
-                {[["FAQ","/faq"],["Terms","/terms"],["Privacy","/privacy"],["Refund","/refund"],["Cookies","/cookie"]].map(([l,h])=><a key={l} href={h} className="s6-footer-link block text-[13px] font-medium py-[5px] no-underline transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}}>{l}</a>)}
-                <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} className="s6-footer-link block text-[13px] font-medium py-[5px] cursor-pointer transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}} onClick={()=>window.dispatchEvent(new Event('nitro-cookie-reset'))}>Cookie settings</div>
-              </div>
-              {/* Get in touch */}
-              <div>
-                <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{color:dark?"rgba(244,241,237,.4)":"rgba(28,27,25,.45)"}}>Get in touch</div>
-                <a href={`mailto:${SITE.email.general}`} className="s6-footer-link block text-[13px] font-medium py-[5px] no-underline transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}}>{SITE.email.general}</a>
-                <a href={socialLinks.social_whatsapp_support?`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`:"#"} target="_blank" rel="noopener noreferrer" className="s6-footer-link block text-[13px] font-medium py-[5px] no-underline transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}}>WhatsApp Support</a>
-                <a href={SITE.status} target="_blank" rel="noopener noreferrer" className="s6-footer-link flex items-center gap-1.5 text-[13px] font-medium py-[5px] no-underline transition-all duration-200 hover:-translate-y-px hover:opacity-80" style={{color:dark?"rgba(244,241,237,.6)":"rgba(28,27,25,.6)"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Status Page</a>
-              </div>
-            </div>
+          <footer className="lv3-ft" style={{background:dark?"#050710":"#2a1a22"}}>
+            <div className="lv3-grain"/>
+            <div className="absolute rounded-full pointer-events-none" style={{width:520,height:400,top:"-40%",left:"18%",background:"rgba(196,125,142,.14)",filter:"blur(110px)"}}/>
+            <div className="lv3-ft-ghost" aria-hidden="true">NITRO</div>
+            <div className="lv3-ft-in">
 
-            {/* Divider */}
-            <div className="h-px mb-5" style={{background:dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.06)"}}/>
+              {/* Row 1: the statement + the channel card */}
+              <div className="lv3-ft-head">
+                <div className="lv3-ft-stmt">The audience is out there. <em>Go get them.</em></div>
+                <a className="lv3-chan" href={waChannel} target="_blank" rel="noopener noreferrer">
+                  <span className="lv3-chan-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d={WA_PATH}/></svg></span>
+                  <span><b>Promos land on WhatsApp first</b><i>Deals, new services and free credit drops, straight to your phone.</i></span>
+                  <span className="lv3-chan-btn"><span className="max-md:hidden">Join the channel</span><span className="hidden max-md:!inline">Join</span></span>
+                </a>
+              </div>
 
-            {/* Bottom bar */}
-            <div className="flex justify-between items-center max-md:!flex-col max-md:gap-2 max-md:text-center">
-              <span className="text-xs" style={{color:dark?"rgba(244,241,237,.35)":"rgba(28,27,25,.4)"}}>{"©"} {new Date().getFullYear()>2025?`2025–${new Date().getFullYear()}`:"2025"} The Nitro NG. All rights reserved. RC 9514845</span>
-              <span className="text-xs" style={{color:dark?"rgba(244,241,237,.3)":"rgba(28,27,25,.35)"}}>Built in Lagos 🇳🇬</span>
+              {/* Row 2: brand + link columns */}
+              <div className="lv3-ft-cols">
+                <div className="lv3-ft-brand">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-[7px] flex items-center justify-center" style={{background:"linear-gradient(135deg,#c47d8e,#8b5e6b)",boxShadow:"0 2px 8px rgba(196,125,142,.25)"}}><svg width="11" height="12" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></div>
+                    <span className="text-base font-bold tracking-[2px] text-white">NITRO</span>
+                  </div>
+                  <p>We handle the promotion so you can focus on content. {siteStats.uniquePlatforms?`${siteStats.uniquePlatforms}+`:"28+"} platforms, naira pricing, fast delivery.</p>
+                  <a className="lv3-ft-status" href={SITE.status} target="_blank" rel="noopener noreferrer"><i/>All systems live</a>
+                  <div className="flex gap-2 mt-[18px]">
+                    <a href={`https://x.com/${(socialLinks.social_twitter||"TheNitroNG").replace(/^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="lv3-ft-soc"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+                    <a href={`https://instagram.com/${(socialLinks.social_instagram||"Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="lv3-ft-soc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none"/></svg></a>
+                    {wa&&<a href={wa} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="lv3-ft-soc"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d={WA_PATH}/></svg></a>}
+                    {socialLinks.social_telegram_support&&<a href={`https://t.me/${socialLinks.social_telegram_support.replace(/^(https?:\/\/)?(t\.me\/)?@?/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="Telegram" className="lv3-ft-soc"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></a>}
+                  </div>
+                </div>
+                <div>
+                  <div className="lv3-ft-h4">Product</div>
+                  {[["Pricing","/pricing","tiers"],["Services","/services"],["Resellers","/resellers"],["Blog","/blog"],["What's New","/changelog"]].map(([l,h,scrollId])=><a key={l} href={h} className="lv3-ft-l" {...(scrollId?{onClick:e=>{e.preventDefault();document.getElementById(scrollId)?.scrollIntoView({behavior:"smooth",block:"start"})}}:{})}>{l}</a>)}
+                </div>
+                <div>
+                  <div className="lv3-ft-h4">Company</div>
+                  {[["About","/about"],["FAQ","/faq"],["Terms","/terms"],["Privacy","/privacy"],["Refund","/refund"],["Cookies","/cookie"]].map(([l,h])=><a key={l} href={h} className="lv3-ft-l">{l}</a>)}
+                  <button type="button" className="lv3-ft-l" onClick={()=>window.dispatchEvent(new Event('nitro-cookie-reset'))}>Cookie settings</button>
+                </div>
+                <div className="lv3-ft-contact">
+                  <div className="lv3-ft-h4">Get in touch</div>
+                  <a href={`mailto:${SITE.email.general}`} className="lv3-ft-l">{SITE.email.general}</a>
+                  <a href={wa||"#"} target="_blank" rel="noopener noreferrer" className="lv3-ft-l">WhatsApp support</a>
+                  <a href={SITE.status} target="_blank" rel="noopener noreferrer" className="lv3-ft-l">Status page</a>
+                </div>
+              </div>
+
+              {/* Row 3: baseline */}
+              <div className="lv3-ft-base">
+                <span className="m">{"©"} {new Date().getFullYear()>2025?`2025–${new Date().getFullYear()}`:"2025"} The Nitro NG · RC 9514845</span>
+                <span>Built in Lagos 🇳🇬</span>
+              </div>
+
             </div>
           </footer>
         </div>{/* end cta */}
