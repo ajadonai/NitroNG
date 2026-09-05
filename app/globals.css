@@ -1139,7 +1139,10 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 }
 
 /* ── The theme toggle is a tiny sky: sun and clouds by day, moon and stars by night. ── */
-.nitro-sky { position: relative; width: 56px; height: 28px; border-radius: 99px; border: none; cursor: pointer; overflow: hidden; padding: 0; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,.16), inset 0 0 0 1px rgba(255,255,255,.3); }
+.nitro-sky { position: relative; width: 56px; height: 28px; border-radius: 99px; border: none; cursor: pointer; overflow: hidden; padding: 0; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,.16), inset 0 0 0 1.5px rgba(255,255,255,.4); }
+/* In dark mode the night-sky is nearly the page colour, so add a visible
+   rose-tinted ring around the whole pill to separate it from the background. */
+.dark .nitro-sky { box-shadow: 0 4px 14px rgba(0,0,0,.35), inset 0 0 0 1.5px rgba(255,255,255,.35), 0 0 0 2px rgba(232,180,196,.4); }
 .nitro-sky.lg { width: 64px; height: 32px; }
 .nitro-sky .sky-d, .nitro-sky .sky-n { position: absolute; inset: 0; transition: opacity .55s ease; }
 .nitro-sky .sky-d { background: linear-gradient(180deg, #8ec9ef, #d9ecf7); }
