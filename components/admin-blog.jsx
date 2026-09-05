@@ -78,13 +78,13 @@ export default function AdminBlogPage({ dark, t }) {
   };
 
   const vars = {
-    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)", "--ok": dark ? "#6ee7b7" : "#0a7d54", "--bad": dark ? "#fca5a5" : "#c62828",
   };
 
   const inputCls = "w-full box-border py-2.5 px-3.5 rounded-lg text-[15px] outline-none font-[inherit] border";
-  const inputSt = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
-  const cardBg = dark ? "#141930" : "#ffffff";
+  const inputSt = { borderColor: t.cardBorder, background: dark ? "#160f22" : "#fff", color: t.text };
+  const cardBg = dark ? "#171126" : "#ffffff";
   const cardBd = `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`;
   const headerBg = dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)";
   const headerBorder = `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`;
@@ -203,7 +203,7 @@ export default function AdminBlogPage({ dark, t }) {
                 </div>
                 <div>
                   <label className="text-[13px] font-semibold block mb-1" style={{ color: t.textMuted }}>Thumbnail URL</label>
-                  <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? "#131728" : "#fff" }}>
+                  <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? "#160f22" : "#fff" }}>
                     <span className="inline-flex items-center px-3 text-[13px] font-semibold shrink-0 select-none" style={{ borderRight: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.textMuted }}>https://</span>
                     <input value={thumbnail} onChange={e => setThumbnail(e.target.value)} placeholder="i.imgur.com/..." className="w-full box-border py-2.5 px-3.5 text-[13px] outline-none font-[inherit] border-0" style={{ background: "transparent", color: t.text }} />
                   </div>

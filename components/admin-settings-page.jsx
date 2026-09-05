@@ -155,12 +155,12 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
   };
 
   const cardBg = t.cardBg;
-  const admInputStyle = { borderColor: t.cardBorder, background: dark ? "#131728" : "#fff", color: t.text };
+  const admInputStyle = { borderColor: t.cardBorder, background: dark ? "#160f22" : "#fff", color: t.text };
   const card = { background: cardBg, border: `1px solid ${t.cardBorder}` };
   const initials = (admin?.name || "A").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
   const notifOn = notifPrefs ? Object.values(notifPrefs).filter(Boolean).length : null;
   const themeBtn = (id, label, icon) => (
-    <button key={id} onClick={() => applyTheme(id)} aria-pressed={themeMode === id} className="inline-flex items-center gap-1 h-[26px] px-2.5 rounded-full border-none font-[inherit] text-[11.5px] font-semibold cursor-pointer" style={themeMode === id ? { background: dark ? "#161b2e" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.12)" } : { background: "transparent", color: t.textMuted }}>{icon}{label}</button>
+    <button key={id} onClick={() => applyTheme(id)} aria-pressed={themeMode === id} className="inline-flex items-center gap-1 h-[26px] px-2.5 rounded-full border-none font-[inherit] text-[11.5px] font-semibold cursor-pointer" style={themeMode === id ? { background: dark ? "#1a1329" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.12)" } : { background: "transparent", color: t.textMuted }}>{icon}{label}</button>
   );
 
   return (

@@ -61,7 +61,7 @@ export default function CookieSettingsSheet({ open, onClose, onSave, dark, initi
         aria-labelledby="cookie-settings-title"
         onClick={e => e.stopPropagation()}
         className="w-[520px] max-w-[calc(100%-28px)] max-sm:w-full max-sm:max-w-full rounded-[18px] max-sm:rounded-b-none px-[22px] pt-[22px] pb-[18px] flex flex-col gap-3"
-        style={{ background: dark ? '#141930' : '#ffffff', border: `1px solid ${line}`, boxShadow: '0 24px 60px rgba(0,0,0,.3)', maxHeight: '92dvh', overflowY: 'auto' }}
+        style={{ background: dark ? '#171126' : '#ffffff', border: `1px solid ${line}`, boxShadow: '0 24px 60px rgba(0,0,0,.3)', maxHeight: '92dvh', overflowY: 'auto' }}
       >
         <div>
           <h2 id="cookie-settings-title" className="serif text-[28px] font-semibold leading-tight m-0" style={{ color: text }}>Cookie settings</h2>

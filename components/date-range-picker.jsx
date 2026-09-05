@@ -368,7 +368,7 @@ export function FilterDropdown({ dark, t, value, onChange, options, icon, alert,
 
   return (
     <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
-      {alert && <span style={{ position: "absolute", top: -3, right: -3, width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", zIndex: 2, boxShadow: "0 0 0 2px " + (dark ? "#131728" : "#fff"), animation: "progress-pulse 2.8s ease-in-out infinite" }} />}
+      {alert && <span style={{ position: "absolute", top: -3, right: -3, width: 8, height: 8, borderRadius: "50%", background: "#f59e0b", zIndex: 2, boxShadow: "0 0 0 2px " + (dark ? "#160f22" : "#fff"), animation: "progress-pulse 2.8s ease-in-out infinite" }} />}
       <button onClick={() => { setQuery(""); setOpen(!open); }} style={{
         display: "inline-flex",
         alignItems: "center",

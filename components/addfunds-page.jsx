@@ -526,7 +526,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         </>
       )}
       <div className="flex items-baseline justify-between mb-1.5"><span className="text-[12.5px] font-semibold text-t-text">Amount</span><span className="text-[11px] text-t-text-muted">min ₦1,000</span></div>
-      <div className="flex items-center gap-1 py-3.5 px-[18px] max-desktop:py-3 max-desktop:px-4 max-md:py-3 max-md:px-3.5 rounded-xl mb-4 max-md:mb-3" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${amount ? t.accent : t.cardBorder}` }}>
+      <div className="flex items-center gap-1 py-3.5 px-[18px] max-desktop:py-3 max-desktop:px-4 max-md:py-3 max-md:px-3.5 rounded-xl mb-4 max-md:mb-3" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${amount ? t.accent : t.cardBorder}` }}>
         <span className="m text-[28px] max-desktop:text-[22px] max-md:text-xl font-semibold" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.4)" }}>₦</span>
         <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="m border-none text-[28px] max-desktop:text-[28px] max-md:text-2xl font-semibold w-full outline-none bg-transparent placeholder:opacity-[.12] text-t-text" />
       </div>
@@ -786,7 +786,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   <div className="text-[13.5px] font-semibold" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
                   <div className="text-[11.5px] text-t-text-muted">{[meta.desc, meta.speed].filter(Boolean).join(" · ")}</div>
                 </div>
-                <span className="w-[18px] h-[18px] rounded-full shrink-0" style={{ border: `2px solid ${sel ? t.accent : t.cardBorder}`, background: sel ? t.accent : "transparent", boxShadow: sel ? `inset 0 0 0 4px ${dark ? "#161b2e" : "#fff"}` : "none" }} />
+                <span className="w-[18px] h-[18px] rounded-full shrink-0" style={{ border: `2px solid ${sel ? t.accent : t.cardBorder}`, background: sel ? t.accent : "transparent", boxShadow: sel ? `inset 0 0 0 4px ${dark ? "#1a1329" : "#fff"}` : "none" }} />
               </button>
             ); })}
           </div>
@@ -822,7 +822,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       {/* ═══ CRYPTO PAYMENT MODAL ═══ */}
       {cryptoModal && (
         <div onClick={() => { if (cryptoIsTerminal) { stopCryptoPolling(); setCryptoModal(null); } }} onKeyDown={e=>{if(e.key==='Escape'&&cryptoIsTerminal){stopCryptoPolling();setCryptoModal(null)}}} className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45 overflow-y-auto">
-          <div role="dialog" aria-modal="true" aria-label="Crypto payment" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] my-auto" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+          <div role="dialog" aria-modal="true" aria-label="Crypto payment" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] my-auto" style={{ background: dark ? "#140d1e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             {cryptoPresentation.kind === "credited" ? (
               <>
                 <div className="text-center py-5">
@@ -867,7 +867,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
                 <div className="mb-3">
                   <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1 text-t-text-muted">TRC-20 Address</div>
-                  <div className="py-2.5 px-3 rounded-lg text-xs leading-normal break-all text-t-text font-[JetBrains_Mono,monospace]" style={{ background: dark ? "#131728" : "#f8f8f8", border: `1px solid ${t.cardBorder}` }}>
+                  <div className="py-2.5 px-3 rounded-lg text-xs leading-normal break-all text-t-text font-[JetBrains_Mono,monospace]" style={{ background: dark ? "#160f22" : "#f8f8f8", border: `1px solid ${t.cardBorder}` }}>
                     {cryptoModal.payAddress}
                   </div>
                   <button onClick={() => { copyText(cryptoModal.payAddress); }} className="mt-1.5 py-1.5 px-3.5 rounded-md bg-transparent text-xs font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent font-[inherit]" style={{ border: `1px solid ${t.accent}` }}>Copy address</button>
@@ -899,7 +899,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       {/* ═══ CONFIRM PAYMENT MODAL ═══ */}
       {confirmModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45" onClick={() => !confirmLoading && setConfirmModal(null)}>
-          <div className="w-full max-w-[420px] rounded-2xl overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }} onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-[420px] rounded-2xl overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#140d1e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }} onClick={e => e.stopPropagation()}>
             <div className="h-1.5" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }} />
             <div className="p-5">
               <div className="text-base font-semibold mb-1 text-t-text">Confirm Payment</div>

@@ -92,7 +92,7 @@ export function AdminAlertsPage({ dark, t }) {
   };
 
   const vars = {
-    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
+    "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
     "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": dark ? "#e0a0b0" : "#c47d8e", "--ac-bg": dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)",
     "--warn": dark ? "#fcd34d" : "#b45309", "--warn-bg": dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.09)",

@@ -8,7 +8,7 @@ import { useEffect } from "react";
 // Solid card colour, never a translucent token, so nothing shows through a card.
 export function pitVars(dark, t) {
   return {
-    "--card": dark ? "#141930" : "#ffffff",
+    "--card": dark ? "#171126" : "#ffffff",
     "--ink": t.text,
     "--mut": t.muted,
     "--dim": dark ? "#5c6170" : "#a19b93",
@@ -19,7 +19,7 @@ export function pitVars(dark, t) {
     "--ok": dark ? "#6ee7b7" : "#0a7d54",
     "--warn": dark ? "#fcd34d" : "#b45309",
     "--bad": dark ? "#fca5a5" : "#c62828",
-    "--in": dark ? "#131728" : "#ffffff",
+    "--in": dark ? "#160f22" : "#ffffff",
   };
 }
 

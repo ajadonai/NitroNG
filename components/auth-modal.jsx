@@ -451,8 +451,8 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
         className={elevated
           ? "auth-card w-full max-h-[90dvh] overflow-y-auto overflow-x-hidden px-8 py-9 max-md:py-6 relative"
           : "auth-card w-full max-w-[440px] max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-2xl px-8 py-9 max-md:py-6 relative backdrop-blur-[20px] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]"}
-        style={elevated ? { background: dark ? '#0e1120' : '#fff' } : {
-          background: dark ? '#0e1120' : '#fff',
+        style={elevated ? { background: dark ? '#140d1e' : '#fff' } : {
+          background: dark ? '#140d1e' : '#fff',
           border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`,
           boxShadow: dark
             ? '0 20px 60px rgba(0,0,0,.4)'

@@ -105,7 +105,7 @@ export function Modal({ open, onClose, title, subtitle, icon, intent = "accent",
         style={{
           maxWidth: sheet ? undefined : maxWidth,
           overscrollBehavior: "contain",
-          background: dark ? "#131728" : "#fff",
+          background: dark ? "#160f22" : "#fff",
           border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`,
           boxShadow: "0 24px 60px rgba(0,0,0,.25)",
         }}

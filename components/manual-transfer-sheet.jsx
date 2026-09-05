@@ -12,7 +12,7 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
   if (!manualModal) return null;
   return (
     <div onClick={() => { if (manualDone) setManualModal(null); }} onKeyDown={e => { if (e.key === 'Escape' && manualDone) setManualModal(null); }} className="fixed inset-0 z-[200] flex items-end md:items-center justify-center md:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45">
-      <div role="dialog" aria-modal="true" aria-label="Bank transfer" onClick={e => e.stopPropagation()} className="w-full md:max-w-[420px] max-h-[94dvh] md:max-h-[88vh] overflow-y-auto rounded-t-[22px] md:rounded-2xl p-4 max-[380px]:p-3.5 md:p-6 pb-[max(16px,env(safe-area-inset-bottom))] md:pb-6 flex flex-col gap-3 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#0e1120" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}` }}>
+      <div role="dialog" aria-modal="true" aria-label="Bank transfer" onClick={e => e.stopPropagation()} className="w-full md:max-w-[420px] max-h-[94dvh] md:max-h-[88vh] overflow-y-auto rounded-t-[22px] md:rounded-2xl p-4 max-[380px]:p-3.5 md:p-6 pb-[max(16px,env(safe-area-inset-bottom))] md:pb-6 flex flex-col gap-3 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#140d1e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}` }}>
         <div className="md:hidden w-[38px] h-1 rounded-sm shrink-0 mx-auto -mt-1 mb-0.5" style={{ background: dark ? "rgba(255,255,255,.2)" : "rgba(0,0,0,.14)" }} />
 
         {manualDone ? (
@@ -125,7 +125,7 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
 
             <div className="flex flex-col gap-1.5">
               <label htmlFor="manual-sender" className="text-[10px] font-extrabold uppercase tracking-[.9px] text-t-text-muted">Name on the account you sent from</label>
-              <input id="manual-sender" type="text" value={manualRef} onChange={e => setManualRef(e.target.value)} placeholder="e.g. Kehinde Adeyemi" autoFocus className="h-11 px-3.5 rounded-[11px] text-[15px] outline-none w-full text-t-text" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${manualRef.trim().length >= 3 ? t.accent : t.cardBorder}`, boxShadow: manualRef.trim().length >= 3 ? `0 0 0 1px ${t.accent} inset` : "none" }} />
+              <input id="manual-sender" type="text" value={manualRef} onChange={e => setManualRef(e.target.value)} placeholder="e.g. Kehinde Adeyemi" autoFocus className="h-11 px-3.5 rounded-[11px] text-[15px] outline-none w-full text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${manualRef.trim().length >= 3 ? t.accent : t.cardBorder}`, boxShadow: manualRef.trim().length >= 3 ? `0 0 0 1px ${t.accent} inset` : "none" }} />
               <p className="text-[11.5px] leading-snug text-t-text-muted">Not your Nitro name — the name your bank shows on the transfer. If a friend sent it for you, put their name.</p>
             </div>
 

@@ -7,7 +7,7 @@ export function Bone({ dark, w = "100%", h = 12, r = 6, style }) {
 }
 
 const line = (dark) => dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.12)";
-const card = (dark) => dark ? "#141930" : "#fff";
+const card = (dark) => dark ? "#171126" : "#fff";
 
 // The facts row: a card split into tiles, each with a big number and two lines under it.
 export function SkelFacts({ dark, n = 4 }) {

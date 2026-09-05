@@ -124,7 +124,7 @@ function AdminOverview({ data, dark, t, setActive, openOrders }) {
   const PF = { tiktok: "TT", instagram: "IG", youtube: "YT", facebook: "FB", twitter: "X", x: "X", telegram: "TG", discord: "DC", spotify: "SP", threads: "TH", snapchat: "SC", linkedin: "LI", website: "WEB", traffic: "WEB" };
   const okStatus = (st) => st === "Completed" ? "ok" : st === "Cancelled" || st === "Failed" ? "bad" : "warn";
   const vars = {
-    "--card": dark ? "#141930" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828",
   };
   return (
@@ -670,7 +670,7 @@ function AdminDashboardInner({ initialData }) {
 
   const t = useMemo(() => ({
     bg: dark ? "#080b14" : "#f4f1ed",
-    sidebarBg: dark ? "#0e1122" : "#eceae5",
+    sidebarBg: dark ? "#120c1e" : "#eceae5",
     sidebarBorder: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)",
     cardBg: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.8)",
     cardBorder: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)",
@@ -778,7 +778,7 @@ function AdminDashboardInner({ initialData }) {
     <div className="dash-root bg-t-bg">
 
       {/* ═══ TOP NAV ═══ */}
-      <nav className="dash-nav" style={{ background: dark ? "rgba(9,12,21,.9)" : "rgba(248,245,241,.92)", borderBottom: `0.5px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
+      <nav className="dash-nav" style={{ background: dark ? "rgba(14,9,22,.9)" : "rgba(248,245,241,.92)", borderBottom: `0.5px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
         <div className="dash-nav-left">
           <button className="dash-menu-btn" onClick={() => setLeftOpen(!leftOpen)}>
             <div className="dash-hamburger-bars" style={{ opacity: leftOpen ? 0 : 1, position: leftOpen ? "absolute" : "relative" }}>
@@ -819,7 +819,7 @@ function AdminDashboardInner({ initialData }) {
               <Avatar size={30} rounded={10} />
             </button>
             {avOpen && (
-              <div role="menu" aria-label="Account" className="dash-av-menu" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+              <div role="menu" aria-label="Account" className="dash-av-menu" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="dash-av-head" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
                   <Avatar size={34} rounded={10} />
                   <div className="min-w-0 flex-1">

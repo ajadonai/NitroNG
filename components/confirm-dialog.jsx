@@ -145,7 +145,7 @@ export function ConfirmProvider({ children, dark }) {
             className={`w-full ${dialog.compact ? "md:max-w-[340px]" : "md:max-w-[400px]"} rounded-t-2xl rounded-b-none md:rounded-2xl overflow-hidden md:animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]`}
             onClick={e => e.stopPropagation()}
             style={{
-              background: dark ? "#131728" : "#fff",
+              background: dark ? "#160f22" : "#fff",
               border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`,
               boxShadow: "0 24px 60px rgba(0,0,0,.25)",
             }}

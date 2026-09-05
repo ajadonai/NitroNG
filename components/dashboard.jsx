@@ -1195,7 +1195,7 @@ function DashboardInner({ initialData }) {
     <div className="dash-root user-dash bg-t-bg">
 
       {/* ═══ TOP NAV ═══ */}
-      <nav className="dash-nav" style={{ background: dark ? "rgba(9,12,21,.9)" : "rgba(248,245,241,.92)", borderBottom: `0.5px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
+      <nav className="dash-nav" style={{ background: dark ? "rgba(14,9,22,.9)" : "rgba(248,245,241,.92)", borderBottom: `0.5px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
         <div className="dash-nav-left">
           {/* Mobile/tablet: hamburger + logo as one button to toggle sidebar */}
           <button className="dash-menu-btn" onClick={() => setLeftOpen(!leftOpen)} aria-label={leftOpen ? "Close menu" : "Open menu"}>
@@ -1239,7 +1239,7 @@ function DashboardInner({ initialData }) {
               <Avatar size={30} rounded={10} />
             </button>
             {avOpen && (
-              <div role="menu" aria-label="Account" className="dash-av-menu" style={{ background: dark ? "#131728" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+              <div role="menu" aria-label="Account" className="dash-av-menu" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="dash-av-head" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
                   <Avatar size={34} rounded={10} />
                   <div className="min-w-0 flex-1">
@@ -1254,7 +1254,7 @@ function DashboardInner({ initialData }) {
                 <div className="dash-av-foot" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
                   <div role="group" aria-label="Theme" className="inline-flex items-center gap-0.5 p-[3px] rounded-full" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", border: `1px solid ${t.cardBorder}` }}>
                     {[["day", "Light", <svg key="d" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>], ["night", "Dark", <svg key="n" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>], ["auto", "Auto", <svg key="a" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>]].map(([id, label, icon]) => (
-                      <button key={id} onClick={() => applyThemeMode(id)} aria-pressed={themeMode === id} aria-label={label} title={label} className="w-8 h-7 rounded-full border-none flex items-center justify-center cursor-pointer" style={themeMode === id ? { background: dark ? "#161b2e" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.12)" } : { background: "transparent", color: t.textMuted }}>{icon}</button>
+                      <button key={id} onClick={() => applyThemeMode(id)} aria-pressed={themeMode === id} aria-label={label} title={label} className="w-8 h-7 rounded-full border-none flex items-center justify-center cursor-pointer" style={themeMode === id ? { background: dark ? "#1a1329" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.12)" } : { background: "transparent", color: t.textMuted }}>{icon}</button>
                     ))}
                   </div>
                   <button role="menuitem" onClick={handleLogout} className="dash-av-logout" style={{ color: t.textMuted }}>Log out</button>
@@ -1419,7 +1419,7 @@ function DashboardInner({ initialData }) {
       {/* ═══ MOBILE BOTTOM NAV ═══ */}
       {moreOpen && <div className="dash-more-overlay" onClick={() => setMoreOpen(false)} />}
       {moreOpen && (
-        <div className="dash-more-sheet" role="dialog" aria-modal="true" aria-label="More" style={{ background: dark ? "#161b2e" : "#fff", borderTop: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+        <div className="dash-more-sheet" role="dialog" aria-modal="true" aria-label="More" style={{ background: dark ? "#1a1329" : "#fff", borderTop: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
           <div className="dash-more-grab" style={{ background: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.18)" }} />
 
           {/* Account glance: who you are, what you hold, one tap to top up */}
@@ -1502,7 +1502,7 @@ function DashboardInner({ initialData }) {
       )}
       {/* Bottom dock: a floating capsule with the five tabs, and the WhatsApp
           concierge at the end that expands into a one-line message. */}
-      <nav ref={bottomNavRef} aria-label="Primary" className={`dash-bottom-nav dash-dock ${dark ? "dark" : "light"}`} style={{ background: dark ? "#161b2e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+      <nav ref={bottomNavRef} aria-label="Primary" className={`dash-bottom-nav dash-dock ${dark ? "dark" : "light"}`} style={{ background: dark ? "#1a1329" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
         {BOTTOM_TABS.map(tab => {
           const isMore = tab.id === "more";
           return (
@@ -1532,7 +1532,7 @@ function DashboardInner({ initialData }) {
       {chatOpen && (
         <>
           <div className="dash-chat-back" onClick={() => setChatOpen(false)} />
-          <div className="dash-chat" role="dialog" aria-modal="true" aria-label="We can order for you" style={{ background: dark ? "#141930" : "#fff", borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)", color: t.text }}>
+          <div className="dash-chat" role="dialog" aria-modal="true" aria-label="We can order for you" style={{ background: dark ? "#171126" : "#fff", borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)", color: t.text }}>
             <div className="dash-chat-grab" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)" }} />
             <div className="dash-chat-hd">
               <span className="dash-chat-av"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></span>

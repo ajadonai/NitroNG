@@ -13,7 +13,7 @@ export default function LoadingScreen() {
     } catch { const h = new Date().getHours(); setDark(h >= 19 || h < 6); }
   }, []);
 
-  const bg = dark ? "#090c15" : "#f4f1ed";
+  const bg = dark ? "#0d0916" : "#f4f1ed";
 
   return (
     <div className="h-dvh flex items-center justify-center" style={{ background: bg }}>

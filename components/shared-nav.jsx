@@ -7,18 +7,20 @@ import { usePathname } from "next/navigation";
 // ── Theme context ──
 const ThemeCtx = createContext();
 
-const SUN = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>;
-const MOON = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>;
-
-/** The theme switch, the same everywhere: a pill whose knob carries a sun by day and a moon by night. */
+/** The theme switch, the same everywhere: a tiny sky. Sun and clouds by day;
+    the knob slides across, the sun rotates away and a cratered moon rises
+    under twinkling stars. Styled by .nitro-sky in globals.css. */
 export function ThemeToggle({ dark, onToggle, size = "md", className = "" }) {
-  const lg = size === "lg";
-  const w = lg ? 64 : 56, h = lg ? 32 : 28, knob = h - 6;
   return (
-    <button type="button" onClick={onToggle} role="switch" aria-checked={dark} aria-label={dark ? "Switch to light mode" : "Switch to dark mode"} className={`relative shrink-0 rounded-full border-none cursor-pointer p-0 transition-colors duration-300 ${className}`} style={{ width: w, height: h, background: dark ? "#c47d8e" : "rgba(0,0,0,.14)" }}>
-      <span className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center text-[0px]" style={{ left: 9, color: "rgba(255,255,255,.9)", opacity: dark ? 1 : 0, transition: "opacity .2s" }}>{SUN}</span>
-      <span className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center" style={{ right: 9, color: "rgba(0,0,0,.45)", opacity: dark ? 0 : 1, transition: "opacity .2s" }}>{MOON}</span>
-      <span className="absolute top-[3px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.25)] flex items-center justify-center" style={{ width: knob, height: knob, left: dark ? w - knob - 3 : 3, color: dark ? "#c47d8e" : "#d97706", transition: "left .3s cubic-bezier(.2,.8,.2,1)" }}>{dark ? MOON : SUN}</span>
+    <button type="button" onClick={onToggle} role="switch" aria-checked={dark} aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+      className={`nitro-sky${dark ? " night" : ""}${size === "lg" ? " lg" : ""} ${className}`}>
+      <span className="sky-d" aria-hidden="true" /><span className="sky-n" aria-hidden="true" />
+      <span className="cl c1" aria-hidden="true" /><span className="cl c2" aria-hidden="true" />
+      <span className="st s1" aria-hidden="true" /><span className="st s2" aria-hidden="true" /><span className="st s3" aria-hidden="true" /><span className="st s4" aria-hidden="true" />
+      <span className="knob" aria-hidden="true">
+        <span className="sun" />
+        <span className="moon"><i className="m1" /><i className="m2" /><i className="m3" /></span>
+      </span>
     </button>
   );
 }
@@ -72,7 +74,7 @@ export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
     if (!document.startViewTransition) { apply(); return; }
 
     const wash = document.createElement("div");
-    wash.style.cssText = `position:fixed;inset:0;z-index:99999;pointer-events:none;opacity:0;background:${goingDark ? "radial-gradient(ellipse at 50% 30%,rgba(30,27,75,.45),rgba(9,12,21,.3))" : "radial-gradient(ellipse at 50% 30%,rgba(251,191,36,.18),rgba(245,158,11,.08))"};transition:opacity 400ms ease;`;
+    wash.style.cssText = `position:fixed;inset:0;z-index:99999;pointer-events:none;opacity:0;background:${goingDark ? "radial-gradient(ellipse at 50% 30%,rgba(52,24,44,.5),rgba(12,8,20,.32))" : "radial-gradient(ellipse at 50% 30%,rgba(251,191,36,.18),rgba(240,180,120,.08))"};transition:opacity 400ms ease;`;
     document.body.appendChild(wash);
     requestAnimationFrame(() => { wash.style.opacity = "1"; });
 
@@ -125,7 +127,13 @@ export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
     sidebarBorder: "var(--t-sidebar-border)",
   }), []);
 
-  return <ThemeCtx.Provider value={{ dark, setDark, toggleTheme, t, loaded, themeMode, setThemeMode }}>{children}</ThemeCtx.Provider>;
+  return (
+    <ThemeCtx.Provider value={{ dark, setDark, toggleTheme, t, loaded, themeMode, setThemeMode }}>
+      {children}
+      {/* The atmosphere: aurora + grain over every page (see .nitro-atmo in globals.css). */}
+      <div aria-hidden="true" className="nitro-atmo" />
+    </ThemeCtx.Provider>
+  );
 }
 
 // ── Shared Nav ──
@@ -154,7 +162,7 @@ export default function SharedNav({ action = "back" }) {
   return (<>
     <nav
       className="flex items-center justify-between px-6 h-14 backdrop-blur-[16px] shrink-0 sticky top-0 z-50"
-      style={{ background: dark ? "rgba(9,12,21,.9)" : "rgba(240,237,232,.9)", borderBottom: `1px solid ${t.surfaceBrd}` }}
+      style={{ background: dark ? "rgba(14,9,22,.9)" : "rgba(240,237,232,.9)", borderBottom: `1px solid ${t.surfaceBrd}` }}
     >
       <a href="/" className="flex items-center">
         <span className="md:hidden w-7 h-7 rounded-[7px] flex items-center justify-center" style={{ background: t.grad }}><svg width="11" height="12" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></span>
