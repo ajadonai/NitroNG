@@ -165,16 +165,6 @@ const BOTTOM_TABS = [
   { id: "orders", label: "History" },
   { id: "more", label: "More" },
 ];
-const MORE_ITEMS = [
-  { id: "referrals", label: "Referrals" },
-  { id: "rewards", label: "Rewards" },
-  { id: "tasks", label: "Tasks" },
-  { id: "guide", label: "Blog" },
-  { id: "changelog", label: "What's New", href: "/changelog" },
-  { id: "support", label: "Support" },
-  { id: "settings", label: "Settings" },
-  { id: "logout", label: "Log Out" },
-];
 const MoreIcon = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>;
 const OrderIcon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 
@@ -383,6 +373,21 @@ function DashboardInner({ initialData }) {
   const avRef = useRef(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [showOrderTour, setShowOrderTour] = useState(false);
+  // What's New badge: entries newer than the last time the user opened the changelog.
+  const [changelogNew, setChangelogNew] = useState(0);
+  const changelogFetched = useRef(false);
+  useEffect(() => {
+    if (!moreOpen || changelogFetched.current) return;
+    changelogFetched.current = true;
+    fetch("/api/changelog").then(r => r.json()).then(entries => {
+      if (!Array.isArray(entries)) return;
+      let seen = 0; try { seen = Number(localStorage.getItem("nitro-changelog-seen")) || 0; } catch {}
+      // No baseline yet (first ever open): everything would count as new, which is
+      // noise, not news. Start the clock now and only badge entries after this.
+      if (!seen) { try { localStorage.setItem("nitro-changelog-seen", String(Date.now())); } catch {} return; }
+      setChangelogNew(entries.filter(e => new Date(e.date).getTime() > seen).length);
+    }).catch(() => {});
+  }, [moreOpen]);
 
   // PWA Add to Home Screen
   const deferredPrompt = useRef(null);
@@ -1416,49 +1421,82 @@ function DashboardInner({ initialData }) {
       {moreOpen && (
         <div className="dash-more-sheet" role="dialog" aria-modal="true" aria-label="More" style={{ background: dark ? "#161b2e" : "#fff", borderTop: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
           <div className="dash-more-grab" style={{ background: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.18)" }} />
-          <div className="dash-more-head" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
-            <Avatar size={34} rounded={10} />
+
+          {/* Account glance: who you are, what you hold, one tap to top up */}
+          <div className="flex items-center gap-2.5 p-3 rounded-2xl" style={{ background: dark ? "linear-gradient(135deg,#1d1a2a,#1a1626)" : "linear-gradient(135deg,#faf3f4,#f4ebe6)", border: `1px solid ${dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.18)"}` }}>
+            <Avatar size={40} rounded={12} />
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-semibold truncate text-t-text">{user?.name || "Your account"}</div>
+              <div className="text-[13.5px] font-bold truncate text-t-text">{user?.name || "Your account"}</div>
               <div className="text-[11px] truncate text-t-text-muted">{user?.email || ""}</div>
             </div>
-            <ThemeToggle dark={dark} onToggle={toggleTheme} />
+            <div className="text-right shrink-0">
+              <div className="m text-[15px] font-bold leading-tight text-t-text">₦{Math.round(user?.balance || 0).toLocaleString()}</div>
+              <div className="text-[10px] font-bold uppercase tracking-[1px] text-t-text-muted">wallet</div>
+            </div>
+            <button type="button" aria-label="Top up wallet" onClick={() => { setActive("add-funds"); setMoreOpen(false); }} className="w-[30px] h-[30px] rounded-[10px] flex items-center justify-center shrink-0 text-white" style={{ background: "#c47d8e", boxShadow: "0 4px 10px rgba(196,125,142,.35)" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
           </div>
-          {(() => {
-            const byId = Object.fromEntries(MORE_ITEMS.map(m => [m.id, m]));
-            const browse = isReseller ? { id: "catalogue", label: "Catalogue" } : { id: "resellers", label: "Resellers", href: "/resellers" };
-            const hq = { id: "lab", label: isReseller ? "Reseller HQ" : "API access" };
-            const sec = (id, label) => ({ id, section: label, header: true });
-            return [
-              sec("sec-money", "Money"), byId.referrals, byId.rewards, byId.tasks,
-              sec("sec-browse", "Browse"), browse, hq, byId.guide, byId.changelog,
-              sec("sec-account", "Account"), byId.support, byId.settings,
-              byId.logout,
-            ].filter(Boolean);
-          })().map(item => {
-            if (item.header) return <div key={item.id} className="rail-sec"><span>{item.section}</span></div>;
-            const tint = item.id === "support" ? "#25d366" : (item.id === "tasks" || item.id === "resellers") ? (dark ? "#60a5fa" : "#2563eb") : item.id === "logout" ? (dark ? "#fca5a5" : "#dc2626") : null;
-            const go = () => {
-              if (item.soon) return;
-              if (item.id === "logout") { setMoreOpen(false); handleLogout(); return; }
-              if (item.href) { window.location.href = item.href; return; }
-              if (item.id === "support") { setMoreOpen(false); setChatOpen(true); return; }
-              setActive(item.id); setMoreOpen(false);
-            };
-            return (
-              <button key={item.id} type="button" onClick={go} className={"rail-it" + (active === item.id && !item.href ? " on" : "") + (tint ? " tint" : "") + (item.soon ? " soon" : "")} style={tint ? { "--ic": tint } : undefined}>
-                <span className="rail-ii">{I[item.id]}</span>
-                <span className="rail-il">{item.label}</span>
-                {item.soon && <span className="text-[11px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
+
+          {/* The earners: tinted tiles that pitch themselves */}
+          <div className="rail-sec"><span>Earn</span></div>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { id: "referrals", label: "Referrals", hint: "invite friends, both earn", bg: dark ? "#12211a" : "#f0f6ef", brd: dark ? "#1e3a2b" : "#d5e6d3", chip: dark ? "#1a3325" : "#dcecd9", ic: dark ? "#6ee7b7" : "#2e7d4f" },
+              { id: "rewards", label: "Rewards", hint: "daily streaks, free credit", bg: dark ? "#241b0e" : "#fdf3e4", brd: dark ? "#453317" : "#f0dfc0", chip: dark ? "#3a2b12" : "#f7e5c4", ic: dark ? "#e0a458" : "#b45309" },
+              { id: "tasks", label: "Tasks", hint: "post, tweet, get paid", bg: dark ? "#101d30" : "#eef4fb", brd: dark ? "#1e3a5c" : "#cfe0f0", chip: dark ? "#16293f" : "#dce9f7", ic: dark ? "#60a5fa" : "#2563eb" },
+            ].map(tl => (
+              <button key={tl.id} type="button" onClick={() => { setActive(tl.id); setMoreOpen(false); }} className="flex flex-col items-start gap-1.5 p-[11px] pb-2.5 rounded-[14px] cursor-pointer text-left font-[inherit]" style={{ background: tl.bg, border: `1px solid ${tl.brd}` }}>
+                <span className="w-[30px] h-[30px] rounded-[9px] flex items-center justify-center" style={{ background: tl.chip, color: tl.ic }}>{I[tl.id]}</span>
+                <span className="text-[12.5px] font-bold text-t-text">{tl.label}</span>
+                <span className="text-[10.5px] leading-[1.35] text-t-text-muted">{tl.hint}</span>
               </button>
-            );
-          })}
-          <div className="w-full flex items-center justify-center gap-3 mt-1.5 pt-2" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+            ))}
+          </div>
+
+          {/* Browse + Account: the calm chevron list */}
+          {(() => {
+            const chev = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-30"><polyline points="9 18 15 12 9 6"/></svg>;
+            const rows = [
+              { header: "Browse" },
+              isReseller ? { id: "catalogue", label: "Catalogue" } : { id: "resellers", label: "Resellers", href: "/resellers" },
+              { id: "lab", label: isReseller ? "Reseller HQ" : "API access" },
+              { id: "guide", label: "Blog" },
+              { id: "changelog", label: "What's New", href: "/changelog", badge: changelogNew },
+              { header: "Account" },
+              { id: "support", label: "WhatsApp support", wa: true },
+              { id: "settings", label: "Settings" },
+              { id: "logout", label: "Log out", out: true },
+            ];
+            return rows.map(item => {
+              if (item.header) return <div key={item.header} className="rail-sec"><span>{item.header}</span></div>;
+              const go = () => {
+                if (item.id === "logout") { setMoreOpen(false); handleLogout(); return; }
+                if (item.id === "changelog") { try { localStorage.setItem("nitro-changelog-seen", String(Date.now())); } catch {} }
+                if (item.href) { window.location.href = item.href; return; }
+                if (item.id === "support") { setMoreOpen(false); setChatOpen(true); return; }
+                setActive(item.id); setMoreOpen(false);
+              };
+              const chipBg = item.wa ? (dark ? "rgba(37,211,102,.14)" : "rgba(37,211,102,.12)") : item.out ? (dark ? "rgba(220,38,38,.16)" : "rgba(220,38,38,.1)") : (dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.045)");
+              const chipIc = item.wa ? (dark ? "#34d399" : "#1fa855") : item.out ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#b9bdc9" : "#55524e");
+              return (
+                <button key={item.id} type="button" onClick={go} className="flex items-center gap-[11px] w-full py-2.5 px-1 rounded-xl cursor-pointer bg-transparent border-none text-left font-[inherit]">
+                  <span className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: chipBg, color: chipIc }}>{I[item.id]}</span>
+                  <span className="text-[13.5px] font-semibold flex-1" style={item.out ? { color: dark ? "#fca5a5" : "#dc2626" } : undefined}>{!item.out ? <span className="text-t-text">{item.label}</span> : item.label}</span>
+                  {item.badge > 0 && <span className="text-[9.5px] font-extrabold uppercase tracking-[.5px] py-[2.5px] px-[7px] rounded-full text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.14)" }}>{item.badge > 9 ? "9+" : item.badge} new</span>}
+                  {!item.out && chev}
+                </button>
+              );
+            });
+          })()}
+
+          <div className="w-full flex items-center justify-between gap-3 mt-1.5 pt-3" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
+            <div className="flex items-center gap-2.5">
             <a href={`https://instagram.com/${(socialLinks.social_instagram || "Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: "#E1306C" }}>{I.instagram}</a>
-            <div className="w-px h-5 shrink-0" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }} />
             <a href={`https://x.com/${(socialLinks.social_twitter || "TheNitroNG").replace(/^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="X" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.4)" }}>{I.x}</a>
-            {socialLinks.social_tiktok && <><div className="w-px h-5 shrink-0" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }} /><a href={`https://tiktok.com/@${socialLinks.social_tiktok.replace(/^(https?:\/\/)?(www\.)?(tiktok\.com\/@?)?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.4)" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.41a8.16 8.16 0 004.77 1.52V7.48a4.85 4.85 0 01-1-.79z"/></svg></a></>}
-            
+            {socialLinks.social_tiktok && <a href={`https://tiktok.com/@${socialLinks.social_tiktok.replace(/^(https?:\/\/)?(www\.)?(tiktok\.com\/@?)?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.4)" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.41a8.16 8.16 0 004.77 1.52V7.48a4.85 4.85 0 01-1-.79z"/></svg></a>}
+            </div>
+            <ThemeToggle dark={dark} onToggle={toggleTheme} />
           </div>
         </div>
       )}
