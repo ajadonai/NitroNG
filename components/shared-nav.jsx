@@ -25,6 +25,26 @@ export function ThemeToggle({ dark, onToggle, size = "md", className = "" }) {
   );
 }
 
+// The three-mode theme control (Auto / Light / Dark), styled like the sky
+// toggle: a highlight springs under the active mode and its icon glows. Styled
+// by .theme-pill in globals.css. `mode` is themeMode; `onMode(id)` applies it.
+const TP_ICONS = {
+  auto: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="currentColor" stroke="none"/></svg>,
+  day: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>,
+  night: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>,
+};
+export function ThemePill({ mode = "auto", onMode, className = "" }) {
+  return (
+    <div role="group" aria-label="Theme" className={`theme-pill ${className}`} data-m={mode}>
+      <span className="tp-hl" aria-hidden="true" />
+      {[["auto", "Auto"], ["day", "Light"], ["night", "Dark"]].map(([id, label]) => (
+        <button key={id} type="button" onClick={() => onMode?.(id)} aria-pressed={mode === id} aria-label={label} title={label}
+          className={`tp-seg tp-${id}`}>{TP_ICONS[id]}</button>
+      ))}
+    </div>
+  );
+}
+
 export function useTheme() {
   return useContext(ThemeCtx);
 }

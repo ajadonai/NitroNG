@@ -1,6 +1,5 @@
 "use client";
 import { Modal } from "./ui-primitives";
-import { ThemeToggle } from "./shared-nav";
 
 // The public site's primary links, in one place so the landing bar, SharedNav
 // and the mobile sheet cannot drift apart.
@@ -28,7 +27,7 @@ const SHEET_CSS = `
  * Links may carry { sub: true } to step down to the smaller tier (page links
  * vs section links) and { em: "word" } to set that word in the italic rose serif.
  */
-export function PublicNavSheet({ open, onClose, dark, toggleTheme, onLogin, onSignup, links = PUBLIC_LINKS, liveCount = null }) {
+export function PublicNavSheet({ open, onClose, dark, onLogin, onSignup, links = PUBLIC_LINKS, liveCount = null }) {
   return (
     <Modal open={open} onClose={onClose} title="Menu" dark={dark} variant="sheet">
       <style>{SHEET_CSS}</style>
@@ -74,10 +73,6 @@ export function PublicNavSheet({ open, onClose, dark, toggleTheme, onLogin, onSi
           <div className="flex-1" />
 
           <div className="md:max-w-[420px] md:w-full md:mx-auto">
-            <div className="flex items-center justify-between mb-3.5 text-[13px]" style={{ color: "rgba(246,236,238,.65)" }}>
-              <span>{dark ? "Dark mode" : "Light mode"}</span>
-              <ThemeToggle dark={dark} onToggle={toggleTheme} />
-            </div>
             {onSignup
               ? <button type="button" onClick={onSignup} className="w-full py-[15px] rounded-full text-[15px] font-extrabold border-none cursor-pointer flex items-center justify-center gap-2" style={{ background: "#fff", color: "#1a1a1a", boxShadow: "0 10px 26px rgba(0,0,0,.25)" }}>🎁 Create free account</button>
               : <a href="/?signup=1" className="w-full py-[15px] rounded-full text-[15px] font-extrabold text-center no-underline flex items-center justify-center gap-2" style={{ background: "#fff", color: "#1a1a1a", boxShadow: "0 10px 26px rgba(0,0,0,.25)" }}>🎁 Create free account</a>}
