@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import NitroLoader from './nitro-loader';
+import { NitroWordmark } from './nitro-logo';
 
 function Lbl({ t, htmlFor, children }) {
   return (
@@ -56,7 +57,31 @@ function PwStrength({ pw, t }) {
   );
 }
 
-function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode, resetToken: resetTokenProp }) {
+// Opt-in two-panel shell (landing v3). Desktop: brand panel + the usual card. Mobile: the usual card with a slim brand strip.
+function ElevatedShell({ elevated, dark, mode, children }) {
+  if (!elevated) return children;
+  return (
+    <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[860px] max-md:max-w-[440px] max-h-[90dvh] grid md:grid-cols-[.9fr_1.1fr] rounded-[22px] overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`, boxShadow: '0 30px 80px rgba(0,0,0,.35)' }}>
+      <div className="max-md:hidden relative overflow-hidden text-white flex flex-col p-[30px] pb-[26px]" style={{ background: 'linear-gradient(160deg,#c47d8e 0%,#a3586b 55%,#7a3d52 100%)' }}>
+        <div className="absolute rounded-full pointer-events-none" style={{ width: 260, height: 260, right: -90, top: -80, background: 'rgba(255,220,200,.35)', filter: 'blur(70px)' }}/>
+        <span className="self-start h-7 px-3 rounded-lg inline-flex items-center relative" style={{ background: 'rgba(255,255,255,.16)', border: '1px solid rgba(255,255,255,.28)' }}><NitroWordmark height={12} color="#fff" /></span>
+        <h3 className="serif italic font-medium text-[34px] leading-[1.1] mt-auto mb-3 relative">{mode === 'login' ? "Welcome back. Let's run it up." : mode === 'signup' ? 'Your first push is on us.' : 'No stress. Let\'s get you back in.'}</h3>
+        <p className="text-[13px] leading-[1.6] relative" style={{ opacity: .86 }}>{mode === 'login' ? 'Your wallet, your orders and your tiers are exactly where you left them.' : mode === 'signup' ? 'Tested services, naira prices, delivery in minutes. Account in 30 seconds.' : 'Tell us the email on the account and we will send a reset link.'}</p>
+        <ul className="list-none p-0 m-0 mt-[18px] flex flex-col gap-[9px] relative">
+          {['Naira pricing, no FX markup', 'Starts in under 60 seconds', 'Real humans on WhatsApp'].map(x => <li key={x} className="flex gap-[9px] text-[13px] items-center"><i className="not-italic w-5 h-5 rounded-full inline-flex items-center justify-center shrink-0 text-[11px]" style={{ background: 'rgba(255,255,255,.18)' }}>✓</i>{x}</li>)}
+        </ul>
+        {mode === 'signup' && <div className="mt-5 py-3 px-3.5 rounded-[14px] text-[12.5px] leading-[1.45] relative" style={{ background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.26)' }}><b className="block text-[13.5px]">🎁 Up to ₦1,500 free promo credit</b>on your first deposit, straight into your wallet.</div>}
+        <div className="flex items-center gap-2.5 mt-[18px] text-xs relative" style={{ opacity: .9 }}>
+          <div className="flex">{[['TM','#e0a458'],['AO','#6ee7b7'],['EN','#a5b4fc'],['BI','#f472b6']].map(([a, c], i) => <i key={a} className="not-italic w-[22px] h-[22px] rounded-full text-[8px] font-extrabold flex items-center justify-center" style={{ background: c, border: '2px solid rgba(255,255,255,.9)', marginLeft: i ? -7 : 0 }}>{a}</i>)}</div>
+          <span>2,300+ creators already here</span>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode, resetToken: resetTokenProp, elevated = false }) {
   const [method, setMethod] = useState('email');
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
@@ -417,13 +442,16 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       className="fixed inset-0 z-100 backdrop-blur-[4px] flex items-center justify-center p-4 animate-[modalFadeIn_.2s_ease]"
       style={{ background: "rgba(0,0,0,.45)" }}
     >
+      <ElevatedShell elevated={elevated} dark={dark} mode={mode}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={mode === 'signup' ? 'Create account' : 'Log in'}
         onClick={(e) => e.stopPropagation()}
-        className="auth-card w-full max-w-[440px] max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-2xl px-8 py-9 max-md:py-6 relative backdrop-blur-[20px] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]"
-        style={{
+        className={elevated
+          ? "auth-card w-full max-h-[90dvh] overflow-y-auto overflow-x-hidden px-8 py-9 max-md:py-6 relative"
+          : "auth-card w-full max-w-[440px] max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-2xl px-8 py-9 max-md:py-6 relative backdrop-blur-[20px] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]"}
+        style={elevated ? { background: dark ? '#0e1120' : '#fff' } : {
           background: dark ? '#0e1120' : '#fff',
           border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`,
           boxShadow: dark
@@ -431,6 +459,10 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             : '0 20px 60px rgba(0,0,0,.1)',
         }}
       >
+        {elevated && <div className="md:hidden flex items-center gap-2.5 -mt-6 -mx-8 mb-[18px] py-3.5 px-[22px] text-white" style={{ background: 'linear-gradient(135deg,#c47d8e,#a3586b)' }}>
+          <span className="h-6 px-2.5 rounded-[7px] inline-flex items-center" style={{ background: 'rgba(255,255,255,.18)' }}><NitroWordmark height={10} color="#fff" /></span>
+          <span className="text-[12.5px] font-semibold" style={{ opacity: .92 }}>{mode === 'signup' ? '🎁 ₦1,500 free credit on your first deposit' : 'Welcome back'}</span>
+        </div>}
         {/* Close button */}
         <button
           type="button"
@@ -1299,6 +1331,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
         )}
         </form>
       </div>
+      </ElevatedShell>
     </div>
   );
 }
