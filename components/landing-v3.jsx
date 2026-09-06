@@ -12,20 +12,29 @@ import { PublicNavSheet, SHEET_LINKS } from "./public-nav-sheet";
 
 // The mobile hero card. Colours come in as CSS variables from the component so it follows the theme.
 const HC_CSS = `
-.hc{border-radius:22px;background:var(--cbg);border:1px solid var(--cline);box-shadow:var(--shadow);color:var(--cink);text-align:left;overflow:hidden;padding-bottom:14px}
-.hc-strip{display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 16px;font-size:12px;color:var(--cmut);background:var(--csoft);border-bottom:1px solid var(--cline)}
-.hc-strip i{width:6px;height:6px;border-radius:50%;background:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.2);flex-shrink:0}.hc-strip b{color:var(--cink);font-weight:700}
-.hc-facts{display:grid;grid-template-columns:1fr 1fr 1fr;margin:14px 16px 12px;border:1px solid var(--cline);border-radius:14px;overflow:hidden}
-.hc-f{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:10px 6px;border-left:1px solid var(--cline);min-width:0}.hc-f:first-child{border-left:0}
-.hc-f b{font-size:18px;font-weight:800;letter-spacing:-.01em;font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.hc-f span{font-size:10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--cmut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hc-f.ac{background:var(--acbg)}.hc-f.ac b{color:#c47d8e}
-.hc-gift{display:flex;align-items:center;gap:10px;margin:0 16px 12px;padding:10px 12px;border-radius:14px;background:var(--acbg)}
+.hc{border-radius:22px;background:var(--cbg);border:1px solid var(--cline);box-shadow:var(--shadow);color:var(--cink);text-align:left;overflow:hidden;padding-bottom:13px}
+/* 2x2 stat grid, number beside label so the rows stay short — the second row
+   is paid for by the removed Live-activity strip, so the card height holds */
+.hc-facts{display:grid;grid-template-columns:1fr 1fr;margin:13px 16px 11px;border:1px solid var(--cline);border-radius:14px;overflow:hidden}
+.hc-f{display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 6px;border-left:1px solid var(--cline);min-width:0}
+.hc-f:nth-child(odd){border-left:0}
+.hc-f:nth-child(n+3){border-top:1px solid var(--cline)}
+/* fallback when the live stat is unavailable: one clean three-column row */
+.hc-facts.three{grid-template-columns:1fr 1fr 1fr}
+.hc-facts.three .hc-f{border-top:0;border-left:1px solid var(--cline)}
+.hc-facts.three .hc-f:first-child{border-left:0}
+.hc-f b{font-size:16.5px;font-weight:800;letter-spacing:-.01em;font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.hc-f span{font-size:9.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--cmut);white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.hc-f.live b{color:#0a9d6b}.dark .hc-f.live b{color:#4be284}
+.hc-f.live i{width:5px;height:5px;border-radius:50%;background:#34d399;flex-shrink:0;animation:hcLp 2.2s ease-out infinite}
+@keyframes hcLp{0%{box-shadow:0 0 0 0 rgba(52,211,153,.4)}80%,100%{box-shadow:0 0 0 5px rgba(52,211,153,0)}}
+@media (prefers-reduced-motion:reduce){.hc-f.live i{animation:none}}
+.hc-gift{display:flex;align-items:center;gap:10px;margin:0 16px 11px;padding:9px 12px;border-radius:14px;background:var(--acbg)}
 .hc-gi{width:32px;height:32px;border-radius:10px;background:var(--cbg);color:#c47d8e;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}.hc-gi svg{width:16px;height:16px}
 .hc-gift>span:last-child{display:flex;flex-direction:column;line-height:1.25;min-width:0}.hc-gift b{font-size:13px;font-weight:700}.hc-gift i{font-style:normal;font-size:12px;color:var(--cmut)}
 .hc-cta{display:block;margin:0 16px;padding:14px;border-radius:14px;font-size:15px;font-weight:700;text-align:center;color:#fff;background:linear-gradient(135deg,#c47d8e,#a3586b);box-shadow:0 6px 24px rgba(196,125,142,.4);cursor:pointer}
-.hc-login{text-align:center;font-size:13px;color:var(--cmut);margin:12px 16px 0}.hc-login a{color:#c47d8e;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.hc-trust{display:flex;justify-content:center;gap:14px;margin:12px 16px 0;padding-top:12px;border-top:1px solid var(--cline);font-size:11px;color:var(--cdim)}
+.hc-login{text-align:center;font-size:13px;color:var(--cmut);margin:11px 16px 0}.hc-login a{color:#c47d8e;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.hc-trust{display:flex;justify-content:center;gap:14px;margin:11px 16px 0;padding-top:11px;border-top:1px solid var(--cline);font-size:11px;color:var(--cdim)}
 .hc-trust span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}.hc-trust svg{width:11px;height:11px}
 `;
 
@@ -281,12 +290,12 @@ function LandingInner({ initialAuthQuery }){
               {/* Mobile hero card: the live format (strip, facts, gift, CTA, log in, trust) */}
               <div className="fu fd4 hidden max-desktop:!flex max-desktop:flex-col max-desktop:items-center max-desktop:mt-4 max-md:mt-3 w-full max-md:max-w-full relative z-[2]">
                 <style>{HC_CSS}</style>
-                <div className="hc w-full max-w-[380px] max-md:max-w-full" style={{"--cbg":dark?"#171126":"#fff","--cink":dark?"#f2efe9":"#1a1a1a","--cmut":dark?"rgba(255,255,255,.5)":"rgba(0,0,0,.45)","--cdim":dark?"rgba(255,255,255,.35)":"rgba(0,0,0,.35)","--cline":dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.08)","--csoft":dark?"rgba(255,255,255,.05)":"rgba(0,0,0,.03)","--acbg":dark?"rgba(196,125,142,.16)":"rgba(196,125,142,.1)","--shadow":dark?"0 20px 60px rgba(0,0,0,.5)":"0 20px 60px rgba(0,0,0,.16)"}}>
-                  {siteStats.processing!=null&&<div className="hc-strip"><i/><span>Live activity: <b><CountUp value={siteStats.processing}/></b></span></div>}
-                  <div className="hc-facts">
-                    {[[siteStats.orders||"0","Orders",false],[siteStats.users||"0","Accounts",false],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Delivery",true]]:[])].map(([num,label,ac],i)=>
-                      <div key={i} className={"hc-f"+(ac?" ac":"")}><b><CountUp value={num}/></b><span>{label}</span></div>
+                <div className="hc w-full max-w-[380px] max-md:max-w-full" style={{"--cbg":dark?"#171126":"#fff","--cink":dark?"#f2efe9":"#1a1a1a","--cmut":dark?"rgba(255,255,255,.5)":"rgba(0,0,0,.45)","--cdim":dark?"rgba(255,255,255,.35)":"rgba(0,0,0,.35)","--cline":dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.08)","--acbg":dark?"rgba(196,125,142,.16)":"rgba(196,125,142,.1)","--shadow":dark?"0 20px 60px rgba(0,0,0,.5)":"0 20px 60px rgba(0,0,0,.16)"}}>
+                  <div className={"hc-facts"+(siteStats.processing==null?" three":"")}>
+                    {[[siteStats.orders||"0","Orders"],[siteStats.users||"0","Accounts"],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Delivery"]]:[])].map(([num,label])=>
+                      <div key={label} className="hc-f"><b><CountUp value={num}/></b><span>{label}</span></div>
                     )}
+                    {siteStats.processing!=null&&<div className="hc-f live"><b><CountUp value={siteStats.processing}/></b><span><i/>Delivering now</span></div>}
                   </div>
                   <div className="hc-gift">
                     <span className="hc-gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></span>
