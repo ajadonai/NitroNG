@@ -142,6 +142,7 @@ const I = {
   instagram: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
   x: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
   logout: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  a2hs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>,
 };
 
 const NAV_ITEMS = [
@@ -413,7 +414,20 @@ function DashboardInner({ initialData }) {
     deferredPrompt.current = null;
     setA2hsReady(false);
   };
-  const dismissA2hs = () => { setA2hsDismissed(true); localStorage.setItem('nitro-a2hs-dismissed', '1'); };
+  // The install moment: fires once ever, the first time an order completes
+  // while the user is in the app and their lifetime completed count is 2 or
+  // more — so existing regulars see it on their very next completion, not
+  // never. Installed users, desktop, and browsers with no install path are out.
+  const [installMoment, setInstallMoment] = useState(false);
+  const [iosSteps, setIosSteps] = useState(false);
+  const [isStandalone] = useState(() => typeof window !== 'undefined' && (window.matchMedia('(display-mode: standalone)').matches || !!window.navigator.standalone));
+  const prevCompleted = useRef(null);
+  const closeInstallMoment = () => { setInstallMoment(false); setIosSteps(false); };
+  const momentInstall = async () => {
+    if (isIos) { setIosSteps(true); return; }
+    await handleA2hsInstall();
+    closeInstallMoment();
+  };
   const orderTourChecked = useRef(false);
   const bottomNavRef = useRef(null);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -444,7 +458,7 @@ function DashboardInner({ initialData }) {
   useEffect(() => { if (notifReadAllAt) { try { localStorage.setItem("nitro-notif-readall-at", notifReadAllAt.toISOString()); } catch {} } }, [notifReadAllAt]);
 
   // Scroll lock when sidebar or notification panel is open (mobile/tablet)
-  useEffect(() => { document.body.style.overflow = leftOpen || notifOpen || moreOpen ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [leftOpen, notifOpen, moreOpen]);
+  useEffect(() => { document.body.style.overflow = leftOpen || notifOpen || moreOpen || installMoment ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [leftOpen, notifOpen, moreOpen, installMoment]);
 
   // Sync theme preference to server when it changes (skip initial mount)
   const themeSyncedRef = useRef(false);
@@ -478,6 +492,23 @@ function DashboardInner({ initialData }) {
     active: 0, completed: 0, thisWeek: 0, attention: 0,
     spent: 0, refunded: 0, averageQuantity: 0, topPlatform: null,
   });
+  // (trigger for the install moment — lives below orderSummary's declaration)
+  const momentCompleted = orderSummary?.completed;
+  useEffect(() => {
+    if (typeof momentCompleted !== 'number') return;
+    const prev = prevCompleted.current;
+    prevCompleted.current = momentCompleted;
+    if (prev == null || momentCompleted <= prev) return; // only a completion seen live this session
+    if (momentCompleted < 2) return;                     // the habit threshold
+    if (isStandalone || a2hsDismissed) return;
+    if (!(a2hsReady || isIos)) return;
+    let done = false; try { done = !!localStorage.getItem('nitro-install-moment'); } catch {}
+    if (done) return;
+    if (!window.matchMedia('(max-width: 1199px)').matches) return; // phones and tablets carry the dock
+    setIosSteps(false);
+    setInstallMoment(true);
+    try { localStorage.setItem('nitro-install-moment', '1'); } catch {}
+  }, [momentCompleted, a2hsReady, isIos, a2hsDismissed, isStandalone]);
   const [txs, setTxs] = useState(initialData?.transactions || []);
   const [transactionsTotal, setTransactionsTotal] = useState(initialData?.transactionsTotal ?? initialData?.transactions?.length ?? 0);
   const [unreadTickets, setUnreadTickets] = useState(initialData?.unreadTickets || []);
@@ -1147,7 +1178,7 @@ function DashboardInner({ initialData }) {
   const renderPage = () => {
     switch (active) {
       case "overview":
-        return <OverviewPage user={user} orders={orders} activeOrders={activeOrders} orderSummary={orderSummary} isReseller={isReseller} dark={dark} t={t} setActive={setActive} a2hs={{ ready: a2hsReady, isIos, dismissed: a2hsDismissed, onInstall: handleA2hsInstall, onDismiss: dismissA2hs }} socialLinks={socialLinks} rewards={rewards} />;
+        return <OverviewPage user={user} orders={orders} activeOrders={activeOrders} orderSummary={orderSummary} isReseller={isReseller} dark={dark} t={t} setActive={setActive} socialLinks={socialLinks} rewards={rewards} />;
       case "services":
         return <NewOrderPage dark={dark} t={t} user={user} onOrderSuccess={refreshDashboard} onViewOrders={() => setActive("orders")} onNavigate={(id) => setActive(id)} onTopUp={() => setActive("add-funds")} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} comments={noComments} setComments={setNoComments} catModal={noCatModal} setCatModal={setNoCatModal} tourActive={showOrderTour} activePromotion={activePromotion} rewards={rewards} socialLinks={socialLinks} refreshRewards={refreshRewards} />;
       case "orders":
@@ -1413,6 +1444,26 @@ function DashboardInner({ initialData }) {
       {showOrderTour && <OrderTour dark={dark} onComplete={() => setShowOrderTour(false)} setSelSvc={setNoSelSvc} setSelTier={setNoSelTier} setQty={setNoQty} user={user} onTopUp={() => setActive("add-funds")} />}
 
       {/* ═══ MOBILE BOTTOM NAV ═══ */}
+      {/* The install moment: over the dock, once ever, on a live second completion */}
+      {installMoment && <>
+        <div className="fixed inset-0 z-[92] desktop:hidden" style={{ background: "rgba(0,0,0,.28)" }} onClick={closeInstallMoment} />
+        <div role="dialog" aria-modal="true" aria-label="Add Nitro to your home screen" className="dash-install-moment fixed left-3 right-3 z-[93] rounded-[18px] p-3.5 desktop:hidden" style={{ bottom: "calc(88px + env(safe-area-inset-bottom))", background: dark ? "#1d1430" : "#fff", border: `1px solid ${dark ? "rgba(232,180,196,.16)" : "rgba(139,74,94,.14)"}`, boxShadow: dark ? "0 18px 50px rgba(0,0,0,.5)" : "0 18px 50px rgba(0,0,0,.24)" }}>
+          <div className="flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-bold leading-snug text-t-text">Two orders delivered.<br/>You&rsquo;re a regular now.</div>
+              <div className="text-xs leading-[1.5] mt-1 text-t-text-muted">{isIos ? "Keep Nitro one tap away for tracking the next one." : "Put Nitro on your home screen and track the next one in one tap. No app store, no download size."}</div>
+            </div>
+            <button type="button" aria-label="Dismiss" onClick={closeInstallMoment} className="shrink-0 w-[26px] h-[26px] rounded-lg flex items-center justify-center border-none cursor-pointer text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          {iosSteps
+            ? <div className="mt-3 py-2.5 px-3 rounded-xl text-xs leading-[1.7] text-t-text" style={{ background: dark ? "rgba(201,127,146,.13)" : "rgba(201,127,146,.08)" }}>Tap <b>Share</b> <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c47d8e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline", verticalAlign: "-2px" }}><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> below, then <b>Add to Home Screen</b>.</div>
+            : <button type="button" onClick={momentInstall} className="w-full flex items-center justify-center gap-2 mt-3 py-3 rounded-xl text-[13.5px] font-extrabold border-none cursor-pointer text-white" style={{ background: "linear-gradient(135deg,#c97f92,#9b5266)", boxShadow: "0 6px 18px rgba(196,125,142,.35)" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Add to Home Screen
+              </button>}
+        </div>
+      </>}
       {moreOpen && <div className="dash-more-overlay" onClick={() => setMoreOpen(false)} />}
       {moreOpen && (
         <div className="dash-more-sheet" role="dialog" aria-modal="true" aria-label="More" style={{ background: dark ? "#1a1329" : "#fff", borderTop: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
@@ -1460,6 +1511,7 @@ function DashboardInner({ initialData }) {
               { id: "guide", label: "Blog" },
               { id: "changelog", label: "What's New", href: "/changelog", badge: changelogNew },
               { header: "Account" },
+              ...(!isStandalone && (a2hsReady || isIos) ? [{ id: "a2hs", label: "Add to Home Screen", pwa: true }] : []),
               { id: "support", label: "WhatsApp support", wa: true },
               { id: "settings", label: "Settings" },
               { id: "logout", label: "Log out", out: true },
@@ -1467,14 +1519,15 @@ function DashboardInner({ initialData }) {
             return rows.map(item => {
               if (item.header) return <div key={item.header} className="rail-sec"><span>{item.header}</span></div>;
               const go = () => {
+                if (item.id === "a2hs") { setMoreOpen(false); if (isIos) { setIosSteps(true); setInstallMoment(true); } else handleA2hsInstall(); return; }
                 if (item.id === "logout") { setMoreOpen(false); handleLogout(); return; }
                 if (item.id === "changelog") { try { localStorage.setItem("nitro-changelog-seen", String(Date.now())); } catch {} }
                 if (item.href) { window.location.href = item.href; return; }
                 if (item.id === "support") { setMoreOpen(false); setChatOpen(true); return; }
                 setActive(item.id); setMoreOpen(false);
               };
-              const chipBg = item.wa ? (dark ? "rgba(37,211,102,.14)" : "rgba(37,211,102,.12)") : item.out ? (dark ? "rgba(220,38,38,.16)" : "rgba(220,38,38,.1)") : (dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.045)");
-              const chipIc = item.wa ? (dark ? "#34d399" : "#1fa855") : item.out ? (dark ? "#fca5a5" : "#dc2626") : (dark ? "#b9bdc9" : "#55524e");
+              const chipBg = item.wa ? (dark ? "rgba(37,211,102,.14)" : "rgba(37,211,102,.12)") : item.out ? (dark ? "rgba(220,38,38,.16)" : "rgba(220,38,38,.1)") : item.pwa ? (dark ? "rgba(201,127,146,.16)" : "rgba(201,127,146,.14)") : (dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.045)");
+              const chipIc = item.wa ? (dark ? "#34d399" : "#1fa855") : item.out ? (dark ? "#fca5a5" : "#dc2626") : item.pwa ? (dark ? "#e3a4b5" : "#c47d8e") : (dark ? "#b9bdc9" : "#55524e");
               return (
                 <button key={item.id} type="button" onClick={go} className="flex items-center gap-[11px] w-full py-2.5 px-1 rounded-xl cursor-pointer bg-transparent border-none text-left font-[inherit]">
                   <span className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: chipBg, color: chipIc }}>{I[item.id]}</span>
