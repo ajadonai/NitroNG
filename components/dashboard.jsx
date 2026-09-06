@@ -421,7 +421,6 @@ function DashboardInner({ initialData }) {
   const [installMoment, setInstallMoment] = useState(false);
   const [iosSteps, setIosSteps] = useState(false);
   const [isStandalone] = useState(() => typeof window !== 'undefined' && (window.matchMedia('(display-mode: standalone)').matches || !!window.navigator.standalone));
-  const prevCompleted = useRef(null);
   const closeInstallMoment = () => { setInstallMoment(false); setIosSteps(false); };
   const momentInstall = async () => {
     if (isIos) { setIosSteps(true); return; }
@@ -496,19 +495,28 @@ function DashboardInner({ initialData }) {
   const momentCompleted = orderSummary?.completed;
   useEffect(() => {
     if (typeof momentCompleted !== 'number') return;
-    const prev = prevCompleted.current;
-    prevCompleted.current = momentCompleted;
-    if (prev == null || momentCompleted <= prev) return; // only a completion seen live this session
     if (momentCompleted < 2) return;                     // the habit threshold
     if (isStandalone || a2hsDismissed) return;
     if (!(a2hsReady || isIos)) return;
     let done = false; try { done = !!localStorage.getItem('nitro-install-moment'); } catch {}
     if (done) return;
     if (!window.matchMedia('(max-width: 1199px)').matches) return; // phones and tablets carry the dock
-    setIosSteps(false);
-    setInstallMoment(true);
-    try { localStorage.setItem('nitro-install-moment', '1'); } catch {}
-  }, [momentCompleted, a2hsReady, isIos, a2hsDismissed, isStandalone]);
+    // Never stack it on another overlay — the order tour, the concierge, a
+    // sheet or the nav. It waits for a clear screen instead, and because the
+    // once-ever flag is only written when it actually shows, waiting costs
+    // nothing: it simply appears the next time nothing else is up.
+    if (showOrderTour || chatOpen || moreOpen || notifOpen || leftOpen) return;
+    // Offered once ever to anyone already past two deliveries — not only to
+    // someone who happens to be watching the app at the moment one completes,
+    // which would never reach the regulars who have been here for months. The
+    // short delay lets the dashboard paint first so it slides up as an event.
+    const timer = setTimeout(() => {
+      setIosSteps(false);
+      setInstallMoment(true);
+      try { localStorage.setItem('nitro-install-moment', '1'); } catch {}
+    }, 1400);
+    return () => clearTimeout(timer);
+  }, [momentCompleted, a2hsReady, isIos, a2hsDismissed, isStandalone, showOrderTour, chatOpen, moreOpen, notifOpen, leftOpen]);
   const [txs, setTxs] = useState(initialData?.transactions || []);
   const [transactionsTotal, setTransactionsTotal] = useState(initialData?.transactionsTotal ?? initialData?.transactions?.length ?? 0);
   const [unreadTickets, setUnreadTickets] = useState(initialData?.unreadTickets || []);
@@ -1450,7 +1458,8 @@ function DashboardInner({ initialData }) {
         <div role="dialog" aria-modal="true" aria-label="Add Nitro to your home screen" className="dash-install-moment fixed left-3 right-3 z-[93] rounded-[18px] p-3.5 desktop:hidden" style={{ bottom: "calc(88px + env(safe-area-inset-bottom))", background: dark ? "#1d1430" : "#fff", border: `1px solid ${dark ? "rgba(232,180,196,.16)" : "rgba(139,74,94,.14)"}`, boxShadow: dark ? "0 18px 50px rgba(0,0,0,.5)" : "0 18px 50px rgba(0,0,0,.24)" }}>
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold leading-snug text-t-text">Two orders delivered.<br/>You&rsquo;re a regular now.</div>
+              {/* The real lifetime count — "Two" only when it is actually two. */}
+              <div className="text-sm font-bold leading-snug text-t-text">{momentCompleted === 2 ? "Two" : Number(momentCompleted || 0).toLocaleString()} orders delivered.<br/>You&rsquo;re a regular now.</div>
               <div className="text-xs leading-[1.5] mt-1 text-t-text-muted">{isIos ? "Keep Nitro one tap away for tracking the next one." : "Put Nitro on your home screen and track the next one in one tap. No app store, no download size."}</div>
             </div>
             <button type="button" aria-label="Dismiss" onClick={closeInstallMoment} className="shrink-0 w-[26px] h-[26px] rounded-lg flex items-center justify-center border-none cursor-pointer text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>
