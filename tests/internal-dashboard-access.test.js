@@ -320,6 +320,12 @@ describe('internal dashboard browser boundary', () => {
     expect(isInternalDashboardPath('/pulse/detail')).toBe(true);
     expect(isInternalDashboardPath('/live')).toBe(true);
     expect(isInternalDashboardPath('/liveness')).toBe(false);
+    // The admin panel is a no-tracking surface, but must stay out of the
+    // redirect allowlist below.
+    expect(isInternalDashboardPath('/admin')).toBe(true);
+    expect(isInternalDashboardPath('/admin/login')).toBe(true);
+    expect(isInternalDashboardPath('/administrators')).toBe(false);
+    expect(safeInternalDashboardDestination('/admin', '/pulse')).toBe('/pulse');
     expect(safeInternalDashboardDestination('/live', '/admin')).toBe('/live');
     expect(safeInternalDashboardDestination('https://evil.example', '/admin')).toBe('/admin');
     expect(safeInternalDashboardDestination('//evil.example', '/admin')).toBe('/admin');
