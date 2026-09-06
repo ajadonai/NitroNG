@@ -1,9 +1,44 @@
-# Backlog
+# The Shelf
 
-The one list. When something ships it moves to Closed with its commit, so it
-never gets picked up twice. Update this in the same commit as the work.
+The one list — everything built dark, parked, or waiting its turn sits on the
+shelf until Trip takes it down. When something ships it moves to Closed with
+its commit, so it never gets picked up twice. Update this in the same commit
+as the work. (Formerly docs/BACKLOG.md.)
 
 ## Open
+
+- **Auto data-saver — parked design, agreed 6 Sep 2026** (the improved version
+  of the audit's "Data-Saver toggle"): no manual toggle — animations cost CPU,
+  not data, and a switch nobody finds helps nobody. Instead the app reads the
+  browser's own signals: `navigator.connection.saveData` (the user's OS-level
+  Data Saver, exposed by Chrome on Android — exactly our audience) and
+  `effectiveType` (`"3g"`/`"2g"`). When either says constrained:
+  **lengthen the polling intervals** (the real data eater — the dashboard's
+  pollers, not the visuals), pause ambient animation (aurora, marquee, ticker
+  pulses — reduced-motion plumbing already exists everywhere new), and defer
+  heavy assets. One small hook (`useDataSaver()`) consumed by the pollers and
+  the atmosphere layer; zero settings UI; helps precisely the users on weak
+  networks without them doing anything. Optional later: a one-line "data saver
+  on" indicator so support can explain why charts feel slower.
+
+- **Outcome Bundles ("Campaign Goals") — parked design, agreed 6 Sep 2026**
+  (the improved version of the audit's bundles item): sell outcomes, not line
+  items — "New Brand Launch" packages followers + views + saves in one
+  checkout. Two corrections to the naive version: **(1) bundles must resolve
+  dynamically, never pin service IDs** — a bundle item is a rule ("the enabled
+  Standard-tier Instagram Followers service"), because services retire and get
+  swapped (NTR-9182 taught this) and a flagship product must not silently
+  break; **(2) bundles are not one-click on inputs** — followers need a
+  profile link, views and saves need post links, so the composer asks for
+  "your profile + one or two posts" and fans those into the right items. The
+  rails already exist: bulk checkout places up to 50 orders with
+  retry-then-refund, so a bundle is a curated bulk template with a friendly
+  face. Surface as a "Campaign Goals" entry on the order page (and a landing
+  section later). Admin: bundle builder (name, pitch, item rules, quantities).
+  **Open for Trip:** the bundle list (Brand Launch / Music Drop / Going Viral
+  etc.), whether bundles carry a small discount (it is the incentive, and it
+  is margin), and whether resellers see them (probably not — they compose
+  their own).
 
 - **Guest-feel checkout ("order first, account at payment") — parked design,
   agreed 6 Sep 2026** (build when Trip reopens it; more audit items incoming):
@@ -57,6 +92,16 @@ never gets picked up twice. Update this in the same commit as the work.
   visit; and **measure first** — pull the funnel from `/pricing` and
   `/services` visits to signup before building, because if that leak is small
   this whole item is low priority.
+
+  **Addendum (6 Sep 2026) — measured speed stats:** the audit's "real-time
+  speeds" idea joins this item, with one hard rule: provider speed fields are
+  never shown (house rule — they identify the source on sight). Instead compute
+  Nitro's own numbers from order history — median time-to-start and
+  time-to-complete per service over the last ~100 orders — and show them on the
+  public composer and service pages as "starts in ~4 min · completes in ~2 hrs,
+  measured from recent orders". Honest, ours, and a stronger trust signal than
+  any provider claim. Needs a small nightly rollup (order timestamps already
+  exist) rather than live queries.
 
 - **Deposit bonus ladder cut — watching, revert if it bites** (1 Sep 2026,
   `v2.4.78`). Every rung was halved to test how much of the ladder's pull is
