@@ -560,9 +560,13 @@ function AdminDashboardInner({ initialData }) {
   };
 
   useEffect(() => {
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+    if (typeof Notification === 'undefined' || Notification.permission !== 'default') return;
+    // Asked on mount, so there is no user gesture behind it — Safari rejects
+    // outright and other browsers may too. Desk notifications are a
+    // nice-to-have, so a refusal changes nothing, but the rejection has to be
+    // swallowed or it surfaces as an unhandled rejection. Older browsers use
+    // the callback form and return undefined, hence the optional chain.
+    try { Notification.requestPermission()?.catch(() => {}); } catch {}
   }, []);
 
   /* Smart polling — refresh data and notifications every 20s */

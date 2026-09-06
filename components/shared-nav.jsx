@@ -95,7 +95,13 @@ export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
     // one another instead of stepping. Timing lives in .nitro-vt in globals.css.
     const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (!document.startViewTransition || reduce) { apply(); return; }
-    document.startViewTransition(apply);
+    // A skipped or interrupted transition rejects these promises. Nothing is
+    // broken when that happens (the theme still applied), but an unhandled
+    // rejection would reach Sentry, so both are swallowed deliberately.
+    const transition = document.startViewTransition(apply);
+    transition.ready?.catch(() => {});
+    transition.finished?.catch(() => {});
+    transition.updateCallbackDone?.catch(() => {});
   }, [storageKey]);
 
   const t = useMemo(() => ({
