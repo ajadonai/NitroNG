@@ -5,6 +5,59 @@ never gets picked up twice. Update this in the same commit as the work.
 
 ## Open
 
+- **Guest-feel checkout ("order first, account at payment") — parked design,
+  agreed 6 Sep 2026** (build when Trip reopens it; more audit items incoming):
+  an external audit flagged "no guest checkout" as a conversion barrier. Half
+  the claim is already false — `/pricing` is public, server-rendered from the
+  live catalogue, and headlines "Every price in naira, before you sign up" —
+  so pricing visibility needs nothing. The real wall is **testing the
+  platform**: today it is signup → fund wallet → order, three steps before any
+  value. The agreed answer is NOT true guest checkout, for three structural
+  reasons: refunds and refill cover resolve into the wallet (card reversals
+  mean processor fees, delays and disputes); anonymous one-off card payments
+  are how carders test stolen cards, and chargebacks endanger the processor
+  relationship itself in this vertical; and the wallet is the retention
+  flywheel — welcome bonus, referrals and the shelved top-up game all hang off
+  deposits. Instead: **keep the account, shrink it, and move it to the end.**
+
+  **The flow.** 1) A public order composer (no auth): pick service and tier,
+  paste the link, choose quantity, see the exact naira price live — priced from
+  the same catalogue as `/api/pricing` via a public quote endpoint. 2) At pay
+  time the buyer gives **email + WhatsApp number only** — no password, no name
+  — and the account is created implicitly (passwordless; the NG phone gate at
+  `app/api/auth/signup/route.js:45` applies unchanged until International
+  Nitro opens it). 3) **One payment sized exactly to the order** — no
+  fund-then-order two-step. The charge carries an order intent
+  (`{serviceId, tierId, link, qty}` stored with the pending deposit); on
+  webhook success `finalizeDeposit` credits the wallet and the order is placed
+  in the same transaction chain, debiting the fresh balance — same idempotency
+  discipline as the referral/top-up credits. The wallet stays the ledger, so
+  refunds and refills land exactly as they do for everyone else. 4) After
+  payment: a session via magic link / OTP, an order-status link by email and
+  WhatsApp, and a normal account with history waiting when they return.
+
+  **Why this shape wins:** the buyer experiences guest checkout (zero fields
+  until pay, one payment), while Nitro keeps the wallet rail, the fraud fence
+  (phone + email uniqueness, deposit history, existing velocity checks), the
+  bonus flywheel (the payment IS a first deposit), and CAPI identity — email
+  and phone hashed at purchase plus the visitor's own fbc/fbp cookies, a
+  better match than a true guest could ever give.
+
+  **Touchpoints when built:** public composer component (candidates: landing
+  hero, `/pricing`, `/services`); public quote endpoint; implicit-account
+  variant of signup (skip password, reuse `check-email`/`check-phone` and the
+  phone gate); order-intent field on the deposit + execution inside
+  `finalizeDeposit`; passwordless session issuance; the order pipeline itself
+  unchanged.
+
+  **Open decisions for Trip:** does the welcome bonus apply to the implicit
+  first deposit (it is a first deposit — probably yes, it is the hook); a
+  minimum order size for the flow (the ₦1,000 deposit minimum exists); where
+  the composer lives; passwordless forever vs a password nudge on the second
+  visit; and **measure first** — pull the funnel from `/pricing` and
+  `/services` visits to signup before building, because if that leak is small
+  this whole item is low priority.
+
 - **Deposit bonus ladder cut — watching, revert if it bites** (1 Sep 2026,
   `v2.4.78`). Every rung was halved to test how much of the ladder's pull is
   the money itself:
