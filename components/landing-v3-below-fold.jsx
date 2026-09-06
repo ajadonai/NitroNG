@@ -19,10 +19,13 @@ const TIERS = [
   { name: "Standard", tfor: "For everyday growth", price: "₦2,720", chip: "Most picked", pop: true, li: [["ok","Balanced speed and retention"],["ok","30-day refill cover"],["ok","Our default recommendation"]], fine: "Where most orders land. Reliable enough to build a page on." },
   { name: "Premium", tfor: "For accounts that matter", price: "₦5,675", chip: "Top quality", pop: false, li: [["ok","Highest-quality sources"],["ok","Longest refill cover"],["ok","Slowest to drop, most natural"]], fine: "For brands, artists and anyone whose numbers get looked at." },
 ];
+// Half Pidgin, half plain English — the plain ones still read Nigerian through
+// what they say (a 2am WhatsApp reply, naira pricing) rather than through
+// grammar, so the Pidgin reads as deliberate instead of as a theme.
 const QUOTES = [
-  ["I was skeptical at first, but Nitro got my content in front of the right people fast. My engagement actually went up.","Chioma A.","Fashion Brand Owner","CA","#c47d8e"],
-  ["The human support is what keeps me here. I had an issue at 2AM and someone responded within minutes.","Amara O.","Content Creator","AO","#6ee7b7"],
-  ["Fastest promotion platform in Nigeria. Results come through in literally seconds.","Kola D.","E-commerce Seller","KD","#fbbf24"],
+  ["I no go lie, I first think say na scam. I try am with small money, e land sharp sharp. Now every new drop, na Nitro I dey run.","Chioma A.","Fashion Brand Owner","CA","#c47d8e"],
+  ["I messaged them at 2am expecting to hear back the next morning. Someone replied within minutes. That is why I stayed.","Aisha B.","Content Creator","AB","#6ee7b7"],
+  ["I don try plenty panels. Na here my order dey start before I even close the page. And na naira, no dollar wahala.","Kola D.","E-commerce Seller","KD","#fbbf24"],
 ];
 const Check = ({ size = 14, sw = 3 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>;
 const Star = ({ c }) => <svg width="14" height="14" viewBox="0 0 24 24" fill={c} stroke={c} strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
@@ -264,7 +267,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
               <span className="absolute top-3 right-3 py-[3px] px-2 rounded-[7px] text-[10px] font-bold text-white z-[3] m" style={{ background: "rgba(0,0,0,.45)" }}>0:24</span>
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5">
                 <div className="w-16 h-16 rounded-full flex items-center justify-center text-[22px] font-bold text-white" style={{ background: "#f472b6", border: "2.5px solid rgba(255,255,255,.5)" }}>BI</div>
-                <div className="text-xs font-semibold text-center px-[18px] leading-[1.5] transition-opacity duration-300" style={{ color: "rgba(255,255,255,.85)", opacity: playing ? 0 : 1 }}>“My TikTok reach has been incredible…”</div>
+                <div className="text-xs font-semibold text-center px-[18px] leading-[1.5] transition-opacity duration-300" style={{ color: "rgba(255,255,255,.85)", opacity: playing ? 0 : 1 }}>“My TikTok reach changed within a week…”</div>
               </div>
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[54px] h-[54px] rounded-full flex items-center justify-center z-[3] transition-opacity duration-200" style={{ background: "rgba(255,255,255,.92)", boxShadow: "0 6px 24px rgba(0,0,0,.3)", opacity: playing ? 0 : 1 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="#8b4a5e"><polygon points="6 3 21 12 6 21 6 3"/></svg></div>
               <div className="absolute left-0 right-0 bottom-0 pt-[34px] px-3.5 pb-3.5 z-[2]" style={{ background: "linear-gradient(transparent,rgba(0,0,0,.72))" }}><h5 className="text-[13.5px] font-bold text-white m-0">Blessing I.</h5><span className="text-[11.5px]" style={{ color: "rgba(255,255,255,.75)" }}>Beauty Influencer</span></div>
@@ -273,19 +276,19 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
             </div>
             <div className="lv3-bcard flex flex-col gap-2.5" style={{ gridArea: "r1", background: panel, border: `1px solid ${brd}` }}>
               <div className="flex gap-0.5">{[0,1,2,3,4].map(i => <Star key={i} c="#fbbf24"/>)}</div>
-              <p className="text-sm leading-[1.55] flex-1 m-0">"Been using Nitro for 3 months to promote my YouTube channel. The pricing is unbeatable and delivery is always fast."</p>
+              <p className="text-sm leading-[1.55] flex-1 m-0">"Every song I drop, I run the views here first. Three months now, e never fail me once."</p>
               <div className="flex items-center gap-[9px] text-[12.5px]" style={{ color: muted }}><i className="not-italic w-7 h-7 rounded-[9px] flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: "#e0a458" }}>TM</i><div><b className="block text-[13px]" style={{ color: text }}>Tunde M.</b>Music Producer</div></div>
             </div>
             <div className="lv3-bcard flex flex-col gap-2.5" style={{ gridArea: "r2", background: panel, border: `1px solid ${brd}` }}>
               <span className="inline-flex self-start py-[3px] px-[9px] rounded-full text-[10.5px] font-extrabold" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.1)", color: dark ? "#6ee7b7" : "#059669" }}>Saves ₦50K monthly</span>
-              <p className="text-sm leading-[1.55] flex-1 m-0">"I manage social media for 12 clients. Nitro's bulk pricing saves me at least ₦50K monthly."</p>
+              <p className="text-sm leading-[1.55] flex-1 m-0">"I run social media for 12 clients. The bulk pricing alone saves me ₦50,000 every month."</p>
               <div className="flex items-center gap-[9px] text-[12.5px]" style={{ color: muted }}><i className="not-italic w-7 h-7 rounded-[9px] flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: "#a5b4fc" }}>EN</i><div><b className="block text-[13px]" style={{ color: text }}>Emeka N.</b>Digital Marketer</div></div>
             </div>
             <div className="lv3-bcard text-white flex flex-col justify-center gap-1.5 overflow-hidden" style={{ gridArea: "stat", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", border: "none" }}>
               <div className="absolute rounded-full" style={{ width: 220, height: 220, right: -80, top: -90, background: "rgba(255,255,255,.16)", filter: "blur(30px)" }}/>
               <div className="m text-[38px] font-bold -tracking-[1px] leading-none relative">4.9<small className="text-base font-semibold">★</small></div>
               <div className="text-[12.5px] relative" style={{ opacity: .9 }}>average across 320+ reviews</div>
-              <div className="flex mt-2 relative">{[["CA","#c47d8e"],["TM","#e0a458"],["AO","#6ee7b7"],["EN","#a5b4fc"],["BI","#f472b6"],["+","rgba(255,255,255,.25)"]].map(([a, c], i) => <i key={a} className="not-italic w-[26px] h-[26px] rounded-full text-[9px] font-extrabold flex items-center justify-center text-white" style={{ background: c, border: "2px solid rgba(255,255,255,.8)", marginLeft: i ? -8 : 0 }}>{a}</i>)}</div>
+              <div className="flex mt-2 relative">{[["CA","#c47d8e"],["TM","#e0a458"],["AB","#6ee7b7"],["EN","#a5b4fc"],["BI","#f472b6"],["+","rgba(255,255,255,.25)"]].map(([a, c], i) => <i key={a} className="not-italic w-[26px] h-[26px] rounded-full text-[9px] font-extrabold flex items-center justify-center text-white" style={{ background: c, border: "2px solid rgba(255,255,255,.8)", marginLeft: i ? -8 : 0 }}>{a}</i>)}</div>
             </div>
           </div>
         </section>
@@ -308,7 +311,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
                 {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 py-[15px] px-6 rounded-full text-[14.5px] font-bold text-white no-underline transition-colors duration-200" style={{ background: "rgba(37,211,102,.2)", border: "1px solid rgba(37,211,102,.5)" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d={WA_PATH}/></svg>Ask us anything</a>}
               </div>
               <div data-reveal="3" className="flex items-center gap-3 mt-[26px] text-[13px]" style={{ color: "rgba(255,255,255,.8)" }}>
-                <div className="flex">{[["TM","#e0a458"],["AO","#6ee7b7"],["EN","#a5b4fc"],["BI","#f472b6"],["KD","#fbbf24"]].map(([a, c], i) => <i key={a} className="not-italic w-[30px] h-[30px] rounded-full text-[10px] font-extrabold flex items-center justify-center text-white" style={{ background: c, border: "2px solid rgba(255,255,255,.9)", marginLeft: i ? -9 : 0 }}>{a}</i>)}</div>
+                <div className="flex">{[["TM","#e0a458"],["AB","#6ee7b7"],["EN","#a5b4fc"],["BI","#f472b6"],["KD","#fbbf24"]].map(([a, c], i) => <i key={a} className="not-italic w-[30px] h-[30px] rounded-full text-[10px] font-extrabold flex items-center justify-center text-white" style={{ background: c, border: "2px solid rgba(255,255,255,.9)", marginLeft: i ? -9 : 0 }}>{a}</i>)}</div>
                 <span><b className="text-white">{siteStats?.users || "2,300"}+ creators</b> already here.{processing != null && <> <span className="m">{processing}</span> orders delivering right now.</>}</span>
               </div>
             </div>
