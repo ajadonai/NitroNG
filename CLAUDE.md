@@ -103,9 +103,9 @@ Anything that sits over the page — a modal, a drawer, a bottom sheet, a pop-ov
 
 `SettingsModal` in `components/admin-settings-page.jsx` is the reference. Match it rather than inventing a new one.
 
-## The backlog
+## The Shelf
 
-`docs/BACKLOG.md` is the one list of open and closed work. Before proposing "what's next", read it; when something ships, move it to Closed with its commit in the same push. Never re-propose a Closed item.
+`docs/SHELF.md` (formerly BACKLOG.md) is the one list of open and closed work — everything built dark, parked, or waiting its turn sits on the shelf until Trip takes it down. Before proposing "what's next", read it; when something ships, move it to Closed with its commit in the same push. Never re-propose a Closed item.
 
 ## Weekly changelog reminder
 
