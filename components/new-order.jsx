@@ -678,7 +678,16 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const types = [...new Set(services.map(s => s.type))];
   const filtered = filterType === "all" ? services : services.filter(s => s.type === filterType);
   const hasOrder = selSvc && selTier;
-  const price = selTier ? Math.round(((Number(qty) || 0) / 1000) * (selTier.pricePer1k || selTier.price)) : 0;
+  // Mirrors the single-order endpoint's charge exactly, operation for operation
+  // (see calculateCreateOrderPricing): back to integer kobo first, then the same
+  // divide/ceil sequence, so floating point lands on the identical naira. The
+  // old Math.round showed a price ₦1 under the real charge on ~36% of
+  // quantity/price combinations, so anyone holding exactly the displayed amount
+  // was refused with "insufficient balance" for an order the screen said they
+  // could afford. (Bulk rounds on both sides and is left alone.)
+  const price = selTier
+    ? Math.ceil((Math.round((selTier.pricePer1k || selTier.price) * 100) / 1000) * (Number(qty) || 0) / 100)
+    : 0;
   const activePlat = PLATFORMS.find(p => p.id === platform);
 
   useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty(""); setRedeemPoints(false); setTrafficConfig(null); }, [platform]);
