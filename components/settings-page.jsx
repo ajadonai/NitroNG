@@ -177,7 +177,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
 
         {/* ── Profile ── */}
         <div className="flex items-center gap-3 rounded-[14px] p-3.5 mb-2" style={card}>
-          <Avatar size={52} rounded={14} />
+          <Avatar size={52} ring />
           <div className="flex flex-col gap-[3px] min-w-0">
             <div className="text-[16px] font-semibold truncate text-t-text">{user?.name || "User"}</div>
             <div className="flex items-center gap-1 text-[11.5px] font-semibold" style={{ color: user?.badgeColor || t.textMuted }}><ShieldBadge color={user?.badgeColor} size={12} tier={user?.badge} />{user?.badge || "Spark"}</div>
@@ -291,7 +291,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
             <label htmlFor="pw-confirm" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">Confirm new password</label>
             <input type="password" id="pw-confirm" autoComplete="new-password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
           </div>
-          <button onClick={changePassword} disabled={pwLoading} className="py-2.5 px-7 rounded-lg bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-semibold border-none cursor-pointer mt-1 transition-[transform,box-shadow] duration-200 ease-in-out hover:translate-y-[-1px] hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ opacity: curPw && newPw && confirmPw && !pwLoading ? 1 : .4 }}>{pwLoading ? "Updating..." : "Update password"}</button>
+          <button onClick={changePassword} disabled={pwLoading} className="py-2.5 px-7 dash-btn-primary bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-semibold border-none cursor-pointer mt-1 transition-[transform,box-shadow] duration-200 ease-in-out hover:translate-y-[-1px] hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ opacity: curPw && newPw && confirmPw && !pwLoading ? 1 : .4 }}>{pwLoading ? "Updating..." : "Update password"}</button>
         </SettingsModal>
 
         {/* ── NOTIFICATIONS MODAL ── */}

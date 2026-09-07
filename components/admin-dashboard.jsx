@@ -698,7 +698,7 @@ function AdminDashboardInner({ initialData }) {
       <div className="dash-root bg-t-bg">
         <nav className="dash-nav bg-t-sidebar-bg" style={{ borderBottom: `0.5px solid ${t.sidebarBorder}` }}>
           <div className="dash-nav-left"><div className="dash-logo-static"><div className="nitro-mark h-7 px-3 flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></div></div></div>
-          <div className="dash-nav-right"><div className={`${skBone} w-[30px] h-[30px] rounded-[10px]`} /></div>
+          <div className="dash-nav-right"><div className={`${skBone} w-[30px] h-[30px] rounded-full`} /></div>
         </nav>
         <div className="dash-body">
           <aside className="dash-left bg-t-sidebar-bg" style={{ borderRight: `0.5px solid ${t.sidebarBorder}` }}>
@@ -794,7 +794,7 @@ function AdminDashboardInner({ initialData }) {
           </button>
           <div className="dash-logo-static gap-2">
             <div className="nitro-mark h-7 px-3 flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></div>
-            <span className="text-xs py-0.5 px-1.5 rounded font-semibold text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)" }}>ADMIN</span>
+            <span className="text-xs py-0.5 px-2 rounded-full font-semibold text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)" }}>ADMIN</span>
           </div>
         </div>
         <div className="dash-nav-right">
@@ -818,7 +818,7 @@ function AdminDashboardInner({ initialData }) {
             {avOpen && (
               <div role="menu" aria-label="Account" className="dash-av-menu" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="dash-av-head" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
-                  <Avatar size={34} rounded={10} />
+                  <Avatar size={34} ring />
                   <div className="min-w-0 flex-1">
                     <div className="text-[13px] font-semibold truncate text-t-text">{admin?.name || "Admin"}</div>
                     <div className="text-[11px] truncate text-t-text-muted">{admin?.email || admin?.role || ""}</div>

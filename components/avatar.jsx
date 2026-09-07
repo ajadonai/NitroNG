@@ -1,13 +1,20 @@
 'use client';
 import { useState } from "react";
 
-export function Avatar({ src, size = 32, rounded = "full", dark, t }) {
+/**
+ * `ring` is opt-in rather than always on: in the nav the avatar sits inside
+ * `.dash-avatar-btn`, which already carries the ring, and a second one there
+ * would read as a double border. Standalone avatars — the account menu, the
+ * profile page, list rows — pass it. The ring comes from `.nitro-ringed` so
+ * the `.dark` cascade picks the right hairline without a prop to keep in sync.
+ */
+export function Avatar({ src, size = 32, rounded = "full", ring = false, dark, t }) {
   const [imgError, setImgError] = useState(false);
   const iconSize = Math.round(size * 0.55);
   const borderRadius = rounded === "full" ? "50%" : typeof rounded === "number" ? rounded : rounded;
 
   return (
-    <div style={{
+    <div className={ring ? "nitro-ringed" : undefined} style={{
       width: size,
       height: size,
       borderRadius,

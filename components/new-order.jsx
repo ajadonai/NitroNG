@@ -1143,7 +1143,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           </div>
           <div className="flex items-center gap-2.5 shrink-0">
             <span className="m text-lg max-md:text-base font-semibold whitespace-nowrap" style={{ color: t.accent }}>₦{price.toLocaleString()}</span>
-            <button onClick={() => setOrderModal(true)} className="py-2.5 px-[22px] max-md:px-[18px] rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">Order</button>
+            <button onClick={() => setOrderModal(true)} className="py-2.5 px-[22px] max-md:px-[18px] dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">Order</button>
           </div>
         </div>
       )}
@@ -1851,7 +1851,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
             <span className="text-[18px] font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{total.toLocaleString()}</span>
             {discount > 0 && <span className="text-[10.5px]" style={{ color: dark ? "#b4db7a" : "#27500A" }}>Nitro Status discount ({loyaltyDiscount}%) · −₦{discount.toLocaleString()}</span>}
           </div>
-          <button onClick={onPlace} disabled={loading} className="shrink-0 h-[42px] px-4 rounded-[12px] border-none text-[14px] font-semibold cursor-pointer font-[inherit] bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+          <button onClick={onPlace} disabled={loading} className="shrink-0 h-[42px] px-4 dash-btn-primary border-none text-[14px] font-semibold cursor-pointer font-[inherit] bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
             {loading && <NitroLoader size={16} mono ariaHidden />}
             {loading ? "Placing orders..." : `Place ${rows.length} order${rows.length !== 1 ? "s" : ""}`}
           </button>

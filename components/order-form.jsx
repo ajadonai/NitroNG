@@ -382,7 +382,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
                   </div>
                 );
               })()}
-              <button onClick={onTopUp} className="w-full py-2.5 rounded-[10px] border-none text-[13px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(5,150,105,.3)]" style={{ background: dark ? "#059669" : "#059669", color: "#fff" }}>Add funds & claim bonus</button>
+              <button onClick={onTopUp} className="nitro-money-btn w-full py-2.5 border-none text-[13px] font-semibold cursor-pointer">Add funds &amp; claim bonus</button>
             </div>
           )}
           {!short && <div className="text-[11px] mb-2 px-0.5" style={{ color: t.textMuted }}>Profile must be <b style={{ color: t.text }}>public</b>. No refunds for orders on private profiles.</div>}
@@ -396,8 +396,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               {short && <span className="text-[11px]" style={{ color: dark ? "#fcd34d" : "#b45309" }}>Balance ₦{balance.toLocaleString()} · short by ₦{(price - balance).toLocaleString()}</span>}
             </div>
             {short
-              ? <button onClick={onTopUp} data-tour="no-submit-btn" className="shrink-0 h-[44px] px-5 rounded-[12px] border-none text-[14px] font-bold cursor-pointer font-[inherit] text-white" style={{ background: "#d97706" }}>Top up</button>
-              : <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames || needsKeywords) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || !trafficValid || orderLoading} className="shrink-0 h-[44px] px-5 rounded-[12px] border-none text-[14px] font-bold cursor-pointer font-[inherit] text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: t.accent, opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer || needsKeywords) || (comments || "").trim()) && !commentShort && trafficValid && !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />Placing...</span> : dripOn && showMultiDay ? "Next" : "Place Order"}</button>}
+              ? <button onClick={onTopUp} data-tour="no-submit-btn" className="nitro-money-btn shrink-0 h-[44px] px-5 border-none text-[14px] font-bold cursor-pointer font-[inherit]">Top up</button>
+              : <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames || needsKeywords) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || !trafficValid || orderLoading} className="dash-btn-primary shrink-0 h-[44px] px-5 border-none text-[14px] font-bold cursor-pointer font-[inherit] text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: t.accent, opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer || needsKeywords) || (comments || "").trim()) && !commentShort && trafficValid && !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />Placing...</span> : dripOn && showMultiDay ? "Next" : "Place Order"}</button>}
           </div>
           </>);
         })()}
@@ -456,7 +456,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               <span className="font-bold text-[18px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{price.toLocaleString()}</span>
             </div>
           </div>
-          <button onClick={() => onSubmit(clampedDays)} data-tour="no-submit-btn" disabled={orderLoading} className="w-full py-2.5 rounded-lg border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />Placing...</span> : "Place Order"}</button>
+          <button onClick={() => onSubmit(clampedDays)} data-tour="no-submit-btn" disabled={orderLoading} className="w-full py-2.5 dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />Placing...</span> : "Place Order"}</button>
         </>)}
       </>}
       </div>

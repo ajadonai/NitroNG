@@ -98,7 +98,7 @@ export default function ReferralsPage({ user, dark, t }) {
         <div className="text-sm mb-1.5 text-t-text-muted">Your Referral Link</div>
         <div className="flex items-center gap-2">
           <div className="m flex-1 py-2 px-3 rounded-lg border text-sm overflow-hidden text-ellipsis whitespace-nowrap text-t-text-soft" style={{ background: dark ? "#160f22" : "#fff", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)" }}>{refLink}</div>
-          <button onClick={() => copyText(refLink, "link")} className="py-2 px-3 desktop:px-3.5 rounded-lg text-[13px] desktop:text-sm font-semibold cursor-pointer whitespace-nowrap shrink-0 border-none text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }}>
+          <button onClick={() => copyText(refLink, "link")} className="py-2 px-3 desktop:px-3.5 dash-btn-primary text-[13px] desktop:text-sm font-semibold cursor-pointer whitespace-nowrap shrink-0 border-none text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }}>
             {copied === "link" ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> Copied</> : "Copy Link"}
           </button>
         </div>
@@ -140,7 +140,7 @@ export default function ReferralsPage({ user, dark, t }) {
         </div>
         {paged.length > 0 ? paged.map((r, i) => (
           <div key={r.id || i} className="flex items-center gap-2.5 desktop:gap-3.5 py-3 px-[13px] desktop:py-3.5 desktop:px-4" style={{ borderBottom: i < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-            <Avatar size={32} rounded={10} />
+            <Avatar size={32} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="text-sm desktop:text-[15px] font-medium text-t-text">{r.name || "User"}</span>

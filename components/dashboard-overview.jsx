@@ -103,7 +103,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
           <div className="m text-[32px] desktop:text-[36px] font-extrabold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.03em" }}>{fN(balance)}</div>
         </div>
         <div className="flex max-md:flex-col gap-1.5 shrink-0">
-          <button onClick={() => setActive("add-funds")} className="h-[34px] px-3.5 rounded-[10px] border-none text-[13px] font-semibold cursor-pointer text-white inline-flex items-center gap-1.5 justify-center" style={{ background: t.accent, boxShadow: "0 10px 24px rgba(196,125,142,.45)" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Top up</button>
+          <button onClick={() => setActive("add-funds")} className="nitro-money-btn h-[34px] px-3.5 border-none text-[13px] font-semibold cursor-pointer inline-flex items-center gap-1.5 justify-center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Top up</button>
           <button onClick={() => setActive("services")} className="h-[34px] px-3.5 rounded-[10px] text-[13px] font-semibold cursor-pointer border border-solid inline-flex items-center justify-center text-t-text" style={{ background: "transparent", borderColor: t.cardBorder }}>New order</button>
         </div>
       </div>

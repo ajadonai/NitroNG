@@ -154,7 +154,7 @@ export function ConfirmProvider({ children, dark }) {
             {/* Header — intent chip, title, X */}
             <div className="flex items-start gap-3 p-4 pb-0">
               <span
-                className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0"
+                className="w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0"
                 style={dialog.danger
                   ? { background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.07)", color: dark ? "#fca5a5" : "#dc2626" }
                   : { background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)", color: "#c47d8e" }}
@@ -170,7 +170,7 @@ export function ConfirmProvider({ children, dark }) {
                 )}
               </span>
               <h2 id={titleId} className="text-[15px] font-bold leading-tight flex-1 min-w-0 mt-1.5 mb-0" style={{ color: dark ? "#f2efe9" : "#1c1b19" }}>{dialog.title}</h2>
-              <button type="button" onClick={handleCancel} aria-label="Close" className="w-[30px] h-[30px] rounded-[9px] flex items-center justify-center shrink-0 cursor-pointer" style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}`, color: dark ? "#8b90a0" : "#757170" }}>
+              <button type="button" onClick={handleCancel} aria-label="Close" className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 cursor-pointer" style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}`, color: dark ? "#8b90a0" : "#757170" }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
               </button>
             </div>
