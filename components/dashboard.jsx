@@ -1257,10 +1257,10 @@ function DashboardInner({ initialData }) {
         <div className="dash-nav-right">
           {/* Balance pill — desktop only. Balance as a number, Top up as the action inside it. */}
           <button onClick={() => setActive("add-funds")} aria-label={`Balance ₦${Math.round(user?.balance || 0).toLocaleString()}. Top up`}
-            className="max-desktop:hidden flex items-center gap-2 h-[34px] pl-3 pr-1.5 rounded-full cursor-pointer text-[13px] font-semibold text-t-text"
-            style={{ background: dark ? "rgba(255,255,255,.07)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, fontVariantNumeric: "tabular-nums" }}>
+            className="dash-balance-pill max-desktop:hidden flex items-center gap-2 h-[34px] pl-3 pr-1.5 cursor-pointer text-[13px] font-semibold text-t-text border-none"
+            style={{ fontVariantNumeric: "tabular-nums" }}>
             ₦{Math.round(user?.balance || 0).toLocaleString()}
-            <span className="text-[11px] font-bold text-white py-1 px-2.5 rounded-full" style={{ background: t.accent }}>Top up</span>
+            <span className="nitro-money text-[11px] font-bold py-1 px-2.5 rounded-full">Top up</span>
           </button>
           {/* Notification bell */}
           <div ref={notifRef} className="relative">
