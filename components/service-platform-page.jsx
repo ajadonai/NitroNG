@@ -4,6 +4,7 @@ import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { trackViewContent } from './capi-tracker';
 import { AskCard, PinkButton, priceRange, eyebrowStyle, cardStyle } from './platform-card';
+import { useMoney } from './locale';
 
 // ── The reading layout shared by the two service templates ──
 // Same 920px column, eyebrow, Cormorant H1, sticky contents and opaque cards as
@@ -223,6 +224,7 @@ export default function ServicePlatformView({ platform, services, copy, nextPlat
 }
 
 function ServicePlatformInner({ platform, services = [], copy = {}, nextPlatform, relatedLinks = [] }) {
+  const money = useMoney();
   const { t } = useTheme();
   const card = cardStyle(t);
   const eyebrow = eyebrowStyle(t);
@@ -282,7 +284,7 @@ function ServicePlatformInner({ platform, services = [], copy = {}, nextPlatform
                   <b className="text-[15px] font-semibold" style={{ color: t.text }}>{s.type}</b>
                   <span className="text-[12px]" style={{ color: t.muted }}>{serviceNote(s)}</span>
                 </span>
-                <b className="m shrink-0 text-[14px] font-semibold whitespace-nowrap" style={{ color: t.text, fontVariantNumeric: 'tabular-nums' }}>{priceRange(s.minPrice, s.maxPrice)}</b>
+                <b className="m shrink-0 text-[14px] font-semibold whitespace-nowrap" style={{ color: t.text, fontVariantNumeric: 'tabular-nums' }}>{priceRange(s.minPrice, s.maxPrice, money)}</b>
               </div>
             ))}
           </div>

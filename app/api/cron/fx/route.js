@@ -25,6 +25,22 @@ export async function GET(req) {
       throw new Error(`Invalid rate from API: ${marketRate}`);
     }
 
+    // Cross rates for the currency switcher, refreshed every run regardless of
+    // the naira drift check below — a pound moving against the dollar is not
+    // something the NGN threshold would notice.
+    const cross = {};
+    for (const code of ['GBP', 'GHS', 'KES']) {
+      const v = data?.rates?.[code];
+      if (typeof v === 'number' && v > 0) cross[code] = Number(v.toFixed(6));
+    }
+    if (Object.keys(cross).length) {
+      await prisma.setting.upsert({
+        where: { key: 'fx_usd_rates' },
+        update: { value: JSON.stringify(cross) },
+        create: { key: 'fx_usd_rates', value: JSON.stringify(cross) },
+      });
+    }
+
     const [bufferRow, thresholdRow, currentRow, currentMarketRow] = await Promise.all([
       prisma.setting.findUnique({ where: { key: 'markup_usd_buffer' } }),
       prisma.setting.findUnique({ where: { key: 'markup_fx_threshold' } }),

@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback, useMemo, createContext, useContext } from "react";
 import { NitroWordmark } from "./nitro-logo";
 import { PublicNavSheet, PUBLIC_LINKS } from "./public-nav-sheet";
+import { LocaleProvider } from "./locale";
+import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
 import { usePathname } from "next/navigation";
 
 // ── Theme context ──
@@ -137,11 +139,16 @@ export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
     sidebarBorder: "var(--t-sidebar-border)",
   }), []);
 
+  // LocaleProvider rides inside ThemeProvider because every page already wraps
+  // itself in this one; nesting here reaches all of them without touching
+  // forty files.
   return (
     <ThemeCtx.Provider value={{ dark, setDark, toggleTheme, t, loaded, themeMode, setThemeMode }}>
-      {children}
-      {/* The atmosphere: aurora + grain over every page (see .nitro-atmo in globals.css). */}
-      <div aria-hidden="true" className="nitro-atmo" />
+      <LocaleProvider>
+        {children}
+        {/* The atmosphere: aurora + grain over every page (see .nitro-atmo in globals.css). */}
+        <div aria-hidden="true" className="nitro-atmo" />
+      </LocaleProvider>
     </ThemeCtx.Provider>
   );
 }
@@ -175,16 +182,16 @@ export default function SharedNav({ action = "back" }) {
       style={{ background: dark ? "rgba(14,9,22,.9)" : "rgba(240,237,232,.9)", borderBottom: `1px solid ${t.surfaceBrd}` }}
     >
       <a href="/" className="flex items-center">
-        <span className="md:hidden w-7 h-7 rounded-[7px] flex items-center justify-center" style={{ background: t.grad }}><svg width="11" height="12" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></span>
-        <span className="max-md:hidden h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
+        <span className="nitro-mark md:hidden w-[34px] h-[34px] flex items-center justify-center" style={{ background: t.grad }}><svg width="13" height="14" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></span>
+        <span className="nitro-mark max-md:hidden h-7 px-3 flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
       </a>
       <nav aria-label="Primary" className="max-desktop:hidden flex items-center gap-1">
         {PUBLIC_LINKS.map(l => <a key={l.href} href={l.href} aria-current={pathname === l.href || (l.href !== "/" && pathname?.startsWith(l.href + "/")) ? "page" : undefined} className="pub-link text-sm font-medium py-1.5 px-3 rounded-lg no-underline" style={{ color: t.soft }}>{l.label}</a>)}
       </nav>
       <div className="flex items-center gap-3">
-        <button type="button" onClick={() => setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen}
-          className="desktop:hidden w-9 h-9 rounded-lg border-none cursor-pointer flex items-center justify-center bg-transparent" style={{ color: t.soft }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-        <ThemeToggle dark={dark} onToggle={toggleTheme} />
+        {/* The page action comes first because it is not always there: with the
+            variable item on the inside, the constant set — currency, language,
+            theme, menu — stays anchored to the edge whether or not it appears. */}
         {action === "back" && (
           <a href="/" className="text-sm font-medium flex items-center gap-1" style={{ color: t.soft }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
@@ -202,6 +209,11 @@ export default function SharedNav({ action = "back" }) {
             Log Out
           </button>
         )}
+        <CurrencySwitcher />
+        <LanguageSwitcher />
+        <ThemeToggle dark={dark} onToggle={toggleTheme} />
+        {/* The menu is the outermost control, where a thumb expects it. */}
+        <button type="button" onClick={() => setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="nav-burger desktop:hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       </div>
     </nav>
     <PublicNavSheet open={navOpen} onClose={() => setNavOpen(false)} dark={dark} toggleTheme={toggleTheme} />
@@ -234,7 +246,9 @@ export function SharedFooter() {
         {/* Brand */}
         <div className="max-md:col-span-full">
           <div className="mb-3">
-            <span className="h-7 px-3 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
+            {/* inline-flex, not flex: a flex span is block-level and stretched to
+                the whole brand column — the full footer width on a phone. */}
+            <span className="nitro-mark h-7 px-3 inline-flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
           </div>
           <p className="text-[13px] leading-[1.7] max-w-[260px] mb-5" style={{ color: dark ? "rgba(244,241,237,.45)" : "rgba(28,27,25,.5)" }}>We handle the numbers so you can handle the content. {platformCount?`${platformCount}+`:"140+"} service types, Naira pricing, fast delivery.</p>
           <div className="flex gap-2.5">

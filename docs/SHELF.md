@@ -189,6 +189,38 @@ as the work. (Formerly docs/BACKLOG.md.)
   3) Flutterwave USD collection crediting naira at the padded rate (medium),
   4) never multi-currency wallets.
 
+  **Addendum, 7 Sep 2026 — reopened; step 2 built locally** (`PENDING`
+  v2.4.104, not pushed). Currency and language switchers on all three navs
+  (labelled on desktop, icons only on a phone); prices on pricing/services,
+  the dashboard balance and the order-form total convert at one resolved
+  deposit rate via `lib/currency.js` + `components/locale.jsx`; public
+  `/api/fx`; admin "Foreign deposits" card on the pricing page. Decisions
+  made: **premium is 15%**, admin-editable (`fx_premium_percent`), stored as a
+  percentage so it keeps its meaning as the naira moves. **No currency lock**
+  — the premium sits inside the exchange at deposit, so switching the display
+  cannot dodge it (three tests pin this); a lock would also have trapped
+  Nigerian USDT payers, since crypto is dollar-denominated. **The balance
+  converts** on the same rate as prices, so "can I afford this" has one
+  answer in any unit. Naira is shown alongside a foreign figure in exactly one
+  place: the crypto modal's rate line.
+
+  **Two corrections to the entry above.** (1) The worked example's "market
+  ₦1,529" was `markup_usd_rate` — market plus the ₦200 pricing cushion. Real
+  mid-market was ≈₦1,324; every figure here was recomputed on it. (2) The
+  crypto rail has always credited at that cushioned rate, i.e. **above**
+  market — a ~13% subsidy on every USDT deposit that nobody chose. It now reads
+  `lib/fx-deposit.js`; with `fx_premium_live` off (the default) behaviour is
+  byte-identical, and flipping it on moves USDT to the premium rate. That flip
+  is ~36% more dollars per naira for USDT payers, mostly in Nigeria, so it is a
+  deliberate act in Admin, announced first — not a side effect of shipping.
+
+  **Still open:** step 1 (phone gate — foreigners still cannot sign up);
+  step 3 (Flutterwave USD, the rail the premium was always meant for); the
+  "Soon" tags on Pidgin/Yoruba/Hausa/Igbo/Kiswahili/Français are a public promise Trip has
+  not yet confirmed; language is a shell (English only, no i18n); and Trip
+  wants "refund to your bank" removed from the refund policy — its own commit
+  with the policy date bumped, and it removes the foreign-refund question.
+
 - **Landing redesign v2 — parked, Trip not yet impressed** (4 Sep 2026): the
   full build lives on local branch `landing-v2-wip` (commit `d1838b9f`, never
   pushed); the design mock is artifact `213efb73`. What it contains: a

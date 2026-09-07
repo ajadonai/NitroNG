@@ -4,6 +4,8 @@ import { RailSec, RailCard, RailRow } from "./rail";
 import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
+import { useMoney } from "./locale";
+import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
 import { NitroWordmark } from "./nitro-logo";
 import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
@@ -765,6 +767,7 @@ function DashboardInner({ initialData }) {
 
 
   /* Theme — provided by ThemeProvider */
+  const money = useMoney();
 
   /* Refresh dashboard data */
   const refreshDashboard = async () => {
@@ -1276,11 +1279,15 @@ function DashboardInner({ initialData }) {
           </div>
         </div>
         <div className="dash-nav-right">
-          {/* Balance pill — desktop only. Balance as a number, Top up as the action inside it. */}
-          <button onClick={() => setActive("add-funds")} aria-label={`Balance ₦${Math.round(user?.balance || 0).toLocaleString()}. Top up`}
+          <CurrencySwitcher />
+          <LanguageSwitcher />
+          {/* Balance pill — desktop only. Balance as a number, Top up as the action inside it.
+              The balance converts on the same rate as every price, so "can I afford
+              this" has the same answer whichever unit is on screen. */}
+          <button onClick={() => setActive("add-funds")} aria-label={`Balance ${money(Math.round(user?.balance || 0))}. Top up`}
             className="dash-balance-pill max-desktop:hidden flex items-center gap-2 h-[34px] pl-3 pr-1.5 cursor-pointer text-[13px] font-semibold text-t-text border-none"
             style={{ fontVariantNumeric: "tabular-nums" }}>
-            ₦{Math.round(user?.balance || 0).toLocaleString()}
+            {money(Math.round(user?.balance || 0))}
             <span className="nitro-money text-[11px] font-bold py-1 px-2.5 rounded-full">Top up</span>
           </button>
           {/* Notification bell */}

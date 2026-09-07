@@ -51,13 +51,19 @@ export const ACCENT = '#c47d8e';
 // Prices are per 1,000 unless the rate is ₦100,000 or more per 1,000, which
 // only happens on services sold per unit — those show the per-unit price.
 export function perUnit(min) { return min >= 100000; }
-export function naira(v, unit) { return `₦${(unit ? Math.round(v / 1000) : v).toLocaleString()}`; }
-export function priceRange(min, max) {
+// `fmt` is the display-currency formatter from useMoney(). Left out, these
+// print naira exactly as they always have, so the many admin callers that pass
+// nothing are untouched.
+const nairaFmt = (v) => `₦${Number(v).toLocaleString()}`;
+export function naira(v, unit, fmt = nairaFmt) { return fmt(unit ? Math.round(v / 1000) : v); }
+export function priceRange(min, max, fmt) {
   const unit = perUnit(min);
-  const s = min === max ? naira(min, unit) : `${naira(min, unit)} – ${naira(max, unit)}`;
+  const a = naira(min, unit, fmt), b = naira(max, unit, fmt);
+  // A foreign range carries one "≈", not one per end.
+  const s = min === max ? a : (a.startsWith("≈ ") && b.startsWith("≈ ") ? `${a} – ${b.slice(2)}` : `${a} – ${b}`);
   return unit ? `${s}/unit` : s;
 }
-export function fromPrice(min) { return perUnit(min) ? `from ${naira(min, true)}/unit` : `from ${naira(min)}/1K`; }
+export function fromPrice(min, fmt) { return perUnit(min) ? `from ${naira(min, true, fmt)}/unit` : `from ${naira(min, false, fmt)}/1K`; }
 
 export const eyebrowStyle = (t) => ({ fontSize: 10.5, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: t.accent, display: 'block' });
 export const cardStyle = (t) => ({ background: t.cardBg, border: `1px solid ${t.cardBorder}` });

@@ -308,20 +308,11 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   box-shadow: 0 8px 22px rgba(0,0,0,.3), inset 0 0 0 1.5px rgba(255,255,255,.9),
               0 0 0 1.5px rgba(255,255,255,.7), 0 0 0 3px rgba(0,0,0,.18);
 }
-.nav-login-btn:active, .nav-signup-btn:active, .nav-burger-btn:active { transform: scale(.97); }
-/* The hamburger is the third control in that group, so it wears the ring too. */
-.nav-burger-btn {
-  border-radius: 999px !important;
-  background: rgba(255,255,255,.16) !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,.18), inset 0 0 0 1.5px rgba(255,255,255,.4),
-              0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(0,0,0,.16);
-  transition: background .2s ease, box-shadow .24s ease,
-              transform .18s cubic-bezier(.34,1.4,.5,1) !important;
-}
-.nav-burger-btn:hover { background: rgba(255,255,255,.26) !important; transform: translateY(-1.5px); }
+.nav-login-btn:active, .nav-signup-btn:active { transform: scale(.97); }
+/* The landing's hamburger now uses .nav-burger, shared with every other bar. */
 @media (prefers-reduced-motion: reduce) {
-  .nav-login-btn, .nav-signup-btn, .nav-burger-btn { transition: background .2s ease, box-shadow .24s ease !important; }
-  .nav-login-btn:hover, .nav-signup-btn:hover, .nav-burger-btn:hover { transform: none; }
+  .nav-login-btn, .nav-signup-btn { transition: background .2s ease, box-shadow .24s ease !important; }
+  .nav-login-btn:hover, .nav-signup-btn:hover { transform: none; }
 }
 
 /* S2 — hover effect */
@@ -1421,3 +1412,117 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .dash-install-moment { animation: dimUp .5s cubic-bezier(.3,1.3,.5,1) both; }
 @keyframes dimUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .dash-install-moment { animation: none; } }
+
+/* ─── Currency and language pills ──────────────────────────────────────────
+   Two more members of the ringed set beside the sky toggle. Labelled on a
+   desktop; on a phone the code and chevron drop away and a bare symbol or
+   globe is left, which is what lets both fit in a 360px bar. One menu serves
+   both breakpoints: a popover under the pill on a desktop, a bottom sheet on a
+   phone. The surface is opaque and the backdrop closes it, per the modal rules. */
+.loc-wrap { position: relative; display: inline-flex; }
+.loc-pill {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
+  border: none; cursor: pointer; border-radius: 999px !important; font: inherit;
+  font-size: 12.5px; font-weight: 700; white-space: nowrap; color: inherit;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.07), inset 0 0 0 1.5px rgba(255,255,255,.9),
+              0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(139,74,94,.2);
+  transition: box-shadow .24s ease, transform .18s cubic-bezier(.34,1.4,.5,1);
+}
+.dark .loc-pill {
+  background: rgba(255,255,255,.07);
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3),
+              0 0 0 1.5px rgba(255,255,255,.35), 0 0 0 3px rgba(232,180,196,.24);
+}
+.loc-pill:hover { transform: translateY(-1.5px); }
+.loc-pill:active, .loc-pill.open { transform: scale(.97); }
+.loc-pill:focus-visible { outline: 2px solid #c47d8e; outline-offset: 3px; }
+.loc-sym { display: inline-flex; align-items: center; justify-content: center; min-width: 15px;
+           font-size: 13.5px; font-weight: 800; line-height: 1; }
+.loc-sym.wide { font-size: 11px; }
+.loc-cd { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11.5px; }
+.loc-gl { width: 15px; height: 15px; opacity: .8; flex-shrink: 0; }
+.loc-cv { width: 9px; height: 9px; opacity: .5; flex-shrink: 0; transition: transform .2s; }
+.loc-pill.open .loc-cv { transform: rotate(180deg); }
+@media (max-width: 1023px) {
+  .loc-pill { width: 34px; padding: 0; justify-content: center; gap: 0; }
+  .loc-pill .loc-cd, .loc-pill .loc-cv { display: none; }
+  .loc-sym { min-width: 0; }
+}
+
+/* Above the cookie banner (z 9999), which otherwise drew over the mobile sheet
+   and hid the last three currencies for a first-time visitor. A transient
+   sheet that closes on any tap sitting above a banner is the right order. */
+.loc-backdrop { position: fixed; inset: 0; z-index: 10000; border: none; cursor: default; background: transparent; }
+.loc-menu {
+  /* Fixed and portalled to <body>; the component supplies top/right inline on
+     a desktop, and the phone rule below overrides them into a bottom sheet. */
+  position: fixed; z-index: 10001; width: 250px; padding: 7px;
+  background: #fffdfb; border: 1px solid rgba(139,74,94,.14); border-radius: 15px;
+  box-shadow: 0 22px 54px rgba(0,0,0,.24); text-align: left;
+}
+.dark .loc-menu { background: #171126; border-color: rgba(232,180,196,.14); }
+.loc-grab { display: none; }
+@media (max-width: 1023px) {
+  .loc-backdrop { background: rgba(0,0,0,.42); }
+  .loc-menu {
+    top: auto !important; left: 0; right: 0 !important; bottom: 0; width: auto;
+    border-radius: 19px 19px 0 0; padding: 9px 9px calc(14px + env(safe-area-inset-bottom));
+    box-shadow: 0 -18px 44px rgba(0,0,0,.26);
+  }
+  .loc-grab { display: block; width: 36px; height: 4px; border-radius: 99px; background: rgba(127,127,127,.3); margin: 1px auto 7px; }
+}
+.loc-sec { font-size: 9.5px; font-weight: 800; letter-spacing: 1.3px; text-transform: uppercase; opacity: .6; padding: 8px 9px 5px; }
+.loc-opt {
+  display: flex; align-items: center; gap: 9px; width: 100%; padding: 8px 9px; border: none;
+  background: transparent; border-radius: 999px; cursor: pointer; font: inherit; font-size: 12.5px;
+  font-weight: 600; color: inherit; text-align: left;
+}
+@media (max-width: 1023px) { .loc-opt { padding: 11px; font-size: 13px; } }
+.loc-opt:hover { background: rgba(201,127,146,.11); }
+.loc-opt.on { background: rgba(201,127,146,.16); }
+.loc-opt.soon { opacity: .45; cursor: default; }
+.loc-opt.soon:hover { background: transparent; }
+.loc-opt:focus-visible { outline: 2px solid #c47d8e; outline-offset: -2px; }
+.loc-osy { font-size: 13px; font-weight: 800; width: 20px; flex-shrink: 0; text-align: center; }
+.loc-osy.wide { font-size: 10.5px; }
+.loc-ofg { font-size: 14px; width: 20px; flex-shrink: 0; text-align: center; }
+.loc-onm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.loc-ocd { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10.5px; opacity: .6; flex-shrink: 0; }
+.loc-tk { width: 13px; height: 13px; color: #c47d8e; flex-shrink: 0; opacity: 0; }
+.loc-opt.on .loc-tk { opacity: 1; }
+.loc-soon { font-size: 8.5px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; padding: 2px 6px;
+            border-radius: 999px; background: rgba(139,74,94,.13); opacity: .8; flex-shrink: 0; }
+.dark .loc-soon { background: rgba(232,180,196,.15); }
+@media (prefers-reduced-motion: reduce) { .loc-pill, .loc-cv { transition: none; } .loc-pill:hover { transform: none; } }
+
+/* The hamburger joins the ringed set: a 34px circle wearing the same two-tone
+   ring as the currency and language pills and the sky toggle, so the bar reads
+   as one family instead of three ringed controls and a bare glyph. */
+.nav-burger {
+  width: 34px; height: 34px; border-radius: 999px !important; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0;
+  color: #201b19; background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.07), inset 0 0 0 1.5px rgba(255,255,255,.9),
+              0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(139,74,94,.2);
+  transition: box-shadow .24s ease, transform .18s cubic-bezier(.34,1.4,.5,1);
+}
+.dark .nav-burger {
+  background: rgba(255,255,255,.07);
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3),
+              0 0 0 1.5px rgba(255,255,255,.35), 0 0 0 3px rgba(232,180,196,.24);
+}
+.nav-burger:hover { transform: translateY(-1.5px); }
+.nav-burger:active { transform: scale(.97); }
+.nav-burger:focus-visible { outline: 2px solid #c47d8e; outline-offset: 3px; }
+.nav-burger svg { width: 16px; height: 16px; }
+/* Mobile-only, stated here rather than left to a Tailwind utility: an unlayered
+   `display: flex` above would otherwise outrank `desktop:hidden` and put a
+   hamburger on every desktop bar. */
+@media (min-width: 1024px) { .nav-burger { display: none; } }
+@media (prefers-reduced-motion: reduce) { .nav-burger { transition: none; } .nav-burger:hover { transform: none; } }
+/* Ringed controls carry their own ink. They sit on their own white or glass
+   surface, so inheriting the bar's text colour is wrong on a white-text hero. */
+.loc-pill { color: #201b19; }
+.dark .loc-pill { color: #f6f1ee; }
+.dark .nav-burger { color: #f6f1ee; }
