@@ -7,6 +7,43 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 ## Open
 
+- **Foreign payment methods — scope, agreed 7 Sep 2026, build next.** Signup
+  now accepts NG/US/GB/GH/KE (`4776d901`), so people can create accounts we
+  cannot easily take money from. Flutterwave is hardcoded to `currency: 'NGN'`
+  (`app/api/payments/initialize/route.js:100`) and the only non-naira rail is
+  dollar-denominated USDT. **Add Funds still shows bank transfer and card to
+  everyone**, so a customer in London meets three methods, two of which cannot
+  work for them, and finds out by failing.
+
+  **The scope, smallest first:**
+  1. **Hide what cannot work.** Gate the gateway list by `user.country`: NG
+     sees everything; the other four see USDT only. Pure UI, no new rail, and
+     it removes the dead end on its own. `app/api/payments/gateways/route.js`
+     defines the list; `components/addfunds-page.jsx` renders it.
+  2. **Say why, once.** A line on Add Funds for a foreign account: bank
+     transfer and card are Nigerian-only today, USDT works everywhere. Without
+     it, a hidden method reads as a bug.
+  3. **Flutterwave USD collection** — step 3 of the parked plan and the real
+     unlock. It is the rail the premium was always meant for, and the thing
+     that lets GBP/GHS/KES come off "Soon" in the currency switcher. Credits
+     naira at the deposit rate like everything else; the wallet stays naira.
+  4. **Then, and only then**, flip `active: true` per currency in
+     `lib/currency.js` as each rail goes live.
+
+  **Do not** build per-country wallets or a second price list — both ruled out
+  in the International Nitro entry, and the premium already lives in the
+  deposit rate. **Open for Trip:** whether a Nigerian paying in USDT keeps
+  local pricing (today: yes, `fx_premium_live` is off).
+
+- **Meta CAPI should send the country** (noted 7 Sep 2026, not urgent). We now
+  store `User.country`, and Meta's Conversions API accepts a hashed country in
+  `user_data` — it improves match quality, which matters because the CAPI fix
+  from 4 Sep is what the scale-ladder gate is measured against. One field in
+  `lib/meta-capi.js` beside the existing `ph`/`em` hashing. Note the phone
+  normaliser there passes non-NG numbers through as typed, so a foreign number
+  entered in local format still hashes in the wrong shape — the signup picker
+  now prevents that at the source, but old rows predate it.
+
 - **Auto data-saver — parked design, agreed 6 Sep 2026** (the improved version
   of the audit's "Data-Saver toggle"): no manual toggle — animations cost CPU,
   not data, and a switch nobody finds helps nobody. Instead the app reads the

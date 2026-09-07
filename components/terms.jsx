@@ -25,7 +25,7 @@ function TermsInner(){
   ];
   const summary=[
     "You must be 18 and give real details.",
-    "Unspent wallet money can go back to your bank on request; order refunds go to your wallet.",
+    "Wallet money is credit for Nitro services; order refunds go back to your wallet.",
     "We deliver through providers, so times are estimates.",
   ];
   const related=[
