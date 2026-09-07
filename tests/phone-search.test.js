@@ -10,6 +10,21 @@ describe('phone search', () => {
     }
   });
 
+  // Since signup opened to five countries, a stored number can carry any of
+  // their dial codes — searching only worked if the admin typed +234 before.
+  it('finds a foreign number typed locally or in full', () => {
+    for (const typed of ['07911123456', '+447911123456', '447911123456', '7911123456']) {
+      expect(phoneSearchDigits(typed), typed).toBe('7911123456');
+    }
+    expect(phoneSearchDigits('+14155552671')).toBe('4155552671');
+    expect(phoneSearchDigits('+254712345678')).toBe('712345678');
+  });
+
+  it('strips the longest matching dial code, so +234 is never read as +2', () => {
+    // 234… is Nigeria, not a US number beginning 34.
+    expect(phoneSearchDigits('+2348012345678')).toBe('8012345678');
+  });
+
   it('accepts a partial number', () => {
     expect(phoneSearchDigits('668928')).toBe('668928');
     expect(phoneSearchDigits('07061')).toBe('7061');
