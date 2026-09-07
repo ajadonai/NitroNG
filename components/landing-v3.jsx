@@ -250,7 +250,7 @@ function LandingInner({ initialAuthQuery }){
             <LanguageSwitcher />
             <ThemeToggle dark={dark} onToggle={toggleTheme} />
             <button onClick={()=>setModal("login")} className="nav-login-btn py-[7px] px-5 text-sm font-semibold cursor-pointer border-none">Log in</button>
-            <button type="button" onClick={()=>setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="nav-burger desktop:hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><button onClick={()=>setModal("signup")} className="nav-signup-btn max-desktop:!hidden py-[7px] px-5 border-none text-sm font-semibold cursor-pointer" style={{background:"#fff",color:"#1a1a1a"}}>Get started</button>
+            <button type="button" onClick={()=>setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="nav-burger desktop:hidden"><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /></button><button onClick={()=>setModal("signup")} className="nav-signup-btn max-desktop:!hidden py-[7px] px-5 border-none text-sm font-semibold cursor-pointer" style={{background:"#fff",color:"#1a1a1a"}}>Get started</button>
           </div>
       </nav>
       <PublicNavSheet open={navOpen} onClose={()=>setNavOpen(false)} dark={dark} links={SHEET_LINKS} liveCount={siteStats.processing} onLogin={()=>{setNavOpen(false);setModal("login")}} onSignup={()=>{setNavOpen(false);setModal("signup")}} />

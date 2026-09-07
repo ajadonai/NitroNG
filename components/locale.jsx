@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
-import { CURRENCIES, BASE_CURRENCY, isSupported, formatDisplayPrice, formatMoney } from "../lib/currency";
+import { CURRENCIES, BASE_CURRENCY, isActive, formatDisplayPrice, formatMoney } from "../lib/currency";
 
 /**
  * Currency and language, the way theme already works: a preference in
@@ -41,9 +41,11 @@ export function LocaleProvider({ children }) {
   const [fx, setFx] = useState(EMPTY_FX);
 
   // Saved preferences, read once. Anything unrecognised falls back to the
-  // defaults rather than throwing, since localStorage can hold anything.
+  // defaults rather than throwing, since localStorage can hold anything — this
+  // is also what quietly reverts anyone who chose a currency before it was
+  // turned back off, without a jarring "your currency was reset" moment.
   useEffect(() => {
-    try { const c = localStorage.getItem(CURRENCY_KEY); if (isSupported(c)) setCurrencyState(c); } catch {}
+    try { const c = localStorage.getItem(CURRENCY_KEY); if (isActive(c)) setCurrencyState(c); } catch {}
     try { const l = localStorage.getItem(LANG_KEY); if (LANGUAGES.some(x => x.code === l && x.available)) setLangState(l); } catch {}
   }, []);
 
@@ -60,7 +62,7 @@ export function LocaleProvider({ children }) {
   }, [currency]);
 
   const setCurrency = useCallback((code) => {
-    if (!isSupported(code)) return;
+    if (!isActive(code)) return;
     setCurrencyState(code);
     try { localStorage.setItem(CURRENCY_KEY, code); } catch {}
   }, []);

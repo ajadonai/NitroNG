@@ -213,7 +213,7 @@ export default function SharedNav({ action = "back" }) {
         <LanguageSwitcher />
         <ThemeToggle dark={dark} onToggle={toggleTheme} />
         {/* The menu is the outermost control, where a thumb expects it. */}
-        <button type="button" onClick={() => setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="nav-burger desktop:hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+        <button type="button" onClick={() => setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="nav-burger desktop:hidden"><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /></button>
       </div>
     </nav>
     <PublicNavSheet open={navOpen} onClose={() => setNavOpen(false)} dark={dark} toggleTheme={toggleTheme} />
