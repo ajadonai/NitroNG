@@ -5,6 +5,7 @@ import { RailSec, RailCard, RailFact, RailRow, RailLink, RailBtn, RailEmpty } fr
 import { Modal } from "./ui-primitives";
 import { PlatformIcon } from "./platform-icon";
 import { useMoney } from "./locale";
+import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { fN, fD } from "../lib/format";
 import { RewardsStrip, ChannelLane, StatusModal, PointsModal } from "./rewards";
 
@@ -65,7 +66,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
   const lowBal = balance < 500;
   const neverPaid = !!user?.welcomeBonusEligible;
   const primaryAction = neverPaid
-    ? { label: "Get up to ₦1,500 free on your first top-up", sub: "One time, for new accounts", target: "add-funds", gift: true }
+    ? { label: `Get up to ${money(MAX_BONUS_NAIRA)} free on your first top-up`, sub: "One time, for new accounts", target: "add-funds", gift: true }
     : isNew
     ? { label: "Place your first order", sub: "Pick a platform and start growing today", target: "services" }
     : lowBal

@@ -29,7 +29,13 @@ describe("dashboard overview module boundary", () => {
 
   it("nudges accounts that never paid toward their first top-up, ahead of the first-order nudge", () => {
     expect(overviewSource).toContain("const neverPaid = !!user?.welcomeBonusEligible;");
-    expect(overviewSource).toMatch(/neverPaid\s*\?\s*\{ label: "Get up to ₦1,500 free on your first top-up",[^}]*target: "add-funds"/);
+    // The amount is no longer written into the copy: it comes from
+    // MAX_BONUS_NAIRA and is rendered through the currency formatter, so a
+    // customer reading the site in dollars is not promised naira. Asserting
+    // the literal "₦1,500" here would lock in exactly what that fixed, so
+    // this checks the thing the test is actually about — that the never-paid
+    // nudge wins, and points at Add Funds.
+    expect(overviewSource).toMatch(/neverPaid\s*\?\s*\{ label: `Get up to \$\{money\(MAX_BONUS_NAIRA\)\} free on your first top-up`,[^}]*target: "add-funds"/);
     expect(overviewSource).toContain("const showNext = isNew || neverPaid;");
   });
 

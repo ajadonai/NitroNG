@@ -4,6 +4,8 @@ import NitroLoader from './nitro-loader';
 import { NitroWordmark } from './nitro-logo';
 import { DEFAULT_COUNTRY, getCountry, validatePhone } from '../lib/phone-countries';
 import { PhoneField } from './phone-field';
+import { useMoney, useLocale } from './locale';
+import { MAX_BONUS_NAIRA } from '../lib/welcome-bonus';
 
 function Lbl({ t, htmlFor, children }) {
   return (
@@ -61,6 +63,10 @@ function PwStrength({ pw, t }) {
 
 // Opt-in two-panel shell (landing v3). Desktop: brand panel + the usual card. Mobile: the usual card with a slim brand strip.
 function ElevatedShell({ elevated, dark, mode, children }) {
+  const money = useMoney();
+  // Outside the provider (a bare render in a test) this falls back to naira,
+  // which is also the right default.
+  const { currency } = useLocale() || { currency: 'NGN' };
   if (!elevated) return children;
   return (
     <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[860px] max-md:max-w-[440px] max-h-[90dvh] grid md:grid-cols-[.9fr_1.1fr] rounded-[22px] overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`, boxShadow: '0 30px 80px rgba(0,0,0,.35)' }}>
@@ -70,9 +76,9 @@ function ElevatedShell({ elevated, dark, mode, children }) {
         <h3 className="serif italic font-medium text-[34px] leading-[1.1] mt-auto mb-3 relative">{mode === 'login' ? "Welcome back. Let's run it up." : mode === 'signup' ? 'Your first push is on us.' : 'No stress. Let\'s get you back in.'}</h3>
         <p className="text-[13px] leading-[1.6] relative" style={{ opacity: .86 }}>{mode === 'login' ? 'Your wallet, your orders and your tiers are exactly where you left them.' : mode === 'signup' ? 'Tested services, naira prices, delivery in minutes. Account in 30 seconds.' : 'Tell us the email on the account and we will send a reset link.'}</p>
         <ul className="list-none p-0 m-0 mt-[18px] flex flex-col gap-[9px] relative">
-          {['Naira pricing, no FX markup', 'Starts in under 60 seconds', 'Real humans on WhatsApp'].map(x => <li key={x} className="flex gap-[9px] text-[13px] items-center"><i className="not-italic w-5 h-5 rounded-full inline-flex items-center justify-center shrink-0 text-[11px]" style={{ background: 'rgba(255,255,255,.18)' }}>✓</i>{x}</li>)}
+          {[currency === 'NGN' ? 'Naira pricing, no FX markup' : 'Prices shown in your currency', 'Starts in under 60 seconds', 'Real humans on WhatsApp'].map(x => <li key={x} className="flex gap-[9px] text-[13px] items-center"><i className="not-italic w-5 h-5 rounded-full inline-flex items-center justify-center shrink-0 text-[11px]" style={{ background: 'rgba(255,255,255,.18)' }}>✓</i>{x}</li>)}
         </ul>
-        {mode === 'signup' && <div className="mt-5 py-3 px-3.5 rounded-[14px] text-[12.5px] leading-[1.45] relative" style={{ background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.26)' }}><b className="block text-[13.5px]">🎁 Up to ₦1,500 free promo credit</b>on your first deposit, straight into your wallet.</div>}
+        {mode === 'signup' && <div className="mt-5 py-3 px-3.5 rounded-[14px] text-[12.5px] leading-[1.45] relative" style={{ background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.26)' }}><b className="block text-[13.5px]">🎁 Up to {money(MAX_BONUS_NAIRA)} free promo credit</b>on your first deposit, straight into your wallet.</div>}
         <div className="flex items-center gap-2.5 mt-[18px] text-xs relative" style={{ opacity: .9 }}>
           <div className="flex">{[['TM','#e0a458'],['AO','#6ee7b7'],['EN','#a5b4fc'],['BI','#f472b6']].map(([a, c], i) => <i key={a} className="not-italic w-[22px] h-[22px] rounded-full text-[8px] font-extrabold flex items-center justify-center" style={{ background: c, border: '2px solid rgba(255,255,255,.9)', marginLeft: i ? -7 : 0 }}>{a}</i>)}</div>
           <span>2,300+ creators already here</span>
@@ -84,6 +90,7 @@ function ElevatedShell({ elevated, dark, mode, children }) {
 }
 
 function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode, resetToken: resetTokenProp, elevated = false }) {
+  const money = useMoney();
   const [method, setMethod] = useState('email');
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
@@ -467,7 +474,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
         }}
       >
         {elevated && <div className="md:hidden relative flex items-center justify-center -mt-6 -mx-8 mb-[18px] py-3.5 px-[52px] text-white text-center" style={{ background: 'linear-gradient(135deg,#c47d8e,#a3586b)' }}>
-          <span className="text-[12.5px] font-semibold" style={{ opacity: .92 }}>{mode === 'signup' ? '🎁 ₦1,500 free credit on your first deposit' : 'Welcome back'}</span>
+          <span className="text-[12.5px] font-semibold" style={{ opacity: .92 }}>{mode === 'signup' ? `🎁 ${money(MAX_BONUS_NAIRA)} free credit on your first deposit` : 'Welcome back'}</span>
           <button
             type="button"
             aria-label="Close authentication dialog"
