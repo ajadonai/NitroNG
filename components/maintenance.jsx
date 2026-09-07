@@ -37,15 +37,15 @@ function MaintenanceInner() {
     return () => clearInterval(iv);
   }, [until]);
 
-  const bg = dark ? "#080b14" : "#f4f1ed";
+  const bg = dark ? "#0c0814" : "#efe8e0";
   const border = dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)";
   const hair = dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.08)";
   const card = dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.6)";
   const track = dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)";
   const muted = dark ? "rgba(255,255,255,.34)" : "rgba(0,0,0,.34)";
   const soft = dark ? "rgba(255,255,255,.58)" : "rgba(0,0,0,.5)";
-  const text = dark ? "#f0ede8" : "#1c1b19";
-  const amber = dark ? "#e0a458" : "#d97706";
+  const text = dark ? "#f6f1ee" : "#201b19";
+  const amber = dark ? "#f0c469" : "#8a6410";
   const amberSoft = dark ? "rgba(224,164,88,.14)" : "rgba(217,119,6,.12)";
   const green = dark ? "#6ee7b7" : "#059669";
 
@@ -76,7 +76,7 @@ function MaintenanceInner() {
         .mx-markbox{position:relative;width:104px;height:104px;margin:0 auto}
         .mx-markbox svg{position:absolute;inset:0;width:100%;height:100%}
         .mx-mk{fill:none;stroke-width:9;stroke-linecap:round;stroke-linejoin:round}
-        .mx-lead{stroke:#c47d8e;stroke-dasharray:220;stroke-dashoffset:220;animation:mxDraw 1.1s cubic-bezier(.6,0,.3,1) .15s forwards}
+        .mx-lead{stroke:#c97f92;stroke-dasharray:220;stroke-dashoffset:220;animation:mxDraw 1.1s cubic-bezier(.6,0,.3,1) .15s forwards}
         .mx-echo{opacity:0;animation:mxEchoIn .8s ease 1s forwards,mxBreathe 2.6s ease-in-out 2s infinite}
         .mx-e1{stroke:#e05252;animation-delay:1s,2s}
         .mx-e2{stroke:#34a97b;animation-delay:1.12s,2.4s}
@@ -106,7 +106,7 @@ function MaintenanceInner() {
       {/* Nav */}
       <nav className="flex items-center justify-center px-6 h-[52px] backdrop-blur-[20px] relative z-10 shrink-0" style={{ borderBottom: `0.5px solid ${border}`, background: dark ? "rgba(8,11,20,.6)" : "rgba(244,241,237,.7)" }}>
         <div className="flex items-center gap-2">
-          <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>
+          <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c97f92,#9b5266)", boxShadow: dark ? "inset 0 0 0 1.5px rgba(255,255,255,.4), 0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(232,180,196,.28)" : "inset 0 0 0 1.5px rgba(255,255,255,.45), 0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(139,74,94,.22)" }}>
             <svg width="8" height="9" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg>
           </div>
           <span className="text-sm font-semibold tracking-[2px]" style={{ color: text }}>NITRO</span>
@@ -146,18 +146,18 @@ function MaintenanceInner() {
               <span className="text-[11px] font-extrabold uppercase" style={{ color: muted, letterSpacing: "1.6px" }}>Back in about</span>
               <span className="font-extrabold" style={{ color: text, fontFamily: "'JetBrains Mono',monospace", fontSize: until ? 38 : 30, letterSpacing: "-1px", fontVariantNumeric: "tabular-nums", lineHeight: 1.2 }}>{big}</span>
               <div className="relative overflow-hidden rounded-full mt-2" style={{ width: 224, height: 5, background: track }}>
-                {pct !== null && <span className="absolute left-0 top-0 bottom-0 rounded-full transition-[width] duration-1000 ease-linear" style={{ width: `${pct}%`, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }} />}
+                {pct !== null && <span className="absolute left-0 top-0 bottom-0 rounded-full transition-[width] duration-1000 ease-linear" style={{ width: `${pct}%`, background: "linear-gradient(135deg,#c97f92,#9b5266)" }} />}
                 <span className="mx-sheen" />
               </div>
             </div>
           </div>
 
           <div className="mx-ctas mx-rise" style={{ animationDelay: ".52s" }}>
-            <a href={`https://wa.me/${waNum}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-[7px] text-[13px] font-bold py-[11px] px-[18px] rounded-[11px] no-underline transition-transform duration-150 hover:-translate-y-px" style={{ color: dark ? "#25d366" : "#1e9e50", background: "rgba(37,211,102,.12)", border: "1px solid rgba(37,211,102,.4)" }}>
+            <a href={`https://wa.me/${waNum}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-[7px] text-[13px] font-bold py-[11px] px-[18px] rounded-full no-underline transition-transform duration-150 hover:-translate-y-px" style={{ color: dark ? "#25d366" : "#1e9e50", background: "rgba(37,211,102,.12)", border: "1px solid rgba(37,211,102,.4)" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               Updates on WhatsApp
             </a>
-            <button onClick={() => window.location.reload()} className="inline-flex items-center gap-2 text-[13px] font-bold py-[11px] px-[18px] rounded-[11px] cursor-pointer transition-transform duration-150 hover:-translate-y-px" style={{ color: soft, background: card, border: `1px solid ${border}` }}>Try again</button>
+            <button onClick={() => window.location.reload()} className="inline-flex items-center gap-2 text-[13px] font-bold py-[11px] px-[18px] rounded-full cursor-pointer transition-transform duration-150 hover:-translate-y-px" style={{ color: soft, background: card, border: `1px solid ${border}` }}>Try again</button>
           </div>
 
           <div className="mx-rise flex items-center justify-center gap-2 mt-[22px]" style={{ animationDelay: ".6s" }}>
@@ -166,7 +166,7 @@ function MaintenanceInner() {
               <svg width="13" height="13" viewBox="0 0 24 24" fill={soft}><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             </a>
             <a href={`https://instagram.com/${(sl.social_instagram || "Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i, "").replace(/^@/, "").replace(/\/$/, "")}`} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-9 h-9 rounded-[10px] flex items-center justify-center no-underline transition-transform duration-200 hover:-translate-y-0.5" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.08)", border: `0.5px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.14)"}` }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c47d8e" strokeWidth="2" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c97f92" strokeWidth="2" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
             </a>
           </div>
 
