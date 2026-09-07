@@ -54,6 +54,54 @@ describe('single-order price display parity', () => {
     expect(displayedNaira(sellPer1kKobo / 100, 100)).toBe(1775);
   });
 
+  it('prices bulk rows identically to single orders', () => {
+    // Bulk used to round while single ceiled, so the same service and quantity
+    // cost ₦1 more as a single order than in a cart. Both ceil now.
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 5_000_000 }),
+        fc.integer({ min: 1, max: 100_000 }),
+        (sellPer1kKobo, qty) => {
+          const bulkServerKobo = Math.ceil((sellPer1kKobo / 1000) * qty / 100) * 100;
+          const bulkCartNaira = Math.ceil(
+            (Math.round((sellPer1kKobo / 100) * 100) / 1000) * qty / 100,
+          );
+          expect(bulkCartNaira).toBe(bulkServerKobo / 100);
+          expect(bulkCartNaira).toBe(chargedNaira(sellPer1kKobo, qty));
+        },
+      ),
+      { numRuns: 2000 },
+    );
+  });
+
+  it('keeps every bulk charge path on ceil, and leaves refund proration alone', () => {
+    const bulk = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/orders/bulk/route.js'),
+      'utf8',
+    );
+    // Charge and cost, both the reorder path and the main row path.
+    expect(bulk).toContain('const charge = Math.ceil((serverPrice / 1000) * qty / 100) * 100;');
+    expect(bulk).toContain('const charge = Math.ceil((Number(o.tier.sellPer1k) / 1000) * o.quantity / 100) * 100;');
+    expect(bulk).not.toMatch(/const charge = Math\.round\(/);
+    expect(bulk).not.toMatch(/const cost = Math\.round\(/);
+    // Discounts re-round up, matching the single-order route.
+    expect(bulk).not.toMatch(/Math\.max\(100, Math\.round\(/);
+    // A partial-delivery refund is money owed back, so it stays on round —
+    // ceiling it would quietly change what customers are repaid.
+    expect(bulk).toContain('Math.round((liveRemains / order.quantity) * order.charge)');
+  });
+
+  it('still uses Math.ceil in the bulk cart', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'components/new-order.jsx'),
+      'utf8',
+    );
+    const start = source.split('\n').findIndex(l => l.includes('function getRowPrice('));
+    expect(start, 'getRowPrice moved or was renamed').toBeGreaterThan(-1);
+    const body = source.split('\n').slice(start, start + 8).join('\n');
+    expect(body).toContain('Math.ceil');
+  });
+
   it('still uses Math.ceil in the order form', () => {
     const source = fs.readFileSync(
       path.join(process.cwd(), 'components/new-order.jsx'),
