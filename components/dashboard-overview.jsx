@@ -4,6 +4,7 @@ import { useState } from "react";
 import { RailSec, RailCard, RailFact, RailRow, RailLink, RailBtn, RailEmpty } from "./rail";
 import { Modal } from "./ui-primitives";
 import { PlatformIcon } from "./platform-icon";
+import { useMoney } from "./locale";
 import { fN, fD } from "../lib/format";
 import { RewardsStrip, ChannelLane, StatusModal, PointsModal } from "./rewards";
 
@@ -53,6 +54,7 @@ function BatchRowMini({ item, first, dark, t, onClick }) {
 }
 
 export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t, setActive, socialLinks, rewards, isReseller }) {
+  const money = useMoney();
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [tipsOpen, setTipsOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -100,7 +102,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       <div className="flex items-center justify-between gap-3 rounded-2xl p-4 mb-4" style={card}>
         <div className="min-w-0">
           <div className="text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted">Balance</div>
-          <div className="m text-[32px] desktop:text-[36px] font-extrabold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.03em" }}>{fN(balance)}</div>
+          <div className="m text-[32px] desktop:text-[36px] font-extrabold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.03em" }}>{money(balance)}</div>
         </div>
         <div className="flex max-md:flex-col gap-1.5 shrink-0">
           <button onClick={() => setActive("add-funds")} className="nitro-money-btn h-[34px] px-3.5 border-none text-[13px] font-semibold cursor-pointer inline-flex items-center gap-1.5 justify-center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Top up</button>
@@ -247,7 +249,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       {/* ── Referral — phone and tablet; the sidebar has it on desktop ── */}
       <div className="hidden max-desktop:block mb-4 rounded-[14px] px-3.5" style={card}>
         <div className="text-[10.5px] font-semibold uppercase tracking-[1px] pt-2.5 pb-0.5 text-t-text-muted">Referral</div>
-        {[["Your code", <span key="c" className="inline-flex items-center gap-1.5"><b className="m text-[14px] font-semibold tracking-[1.5px] text-accent">{user?.refCode || "—"}</b></span>],["Referrals", <b key="r" className="m text-[14px] font-semibold text-t-text">{user?.refs || 0}</b>],["Earned", <b key="e" className="m text-[14px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(user?.earnings || 0)}</b>]].map(([label, val], i) => (
+        {[["Your code", <span key="c" className="inline-flex items-center gap-1.5"><b className="m text-[14px] font-semibold tracking-[1.5px] text-accent">{user?.refCode || "—"}</b></span>],["Referrals", <b key="r" className="m text-[14px] font-semibold text-t-text">{user?.refs || 0}</b>],["Earned", <b key="e" className="m text-[14px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{money(user?.earnings || 0)}</b>]].map(([label, val], i) => (
           <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-soft" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}><span>{label}</span>{val}</div>
         ))}
         <button onClick={() => setActive("referrals")} className="w-full my-2.5 py-2 rounded-lg text-[13px] font-semibold border-none cursor-pointer text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>Invite friends</button>
@@ -257,6 +259,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
 }
 
 export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setActive }) {
+  const money = useMoney();
   const activeCount = orderSummary?.active ?? activeOrders.length;
   const topPlatform = orderSummary?.topPlatform;
   const avgQty = orderSummary?.averageQuantity || 0;
@@ -282,7 +285,7 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
       <RailCard>
         <RailFact label="Your code" value={user?.refCode || "—"} color="var(--t-accent)" />
         <RailFact label="Referrals" value={user?.refs || 0} />
-        <RailFact label="Earned" value={fN(user?.earnings || 0)} />
+        <RailFact label="Earned" value={money(user?.earnings || 0)} />
       </RailCard>
       <RailBtn onClick={() => setActive("referrals")}>Invite friends</RailBtn>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { SITE } from '@/lib/site';
+import { useMoney } from './locale';
 
 // Tier colours are the ones the order form uses (components/new-order.jsx), so the landing and the app agree.
 const TIER_STYLE = {
@@ -13,11 +14,12 @@ const TIER_ICON = {
   Standard: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>,
   Premium: <><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></>,
 };
-// "From" prices are Instagram followers per 1,000. Static until /api/pricing exposes per-tier prices (Claude Code: see the note in the PR).
+// "From" prices are Instagram followers per 1,000, in naira. Plain numbers,
+// not formatted strings: the currency switcher decides how they are shown.
 const TIERS = [
-  { name: "Budget", tfor: "For tests, views and volume", price: "₦1,559", chip: "Lowest price", pop: false, li: [["ok","Cheapest rate per 1,000"],["ok","Tested source, fast start"],["no","No refill cover"]], fine: "Best when a drop wouldn't hurt: views, tests, big cheap pushes." },
-  { name: "Standard", tfor: "For everyday growth", price: "₦2,720", chip: "Most picked", pop: true, li: [["ok","Balanced speed and retention"],["ok","30-day refill cover"],["ok","Our default recommendation"]], fine: "Where most orders land. Reliable enough to build a page on." },
-  { name: "Premium", tfor: "For accounts that matter", price: "₦5,675", chip: "Top quality", pop: false, li: [["ok","Highest-quality sources"],["ok","Longest refill cover"],["ok","Slowest to drop, most natural"]], fine: "For brands, artists and anyone whose numbers get looked at." },
+  { name: "Budget", tfor: "For tests, views and volume", price: 1559, chip: "Lowest price", pop: false, li: [["ok","Cheapest rate per 1,000"],["ok","Tested source, fast start"],["no","No refill cover"]], fine: "Best when a drop wouldn't hurt: views, tests, big cheap pushes." },
+  { name: "Standard", tfor: "For everyday growth", price: 2720, chip: "Most picked", pop: true, li: [["ok","Balanced speed and retention"],["ok","30-day refill cover"],["ok","Our default recommendation"]], fine: "Where most orders land. Reliable enough to build a page on." },
+  { name: "Premium", tfor: "For accounts that matter", price: 5675, chip: "Top quality", pop: false, li: [["ok","Highest-quality sources"],["ok","Longest refill cover"],["ok","Slowest to drop, most natural"]], fine: "For brands, artists and anyone whose numbers get looked at." },
 ];
 // Half Pidgin, half plain English — the plain ones still read Nigerian through
 // what they say (a 2am WhatsApp reply, naira pricing) rather than through
@@ -106,6 +108,7 @@ const BF_CSS = `
 `;
 
 export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socialLinks, scrollRoot, pricingData }) {
+  const money = useMoney();
   const wrapRef = useRef(null);
   const [qi, setQi] = useState(0);
   const [qFade, setQFade] = useState(false);
@@ -170,7 +173,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
                   <span className="w-8 h-8 rounded-[10px] inline-flex items-center justify-center shrink-0 text-white" style={{ background: s.grad }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{TIER_ICON[tier.name]}</svg></span>{tier.name}
                 </h3>
                 <div className="text-sm mt-1.5 min-h-[22px]" style={{ color: soft }}>{tier.tfor}</div>
-                <div className="flex items-baseline gap-1.5 mt-[18px]"><b className="m text-[34px] font-extrabold -tracking-[1.5px]" style={{ color: tc }}>{livePrice || tier.price}</b><span className="text-[13px]" style={{ color: muted }}>/ 1,000 Instagram followers</span></div>
+                <div className="flex items-baseline gap-1.5 mt-[18px]"><b className="m text-[34px] font-extrabold -tracking-[1.5px]" style={{ color: tc }}>{money(livePrice ?? tier.price)}</b><span className="text-[13px]" style={{ color: muted }}>/ 1,000 Instagram followers</span></div>
                 <div className="h-px my-[20px] mb-4" style={{ background: hair }}/>
                 <ul className="list-none p-0 m-0 flex flex-col gap-[11px] flex-1">
                   {tier.li.map(([k, x]) => <li key={x} className="flex gap-2.5 text-sm leading-[1.5]" style={{ color: k === "no" ? muted : text }}><span className="mt-[3px]" style={{ color: k === "no" ? muted : tc }}>{k === "no" ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="6" y1="12" x2="18" y2="12"/></svg> : <Check size={15}/>}</span><span>{x}</span></li>)}

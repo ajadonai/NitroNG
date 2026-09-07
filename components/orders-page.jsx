@@ -5,6 +5,7 @@ import { useBodyScrollLock } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
+import { useMoney } from "./locale";
 import { fN, fD, fT } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { NotSureHelp } from "./new-order";
@@ -258,6 +259,7 @@ function refillEligible(o) {
 }
 
 function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, toast, onNavigate, waNum, onViewComments, doRefill, refillLoading }) {
+  const money = useMoney();
   const qty = o.quantity || 0;
   const isCancelled = o.status === "Cancelled";
   const hasData = o.remains != null;
@@ -439,7 +441,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
           isCancelled ? ["Quantity", <b key="q" className="m text-[13px] font-semibold text-t-text">{qty.toLocaleString()}</b>]
             : (hasData && !isComplete) ? ["Delivered", <span key="d" className="m text-[13px] text-t-text-muted"><b className="font-semibold text-t-text">{delivered.toLocaleString()}</b> of {qty.toLocaleString()}</span>]
             : ["Quantity", <b key="q" className="m text-[13px] font-semibold text-t-text">{qty.toLocaleString()}</b>],
-          [isCancelled ? "Refunded" : "Charge", <b key="c" className="m text-[13px] font-semibold" style={{ color: isCancelled ? (dark ? "#6ee7b7" : "#059669") : t.text }}>{fN(o.charge)}</b>],
+          [isCancelled ? "Refunded" : "Charge", <b key="c" className="m text-[13px] font-semibold" style={{ color: isCancelled ? (dark ? "#6ee7b7" : "#059669") : t.text }}>{money(o.charge)}</b>],
           ["Start count", o.startCount != null ? <b key="s" className="m text-[13px] font-semibold text-t-text">{o.startCount.toLocaleString()}</b> : <span key="s" className="text-[12.5px] text-t-text-muted">Not yet</span>],
           o.link ? ["Link", <a key="l" href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="text-[12.5px] font-medium no-underline truncate max-w-[200px] desktop:max-w-[420px] text-t-text-soft">{o.link.replace(/^https?:\/\/(www\.)?/, "")}</a>] : null,
         ].filter(Boolean).map(([label, val], i) => (
@@ -602,6 +604,7 @@ function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
 /* ═══ ORDERS PAGE                         ═══ */
 /* ═══════════════════════════════════════════ */
 export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, orderSummary, txs, dark, t, onNavigate, onRefresh, waNum, email }) {
+  const money = useMoney();
   const [sumOpen, setSumOpen] = useState(false);
   const sumRef = useRef(null);
   useEffect(() => {
@@ -723,9 +726,9 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       await fetchOrders();
       onRefresh?.();
       if (action === "check") toast.info("Bulk checked", `Checked ${data.checked || 0} orders · ${data.updated || 0} updated`);
-      else if (action === "cancel") toast.success("Bulk cancelled", `${data.cancelled || 0} cancelled${data.refunded ? ` · ${fN(data.refunded)} refunded` : ""}`);
+      else if (action === "cancel") toast.success("Bulk cancelled", `${data.cancelled || 0} cancelled${data.refunded ? ` · ${money(data.refunded)} refunded` : ""}`);
       else if (action === "reorder") toast.success("Bulk retry", `Placed ${data.placed || 0} of ${data.retried || 0}`);
-      else if (action === "reorder_completed") toast.success("Reorder placed", `${data.placed || 0} orders · ${data.newBatchId || ""} · ${fN(data.totalCharge || 0)} charged`);
+      else if (action === "reorder_completed") toast.success("Reorder placed", `${data.placed || 0} orders · ${data.newBatchId || ""} · ${money(data.totalCharge || 0)} charged`);
     } catch { toast.error("Request failed", "Check your connection and try again"); }
     setBatchActionLoading(null);
   };
@@ -898,6 +901,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
 /* ═══ ORDERS RIGHT SIDEBAR                ═══ */
 /* ═══════════════════════════════════════════ */
 export function OrdersSidebar({ orders, orderSummary, dark }) {
+  const money = useMoney();
   const activeCount = orderSummary?.active || 0;
   const attentionCount = orderSummary?.attention || 0;
   return (
@@ -908,13 +912,13 @@ export function OrdersSidebar({ orders, orderSummary, dark }) {
         <RailFact label="Delivering now" value={String(activeCount)} color={activeCount ? (dark ? "#a5b4fc" : "#4f46e5") : undefined} />
         {attentionCount > 0 && <RailFact label="Needs attention" value={String(attentionCount)} color={dark ? "#fdba74" : "#c2410c"} />}
         <RailFact label="Completed" value={String(orderSummary?.completed || 0)} />
-        <RailFact label="Spent" value={fN(orderSummary?.spent || 0)} />
+        <RailFact label="Spent" value={money(orderSummary?.spent || 0)} />
       </RailCard>
       {activeCount > 0 && <RailNote>Delivery takes 0 to 6 hours, up to 24 in a few cases. Speed requests are looked at after the first 6 hours.</RailNote>}
       <RailSec>Recent</RailSec>
       <RailCard>
         {orders.length === 0 ? <RailEmpty>No orders yet.</RailEmpty> : orders.slice(0, 5).map(o => (
-          <RailRow key={o.id} tile={<PlatformIcon platform={o.platform} dark={dark} size={16} />} title={o.service} sub={`${o.created ? fD(o.created, true) : ""}${o.tier ? ` · ${o.tier}` : ""}${o.status ? ` · ${o.status}` : ""}`} right={o.charge != null ? fN(o.charge) : null} />
+          <RailRow key={o.id} tile={<PlatformIcon platform={o.platform} dark={dark} size={16} />} title={o.service} sub={`${o.created ? fD(o.created, true) : ""}${o.tier ? ` · ${o.tier}` : ""}${o.status ? ` · ${o.status}` : ""}`} right={o.charge != null ? money(o.charge) : null} />
         ))}
       </RailCard>
     </div>
