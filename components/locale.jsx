@@ -93,8 +93,10 @@ export function LocaleProvider({ children }) {
 
   // Naira in → the string that goes on screen. With no rate yet (or ever), it
   // prints naira, which is the contract every caller relies on.
+  // `money(n)` is a price and rounds up; `money(n, { round: "down" })` is money
+  // someone holds and rounds down. See the note in lib/currency.js.
   const fmt = useCallback(
-    (naira) => formatDisplayPrice(naira, { code: currency, depositRate: fx.depositRate, usdRates: fx.usdRates }),
+    (naira, opts) => formatDisplayPrice(naira, { code: currency, depositRate: fx.depositRate, usdRates: fx.usdRates, ...opts }),
     [currency, fx],
   );
 
@@ -114,5 +116,5 @@ export function useLocale() {
  *  provider (admin, tests) it formats naira, so it is always safe to call. */
 export function useMoney() {
   const l = useContext(LocaleCtx);
-  return l?.fmt ?? ((n) => formatMoney(n, BASE_CURRENCY));
+  return l?.fmt ?? ((n, opts) => formatMoney(n, BASE_CURRENCY, opts));
 }

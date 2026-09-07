@@ -395,7 +395,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               {discountAmount > 0 && <span className="text-[11px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Nitro Status {loyaltyDiscount}% · −₦{discountAmount.toLocaleString()}</span>}
               {cappedPromoDiscount > 0 && <span className="text-[11px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}>Discount {activePromotion.discountPercent}% · −₦{cappedPromoDiscount.toLocaleString()}</span>}
               {pointsDiscount > 0 && <span className="text-[11px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>₦{pointsDiscount.toLocaleString()} in points applied</span>}
-              {short && <span className="text-[11px]" style={{ color: dark ? "#fcd34d" : "#b45309" }}>Balance {money(balance)} · short by {money(price - balance)}</span>}
+              {short && <span className="text-[11px]" style={{ color: dark ? "#fcd34d" : "#b45309" }}>Balance {money(balance, { round: "down" })} · short by {money(price - balance)}</span>}
             </div>
             {short
               ? <button onClick={onTopUp} data-tour="no-submit-btn" className="nitro-money-btn shrink-0 h-[44px] px-5 border-none text-[14px] font-bold cursor-pointer font-[inherit]">Top up</button>

@@ -103,7 +103,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       <div className="flex items-center justify-between gap-3 rounded-2xl p-4 mb-4" style={card}>
         <div className="min-w-0">
           <div className="text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted">Balance</div>
-          <div className="m text-[32px] desktop:text-[36px] font-extrabold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.03em" }}>{money(balance)}</div>
+          <div className="m text-[32px] desktop:text-[36px] font-extrabold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.03em" }}>{money(balance, { round: "down" })}</div>
         </div>
         <div className="flex max-md:flex-col gap-1.5 shrink-0">
           <button onClick={() => setActive("add-funds")} className="nitro-money-btn h-[34px] px-3.5 border-none text-[13px] font-semibold cursor-pointer inline-flex items-center gap-1.5 justify-center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Top up</button>

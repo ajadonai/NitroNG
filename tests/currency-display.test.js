@@ -284,6 +284,53 @@ describe("display currency — one deposit rate, read both ways", () => {
     });
   });
 
+  describe("rounding has a direction — the house rule, in the display layer", () => {
+    // The catalogue ceils to whole naira (markup.js) and every order step ceils
+    // again, because a price quoted below the real charge got customers refused
+    // with "insufficient balance" for an order the screen said they could
+    // afford. The display layer has to keep the same discipline, and a balance
+    // is the mirror of a price: never show more money than someone holds.
+    it("a price never displays below the real charge", () => {
+      // ₦2,480 ÷ 1529 = $1.62197… — to-nearest would print $1.62.
+      expect(formatDisplayPrice(2480, { code: "USD", depositRate: 1529 })).toBe("≈ $1.63");
+    });
+
+    it("a balance never displays above what is held", () => {
+      // 473,460 kobo is a real production balance: ₦4,734.60, shown as ₦4,735.
+      expect(formatMoney(4734.6, "NGN", { round: "down" })).toBe("₦4,734");
+      expect(formatDisplayPrice(4734.6, { code: "USD", depositRate: 1529, round: "down" })).toBe("≈ $3.09");
+    });
+
+    it("an exact figure is left alone in both directions", () => {
+      expect(formatMoney(1500, "NGN")).toBe("₦1,500");
+      expect(formatMoney(1500, "NGN", { round: "down" })).toBe("₦1,500");
+      expect(formatDisplayPrice(1529, { code: "USD", depositRate: 1529 })).toBe("≈ $1.00");
+    });
+
+    it("a debit rounds by magnitude, so what is owed is never understated", () => {
+      expect(formatMoney(-4734.6, "NGN")).toBe("-₦4,735");
+    });
+
+    it("what a screen shows can never make an unaffordable order look affordable", () => {
+      // The invariant the whole rule exists for: if the displayed balance covers
+      // the displayed price, the real balance covers the real charge.
+      const rate = 1529;
+      for (let kobo = 0; kobo < 400; kobo++) {
+        const balance = 4700 + kobo / 100;
+        for (const price of [4700, 4701, 4702, 4703, 4704]) {
+          for (const code of ["NGN", "USD"]) {
+            const shownBal = formatMoney(
+              convertFromNaira(balance, { code, depositRate: rate }), code, { round: "down" });
+            const shownPrice = formatMoney(
+              convertFromNaira(price, { code, depositRate: rate }), code);
+            const num = str => Number(str.replace(/[^0-9.]/g, ""));
+            if (num(shownBal) >= num(shownPrice)) expect(balance).toBeGreaterThanOrEqual(price);
+          }
+        }
+      }
+    });
+  });
+
   it("base currency and the offered set are the agreed ones", () => {
     expect(BASE_CURRENCY).toBe("NGN");
     expect(Object.keys(CURRENCIES)).toEqual(["NGN", "USD", "GBP", "GHS", "KES"]);

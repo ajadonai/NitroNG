@@ -9,6 +9,10 @@ import { copyText } from '@/lib/clipboard';
 // rendered when /api/referrals/cash says enabled — see referrals-page.jsx.
 
 const fN = k => `₦${Math.round(k / 100).toLocaleString()}`;
+// Money already earned. Kobo in, and it never rounds up: showing ₦5,000 to
+// someone holding ₦4,999.60 puts a locked cash-out button under a figure that
+// says it should be unlocked. Same rule as lib/format.js fHeld.
+const fHeld = k => `₦${Math.floor(k / 100).toLocaleString()}`;
 const initials = n => (n || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
 const fD = d => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
@@ -69,7 +73,7 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
 
       {/* Facts */}
       <div className="grid grid-cols-2 desktop:grid-cols-4 gap-2 mb-4">
-        {[["Available", fN(s.available), green], ["On hold", fN(s.held + s.requested), amber], ["Paid out", fN(s.paidOut), t.text], ["Friends", String(data.earnings.length + data.waiting.length), t.text]].map(([label, val, color]) => (
+        {[["Available", fHeld(s.available), green], ["On hold", fHeld(s.held + s.requested), amber], ["Paid out", fN(s.paidOut), t.text], ["Friends", String(data.earnings.length + data.waiting.length), t.text]].map(([label, val, color]) => (
           <div key={label} className="p-3 rounded-xl" style={card}>
             <div className="text-[10.5px] uppercase tracking-[0.8px] font-semibold mb-1 text-t-text-muted">{label}</div>
             <div className="m text-[17px] font-bold" style={{ color }}>{val}</div>
@@ -95,7 +99,7 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
                 <div className="h-[7px] rounded overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)" }}>
                   <div className="h-full rounded" style={{ width: `${Math.min(100, (s.available / data.minPayout) * 100)}%`, background: t.accent }} />
                 </div>
-                <div className="flex justify-between text-[11px] mt-1 text-t-text-muted"><span>{fN(s.available)} available</span><span>{overLine ? "ready to cash out" : `${fN(data.minPayout - s.available)} to go`}</span></div>
+                <div className="flex justify-between text-[11px] mt-1 text-t-text-muted"><span>{fHeld(s.available)} available</span><span>{overLine ? "ready to cash out" : `${fN(data.minPayout - s.available)} to go`}</span></div>
               </div>
               {overLine && (
                 <div className="grid grid-cols-1 desktop:grid-cols-3 gap-2">
@@ -105,7 +109,7 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
                 </div>
               )}
               <button disabled={busy || !overLine || (overLine && (!bank.bankName || bank.bankAccountNo.length !== 10 || !bank.bankAccountName))} onClick={() => act({ action: "payout", ...bank }, "Cash-out requested")} className="h-[42px] rounded-xl text-[13.5px] font-semibold border-none cursor-pointer text-white disabled:cursor-default" style={{ background: overLine ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"), color: overLine ? "#fff" : t.textMuted, opacity: busy ? .6 : 1 }}>
-                {busy ? "Working…" : overLine ? `Cash out ${fN(s.available)} to my bank` : `Cash out ${fN(s.available)} — unlocks at ${fN(data.minPayout)}`}
+                {busy ? "Working…" : overLine ? `Cash out ${fHeld(s.available)} to my bank` : `Cash out ${fHeld(s.available)} — unlocks at ${fN(data.minPayout)}`}
               </button>
             </>
           ) : (

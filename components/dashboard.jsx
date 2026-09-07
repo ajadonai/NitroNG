@@ -1287,10 +1287,10 @@ function DashboardInner({ initialData }) {
           {/* Balance pill — desktop only. Balance as a number, Top up as the action inside it.
               The balance converts on the same rate as every price, so "can I afford
               this" has the same answer whichever unit is on screen. */}
-          <button onClick={() => setActive("add-funds")} aria-label={`Balance ${money(Math.round(user?.balance || 0))}. Top up`}
+          <button onClick={() => setActive("add-funds")} aria-label={`Balance ${money(user?.balance || 0, { round: "down" })}. Top up`}
             className="dash-balance-pill max-desktop:hidden flex items-center gap-2 h-[34px] pl-3 pr-1.5 cursor-pointer text-[13px] font-semibold text-t-text border-none"
             style={{ fontVariantNumeric: "tabular-nums" }}>
-            {money(Math.round(user?.balance || 0))}
+            {money(user?.balance || 0, { round: "down" })}
             <span className="nitro-money text-[11px] font-bold py-1 px-2.5 rounded-full">Top up</span>
           </button>
           {/* Notification bell */}
@@ -1414,7 +1414,7 @@ function DashboardInner({ initialData }) {
               </div>
               <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">Balance</div>
-                <div className="m text-lg max-md:text-base font-semibold text-t-green">{fN(user?.balance || 0)}</div>
+                <div className="m text-lg max-md:text-base font-semibold text-t-green">{money(user?.balance || 0, { round: "down" })}</div>
                 {user?.bonusCredit && <div className="text-[11px] mt-0.5 text-accent">₦{(user.bonusCredit.amount / 100).toLocaleString()} bonus — expires in {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}
               </div>
             </div>
