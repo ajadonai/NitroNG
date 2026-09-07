@@ -686,7 +686,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   // was refused with "insufficient balance" for an order the screen said they
   // could afford. (Bulk rounds on both sides and is left alone.)
   const price = selTier
-    ? Math.ceil((Math.round((selTier.pricePer1k || selTier.price) * 100) / 1000) * (Number(qty) || 0) / 100)
+    ? Math.ceil(Math.round((selTier.pricePer1k || selTier.price) * 100) * (Number(qty) || 0) / 100_000)
     : 0;
   const activePlat = PLATFORMS.find(p => p.id === platform);
 
@@ -910,7 +910,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       const drifted = [];
       for (const row of cartRows) {
         const price = getRowPrice(row, menuData);
-        const storedPrice = Math.ceil((Math.round((row.storedPricePer1k || 0) * 100) / 1000) * row.qty / 100);
+        const storedPrice = Math.ceil(Math.round((row.storedPricePer1k || 0) * 100) * row.qty / 100_000);
         if (row.storedPricePer1k && storedPrice > 0 && Math.abs(price - storedPrice) / storedPrice > 0.05) {
           drifted.push(row.id);
         }
@@ -1480,7 +1480,7 @@ function getRowPrice(row, menuData) {
   // Mirrors the bulk endpoint operation for operation, the same way the
   // single-order quote does — back to integer kobo, then the endpoint's own
   // divide/ceil sequence, so the cart never quotes under what is charged.
-  return Math.ceil((Math.round(pricePer1k * 100) / 1000) * row.qty / 100);
+  return Math.ceil(Math.round(pricePer1k * 100) * row.qty / 100_000);
 }
 
 const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, bounds, cartOpen, onClick }, ref) {

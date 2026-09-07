@@ -397,7 +397,7 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .dash-bell-badge { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; border-radius: 8px; background: #dc2626; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 3px; font-family: 'JetBrains Mono', monospace; line-height: 1; }
 
 /* Avatar */
-.dash-avatar-btn { background: none; display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 3px 10px 3px 3px; border-radius: 10px; }
+.dash-avatar-btn { background: none; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; width: 34px; height: 34px; padding: 2px; border-radius: 999px; }
 .dash-avatar { width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; }
 
 /* Left sidebar */
@@ -785,7 +785,10 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .dash-nav-item { transition: background-color .2s ease, color .2s ease, transform .2s cubic-bezier(.4,0,.2,1) !important; }
 .dash-nav-item:hover { background-color: rgba(196,125,142,.07) !important; transform: translateX(4px); }
 .dash-nav-item:active { transform: translateX(2px) scale(.98); }
-/* ── Ringed controls ─────────────────────────────────────────────────────
+/* ── Ringed controls ────────────────────────────────────────────────────
+   Bell, avatar and the balance pill are all a 34px-tall pill so they sit on
+   one baseline; the avatar button is a true circle with symmetric padding,
+   since asymmetric padding left the avatar hugging one edge inside its ring.
    Every control in the top bar wears the sky toggle's two-tone ring: a light
    hug against the control plus a rose hairline just outside it. The hairline
    is what you see on cream; the hug is what you see on plum — which is why a

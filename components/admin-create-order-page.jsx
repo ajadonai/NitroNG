@@ -139,7 +139,12 @@ export function AdminCreateOrderPage({ dark, t }) {
     if (effectiveDripDays >= 2 && dripPauseDay >= effectiveDripDays) setDripPauseDay(effectiveDripDays - 1);
   }, [effectiveDripDays, dripPauseDay]);
   const nLinks = link ? 1 : 0;
-  const perOrder = sellPer1k * qtyNum / 1000;
+  // Mirrors app/api/admin/orders/create/route.js operation for operation — back
+  // to integer kobo, then its own multiply/divide/ceil sequence — so the quoted
+  // total is exactly what the order charges. Raw naira rounded at display time
+  // showed a naira under the real charge on about a third of quantities.
+  const chargeNaira = (per1kNaira, q) => Math.ceil(Math.round(per1kNaira * 100) * q / 100_000);
+  const perOrder = chargeNaira(sellPer1k, qtyNum);
   const totalCharge = perOrder * nLinks;
   const totalCost = costPer1kNgn * qtyNum / 1000 * nLinks;
 
@@ -159,7 +164,7 @@ export function AdminCreateOrderPage({ dark, t }) {
       (traffic.trafficType === "referrer" && traffic.referrer.trim()))
   );
   const canAddToBatch = mode === "bulk" && selectedTier && validQty && link.trim() && linkValid;
-  const batchTotalCharge = batchItems.reduce((s, it) => s + it.sellPer1k * it.quantity / 1000, 0);
+  const batchTotalCharge = batchItems.reduce((s, it) => s + chargeNaira(it.sellPer1k, it.quantity), 0);
   const batchTotalCost = batchItems.reduce((s, it) => s + it.costNgn * it.quantity / 1000, 0);
   const batchTotalOrders = batchItems.length;
   const activeCharge = mode === "bulk" ? batchTotalCharge : totalCharge;
@@ -633,7 +638,7 @@ export function AdminCreateOrderPage({ dark, t }) {
                         <span className="dot" style={{ background: TIER_CLR_ORDER[item.tier] || "#3b82f6" }} />
                         <div>
                           <b>{item.groupName} · {item.tier}</b>
-                          <i className="m">{item.link.replace(/^https?:\/\//, "").slice(0, 30)}{item.link.length > 38 ? "…" : ""} · {item.quantity.toLocaleString()} · {fN(item.sellPer1k * item.quantity / 1000)}</i>
+                          <i className="m">{item.link.replace(/^https?:\/\//, "").slice(0, 30)}{item.link.length > 38 ? "…" : ""} · {item.quantity.toLocaleString()} · {fN(chargeNaira(item.sellPer1k, item.quantity))}</i>
                         </div>
                         <button type="button" className="co-ib" onClick={() => editBatchItem(i)} aria-label="Edit item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z" /></svg></button>
                         <button type="button" className="co-ib" onClick={() => removeBatchItem(i)} aria-label="Remove item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>
