@@ -2,12 +2,14 @@
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { PlatformCard, PlatformIcon, TierCards, AskCard, fromPrice, eyebrowStyle } from './platform-card';
+import { useMoney } from './locale';
 
 export default function ServicesHubView({ platforms }) {
   return <ThemeProvider><ServicesHubInner platforms={platforms} /></ThemeProvider>;
 }
 
 function Grid({ items }) {
+  const money = useMoney();
   const { t } = useTheme();
   return (
     <div className="grid grid-cols-4 gap-2.5 max-md:grid-cols-2">
@@ -17,7 +19,7 @@ function Grid({ items }) {
           name={p.name}
           icon={<PlatformIcon name={p.name} color={t.muted} />}
           count={p.serviceCount}
-          fromPrice={fromPrice(p.fromPrice)}
+          fromPrice={fromPrice(p.fromPrice, money)}
           href={`/services/${p.slug}`}
         />
       ))}

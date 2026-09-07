@@ -12,7 +12,7 @@ const DEF_BRACKETS = [
   { min: 5000, max: 20000, multiplier: 1.5, label: "Premium" },
   { min: 20000, max: 999999999, multiplier: 1.35, label: "Ultra" },
 ];
-const DEFAULTS = { brackets: DEF_BRACKETS, floorPct: 50, floorCeiling: 5000, ngBonus: 25, resellerDiscount: 20, usdBuffer: 200, fxThreshold: 20, tierMults: { Budget: 1, Standard: 1.15, Premium: 1.35 }, provBonuses: { mtp: 0, dao: 0, jap: 0 } };
+const DEFAULTS = { brackets: DEF_BRACKETS, floorPct: 50, floorCeiling: 5000, ngBonus: 25, resellerDiscount: 20, usdBuffer: 200, fxThreshold: 20, premium: 15, premiumLive: false, tierMults: { Budget: 1, Standard: 1.15, Premium: 1.35 }, provBonuses: { mtp: 0, dao: 0, jap: 0 } };
 const COLORS = ["#34d399", "#6ee7b7", "#60a5fa", "#a78bfa", "#e0a458", "#c47d8e"];
 const PROV = [["mtp", "MoreThanPanel"], ["dao", "DaoSMM"], ["jap", "JAP"]];
 const naira = (v) => `₦${Math.round(Number(v || 0)).toLocaleString()}`;
@@ -97,6 +97,8 @@ export default function AdminPricingPage({ dark, t }) {
       if (v.markup_reseller_discount) next.resellerDiscount = Number(v.markup_reseller_discount);
       if (v.markup_usd_buffer) next.usdBuffer = Number(v.markup_usd_buffer);
       if (v.markup_fx_threshold) next.fxThreshold = Number(v.markup_fx_threshold);
+      if (v.fx_premium_percent !== undefined && v.fx_premium_percent !== "") next.premium = Number(v.fx_premium_percent);
+      next.premiumLive = v.fx_premium_live === "1";
       try { if (v.markup_tier_multipliers) next.tierMults = JSON.parse(v.markup_tier_multipliers); } catch {}
       next.provBonuses = { mtp: Number(v.markup_provider_bonus_mtp || 0), dao: Number(v.markup_provider_bonus_dao || 0), jap: Number(v.markup_provider_bonus_jap || 0) };
       if (v.markup_usd_market) setUsdMarket(Number(v.markup_usd_market));
@@ -107,6 +109,7 @@ export default function AdminPricingPage({ dark, t }) {
   const pack = (v) => ({
     markup_brackets: JSON.stringify(v.brackets), markup_margin_floor: String(v.floorPct), markup_floor_ceiling: String(v.floorCeiling),
     markup_ng_bonus: String(v.ngBonus), markup_reseller_discount: String(v.resellerDiscount), markup_usd_buffer: String(v.usdBuffer), markup_fx_threshold: String(v.fxThreshold),
+    fx_premium_percent: String(v.premium ?? 15), fx_premium_live: v.premiumLive ? "1" : "0",
     markup_tier_multipliers: JSON.stringify(v.tierMults),
     markup_provider_bonus_mtp: String(v.provBonuses.mtp || 0), markup_provider_bonus_dao: String(v.provBonuses.dao || 0), markup_provider_bonus_jap: String(v.provBonuses.jap || 0),
   });
@@ -166,6 +169,9 @@ export default function AdminPricingPage({ dark, t }) {
     { id: "pv", title: "Provider discounts", sub: PROV.filter(([k]) => s.provBonuses[k]).length ? `Extra ${PROV.filter(([k]) => s.provBonuses[k]).map(([k, n]) => `${s.provBonuses[k]}% kept on ${n}`).join(", ")}.` : "Nothing extra kept on any provider." },
     { id: "rs", title: "Reseller discount", sub: `Resellers pay ${s.resellerDiscount}% less than the site price on every order.` },
     { id: "fx", title: "Dollar rate", sub: usdMarket ? `${naira(usdRate)} to the dollar today: the market rate plus a ${naira(s.usdBuffer)} cushion. Checked every morning.` : `A ${naira(s.usdBuffer)} cushion on the market rate. Checked every morning.` },
+    { id: "fd", title: "Foreign deposits", sub: !usdMarket ? `A ${s.premium}% premium on dollar deposits, ${s.premiumLive ? "switched on" : "set but not yet switched on"}.`
+        : s.premiumLive ? `Dollars credit at ${naira(Math.round(usdMarket / (1 + (s.premium || 0) / 100)))} to the dollar — ${s.premium}% under the market rate. $100 lands as ${naira(Math.round(100 * usdMarket / (1 + (s.premium || 0) / 100)))}.`
+        : `Switched off: dollars still credit at the pricing rate, ${naira(usdRate)}. A ${s.premium}% premium is set and waiting for you to turn it on.` },
     { id: "rc", title: "Reprice the menu", sub: "Work every menu price out again with these settings. Prices you have pinned are left as they are.", danger: true },
   ];
   const foot = (onSave) => <><button type="button" className="pr-b ghost" onClick={close}>Cancel</button><button type="button" className="pr-pri" disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save"}</button></>;
@@ -271,6 +277,19 @@ export default function AdminPricingPage({ dark, t }) {
             <Row label="Cushion on top" hint="Covers the rate moving between checks"><em className="pr-u">₦</em><NumInput value={draft.usdBuffer} onChange={v => d({ usdBuffer: v })} min={0} max={1000} fallback={200} width={76} /></Row>
             <Row label="Ignore moves smaller than" hint="So prices do not twitch every day"><em className="pr-u">₦</em><NumInput value={draft.fxThreshold} onChange={v => d({ fxThreshold: v })} min={1} max={500} fallback={20} width={68} /></Row>
             <div className="pr-tot"><span>Rate used for every price</span><b className="m">{naira(usdMarket + (draft.usdBuffer || 0))}<small> / $1</small></b></div>
+          </Modal>
+          <Modal open={open === "fd"} onClose={close} title="Foreign deposits" footer={foot(() => persist(draft))}>
+            <p className="pr-hint">Someone paying in dollars gets fewer naira per dollar than the market gives. That gap is the premium. It is charged inside the exchange when they deposit, so switching the site to naira afterwards cannot get round it.</p>
+            <Row label="Market rate this morning" hint="Fetched automatically"><b className="m">{usdMarket ? naira(usdMarket) : "—"}</b></Row>
+            <Row label="Premium on dollar deposits" hint="Kept as a percentage so it holds as the naira moves"><NumInput value={draft.premium} onChange={v => d({ premium: v })} min={0} max={60} fallback={15} width={70} /><em className="pr-u">%</em></Row>
+            <Row label="Charge it" hint={draft.premiumLive ? "On. USDT deposits credit at the premium rate." : "Off. USDT deposits still credit at the pricing rate, as they always have."}>
+              <label className="flex items-center gap-2 cursor-pointer text-[13px] font-semibold">
+                <input type="checkbox" checked={!!draft.premiumLive} onChange={e => d({ premiumLive: e.target.checked })} />
+                {draft.premiumLive ? "On" : "Off"}
+              </label>
+            </Row>
+            <div className="pr-tot"><span>$100 credits</span><b className="m">{naira(Math.round(100 * (draft.premiumLive && usdMarket ? usdMarket / (1 + (draft.premium || 0) / 100) : usdRate)))}</b></div>
+            {!draft.premiumLive && <p className="pr-hint">Turning this on is a visible jump for anyone paying with USDT, most of whom are in Nigeria: ₦100,000 that costs $65 today would cost about $87 at 15%. Tell people before you flip it.</p>}
           </Modal>
         </>
       )}

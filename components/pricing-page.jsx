@@ -4,6 +4,7 @@ import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { trackViewContent } from './capi-tracker';
 import { PlatformCard, PlatformIcon, TierCards, AskCard, PinkButton, priceRange, fromPrice, eyebrowStyle, cardStyle } from './platform-card';
+import { useMoney } from './locale';
 
 export default function PricingView({ platforms }) {
   return <ThemeProvider><PricingInner platforms={platforms} /></ThemeProvider>;
@@ -18,6 +19,7 @@ const tierNote = s => {
 };
 
 function PricingInner({ platforms }) {
+  const money = useMoney();
   const { t } = useTheme();
   const sorted = useMemo(() => [...platforms].sort((a, b) => b.services.length - a.services.length), [platforms]);
   const [active, setActive] = useState(sorted[0]?.platform || null);
@@ -77,7 +79,7 @@ function PricingInner({ platforms }) {
                         name={p.platform}
                         icon={<PlatformIcon name={p.platform} color={on ? t.accent : t.muted} />}
                         count={p.services.length}
-                        fromPrice={fromPrice(min)}
+                        fromPrice={fromPrice(min, money)}
                         active={on}
                         onClick={() => pick(p.platform)}
                       />
@@ -99,7 +101,7 @@ function PricingInner({ platforms }) {
                           <b className="text-[15px] font-semibold" style={{ color: t.text }}>{s.type}</b>
                           <span className="text-[12px]" style={{ color: t.muted }}>{tierNote(s)}</span>
                         </span>
-                        <b className="m shrink-0 text-[14px] font-semibold whitespace-nowrap" style={{ color: t.text, fontVariantNumeric: 'tabular-nums' }}>{priceRange(s.minPrice, s.maxPrice)}</b>
+                        <b className="m shrink-0 text-[14px] font-semibold whitespace-nowrap" style={{ color: t.text, fontVariantNumeric: 'tabular-nums' }}>{priceRange(s.minPrice, s.maxPrice, money)}</b>
                       </div>
                     ))}
                   </div>

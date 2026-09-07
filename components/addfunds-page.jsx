@@ -862,7 +862,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 <div className="p-3.5 rounded-[10px] mb-3 text-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.04)", border: `1px solid ${t.cardBorder}` }}>
                   <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1 text-t-text-muted">Amount to send</div>
                   <div className="m text-[28px] font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{cryptoModal.payAmount} USDT</div>
-                  <div className="text-xs mt-0.5 text-t-text-muted">≈ ${cryptoModal.amountUsd} USD · {fN(cryptoModal.amountNgn)}</div>
+                  <div className="text-xs mt-0.5 text-t-text-muted">≈ ${cryptoModal.amountUsd} USD · {fN(cryptoModal.amountNgn)}{Number(cryptoModal.amountUsd) > 0 && <> · ₦{Math.round(Number(cryptoModal.amountNgn) / Number(cryptoModal.amountUsd)).toLocaleString()} per $1</>}</div>
+                  {/* The one sentence in the product that shows both currencies:
+                      said here, before the money moves, so nobody meets the rate after. */}
+                  <div className="text-[11px] mt-2 text-t-text-muted">Your wallet is credited in naira at this rate.</div>
                 </div>
 
                 <div className="mb-3">

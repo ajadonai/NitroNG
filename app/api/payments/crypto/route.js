@@ -5,6 +5,7 @@ import { log } from '@/lib/logger';
 import { parseFbCookies } from '@/lib/meta-capi';
 import { rateLimit } from '@/lib/rate-limit';
 import { isReservedDepositEffectKey } from '@/lib/deposit-finalization';
+import { resolveDepositRate } from '@/lib/fx-deposit';
 import { notifyDepositFinalized } from '@/lib/deposit-notifications';
 import { isReservedProviderQueryLeaseKey } from '@/lib/provider-query-lease';
 import {
@@ -213,10 +214,13 @@ function replayExistingPayment(transaction, { amountKobo, couponId } = {}) {
   );
 }
 
+// The rate a dollar credits at, resolved by lib/fx-deposit so it is the same
+// number the currency display reads. With fx_premium_live off (the default)
+// this returns markup_usd_rate exactly as before.
 async function getNgnPerUsdRate() {
   try {
-    const setting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
-    return canonicalRate(setting?.value);
+    const { depositRate } = await resolveDepositRate();
+    return canonicalRate(String(depositRate));
   } catch {
     return FALLBACK_NGN_PER_USD;
   }

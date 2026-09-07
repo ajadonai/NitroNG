@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { ThemeProvider, useTheme } from './shared-nav';
 import { trackViewContent } from './capi-tracker';
 import { AskCard, PinkButton, naira, perUnit, eyebrowStyle, cardStyle } from './platform-card';
+import { useMoney } from './locale';
 import {
   Crumbs, Contents, Section, Accordion, Steps, RelatedTiles, PageShell,
 } from './service-platform-page';
@@ -20,6 +21,7 @@ function tierLine(tier) {
 }
 
 function TierCards({ tiers }) {
+  const money = useMoney();
   const { t } = useTheme();
   return (
     <div className="flex gap-3 max-md:flex-col">
@@ -30,7 +32,7 @@ function TierCards({ tiers }) {
           style={{ ...cardStyle(t), ...(tier.tier === 'Standard' ? { borderColor: t.accent } : {}) }}
         >
           <em className="not-italic text-[10.5px] font-bold uppercase tracking-[1.2px]" style={{ color: t.accent }}>{tier.tier}</em>
-          <b className="m text-[20px] font-extrabold" style={{ color: t.text, fontVariantNumeric: 'tabular-nums' }}>{naira(tier.price, perUnit(tier.price))}</b>
+          <b className="m text-[20px] font-extrabold" style={{ color: t.text, fontVariantNumeric: 'tabular-nums' }}>{naira(tier.price, perUnit(tier.price), money)}</b>
           <i className="not-italic text-[12.5px]" style={{ color: t.muted }}>{tierLine(tier)}</i>
           {tier.speed && <i className="not-italic text-[12.5px]" style={{ color: t.muted }}>{tier.speed}</i>}
         </span>

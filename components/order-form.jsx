@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { BONUS_PRESETS, bonusForNaira } from "../lib/welcome-bonus";
 import { calculateOrderPrice, formatOrderQuantity, getDripSchedule, getLinkPlaceholder, LINK_EXAMPLES, LINK_HINTS, MULTIDAY_THRESHOLD, validateOrderLink } from "../lib/order-form-core";
 import NitroLoader from "./nitro-loader";
+import { useMoney } from "./locale";
 
 const TRAFFIC_DEVICES = [
   { value: 'desktop', label: 'Desktop' },
@@ -30,6 +31,7 @@ function presetsFor(min, max) {
 }
 
 export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, inline, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints, trafficConfig, setTrafficConfig, tierStyles = {}, socialLinks = {} }) {
+  const money = useMoney();
   const minQty = selTier?.min || 100;
   const maxQty = selTier?.max || 50000;
   const isPackage = minQty === maxQty;
@@ -389,11 +391,11 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           <div className="flex items-center gap-3 pt-3 border-t border-solid" style={{ borderColor: t.cardBorder }}>
             <div className="flex flex-col flex-1 min-w-0 leading-tight">
               <span className="text-[10.5px] uppercase tracking-[1px] font-semibold" style={{ color: t.textMuted }}>Total</span>
-              <span className="text-[20px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{hasCut && <span className="text-[12px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>₦{basePrice.toLocaleString()}</span>}₦{price.toLocaleString()}</span>
+              <span className="text-[20px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{hasCut && <span className="text-[12px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>{money(basePrice)}</span>}{money(price)}</span>
               {discountAmount > 0 && <span className="text-[11px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Nitro Status {loyaltyDiscount}% · −₦{discountAmount.toLocaleString()}</span>}
               {cappedPromoDiscount > 0 && <span className="text-[11px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}>Discount {activePromotion.discountPercent}% · −₦{cappedPromoDiscount.toLocaleString()}</span>}
               {pointsDiscount > 0 && <span className="text-[11px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>₦{pointsDiscount.toLocaleString()} in points applied</span>}
-              {short && <span className="text-[11px]" style={{ color: dark ? "#fcd34d" : "#b45309" }}>Balance ₦{balance.toLocaleString()} · short by ₦{(price - balance).toLocaleString()}</span>}
+              {short && <span className="text-[11px]" style={{ color: dark ? "#fcd34d" : "#b45309" }}>Balance {money(balance)} · short by {money(price - balance)}</span>}
             </div>
             {short
               ? <button onClick={onTopUp} data-tour="no-submit-btn" className="nitro-money-btn shrink-0 h-[44px] px-5 border-none text-[14px] font-bold cursor-pointer font-[inherit]">Top up</button>

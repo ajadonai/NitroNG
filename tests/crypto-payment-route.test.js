@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   notifyDepositFinalized: vi.fn(),
   parseFbCookies: vi.fn(() => ({})),
   settingFindUnique: vi.fn(),
+  settingFindMany: vi.fn(),
   userFindUnique: vi.fn(),
   userUpdate: vi.fn(),
   transactionFindUnique: vi.fn(),
@@ -33,7 +34,7 @@ vi.mock('@/lib/logger', () => ({
 }));
 vi.mock('@/lib/prisma', () => ({
   default: {
-    setting: { findUnique: mocks.settingFindUnique },
+    setting: { findUnique: mocks.settingFindUnique, findMany: mocks.settingFindMany },
     user: { findUnique: mocks.userFindUnique, update: mocks.userUpdate },
     transaction: {
       findUnique: mocks.transactionFindUnique,
@@ -126,6 +127,10 @@ beforeEach(() => {
   mocks.rateLimit.mockResolvedValue({ limited: false });
   mocks.getNowPaymentsCreationApiKey.mockResolvedValue('np-key');
   mocks.settingFindUnique.mockResolvedValue({ value: '1600' });
+  // The rate now comes through lib/fx-deposit, which reads the settings in one
+  // findMany. With no fx_premium_live row the resolver returns markup_usd_rate
+  // untouched, so every expectation below stays exactly as it was.
+  mocks.settingFindMany.mockResolvedValue([{ key: 'markup_usd_rate', value: '1600' }]);
   mocks.userFindUnique.mockResolvedValue({
     id: USER_ID,
     email: 'user@example.test',
