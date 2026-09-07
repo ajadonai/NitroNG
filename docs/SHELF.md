@@ -7,6 +7,28 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 ## Open
 
+- **Finish the currency switch — the rest of the money on screen** (started
+  7 Sep 2026, `3a83005b`). The switcher converts the landing tiers, the
+  dashboard balance and the orders page. It does **not** yet convert: Add
+  Funds (26 naira renders plus the wallet history), the order form and
+  new-order service prices (21), the rewards screens (19), earn, tasks, the
+  Lagos landing page, and the marketing amounts written into sentences ("up to
+  ₦1,500 free", "from ₦1,000"). Roughly 200 renders across ~30 files.
+
+  **The pattern is settled**, so this is mechanical rather than a design job:
+  `const money = useMoney()` in each component that renders money, then
+  `fN(x)` or `₦{x}` becomes `money(x)`. Two traps found doing the first batch:
+  a component with several sub-components needs the hook in each one, and any
+  amount formatted **server-side** into a string can never be converted — the
+  pricing API had to be changed to return numbers. Grep the API routes for `₦`
+  before assuming the client is at fault.
+
+  **Deliberately excluded, do not convert:** crew and affiliate payouts
+  (`components/m/*`) — real naira paid to Nigerian banks; admin; the terms and
+  refund pages — the wallet genuinely is naira; and `landing-page.jsx`, which
+  is dead. Marketing amounts inside sentences need copy judgement, not a
+  formatter, so decide those separately.
+
 - **Foreign payment methods — scope, agreed 7 Sep 2026, build next.** Signup
   now accepts NG/US/GB/GH/KE (`4776d901`), so people can create accounts we
   cannot easily take money from. Flutterwave is hardcoded to `currency: 'NGN'`
