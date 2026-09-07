@@ -189,8 +189,8 @@ as the work. (Formerly docs/BACKLOG.md.)
   3) Flutterwave USD collection crediting naira at the padded rate (medium),
   4) never multi-currency wallets.
 
-  **Addendum, 7 Sep 2026 — reopened; step 2 built locally** (`PENDING`
-  v2.4.104, not pushed). Currency and language switchers on all three navs
+  **Addendum, 7 Sep 2026 — reopened; step 2 shipped** (`80ec76d6` v2.4.104,
+  with `0237a2f1` for the hamburger). Currency and language switchers on all three navs
   (labelled on desktop, icons only on a phone); prices on pricing/services,
   the dashboard balance and the order-form total convert at one resolved
   deposit rate via `lib/currency.js` + `components/locale.jsx`; public
