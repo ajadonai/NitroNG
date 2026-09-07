@@ -7,19 +7,6 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 ## Open
 
-- **Offline page — noticed 7 Sep 2026, deliberately not done with the other
-  error screens.** The 404, maintenance and crash screens were re-skinned in
-  `v2.4.101`; the offline case was left out because it is not a design job.
-  `public/sw.js` registers and then ignores every fetch, so there is nothing
-  cached to show a user who loses signal — the browser's own dinosaur is what
-  they get. Doing it properly means a real service worker: cache the shell and
-  the logo on install, serve a designed offline screen on navigation failure,
-  and decide what (if anything) of the dashboard is safe to serve stale — a
-  cached balance or order list that is an hour old is worse than no page at
-  all on a money app, so the honest version probably shows the shell plus
-  "you are offline" and refuses to render figures. Only then does the screen
-  itself get designed, in the plum world the crash screen now uses.
-
 - **Auto data-saver — parked design, agreed 6 Sep 2026** (the improved version
   of the audit's "Data-Saver toggle"): no manual toggle — animations cost CPU,
   not data, and a switch nobody finds helps nobody. Instead the app reads the
@@ -237,6 +224,7 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-07 | Offline screen: the installed app no longer shows the browser's error page when signal drops. A real service worker precaches one self-contained page and serves it on a failed navigation; it never caches an API response, so no balance is ever shown from cache. Agreed scope: dashboard only, no figures on screen | `e4ed4f0f` v2.4.103 |
 | 2026-08-31 | Admin table headers align with their rows (fixed actions column) and dense tables scroll rather than clip | `f21c93e4` v2.4.59 |
 | 2026-08-31 | Pulse shows the day's margin as profit on cost beside the profit figure | `7e927581` v2.4.60 |
 | 2026-08-31 | Rewards gets its own page with the tier colours, gold points and the ladder; the two pop-ups stay and link to it; Guide is a searchable reading list; the task editor is two columns with a live preview and folded limits; row actions can no longer be pushed off a card | `20520632` v2.4.59 |
