@@ -5,7 +5,8 @@ import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
 import { useMoney } from "./locale";
-import { COUNTRIES, DEFAULT_COUNTRY, getCountry, validatePhone } from "../lib/phone-countries";
+import { DEFAULT_COUNTRY, validatePhone } from "../lib/phone-countries";
+import { PhoneField } from "./phone-field";
 import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
 import { NitroWordmark } from "./nitro-logo";
 import { ToastProvider } from "./toast";
@@ -569,7 +570,6 @@ function DashboardInner({ initialData }) {
   const phoneForPrompt = phoneKnown ? phoneConfirmation.phone : null;
   const [phonePromptVal, setPhonePromptVal] = useState("");
   const [phonePromptCc, setPhonePromptCc] = useState(user?.country || DEFAULT_COUNTRY);
-  const [phonePromptCcOpen, setPhonePromptCcOpen] = useState(false);
   const [phonePromptSaving, setPhonePromptSaving] = useState(false);
   const [phonePromptError, setPhonePromptError] = useState("");
   const [phonePromptDone, setPhonePromptDone] = useState(false);
@@ -1677,42 +1677,7 @@ function DashboardInner({ initialData }) {
             </p>
             {phonePromptError && <div className="py-2 px-3 rounded-lg text-[13px] mb-3" style={{ background: dark ? "rgba(220,38,38,0.1)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.28)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626" }}>{phonePromptError}</div>}
             <div className="flex gap-2 mb-5">
-              <div className="relative shrink-0">
-                <button type="button" onClick={() => setPhonePromptCcOpen(o => !o)} aria-haspopup="listbox" aria-expanded={phonePromptCcOpen}
-                  aria-label={`Country: ${(getCountry(phonePromptCc) || getCountry(DEFAULT_COUNTRY)).name}`}
-                  className="py-3 px-3.5 rounded-xl text-[15px] flex items-center gap-1.5 text-t-text-muted cursor-pointer"
-                  style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)"}` }}>
-                  <span className="text-base">{(getCountry(phonePromptCc) || getCountry(DEFAULT_COUNTRY)).flag}</span>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true" style={{ opacity: .5 }}><path d="m6 9 6 6 6-6"/></svg>
-                </button>
-                {phonePromptCcOpen && (<>
-                  <button type="button" aria-label="Close country list" onClick={() => setPhonePromptCcOpen(false)} className="fixed inset-0 z-[1] cursor-default border-none bg-transparent" />
-                  <div role="listbox" className="absolute left-0 top-[calc(100%+6px)] z-[2] w-[232px] p-1.5 rounded-[13px]" style={{ background: dark ? "#171126" : "#fffdfb", border: `1px solid ${t.cardBorder}`, boxShadow: "0 18px 44px rgba(0,0,0,.24)" }}>
-                    {COUNTRIES.map(c => (
-                      <button key={c.code} type="button" role="option" aria-selected={c.code === phonePromptCc}
-                        onClick={() => { setPhonePromptCc(c.code); setPhonePromptVal(""); setPhonePromptCcOpen(false); }}
-                        className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-full text-[13px] font-semibold text-left border-none cursor-pointer text-t-text"
-                        style={{ background: c.code === phonePromptCc ? "rgba(196,125,142,.16)" : "transparent" }}>
-                        <span className="text-[15px] leading-none w-5 text-center">{c.flag}</span>
-                        <span className="flex-1">{c.name}</span>
-                        <span className="text-[11px] text-t-text-muted">+{c.dial}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>)}
-              </div>
-              <div className="relative flex-1 min-w-0 flex items-center">
-                <span className="absolute left-3.5 text-[15px] pointer-events-none select-none text-t-text-soft">+{(getCountry(phonePromptCc) || getCountry(DEFAULT_COUNTRY)).dial}</span>
-                <input
-                  value={phonePromptVal}
-                  onChange={e => setPhonePromptVal(e.target.value.replace(/\D/g, "").slice(0, (getCountry(phonePromptCc) || getCountry(DEFAULT_COUNTRY)).maxLocal + 1))}
-                  placeholder={(getCountry(phonePromptCc) || getCountry(DEFAULT_COUNTRY)).example}
-                  type="tel"
-                  autoComplete="tel"
-                  className="w-full py-3 rounded-xl text-[15px] outline-none font-[inherit] text-t-text"
-                  style={{ paddingLeft: `${28 + (getCountry(phonePromptCc) || getCountry(DEFAULT_COUNTRY)).dial.length * 9}px`, paddingRight: "14px", background: dark ? "rgba(255,255,255,.07)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)"}` }}
-                />
-              </div>
+              <PhoneField id="dash-phone-prompt" country={phonePromptCc} onCountry={setPhonePromptCc} value={phonePromptVal} onValue={setPhonePromptVal} t={t} dark={dark} />
             </div>
             <button
               disabled={phonePromptSaving || !validatePhone(phonePromptCc, phonePromptVal).ok}

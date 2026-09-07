@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef } from 'react';
 import NitroLoader from './nitro-loader';
 import { NitroWordmark } from './nitro-logo';
-import { COUNTRIES, DEFAULT_COUNTRY, getCountry, validatePhone } from '../lib/phone-countries';
+import { DEFAULT_COUNTRY, getCountry, validatePhone } from '../lib/phone-countries';
+import { PhoneField } from './phone-field';
 
 function Lbl({ t, htmlFor, children }) {
   return (
@@ -99,7 +100,6 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
   const emailCheckTimer = useRef(null);
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState(DEFAULT_COUNTRY);
-  const [ccOpen, setCcOpen] = useState(false);
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
   const [refCode, setRefCode] = useState(referralCode || '');
@@ -635,55 +635,8 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 }}
               />
             ) : (
-              <div className="flex gap-2 mb-2">
-                <div className="relative shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setCcOpen((o) => !o)}
-                    aria-haspopup="listbox"
-                    aria-expanded={ccOpen}
-                    aria-label={`Country: ${cc.name}`}
-                    className="px-3 py-2.5 rounded-xl text-sm flex items-center gap-1.5 cursor-pointer h-full"
-                    style={{ background: t.inputBg, border: `1px solid ${ccOpen ? t.accent : t.inputBorder}`, color: t.textSoft }}
-                  >
-                    <span className="text-base leading-none">{cc.flag}</span>
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true" style={{ opacity: .5 }}><path d="m6 9 6 6 6-6" /></svg>
-                  </button>
-                  {ccOpen && (
-                    <>
-                      <button type="button" aria-label="Close country list" onClick={() => setCcOpen(false)} className="fixed inset-0 z-[1] cursor-default border-none bg-transparent" />
-                      <div role="listbox" className="absolute left-0 top-[calc(100%+6px)] z-[2] w-[232px] p-1.5 rounded-[13px]" style={{ background: t.cardBg || t.inputBg, border: `1px solid ${t.inputBorder}`, boxShadow: '0 18px 44px rgba(0,0,0,.24)' }}>
-                        {COUNTRIES.map((c) => (
-                          <button key={c.code} type="button" role="option" aria-selected={c.code === country}
-                            onClick={() => { setCountry(c.code); setPhone(''); setCcOpen(false); }}
-                            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-full text-[13px] font-semibold text-left border-none cursor-pointer"
-                            style={{ background: c.code === country ? 'rgba(196,125,142,.16)' : 'transparent', color: t.text }}>
-                            <span className="text-[15px] leading-none w-5 text-center">{c.flag}</span>
-                            <span className="flex-1">{c.name}</span>
-                            <span className="text-[11px]" style={{ color: t.textMuted }}>+{c.dial}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-                <input
-                  id="login-identity"
-                  name="phone"
-                  value={phone}
-                  onChange={(e) =>
-                    setPhone(e.target.value.replace(/\D/g, '').slice(0, cc.maxLocal + 1))
-                  }
-                  placeholder={cc.example}
-                  type="tel"
-                  autoComplete="tel"
-                  className="flex-1 px-3.5 py-3 rounded-xl text-[15px] outline-none"
-                  style={{
-                    background: t.inputBg,
-                    border: `1px solid ${t.inputBorder}`,
-                    color: t.text,
-                  }}
-                />
+              <div className="mb-2">
+                <PhoneField id="login-identity" country={country} onCountry={setCountry} value={phone} onValue={setPhone} t={t} dark={dark} compact />
               </div>
             )}
 
@@ -938,67 +891,8 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             <Lbl t={t} htmlFor="signup-phone">
               WhatsApp Number <span style={{ color: dark ? '#fca5a5' : '#dc2626' }}>*</span>
             </Lbl>
-            <div className="flex gap-2 mb-1">
-              {/* Flag picks the country; the dial code sits inside the field as
-                  a dimmed prefix, so nobody has to guess whether to type it. */}
-              <div className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setCcOpen((o) => !o)}
-                  aria-haspopup="listbox"
-                  aria-expanded={ccOpen}
-                  aria-label={`Country: ${cc.name}`}
-                  className="px-3 py-3 rounded-xl text-[15px] flex items-center gap-1.5 cursor-pointer"
-                  style={{ background: t.inputBg, border: `1px solid ${ccOpen ? t.accent : t.inputBorder}`, color: t.textSoft }}
-                >
-                  <span className="text-base leading-none">{cc.flag}</span>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true" style={{ opacity: .5, transform: ccOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="m6 9 6 6 6-6" /></svg>
-                </button>
-                {ccOpen && (
-                  <>
-                    <button type="button" aria-label="Close country list" onClick={() => setCcOpen(false)} className="fixed inset-0 z-[1] cursor-default border-none bg-transparent" />
-                    <div role="listbox" className="absolute left-0 top-[calc(100%+6px)] z-[2] w-[232px] p-1.5 rounded-[13px]" style={{ background: t.cardBg || t.inputBg, border: `1px solid ${t.inputBorder}`, boxShadow: '0 18px 44px rgba(0,0,0,.24)' }}>
-                      {COUNTRIES.map((c) => (
-                        <button
-                          key={c.code}
-                          type="button"
-                          role="option"
-                          aria-selected={c.code === country}
-                          onClick={() => { setCountry(c.code); setPhone(''); setCcOpen(false); }}
-                          className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-full text-[13px] font-semibold text-left border-none cursor-pointer"
-                          style={{ background: c.code === country ? 'rgba(196,125,142,.16)' : 'transparent', color: t.text }}
-                        >
-                          <span className="text-[15px] leading-none w-5 text-center">{c.flag}</span>
-                          <span className="flex-1">{c.name}</span>
-                          <span className="text-[11px]" style={{ color: t.textMuted }}>+{c.dial}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-              <div className="relative flex-1 min-w-0 flex items-center">
-                <span className="absolute left-3.5 text-[15px] pointer-events-none select-none" style={{ color: t.textSoft }}>+{cc.dial}</span>
-                <input
-                  id="signup-phone"
-                  name="phone"
-                  value={phone}
-                  onChange={(e) =>
-                    setPhone(e.target.value.replace(/\D/g, '').slice(0, cc.maxLocal + 1))
-                  }
-                  placeholder={cc.example}
-                  type="tel"
-                  autoComplete="tel"
-                  className="w-full py-3 rounded-xl text-[15px] outline-none"
-                  style={{
-                    paddingLeft: `${28 + cc.dial.length * 9}px`,
-                    paddingRight: '14px',
-                    background: t.inputBg,
-                    border: `1px solid ${t.inputBorder}`,
-                    color: t.text,
-                  }}
-                />
-              </div>
+            <div className="mb-1">
+              <PhoneField id="signup-phone" country={country} onCountry={setCountry} value={phone} onValue={setPhone} t={t} dark={dark} />
             </div>
             <div className="min-h-[16px] mb-1">
               {phone && !validPhone ? (

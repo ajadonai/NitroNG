@@ -155,6 +155,13 @@ export async function GET(req) {
               referralCode: refCode,
               referredBy,
               emailVerified: true,
+              // Google gives us no phone, so we do not know their country
+              // either. Left null rather than taking the column default of NG,
+              // which is a fact for accounts that predate the country picker
+              // but would be a guess here — and these rows feed the demand
+              // meter that decides which payment rail gets built next. The
+              // dashboard prompt asks for the number, and sets both together.
+              country: null,
               signupSource: viaSlug || null,
               signupIp,
               referredByMemberId,
