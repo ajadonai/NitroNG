@@ -7,6 +7,7 @@ import {
   creditForDollars,
   depositRateForPremium,
   impliedPremiumPercent,
+  isActive,
   formatMoney,
   formatDisplayPrice,
 } from "../lib/currency.js";
@@ -212,6 +213,30 @@ describe("display currency — one deposit rate, read both ways", () => {
 
     it("keeps the minus sign outside the symbol", () => {
       expect(formatMoney(-500, "NGN")).toBe("-₦500");
+    });
+  });
+
+  describe("active vs merely supported — the pre-Flutterwave gate", () => {
+    // GBP/GHS/KES convert correctly today (the math and the cross rates are
+    // ready) but nobody can actually pay Nitro in them: Flutterwave is
+    // hardcoded to NGN and the only foreign rail is dollar-denominated USDT.
+    // `active` is what the switcher gates on; it must not be conflated with
+    // "this module knows how to convert it", which conversion still needs.
+    it("only NGN and USD are active until a rail exists for the rest", () => {
+      expect(isActive("NGN")).toBe(true);
+      expect(isActive("USD")).toBe(true);
+      expect(isActive("GBP")).toBe(false);
+      expect(isActive("GHS")).toBe(false);
+      expect(isActive("KES")).toBe(false);
+    });
+
+    it("an inactive currency still converts — the rail is missing, not the maths", () => {
+      expect(convertFromNaira(2490, { code: "GBP", depositRate: 1151, usdRates: { GBP: 0.74 } })).not.toBeNull();
+    });
+
+    it("unknown codes are never active", () => {
+      expect(isActive("XYZ")).toBe(false);
+      expect(isActive(undefined)).toBe(false);
     });
   });
 

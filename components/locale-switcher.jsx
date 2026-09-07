@@ -97,12 +97,12 @@ export function CurrencySwitcher() {
         const c = CURRENCIES[code];
         const on = code === currency;
         return (
-          <button key={code} type="button" role="menuitemradio" aria-checked={on} className={`loc-opt${on ? " on" : ""}`}
-            onClick={() => { setCurrency(code); setOpen(false); }}>
+          <button key={code} type="button" role="menuitemradio" aria-checked={on} disabled={!c.active}
+            className={`loc-opt${on ? " on" : ""}${c.active ? "" : " soon"}`}
+            onClick={() => { if (c.active) { setCurrency(code); setOpen(false); } }}>
             <span className={`loc-osy${code === "KES" ? " wide" : ""}`} aria-hidden="true">{c.symbol}</span>
             <span className="loc-onm">{c.name}</span>
-            <span className="loc-ocd">{code}</span>
-            {TICK}
+            {c.active ? <><span className="loc-ocd">{code}</span>{TICK}</> : <span className="loc-soon">Soon</span>}
           </button>
         );
       })}
