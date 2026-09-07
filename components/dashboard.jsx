@@ -1275,7 +1275,7 @@ function DashboardInner({ initialData }) {
             <button
               onClick={() => { if (window.matchMedia("(min-width: 1200px)").matches) setAvOpen(o => !o); else { setActive("settings"); setLeftOpen(false); } }}
               className="dash-avatar-btn" aria-label="Account menu" aria-haspopup="menu" aria-expanded={avOpen}>
-              <Avatar size={30} rounded={10} />
+              <Avatar size={30} />
             </button>
             {avOpen && (
               <div role="menu" aria-label="Account" className="dash-av-menu" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>

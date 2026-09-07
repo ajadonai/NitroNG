@@ -674,8 +674,8 @@ export async function PATCH(req) {
       const usdRate = Number(usdRateSetting?.value || 1600);
 
       const orderData = completed.map(o => {
-        const charge = Math.ceil((Number(o.tier.sellPer1k) / 1000) * o.quantity / 100) * 100;
-        const cost = Math.ceil((Number(o.service.costPer1k) * usdRate / 1000) * o.quantity / 100) * 100;
+        const charge = Math.ceil(Number(o.tier.sellPer1k) * o.quantity / 100_000) * 100;
+        const cost = Math.ceil(Number(o.service.costPer1k) * usdRate * o.quantity / 100_000) * 100;
         return { original: o, charge: Math.max(100, charge), cost };
       });
       const totalCharge = orderData.reduce((s, d) => s + d.charge, 0);
@@ -881,8 +881,8 @@ export async function POST(req) {
         });
       }
 
-      const charge = Math.ceil((serverPrice / 1000) * qty / 100) * 100;
-      const cost = Math.ceil((Number(service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
+      const charge = Math.ceil(serverPrice * qty / 100_000) * 100;
+      const cost = Math.ceil(Number(service.costPer1k) * usdRate * qty / 100_000) * 100;
       if (!charge || charge <= 0) {
         return Response.json({ error: `Row ${i + 1}: service pricing not configured` }, { status: 400 });
       }

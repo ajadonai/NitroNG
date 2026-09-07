@@ -63,10 +63,8 @@ describe('single-order price display parity', () => {
         fc.integer({ min: 1, max: 5_000_000 }),
         fc.integer({ min: 1, max: 100_000 }),
         (sellPer1kKobo, qty) => {
-          const bulkServerKobo = Math.ceil((sellPer1kKobo / 1000) * qty / 100) * 100;
-          const bulkCartNaira = Math.ceil(
-            (Math.round((sellPer1kKobo / 100) * 100) / 1000) * qty / 100,
-          );
+          const bulkServerKobo = Math.ceil(sellPer1kKobo * qty / 100_000) * 100;
+          const bulkCartNaira = Math.ceil(Math.round((sellPer1kKobo / 100) * 100) * qty / 100_000);
           expect(bulkCartNaira).toBe(bulkServerKobo / 100);
           expect(bulkCartNaira).toBe(chargedNaira(sellPer1kKobo, qty));
         },
@@ -81,8 +79,8 @@ describe('single-order price display parity', () => {
       'utf8',
     );
     // Charge and cost, both the reorder path and the main row path.
-    expect(bulk).toContain('const charge = Math.ceil((serverPrice / 1000) * qty / 100) * 100;');
-    expect(bulk).toContain('const charge = Math.ceil((Number(o.tier.sellPer1k) / 1000) * o.quantity / 100) * 100;');
+    expect(bulk).toContain('const charge = Math.ceil(serverPrice * qty / 100_000) * 100;');
+    expect(bulk).toContain('const charge = Math.ceil(Number(o.tier.sellPer1k) * o.quantity / 100_000) * 100;');
     expect(bulk).not.toMatch(/const charge = Math\.round\(/);
     expect(bulk).not.toMatch(/const cost = Math\.round\(/);
     // Discounts re-round up, matching the single-order route.
@@ -101,6 +99,26 @@ describe('single-order price display parity', () => {
     expect(start, 'getRowPrice moved or was renamed').toBeGreaterThan(-1);
     const body = source.split('\n').slice(start, start + 8).join('\n');
     expect(body).toContain('Math.ceil');
+  });
+
+  it('quotes admin-created orders at the admin endpoint\'s charge', () => {
+    // The admin create-order screen did no rounding at all and let fN() round to
+    // nearest at display time, while its endpoint ceils — the same fault as the
+    // customer form, in a third place. This is the helper as written there.
+    const adminQuote = (per1kNaira, q) => Math.ceil(Math.round(per1kNaira * 100) * q / 100_000);
+    const adminCharge = (per1kKobo, q) => Math.ceil(per1kKobo * q / 100_000) * 100 / 100;
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 5_000_000 }),
+        fc.integer({ min: 1, max: 100_000 }),
+        (sellPer1kKobo, qty) => {
+          expect(adminQuote(sellPer1kKobo / 100, qty)).toBe(adminCharge(sellPer1kKobo, qty));
+          // and admin must charge what the customer route would charge
+          expect(adminCharge(sellPer1kKobo, qty)).toBe(chargedNaira(sellPer1kKobo, qty));
+        },
+      ),
+      { numRuns: 2000 },
+    );
   });
 
   it('still uses Math.ceil in the order form', () => {
