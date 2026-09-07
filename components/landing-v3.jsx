@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
 import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
+import { PhoneField } from "./phone-field";
+import { DEFAULT_COUNTRY, validatePhone } from "../lib/phone-countries";
 import { NitroWordmark } from "./nitro-logo";
 import NitroLoader from "./nitro-loader";
 import { SITE } from "../lib/site";
@@ -137,6 +139,7 @@ function LandingInner({ initialAuthQuery }){
   const [heroSignupStep,setHeroSignupStep]=useState(1);
   const [heroPw2,setHeroPw2]=useState("");
   const [heroPhone,setHeroPhone]=useState("");
+  const [heroCountry,setHeroCountry]=useState(DEFAULT_COUNTRY);
   const [heroRefCode,setHeroRefCode]=useState(initialRef);
   const heroVia=initialVia;
   const [heroAgree,setHeroAgree]=useState(false);
@@ -168,12 +171,12 @@ function LandingInner({ initialAuthQuery }){
   const heroLoginSubmit=async()=>{
     setHeroError("");if(!heroEmail||!heroPw){setHeroError("Please fill in all fields");return;}
     setHeroLoading(true);
-    try{const res=await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:heroMethod==="email"?heroEmail:`+234${heroEmail}`,password:heroPw,remember:heroRemember})});const data=await res.json();if(!res.ok){if(data.banned){window.location.href="/banned";return;}setHeroError(data.error||"Login failed");setHeroLoading(false);return;}window.location.replace("/dashboard");}catch{setHeroError("Something went wrong.");setHeroLoading(false);}
+    try{const res=await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:heroMethod==="email"?heroEmail:(validatePhone(heroCountry,heroEmail).e164||heroEmail),password:heroPw,remember:heroRemember})});const data=await res.json();if(!res.ok){if(data.banned){window.location.href="/banned";return;}setHeroError(data.error||"Login failed");setHeroLoading(false);return;}window.location.replace("/dashboard");}catch{setHeroError("Something went wrong.");setHeroLoading(false);}
   };
   const heroSignupSubmit=()=>{
     setHeroError("");if(!heroFirstName||!heroLastName){setHeroError("Please enter your first and last name");return;}if(!heroEmail){setHeroError("Please enter your email");return;}
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(heroEmail)){setHeroError("Please enter a valid email");return;}
-    const cleanPhone=heroPhone.replace(/^0+/,"");if(!cleanPhone||!/^[789]\d{9}$/.test(cleanPhone)){setHeroError("Please enter a valid Nigerian phone number");return;}
+    const heroPhoneCheck=validatePhone(heroCountry,heroPhone);if(!heroPhoneCheck.ok){setHeroError(heroPhoneCheck.error);return;}
     setHeroSignupStep(2);
   };
   const heroSignupFinalSubmit=async()=>{
@@ -183,7 +186,7 @@ function LandingInner({ initialAuthQuery }){
     if(!heroAgree){setHeroError("Please agree to the Terms of Service");return;}
     setHeroLoading(true);
     try{
-      const res=await fetch("/api/auth/signup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:`${heroFirstName} ${heroLastName}`,firstName:heroFirstName,lastName:heroLastName,email:heroEmail,password:heroPw,phone:heroPhone?`+234${heroPhone.replace(/^0+/,"")}`:undefined,referralCode:heroRefCode||undefined,via:heroVia||undefined})});
+      const res=await fetch("/api/auth/signup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:`${heroFirstName} ${heroLastName}`,firstName:heroFirstName,lastName:heroLastName,email:heroEmail,password:heroPw,phone:heroPhone||undefined,country:heroCountry,referralCode:heroRefCode||undefined,via:heroVia||undefined})});
       const data=await res.json();
       if(!res.ok){setHeroError(data.error||"Signup failed");setHeroLoading(false);return;}
       window.fbq&&window.fbq("track","CompleteRegistration",{content_name:"signup",status:true},{eventID:data.eventId});
@@ -350,9 +353,8 @@ function LandingInner({ initialAuthQuery }){
                   <label htmlFor="hero-signup-email" className="text-t-text-soft" style={{fontSize:11,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>Email Address</label>
                   <input id="hero-signup-email" name="email" autoComplete="email" placeholder="you@example.com" value={heroEmail} onChange={e=>setHeroEmail(e.target.value.trim().toLowerCase().slice(0,254))} type="email" className="text-t-text font-[inherit]" style={{width:"100%",padding:"11px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,fontSize:15,outline:"none",marginBottom:12}}/>
                   <label htmlFor="hero-signup-phone" className="text-t-text-soft" style={{fontSize:11,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>WhatsApp Number <span style={{color:dark?"#fca5a5":"#dc2626"}}>*</span></label>
-                  <div style={{display:"flex",gap:8,marginBottom:12}}>
-                    <div aria-hidden="true" className="text-t-text-soft" style={{padding:"11px 12px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,fontSize:15,flexShrink:0,display:"flex",alignItems:"center",gap:6,userSelect:"none"}}><span style={{fontSize:15,lineHeight:1}}>🇳🇬</span> +234</div>
-                    <input id="hero-signup-phone" name="phone" autoComplete="tel" placeholder="8012345678" value={heroPhone} onChange={e=>setHeroPhone(e.target.value.replace(/\D/g,"").slice(0,11))} type="tel" className="text-t-text font-[inherit]" style={{flex:1,padding:"11px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,fontSize:15,outline:"none"}}/>
+                  <div style={{marginBottom:12}}>
+                    <PhoneField id="hero-signup-phone" country={heroCountry} onCountry={setHeroCountry} value={heroPhone} onValue={setHeroPhone} t={t} dark={dark} compact />
                   </div>
                 </>}
                 {heroAuth==="signup"&&heroSignupStep===2&&<>
