@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { phoneSearchDigits } from '@/lib/phone-search';
+import { validatePhone, splitE164, isSupportedCountry, DEFAULT_COUNTRY } from '@/lib/phone-countries';
 import { watBounds } from '@/lib/format';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail, maskPhone } from '@/lib/admin';
@@ -66,7 +67,7 @@ export async function GET(req) {
 
     // --- Select fields ---
     const userSelect = {
-      id: true, name: true, firstName: true, lastName: true, phone: true,
+      id: true, name: true, firstName: true, lastName: true, phone: true, country: true,
       email: true, balance: true, status: true,
       emailVerified: true, referralCode: true, createdAt: true,
       deletedAt: true, deletedName: true, deletedEmail: true,
@@ -239,7 +240,29 @@ export async function POST(req) {
         if (existing) return Response.json({ error: 'Email already in use' }, { status: 409 });
         updates.email = body.email.trim();
       }
-      if (body.phone !== undefined) updates.phone = body.phone.trim() || null;
+      // Country and phone are one value, not two fields that sit together:
+      // the country decides the dial code that gets stored, and a mismatch
+      // points every WhatsApp link at a different person. So editing either
+      // revalidates the pair, and the number is normalised rather than saved
+      // as whatever was typed — this endpoint used to store the raw string.
+      const editingPhone = body.phone !== undefined;
+      const editingCountry = body.country !== undefined;
+      if (editingPhone || editingCountry) {
+        const cc = isSupportedCountry(body.country) ? body.country
+          : (isSupportedCountry(user.country) ? user.country : DEFAULT_COUNTRY);
+        const raw = editingPhone ? body.phone : splitE164(user.phone).local;
+        if (editingPhone && !String(raw).trim()) {
+          updates.phone = null;
+          updates.country = cc;
+        } else {
+          const checked = validatePhone(cc, raw);
+          if (!checked.ok) return Response.json({ error: checked.error }, { status: 400 });
+          const clash = await prisma.user.findFirst({ where: { phone: checked.e164, id: { not: userId } }, select: { id: true } });
+          if (clash) return Response.json({ error: 'That WhatsApp number belongs to another account' }, { status: 409 });
+          updates.phone = checked.e164;
+          updates.country = cc;
+        }
+      }
       if (!Object.keys(updates).length) return Response.json({ error: 'Nothing to update' }, { status: 400 });
       await prisma.user.update({ where: { id: userId }, data: updates });
       const changes = Object.entries(updates).map(([k, v]) => `${k}: ${v || '(cleared)'}`).join(', ');

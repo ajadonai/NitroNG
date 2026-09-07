@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
+import { validatePhone, isSupportedCountry, DEFAULT_COUNTRY } from '@/lib/phone-countries';
 
 export async function POST(req) {
   try {
@@ -7,15 +8,19 @@ export async function POST(req) {
     if (limit.unavailable) return rateLimitUnavailable(undefined, limit.retryAfter);
     if (limit.limited) return tooManyRequests('Too many requests.', limit.retryAfter);
 
-    const { phone } = await req.json();
+    const { phone, country } = await req.json();
     if (!phone || typeof phone !== 'string') return Response.json({ available: true });
 
-    const cleaned = phone.replace(/\D/g, '').replace(/^234/, '').replace(/^0+/, '');
-    if (!/^[789]\d{9}$/.test(cleaned)) return Response.json({ available: true });
+    // An unparseable number is reported available: the signup route is what
+    // actually rejects it, and saying "taken" here would be a lie that blocks
+    // someone mid-typing. Must use the same validator as signup, or a number
+    // could pass one and fail the other.
+    const cc = isSupportedCountry(country) ? country : DEFAULT_COUNTRY;
+    const checked = validatePhone(cc, phone);
+    if (!checked.ok) return Response.json({ available: true });
 
-    const normalized = `+234${cleaned}`;
     const existing = await prisma.user.findUnique({
-      where: { phone: normalized },
+      where: { phone: checked.e164 },
       select: { id: true },
     });
 

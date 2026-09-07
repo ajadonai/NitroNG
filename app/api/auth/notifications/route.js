@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
+import { validatePhone, isSupportedCountry, DEFAULT_COUNTRY } from '@/lib/phone-countries';
 
 export async function GET() {
   try {
@@ -72,11 +73,19 @@ export async function POST(req) {
       data.notifReadIds = JSON.stringify(merged.slice(-500));
     }
 
-    // Phone number update
+    // Phone number update. Country comes with it, because the two are one
+    // value: the country decides the dial code that gets stored, and storing a
+    // number under the wrong one points WhatsApp at a different person.
     if (typeof body.phone === 'string') {
-      const cleaned = body.phone.replace(/\D/g, '').replace(/^234/, '').replace(/^0+/, '');
-      if (cleaned.length !== 10 || !/^[789]/.test(cleaned)) return error('Enter a valid Nigerian phone number', 400);
-      data.phone = `+234${cleaned}`;
+      let cc = body.country;
+      if (!isSupportedCountry(cc)) {
+        const owner = await prisma.user.findUnique({ where: { id: session.id }, select: { country: true } });
+        cc = isSupportedCountry(owner?.country) ? owner.country : DEFAULT_COUNTRY;
+      }
+      const checked = validatePhone(cc, body.phone);
+      if (!checked.ok) return error(checked.error, 400);
+      data.phone = checked.e164;
+      data.country = cc;
     }
 
     // Clear all — set timestamp
