@@ -282,11 +282,47 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .nav-brand:hover .nav-logo { transform: scale(1.05); }
 .nav-link-pill { transition: background .15s ease, color .15s ease !important; }
 .nav-link-pill:hover { background: rgba(255,255,255,.08) !important; color: rgba(255,255,255,.9) !important; }
-.nav-login-btn { transition: background .15s ease, border-color .15s ease, color .15s ease !important; }
-.nav-login-btn:hover { background: rgba(255,255,255,.12) !important; border-color: rgba(255,255,255,.2) !important; color: #fff !important; }
-.nav-signup-btn { transition: background .15s ease, transform .15s ease !important; }
-.nav-signup-btn:hover { background: rgba(255,255,255,.88) !important; transform: translateY(-1px); }
-.nav-signup-btn:active { transform: scale(.97); }
+/* Nav buttons wear the sky toggle's two-tone ring — a white hug plus a dark
+   hairline outside it — so the three controls in the bar read as one set. A
+   single-colour ring cannot do this: white alone vanishes where the hero is
+   pale, and the dark hairline alone vanishes on the deep plum. */
+.nav-login-btn, .nav-signup-btn {
+  border-radius: 999px !important;
+  transition: background .2s ease, color .2s ease, box-shadow .24s ease,
+              transform .18s cubic-bezier(.34,1.4,.5,1) !important;
+}
+.nav-login-btn {
+  background: rgba(255,255,255,.16) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,.18), inset 0 0 0 1.5px rgba(255,255,255,.4),
+              0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(0,0,0,.16);
+}
+.nav-login-btn:hover { background: rgba(255,255,255,.26) !important; transform: translateY(-1.5px); }
+.nav-signup-btn {
+  box-shadow: 0 4px 14px rgba(0,0,0,.24), inset 0 0 0 1.5px rgba(255,255,255,.9),
+              0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(0,0,0,.16);
+}
+.nav-signup-btn:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 22px rgba(0,0,0,.3), inset 0 0 0 1.5px rgba(255,255,255,.9),
+              0 0 0 1.5px rgba(255,255,255,.7), 0 0 0 3px rgba(0,0,0,.18);
+}
+.nav-login-btn:active, .nav-signup-btn:active, .nav-burger-btn:active { transform: scale(.97); }
+/* The hamburger is the third control in that group, so it wears the ring too. */
+.nav-burger-btn {
+  border-radius: 999px !important;
+  background: rgba(255,255,255,.16) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,.18), inset 0 0 0 1.5px rgba(255,255,255,.4),
+              0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(0,0,0,.16);
+  transition: background .2s ease, box-shadow .24s ease,
+              transform .18s cubic-bezier(.34,1.4,.5,1) !important;
+}
+.nav-burger-btn:hover { background: rgba(255,255,255,.26) !important; transform: translateY(-1.5px); }
+@media (prefers-reduced-motion: reduce) {
+  .nav-login-btn, .nav-signup-btn, .nav-burger-btn { transition: background .2s ease, box-shadow .24s ease !important; }
+  .nav-login-btn:hover, .nav-signup-btn:hover, .nav-burger-btn:hover { transform: none; }
+}
 
 /* S2 — hover effect */
 .s2-feat-row:hover { border-color: rgba(196,125,142,.25) !important; }
@@ -519,7 +555,7 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 /* ══════════════════════════════════════ */
 @media (max-width: 1199px) {
   /* Nav — kept for !important overrides on inline styles */
-  .nav-login-btn { padding: 6px 14px !important; font-size: 13px !important; border-radius: 8px !important; }
+  .nav-login-btn { padding: 6px 14px !important; font-size: 13px !important; }
   .nav-right { gap: 10px !important; }
   /* S2 */
   .s2-how { padding: 0 40px 56px !important; margin: 0 !important; }
@@ -540,7 +576,7 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   .hero-mobile-cta button { width: 100%; }
   .hero-secondary-btn { display: none !important; }
   .nav-right { gap: 10px !important; }
-  .nav-login-btn { padding: 6px 14px !important; font-size: 13px !important; border-radius: 8px !important; }
+  .nav-login-btn { padding: 6px 14px !important; font-size: 13px !important; }
   .theme-toggle { width: 44px !important; height: 24px !important; }
   .theme-toggle > div { width: 18px !important; height: 18px !important; }
   /* S2 */
@@ -749,12 +785,66 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .dash-nav-item { transition: background-color .2s ease, color .2s ease, transform .2s cubic-bezier(.4,0,.2,1) !important; }
 .dash-nav-item:hover { background-color: rgba(196,125,142,.07) !important; transform: translateX(4px); }
 .dash-nav-item:active { transform: translateX(2px) scale(.98); }
-.dash-bell { transition: background-color .2s ease, color .2s ease, transform .2s cubic-bezier(.4,0,.2,1) !important; }
-.dash-bell:hover { background-color: rgba(196,125,142,.08) !important; transform: scale(1.08); }
-.dash-bell:active { transform: scale(.95); }
-.dash-avatar-btn { transition: background-color .2s ease, transform .2s cubic-bezier(.4,0,.2,1) !important; }
-.dash-avatar-btn:hover { background-color: rgba(196,125,142,.06) !important; transform: scale(1.04); }
-.dash-avatar-btn:active { transform: scale(.96); }
+/* ── Ringed controls ─────────────────────────────────────────────────────
+   Every control in the top bar wears the sky toggle's two-tone ring: a light
+   hug against the control plus a rose hairline just outside it. The hairline
+   is what you see on cream; the hug is what you see on plum — which is why a
+   single-colour ring cannot serve both surfaces. Bell, avatar and the balance
+   pill share it so the row reads as one set instead of three loose icons. */
+.dash-bell, .dash-avatar-btn, .dash-balance-pill {
+  border-radius: 999px !important;
+  background: #fff !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.07), inset 0 0 0 1.5px rgba(255,255,255,.9),
+              0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(139,74,94,.2);
+  transition: box-shadow .24s ease, background-color .2s ease,
+              transform .18s cubic-bezier(.34,1.4,.5,1) !important;
+}
+.dark .dash-bell, .dark .dash-avatar-btn, .dark .dash-balance-pill {
+  background: rgba(255,255,255,.07) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3),
+              0 0 0 1.5px rgba(255,255,255,.35), 0 0 0 3px rgba(232,180,196,.24);
+}
+.dash-bell:hover, .dash-avatar-btn:hover, .dash-balance-pill:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 16px rgba(0,0,0,.1), inset 0 0 0 1.5px #fff,
+              0 0 0 1.5px rgba(255,255,255,.7), 0 0 0 3px rgba(139,74,94,.3);
+}
+.dark .dash-bell:hover, .dark .dash-avatar-btn:hover, .dark .dash-balance-pill:hover {
+  background: rgba(255,255,255,.12) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.42),
+              0 0 0 1.5px rgba(255,255,255,.45), 0 0 0 3px rgba(232,180,196,.36);
+}
+.dash-bell:active, .dash-avatar-btn:active, .dash-balance-pill:active { transform: scale(.97); }
+
+/* Split: gold is reserved for money — top up, add funds, deposits. Rose stays
+   the colour of every other action, so colour carries meaning here. */
+.nitro-money {
+  background: radial-gradient(120% 140% at 30% 20%, #ffe9a8, #f8c145 58%, #eda63a) !important;
+  color: #4a2a12 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.55), 0 0 0 1px rgba(180,120,20,.3);
+}
+.dash-balance-pill:hover .nitro-money {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.7), 0 0 0 1px rgba(180,120,20,.42),
+              0 0 12px rgba(248,193,69,.45);
+}
+/* Admin primaries take the same ring on the app's rose. */
+.adm-btn-primary {
+  border-radius: 999px !important;
+  box-shadow: 0 4px 14px rgba(139,74,94,.3), inset 0 0 0 1.5px rgba(255,255,255,.45),
+              0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(139,74,94,.22) !important;
+  transition: box-shadow .24s ease, transform .18s cubic-bezier(.34,1.4,.5,1) !important;
+}
+.dark .adm-btn-primary {
+  box-shadow: 0 4px 14px rgba(0,0,0,.4), inset 0 0 0 1.5px rgba(255,255,255,.4),
+              0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(232,180,196,.28) !important;
+}
+.adm-btn-primary:hover { transform: translateY(-1.5px); }
+.adm-btn-primary:active { transform: scale(.97); }
+.adm-btn-sm { border-radius: 999px !important; }
+@media (prefers-reduced-motion: reduce) {
+  .dash-bell:hover, .dash-avatar-btn:hover, .dash-balance-pill:hover,
+  .adm-btn-primary:hover { transform: none; }
+}
 .dash-logout { transition: opacity .15s ease, transform .2s cubic-bezier(.4,0,.2,1) !important; }
 .dash-logout:hover { opacity: 1 !important; transform: translateX(4px); }
 .dash-logout:active { transform: translateX(2px) scale(.98); }
