@@ -19,7 +19,7 @@
  * the old copy cached on every device that already has it.
  */
 
-const CACHE = 'nitro-shell-v2';
+const CACHE = 'nitro-shell-v3';
 const OFFLINE = '/offline.html';
 
 self.addEventListener('install', (event) => {
