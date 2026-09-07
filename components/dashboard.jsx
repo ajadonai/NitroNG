@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, useRef, useTransition, Fragment } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, useTransition, Fragment } from "react";
 import { RailSec, RailCard, RailRow } from "./rail";
 import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
@@ -429,6 +429,27 @@ function DashboardInner({ initialData }) {
   };
   const orderTourChecked = useRef(false);
   const bottomNavRef = useRef(null);
+  // The dock's highlight springs to whichever tab is current. It hides behind
+  // New Order, which keeps its own halo — a rounded rectangle sliding under a
+  // circle fights its shape (the same reason that tab never took the old pill).
+  const positionDockSlide = useCallback(() => {
+    const dock = bottomNavRef.current;
+    const slide = dock?.querySelector(".dash-dock-slide");
+    if (!dock || !slide) return;
+    const on = dock.querySelector(".dash-bottom-tab.active");
+    if (!on || on.classList.contains("primary")) { slide.style.opacity = "0"; return; }
+    const d = dock.getBoundingClientRect(), t = on.getBoundingClientRect();
+    slide.style.opacity = "1";
+    slide.style.width = `${t.width - 4}px`;
+    slide.style.transform = `translateX(${t.left - d.left + 2}px)`;
+  }, []);
+  // Must sit below positionDockSlide: a const is in its temporal dead zone
+  // until its own line runs, so an effect referencing it any earlier throws.
+  useEffect(() => {
+    positionDockSlide();
+    window.addEventListener("resize", positionDockSlide);
+    return () => window.removeEventListener("resize", positionDockSlide);
+  }, [active, moreOpen, positionDockSlide]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [readNotifIds, setReadNotifIds] = useState(() => {
     if (typeof window === 'undefined') return new Set();
@@ -1560,7 +1581,8 @@ function DashboardInner({ initialData }) {
       )}
       {/* Bottom dock: a floating capsule with the five tabs, and the WhatsApp
           concierge at the end that expands into a one-line message. */}
-      <nav ref={bottomNavRef} aria-label="Primary" className={`dash-bottom-nav dash-dock ${dark ? "dark" : "light"}`} style={{ background: dark ? "#1a1329" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+      <nav ref={bottomNavRef} aria-label="Primary" className={`dash-bottom-nav dash-dock ${dark ? "dark" : "light"}`} style={{ background: dark ? "#1a1329" : "#fff" }}>
+        <span className="dash-dock-slide" aria-hidden="true" />
         {BOTTOM_TABS.map(tab => {
           const isMore = tab.id === "more";
           return (
@@ -1571,6 +1593,7 @@ function DashboardInner({ initialData }) {
                 if (bottomNavRef.current) {
                   bottomNavRef.current.querySelectorAll(".dash-bottom-tab").forEach(el => el.classList.remove("active"));
                   bottomNavRef.current.querySelector(`[data-tab="${tab.id}"]`)?.classList.add("active");
+                  positionDockSlide();
                 }
                 setActive(tab.id); setMoreOpen(false); setLeftOpen(false);
               }
