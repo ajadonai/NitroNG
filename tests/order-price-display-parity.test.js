@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import fc from 'fast-check';
 import { calculateCreateOrderPricing } from '@/lib/order-create-input.server';
+import { calculateOrderPrice } from '@/lib/order-form-core';
 
 /**
  * The single-order form must display exactly what the endpoint will charge.
@@ -15,10 +16,10 @@ import { calculateCreateOrderPricing } from '@/lib/order-create-input.server';
  * against a ₦1,775 charge.
  */
 
-// The formula as it appears in components/new-order.jsx, kept in lockstep with
-// the source assertion below.
+// The real function the order form quotes from — not a copy of it, so this
+// cannot pass while the form itself drifts.
 const displayedNaira = (pricePer1kNaira, qty) =>
-  Math.ceil((Math.round(pricePer1kNaira * 100) / 1000) * qty / 100);
+  calculateOrderPrice({ quantity: qty, tier: { pricePer1k: pricePer1kNaira } }).price;
 
 const chargedNaira = (sellPer1kKobo, qty) => {
   const pricing = calculateCreateOrderPricing({
