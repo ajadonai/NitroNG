@@ -8,6 +8,7 @@ import {
   depositRateForPremium,
   impliedPremiumPercent,
   isActive,
+  canDisplay,
   formatMoney,
   formatDisplayPrice,
 } from "../lib/currency.js";
@@ -237,6 +238,49 @@ describe("display currency — one deposit rate, read both ways", () => {
     it("unknown codes are never active", () => {
       expect(isActive("XYZ")).toBe(false);
       expect(isActive(undefined)).toBe(false);
+    });
+  });
+
+  describe("canDisplay — what the picker is allowed to offer", () => {
+    // The day GBP's rail goes live, someone flips one boolean. If the FX cron
+    // had not written a GBP cross rate, the menu would offer it and every price
+    // would quietly stay in naira — a switch that looks broken. The picker asks
+    // canDisplay so that cannot happen. These tests flip `active` the way that
+    // day will, and restore it, so they describe the future rather than today.
+    const withActive = (code, fn) => {
+      const was = CURRENCIES[code].active;
+      CURRENCIES[code].active = true;
+      try { fn(); } finally { CURRENCIES[code].active = was; }
+    };
+
+    it("naira needs no rate — always offerable", () => {
+      expect(canDisplay("NGN", {})).toBe(true);
+    });
+
+    it("dollars need the deposit rate", () => {
+      expect(canDisplay("USD", {})).toBe(false);
+      expect(canDisplay("USD", { depositRate: 1151 })).toBe(true);
+    });
+
+    it("an inactive currency is never offered, rate or no rate", () => {
+      expect(canDisplay("GBP", { depositRate: 1151, usdRates: { GBP: 0.74 } })).toBe(false);
+    });
+
+    it("activating a currency offers it only once its cross rate exists", () => {
+      withActive("GBP", () => {
+        expect(canDisplay("GBP", { depositRate: 1151, usdRates: {} })).toBe(false);
+        expect(canDisplay("GBP", { depositRate: 1151, usdRates: { GBP: 0.739722 } })).toBe(true);
+      });
+    });
+
+    it("a cross rate without a deposit rate is not enough", () => {
+      withActive("KES", () => {
+        expect(canDisplay("KES", { usdRates: { KES: 129.384717 } })).toBe(false);
+      });
+    });
+
+    it("unknown codes are never offerable", () => {
+      expect(canDisplay("XYZ", { depositRate: 1151 })).toBe(false);
     });
   });
 
