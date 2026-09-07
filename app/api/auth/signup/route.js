@@ -5,6 +5,7 @@ import { signUserToken, setUserCookie, detectDevice, hashToken, createSessionId 
 import { generateReferralCode, ok, error } from '@/lib/utils';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { validateEmail, validatePassword, validateName, sanitizeEmail, sanitizeString, isDisposableEmail } from '@/lib/validate';
+import { validatePhone, isSupportedCountry, DEFAULT_COUNTRY } from '@/lib/phone-countries';
 import { headers } from 'next/headers';
 import { sendWelcomeEmail } from '@/lib/email';
 import { enqueueMetaEvent, scheduleQueuedMetaEventDelivery, parseFbCookies } from '@/lib/meta-capi';
@@ -41,8 +42,9 @@ export async function POST(req) {
     if (firstName) { const fnCheck = checkName(firstName); if (fnCheck.blocked) return error(fnCheck.reason); }
     if (lastName) { const lnCheck = checkName(lastName); if (lnCheck.blocked) return error(lnCheck.reason); }
 
-    const cleanedPhone = (phone || '').replace(/\D/g, '').replace(/^234/, '').replace(/^0+/, '');
-    if (!cleanedPhone || !/^[789]\d{9}$/.test(cleanedPhone)) return error('Please enter a valid Nigerian phone number');
+    const country = isSupportedCountry(body.country) ? body.country : DEFAULT_COUNTRY;
+    const checked = validatePhone(country, phone);
+    if (!checked.ok) return error(checked.error);
     if (!validateEmail(email)) return error('Please enter a valid email address');
     if (isDisposableEmail(email)) return error('Disposable email addresses aren\'t allowed. Please use a permanent email.');
 
@@ -75,7 +77,7 @@ export async function POST(req) {
     }
 
     // Check if phone is already used
-    const normalizedPhone = `+234${cleanedPhone}`;
+    const normalizedPhone = checked.e164;
     const existingPhone = await prisma.user.findUnique({ where: { phone: normalizedPhone }, select: { id: true } });
     if (existingPhone) return error('This WhatsApp number is already in use');
 
@@ -126,6 +128,7 @@ export async function POST(req) {
             firstName: firstName || null,
             lastName: lastName || null,
             phone: normalizedPhone,
+            country,
             email: email.toLowerCase().trim(),
             password: hashed,
             referralCode: refCode,

@@ -42,6 +42,12 @@ model User {
   firstName              String?
   lastName               String?
   phone                  String?   @unique
+  // The country the phone belongs to (ISO 3166-1 alpha-2), so a stored number
+  // can be shown and edited the way its owner would recognise it rather than
+  // as raw E.164. Backfilled to "NG" for every account that existed before
+  // signup asked — all of them were Nigerian by definition, since the gate
+  // accepted nothing else.
+  country                String?   @default("NG")
   balance                Int       @default(0)
   depositCount           Int       @default(0)
   referralCode           String    @unique @default(cuid())
