@@ -910,7 +910,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       const drifted = [];
       for (const row of cartRows) {
         const price = getRowPrice(row, menuData);
-        const storedPrice = Math.round((row.storedPricePer1k || 0) / 1000 * row.qty);
+        const storedPrice = Math.ceil((Math.round((row.storedPricePer1k || 0) * 100) / 1000) * row.qty / 100);
         if (row.storedPricePer1k && storedPrice > 0 && Math.abs(price - storedPrice) / storedPrice > 0.05) {
           drifted.push(row.id);
         }
@@ -1477,7 +1477,10 @@ const CartIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="non
 
 function getRowPrice(row, menuData) {
   const pricePer1k = getRowPricePer1k(row, menuData) || row.storedPricePer1k || 0;
-  return Math.round((pricePer1k / 1000) * row.qty);
+  // Mirrors the bulk endpoint operation for operation, the same way the
+  // single-order quote does — back to integer kobo, then the endpoint's own
+  // divide/ceil sequence, so the cart never quotes under what is charged.
+  return Math.ceil((Math.round(pricePer1k * 100) / 1000) * row.qty / 100);
 }
 
 const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, bounds, cartOpen, onClick }, ref) {
