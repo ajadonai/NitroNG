@@ -973,9 +973,31 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
     bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 91;
     height: 60px; width: min(368px, calc(100vw - 24px)); padding: 0 6px;
     border-radius: 999px; align-items: center; gap: 1px;
-    box-shadow: 0 18px 48px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.08);
+    /* The dock wears the same ring as the top bar, but heavier: it floats over
+       scrolling photos and cards, and the thin top-bar ring goes muddy there. */
+    border: none !important;
+    box-shadow: 0 18px 48px rgba(0,0,0,.24), inset 0 0 0 1.5px rgba(255,255,255,.95),
+                0 0 0 1.5px rgba(255,255,255,.75), 0 0 0 3px rgba(139,74,94,.3);
     -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
   }
+  .dark .dash-bottom-nav {
+    box-shadow: 0 18px 48px rgba(0,0,0,.55), inset 0 0 0 1.5px rgba(255,255,255,.34),
+                0 0 0 1.5px rgba(255,255,255,.4), 0 0 0 3px rgba(232,180,196,.34);
+  }
+  /* One highlight that springs between tabs, with the theme pill's easing, so
+     "where am I" is answered by motion instead of a third ring in a small bar.
+     It hides behind New Order, which keeps its own halo — a rounded rectangle
+     sliding under a circle fights its shape. */
+  .dash-dock-slide {
+    position: absolute; top: 4px; height: calc(100% - 8px); left: 0; width: 0;
+    border-radius: 999px; background: rgba(196,125,142,.13);
+    box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.8);
+    z-index: 0; pointer-events: none; opacity: 0;
+    transition: transform .42s cubic-bezier(.34,1.42,.5,1),
+                width .42s cubic-bezier(.34,1.42,.5,1), opacity .2s ease;
+  }
+  .dark .dash-dock-slide { background: rgba(211,143,160,.16); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.24); }
+  @media (prefers-reduced-motion: reduce) { .dash-dock-slide { transition: opacity .2s ease; } }
   .dash-bottom-tab {
     position: relative;
     flex: 1; min-width: 0; height: 50px; padding: 0 4px; border-radius: 999px;
@@ -994,15 +1016,20 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
      50px tap target while the pill it draws is inset to 44px, leaving the same
      8px of clearance on every side as the bar's cap. */
   .dash-bottom-tab.active { color: #c47d8e !important; }
-  .dash-bottom-tab.active::before {
-    content: ''; position: absolute; inset: 3px 2px;
-    border-radius: 999px; background: rgba(196,125,142,.1);
-  }
+
   .dash-bottom-tab .dash-bottom-icon, .dash-bottom-tab .dash-bottom-label { position: relative; }
   .dash-bottom-tab.active .dash-bottom-label { font-weight: 600; }
   /* New Order: the loudest thing in the dock, and named like everything else */
   .dash-bottom-tab.primary { color: #c47d8e !important; gap: 4px; }
   .dash-bottom-tab.primary .dash-bottom-icon { width: 40px; height: 40px; border-radius: 50%; background: #c47d8e; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(196,125,142,.4); margin-top: -10px; }
+  .dash-bottom-tab.primary .dash-bottom-icon {
+    box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.5),
+                0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(139,74,94,.3);
+  }
+  .dark .dash-bottom-tab.primary .dash-bottom-icon {
+    box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.4),
+                0 0 0 1.5px rgba(255,255,255,.45), 0 0 0 3px rgba(232,180,196,.34);
+  }
   .dash-bottom-tab.primary .dash-bottom-icon svg { width: 20px; height: 20px; stroke: #fff; }
   .dash-bottom-tab.primary .dash-bottom-label { font-size: 10.5px; font-weight: 700; }
   /* New Order keeps its raised circle and never takes the pill: that highlight
@@ -1012,7 +1039,8 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   .dash-bottom-tab.primary.active { background: transparent; }
   .dash-bottom-tab.primary.active::before { content: none; }
   .dash-bottom-tab.primary.active .dash-bottom-icon {
-    box-shadow: 0 8px 20px rgba(196,125,142,.4), 0 0 0 4px rgba(196,125,142,.24);
+    box-shadow: 0 8px 20px rgba(196,125,142,.4), inset 0 0 0 1.5px rgba(255,255,255,.5),
+                0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 4px rgba(196,125,142,.34);
   }
   .dash-bottom-nav :is(button):focus-visible { outline: 2px solid #c47d8e; outline-offset: -2px; }
   .dash-dock.chat:focus-within { border-color: rgba(196,125,142,.55) !important; }
