@@ -43,15 +43,22 @@ const INTENT_CHIP = {
 
 /** Modal action button in the shared semantic colours. */
 export function ModalBtn({ kind = "quiet", dark, className = "", style: styleOverride, ...props }) {
-  const style = kind === "primary" ? { background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", border: "none", boxShadow: "0 8px 22px rgba(196,125,142,.28)" }
-    : kind === "danger" ? { background: "#dc2626", color: "#fff", border: "none" }
-    : kind === "success" ? { background: dark ? "#10b981" : "#059669", color: "#fff", border: "none" }
-    : kind === "warn" ? { background: "#d97706", color: "#fff", border: "none" }
+  // The two-tone ring: a light hug against the button plus a rose hairline just
+  // outside it. The hairline is what reads on cream, the hug is what reads on
+  // plum, which is why one colour cannot serve both. Quiet keeps its border
+  // instead — ringing every button would flatten the hierarchy.
+  const ring = dark
+    ? "inset 0 0 0 1.5px rgba(255,255,255,.4), 0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(232,180,196,.28)"
+    : "inset 0 0 0 1.5px rgba(255,255,255,.45), 0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(139,74,94,.22)";
+  const style = kind === "primary" ? { background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", color: "#fff", border: "none", boxShadow: `0 8px 22px rgba(196,125,142,.28), ${ring}` }
+    : kind === "danger" ? { background: "#dc2626", color: "#fff", border: "none", boxShadow: ring }
+    : kind === "success" ? { background: dark ? "#10b981" : "#059669", color: "#fff", border: "none", boxShadow: ring }
+    : kind === "warn" ? { background: "#d97706", color: "#fff", border: "none", boxShadow: ring }
     : { background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", color: dark ? "#8b90a0" : "#757170", border: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)"}` };
   return (
     <button
       type="button"
-      className={`font-[inherit] text-[13px] py-[9px] px-4 rounded-[10px] cursor-pointer whitespace-nowrap ${kind === "quiet" ? "font-bold" : "font-extrabold"} transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[.97] disabled:opacity-45 disabled:cursor-default ${FOCUS_RING} ${className}`}
+      className={`font-[inherit] text-[13px] py-[9px] px-4 rounded-full cursor-pointer whitespace-nowrap ${kind === "quiet" ? "font-bold" : "font-extrabold"} transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[.97] disabled:opacity-45 disabled:cursor-default ${FOCUS_RING} ${className}`}
       style={{ ...style, ...styleOverride }}
       {...props}
     />
@@ -115,7 +122,7 @@ export function Modal({ open, onClose, title, subtitle, icon, intent = "accent",
             <div className="md:hidden w-[38px] h-1 rounded-sm mx-auto mt-2.5 shrink-0" style={{ background: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.14)" }} />
             <div className="flex items-start gap-3 p-4 pb-0 shrink-0">
               {icon && (
-                <span className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0" style={(INTENT_CHIP[intent] || INTENT_CHIP.accent)(dark)}>
+                <span className="w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0" style={(INTENT_CHIP[intent] || INTENT_CHIP.accent)(dark)}>
                   {icon}
                 </span>
               )}
@@ -123,7 +130,7 @@ export function Modal({ open, onClose, title, subtitle, icon, intent = "accent",
                 <div className="text-[15px] font-bold leading-tight" style={{ color: ink }}>{title}</div>
                 {subtitle && <div className="text-[12.5px] mt-0.5 leading-relaxed" style={{ color: mut }}>{subtitle}</div>}
               </div>
-              <button type="button" onClick={onClose} aria-label="Close" className={`w-[30px] h-[30px] rounded-[9px] flex items-center justify-center shrink-0 cursor-pointer ${FOCUS_RING}`} style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${line}`, color: mut }}>
+              <button type="button" onClick={onClose} aria-label="Close" className={`w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 cursor-pointer ${FOCUS_RING}`} style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${line}`, color: mut }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
               </button>
             </div>

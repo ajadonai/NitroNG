@@ -175,7 +175,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         <div>
           {/* ── Profile ── */}
           <div className="flex items-center gap-3 rounded-[14px] p-3.5 mb-2" style={card}>
-            <div className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center text-white text-[17px] font-bold shrink-0" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }}>{initials}</div>
+            <div className="nitro-ringed w-[52px] h-[52px] flex items-center justify-center text-white text-[17px] font-bold shrink-0" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }}>{initials}</div>
             <div className="flex flex-col gap-[3px] min-w-0">
               <div className="text-[16px] font-semibold truncate" style={{ color: t.text }}>{admin?.name || "Admin"}</div>
               <div className="text-[11.5px] font-semibold uppercase tracking-[.6px]" style={{ color: t.accent }}>{admin?.role || "admin"}</div>

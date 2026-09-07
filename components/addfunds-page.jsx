@@ -623,7 +623,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             </div>
             <div className="flex gap-2">
               <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} placeholder="e.g. NITRO20" className="m flex-1 py-[9px] px-3 rounded-lg text-[13px] tracking-[1.5px] outline-none text-t-text font-[JetBrains_Mono,monospace] transition-[border-color] duration-200" style={{ background: dark ? "rgba(255,255,255,.08)" : "#fff", border: `1.5px solid ${couponCode.trim() ? t.accent : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)")}` }} />
-              <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} className="py-[9px] px-4 rounded-lg text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: couponCode.trim() ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"), color: couponCode.trim() ? "#fff" : t.textMuted, opacity: couponLoading ? .5 : 1 }}>{couponLoading ? "..." : "Apply"}</button>
+              <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} className="py-[9px] px-4 dash-btn-primary text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: couponCode.trim() ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"), color: couponCode.trim() ? "#fff" : t.textMuted, opacity: couponLoading ? .5 : 1 }}>{couponLoading ? "..." : "Apply"}</button>
             </div>
             {couponError && <div className="text-xs mt-1.5 flex items-center gap-1" style={{ color: dark ? "#fca5a5" : "#dc2626" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {couponError}</div>}
           </div>
@@ -654,7 +654,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   );
 
   const PayButton = ({ onClick, disabled, text, loading: busy, className: cls }) => (
-    <button onClick={onClick} disabled={disabled} className={`w-full py-4 max-desktop:py-3.5 max-md:py-[13px] rounded-xl max-md:rounded-[10px] text-base font-semibold border-none cursor-pointer flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:translate-y-[-1px] hover:shadow-[0_6px_20px_rgba(196,125,142,.31)] ${cls || ""}`} style={{ background: valid ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"), color: valid ? "#fff" : t.textMuted }}>
+    <button onClick={onClick} disabled={disabled} className={`${valid ? "nitro-money-btn" : ""} w-full py-4 max-desktop:py-3.5 max-md:py-[13px] rounded-full text-base font-semibold border-none cursor-pointer flex items-center justify-center gap-2 ${cls || ""}`} style={valid ? undefined : { background: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textMuted }}>
       {busy && <NitroLoader size={16} mono ariaHidden />}
       {text}
     </button>

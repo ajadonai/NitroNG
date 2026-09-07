@@ -382,15 +382,9 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 /* Static logo — desktop only */
 .dash-logo-static { display: flex; align-items: center; gap: 10px; }
 
-.dash-logo-box { width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(135deg, #c47d8e, #8b5e6b); display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(196,125,142,.2); }
-.dash-logo-text { font-size: 15px; font-weight: 700; letter-spacing: 2px; }
 .dash-nav-name { font-size: 13px; font-weight: 500; }
 
 /* Theme toggle */
-.dash-theme-toggle { width: 44px; height: 24px; border-radius: 12px; position: relative; transition: background .6s cubic-bezier(.4,0,.2,1), border-color .6s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1); }
-.dash-theme-toggle:hover { transform: scale(1.08); }
-.dash-theme-toggle:active { transform: scale(.94); }
-.dash-theme-thumb { width: 18px; height: 18px; border-radius: 50%; position: absolute; top: 2px; transition: left .6s cubic-bezier(.4,0,.2,1), background .6s cubic-bezier(.4,0,.2,1), box-shadow .6s cubic-bezier(.4,0,.2,1); display: flex; align-items: center; justify-content: center; }
 
 /* Bell */
 .dash-bell { background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; width: 34px; height: 34px; border-radius: 10px; }
@@ -657,7 +651,6 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .dash-av-item svg { width: 16px; height: 16px; }
 .dash-av-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; padding: 8px 4px 2px; }
 .dash-seg { display: flex; gap: 2px; border-radius: 9px; padding: 3px; }
-.dash-seg-btn { width: 30px; height: 26px; border: none; border-radius: 7px; background: transparent; display: grid; place-items: center; cursor: pointer; }
 .dash-av-logout { font: inherit; font-size: 13px; font-weight: 500; background: transparent; border: none; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
 .dash-av-logout:hover { color: #dc2626 !important; background: rgba(220,38,38,.08); }
 .dash-av-menu :is(button):focus-visible { outline: 2px solid #c47d8e; outline-offset: -2px; }
@@ -705,7 +698,6 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .adm-deposit-info { flex: 1; min-width: 0; overflow: hidden; }
 .adm-deposit-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; white-space: nowrap; }
 .adm-badge { font-size: 12px; padding: 2px 7px; border-radius: 4px; font-weight: 600; }
-.adm-user-avatar { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; color: #fff; flex-shrink: 0; }
 .adm-empty { padding: 30px 16px; text-align: center; font-size: 14px; }
 .adm-nav-section { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; padding: 10px 14px 4px; }
 
@@ -857,9 +849,85 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .adm-btn-primary:hover { transform: translateY(-1.5px); }
 .adm-btn-primary:active { transform: scale(.97); }
 .adm-btn-sm { border-radius: 999px !important; }
+
+/* The admin pages that predate the shared primitives each declared their own
+   button, so the ring above reached only the four files that had migrated.
+   The legacy names are listed here once instead of rewriting 42 call sites
+   across 18 files — the duplication itself is on the Shelf. The ticket pages
+   declare no button classes, so nothing here reaches them. */
+.us-pri, .co-pri, .mb-pri, .fb-pri, .aa-pri, .rs-pri, .pr-pri, .re-pri {
+  border-radius: 999px !important;
+  box-shadow: 0 4px 14px rgba(139,74,94,.3), inset 0 0 0 1.5px rgba(255,255,255,.45),
+              0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(139,74,94,.22) !important;
+}
+.dark .us-pri, .dark .co-pri, .dark .mb-pri, .dark .fb-pri,
+.dark .aa-pri, .dark .rs-pri, .dark .pr-pri, .dark .re-pri {
+  box-shadow: 0 4px 14px rgba(0,0,0,.4), inset 0 0 0 1.5px rgba(255,255,255,.4),
+              0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(232,180,196,.28) !important;
+}
+/* Secondaries and icon buttons take the pill only, matching .adm-btn-sm —
+   a ring on every quiet control would flatten the hierarchy it exists to show. */
+.us-b, .cw-b, .tk-b, .ou-b, .bl-b, .rs-b, .pr-b, .mb-b, .re-b, .pro-b, .rf-b,
+.aa-b, .co-b, .pm-b, .fb-b, .tm-b, .rw-b, .eb-b, .mt-b, .pv-b, .tl-b, .is-b, .cl-b,
+.us-ib, .cw-ib, .tk-ib, .ou-ib, .bl-ib, .rs-ib, .co-ib, .pm-ib, .rw-ib, .tl-ib,
+.cl-ib, .lg-ib, .dash-av-gear, .dash-social-btn {
+  border-radius: 999px !important;
+}
+
+/* The user dashboard never had a primary-button class — which is why the ring
+   reached its top bar and stopped there, while admin got it in one edit.
+   Buttons opt in by name; the gradient, padding and type stay with the caller,
+   so adding it to an existing button changes only its radius and ring. */
+.dash-btn-primary {
+  border-radius: 999px !important;
+  box-shadow: 0 4px 14px rgba(139,74,94,.3), inset 0 0 0 1.5px rgba(255,255,255,.45),
+              0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(139,74,94,.22) !important;
+  transition: box-shadow .24s ease, transform .18s cubic-bezier(.34,1.4,.5,1) !important;
+}
+.dark .dash-btn-primary {
+  box-shadow: 0 4px 14px rgba(0,0,0,.4), inset 0 0 0 1.5px rgba(255,255,255,.4),
+              0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(232,180,196,.28) !important;
+}
+.dash-btn-primary:hover { transform: translateY(-1.5px); }
+.dash-btn-primary:active { transform: scale(.97); }
+/* Quiet counterpart: the pill without the ring, so hierarchy survives. */
+.dash-btn-quiet { border-radius: 999px !important; }
+
+/* The money button — the gold chip scaled up to a real control. Its ring is
+   gold rather than rose: at chip size the rose hairline is invisible, but at
+   button size it would fight the gold and blur the very split it exists to
+   carry. Dark ink on gold, because white on #f8c145 fails contrast. */
+.nitro-money-btn {
+  border-radius: 999px !important;
+  background: radial-gradient(120% 140% at 30% 20%, #ffe9a8, #f8c145 58%, #eda63a) !important;
+  color: #4a2a12 !important;
+  box-shadow: 0 4px 14px rgba(212,150,30,.34), inset 0 0 0 1.5px rgba(255,255,255,.65),
+              0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(180,120,20,.28) !important;
+  transition: box-shadow .24s ease, transform .18s cubic-bezier(.34,1.4,.5,1) !important;
+}
+.dark .nitro-money-btn {
+  box-shadow: 0 4px 14px rgba(0,0,0,.4), inset 0 0 0 1.5px rgba(255,255,255,.6),
+              0 0 0 1.5px rgba(255,255,255,.45), 0 0 0 3px rgba(248,193,69,.32) !important;
+}
+.nitro-money-btn:hover { transform: translateY(-1.5px); }
+.nitro-money-btn:active { transform: scale(.97); }
+
+/* The ring as a utility, so a one-off control can name it instead of
+   re-declaring the six shadow values. */
+.nitro-ringed {
+  border-radius: 999px !important;
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.45),
+              0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(139,74,94,.22);
+}
+.dark .nitro-ringed {
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.4),
+              0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(232,180,196,.28);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dash-bell:hover, .dash-avatar-btn:hover, .dash-balance-pill:hover,
-  .adm-btn-primary:hover { transform: none; }
+  .adm-btn-primary:hover, .nitro-money-btn:hover,
+  .dash-btn-primary:hover { transform: none; }
 }
 .dash-logout { transition: opacity .15s ease, transform .2s cubic-bezier(.4,0,.2,1) !important; }
 .dash-logout:hover { opacity: 1 !important; transform: translateX(4px); }

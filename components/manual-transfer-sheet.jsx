@@ -108,7 +108,7 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
               <span>Take your time — this stays here until you tell us it&apos;s sent.</span>
             </div>
 
-            <button onClick={() => setManualStep("confirm")} className="h-11 rounded-xl border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-bold cursor-pointer">I&apos;ve sent it</button>
+            <button onClick={() => setManualStep("confirm")} className="h-11 dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-bold cursor-pointer">I&apos;ve sent it</button>
             <button onClick={async () => { try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: manualModal.reference }) }); } catch {} setManualModal(null); onRefresh?.(); }} className="h-9 rounded-[10px] bg-transparent border-none text-[13px] font-semibold cursor-pointer text-t-text-muted">Cancel this transfer</button>
           </>
         ) : (
