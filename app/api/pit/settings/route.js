@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { normalizeAnyPhone } from '@/lib/phone-countries';
 import { getCrewSession, hashToken } from "@/lib/crew";
 import { sendDM } from "@/lib/crew-bot";
 import { cookies } from "next/headers";
@@ -50,8 +51,11 @@ export async function PATCH(req) {
     if (section === "profile") {
       const { name, phone, xHandle } = body;
       if (!name?.trim()) return Response.json({ error: "Name is required" }, { status: 400 });
+      // This path stored whatever was typed, with no validation at all.
+      const normalizedPhone = phone?.trim() ? normalizeAnyPhone(phone) : null;
+      if (phone?.trim() && !normalizedPhone) return Response.json({ error: "Please enter a valid phone number" }, { status: 400 });
       const updated = await updateActiveMember(member.id, {
-        name: name.trim(), phone: phone?.trim() || null, xHandle: xHandle?.trim() || null,
+        name: name.trim(), phone: normalizedPhone, xHandle: xHandle?.trim() || null,
       });
       if (!updated) return inactiveMemberResponse();
       return Response.json({ ok: true });

@@ -1,7 +1,8 @@
 import prisma from "@/lib/prisma";
+import { normalizeAnyPhone } from '@/lib/phone-countries';
 import bcrypt from "bcryptjs";
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from "@/lib/rate-limit";
-import { validateEmail, validatePassword, validateName, validatePhone, sanitizeEmail, isDisposableEmail } from "@/lib/validate";
+import { validateEmail, validatePassword, validateName, sanitizeEmail, isDisposableEmail } from "@/lib/validate";
 import { getAffiliateSettings } from "@/lib/affiliate-settings";
 
 export async function POST(req) {
@@ -24,7 +25,12 @@ export async function POST(req) {
     if (!validateName(name)) return Response.json({ error: "Name must be 2-100 characters, letters only" }, { status: 400 });
     if (!validateEmail(email)) return Response.json({ error: "Please enter a valid email address" }, { status: 400 });
     if (!validatePassword(password)) return Response.json({ error: "Password must be 6-128 characters" }, { status: 400 });
-    if (phone && !validatePhone(phone)) return Response.json({ error: "Please enter a valid phone number" }, { status: 400 });
+    // Normalise to +country+digits, the shape every wa.me link needs. Stored raw,
+    // a crew phone of "08012345678" became wa.me/08012345678, which is not an
+    // address. This also writes the linked User row, so it must match the shape
+    // signup enforces or the same human can end up as two rows.
+    const normalizedPhone = phone ? normalizeAnyPhone(phone) : null;
+    if (phone && !normalizedPhone) return Response.json({ error: "Please enter a valid phone number" }, { status: 400 });
 
     const clean = sanitizeEmail(email);
     if (isDisposableEmail(clean)) return Response.json({ error: "Disposable email addresses are not allowed" }, { status: 400 });
@@ -45,7 +51,7 @@ export async function POST(req) {
       name: existingUser?.name || name.trim(),
       email: clean,
       password: hashed,
-      phone: existingUser?.phone || phone?.trim() || null,
+      phone: existingUser?.phone || normalizedPhone,
       xHandle: xHandle?.trim()?.replace(/^@/, "") || null,
       whyApply: whyApply?.trim() || null,
       ...(existingUser ? { userId: existingUser.id } : {}),
@@ -55,9 +61,9 @@ export async function POST(req) {
 
     if (!existingUser) {
       let newUser = await prisma.user.create({
-        data: { name: name.trim(), email: clean, password: hashed, phone: phone?.trim() || null },
+        data: { name: name.trim(), email: clean, password: hashed, phone: normalizedPhone },
       }).catch(() => null);
-      if (!newUser && phone?.trim()) {
+      if (!newUser && normalizedPhone) {
         newUser = await prisma.user.create({
           data: { name: name.trim(), email: clean, password: hashed },
         }).catch(() => null);

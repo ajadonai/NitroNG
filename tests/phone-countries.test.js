@@ -9,6 +9,7 @@ import {
   validatePhone,
   toE164,
   splitE164,
+  normalizeAnyPhone,
 } from "../lib/phone-countries.js";
 
 describe("phone countries", () => {
@@ -120,5 +121,26 @@ describe("phone countries", () => {
     expect(isSupportedCountry("NG")).toBe(true);
     expect(isSupportedCountry("FR")).toBe(false);
     expect(getCountry("GB").dial).toBe("44");
+  });
+});
+
+describe("normalizeAnyPhone — the crew portal, where there is no country picker", () => {
+  it("turns a locally-typed Nigerian number into something wa.me can dial", () => {
+    // The bug this fixes: stored raw, "08012345678" produced wa.me/08012345678,
+    // which is not an address, so the admin's WhatsApp button went nowhere.
+    expect(normalizeAnyPhone("08012345678")).toBe("+2348012345678");
+    expect(normalizeAnyPhone("8012345678")).toBe("+2348012345678");
+  });
+
+  it("keeps a number that already carries a supported country code", () => {
+    expect(normalizeAnyPhone("447911123456")).toBe("+447911123456");
+    expect(normalizeAnyPhone("+44 7911 123456")).toBe("+447911123456");
+    expect(normalizeAnyPhone("+2348012345678")).toBe("+2348012345678");
+  });
+
+  it("returns null rather than storing something undialable", () => {
+    for (const bad of ["", null, "123", "abc", "+33612345678"]) {
+      expect(normalizeAnyPhone(bad), String(bad)).toBeNull();
+    }
   });
 });
