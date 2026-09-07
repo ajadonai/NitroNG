@@ -371,7 +371,7 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 /* Nav */
 .dash-nav { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 20; height: 54px; padding: 0 20px; }
 .dash-nav-left { display: flex; align-items: center; gap: 12px; }
-.dash-nav-right { display: flex; align-items: center; gap: 6px; }
+.dash-nav-right { display: flex; align-items: center; gap: 12px; }
 
 /* Unified menu button (hamburger + logo) — mobile/tablet only */
 .dash-menu-btn { display: none; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; padding: 4px 2px; }
@@ -818,6 +818,18 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
               0 0 0 1.5px rgba(255,255,255,.45), 0 0 0 3px rgba(232,180,196,.36);
 }
 .dash-bell:active, .dash-avatar-btn:active, .dash-balance-pill:active { transform: scale(.97); }
+
+/* The wordmark is a control too, so it wears the same ring; otherwise it is
+   the one flat chip left in a bar of ringed ones. */
+.nitro-mark {
+  border-radius: 999px !important;
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.45),
+              0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(139,74,94,.22);
+}
+.dark .nitro-mark {
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.4),
+              0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(232,180,196,.28);
+}
 
 /* Split: gold is reserved for money — top up, add funds, deposits. Rose stays
    the colour of every other action, so colour carries meaning here. */
