@@ -7,6 +7,19 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 ## Open
 
+- **Offline page — noticed 7 Sep 2026, deliberately not done with the other
+  error screens.** The 404, maintenance and crash screens were re-skinned in
+  `v2.4.101`; the offline case was left out because it is not a design job.
+  `public/sw.js` registers and then ignores every fetch, so there is nothing
+  cached to show a user who loses signal — the browser's own dinosaur is what
+  they get. Doing it properly means a real service worker: cache the shell and
+  the logo on install, serve a designed offline screen on navigation failure,
+  and decide what (if anything) of the dashboard is safe to serve stale — a
+  cached balance or order list that is an hour old is worse than no page at
+  all on a money app, so the honest version probably shows the shell plus
+  "you are offline" and refuses to render figures. Only then does the screen
+  itself get designed, in the plum world the crash screen now uses.
+
 - **Auto data-saver — parked design, agreed 6 Sep 2026** (the improved version
   of the audit's "Data-Saver toggle"): no manual toggle — animations cost CPU,
   not data, and a switch nobody finds helps nobody. Instead the app reads the

@@ -38,17 +38,17 @@ function NotFoundInner() {
     return best && bd > 0 && bd <= 2 ? "/" + best : null;
   }, [pathname]);
 
-  const bg = dark ? "#080b14" : "#f4f1ed";
-  const border = dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)";
-  const hair = dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.08)";
-  const card = dark ? "rgba(255,255,255,.06)" : "rgba(255,255,255,.6)";
-  const muted = dark ? "rgba(255,255,255,.34)" : "rgba(0,0,0,.34)";
-  const soft = dark ? "rgba(255,255,255,.58)" : "rgba(0,0,0,.5)";
-  const text = dark ? "#f0ede8" : "#1c1b19";
-  const accent = "#c47d8e";
-  const green = dark ? "#6ee7b7" : "#059669";
-  const greenSoft = dark ? "rgba(110,231,183,.14)" : "rgba(5,150,105,.12)";
-  const halo = dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.16)";
+  const bg = dark ? "#0c0814" : "#efe8e0";
+  const border = dark ? "rgba(232,180,196,.14)" : "rgba(139,74,94,.14)";
+  const hair = dark ? "rgba(232,180,196,.12)" : "rgba(139,74,94,.12)";
+  const card = dark ? "#171126" : "#fffdfb";
+  const muted = dark ? "rgba(246,241,238,.42)" : "rgba(32,27,25,.42)";
+  const soft = dark ? "rgba(246,241,238,.62)" : "rgba(32,27,25,.55)";
+  const text = dark ? "#f6f1ee" : "#201b19";
+  const accent = dark ? "#e3a4b5" : "#c97f92";
+  const green = dark ? "#4be284" : "#0a9d6b";
+  const greenSoft = dark ? "rgba(75,226,132,.14)" : "rgba(10,157,107,.12)";
+  const halo = dark ? "rgba(201,127,146,.18)" : "rgba(201,127,146,.16)";
 
   if (!loaded) return <div style={{ minHeight: "100dvh", background: bg }} />;
 
@@ -77,7 +77,7 @@ function NotFoundInner() {
         .nf-markbox{position:relative;width:118px;height:118px;margin:0 10px;cursor:pointer}
         .nf-markbox svg{position:absolute;inset:0;width:100%;height:100%}
         .nf-mk{fill:none;stroke-width:9;stroke-linecap:round;stroke-linejoin:round}
-        .nf-lead{stroke:#c47d8e;stroke-dasharray:220;stroke-dashoffset:220;animation:nfDraw 1.1s cubic-bezier(.6,0,.3,1) .15s forwards}
+        .nf-lead{stroke:#c97f92;stroke-dasharray:220;stroke-dashoffset:220;animation:nfDraw 1.1s cubic-bezier(.6,0,.3,1) .15s forwards}
         .nf-echo{opacity:0;animation:nfEchoIn .8s ease 1s forwards,nfDrift 6s ease-in-out 1.8s infinite alternate}
         .nf-e1{stroke:#e05252;--dx:-5px;--dy:3px;animation-delay:1s,1.8s}
         .nf-e2{stroke:#34a97b;--dx:4px;--dy:-4px;animation-delay:1.12s,2.1s}
@@ -100,7 +100,7 @@ function NotFoundInner() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 h-[52px] relative z-10 shrink-0 backdrop-blur-sm" style={{ borderBottom: `0.5px solid ${border}`, background: dark ? "rgba(8,11,20,.5)" : "rgba(244,241,237,.5)" }}>
         <a href="/" className="flex items-center gap-2 no-underline">
-          <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>
+          <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c97f92,#9b5266)", boxShadow: dark ? "inset 0 0 0 1.5px rgba(255,255,255,.4), 0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(232,180,196,.28)" : "inset 0 0 0 1.5px rgba(255,255,255,.45), 0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(139,74,94,.22)" }}>
             <svg width="9" height="10" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg>
           </div>
           <span className="text-[15px] font-semibold tracking-[2px]" style={{ color: text }}>NITRO</span>
@@ -151,8 +151,8 @@ function NotFoundInner() {
           )}
 
           <div className="nf-ctas nf-rise" style={{ animationDelay: ".52s" }}>
-            <a href="/dashboard" className="inline-flex items-center gap-2 text-[13px] font-extrabold py-3 px-[22px] rounded-[11px] no-underline text-white transition-transform duration-150 hover:-translate-y-px" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", boxShadow: "0 5px 16px rgba(196,125,142,.28)" }}>Back to dashboard</a>
-            <a href="/" className="inline-flex items-center gap-2 text-[13px] font-bold py-[11px] px-[18px] rounded-[11px] no-underline transition-transform duration-150 hover:-translate-y-px" style={{ color: soft, background: card, border: `1px solid ${border}` }}>Go home</a>
+            <a href="/dashboard" className="inline-flex items-center gap-2 text-[13px] font-extrabold py-3 px-[22px] rounded-full no-underline text-white transition-transform duration-150 hover:-translate-y-px" style={{ background: "linear-gradient(135deg,#c97f92,#9b5266)", boxShadow: dark ? "0 5px 16px rgba(0,0,0,.4), inset 0 0 0 1.5px rgba(255,255,255,.4), 0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(232,180,196,.28)" : "0 5px 16px rgba(139,74,94,.3), inset 0 0 0 1.5px rgba(255,255,255,.45), 0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(139,74,94,.24)" }}>Back to dashboard</a>
+            <a href="/" className="inline-flex items-center gap-2 text-[13px] font-bold py-[11px] px-[18px] rounded-full no-underline transition-transform duration-150 hover:-translate-y-px" style={{ color: soft, background: card, border: `1px solid ${border}` }}>Go home</a>
           </div>
 
           <div className="nf-rise flex gap-[18px] justify-center mt-[22px] text-[11px] flex-wrap" style={{ animationDelay: ".6s" }}>
