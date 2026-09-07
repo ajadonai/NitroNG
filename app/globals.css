@@ -1515,7 +1515,36 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .nav-burger:hover { transform: translateY(-1.5px); }
 .nav-burger:active { transform: scale(.97); }
 .nav-burger:focus-visible { outline: 2px solid #c47d8e; outline-offset: 3px; }
-.nav-burger svg { width: 16px; height: 16px; }
+/* The glow: three bars that fold into an X on the sky toggle's own spring, a
+   rose halo that blooms around the circle on open — the way the sun carries
+   its glow on the toggle — and a quarter-turn so the X arrives with momentum.
+   Keyed off aria-expanded, which both bars already set, so there is no extra
+   state to keep in step. */
+.nav-burger { position: relative; }
+.nav-burger .nb-bar {
+  position: absolute; left: 50%; width: 16px; height: 2px; border-radius: 2px;
+  background: currentColor; transform: translateX(-50%);
+  transition: transform .42s cubic-bezier(.34,1.46,.54,1), width .3s ease, opacity .2s ease, background .3s ease;
+}
+.nav-burger .nb-bar:nth-child(1) { top: calc(50% - 6px); }
+.nav-burger .nb-bar:nth-child(2) { top: calc(50% - 1px); }
+.nav-burger .nb-bar:nth-child(3) { top: calc(50% + 4px); }
+.nav-burger::after {
+  content: ""; position: absolute; inset: -3px; border-radius: 999px; pointer-events: none;
+  box-shadow: 0 0 0 0 rgba(201,127,146,0); transition: box-shadow .45s ease;
+}
+.nav-burger[aria-expanded="true"] { transform: rotate(90deg); }
+.nav-burger[aria-expanded="true"]:hover { transform: rotate(90deg) translateY(-1.5px); }
+.nav-burger[aria-expanded="true"]::after { box-shadow: 0 0 0 4px rgba(201,127,146,.18), 0 0 18px rgba(201,127,146,.45); }
+.nav-burger[aria-expanded="true"] .nb-bar { background: #c47d8e; }
+.dark .nav-burger[aria-expanded="true"] .nb-bar { background: #e3a4b5; }
+.nav-burger[aria-expanded="true"] .nb-bar:nth-child(1) { transform: translateX(-50%) translateY(5px) rotate(45deg); }
+.nav-burger[aria-expanded="true"] .nb-bar:nth-child(2) { opacity: 0; width: 0; }
+.nav-burger[aria-expanded="true"] .nb-bar:nth-child(3) { transform: translateX(-50%) translateY(-5px) rotate(-45deg); }
+@media (prefers-reduced-motion: reduce) {
+  .nav-burger .nb-bar, .nav-burger::after { transition: none; }
+  .nav-burger[aria-expanded="true"], .nav-burger[aria-expanded="true"]:hover { transform: none; }
+}
 /* Mobile-only, stated here rather than left to a Tailwind utility: an unlayered
    `display: flex` above would otherwise outrank `desktop:hidden` and put a
    hamburger on every desktop bar. */
