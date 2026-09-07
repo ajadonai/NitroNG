@@ -25,7 +25,7 @@ const WORKS = [
 const COMPLAINTS = [
   ['"My followers dropped."', 'This is the most common one and it is a real property of the product, not a fault we can eliminate. Some accounts in every follower service get removed when a platform runs a purge. What we can control is source quality and refills. Standard services carry refill for 30 days, Premium carries it for the life of the order, on services marked refill included. Budget carries none, which we state on the service before you buy.'],
   ['"The order is still pending."', 'Some services start within minutes. Others queue at the supplier. When an order sits longer than it should, message us with the order ID and we chase the supplier or cancel and return the value to your wallet. The honest fix on our side is better expected time estimates on each service, which we are still improving.'],
-  ['"I wanted my money back in my bank account."', 'Order refunds go to your wallet so they are instant. Money you added and never spent can go back to your bank if you ask.'],
+  ['"I wanted my money back in my bank account."', 'Order refunds go to your wallet, so they are instant and you can spend them on the next order straight away. Wallet money is credit for Nitro services rather than a balance we pay back out.'],
   ['"The service I wanted is not listed."', 'A direct consequence of curating. If a service is missing it is usually because it failed testing or the supplier became unreliable. Ask on WhatsApp. Sometimes we can source it, sometimes the honest answer is that we could not find a version that works.'],
 ];
 

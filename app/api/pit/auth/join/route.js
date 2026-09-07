@@ -1,10 +1,11 @@
 import prisma from "@/lib/prisma";
+import { normalizeAnyPhone } from '@/lib/phone-countries';
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from "@/lib/rate-limit";
 import { hashToken } from "@/lib/crew";
-import { validatePassword, validatePhone } from "@/lib/validate";
+import { validatePassword } from "@/lib/validate";
 import { getAffiliateSettings } from "@/lib/affiliate-settings";
 
 const MAX_RETRIES = 3;
@@ -39,7 +40,9 @@ export async function POST(req) {
     const { token, password, phone, xHandle } = await req.json().catch(() => ({}));
     if (!token || !password) return Response.json({ error: "Token and password required" }, { status: 400 });
     if (!validatePassword(password)) return Response.json({ error: "Password must be 6-128 characters" }, { status: 400 });
-    if (phone && !validatePhone(phone)) return Response.json({ error: "Please enter a valid phone number" }, { status: 400 });
+    // Same normalisation as apply: wa.me needs the country code in the string.
+    const normalizedPhone = phone ? normalizeAnyPhone(phone) : null;
+    if (phone && !normalizedPhone) return Response.json({ error: "Please enter a valid phone number" }, { status: 400 });
 
     const hashed = await bcrypt.hash(password, 12);
     const sessionToken = crypto.randomBytes(32).toString("hex");
@@ -61,7 +64,7 @@ export async function POST(req) {
             let userId = existingUser?.id || member.userId;
             if (!existingUser) {
               const newUser = await tx.user.create({
-                data: { name: member.name, email: member.email, password: hashed, phone: phone?.trim() || member.phone || null },
+                data: { name: member.name, email: member.email, password: hashed, phone: normalizedPhone || member.phone || null },
               });
               userId = newUser.id;
             }
@@ -76,7 +79,7 @@ export async function POST(req) {
               data: {
                 password: hashed, status: "approved", approvedAt: new Date(),
                 inviteToken: null, inviteExpiresAt: null,
-                ...(phone ? { phone: phone.trim() } : {}),
+                ...(normalizedPhone ? { phone: normalizedPhone } : {}),
                 ...(xHandle ? { xHandle: xHandle.toLowerCase().replace(/^@/, "") } : {}),
                 ...(userId ? { userId } : {}),
               },

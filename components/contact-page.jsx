@@ -9,7 +9,7 @@ const WA_FALLBACK = '2347071656156';
 const QUESTIONS = [
   ['"My order is still pending."', 'Some services start in minutes, others queue at the provider. Give it a couple of hours first. If it is still pending after that, message us with the order ID and we will chase it or cancel it and return the value to your wallet.'],
   ['"My followers dropped."', 'Some drop is normal on every follower service. On a Standard or Premium service, refill should replace them within a few days. If it has not, send us the order ID. Budget has no refill, which is shown on the service before you order.'],
-  ['"I want a refund."', 'If an order did not start, the value goes back to your wallet as credit you can spend. Money you added and have not spent can go back to your bank — just ask us on WhatsApp.'],
+  ['"I want a refund."', 'If an order did not start, the value goes back to your wallet as credit you can spend right away. Wallet money is credit for Nitro services rather than a balance we pay back out — if a payment went wrong, message us on WhatsApp and we will sort it.'],
   ['"Do you need my password?"', 'No. Never. We only need your public profile link or post link. If anyone claiming to be from Nitro asks for your password or a login code, it is not us. Report it to us immediately.'],
 ];
 
