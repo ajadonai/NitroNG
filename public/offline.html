@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2a1a22">
+<title>No signal — Nitro</title>
+<!--
+  Served by the service worker when a page navigation fails. Everything is
+  inline on purpose: this file has to render with no network at all, so it
+  cannot reach for a font, a stylesheet, a script or an image. It commits to
+  the plum world for the same reason the crash screen does — it is a momentary
+  screen that must not depend on the app's theme having loaded.
+
+  It shows no figures. On a panel where people hold a balance, a cached number
+  reads as fact, and a balance that is quietly an hour old is worse than no
+  balance at all.
+-->
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 24px; text-align: center; position: relative; overflow: hidden;
+    background: #2a1a22; color: #f6ecee;
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system,
+                 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .grain, .glow, .wm { position: absolute; pointer-events: none; }
+  .grain {
+    inset: 0; opacity: .05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .glow {
+    width: 420px; height: 340px; top: -20%; left: 12%; border-radius: 50%;
+    background: rgba(196,125,142,.18); filter: blur(100px);
+  }
+  .wm {
+    left: 50%; transform: translateX(-50%); bottom: -.34em;
+    font-size: 130px; font-weight: 800; line-height: 1; letter-spacing: -.04em;
+    white-space: nowrap; user-select: none;
+    color: transparent; -webkit-text-stroke: 1px rgba(246,217,222,.07);
+  }
+  @media (min-width: 768px) { .wm { font-size: 200px; } }
+
+  .card { position: relative; z-index: 2; display: flex; flex-direction: column;
+          align-items: center; max-width: 400px; }
+
+  .mark {
+    width: 44px; height: 44px; border-radius: 999px; margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg,#c97f92,#8b5266);
+    box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.4),
+                0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(232,180,196,.3);
+  }
+
+  h1 { font-size: 27px; font-weight: 700; line-height: 1.15;
+       letter-spacing: -.02em; margin: 0 0 10px; }
+  h1 em { font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+          font-style: italic; font-weight: 600; color: #e8a0b2; }
+  p { font-size: 14px; line-height: 1.65; margin: 0 0 12px;
+      color: rgba(246,236,238,.62); }
+
+  .safe {
+    display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px;
+    padding: 8px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+    background: rgba(75,226,132,.09); border: 1px solid rgba(75,226,132,.24);
+    color: #4be284;
+  }
+  .safe i { width: 7px; height: 7px; border-radius: 50%; background: #4be284;
+            flex-shrink: 0; display: block; }
+
+  button {
+    font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+    padding: 11px 22px; border-radius: 999px; border: none;
+    background: #fff; color: #1c1b19;
+    box-shadow: 0 4px 14px rgba(0,0,0,.28), inset 0 0 0 1.5px rgba(255,255,255,.9),
+                0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(0,0,0,.2);
+    transition: transform .2s ease;
+  }
+  button:hover { transform: translateY(-1px); }
+  button:disabled { opacity: .6; cursor: default; transform: none; }
+  button:focus-visible { outline: 2px solid #e8a0b2; outline-offset: 3px; }
+
+  .status { margin-top: 16px; font-size: 11px; letter-spacing: .04em;
+            color: rgba(246,236,238,.34); min-height: 14px; }
+  .dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+         background: rgba(246,236,238,.4); margin-right: 6px;
+         animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    button, .dot { transition: none; animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+  <div class="wm" aria-hidden="true">NITRO</div>
+
+  <main class="card">
+    <span class="mark" aria-hidden="true">
+      <svg width="19" height="21" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg>
+    </span>
+
+    <h1>No signal <em>right now.</em></h1>
+    <p>Your phone cannot reach Nitro. Nothing is wrong with your account and no order was lost.</p>
+
+    <span class="safe"><i></i>Your balance and your orders are safe</span>
+
+    <button id="retry" type="button">Try again</button>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+  </main>
+
+<script>
+(function () {
+  var btn = document.getElementById('retry');
+  var out = document.getElementById('status');
+  var timer = null;
+
+  function say(html) { out.innerHTML = html; }
+  function waiting() { say('<span class="dot"></span>Checking for a connection'); }
+
+  // navigator.onLine only says a network exists, not that it reaches anything —
+  // it is true on hotel wifi that goes nowhere. So we ask the server directly.
+  function reachable() {
+    return fetch('/manifest.json', { method: 'HEAD', cache: 'no-store' })
+      .then(function (r) { return r && r.ok; })
+      .catch(function () { return false; });
+  }
+
+  function attempt(manual) {
+    if (manual) { btn.disabled = true; say('<span class="dot"></span>Trying'); }
+    return reachable().then(function (ok) {
+      if (ok) { say('Back online. Loading&hellip;'); location.reload(); return true; }
+      if (manual) { btn.disabled = false; say('Still no connection. We keep checking.'); }
+      return false;
+    });
+  }
+
+  btn.addEventListener('click', function () { attempt(true); });
+
+  // Come back on our own so nobody has to sit tapping the button.
+  window.addEventListener('online', function () { attempt(false); });
+  timer = setInterval(function () { attempt(false); }, 5000);
+  window.addEventListener('pagehide', function () { clearInterval(timer); });
+
+  waiting();
+})();
+</script>
+</body>
+</html>
