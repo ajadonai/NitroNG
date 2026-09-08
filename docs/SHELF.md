@@ -7,6 +7,21 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 ## Open
 
+- **Two dead landing files, found 9 Sep 2026 by the translation guard.**
+  `components/landing-page.jsx` (2,000+ lines) and
+  `components/landing-below-fold.jsx` are not reachable from any route:
+  `app/page.jsx` → `components/home-client.jsx` → `components/landing-v3.jsx`
+  is the live path, and nothing imports the other two. They were found the
+  expensive way — the drift guard reported 87 untranslated strings in them and
+  they were an hour from being translated into four languages before anyone
+  checked whether a customer could reach them.
+
+  Not deleted, for two reasons: it is Trip's call, and the landing redesign on
+  `landing-v2-wip` may yet want the markup. They stay in
+  `scripts/i18n-baseline.json` so nobody re-discovers them as new debt; the
+  live debt is 1,311 strings, not 1,398. Delete them, or fold what is worth
+  keeping into `landing-v3.jsx`, and the baseline drops by 87 for free.
+
 - **Foreign payment methods — steps 1 and 2 shipped 8 Sep 2026, steps 3 and 4
   remain.** Signup accepts NG/US/GB/GH/KE (`4776d901`). Flutterwave is
   hardcoded to `currency: 'NGN'` (`app/api/payments/initialize/route.js:100`)

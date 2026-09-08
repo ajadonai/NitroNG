@@ -70,14 +70,14 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
   const lowBal = balance < 500;
   const neverPaid = !!user?.welcomeBonusEligible;
   const primaryAction = neverPaid
-    ? { label: `Get up to ${money(MAX_BONUS_NAIRA, { round: "down" })} free on your first top-up`, sub: "One time, for new accounts", target: "add-funds", gift: true }
+    ? { label: `${tr("Get up to")} ${money(MAX_BONUS_NAIRA, { round: "down" })} ${tr("free on your first top-up")}`, sub: tr("One time, for new accounts"), target: "add-funds", gift: true }
     : isNew
-    ? { label: "Place your first order", sub: "Pick a platform and start growing today", target: "services" }
+    ? { label: tr("Place your first order"), sub: tr("Pick a platform and start growing today"), target: "services" }
     : lowBal
-    ? { label: "Add funds", sub: "Top up your balance to keep the momentum going", target: "add-funds" }
+    ? { label: tr("Add funds"), sub: tr("Top up your balance to keep the momentum going"), target: "add-funds" }
     : activeCount > 0
-    ? { label: "Track your orders", sub: `${activeCount} order${activeCount > 1 ? "s" : ""} in progress right now`, target: "orders" }
-    : { label: "Start a new order", sub: "Ready when you are — let's keep growing", target: "services" };
+    ? { label: tr("Track your orders"), sub: `${activeCount} ${activeCount > 1 ? tr("orders") : tr("order")} ${tr("in progress right now")}`, target: "orders" }
+    : { label: tr("Start a new order"), sub: tr("Ready when you are — let's keep growing"), target: "services" };
 
   const firstName = user?.firstName || (user?.name || "").split(" ")[0] || "there";
   const hour = new Date().getHours();
@@ -277,10 +277,10 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
     <div className="rr">
       <RailSec>{tr("Your stats")}</RailSec>
       <RailCard>
-        <RailFact label="Top platform" value={topPlatform ? topPlatform.charAt(0).toUpperCase() + topPlatform.slice(1) : "—"} mono={false} />
-        <RailFact label="Average order" value={avgQty > 0 ? avgQty.toLocaleString() : "—"} />
-        <RailFact label="This week" value={`${wkOrders} order${wkOrders === 1 ? "" : "s"}`} />
-        <RailFact label="Member since" value={memberDate} mono={false} />
+        <RailFact label={tr("Top platform")} value={topPlatform ? topPlatform.charAt(0).toUpperCase() + topPlatform.slice(1) : "—"} mono={false} />
+        <RailFact label={tr("Average order")} value={avgQty > 0 ? avgQty.toLocaleString() : "—"} />
+        <RailFact label={tr("This week")} value={`${wkOrders} ${wkOrders === 1 ? tr("order") : tr("orders")}`} />
+        <RailFact label={tr("Member since")} value={memberDate} mono={false} />
       </RailCard>
       <RailSec action={activeCount > 0 ? <RailLink onClick={() => setActive("orders")}>{tr("View all")}</RailLink> : null}>{tr("Delivering now")}</RailSec>
       <RailCard>
@@ -290,9 +290,9 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
       </RailCard>
       <RailSec>{tr("Referral")}</RailSec>
       <RailCard>
-        <RailFact label="Your code" value={user?.refCode || "—"} color="var(--t-accent)" />
-        <RailFact label="Referrals" value={user?.refs || 0} />
-        <RailFact label="Earned" value={money(user?.earnings || 0, { round: "down" })} />
+        <RailFact label={tr("Your code")} value={user?.refCode || "—"} color="var(--t-accent)" />
+        <RailFact label={tr("Referrals")} value={user?.refs || 0} />
+        <RailFact label={tr("Earned")} value={money(user?.earnings || 0, { round: "down" })} />
       </RailCard>
       <RailBtn onClick={() => setActive("referrals")}>{tr("Invite friends")}</RailBtn>
     </div>
