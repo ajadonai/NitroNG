@@ -4,7 +4,7 @@ import { RailSec, RailCard, RailRow } from "./rail";
 import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
-import { useMoney } from "./locale";
+import { useMoney, useT } from "./locale";
 import { DEFAULT_COUNTRY, validatePhone } from "../lib/phone-countries";
 import { PhoneField } from "./phone-field";
 import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
@@ -180,6 +180,7 @@ const WAITLIST_META = {
 };
 
 function WaitlistPage({ feature, dark, t }) {
+  const tr = useT();
   const meta = WAITLIST_META[feature];
   const [email, setEmail] = useState("");
   const [joined, setJoined] = useState(null);
@@ -228,14 +229,14 @@ function WaitlistPage({ feature, dark, t }) {
           <div className="rounded-xl py-4 px-6 max-md:px-4" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.12)"}` }}>
             <div className="flex items-center gap-2 justify-center mb-1">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              <span className="text-sm font-semibold text-t-green">You're on the list</span>
+              <span className="text-sm font-semibold text-t-green">{tr("You're on the list")}</span>
             </div>
             <div className="text-[13px] text-t-text-muted">{joined.email}</div>
           </div>
         ) : (
           <form onSubmit={submit} className="w-full max-w-[360px]">
             <div className="mb-4">
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email" className="w-full py-2.5 px-3 rounded-[10px] text-sm font-[inherit] outline-none box-border text-t-text" style={{ background: dark ? "rgba(255,255,255,.09)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}` }} />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={tr("Enter your email")} className="w-full py-2.5 px-3 rounded-[10px] text-sm font-[inherit] outline-none box-border text-t-text" style={{ background: dark ? "rgba(255,255,255,.09)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}` }} />
             </div>
             <button type="submit" disabled={submitting || !email.trim()} className="w-full py-2.5 rounded-[10px] text-sm font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px bg-accent text-white" style={{ opacity: submitting || !email.trim() ? 0.5 : 1 }}>
               {submitting ? "Joining…" : "Join the waitlist"}
@@ -257,6 +258,7 @@ const NOTIF_ICONS = {
 };
 
 function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, setClearedAt, readAllAt, setReadAllAt, onNavigate, socialLinks = {} }) {
+  const tr = useT();
   const [filter, setFilter] = useState("all");
 
   const filtered = filter === "all" ? items : items.filter(n => n.type === filter);
@@ -290,12 +292,12 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
       {/* Header */}
       <div className="flex justify-between items-center py-3.5 px-4">
         <div className="flex items-center gap-2">
-          <span className="text-base font-semibold text-t-text">Notifications</span>
+          <span className="text-base font-semibold text-t-text">{tr("Notifications")}</span>
           {unreadCount > 0 && <span className="text-xs py-0.5 px-1.5 rounded-[5px] font-semibold text-accent" style={{ background: dark ? "#1c1015" : "#fdf2f4" }}>{unreadCount}</span>}
         </div>
         <div className="flex gap-2.5">
-          {unreadCount > 0 && <button onClick={markAllRead} className="text-[13px] font-semibold bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent">Mark all read</button>}
-          {items.length > 0 && <button onClick={clearAll} className="text-[13px] font-semibold bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text-muted">Clear all</button>}
+          {unreadCount > 0 && <button onClick={markAllRead} className="text-[13px] font-semibold bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent">{tr("Mark all read")}</button>}
+          {items.length > 0 && <button onClick={clearAll} className="text-[13px] font-semibold bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text-muted">{tr("Clear all")}</button>}
         </div>
       </div>
       {/* Filter tabs */}
@@ -321,7 +323,7 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
             </div>
           );
         }) : (
-          <div className="py-6 px-3.5 text-center text-sm text-t-text-muted">No notifications</div>
+          <div className="py-6 px-3.5 text-center text-sm text-t-text-muted">{tr("No notifications")}</div>
         )}
       </div>
       {/* Footer */}
@@ -338,6 +340,7 @@ export default function Dashboard({ initialData }) {
 }
 
 function DashboardInner({ initialData }) {
+  const tr = useT();
   const { dark, setDark, toggleTheme, t: baseT, themeMode, setThemeMode } = useTheme();
   // Declared up here, not beside the other formatters further down: the
   // notification memo builds its transaction lines with it around line 690, and
@@ -1254,7 +1257,7 @@ function DashboardInner({ initialData }) {
         return (
           <div className="p-10 rounded-2xl flex flex-col items-center justify-center min-h-[300px]" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
             <div className="text-base font-medium text-t-text-muted">{active.charAt(0).toUpperCase() + active.slice(1).replace("-", " ")}</div>
-            <div className="text-sm opacity-50 mt-1 text-t-text-muted">Coming soon</div>
+            <div className="text-sm opacity-50 mt-1 text-t-text-muted">{tr("Coming soon")}</div>
           </div>
         );
     }
@@ -1298,11 +1301,11 @@ function DashboardInner({ initialData }) {
             className="dash-balance-pill max-desktop:hidden flex items-center gap-2 h-[34px] pl-3 pr-1.5 cursor-pointer text-[13px] font-semibold text-t-text border-none"
             style={{ fontVariantNumeric: "tabular-nums" }}>
             {money(user?.balance || 0, { round: "down" })}
-            <span className="nitro-money text-[11px] font-bold py-1 px-2.5 rounded-full">Top up</span>
+            <span className="nitro-money text-[11px] font-bold py-1 px-2.5 rounded-full">{tr("Top up")}</span>
           </button>
           {/* Notification bell */}
           <div ref={notifRef} className="relative">
-            <button onClick={() => setNotifOpen(!notifOpen)} className="dash-bell" aria-label="Notifications" style={{ color: t.textSoft }}>
+            <button onClick={() => setNotifOpen(!notifOpen)} className="dash-bell" aria-label={tr("Notifications")} style={{ color: t.textSoft }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
               {bellUnread > 0 && <div className="dash-bell-badge">{bellUnread > 10 ? "10+" : bellUnread}</div>}
             </button>
@@ -1312,25 +1315,25 @@ function DashboardInner({ initialData }) {
           <div ref={avRef} className="relative">
             <button
               onClick={() => { if (window.matchMedia("(min-width: 1200px)").matches) setAvOpen(o => !o); else { setActive("settings"); setLeftOpen(false); } }}
-              className="dash-avatar-btn" aria-label="Account menu" aria-haspopup="menu" aria-expanded={avOpen}>
+              className="dash-avatar-btn" aria-label={tr("Account menu")} aria-haspopup="menu" aria-expanded={avOpen}>
               <Avatar size={30} />
             </button>
             {avOpen && (
-              <div role="menu" aria-label="Account" className="dash-av-menu" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+              <div role="menu" aria-label={tr("Account")} className="dash-av-menu" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="dash-av-head" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
                   <Avatar size={34} ring />
                   <div className="min-w-0 flex-1">
                     <div className="text-[13px] font-semibold truncate text-t-text">{user?.name || "Your account"}</div>
                     <div className="text-[11px] truncate text-t-text-muted">{user?.email || ""}</div>
                   </div>
-                  <button role="menuitem" onClick={() => { setAvOpen(false); setActive("settings"); }} className="dash-av-gear" aria-label="Settings" style={{ color: t.textMuted }}>{I.settings}</button>
+                  <button role="menuitem" onClick={() => { setAvOpen(false); setActive("settings"); }} className="dash-av-gear" aria-label={tr("Settings")} style={{ color: t.textMuted }}>{I.settings}</button>
                 </div>
                 <button role="menuitem" onClick={() => { setAvOpen(false); window.location.href = "/changelog"; }} className="dash-av-item" style={{ color: t.textSoft }}>{I.changelog}What&rsquo;s New</button>
                 <button role="menuitem" onClick={() => { setAvOpen(false); setActive("referrals"); }} className="dash-av-item" style={{ color: t.textSoft }}>{I.referrals}Referrals</button>
                 <button role="menuitem" onClick={() => { setAvOpen(false); if (socialLinks.social_whatsapp_support) window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); }} className="dash-av-item" style={{ color: "#25d366" }}>{I.support}Support on WhatsApp</button>
                 <div className="dash-av-foot" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
                   <ThemePill mode={themeMode} onMode={applyThemeMode} />
-                  <button role="menuitem" onClick={handleLogout} className="dash-av-logout" style={{ color: t.textMuted }}>Log out</button>
+                  <button role="menuitem" onClick={handleLogout} className="dash-av-logout" style={{ color: t.textMuted }}>{tr("Log out")}</button>
                 </div>
               </div>
             )}
@@ -1372,7 +1375,7 @@ function DashboardInner({ initialData }) {
                     <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem) { setLeftOpen(false); setChatOpen(true); return; } setActive(item.id); setLeftOpen(false); }} className={"rail-it" + (isActive ? " on" : "") + (specialClr && !isActive ? " tint" : "") + (item.soon ? " soon" : "")} style={specialClr ? { "--ic": specialClr } : undefined}>
                       <span className="rail-ii">{I[item.id]}</span>
                       <span className="rail-il">{item.label}</span>
-                      {item.soon && <span className="text-[11px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>Soon</span>}
+                      {item.soon && <span className="text-[11px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>{tr("Soon")}</span>}
                       {processingCount > 0 && <span className="m rail-bd">{processingCount > 99 ? "99+" : processingCount}</span>}
                     </button>
                   </Fragment>
@@ -1420,7 +1423,7 @@ function DashboardInner({ initialData }) {
                 <div className="text-sm text-t-text-muted">{orderSummary.total === 0 ? "Place your first order in under a minute." : "Here's your dashboard at a glance."}</div>
               </div>
               <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-                <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">Balance</div>
+                <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">{tr("Balance")}</div>
                 <div className="m text-lg max-md:text-base font-semibold text-t-green">{money(user?.balance || 0, { round: "down" })}</div>
                 {user?.bonusCredit && <div className="text-[11px] mt-0.5 text-accent">{money(user.bonusCredit.amount / 100, { round: "down" })} bonus — expires in {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}
               </div>
@@ -1428,23 +1431,23 @@ function DashboardInner({ initialData }) {
             <div className="page-divider bg-t-card-border" />
           </div>}
           {isAudit && <div className="pb-3.5 max-md:pb-2">
-            <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Audit</div>
-            <div className="text-sm text-t-text-muted">Deep analytics and insights for your social accounts</div>
+            <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">{tr("Audit")}</div>
+            <div className="text-sm text-t-text-muted">{tr("Deep analytics and insights for your social accounts")}</div>
             <div className="page-divider bg-t-card-border" />
           </div>}
           {isCleanup && <div className="pb-3.5 max-md:pb-2">
-            <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Cleanup</div>
-            <div className="text-sm text-t-text-muted">Remove ghost followers, non-followers, and inactive accounts</div>
+            <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">{tr("Cleanup")}</div>
+            <div className="text-sm text-t-text-muted">{tr("Remove ghost followers, non-followers, and inactive accounts")}</div>
             <div className="page-divider bg-t-card-border" />
           </div>}
           {isLab && <div className="pb-2 desktop:pb-3.5">
-            <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Reseller HQ</div>
-            <div className="text-sm desktop:text-[15px] text-t-text-muted">Your key, your prices, and the API for your panel</div>
+            <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">{tr("Reseller HQ")}</div>
+            <div className="text-sm desktop:text-[15px] text-t-text-muted">{tr("Your key, your prices, and the API for your panel")}</div>
             <div className="page-divider bg-t-card-border" />
           </div>}
           {isTasks && <div className="pb-2 desktop:pb-3.5">
-            <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Tasks</div>
-            <div className="text-sm desktop:text-[15px] text-t-text-muted">Do tasks, earn free credit</div>
+            <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">{tr("Tasks")}</div>
+            <div className="text-sm desktop:text-[15px] text-t-text-muted">{tr("Do tasks, earn free credit")}</div>
             <div className="page-divider bg-t-card-border" />
           </div>}
 
@@ -1473,13 +1476,13 @@ function DashboardInner({ initialData }) {
           ) : isLeaderboard ? (
             <LeaderboardCard dark={dark} t={t} />
           ) : isAudit ? (
-            <div className="rr"><RailSec>What you'll get</RailSec><RailCard>{[["Follower quality score", "See how many real vs ghost followers you have"],["Engagement rate", "Your true engagement compared to your follower count"],["Best posting times", "When your audience is most active"],["Growth trends", "Track follower gains and losses over time"]].map(([title, desc]) => <RailRow key={title} title={title} sub={desc} />)}</RailCard></div>
+            <div className="rr"><RailSec>{tr("What you'll get")}</RailSec><RailCard>{[["Follower quality score", "See how many real vs ghost followers you have"],["Engagement rate", "Your true engagement compared to your follower count"],["Best posting times", "When your audience is most active"],["Growth trends", "Track follower gains and losses over time"]].map(([title, desc]) => <RailRow key={title} title={title} sub={desc} />)}</RailCard></div>
           ) : active === "catalogue" ? (
             <ResellerCatalogueSidebar dark={dark} t={t} />
           ) : isLab ? (
             <ResellerLabSidebar dark={dark} t={t} onNavigate={setActive} />
           ) : isCleanup ? (
-            <div className="rr"><RailSec>Cleanup tools</RailSec><RailCard>{[["Ghost followers", "Remove inactive accounts that never engage"],["Non-followers", "Unfollow people who don't follow you back"],["Mass unfollow", "Bulk unfollow with filters and safety limits"],["Inactive accounts", "Detect and remove accounts that haven't posted in months"]].map(([title, desc]) => <RailRow key={title} title={title} sub={desc} />)}</RailCard></div>
+            <div className="rr"><RailSec>{tr("Cleanup tools")}</RailSec><RailCard>{[["Ghost followers", "Remove inactive accounts that never engage"],["Non-followers", "Unfollow people who don't follow you back"],["Mass unfollow", "Bulk unfollow with filters and safety limits"],["Inactive accounts", "Detect and remove accounts that haven't posted in months"]].map(([title, desc]) => <RailRow key={title} title={title} sub={desc} />)}</RailCard></div>
           ) : (
             <RightSidebar activeOrders={activeOrders} orderSummary={orderSummary} user={user} dark={dark} t={t} setActive={setActive} />
           )}
@@ -1493,19 +1496,19 @@ function DashboardInner({ initialData }) {
       {/* The install moment: over the dock, once ever, on a live second completion */}
       {installMoment && <>
         <div className="fixed inset-0 z-[92] desktop:hidden" style={{ background: "rgba(0,0,0,.28)" }} onClick={closeInstallMoment} />
-        <div role="dialog" aria-modal="true" aria-label="Add Nitro to your home screen" className="dash-install-moment fixed left-3 right-3 z-[93] rounded-[18px] p-3.5 desktop:hidden" style={{ bottom: "calc(88px + env(safe-area-inset-bottom))", background: dark ? "#1d1430" : "#fff", border: `1px solid ${dark ? "rgba(232,180,196,.16)" : "rgba(139,74,94,.14)"}`, boxShadow: dark ? "0 18px 50px rgba(0,0,0,.5)" : "0 18px 50px rgba(0,0,0,.24)" }}>
+        <div role="dialog" aria-modal="true" aria-label={tr("Add Nitro to your home screen")} className="dash-install-moment fixed left-3 right-3 z-[93] rounded-[18px] p-3.5 desktop:hidden" style={{ bottom: "calc(88px + env(safe-area-inset-bottom))", background: dark ? "#1d1430" : "#fff", border: `1px solid ${dark ? "rgba(232,180,196,.16)" : "rgba(139,74,94,.14)"}`, boxShadow: dark ? "0 18px 50px rgba(0,0,0,.5)" : "0 18px 50px rgba(0,0,0,.24)" }}>
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
               {/* The real lifetime count — "Two" only when it is actually two. */}
-              <div className="text-sm font-bold leading-snug text-t-text">{momentCompleted === 2 ? "Two" : Number(momentCompleted || 0).toLocaleString()} orders delivered.<br/>You&rsquo;re a regular now.</div>
+              <div className="text-sm font-bold leading-snug text-t-text">{momentCompleted === 2 ? "Two" : Number(momentCompleted || 0).toLocaleString()} orders delivered.<br/>{tr("You&rsquo;re a regular now.")}</div>
               <div className="text-xs leading-[1.5] mt-1 text-t-text-muted">{isIos ? "Keep Nitro one tap away for tracking the next one." : "Put Nitro on your home screen and track the next one in one tap. No app store, no download size."}</div>
             </div>
-            <button type="button" aria-label="Dismiss" onClick={closeInstallMoment} className="shrink-0 w-[26px] h-[26px] rounded-lg flex items-center justify-center border-none cursor-pointer text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>
+            <button type="button" aria-label={tr("Dismiss")} onClick={closeInstallMoment} className="shrink-0 w-[26px] h-[26px] rounded-lg flex items-center justify-center border-none cursor-pointer text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
           {iosSteps
-            ? <div className="mt-3 py-2.5 px-3 rounded-xl text-xs leading-[1.7] text-t-text" style={{ background: dark ? "rgba(201,127,146,.13)" : "rgba(201,127,146,.08)" }}>Tap <b>Share</b> <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c47d8e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline", verticalAlign: "-2px" }}><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> below, then <b>Add to Home Screen</b>.</div>
+            ? <div className="mt-3 py-2.5 px-3 rounded-xl text-xs leading-[1.7] text-t-text" style={{ background: dark ? "rgba(201,127,146,.13)" : "rgba(201,127,146,.08)" }}>{tr("Tap")} <b>{tr("Share")}</b> <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c47d8e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline", verticalAlign: "-2px" }}><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> {tr("below, then")} <b>{tr("Add to Home Screen")}</b>.</div>
             : <button type="button" onClick={momentInstall} className="w-full flex items-center justify-center gap-2 mt-3 py-3 rounded-xl text-[13.5px] font-extrabold border-none cursor-pointer text-white" style={{ background: "linear-gradient(135deg,#c97f92,#9b5266)", boxShadow: "0 6px 18px rgba(196,125,142,.35)" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Add to Home Screen
               </button>}
@@ -1513,7 +1516,7 @@ function DashboardInner({ initialData }) {
       </>}
       {moreOpen && <div className="dash-more-overlay" onClick={() => setMoreOpen(false)} />}
       {moreOpen && (
-        <div className="dash-more-sheet" role="dialog" aria-modal="true" aria-label="More" style={{ background: dark ? "#1a1329" : "#fff", borderTop: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+        <div className="dash-more-sheet" role="dialog" aria-modal="true" aria-label={tr("More")} style={{ background: dark ? "#1a1329" : "#fff", borderTop: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
           <div className="dash-more-grab" style={{ background: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.18)" }} />
 
           {/* Account glance: who you are, what you hold, one tap to top up */}
@@ -1527,13 +1530,13 @@ function DashboardInner({ initialData }) {
               <div className="m text-[15px] font-bold leading-tight text-t-text">{money(user?.balance || 0, { round: "down" })}</div>
               <div className="text-[10px] font-bold uppercase tracking-[1px] text-t-text-muted">wallet</div>
             </div>
-            <button type="button" aria-label="Top up wallet" onClick={() => { setActive("add-funds"); setMoreOpen(false); }} className="nitro-money-btn w-[30px] h-[30px] flex items-center justify-center shrink-0">
+            <button type="button" aria-label={tr("Top up wallet")} onClick={() => { setActive("add-funds"); setMoreOpen(false); }} className="nitro-money-btn w-[30px] h-[30px] flex items-center justify-center shrink-0">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
           </div>
 
           {/* The earners: tinted tiles that pitch themselves */}
-          <div className="rail-sec"><span>Earn</span></div>
+          <div className="rail-sec"><span>{tr("Earn")}</span></div>
           <div className="grid grid-cols-3 gap-2">
             {[
               { id: "referrals", label: "Referrals", hint: "invite friends, both earn", bg: dark ? "#12211a" : "#f0f6ef", brd: dark ? "#1e3a2b" : "#d5e6d3", chip: dark ? "#1a3325" : "#dcecd9", ic: dark ? "#6ee7b7" : "#2e7d4f" },
@@ -1598,7 +1601,7 @@ function DashboardInner({ initialData }) {
       )}
       {/* Bottom dock: a floating capsule with the five tabs, and the WhatsApp
           concierge at the end that expands into a one-line message. */}
-      <nav ref={bottomNavRef} aria-label="Primary" className={`dash-bottom-nav dash-dock ${dark ? "dark" : "light"}`} style={{ background: dark ? "#1a1329" : "#fff" }}>
+      <nav ref={bottomNavRef} aria-label={tr("Primary")} className={`dash-bottom-nav dash-dock ${dark ? "dark" : "light"}`} style={{ background: dark ? "#1a1329" : "#fff" }}>
         <span className="dash-dock-slide" aria-hidden="true" />
         {BOTTOM_TABS.map(tab => {
           const isMore = tab.id === "more";
@@ -1625,24 +1628,24 @@ function DashboardInner({ initialData }) {
       {/* ── The concierge: a float above the dock (bottom-right on a desktop) that opens the "we can order for you" panel.
           A sheet over the dock on a phone, a docked window on a desktop. Send hands off to WhatsApp with the message ready. ── */}
       {socialLinks.social_whatsapp_support && !chatOpen && !moreOpen && !leftOpen && (
-        <button type="button" className="dash-chat-fab" onClick={() => setChatOpen(true)} aria-label="We can order for you. Message us on WhatsApp"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></button>
+        <button type="button" className="dash-chat-fab" onClick={() => setChatOpen(true)} aria-label={tr("We can order for you. Message us on WhatsApp")}><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></button>
       )}
       {chatOpen && (
         <>
           <div className="dash-chat-back" onClick={() => setChatOpen(false)} />
-          <div className="dash-chat" role="dialog" aria-modal="true" aria-label="We can order for you" style={{ background: dark ? "#171126" : "#fff", borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)", color: t.text }}>
+          <div className="dash-chat" role="dialog" aria-modal="true" aria-label={tr("We can order for you")} style={{ background: dark ? "#171126" : "#fff", borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)", color: t.text }}>
             <div className="dash-chat-grab" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)" }} />
             <div className="dash-chat-hd">
               <span className="dash-chat-av"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></span>
-              <span className="dash-chat-t"><b>We can order for you</b><i style={{ color: t.textMuted }}>Nitro Support on WhatsApp · replies in minutes</i></span>
-              <button type="button" onClick={() => setChatOpen(false)} className="dash-chat-x" aria-label="Close" style={{ color: t.textMuted }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+              <span className="dash-chat-t"><b>{tr("We can order for you")}</b><i style={{ color: t.textMuted }}>{tr("Nitro Support on WhatsApp · replies in minutes")}</i></span>
+              <button type="button" onClick={() => setChatOpen(false)} className="dash-chat-x" aria-label={tr("Close")} style={{ color: t.textMuted }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
             </div>
-            <div className="dash-chat-bub" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)" }}>Not sure what to pick, or in a hurry? Paste your link and say what you want. We place the order on your account.</div>
+            <div className="dash-chat-bub" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)" }}>{tr("Not sure what to pick, or in a hurry? Paste your link and say what you want. We place the order on your account.")}</div>
             {active === "services" && noSelSvc && (
               <div className="dash-chat-ctx" style={{ borderColor: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)" }}>
                 <span className="dash-chat-ci" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textMuted }}>{I.services}</span>
-                <span className="dash-chat-ct"><b>{noSelSvc.name}{noSelTier?.tier ? ` · ${noSelTier.tier}` : ""}</b><i style={{ color: t.textMuted }}>the service you are looking at</i></span>
-                <button type="button" className="dash-chat-cb" onClick={() => chatQuick(`Hi! I want to order ${noSelSvc.name}${noSelTier?.tier ? ` (${noSelTier.tier})` : ""} on Nitro. Can you help me place it?`)}>Order this for me</button>
+                <span className="dash-chat-ct"><b>{noSelSvc.name}{noSelTier?.tier ? ` · ${noSelTier.tier}` : ""}</b><i style={{ color: t.textMuted }}>{tr("the service you are looking at")}</i></span>
+                <button type="button" className="dash-chat-cb" onClick={() => chatQuick(`Hi! I want to order ${noSelSvc.name}${noSelTier?.tier ? ` (${noSelTier.tier})` : ""} on Nitro. Can you help me place it?`)}>{tr("Order this for me")}</button>
               </div>
             )}
             <div className="dash-chat-quick">
@@ -1652,12 +1655,12 @@ function DashboardInner({ initialData }) {
             </div>
             <div className="dash-chat-field" style={{ borderColor: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.12)" }}>
               <input ref={dockInputRef} value={dockMsg} onChange={e => setDockMsg(e.target.value)} onKeyDown={e => { if (e.key === "Enter") sendDockMessage(); }}
-                aria-label="Your link, or what you want ordered" placeholder="Paste your link, we place the order" autoComplete="off" spellCheck={false} style={{ color: t.text }} />
-              <button type="button" onClick={sendDockMessage} className="dash-chat-send" aria-label="Send on WhatsApp">
+                aria-label={tr("Your link, or what you want ordered")} placeholder={tr("Paste your link, we place the order")} autoComplete="off" spellCheck={false} style={{ color: t.text }} />
+              <button type="button" onClick={sendDockMessage} className="dash-chat-send" aria-label={tr("Send on WhatsApp")}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
               </button>
             </div>
-            <div className="dash-chat-foot" style={{ color: t.textMuted }}>Opens WhatsApp with the message ready, with your account attached.</div>
+            <div className="dash-chat-foot" style={{ color: t.textMuted }}>{tr("Opens WhatsApp with the message ready, with your account attached.")}</div>
           </div>
         </>
       )}
@@ -1673,14 +1676,14 @@ function DashboardInner({ initialData }) {
               </div>
             </div>
             {phonePromptDone ? <>
-              <h2 className="text-lg font-semibold text-t-text text-center m-0 mb-2">Number saved</h2>
+              <h2 className="text-lg font-semibold text-t-text text-center m-0 mb-2">{tr("Number saved")}</h2>
               <p className="text-[13px] text-t-text-muted text-center m-0 leading-[1.6]">
-                We'll reach you on WhatsApp for order updates and support.
+                {tr("We'll reach you on WhatsApp for order updates and support.")}
               </p>
             </> : <>
-            <h2 className="text-lg font-semibold text-t-text text-center m-0 mb-2">Add your WhatsApp number</h2>
+            <h2 className="text-lg font-semibold text-t-text text-center m-0 mb-2">{tr("Add your WhatsApp number")}</h2>
             <p className="text-[13px] text-t-text-muted text-center m-0 mb-5 leading-[1.6]">
-              We need your WhatsApp number to send you order updates and support.
+              {tr("We need your WhatsApp number to send you order updates and support.")}
             </p>
             {phonePromptError && <div className="py-2 px-3 rounded-lg text-[13px] mb-3" style={{ background: dark ? "rgba(220,38,38,0.1)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.28)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626" }}>{phonePromptError}</div>}
             <div className="flex gap-2 mb-5">
@@ -1732,17 +1735,17 @@ function DashboardInner({ initialData }) {
             <div className="text-center mb-5">
               <div className="nitro-mark w-12 h-12 inline-flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${t.accent}, ${dark ? "#6b3a4a" : "#8b5e6b"})` }}><svg width="22" height="24" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></div>
             </div>
-            <h2 className="text-lg font-semibold text-t-text text-center m-0 mb-2">We've updated our Terms</h2>
+            <h2 className="text-lg font-semibold text-t-text text-center m-0 mb-2">{tr("We've updated our Terms")}</h2>
             <p className="text-[13px] text-t-text-muted text-center m-0 mb-5 leading-[1.6]">
-              Our Terms of Service and Privacy Policy have been updated. Please review and accept to continue using Nitro.
+              {tr("Our Terms of Service and Privacy Policy have been updated. Please review and accept to continue using Nitro.")}
             </p>
             <div className="flex gap-3 justify-center mb-5">
-              <a href="/terms" target="_blank" rel="noopener" className="text-[13px] text-accent no-underline font-medium">Terms of Service ↗</a>
-              <a href="/privacy" target="_blank" rel="noopener" className="text-[13px] text-accent no-underline font-medium">Privacy Policy ↗</a>
+              <a href="/terms" target="_blank" rel="noopener" className="text-[13px] text-accent no-underline font-medium">{tr("Terms of Service ↗")}</a>
+              <a href="/privacy" target="_blank" rel="noopener" className="text-[13px] text-accent no-underline font-medium">{tr("Privacy Policy ↗")}</a>
             </div>
             <label className="flex items-start gap-2.5 cursor-pointer mb-5 py-3 px-3.5 rounded-[10px]" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)" }}>
-              <input type="checkbox" checked={tosChecked} onChange={e => setTosChecked(e.target.checked)} aria-label="Agree to updated terms" className="mt-0.5" style={{ accentColor: t.accent }} />
-              <span className="text-[13px] text-t-text leading-normal">I have read and agree to the updated Terms of Service and Privacy Policy</span>
+              <input type="checkbox" checked={tosChecked} onChange={e => setTosChecked(e.target.checked)} aria-label={tr("Agree to updated terms")} className="mt-0.5" style={{ accentColor: t.accent }} />
+              <span className="text-[13px] text-t-text leading-normal">{tr("I have read and agree to the updated Terms of Service and Privacy Policy")}</span>
             </label>
             <button
               disabled={!tosChecked || tosAccepting}
