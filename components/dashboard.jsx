@@ -338,6 +338,11 @@ export default function Dashboard({ initialData }) {
 
 function DashboardInner({ initialData }) {
   const { dark, setDark, toggleTheme, t: baseT, themeMode, setThemeMode } = useTheme();
+  // Declared up here, not beside the other formatters further down: the
+  // notification memo builds its transaction lines with it around line 690, and
+  // a `const` below that point is still in its temporal dead zone when the memo
+  // runs. That shipped, and every dashboard render threw.
+  const money = useMoney();
   const applyThemeMode = (mode) => {
     setThemeMode(mode);
     try { localStorage.setItem("nitro-theme", mode); } catch {}
@@ -770,7 +775,6 @@ function DashboardInner({ initialData }) {
 
 
   /* Theme — provided by ThemeProvider */
-  const money = useMoney();
 
   /* Refresh dashboard data */
   const refreshDashboard = async () => {
