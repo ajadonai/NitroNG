@@ -24,7 +24,7 @@ const LocaleCtx = createContext(null);
 // site to be worth choosing. Empty today: the dictionaries exist but are not
 // filled in, and a half-English French page is worse than an English one.
 // Add a code here when its coverage is good — `npm run i18n:report` says.
-const AVAILABLE_LOCALES = new Set([]);
+const AVAILABLE_LOCALES = new Set(["pcm", "fr", "sw", "ar"]);
 
 /**
  * The switcher's list, derived from lib/i18n.js so there is one place a
@@ -122,7 +122,7 @@ export function LocaleProvider({ children }) {
 
   // English in, the chosen language out — or the same English back, which is
   // what makes a missing translation merely untranslated rather than broken.
-  const t = useMemo(() => makeTranslator(lang, messages), [lang, messages]);
+  const tr = useMemo(() => makeTranslator(lang, messages), [lang, messages]);
 
   const setLang = useCallback((code) => {
     if (!LANGUAGES.some(x => x.code === code && x.available)) return;
@@ -155,8 +155,8 @@ export function LocaleProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ currency, setCurrency, lang, setLang, t, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
-    [currency, setCurrency, lang, setLang, t, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates],
+    () => ({ currency, setCurrency, lang, setLang, tr, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
+    [currency, setCurrency, lang, setLang, tr, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates],
   );
 
   return <LocaleCtx.Provider value={value}>{children}</LocaleCtx.Provider>;
@@ -169,15 +169,15 @@ export function useLocale() {
 /**
  * The translator, bound to the chosen language.
  *
- *     const t = useT();
- *     <h2>{t("Fund your wallet")}</h2>
+ *     const tr = useT();
+ *     <h2>{tr("Fund your wallet")}</h2>
  *
  * Outside the provider — admin, tests, anything server-rendered — it returns
  * the English unchanged, so it is always safe to call and never needs guarding.
  */
 export function useT() {
   const l = useContext(LocaleCtx);
-  return l?.t ?? ((english) => english);
+  return l?.tr ?? ((english) => english);
 }
 
 /** A money formatter bound to the current display currency. Outside the

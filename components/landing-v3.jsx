@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
 import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
-import { SWITCHER_LIVE } from "./locale";
+import { SWITCHER_LIVE, useT } from "./locale";
 import { PhoneField } from "./phone-field";
 import { useMoney } from "./locale";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
@@ -121,6 +121,8 @@ function CountUp({value,duration=1500}){const[display,setDisplay]=useState("0");
 
 function LandingInner({ initialAuthQuery }){
   const money = useMoney();
+  // Named tr, not t: t is the theme object in this file (t.accent, t.cardBg).
+  const tr = useT();
   const { dark, toggleTheme, t: baseT } = useTheme();
 
   const initialVia=initialAuthQuery?.via||"";
@@ -257,7 +259,7 @@ function LandingInner({ initialAuthQuery }){
               because Tailwind v4 positions with the `translate` property and the
               compiler folds an override of it away. */}
           <div className="nav-centre max-desktop:hidden flex flex-1 min-w-0 justify-center mx-3 gap-1 items-center min-[1560px]:absolute min-[1560px]:left-1/2 min-[1560px]:top-1/2 min-[1560px]:-translate-x-1/2 min-[1560px]:-translate-y-1/2 min-[1560px]:flex-none min-[1560px]:mx-0">
-              {[["Tiers","tiers"],["Why curated","curated"],["How it works","how"],["Reviews","reviews"]].map(([l,id])=><button key={l} onClick={()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"})} className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{color:"rgba(255,255,255,.75)"}}>{l}</button>)}<a href="/resellers" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:"rgba(255,255,255,.75)"}}>Resellers</a><a href="/blog" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:"rgba(255,255,255,.75)"}}>Blog</a>
+              {[[tr("Tiers"),"tiers"],[tr("Why curated"),"curated"],[tr("How it works"),"how"],[tr("Reviews"),"reviews"]].map(([l,id])=><button key={l} onClick={()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"})} className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{color:"rgba(255,255,255,.75)"}}>{l}</button>)}<a href="/resellers" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:"rgba(255,255,255,.75)"}}>{tr("Resellers")}</a><a href="/blog" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:"rgba(255,255,255,.75)"}}>{tr("Blog")}</a>
           </div>
           <div className="nav-right flex items-center gap-2.5">
             {/* Local only until the currency switch is finished — see SWITCHER_LIVE
@@ -265,8 +267,8 @@ function LandingInner({ initialAuthQuery }){
             {SWITCHER_LIVE && <CurrencySwitcher />}
             {SWITCHER_LIVE && <LanguageSwitcher />}
             <ThemeToggle dark={dark} onToggle={toggleTheme} />
-            <button onClick={()=>setModal("login")} className="nav-login-btn py-[7px] px-5 text-sm font-semibold cursor-pointer border-none">Log in</button>
-            <button type="button" onClick={()=>setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="nav-burger desktop:hidden"><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /></button><button onClick={()=>setModal("signup")} className="nav-signup-btn max-desktop:!hidden py-[7px] px-5 border-none text-sm font-semibold cursor-pointer" style={{background:"#fff",color:"#1a1a1a"}}>Get started</button>
+            <button onClick={()=>setModal("login")} className="nav-login-btn py-[7px] px-5 text-sm font-semibold cursor-pointer border-none">{tr("Log in")}</button>
+            <button type="button" onClick={()=>setNavOpen(true)} aria-label={tr("Open menu")} aria-expanded={navOpen} className="nav-burger desktop:hidden"><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /></button><button onClick={()=>setModal("signup")} className="nav-signup-btn max-desktop:!hidden py-[7px] px-5 border-none text-sm font-semibold cursor-pointer" style={{background:"#fff",color:"#1a1a1a"}}>{tr("Get started")}</button>
           </div>
       </nav>
       <PublicNavSheet open={navOpen} onClose={()=>setNavOpen(false)} dark={dark} links={SHEET_LINKS} liveCount={siteStats.processing} onLogin={()=>{setNavOpen(false);setModal("login")}} onSignup={()=>{setNavOpen(false);setModal("signup")}} />
@@ -294,7 +296,7 @@ function LandingInner({ initialAuthQuery }){
           <div className={`lv3-grid grid grid-cols-[1.1fr_96px_.9fr] max-desktop:grid-cols-1 gap-x-[18px] max-desktop:gap-y-[30px] items-center pt-14 pb-12 max-desktop:pt-6 max-desktop:pb-4 max-md:pb-2 px-[60px] max-desktop:px-10 max-md:px-5 max-w-[1200px] mx-auto w-full relative z-[1] flex-1 max-desktop:text-center max-desktop:min-h-0 ${siteAlerts.length > 0 ? "max-md:pt-[50px]" : "max-md:pt-2"}`}>
             {/* LEFT */}
             <div className="text-left relative z-[1] max-desktop:text-center max-desktop:flex max-desktop:flex-col max-desktop:items-center">
-              <div className="fu text-[11px] font-bold tracking-[3px] uppercase mb-[22px] max-md:mb-3.5" style={{color:dark?t.accent:"rgba(255,255,255,.72)"}}>Nigeria's social growth engine</div>
+              <div className="fu text-[11px] font-bold tracking-[3px] uppercase mb-[22px] max-md:mb-3.5" style={{color:dark?t.accent:"rgba(255,255,255,.72)"}}>{tr("Nigeria's social growth engine")}</div>
               <h1 className="fu fd1 text-[clamp(40px,5vw,66px)] max-md:text-[clamp(34px,9vw,44px)] font-semibold leading-[1.02] -tracking-[2.2px] max-md:-tracking-[1.2px]" style={{color:t.heroText}}>
                 Your <span className="lv3-roller" aria-live="polite">{HERO_WORDS.map((w,i)=><span key={w} className={i===word?"on":i===((word+HERO_WORDS.length-1)%HERO_WORDS.length)?"out":""} style={{color:dark?t.accent:"#fff"}} aria-hidden={i!==word}>{w}</span>)}</span><br/>deserves a bigger audience.
               </h1>
@@ -303,7 +305,7 @@ function LandingInner({ initialAuthQuery }){
               {/* CTAs — desktop/tablet */}
               <div className="fu fd3 flex gap-[18px] items-center flex-wrap max-desktop:!hidden">
                 <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hero-cta-btn inline-flex items-center gap-2 py-[15px] px-[26px] rounded-xl text-[15px] font-bold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(0,0,0,.22)]" style={{background:dark?"linear-gradient(135deg,#c47d8e,#8b5e6b)":"#fff",color:dark?"#fff":"#1a1a1a"}}>🎁 Start with {money(MAX_BONUS_NAIRA, { round: "down" })} free credit →</a>
-                <a href="/pricing" onClick={e=>{e.preventDefault();document.getElementById("tiers")?.scrollIntoView({behavior:"smooth",block:"start"})}} className="text-[15px] font-semibold no-underline pb-0.5" style={{color:dark?t.text:"#fff",borderBottom:`1.5px solid ${dark?"rgba(255,255,255,.2)":"rgba(255,255,255,.5)"}`}}>See the tiers</a>
+                <a href="/pricing" onClick={e=>{e.preventDefault();document.getElementById("tiers")?.scrollIntoView({behavior:"smooth",block:"start"})}} className="text-[15px] font-semibold no-underline pb-0.5" style={{color:dark?t.text:"#fff",borderBottom:`1.5px solid ${dark?"rgba(255,255,255,.2)":"rgba(255,255,255,.5)"}`}}>{tr("See the tiers")}</a>
               </div>
 
               {/* Mobile hero card: the live format (strip, facts, gift, CTA, log in, trust) */}
@@ -314,18 +316,18 @@ function LandingInner({ initialAuthQuery }){
                     {[[siteStats.orders||"0","Orders"],[siteStats.users||"0","Accounts"],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Delivery"]]:[])].map(([num,label])=>
                       <div key={label} className="hc-f"><b><CountUp value={num}/></b><span>{label}</span></div>
                     )}
-                    {siteStats.processing!=null&&<div className="hc-f live"><b><CountUp value={siteStats.processing}/></b><span><i/>Delivering now</span></div>}
+                    {siteStats.processing!=null&&<div className="hc-f live"><b><CountUp value={siteStats.processing}/></b><span><i/>{tr("Delivering now")}</span></div>}
                   </div>
                   <div className="hc-gift">
                     <span className="hc-gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></span>
                     <span><b>Up to {money(MAX_BONUS_NAIRA, { round: "down" })} in free promo credit</b><i>to give your next post a real push</i></span>
                   </div>
-                  <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hc-cta hero-cta-pulse no-underline">Create free account →</a>
-                  <div className="hc-login">Already have an account? <a href="/?login=1" onClick={e=>{e.preventDefault();setModal("login")}}>Log in</a></div>
+                  <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hc-cta hero-cta-pulse no-underline">{tr("Create free account")} →</a>
+                  <div className="hc-login">{tr("Already have an account?")} <a href="/?login=1" onClick={e=>{e.preventDefault();setModal("login")}}>{tr("Log in")}</a></div>
                   <div className="hc-trust">
-                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Trusted by creators</span>
-                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Fast delivery</span>
-                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Human support</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>{tr("Trusted by creators")}</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>{tr("Fast delivery")}</span>
+                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>{tr("Human support")}</span>
                   </div>
                 </div>
               </div>
@@ -412,7 +414,7 @@ function LandingInner({ initialAuthQuery }){
         {/* Stats strip (desktop/tablet — the phone hero card already carries the stats) + platform marquee (all viewports) */}
         <div className="lv3-strip">
           <div className="max-md:hidden grid grid-cols-4 max-desktop:grid-cols-2" style={{background:dark?"#160f22":"#fff",borderBottom:`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`}}>
-            {[[siteStats.orders||"0","Orders placed",false],[siteStats.users||"0","Accounts created",false],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Delivery benchmark",false]]:[]),...(siteStats.processing!=null?[[siteStats.processing,"Delivering right now",true]]:[])].map(([v,l,g],i,arr)=>
+            {[[siteStats.orders||"0",tr("Orders placed"),false],[siteStats.users||"0",tr("Accounts created"),false],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,tr("Delivery benchmark"),false]]:[]),...(siteStats.processing!=null?[[siteStats.processing,tr("Delivering right now"),true]]:[])].map(([v,l,g],i,arr)=>
               <div key={l} className="lv3-stat py-7 px-12 max-desktop:py-[22px] max-desktop:px-8" style={{borderRight:i<arr.length-1?`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`:"none"}}>
                 <div className="m text-[30px] font-bold -tracking-[1px] leading-none" style={{color:g?(dark?"#34d399":"#059669"):t.text}}><CountUp value={v}/></div>
                 <div className="text-[10.5px] font-bold tracking-[2px] uppercase mt-2.5" style={{color:dark?"rgba(244,241,237,.36)":"rgba(28,27,25,.42)"}}>{l}</div>

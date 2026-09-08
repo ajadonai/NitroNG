@@ -5,9 +5,9 @@
  *   node scripts/i18n-report.mjs --missing fr  → the English still to translate
  *   node scripts/i18n-report.mjs --orphans     → translations whose English changed
  *
- * The source of truth is the code: every t("…") call in the app is a string
+ * The source of truth is the code: every tr("…") call in the app is a string
  * that needs translating, so nobody maintains a list by hand and a list cannot
- * fall out of date. Wrapping a new string in t() adds it to the report; editing
+ * fall out of date. Wrapping a new string in tr() adds it to the report; editing
  * the English orphans its old translations, which is the cost of keying on
  * sentences and the reason --orphans exists.
  */
@@ -18,10 +18,10 @@ import { LOCALE_CODES, SOURCE_LOCALE, coverage, orphans } from '../lib/i18n.js';
 const ROOT = process.cwd();
 const SEARCH = ['components', 'app'];
 
-// t("…") and t('…'), single-line, no interpolation — which is the only shape
+// tr("…") and tr('…'), single-line, no interpolation — the only shape the
 // the codebase is allowed to use. Template literals are deliberately not
 // matched: a sentence with a value inside it is split at the call site instead.
-const CALL = /\bt\(\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\s*\)/g;
+const CALL = /\btr\(\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\s*\)/g;
 
 function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -38,7 +38,7 @@ function sourceStrings() {
     const abs = path.join(ROOT, dir);
     if (!fs.existsSync(abs)) continue;
     for (const file of walk(abs)) {
-      // Comments out first: a t("…") in a doc example is not a string the
+      // Comments out first: a tr("…") in a doc example is not a string the
       // site shows, and left in it would ask for translations of the manual.
       const src = fs.readFileSync(file, 'utf8')
         .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -84,7 +84,7 @@ if (flag === '--missing') {
   }
   if (!any) console.log('No orphans: every translation still matches a live English string.');
 } else {
-  console.log(`${strings.length} string(s) wrapped in t() across the app\n`);
+  console.log(`${strings.length} string(s) wrapped in tr() across the app\n`);
   for (const code of targets) {
     const { translated, total, percent } = coverage(strings, dictionary(code));
     const bar = '█'.repeat(Math.round(percent / 5)).padEnd(20, '·');
