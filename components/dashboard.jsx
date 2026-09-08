@@ -150,6 +150,11 @@ const I = {
   a2hs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>,
 };
 
+// Rendered through tr(item.label) at the point of use, because these sit at
+// module scope where a hook cannot reach. The scanner reads code and cannot
+// follow a variable, so their dictionary entries are written by hand — and
+// these are the labels a customer reads on every single page, so a missing one
+// is the most visible gap there is.
 const NAV_ITEMS = [
   { id: "overview", label: "Home" },
   { id: "services", label: "New Order" },
@@ -1374,7 +1379,7 @@ function DashboardInner({ initialData }) {
                     {item.first && <div className="rail-sec"><span>{item.section}</span></div>}
                     <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem) { setLeftOpen(false); setChatOpen(true); return; } setActive(item.id); setLeftOpen(false); }} className={"rail-it" + (isActive ? " on" : "") + (specialClr && !isActive ? " tint" : "") + (item.soon ? " soon" : "")} style={specialClr ? { "--ic": specialClr } : undefined}>
                       <span className="rail-ii">{I[item.id]}</span>
-                      <span className="rail-il">{item.label}</span>
+                      <span className="rail-il">{tr(item.label)}</span>
                       {item.soon && <span className="text-[11px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>{tr("Soon")}</span>}
                       {processingCount > 0 && <span className="m rail-bd">{processingCount > 99 ? "99+" : processingCount}</span>}
                     </button>
@@ -1545,7 +1550,7 @@ function DashboardInner({ initialData }) {
             ].map(tl => (
               <button key={tl.id} type="button" onClick={() => { setActive(tl.id); setMoreOpen(false); }} className="flex flex-col items-start gap-1.5 p-[11px] pb-2.5 rounded-[14px] cursor-pointer text-left font-[inherit]" style={{ background: tl.bg, border: `1px solid ${tl.brd}` }}>
                 <span className="w-[30px] h-[30px] rounded-[9px] flex items-center justify-center" style={{ background: tl.chip, color: tl.ic }}>{I[tl.id]}</span>
-                <span className="text-[12.5px] font-bold text-t-text">{tl.label}</span>
+                <span className="text-[12.5px] font-bold text-t-text">{tr(tl.label)}</span>
                 <span className="text-[10.5px] leading-[1.35] text-t-text-muted">{tl.hint}</span>
               </button>
             ))}
@@ -1581,7 +1586,7 @@ function DashboardInner({ initialData }) {
               return (
                 <button key={item.id} type="button" onClick={go} className="flex items-center gap-[11px] w-full py-2.5 px-1 rounded-xl cursor-pointer bg-transparent border-none text-left font-[inherit]">
                   <span className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: chipBg, color: chipIc }}>{I[item.id]}</span>
-                  <span className="text-[13.5px] font-semibold flex-1" style={item.out ? { color: dark ? "#fca5a5" : "#dc2626" } : undefined}>{!item.out ? <span className="text-t-text">{item.label}</span> : item.label}</span>
+                  <span className="text-[13.5px] font-semibold flex-1" style={item.out ? { color: dark ? "#fca5a5" : "#dc2626" } : undefined}>{!item.out ? <span className="text-t-text">{tr(item.label)}</span> : tr(item.label)}</span>
                   {item.badge > 0 && <span className="text-[9.5px] font-extrabold uppercase tracking-[.5px] py-[2.5px] px-[7px] rounded-full text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.14)" }}>{item.badge > 9 ? "9+" : item.badge} new</span>}
                   {!item.out && chev}
                 </button>
@@ -1619,7 +1624,7 @@ function DashboardInner({ initialData }) {
               }
             }} className={`dash-bottom-tab${(!moreOpen && active === tab.id) || (isMore && moreOpen) ? " active" : ""}${tab.primary ? " primary" : ""}`}>
               <span className="dash-bottom-icon">{isMore ? MoreIcon : tab.primary ? OrderIcon : I[tab.id]}</span>
-              <span className="dash-bottom-label">{tab.label}</span>
+              <span className="dash-bottom-label">{tr(tab.label)}</span>
             </button>
           );
         })}
