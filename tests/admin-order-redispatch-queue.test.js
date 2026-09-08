@@ -92,7 +92,9 @@ vi.mock('@/lib/meta-capi', () => ({
   enqueueMetaEvent: (...args) => mocks.enqueueMetaEvent(...args),
   scheduleQueuedMetaEventDelivery: (...args) => mocks.scheduleQueuedMetaEventDelivery(...args),
 }));
-vi.mock('@/lib/telegram', () => ({ tgRefundAlert: vi.fn() }));
+vi.mock('@/lib/telegram', () => ({
+  tgFlush: vi.fn(() => Promise.resolve([])),
+  tgRefundAlert: vi.fn() }));
 vi.mock('@/lib/nitro-rewards', () => ({
   reverseOrderPoints: vi.fn(),
   computeRefundSplit: charge => ({ walletRefund: charge, pointsRestore: 0 }),

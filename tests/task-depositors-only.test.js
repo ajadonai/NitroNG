@@ -12,7 +12,9 @@ const prisma = {
 };
 vi.mock('@/lib/prisma', () => ({ default: prisma }));
 vi.mock('@/lib/auth', () => ({ getCurrentUser: vi.fn().mockResolvedValue({ id: 'u1', name: 'A', email: 'a@b.c' }) }));
-vi.mock('@/lib/telegram', () => ({ tgTaskSubmission: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/telegram', () => ({
+  tgFlush: vi.fn(() => Promise.resolve([])),
+  tgTaskSubmission: vi.fn().mockResolvedValue(undefined) }));
 
 const { POST } = await import('@/app/api/tasks/route');
 const submit = () => POST(new Request('http://localhost/api/tasks', {

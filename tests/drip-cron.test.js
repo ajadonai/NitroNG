@@ -19,7 +19,9 @@ const mockPrisma = {
 vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 vi.mock('@/lib/logger', () => ({ log: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }));
 vi.mock('@/lib/smm', () => ({ placeOrder: vi.fn(), checkOrder: vi.fn(), checkOrders: vi.fn() }));
-vi.mock('@/lib/telegram', () => ({ tgDripTimeout: vi.fn() }));
+vi.mock('@/lib/telegram', () => ({
+  tgFlush: vi.fn(() => Promise.resolve([])),
+  tgDripTimeout: vi.fn() }));
 vi.mock('@/lib/drip-feed', async () => {
   const actual = await vi.importActual('@/lib/drip-feed');
   return { ...actual, getDripConfig: () => ({ intervalHours: 2 }) };

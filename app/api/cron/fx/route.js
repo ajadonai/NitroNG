@@ -2,7 +2,7 @@ export const maxDuration = 60;
 
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
-import { tgFxUpdate } from '@/lib/telegram';
+import { tgFxUpdate, tgFlush } from '@/lib/telegram';
 import { getApplicationUrl } from '@/lib/env';
 
 const API_URL = 'https://open.er-api.com/v6/latest/USD';
@@ -56,6 +56,7 @@ export async function GET(req) {
     const drift = Math.abs(roundedMarket - currentMarket);
 
     if (drift < threshold) {
+      await tgFlush();
       return Response.json({ success: true, skipped: true, reason: `Market moved ₦${drift} (below ₦${threshold} threshold)`, rate: currentRate, market: roundedMarket, buffer });
     }
 
@@ -93,9 +94,11 @@ export async function GET(req) {
 
     tgFxUpdate(currentRate, newRate, roundedMarket, buffer);
     log.info('FX', `Rate updated: ${currentRate} → ${newRate} (market ${Math.round(marketRate)} + ${buffer})`);
+    await tgFlush();
     return Response.json({ success: true, previous: currentRate, rate: newRate, market: Math.round(marketRate), buffer, repriceResult });
   } catch (err) {
     log.error('FX', err.message);
+    await tgFlush();
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

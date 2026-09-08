@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { STAFF_NAMES } from '@/lib/telegram';
+import { STAFF_NAMES, tgFlush } from '@/lib/telegram';
 import { sendOutreach, OUTREACH_TOPICS } from '@/lib/telegram';
 import {
   message, block, row, outcomeRows, touchRows, staffRows, naira,
@@ -19,6 +19,7 @@ export async function GET(req) {
   const authHeader = req.headers.get('authorization');
   const secret = process.env.CRON_SECRET;
   if (!secret || (token !== secret && authHeader !== `Bearer ${secret}`)) {
+    await tgFlush();
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   if (await isOutreachPaused()) return Response.json({ ok: true, paused: true });
@@ -29,6 +30,7 @@ export async function GET(req) {
     const now = new Date();
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
     if (tomorrow.getDate() !== 1) {
+      await tgFlush();
       return Response.json({ ok: true, skipped: 'not last day of month' });
     }
   }
@@ -53,6 +55,7 @@ export async function GET(req) {
       + `Nothing worked this ${isMonthly ? 'month' : 'week'}.`,
       OUTREACH_TOPICS.summary,
     );
+    await tgFlush();
     return Response.json({ ok: true, contacts: 0, period });
   }
 
@@ -203,6 +206,8 @@ export async function GET(req) {
   );
 
   await sendOutreach(text, OUTREACH_TOPICS.summary);
+
+  await tgFlush();
 
   return Response.json({
     ok: true,
