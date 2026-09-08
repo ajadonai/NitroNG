@@ -1,4 +1,6 @@
 'use client';
+import { useMoney } from "./locale";
+import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { BONUS_PRESETS } from "../lib/welcome-bonus";
 
@@ -31,6 +33,7 @@ function waitForEl(selector, cb, onTimeout, maxWait = 3000) {
 }
 
 export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, setQty, user, onTopUp }) {
+  const money = useMoney();
   const eligible = user?.welcomeBonusEligible;
   const saved = (() => {
     try { const s = localStorage.getItem("nitro-order-tour-progress"); return s ? JSON.parse(s) : null; } catch { return null; }
@@ -280,7 +283,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
           {eligible && (
             <div className="flex items-center gap-2 rounded-lg py-2 px-3 mb-3" style={{ background: greenBg, border: `1px solid ${greenBorder}` }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
-              <span className="text-[11px] font-semibold" style={{ color: green }}>Up to ₦1,500 free on your first deposit</span>
+              <span className="text-[11px] font-semibold" style={{ color: green }}>Up to {money(MAX_BONUS_NAIRA, { round: "down" })} free on your first deposit</span>
             </div>
           )}
           <div className="flex flex-col gap-2.5">
@@ -348,8 +351,8 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
                 background: i === 1 ? (dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)"),
                 border: `1px solid ${i === 1 ? greenBorder : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)")}`,
               }}>
-                <div className="text-[13px] font-bold" style={{ color: i === 1 ? green : text }}>₦{p.amount.toLocaleString()}</div>
-                <div className="text-[11px] font-semibold mt-0.5" style={{ color: i === 1 ? green : sub }}>+₦{p.bonus.toLocaleString()}</div>
+                <div className="text-[13px] font-bold" style={{ color: i === 1 ? green : text }}>{money(p.amount)}</div>
+                <div className="text-[11px] font-semibold mt-0.5" style={{ color: i === 1 ? green : sub }}>+{money(p.bonus, { round: "down" })}</div>
               </div>
             ))}
           </div>

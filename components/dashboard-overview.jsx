@@ -66,7 +66,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
   const lowBal = balance < 500;
   const neverPaid = !!user?.welcomeBonusEligible;
   const primaryAction = neverPaid
-    ? { label: `Get up to ${money(MAX_BONUS_NAIRA)} free on your first top-up`, sub: "One time, for new accounts", target: "add-funds", gift: true }
+    ? { label: `Get up to ${money(MAX_BONUS_NAIRA, { round: "down" })} free on your first top-up`, sub: "One time, for new accounts", target: "add-funds", gift: true }
     : isNew
     ? { label: "Place your first order", sub: "Pick a platform and start growing today", target: "services" }
     : lowBal
@@ -286,7 +286,7 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
       <RailCard>
         <RailFact label="Your code" value={user?.refCode || "—"} color="var(--t-accent)" />
         <RailFact label="Referrals" value={user?.refs || 0} />
-        <RailFact label="Earned" value={money(user?.earnings || 0)} />
+        <RailFact label="Earned" value={money(user?.earnings || 0, { round: "down" })} />
       </RailCard>
       <RailBtn onClick={() => setActive("referrals")}>Invite friends</RailBtn>
     </div>

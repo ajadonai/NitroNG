@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
-import { CURRENCIES, BASE_CURRENCY, isActive, formatDisplayPrice, formatMoney } from "../lib/currency";
+import { CURRENCIES, BASE_CURRENCY, isActive, formatDisplayPrice, formatMoney, convertFromNaira, convertToNaira } from "../lib/currency";
 
 /**
  * Currency and language, the way theme already works: a preference in
@@ -100,9 +100,20 @@ export function LocaleProvider({ children }) {
     [currency, fx],
   );
 
+  // The two directions a deposit field needs: naira → what to show in the box,
+  // and back again for what the customer typed. Both null when there is no rate.
+  const toDisplay = useCallback(
+    (naira) => convertFromNaira(naira, { code: currency, depositRate: fx.depositRate, usdRates: fx.usdRates }),
+    [currency, fx],
+  );
+  const toNaira = useCallback(
+    (amount) => convertToNaira(amount, { code: currency, depositRate: fx.depositRate, usdRates: fx.usdRates }),
+    [currency, fx],
+  );
+
   const value = useMemo(
-    () => ({ currency, setCurrency, lang, setLang, fx, fxPending, fmt, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
-    [currency, setCurrency, lang, setLang, fx, fxPending, fmt, ensureRates],
+    () => ({ currency, setCurrency, lang, setLang, fx, fxPending, fmt, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
+    [currency, setCurrency, lang, setLang, fx, fxPending, fmt, toDisplay, toNaira, ensureRates],
   );
 
   return <LocaleCtx.Provider value={value}>{children}</LocaleCtx.Provider>;

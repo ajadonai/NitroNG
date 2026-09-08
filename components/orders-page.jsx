@@ -461,7 +461,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
           </>
         )}
         {(o.status === "Completed" || o.status === "Cancelled") && !o.offerDisabled && (
-          <button onClick={async () => { const ok = await confirm({ title: "Reorder", message: `Reorder ${o.service}? ₦${o.charge?.toLocaleString()} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)" }}>{actionLoading === o.id ? <Spinner size={14} color={t.accent} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}Reorder</button>
+          <button onClick={async () => { const ok = await confirm({ title: "Reorder", message: `Reorder ${o.service}? ${money(o.charge || 0)} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)" }}>{actionLoading === o.id ? <Spinner size={14} color={t.accent} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}Reorder</button>
         )}
         {o.refillRequestedAt && refillEligible(o) && (
           <span className="m flex items-center gap-1.5 text-[11px] font-semibold rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.06)", color: dark ? "#fcd34d" : "#d97706" }}>
@@ -695,7 +695,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
         await fetchOrders();
         onRefresh?.();
       } else if (action === "cancel") {
-        toast.success("Order cancelled", data.refunded ? `₦${data.refunded.toLocaleString()} refunded to wallet` : "Cancelled successfully");
+        toast.success("Order cancelled", data.refunded ? `${money(data.refunded, { round: "down" })} refunded to wallet` : "Cancelled successfully");
         await fetchOrders();
         onRefresh?.();
       } else if (action === "reorder") {

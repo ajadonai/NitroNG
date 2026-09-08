@@ -1,7 +1,7 @@
 'use client';
 import { TRAFFIC_COUNTRIES, TRAFFIC_CONTINENTS } from '@/lib/traffic-targets';
 import { useEffect, useState } from "react";
-import { BONUS_PRESETS, bonusForNaira } from "../lib/welcome-bonus";
+import { BONUS_PRESETS, MAX_BONUS_NAIRA, bonusForNaira } from "../lib/welcome-bonus";
 import { calculateOrderPrice, formatOrderQuantity, getDripSchedule, getLinkPlaceholder, LINK_EXAMPLES, LINK_HINTS, MULTIDAY_THRESHOLD, validateOrderLink } from "../lib/order-form-core";
 import NitroLoader from "./nitro-loader";
 import { useMoney } from "./locale";
@@ -359,7 +359,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-semibold" style={{ color: t.text }}>Use Nitro Points</div>
-                <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{pointsBalance.toLocaleString()} pts available · saves ₦{Math.min(pointsBalance, priceBeforePoints).toLocaleString()}</div>
+                <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{pointsBalance.toLocaleString()} pts available · saves {money(Math.min(pointsBalance, priceBeforePoints), { round: "down" })}</div>
               </div>
             </div>
             )}
@@ -372,7 +372,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           {short && welcomeBonusEligible && (
             <div className="rounded-xl p-3.5" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.12)"}` }}>
               <div className="text-[13px] font-semibold mb-1" style={{ color: t.text }}>Almost there — add funds to place this order</div>
-              <div className="text-[11px] mb-2.5" style={{ color: t.textMuted }}>Your first deposit gets up to ₦1,500 free to spend.</div>
+              <div className="text-[11px] mb-2.5" style={{ color: t.textMuted }}>Your first deposit gets up to {money(MAX_BONUS_NAIRA, { round: "down" })} free to spend.</div>
               {(() => {
                 const needed = price - balance;
                 const tier = BONUS_PRESETS.find(p => p.amount >= needed) || BONUS_PRESETS[BONUS_PRESETS.length - 1];
@@ -380,7 +380,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
                 return (
                   <div className="inline-flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg mb-3 text-[11px] font-semibold" style={{ background: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.07)", color: dark ? "#6ee7b7" : "#059669" }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-                    Deposit ₦{tier.amount.toLocaleString()} → ₦{(tier.amount + bonus).toLocaleString()} to spend
+                    Deposit {money(tier.amount)} → {money(tier.amount + bonus, { round: "down" })} to spend
                   </div>
                 );
               })()}
@@ -392,9 +392,9 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <div className="flex flex-col flex-1 min-w-0 leading-tight">
               <span className="text-[10.5px] uppercase tracking-[1px] font-semibold" style={{ color: t.textMuted }}>Total</span>
               <span className="text-[20px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{hasCut && <span className="text-[12px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>{money(basePrice)}</span>}{money(price)}</span>
-              {discountAmount > 0 && <span className="text-[11px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Nitro Status {loyaltyDiscount}% · −₦{discountAmount.toLocaleString()}</span>}
-              {cappedPromoDiscount > 0 && <span className="text-[11px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}>Discount {activePromotion.discountPercent}% · −₦{cappedPromoDiscount.toLocaleString()}</span>}
-              {pointsDiscount > 0 && <span className="text-[11px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>₦{pointsDiscount.toLocaleString()} in points applied</span>}
+              {discountAmount > 0 && <span className="text-[11px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Nitro Status {loyaltyDiscount}% · −{money(discountAmount, { round: "down" })}</span>}
+              {cappedPromoDiscount > 0 && <span className="text-[11px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}>Discount {activePromotion.discountPercent}% · −{money(cappedPromoDiscount, { round: "down" })}</span>}
+              {pointsDiscount > 0 && <span className="text-[11px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{money(pointsDiscount, { round: "down" })} in points applied</span>}
               {short && <span className="text-[11px]" style={{ color: dark ? "#fcd34d" : "#b45309" }}>Balance {money(balance, { round: "down" })} · short by {money(price - balance)}</span>}
             </div>
             {short
@@ -455,7 +455,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           <div className="rounded-[10px] p-2.5 mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", borderColor: t.cardBorder }}>
             <div className="flex justify-between items-baseline">
               <span className="text-[13px] font-semibold" style={{ color: t.textMuted }}>Total</span>
-              <span className="font-bold text-[18px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{price.toLocaleString()}</span>
+              <span className="font-bold text-[18px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{money(price)}</span>
             </div>
           </div>
           <button onClick={() => onSubmit(clampedDays)} data-tour="no-submit-btn" disabled={orderLoading} className="w-full py-2.5 dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />Placing...</span> : "Place Order"}</button>

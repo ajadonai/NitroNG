@@ -4,6 +4,8 @@ import { RailSec, RailCard, RailRow, RailStep, RailEmpty } from "./rail";
 import { useBodyScrollLock } from "./ui-primitives";
 import { useToast } from "./toast";
 import { fN, fHeld, fD } from "../lib/format";
+import { useMoney, useLocale } from "./locale";
+import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { PointsModal } from "./rewards";
@@ -89,7 +91,8 @@ function txStatusMeta(tx, dk) {
 function txAmountPrefix(tx) {
   return tx.amount > 0 && txIsCompleted(tx) ? "+" : "";
 }
-function fNShort(v) { const a = Math.abs(v); if (a >= 1e8) return `₦${(a/1e6).toFixed(1).replace(/\.0$/,"")}M`; if (a >= 1e6) return `₦${(a/1e6).toFixed(2).replace(/\.?0+$/,"")}M`; if (a >= 1e5) return `₦${(a/1e3).toFixed(1).replace(/\.0$/,"")}K`; return fN(v); }
+function fNShort(v, money) {
+  if (money) return money(v, { round: "down" }); const a = Math.abs(v); if (a >= 1e8) return `₦${(a/1e6).toFixed(1).replace(/\.0$/,"")}M`; if (a >= 1e6) return `₦${(a/1e6).toFixed(2).replace(/\.?0+$/,"")}M`; if (a >= 1e5) return `₦${(a/1e3).toFixed(1).replace(/\.0$/,"")}K`; return fN(v); }
 function txIcon(type) { return (TX_META[type] || TX_META.order).icon; }
 function txLabel(type) { return (TX_META[type] || { label: type }).label; }
 function txDesc(tx) {
@@ -146,6 +149,9 @@ export function recoverableFlutterwaveDeposits(txs, excludedReference = null) {
 }
 
 export default function AddFundsPage({ user, txs, transactionsTotal, walletSummary, dark, t, paymentStatus, setPaymentStatus, gatewayReturnReference, onPlaceOrder, onRefresh }) {
+  const money = useMoney();
+  const loc = useLocale();
+  const currency = loc?.currency ?? "NGN";
   const toast = useToast();
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("");
@@ -171,13 +177,13 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   useEffect(() => {
     if (isCreditedPaymentResult(paymentStatus) && !toastShown.current) {
       toastShown.current = true;
-      const amt = paymentStatus.amount ? `₦${Number(paymentStatus.amount).toLocaleString()} credited` : "Your wallet has been credited";
+      const amt = paymentStatus.amount ? `${money(Number(paymentStatus.amount), { round: "down" })} credited` : "Your wallet has been credited";
       toast.success("Payment successful!", amt);
       if (paymentStatus.welcomeBonus > 0) {
-        setTimeout(() => toast.success("🎁 Welcome bonus!", `₦${Number(paymentStatus.welcomeBonus).toLocaleString()} bonus added to your wallet`), 1500);
+        setTimeout(() => toast.success("🎁 Welcome bonus!", `${money(Number(paymentStatus.welcomeBonus), { round: "down" })} bonus added to your wallet`), 1500);
       }
       if (paymentStatus.topupBonus > 0) {
-        setTimeout(() => toast.success("🎉 Top-up bonus unlocked!", `₦${Number(paymentStatus.topupBonus).toLocaleString()} added to your wallet`), 1500);
+        setTimeout(() => toast.success("🎉 Top-up bonus unlocked!", `${money(Number(paymentStatus.topupBonus), { round: "down" })} added to your wallet`), 1500);
       }
       // A completed credit only needs to survive long enough to show once.
       // Consuming it prevents success from replaying when this page remounts.
@@ -260,7 +266,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           });
           const data = await res.json();
           if (isCreditedPaymentResult(data)) {
-            toast.success("Payment recovered!", `₦${Number(data.amount).toLocaleString()} has been credited to your wallet`);
+            toast.success("Payment recovered!", `${money(Number(data.amount), { round: "down" })} has been credited to your wallet`);
             onRefresh?.();
             return;
           }
@@ -272,6 +278,31 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   }, [txs, gatewayReturnReference]);
 
   const numAmount = Number(amount) || 0;
+
+  // The box speaks whatever currency the site is set to, but `amount` under it
+  // is always naira: the bonus tiers, the minimum and the charge itself are
+  // naira, and Flutterwave is hardcoded to NGN. So only the box and its presets
+  // are translated, and the naira that will actually leave the account is
+  // printed underneath. Needs a live rate — without one it stays naira rather
+  // than offering a box that cannot convert what is typed into it.
+  const fxReady = currency !== "NGN" && loc?.toNaira?.(1) !== null && loc?.toNaira?.(1) !== undefined;
+  const [typed, setTyped] = useState("");
+  const boxSymbol = fxReady ? (loc?.meta?.symbol ?? "₦") : "₦";
+  const boxValue = fxReady ? typed : amount;
+  const setBox = (raw) => {
+    if (!fxReady) { setAmount(raw); return; }
+    setTyped(raw);
+    const naira = raw === "" ? null : loc.toNaira(raw);
+    setAmount(naira === null ? "" : String(naira));
+  };
+  // A preset is a naira figure; the box shows its equivalent.
+  const setPreset = (naira) => {
+    setAmount(String(naira));
+    if (fxReady) {
+      const shown = loc.toDisplay(naira);
+      setTyped(shown === null ? "" : String(Number(shown.toFixed(2))));
+    }
+  };
   const valid = numAmount >= 1000;
   const balance = user?.balance || 0;
 
@@ -450,8 +481,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     <>
       {topup && (() => {
         const fillPct = Math.min(100, (topup.total / topup.max) * 100);
-        const fmtK = kobo => `₦${Math.round(kobo / 100000)}k`;
-        const fN2 = kobo => `₦${(kobo / 100).toLocaleString()}`;
+        const fmtK = kobo => money(kobo / 100);
+        const fN2 = kobo => money(kobo / 100, { round: "down" });
         const allDone = !topup.next;
         return (
           <div className="rounded-xl p-4 mb-4" style={{ background: dark ? 'rgba(196,125,142,.08)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.22)' : 'rgba(196,125,142,.18)'}` }}>
@@ -498,7 +529,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           </div>
           <div>
             <div className="text-[13px] font-semibold text-accent">Welcome bonus</div>
-            <div className="text-[13px] mt-0.5 text-t-text-soft leading-[1.45]">Your first deposit earns up to ₦1,500 free. The more you add, the bigger the bonus.</div>
+            <div className="text-[13px] mt-0.5 text-t-text-soft leading-[1.45]">Your first deposit earns up to {money(MAX_BONUS_NAIRA, { round: "down" })} free. The more you add, the bigger the bonus.</div>
           </div>
         </div>
       )}
@@ -511,9 +542,9 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               return (
                 <button key={p.amount} onClick={() => setAmount(String(p.amount))} aria-pressed={sel} className="relative flex flex-col items-start gap-[2px] pt-3 pb-2.5 px-2.5 rounded-xl text-left cursor-pointer font-[inherit] min-w-0" style={{ border: `1.5px solid ${sel ? t.accent : t.cardBorder}`, background: sel ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)") : (dark ? "rgba(255,255,255,.04)" : "#fff"), boxShadow: sel ? `0 0 0 2px ${t.accent}` : "none" }}>
                   {p.tag && <span className="absolute -top-2 left-2 text-[9.5px] font-bold uppercase tracking-[.04em] py-[2px] px-1.5 rounded-full text-white whitespace-nowrap" style={{ background: t.accent }}>{p.tag}</span>}
-                  <div className="m text-[15px] font-bold" style={{ color: t.text }}>₦{p.amount.toLocaleString()}</div>
-                  <div className="text-[12px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+₦{p.bonus.toLocaleString()} free</div>
-                  <div className="text-[10.5px] text-t-text-muted">₦{total.toLocaleString()} to spend</div>
+                  <div className="m text-[15px] font-bold" style={{ color: t.text }}>{money(p.amount)}</div>
+                  <div className="text-[12px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(p.bonus, { round: "down" })} free</div>
+                  <div className="text-[10.5px] text-t-text-muted">{money(total, { round: "down" })} to spend</div>
                 </button>
               );
             })}
@@ -525,16 +556,21 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           </div>
         </>
       )}
-      <div className="flex items-baseline justify-between mb-1.5"><span className="text-[12.5px] font-semibold text-t-text">Amount</span><span className="text-[11px] text-t-text-muted">min ₦1,000</span></div>
+      <div className="flex items-baseline justify-between mb-1.5"><span className="text-[12.5px] font-semibold text-t-text">Amount</span><span className="text-[11px] text-t-text-muted">min {money(1000)}</span></div>
       <div className="flex items-center gap-1 py-3.5 px-[18px] max-desktop:py-3 max-desktop:px-4 max-md:py-3 max-md:px-3.5 rounded-xl mb-4 max-md:mb-3" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${amount ? t.accent : t.cardBorder}` }}>
-        <span className="m text-[28px] max-desktop:text-[22px] max-md:text-xl font-semibold" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.4)" }}>₦</span>
-        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className="m border-none text-[28px] max-desktop:text-[28px] max-md:text-2xl font-semibold w-full outline-none bg-transparent placeholder:opacity-[.12] text-t-text" />
+        <span className="m text-[28px] max-desktop:text-[22px] max-md:text-xl font-semibold" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.4)" }}>{boxSymbol}</span>
+        <input type="number" value={boxValue} onChange={e => setBox(e.target.value)} placeholder="0" className="m border-none text-[28px] max-desktop:text-[28px] max-md:text-2xl font-semibold w-full outline-none bg-transparent placeholder:opacity-[.12] text-t-text" />
       </div>
+      {/* The charge is naira whatever the box says, so the naira is never
+          hidden — it is the figure the bank statement will show. */}
+      {fxReady && numAmount > 0 && (
+        <div className="text-[11px] -mt-2 mb-3 text-t-text-muted">You will be charged {fN(numAmount)}</div>
+      )}
       {!welcomeEligible && (
         <div className="grid grid-cols-3 gap-2 max-md:gap-1.5 mb-3">
           {PRESETS.map(p => (
-            <button key={p} onClick={() => setAmount(String(p))} className="m py-[13px] max-desktop:py-[11px] max-md:py-2.5 rounded-[10px] text-base max-desktop:text-[15px] max-md:text-sm font-semibold text-center cursor-pointer transition-[border-color,background-color,color,transform] duration-150 hover:translate-y-[-1px]" style={{ border: `1px solid ${numAmount === p ? t.accent : t.cardBorder}`, background: numAmount === p ? (dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)") : "transparent", color: numAmount === p ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.45)") }}>
-              ₦{p >= 1000 ? `${p / 1000}K` : p}
+            <button key={p} onClick={() => setPreset(p)} className="m py-[13px] max-desktop:py-[11px] max-md:py-2.5 rounded-[10px] text-base max-desktop:text-[15px] max-md:text-sm font-semibold text-center cursor-pointer transition-[border-color,background-color,color,transform] duration-150 hover:translate-y-[-1px]" style={{ border: `1px solid ${numAmount === p ? t.accent : t.cardBorder}`, background: numAmount === p ? (dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)") : "transparent", color: numAmount === p ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.45)") }}>
+              {fxReady ? money(p) : `₦${p >= 1000 ? `${p / 1000}K` : p}`}
             </button>
           ))}
         </div>
@@ -546,7 +582,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.08)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? '#6ee7b7' : '#059669'} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
             </div>
-            <span className="text-[13px] font-semibold" style={{ color: dark ? '#6ee7b7' : '#059669' }}>+₦{wb.toLocaleString()} welcome bonus will be added</span>
+            <span className="text-[13px] font-semibold" style={{ color: dark ? '#6ee7b7' : '#059669' }}>+{money(wb, { round: "down" })} welcome bonus will be added</span>
           </div>
         );
       })()}
@@ -562,8 +598,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             </div>
             <span className="text-[13px] font-medium text-t-text-soft">
               {cur > 0
-                ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add ₦{diff.toLocaleString()} more</button> and get <strong className="text-accent">₦{nt.bonus.toLocaleString()} free</strong> instead of ₦{cur.toLocaleString()}.</>
-                : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add ₦{diff.toLocaleString()} more</button> to unlock your <strong className="text-accent">₦{nt.bonus.toLocaleString()} welcome bonus</strong>.</>
+                ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add {money(diff)} more</button> and get <strong className="text-accent">{money(nt.bonus, { round: "down" })} free</strong> instead of {money(cur, { round: "down" })}.</>
+                : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add {money(diff)} more</button> to unlock your <strong className="text-accent">{money(nt.bonus, { round: "down" })} welcome bonus</strong>.</>
               }
             </span>
           </div>
@@ -571,14 +607,14 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       })()}
       {topup && topup.next && numAmount >= 1000 && (() => {
         const projected = topup.total + numAmount * 100;
-        const prize = (topup.next.prize / 100).toLocaleString();
+        const prize = money(topup.next.prize / 100, { round: "down" });
         if (projected >= topup.next.min) {
           return (
             <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(110,231,183,.06)' : 'rgba(5,150,105,.04)', border: `1px solid ${dark ? 'rgba(110,231,183,.14)' : 'rgba(5,150,105,.1)'}` }}>
               <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.08)' }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={okColor} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
               </div>
-              <span className="text-[13px] font-semibold" style={{ color: okColor }}>This deposit unlocks your ₦{prize} top-up bonus</span>
+              <span className="text-[13px] font-semibold" style={{ color: okColor }}>This deposit unlocks your {prize} top-up bonus</span>
             </div>
           );
         }
@@ -589,7 +625,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             </div>
             <span className="text-[13px] font-medium text-t-text-soft">
-              This takes you to <strong className="m">₦{(projected / 100).toLocaleString()}</strong> of ₦{(topup.next.min / 100).toLocaleString()} — <button onClick={() => setAmount(String(fullAdd))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>deposit ₦{fullAdd.toLocaleString()}</button> to unlock <strong className="text-accent">₦{prize}</strong>.
+              This takes you to <strong className="m">{money(projected / 100)}</strong> of {money(topup.next.min / 100)} — <button onClick={() => setAmount(String(fullAdd))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>deposit {money(fullAdd)}</button> to unlock <strong className="text-accent">₦{prize}</strong>.
             </span>
           </div>
         );
@@ -598,7 +634,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         {numAmount > 0 && numAmount < 1000 ? (
           <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Minimum deposit is ₦1,000
+            Minimum deposit is {money(1000)}
           </div>
         ) : null}
       </div>
@@ -635,7 +671,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(110,231,183,.2)" : "rgba(5,150,105,.12)" }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           </div>
-          <span className="font-semibold"><span className="m tracking-[1px]" style={{ fontFamily: "'JetBrains Mono',monospace" }}>{couponApplied.code}</span> · {couponApplied.type === "percent" ? `${couponApplied.value}%` : `+₦${couponApplied.value.toLocaleString()}`} bonus</span>
+          <span className="font-semibold"><span className="m tracking-[1px]" style={{ fontFamily: "'JetBrains Mono',monospace" }}>{couponApplied.code}</span> · {couponApplied.type === "percent" ? `${couponApplied.value}%` : `+${money(couponApplied.value, { round: "down" })}`} bonus</span>
           <button onClick={removeCoupon} className="ml-auto bg-transparent border-none text-[11px] font-semibold cursor-pointer py-1 px-2 rounded-md transition-all duration-200 hover:-translate-y-px" style={{ color: dark ? "#fca5a5" : "#dc2626", background: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.05)" }}>Remove</button>
         </div>
       </div>
@@ -725,7 +761,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               return (
                 <div className="flex items-center gap-1.5 mt-2 py-2 px-2.5 rounded-lg text-[11px]" style={{ background: dark ? "rgba(240,171,252,.06)" : "rgba(168,85,247,.04)", border: `1px solid ${dark ? "rgba(240,171,252,.14)" : "rgba(168,85,247,.1)"}`, color: dark ? "#f0abfc" : "#a855f7" }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>
-                  <span>{fN(user.bonusCredit.amount / 100)} bonus credit — expires in {daysLeft}d</span>
+                  <span>{fHeld(user.bonusCredit.amount / 100)} bonus credit — expires in {daysLeft}d</span>
                 </div>
               );
             })()}
@@ -747,7 +783,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       {rewards?.points && (() => { const p = rewards.points; return (
         <div className="flex items-center gap-2.5 rounded-xl py-2.5 px-3" style={{ background: dark ? "#2d2210" : "#fef7ed", border: `1px solid ${dark ? "#5a4020" : "#e8d5b8"}`, color: dark ? "#e0a458" : "#854F0B" }}>
           <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-white" style={{ background: "linear-gradient(135deg,#fbbf24,#d97706)" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg></span>
-          <span className="flex flex-col gap-px flex-1 min-w-0"><b className="text-[13px] font-semibold"><span className="m">{(p.balance || 0).toLocaleString()}</span> Nitro Points</b><small className="text-[11px] opacity-80 truncate">{p.redeemable ? `≈ ₦${(p.valueNaira || 0).toLocaleString()} ready to spend on your next order` : `${(p.neededToRedeem || 0).toLocaleString()} more to spend`}</small></span>
+          <span className="flex flex-col gap-px flex-1 min-w-0"><b className="text-[13px] font-semibold"><span className="m">{(p.balance || 0).toLocaleString()}</span> Nitro Points</b><small className="text-[11px] opacity-80 truncate">{p.redeemable ? `≈ ${money(p.valueNaira || 0, { round: "down" })} ready to spend on your next order` : `${(p.neededToRedeem || 0).toLocaleString()} more to spend`}</small></span>
           <button onClick={() => setPointsOpen(true)} className="bg-transparent border-none cursor-pointer text-[12px] font-semibold p-0 font-[inherit]" style={{ color: "inherit" }}>View</button>
         </div>
       ); })()}
@@ -800,10 +836,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           {(() => { const wb = welcomeEligible && valid ? bonusForNaira(numAmount) : 0; const extra = (discount > 0 ? discount / 100 : 0) + wb; return (
             <div className="rounded-[14px] px-3.5 mt-3" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
               {[
-                ["Deposit", <b key="d" className="m text-[13px] font-semibold text-t-text">{valid ? fN(numAmount) : "₦0"}</b>],
+                ["Deposit", <b key="d" className="m text-[13px] font-semibold text-t-text">{valid ? money(numAmount) : money(0)}</b>],
                 ["Fee", <b key="f" className="text-[13px] font-semibold text-t-text">Free</b>],
                 couponApplied && discount > 0 ? ["Coupon bonus", <b key="c" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{fN(discount / 100)}</b>] : null,
-                wb > 0 ? ["Welcome bonus", <b key="w" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+₦{wb.toLocaleString()}</b>] : null,
+                wb > 0 ? ["Welcome bonus", <b key="w" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(wb, { round: "down" })}</b>] : null,
               ].filter(Boolean).map(([label, val], i) => (
                 <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}><span>{label}</span>{val}</div>
               ))}
@@ -828,7 +864,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 <div className="text-center py-5">
                   <div className="mb-3 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
                   <div className="text-lg font-semibold mb-1.5 text-t-text">{cryptoPresentation.title}</div>
-                  <div className="text-sm text-t-text-muted">{fN(cryptoResult?.amount ?? cryptoModal.amountNgn)} has been added to your wallet</div>
+                  <div className="text-sm text-t-text-muted">{money(cryptoResult?.amount ?? cryptoModal.amountNgn, { round: "down" })} has been added to your wallet</div>
                 </div>
                 <div className="flex max-md:flex-col gap-3">
                   <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); window.location.reload(); }} className="flex-1 py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Done</button>
@@ -1019,11 +1055,11 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="py-2.5 px-3 rounded-xl text-center" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.1)"}` }}>
           <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">Funded</div>
-          <div className="m text-[15px] font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{fNShort(totalIn)}</div>
+          <div className="m text-[15px] font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{fNShort(totalIn, money)}</div>
         </div>
         <div className="py-2.5 px-3 rounded-xl text-center" style={{ background: dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)"}` }}>
           <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">Spent</div>
-          <div className="m text-[15px] font-bold" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>-{fNShort(totalOut)}</div>
+          <div className="m text-[15px] font-bold" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>-{fNShort(totalOut, money)}</div>
         </div>
       </div>
 
@@ -1088,7 +1124,7 @@ export function AddFundsSidebar({ txs, dark }) {
     <div className="rr">
       <RailSec>How it works</RailSec>
       <RailCard>
-        <RailStep n="1" title="Enter an amount" sub="₦500 or more" />
+        <RailStep n="1" title="Enter an amount" sub={`${money(500)} or more`} />
         <RailStep n="2" title="Pick how to pay" sub="Bank transfer, card, crypto" />
         <RailStep n="3" title="Pay" sub="Your balance updates at once" />
       </RailCard>

@@ -35,7 +35,7 @@ describe("dashboard overview module boundary", () => {
     // the literal "₦1,500" here would lock in exactly what that fixed, so
     // this checks the thing the test is actually about — that the never-paid
     // nudge wins, and points at Add Funds.
-    expect(overviewSource).toMatch(/neverPaid\s*\?\s*\{ label: `Get up to \$\{money\(MAX_BONUS_NAIRA\)\} free on your first top-up`,[^}]*target: "add-funds"/);
+    expect(overviewSource).toMatch(/neverPaid\s*\?\s*\{ label: `Get up to \$\{money\(MAX_BONUS_NAIRA, \{ round: "down" \}\)\} free on your first top-up`,[^}]*target: "add-funds"/);
     expect(overviewSource).toContain("const showNext = isNew || neverPaid;");
   });
 
