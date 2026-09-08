@@ -38,9 +38,14 @@ function componentsMissingHook(source) {
     // Prose mentions the word all over this codebase — in comments, and inside
     // strings ("ordering, money, delivery"). Strip both; only code counts.
     const t = raw.trim();
+    // Quoted strings go. Template literals keep their ${…} parts, because those
+    // are code — the dashboard's TDZ crash was a money() call inside one, and
+    // stripping the whole literal is exactly how this test waved it through.
     const line = (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*"))
       ? ""
-      : raw.replace(/'[^']*'|"[^"]*"|`[^`]*`/g, "''");
+      : raw
+          .replace(/`[^`]*`/g, m => (m.match(/\$\{[^}]*\}?/g) || []).join(" "))
+          .replace(/'[^']*'|"[^"]*"/g, "''");
     const m = line.match(COMPONENT_START);
     if (m) { flush(); name = m[1] || m[2]; hasHook = false; usedAt = 0; hookAt = 0; }
     if (/const money = useMoney\(\)/.test(line)) { hasHook = true; if (!hookAt) hookAt = i + 1; }
