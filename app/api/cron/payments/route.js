@@ -5,12 +5,13 @@ import { log } from '@/lib/logger';
 import { reportOperationalFailure } from '@/lib/monitoring';
 import { recoverStalePendingPayments } from '@/lib/payment-recovery';
 import { getBalance, isProviderConfigured, PROVIDER_IDS, getProviderName } from '@/lib/smm';
-import { tgProviderBalance } from '@/lib/telegram';
+import { tgProviderBalance, tgFlush } from '@/lib/telegram';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
   const secret = req.headers.get('authorization')?.replace('Bearer ', '');
   if (secret !== process.env.CRON_SECRET) {
+    await tgFlush();
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -56,6 +57,8 @@ export async function GET(req) {
       log.warn('Balance check', err.message);
     }
 
+    await tgFlush();
+
     return Response.json({
       checked: stats.checked,
       recovered: stats.recovered,
@@ -77,6 +80,7 @@ export async function GET(req) {
       error: err,
       data: { job: 'payments_cron' },
     });
+    await tgFlush();
     return Response.json({ error: 'Recovery failed' }, { status: 500 });
   }
 }

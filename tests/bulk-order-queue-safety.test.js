@@ -101,6 +101,8 @@ vi.mock('@/lib/meta-capi', () => ({
 }));
 vi.mock('next/headers', () => ({ headers: vi.fn(async () => new Headers()) }));
 vi.mock('@/lib/telegram', () => ({
+  tgFlush: vi.fn(() => Promise.resolve([])),
+ 
   tgNewOrder: (...args) => mocks.tgNewOrder(...args),
   tgRefundAlert: vi.fn(),
 }));
