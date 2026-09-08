@@ -1,6 +1,7 @@
 'use client';
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { CURRENCIES, BASE_CURRENCY, isActive, formatDisplayPrice, formatMoney, convertFromNaira, convertToNaira } from "../lib/currency";
+import { LOCALES, LOCALE_CODES, SOURCE_LOCALE, isLocale, makeTranslator } from "../lib/i18n";
 
 /**
  * Currency and language, the way theme already works: a preference in
@@ -19,17 +20,22 @@ import { CURRENCIES, BASE_CURRENCY, isActive, formatDisplayPrice, formatMoney, c
 
 const LocaleCtx = createContext(null);
 
-export const LANGUAGES = [
-  { code: "en", label: "English", flag: "🇬🇧", available: true },
-  { code: "pcm", label: "Pidgin", flag: "🇳🇬", available: false },
-  { code: "yo", label: "Yoruba", flag: "🇳🇬", available: false },
-  { code: "ha", label: "Hausa", flag: "🇳🇬", available: false },
-  { code: "ig", label: "Igbo", flag: "🇳🇬", available: false },
-  // Pairs with the Kenyan shilling in the currency menu: a language for each
-  // currency Nitro sells in.
-  { code: "sw", label: "Kiswahili", flag: "🇰🇪", available: false },
-  { code: "fr", label: "Français", flag: "🇫🇷", available: false },
-];
+// A language appears in the picker once its dictionary covers enough of the
+// site to be worth choosing. Empty today: the dictionaries exist but are not
+// filled in, and a half-English French page is worse than an English one.
+// Add a code here when its coverage is good — `npm run i18n:report` says.
+const AVAILABLE_LOCALES = new Set([]);
+
+/**
+ * The switcher's list, derived from lib/i18n.js so there is one place a
+ * language exists. `available` is not a property of a language, it is a fact
+ * about whether its dictionary has arrived — English is the source and always
+ * available; the rest turn on when `messages/<code>.json` has enough in it.
+ */
+export const LANGUAGES = LOCALE_CODES.map((code) => ({
+  ...LOCALES[code],
+  available: code === SOURCE_LOCALE || AVAILABLE_LOCALES.has(code),
+}));
 
 /**
  * The currency and language controls: off in production until the switch is
@@ -101,6 +107,23 @@ export function LocaleProvider({ children }) {
     try { localStorage.setItem(CURRENCY_KEY, code); } catch {}
   }, []);
 
+  // The dictionary for the chosen language, fetched once when it is chosen.
+  // English needs none — it is the source — so a Nigerian reading the site in
+  // English never downloads a translation file, which is almost everybody.
+  const [messages, setMessages] = useState({});
+  useEffect(() => {
+    if (lang === SOURCE_LOCALE || !isLocale(lang)) { setMessages({}); return undefined; }
+    let dead = false;
+    import(`../messages/${lang}.json`)
+      .then((m) => { if (!dead) setMessages(m.default || m); })
+      .catch(() => { if (!dead) setMessages({}); });   // falls back to English
+    return () => { dead = true; };
+  }, [lang]);
+
+  // English in, the chosen language out — or the same English back, which is
+  // what makes a missing translation merely untranslated rather than broken.
+  const t = useMemo(() => makeTranslator(lang, messages), [lang, messages]);
+
   const setLang = useCallback((code) => {
     if (!LANGUAGES.some(x => x.code === code && x.available)) return;
     setLangState(code);
@@ -132,8 +155,8 @@ export function LocaleProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ currency, setCurrency, lang, setLang, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
-    [currency, setCurrency, lang, setLang, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates],
+    () => ({ currency, setCurrency, lang, setLang, t, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
+    [currency, setCurrency, lang, setLang, t, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates],
   );
 
   return <LocaleCtx.Provider value={value}>{children}</LocaleCtx.Provider>;
@@ -141,6 +164,20 @@ export function LocaleProvider({ children }) {
 
 export function useLocale() {
   return useContext(LocaleCtx);
+}
+
+/**
+ * The translator, bound to the chosen language.
+ *
+ *     const t = useT();
+ *     <h2>{t("Fund your wallet")}</h2>
+ *
+ * Outside the provider — admin, tests, anything server-rendered — it returns
+ * the English unchanged, so it is always safe to call and never needs guarding.
+ */
+export function useT() {
+  const l = useContext(LocaleCtx);
+  return l?.t ?? ((english) => english);
 }
 
 /** A money formatter bound to the current display currency. Outside the

@@ -843,7 +843,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               a hidden method with one reads as the site knowing where you are. */}
           {!gatewaysLoading && hiddenNigeriaOnly > 0 && (
             gateways.length > 0
-              ? <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">Card and bank transfer are Nigerian-only for now. USDT works from anywhere, and credits your wallet in naira.</div>
+              ? <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">Bank transfer and mobile money are Nigerian-only for now. Card and USDT work from anywhere, and credit your wallet in naira.</div>
               : <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">No payment method is available for your country yet. Message us on WhatsApp and we will sort it out.</div>
           )}
           {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
