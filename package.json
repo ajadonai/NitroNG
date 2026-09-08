@@ -26,7 +26,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "NITRO_E2E=1 playwright test",
-    "i18n:report": "node scripts/i18n-report.mjs"
+    "i18n:report": "node scripts/i18n-report.mjs",
+    "i18n:baseline": "node scripts/i18n-baseline.mjs"
   },
   "keywords": [],
   "author": "",
