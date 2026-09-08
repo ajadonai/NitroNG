@@ -47,7 +47,7 @@ const NOT_PROSE = [
   /\b(?:className|onClick|style|aria-|data-)\b/,
   // Comparison operators read as tags: `a > b && c < d` looks exactly like
   // `>text<` to a regex, and the first run duly offered to translate it.
-  /&&|\|\||=>|\?\?|\.\w+\(|\breturn\b|\bconst\b|\bawait\b/,
+  /&&|\|\||=>|\?\?|\w\(|\breturn\b|\bconst\b|\bawait\b/,   // \w\( catches any call: setTutorialOpen(true), Number(x)
   // A person's name with an initial: "Blessing I.", "Tunde M." — testimonial
   // bylines, which stay as the person wrote them.
   /^[A-Z][a-z]+ [A-Z]\.$/,

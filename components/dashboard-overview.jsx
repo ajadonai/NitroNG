@@ -4,7 +4,7 @@ import { useState } from "react";
 import { RailSec, RailCard, RailFact, RailRow, RailLink, RailBtn, RailEmpty } from "./rail";
 import { Modal } from "./ui-primitives";
 import { PlatformIcon } from "./platform-icon";
-import { useMoney } from "./locale";
+import { useMoney , useT} from "./locale";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { fN, fD } from "../lib/format";
 import { RewardsStrip, ChannelLane, StatusModal, PointsModal } from "./rewards";
@@ -46,15 +46,17 @@ function OrderRow({ o, first, dark, t, onClick }) {
   );
 }
 function BatchRowMini({ item, first, dark, t, onClick }) {
+  const tr = useT();
   return (
     <div role="button" tabIndex={0} onClick={onClick} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }} className="flex items-center gap-3 py-3 px-3.5 cursor-pointer" style={{ borderTop: first ? "none" : `1px solid ${t.cardBorder}` }}>
       <div className="shrink-0 flex items-center justify-center rounded-xl text-accent" style={{ width: 40, height: 40, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
-      <div className="min-w-0 flex-1"><div className="text-[13.5px] font-semibold text-t-text">Bulk order</div><div className="text-[11px] text-t-text-muted">{item.orders.length} orders · {item.created ? fD(item.created, true) : ""}</div></div>
+      <div className="min-w-0 flex-1"><div className="text-[13.5px] font-semibold text-t-text">{tr("Bulk order")}</div><div className="text-[11px] text-t-text-muted">{item.orders.length} orders · {item.created ? fD(item.created, true) : ""}</div></div>
     </div>
   );
 }
 
 export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t, setActive, socialLinks, rewards, isReseller }) {
+  const tr = useT();
   const money = useMoney();
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [tipsOpen, setTipsOpen] = useState(false);
@@ -77,7 +79,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
 
   const firstName = user?.firstName || (user?.name || "").split(" ")[0] || "there";
   const hour = new Date().getHours();
-  const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greet = hour < 12 ? tr("Good morning") : hour < 17 ? tr("Good afternoon") : tr("Good evening");
   const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
   const showNext = isNew || neverPaid;
   const card = { background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` };
@@ -102,12 +104,12 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       {/* ── Balance: the biggest number on the page, and the two things you do with it ── */}
       <div className="flex items-center justify-between gap-3 rounded-2xl p-4 mb-4" style={card}>
         <div className="min-w-0">
-          <div className="text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted">Balance</div>
+          <div className="text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted">{tr("Balance")}</div>
           <div className="m text-[32px] desktop:text-[36px] font-extrabold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.03em" }}>{money(balance, { round: "down" })}</div>
         </div>
         <div className="flex max-md:flex-col gap-1.5 shrink-0">
-          <button onClick={() => setActive("add-funds")} className="nitro-money-btn h-[34px] px-3.5 border-none text-[13px] font-semibold cursor-pointer inline-flex items-center gap-1.5 justify-center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Top up</button>
-          <button onClick={() => setActive("services")} className="h-[34px] px-3.5 rounded-[10px] text-[13px] font-semibold cursor-pointer border border-solid inline-flex items-center justify-center text-t-text" style={{ background: "transparent", borderColor: t.cardBorder }}>New order</button>
+          <button onClick={() => setActive("add-funds")} className="nitro-money-btn h-[34px] px-3.5 border-none text-[13px] font-semibold cursor-pointer inline-flex items-center gap-1.5 justify-center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>{tr("Top up")}</button>
+          <button onClick={() => setActive("services")} className="h-[34px] px-3.5 rounded-[10px] text-[13px] font-semibold cursor-pointer border border-solid inline-flex items-center justify-center text-t-text" style={{ background: "transparent", borderColor: t.cardBorder }}>{tr("New order")}</button>
         </div>
       </div>
 
@@ -124,7 +126,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       )}
 
       {/* ── Rewards ── */}
-      <SectionHead>Rewards</SectionHead>
+      <SectionHead>{tr("Rewards")}</SectionHead>
       <RewardsStrip rewards={rewards} dark={dark} t={t} onStatus={() => setStatusOpen(true)} onPoints={() => setPointsOpen(true)} onTasks={() => setActive("tasks")} />
 
       {/* ── Quick links: the three tiles, icons in their gradients ── */}
@@ -142,22 +144,22 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       </div>
 
       {/* ── Stay updated ── */}
-      <SectionHead>Stay updated</SectionHead>
+      <SectionHead>{tr("Stay updated")}</SectionHead>
       <ChannelLane dark={dark} t={t} socialLinks={socialLinks} />
 
       {/* ── Resellers: for anyone who is not one yet ── */}
       {!isReseller && (
         <a href="/resellers" className="flex items-center gap-2.5 rounded-[14px] p-3 mb-[18px] no-underline border border-solid max-md:flex-wrap" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", borderColor: "rgba(196,125,142,.35)" }}>
           <span className="w-[38px] h-[38px] rounded-[11px] flex items-center justify-center shrink-0 text-white" style={{ background: t.accent }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 01-2.8 0L2 12V2h10l8.6 8.6a2 2 0 010 2.8z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg></span>
-          <span className="flex flex-col gap-0.5 flex-1 min-w-0"><b className="text-[13.5px] font-semibold text-t-text">Sell Nitro at your own prices</b><small className="text-[11.5px] leading-snug text-t-text-muted">Resellers get wholesale rates on every service. Ask support to join.</small></span>
-          <span className="h-8 px-3.5 rounded-[10px] text-[12px] font-semibold text-white inline-flex items-center justify-center whitespace-nowrap shrink-0 max-md:w-full max-md:mt-1" style={{ background: t.accent }}><span className="max-md:hidden">Become a reseller</span><span className="md:hidden">Join</span></span>
+          <span className="flex flex-col gap-0.5 flex-1 min-w-0"><b className="text-[13.5px] font-semibold text-t-text">{tr("Sell Nitro at your own prices")}</b><small className="text-[11.5px] leading-snug text-t-text-muted">{tr("Resellers get wholesale rates on every service. Ask support to join.")}</small></span>
+          <span className="h-8 px-3.5 rounded-[10px] text-[12px] font-semibold text-white inline-flex items-center justify-center whitespace-nowrap shrink-0 max-md:w-full max-md:mt-1" style={{ background: t.accent }}><span className="max-md:hidden">{tr("Become a reseller")}</span><span className="md:hidden">{tr("Join")}</span></span>
         </a>
       )}
 
       {/* ── Delivering now: phone and tablet; the sidebar has it on desktop ── */}
       {activeOrders.length > 0 && (
         <div className="desktop:hidden">
-          <SectionHead action={<button onClick={() => setActive("orders")} className="text-[12px] font-semibold bg-transparent border-none cursor-pointer font-[inherit] text-accent">View all</button>}>Delivering now</SectionHead>
+          <SectionHead action={<button onClick={() => setActive("orders")} className="text-[12px] font-semibold bg-transparent border-none cursor-pointer font-[inherit] text-accent">{tr("View all")}</button>}>{tr("Delivering now")}</SectionHead>
           <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
             {activeOrders.slice(0, 3).map((o, i) => <OrderRow key={o.id} o={o} first={i === 0} dark={dark} t={t} onClick={() => setActive("orders")} />)}
           </div>
@@ -165,7 +167,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       )}
 
       {/* ── Recent orders ── */}
-      <SectionHead action={orders.length > 0 ? <button onClick={() => setActive("orders")} className="text-[12px] font-semibold bg-transparent border-none cursor-pointer font-[inherit] text-accent">View all</button> : null}>Recent orders</SectionHead>
+      <SectionHead action={orders.length > 0 ? <button onClick={() => setActive("orders")} className="text-[12px] font-semibold bg-transparent border-none cursor-pointer font-[inherit] text-accent">{tr("View all")}</button> : null}>{tr("Recent orders")}</SectionHead>
       <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
         {recent.length > 0 ? recent.map((item, i) => item.type === "batch"
           ? <BatchRowMini key={item.batchId} item={item} first={i === 0} dark={dark} t={t} onClick={() => setActive("orders")} />
@@ -179,10 +181,10 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
               <circle cx="32" cy="38" r="8" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
               <path d="M29 38l2 2 4-4" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity=".4" />
             </svg>
-            <div className="text-base font-semibold mb-1 text-t-text-soft">No orders yet</div>
-            <div className="text-sm mb-4 leading-[1.5] max-w-[320px] text-t-text-muted">Choose a platform, pick a service, and place your first order.</div>
-            <button onClick={() => setActive("services")} className="cursor-pointer py-2.5 px-6 rounded-[10px] text-sm font-semibold border-none transition-transform duration-200 hover:-translate-y-px mb-2 bg-accent text-white">Place first order</button>
-            <button onClick={() => setActive("guide")} className="cursor-pointer py-2 px-4 rounded-[10px] text-[13px] font-medium border-none transition-transform duration-200 hover:-translate-y-px bg-transparent text-t-text-muted">View blog</button>
+            <div className="text-base font-semibold mb-1 text-t-text-soft">{tr("No orders yet")}</div>
+            <div className="text-sm mb-4 leading-[1.5] max-w-[320px] text-t-text-muted">{tr("Choose a platform, pick a service, and place your first order.")}</div>
+            <button onClick={() => setActive("services")} className="cursor-pointer py-2.5 px-6 rounded-[10px] text-sm font-semibold border-none transition-transform duration-200 hover:-translate-y-px mb-2 bg-accent text-white">{tr("Place first order")}</button>
+            <button onClick={() => setActive("guide")} className="cursor-pointer py-2 px-4 rounded-[10px] text-[13px] font-medium border-none transition-transform duration-200 hover:-translate-y-px bg-transparent text-t-text-muted">{tr("View blog")}</button>
             <div className="mt-3"><NotSureHelp waNumber={(socialLinks?.social_whatsapp_support || "").replace(/\D/g, "")} dark={dark} t={t} email={user?.email} /></div>
           </div>
         )}
@@ -196,7 +198,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       {tutorialOpen && (
         <Modal open={tutorialOpen} onClose={() => setTutorialOpen(false)} dark={dark} maxWidth={420} bare>
             <div className="py-4 px-5 flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
-              <div className="text-[15px] font-semibold text-t-text">How it works</div>
+              <div className="text-[15px] font-semibold text-t-text">{tr("How it works")}</div>
               <button onClick={() => setTutorialOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent text-t-text-soft" style={{ borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div className="py-5 px-5 flex flex-col gap-3.5 max-h-[70vh] overflow-y-auto">
@@ -225,7 +227,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       {tipsOpen && (
         <Modal open={tipsOpen} onClose={() => setTipsOpen(false)} dark={dark} maxWidth={420} bare>
             <div className="py-4 px-5 flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
-              <div className="text-[15px] font-semibold text-t-text">What to Expect</div>
+              <div className="text-[15px] font-semibold text-t-text">{tr("What to Expect")}</div>
               <button onClick={() => setTipsOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent text-t-text-soft" style={{ borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div className="py-5 px-5 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
@@ -249,17 +251,18 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
 
       {/* ── Referral — phone and tablet; the sidebar has it on desktop ── */}
       <div className="hidden max-desktop:block mb-4 rounded-[14px] px-3.5" style={card}>
-        <div className="text-[10.5px] font-semibold uppercase tracking-[1px] pt-2.5 pb-0.5 text-t-text-muted">Referral</div>
+        <div className="text-[10.5px] font-semibold uppercase tracking-[1px] pt-2.5 pb-0.5 text-t-text-muted">{tr("Referral")}</div>
         {[["Your code", <span key="c" className="inline-flex items-center gap-1.5"><b className="m text-[14px] font-semibold tracking-[1.5px] text-accent">{user?.refCode || "—"}</b></span>],["Referrals", <b key="r" className="m text-[14px] font-semibold text-t-text">{user?.refs || 0}</b>],["Earned", <b key="e" className="m text-[14px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{money(user?.earnings || 0)}</b>]].map(([label, val], i) => (
           <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-soft" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}><span>{label}</span>{val}</div>
         ))}
-        <button onClick={() => setActive("referrals")} className="w-full my-2.5 py-2 rounded-lg text-[13px] font-semibold border-none cursor-pointer text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>Invite friends</button>
+        <button onClick={() => setActive("referrals")} className="w-full my-2.5 py-2 rounded-lg text-[13px] font-semibold border-none cursor-pointer text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>{tr("Invite friends")}</button>
       </div>
     </>
   );
 }
 
 export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setActive }) {
+  const tr = useT();
   const money = useMoney();
   const activeCount = orderSummary?.active ?? activeOrders.length;
   const topPlatform = orderSummary?.topPlatform;
@@ -269,26 +272,26 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
   const pctOf = (o) => { const qty = o.quantity || 0; if (!qty) return 0; const delivered = o.status === "Completed" ? qty : o.remains != null ? Math.max(0, qty - Math.max(0, o.remains)) : 0; return Math.min(100, Math.round(delivered / qty * 100)); };
   return (
     <div className="rr">
-      <RailSec>Your stats</RailSec>
+      <RailSec>{tr("Your stats")}</RailSec>
       <RailCard>
         <RailFact label="Top platform" value={topPlatform ? topPlatform.charAt(0).toUpperCase() + topPlatform.slice(1) : "—"} mono={false} />
         <RailFact label="Average order" value={avgQty > 0 ? avgQty.toLocaleString() : "—"} />
         <RailFact label="This week" value={`${wkOrders} order${wkOrders === 1 ? "" : "s"}`} />
         <RailFact label="Member since" value={memberDate} mono={false} />
       </RailCard>
-      <RailSec action={activeCount > 0 ? <RailLink onClick={() => setActive("orders")}>View all</RailLink> : null}>Delivering now</RailSec>
+      <RailSec action={activeCount > 0 ? <RailLink onClick={() => setActive("orders")}>{tr("View all")}</RailLink> : null}>{tr("Delivering now")}</RailSec>
       <RailCard>
-        {activeCount === 0 ? <RailEmpty>Nothing delivering right now.</RailEmpty> : activeOrders.slice(0, 5).map(o => (
+        {activeCount === 0 ? <RailEmpty>{tr("Nothing delivering right now.")}</RailEmpty> : activeOrders.slice(0, 5).map(o => (
           <RailRow key={o.id} tile={<PlatformIcon platform={o.platform} dark={dark} size={16} />} title={o.service} sub={`${o.id || ""}${o.tier ? ` · ${o.tier}` : ""}`} right={`${pctOf(o)}%`} bar={pctOf(o)} onClick={() => setActive("orders")} />
         ))}
       </RailCard>
-      <RailSec>Referral</RailSec>
+      <RailSec>{tr("Referral")}</RailSec>
       <RailCard>
         <RailFact label="Your code" value={user?.refCode || "—"} color="var(--t-accent)" />
         <RailFact label="Referrals" value={user?.refs || 0} />
         <RailFact label="Earned" value={money(user?.earnings || 0, { round: "down" })} />
       </RailCard>
-      <RailBtn onClick={() => setActive("referrals")}>Invite friends</RailBtn>
+      <RailBtn onClick={() => setActive("referrals")}>{tr("Invite friends")}</RailBtn>
     </div>
   );
 }
