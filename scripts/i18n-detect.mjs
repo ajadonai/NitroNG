@@ -103,8 +103,18 @@ export const NOT_PROSE = [
   // A service as the catalogue names it, which the API and the order form both
   // use — translating it here would describe something by another name.
   /^(Instagram|TikTok|YouTube|X|Facebook|Telegram) (Followers|Likes|Views|Subscribers|Comments|Shares)$/,
-  // Brand names travel untranslated.
-  /^(Instagram|TikTok|WhatsApp|Telegram|YouTube|Facebook|Twitter|X \(Twitter\)|Google|Nitro|Threads|Twitch|LinkedIn|Snapchat|Spotify)$/,
+  // Brand names travel untranslated. This list is the catalogue's platforms,
+  // read out of components/new-order.jsx rather than guessed — a missing one
+  // means a translator is handed "Boomplay" and asked what it means.
+  // The category headings above them ("Music", "Web Traffic", "SEO & Reviews",
+  // "Social Platforms") are deliberately NOT here: those are our words.
+  /^(Instagram|TikTok|WhatsApp|Telegram|YouTube|Facebook|Twitter|X \(Twitter\)|Google|Google Analytics|Nitro|Threads|Twitch|LinkedIn|Snapchat|Spotify)$/,
+  /^(Pinterest|Reddit|Discord|Kick|Tumblr|Quora|OnlyFans|Clubhouse|Kwai|Vimeo|Bluesky)$/,
+  /^(Audiomack|Boomplay|Apple Music|SoundCloud|Deezer|Tidal|Shazam|Mixcloud)$/,
+  /^(Trustpilot|App Store|Play Store)$/,
+  // A property access that reached here as text: `r => r.qty <` reads as
+  // `>text<` once the arrow's own `>` is mistaken for a closing tag.
+  /^[\w$]+(\.[\w$]+)+$/,
 ];
 
 /**
@@ -139,12 +149,29 @@ export function isProse(s) {
  * key: `id`, `name`, `key`, `type` and `variant` carry identifiers that would
  * break if translated, and `value` is usually a number.
  */
-const PROSE_KEY = /\b(label|title|desc|description|heading|subheading|subtitle|sub|subtext|caption|hint|tooltip|cta|blurb|summary|note|body|placeholder|empty|error)\s*:\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/g;
+/**
+ * Names whose value is prose often enough to be worth reading — as an object
+ * key, `{ label: "How it works" }`, and as a JSX prop, `<RailFact label="Top
+ * platform" />`. One list for both, because they were two lists once and the
+ * prop half was missing `label`: "Top platform", "Average order", "This week",
+ * "Member since", "Your code", "Referrals" and "Earned" sat in English in the
+ * dashboard sidebar, and Trip reported them after the object-key half of the
+ * very same word had already been fixed twenty lines above.
+ *
+ * Not every name: `id`, `name`, `key`, `type`, `variant` and `value` carry
+ * identifiers that break when translated.
+ */
+const PROSE_NAMES = "label|title|desc|description|heading|subheading|subtitle|sub|subtext|caption|hint|tooltip|cta|blurb|summary|note|body|placeholder|empty|error|aria-label|alt";
 
-/** The prose-carrying JSX attributes. Deliberately not every quoted string:
+/** A quoted string, either quote style, allowing the other quote inside it. */
+const QUOTED = `(?:"((?:[^"\\\\]|\\\\.)*)"|'((?:[^'\\\\]|\\\\.)*)')`;
+
+const PROSE_KEY = new RegExp(`\\b(${PROSE_NAMES})\\s*:\\s*${QUOTED}`, "g");
+
+/** The same names as JSX props. Deliberately not every quoted attribute:
  *  className, keys and ids are quoted too, and a wrapped CSS class is a broken
  *  layout sent to a translator. */
-const PROSE_ATTR = /(placeholder|title|aria-label|alt)=(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/g;
+const PROSE_ATTR = new RegExp(`\\b(${PROSE_NAMES})=${QUOTED}`, "g");
 
 /** tr() is a hook, so a string outside a component cannot simply be wrapped —
  *  it has to be moved inside one first. Those are reported, never rewritten. */

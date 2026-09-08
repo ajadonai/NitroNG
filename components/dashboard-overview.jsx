@@ -277,10 +277,10 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
     <div className="rr">
       <RailSec>{tr("Your stats")}</RailSec>
       <RailCard>
-        <RailFact label="Top platform" value={topPlatform ? topPlatform.charAt(0).toUpperCase() + topPlatform.slice(1) : "—"} mono={false} />
-        <RailFact label="Average order" value={avgQty > 0 ? avgQty.toLocaleString() : "—"} />
-        <RailFact label="This week" value={`${wkOrders} order${wkOrders === 1 ? "" : "s"}`} />
-        <RailFact label="Member since" value={memberDate} mono={false} />
+        <RailFact label={tr("Top platform")} value={topPlatform ? topPlatform.charAt(0).toUpperCase() + topPlatform.slice(1) : "—"} mono={false} />
+        <RailFact label={tr("Average order")} value={avgQty > 0 ? avgQty.toLocaleString() : "—"} />
+        <RailFact label={tr("This week")} value={`${wkOrders} ${wkOrders === 1 ? tr("order") : tr("orders")}`} />
+        <RailFact label={tr("Member since")} value={memberDate} mono={false} />
       </RailCard>
       <RailSec action={activeCount > 0 ? <RailLink onClick={() => setActive("orders")}>{tr("View all")}</RailLink> : null}>{tr("Delivering now")}</RailSec>
       <RailCard>
@@ -290,9 +290,9 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
       </RailCard>
       <RailSec>{tr("Referral")}</RailSec>
       <RailCard>
-        <RailFact label="Your code" value={user?.refCode || "—"} color="var(--t-accent)" />
-        <RailFact label="Referrals" value={user?.refs || 0} />
-        <RailFact label="Earned" value={money(user?.earnings || 0, { round: "down" })} />
+        <RailFact label={tr("Your code")} value={user?.refCode || "—"} color="var(--t-accent)" />
+        <RailFact label={tr("Referrals")} value={user?.refs || 0} />
+        <RailFact label={tr("Earned")} value={money(user?.earnings || 0, { round: "down" })} />
       </RailCard>
       <RailBtn onClick={() => setActive("referrals")}>{tr("Invite friends")}</RailBtn>
     </div>
