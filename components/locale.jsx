@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { CURRENCIES, BASE_CURRENCY, isActive, formatDisplayPrice, formatMoney, convertFromNaira, convertToNaira } from "../lib/currency";
 import { LOCALES, LOCALE_CODES, SOURCE_LOCALE, isLocale, makeTranslator } from "../lib/i18n";
+import { fD, fT, fDY, fRel } from "../lib/format";
 
 /**
  * Currency and language, the way theme already works: a preference in
@@ -124,6 +125,20 @@ export function LocaleProvider({ children }) {
   // what makes a missing translation merely untranslated rather than broken.
   const tr = useMemo(() => makeTranslator(lang, messages), [lang, messages]);
 
+  // Dates bound to the chosen language. Weekday and month names come from Intl
+  // rather than the dictionary, so translating copy never reaches them — a
+  // French page showed "Tuesday, September 8" under "Bonsoir" until this
+  // existed. fRel also carries two actual words, which it takes from here.
+  const dates = useMemo(() => ({
+    d: (v, dateOnly) => fD(v, dateOnly, lang),
+    t: (v) => fT(v, lang),
+    dy: (v) => fDY(v, lang),
+    rel: (v) => fRel(v, lang, {
+      yesterday: tr("Yesterday"),
+      daysAgo: (n) => `${n}${tr("d ago")}`,
+    }),
+  }), [lang, tr]);
+
   const setLang = useCallback((code) => {
     if (!LANGUAGES.some(x => x.code === code && x.available)) return;
     setLangState(code);
@@ -155,8 +170,8 @@ export function LocaleProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ currency, setCurrency, lang, setLang, tr, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
-    [currency, setCurrency, lang, setLang, tr, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates],
+    () => ({ currency, setCurrency, lang, setLang, tr, dates, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
+    [currency, setCurrency, lang, setLang, tr, dates, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates],
   );
 
   return <LocaleCtx.Provider value={value}>{children}</LocaleCtx.Provider>;
@@ -178,6 +193,25 @@ export function useLocale() {
 export function useT() {
   const l = useContext(LocaleCtx);
   return l?.tr ?? ((english) => english);
+}
+
+/**
+ * Date formatters bound to the chosen language.
+ *
+ *     const d = useDates();
+ *     d.d(order.created)      → "8 sept." in French, "8 Sept" in English
+ *
+ * Outside the provider it formats in Nigerian English, the same default the
+ * raw helpers in lib/format.js have always had.
+ */
+export function useDates() {
+  const l = useContext(LocaleCtx);
+  return l?.dates ?? {
+    d: (v, dateOnly) => fD(v, dateOnly),
+    t: (v) => fT(v),
+    dy: (v) => fDY(v),
+    rel: (v) => fRel(v),
+  };
 }
 
 /** A money formatter bound to the current display currency. Outside the

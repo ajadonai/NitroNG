@@ -4,7 +4,8 @@ import { useState } from "react";
 import { RailSec, RailCard, RailFact, RailRow, RailLink, RailBtn, RailEmpty } from "./rail";
 import { Modal } from "./ui-primitives";
 import { PlatformIcon } from "./platform-icon";
-import { useMoney , useT} from "./locale";
+import { useMoney, useT, useLocale } from "./locale";
+import { dateLocale } from "../lib/format";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { fN, fD } from "../lib/format";
 import { RewardsStrip, ChannelLane, StatusModal, PointsModal } from "./rewards";
@@ -57,6 +58,7 @@ function BatchRowMini({ item, first, dark, t, onClick }) {
 
 export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t, setActive, socialLinks, rewards, isReseller }) {
   const tr = useT();
+  const lang = useLocale()?.lang ?? "en";
   const money = useMoney();
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [tipsOpen, setTipsOpen] = useState(false);
@@ -80,7 +82,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
   const firstName = user?.firstName || (user?.name || "").split(" ")[0] || "there";
   const hour = new Date().getHours();
   const greet = hour < 12 ? tr("Good morning") : hour < 17 ? tr("Good afternoon") : tr("Good evening");
-  const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  const today = new Date().toLocaleDateString(dateLocale(lang), { weekday: "long", day: "numeric", month: "long" });
   const showNext = isNew || neverPaid;
   const card = { background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` };
   const recent = (() => {
@@ -263,11 +265,12 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
 
 export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setActive }) {
   const tr = useT();
+  const lang = useLocale()?.lang ?? "en";
   const money = useMoney();
   const activeCount = orderSummary?.active ?? activeOrders.length;
   const topPlatform = orderSummary?.topPlatform;
   const avgQty = orderSummary?.averageQuantity || 0;
-  const memberDate = user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : "—";
+  const memberDate = user?.createdAt ? new Date(user.createdAt).toLocaleDateString(dateLocale(lang), { month: "short", year: "numeric" }) : "—";
   const wkOrders = orderSummary?.thisWeek || 0;
   const pctOf = (o) => { const qty = o.quantity || 0; if (!qty) return 0; const delivered = o.status === "Completed" ? qty : o.remains != null ? Math.max(0, qty - Math.max(0, o.remains)) : 0; return Math.min(100, Math.round(delivered / qty * 100)); };
   return (

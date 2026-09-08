@@ -13,9 +13,12 @@ import { describe, expect, it } from "vitest";
 // Both formatters come from a hook and are therefore per component, and both
 // have shipped this bug: money() crashed the dashboard twice, tr() crashed the
 // landing page and the auth modal. One check, two names.
+// The declaration is any binding of the name, not the hook call specifically.
+// What crashes a page is the identifier being unbound; how it got bound does
+// not matter — LocaleProvider builds its own tr with useMemo and is correct.
 const HOOKS = [
-  { call: /(?<![\w.$])money\(|[,(]\s*money\s*[,)]/, decl: /const money = useMoney\(\)/, name: "useMoney()" },
-  { call: /(?<![\w.$])tr\(/,                          decl: /const tr = useT\(\)/,        name: "useT()" },
+  { call: /(?<![\w.$])money\(|[,(]\s*money\s*[,)]/, decl: /const money\s*=/, name: "useMoney()" },
+  { call: /(?<![\w.$])tr\(/,                          decl: /const tr\s*=/,    name: "useT()" },
 ];
 
 const COMPONENT_START = /^(?:export\s+)?(?:default\s+)?function\s+([A-Za-z]\w*)|^(?:export\s+)?const\s+([A-Z]\w*)\s*=\s*(?:\(|function|forwardRef|memo)/;
