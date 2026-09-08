@@ -7,55 +7,42 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 ## Open
 
-- **Finish the currency switch — the rest of the money on screen** (started
-  7 Sep 2026, `3a83005b`). The switcher converts the landing tiers, the
-  dashboard balance and the orders page. It does **not** yet convert: Add
-  Funds (26 naira renders plus the wallet history), the order form and
-  new-order service prices (21), the rewards screens (19), earn, tasks, the
-  Lagos landing page, and the marketing amounts written into sentences ("up to
-  ₦1,500 free", "from ₦1,000"). Roughly 200 renders across ~30 files.
+- **Foreign payment methods — steps 1 and 2 shipped 8 Sep 2026, steps 3 and 4
+  remain.** Signup accepts NG/US/GB/GH/KE (`4776d901`). Flutterwave is
+  hardcoded to `currency: 'NGN'` (`app/api/payments/initialize/route.js:100`)
+  and the only non-naira rail is dollar-denominated USDT.
 
-  **The pattern is settled**, so this is mechanical rather than a design job:
-  `const money = useMoney()` in each component that renders money, then
-  `fN(x)` or `₦{x}` becomes `money(x)`. Two traps found doing the first batch:
-  a component with several sub-components needs the hook in each one, and any
-  amount formatted **server-side** into a string can never be converted — the
-  pricing API had to be changed to return numbers. Grep the API routes for `₦`
-  before assuming the client is at fault.
+  **Done:** the gateway list is cut by the country on the account —
+  `app/api/payments/gateways/route.js` marks every rail `nigeriaOnly` except
+  crypto, hides the rest for a foreign account, and returns how many it hid so
+  the wallet can say why in one line ("Card and bank transfer are Nigerian-only
+  for now. USDT works from anywhere, and credits your wallet in naira."). A
+  gateway id it does not recognise is treated as Nigerian; no session or no
+  country reads as Nigeria, which is the list it always returned.
+  `tests/gateways-by-country.test.js`.
 
-  **Deliberately excluded, do not convert:** crew and affiliate payouts
-  (`components/m/*`) — real naira paid to Nigerian banks; admin; the terms and
-  refund pages — the wallet genuinely is naira; and `landing-page.jsx`, which
-  is dead. Marketing amounts inside sentences need copy judgement, not a
-  formatter, so decide those separately.
+  **Also decided the same day:** the deposit premium is ON at 15%
+  (`fx_premium_live = 1`, `fx_premium_percent = 15`) — Trip's call after
+  finding the off state was not neutral but the legacy cushioned rate, which
+  had been crediting every USDT deposit 15% above market (₦20,000 per $100).
+  Deposit rate is now market ÷ 1.15 ≈ ₦1,156/$. A Nigerian paying USDT pays it
+  too; Trip chose not to carve that segment out. And there is **one welcome
+  bonus ladder for everyone**, in naira, converted on screen — the per-currency
+  ladders built that morning came out again the same afternoon (`bc3b40ec`).
 
-- **Foreign payment methods — scope, agreed 7 Sep 2026, build next.** Signup
-  now accepts NG/US/GB/GH/KE (`4776d901`), so people can create accounts we
-  cannot easily take money from. Flutterwave is hardcoded to `currency: 'NGN'`
-  (`app/api/payments/initialize/route.js:100`) and the only non-naira rail is
-  dollar-denominated USDT. **Add Funds still shows bank transfer and card to
-  everyone**, so a customer in London meets three methods, two of which cannot
-  work for them, and finds out by failing.
-
-  **The scope, smallest first:**
-  1. **Hide what cannot work.** Gate the gateway list by `user.country`: NG
-     sees everything; the other four see USDT only. Pure UI, no new rail, and
-     it removes the dead end on its own. `app/api/payments/gateways/route.js`
-     defines the list; `components/addfunds-page.jsx` renders it.
-  2. **Say why, once.** A line on Add Funds for a foreign account: bank
-     transfer and card are Nigerian-only today, USDT works everywhere. Without
-     it, a hidden method reads as a bug.
-  3. **Flutterwave USD collection** — step 3 of the parked plan and the real
-     unlock. It is the rail the premium was always meant for, and the thing
-     that lets GBP/GHS/KES come off "Soon" in the currency switcher. Credits
-     naira at the deposit rate like everything else; the wallet stays naira.
-  4. **Then, and only then**, flip `active: true` per currency in
-     `lib/currency.js` as each rail goes live.
+  **Remaining:**
+  3. **Flutterwave USD (and GHS/KES) collection** — the real unlock, and the
+     thing Trip has already asked Flutterwave to enable. Credits naira at the
+     deposit rate like everything else; the wallet stays naira. When a rail
+     goes live, flip its `nigeriaOnly` in the gateways route — that is the
+     whole change on the payments side.
+  4. The currency picker is hidden in production behind `SWITCHER_LIVE`
+     (dev-only, `components/locale.jsx`) until Trip is satisfied. All five
+     currencies are `active` in `lib/currency.js`; activation gates only the
+     unit prices are read in, never what anyone pays.
 
   **Do not** build per-country wallets or a second price list — both ruled out
-  in the International Nitro entry, and the premium already lives in the
-  deposit rate. **Open for Trip:** whether a Nigerian paying in USDT keeps
-  local pricing (today: yes, `fx_premium_live` is off).
+  in the International Nitro entry, and the premium lives in the deposit rate.
 
 - **Meta CAPI should send the country** (noted 7 Sep 2026, not urgent). We now
   store `User.country`, and Meta's Conversions API accepts a hashed country in
@@ -312,6 +299,23 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **Currency switch — every money figure in the user dashboard follows the
+  picker** (7–8 Sep 2026, `3a83005b` → `bc3b40ec`, all under `v2.4.104`).
+  Landing, overview, new order, order form, wallet (deposit box, native
+  quick-picks, bonus cards, summary, coupons, ledger), rewards, tasks, earn,
+  orders, referrals, reseller HQ and catalogue. The rule that settled every
+  edge: **the wallet converts, the bank does not** — anything landing in a
+  Nigerian bank account (transfer sheet, cash referrals, crew payouts) stays
+  naira, as does "1 point = ₦1" and every "you will be charged ₦…" line, since
+  Flutterwave collects naira. Rounding got a direction: prices up, balances and
+  benefits down — which fixed a live bug where 60 accounts were shown more
+  money than they held. Cannot convert: 6,985 transaction descriptions with
+  naira baked into the string at write time; the amount beside them does. Two
+  dashboard crashes shipped from the same mechanical edit (a `money()` call in
+  a component without the hook, then one above its declaration); the guardrail
+  in `tests/money-hook-scope.test.js` now checks presence and order. The picker
+  itself is hidden in production behind `SWITCHER_LIVE` until Trip is happy.
 
 | Date | Item | Commit |
 | --- | --- | --- |
