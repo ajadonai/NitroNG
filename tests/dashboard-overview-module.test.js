@@ -35,7 +35,14 @@ describe("dashboard overview module boundary", () => {
     // the literal "₦1,500" here would lock in exactly what that fixed, so
     // this checks the thing the test is actually about — that the never-paid
     // nudge wins, and points at Add Funds.
-    expect(overviewSource).toMatch(/neverPaid\s*\?\s*\{ label: `Get up to \$\{money\(MAX_BONUS_NAIRA, \{ round: "down" \}\)\} free on your first top-up`,[^}]*target: "add-funds"/);
+    //
+    // The wording is not asserted either, for the same reason one step on: the
+    // sentence is now split around tr() so it can be read in five languages,
+    // and pinning the English here would mean every translation pass had to
+    // come and edit this line. What must hold is the amount coming from
+    // MAX_BONUS_NAIRA through the formatter, rounded down — never promise more
+    // than is given — and the nudge pointing at Add Funds.
+    expect(overviewSource).toMatch(/neverPaid\s*\?\s*\{ label: `[^`]*\$\{money\(MAX_BONUS_NAIRA, \{ round: "down" \}\)\}[^`]*`,[^}]*target: "add-funds"/);
     expect(overviewSource).toContain("const showNext = isNew || neverPaid;");
   });
 

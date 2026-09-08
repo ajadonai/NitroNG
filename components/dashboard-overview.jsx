@@ -70,14 +70,14 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
   const lowBal = balance < 500;
   const neverPaid = !!user?.welcomeBonusEligible;
   const primaryAction = neverPaid
-    ? { label: `Get up to ${money(MAX_BONUS_NAIRA, { round: "down" })} free on your first top-up`, sub: "One time, for new accounts", target: "add-funds", gift: true }
+    ? { label: `${tr("Get up to")} ${money(MAX_BONUS_NAIRA, { round: "down" })} ${tr("free on your first top-up")}`, sub: tr("One time, for new accounts"), target: "add-funds", gift: true }
     : isNew
-    ? { label: "Place your first order", sub: "Pick a platform and start growing today", target: "services" }
+    ? { label: tr("Place your first order"), sub: tr("Pick a platform and start growing today"), target: "services" }
     : lowBal
-    ? { label: "Add funds", sub: "Top up your balance to keep the momentum going", target: "add-funds" }
+    ? { label: tr("Add funds"), sub: tr("Top up your balance to keep the momentum going"), target: "add-funds" }
     : activeCount > 0
-    ? { label: "Track your orders", sub: `${activeCount} order${activeCount > 1 ? "s" : ""} in progress right now`, target: "orders" }
-    : { label: "Start a new order", sub: "Ready when you are — let's keep growing", target: "services" };
+    ? { label: tr("Track your orders"), sub: `${activeCount} ${activeCount > 1 ? tr("orders") : tr("order")} ${tr("in progress right now")}`, target: "orders" }
+    : { label: tr("Start a new order"), sub: tr("Ready when you are — let's keep growing"), target: "services" };
 
   const firstName = user?.firstName || (user?.name || "").split(" ")[0] || "there";
   const hour = new Date().getHours();
