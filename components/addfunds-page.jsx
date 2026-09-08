@@ -7,8 +7,7 @@ import { fN, fHeld, fD } from "../lib/format";
 import { useMoney, useLocale } from "./locale";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { depositPresets } from "../lib/currency";
-import { BONUS_PRESETS, bonusPresetsFor, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
-import { nairaPerUnit, currencyForCountry } from "../lib/currency";
+import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { PointsModal } from "./rewards";
 import NitroLoader from "./nitro-loader";
@@ -479,27 +478,6 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   // figures are still shown in whatever currency the customer is reading, so a
   // Nigerian paying crypto sees the dollar ladder rendered in naira. Bonuses
   // round down, so the card never promises more than the rail will pay.
-  // The customer's market decides which ladder applies, not the rail they pay
-  // on and not the currency they are reading in. Keying it to the rail meant a
-  // US customer only met the dollar ladder after choosing crypto, which is a
-  // strange thing to have to discover. Country is what the server credits on
-  // too, so the cards and the payout agree by construction.
-  const ladderCurrency = currencyForCountry(user?.country);
-  const foreignLadder = ladderCurrency !== "NGN";
-  // A Nigerian reading the site in naira never triggers the rate fetch, but the
-  // dollar ladder cannot be shown in naira without it. Asking here costs one
-  // small cached request, and only for people who picked crypto.
-  useEffect(() => { if (foreignLadder) loc?.ensureRates?.(); }, [foreignLadder, loc]);
-  const railRate = foreignLadder ? nairaPerUnit(ladderCurrency, loc?.fx || {}) : null;
-  const railLadder = foreignLadder ? bonusPresetsFor(ladderCurrency) : null;
-  const bonusCards = (railLadder && railRate > 0)
-    ? railLadder.map(p => ({
-        amount: Math.ceil(p.amount * railRate),
-        bonus: Math.floor(p.bonus * railRate),   // never promise more than the rail pays
-        tag: p.tag,
-      }))
-    : BONUS_PRESETS;
-
   const welcomeEligible = user?.welcomeBonusEligible;
   const topup = !welcomeEligible ? user?.topupBonus : null;
   const cryptoPresentation = cryptoPaymentPresentation(cryptoResult || { status: cryptoStatus });
@@ -566,7 +544,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       {welcomeEligible && (
         <>
           <div className="grid grid-cols-3 gap-2 mb-3 pt-2">
-            {bonusCards.map(p => {
+            {BONUS_PRESETS.map(p => {
               const sel = numAmount === p.amount;
               const total = p.amount + p.bonus;
               return (
