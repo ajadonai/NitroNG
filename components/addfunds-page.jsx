@@ -1117,6 +1117,7 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
 /* ═══ ADD FUNDS RIGHT SIDEBAR             ═══ */
 /* ═══════════════════════════════════════════ */
 export function AddFundsSidebar({ txs, dark }) {
+  const money = useMoney();
   const METHOD = { manual: ["BT", "Bank transfer"], crypto: ["CR", "Crypto"], flutterwave: ["CD", "Card"], paystack: ["CD", "Card"], monnify: ["BT", "Bank transfer"], korapay: ["CD", "Card"], alatpay: ["BT", "Bank transfer"] };
   const STATUS = { Completed: "Cleared", Pending: "Waiting", Failed: "Failed", Rejected: "Rejected", Expired: "Expired", Processing: "Processing" };
   const deposits = (txs || []).filter(tx => tx.type === "deposit").slice(0, 5);
