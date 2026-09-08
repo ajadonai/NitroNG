@@ -866,14 +866,14 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               {[
                 ["Deposit", <b key="d" className="m text-[13px] font-semibold text-t-text">{valid ? money(numAmount) : money(0)}</b>],
                 ["Fee", <b key="f" className="text-[13px] font-semibold text-t-text">Free</b>],
-                couponApplied && discount > 0 ? ["Coupon bonus", <b key="c" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{fN(discount / 100)}</b>] : null,
+                couponApplied && discount > 0 ? ["Coupon bonus", <b key="c" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(discount / 100, { round: "down" })}</b>] : null,
                 wb > 0 ? ["Welcome bonus", <b key="w" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(wb, { round: "down" })}</b>] : null,
               ].filter(Boolean).map(([label, val], i) => (
                 <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}><span>{label}</span>{val}</div>
               ))}
               <div className="flex items-center justify-between gap-3 py-3" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
                 <span className="text-[13px] font-semibold text-t-text">{extra > 0 ? "You get" : "Total"}</span>
-                <b className="m text-[18px] font-bold" style={{ color: valid ? t.text : t.textMuted }}>{valid ? fN(numAmount + extra) : "—"}</b>
+                <b className="m text-[18px] font-bold" style={{ color: valid ? t.text : t.textMuted }}>{valid ? money(numAmount + extra, { round: "down" }) : "—"}</b>
               </div>
             </div>
           ); })()}
@@ -1162,7 +1162,7 @@ export function AddFundsSidebar({ txs, dark }) {
       <RailCard>
         {deposits.length === 0 ? <RailEmpty>No deposits yet.</RailEmpty> : deposits.map(tx => {
           const [ini, name] = METHOD[tx.method] || ["DP", tx.method ? tx.method.charAt(0).toUpperCase() + tx.method.slice(1) : "Deposit"];
-          return <RailRow key={tx.id || tx.reference} tile={ini} title={name} sub={`${tx.createdAt || tx.date ? fD(tx.createdAt || tx.date, true) : ""} · ${STATUS[tx.status] || tx.status}`} right={fN(Math.abs(tx.amount || 0))} />;
+          return <RailRow key={tx.id || tx.reference} tile={ini} title={name} sub={`${tx.createdAt || tx.date ? fD(tx.createdAt || tx.date, true) : ""} · ${STATUS[tx.status] || tx.status}`} right={money(Math.abs(tx.amount || 0), { round: (tx.amount || 0) < 0 ? "up" : "down" })} />;
         })}
       </RailCard>
     </div>
