@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { isInternalDashboardPath } from '@/lib/internal-dashboard-path';
 import CookieSettingsSheet from './cookie-settings';
+import { useT } from './locale';
 
 const KEY = 'nitro-cookie-consent';
 
@@ -56,6 +57,7 @@ export function initPixel() {
 }
 
 export default function CookieBanner() {
+  const tr = useT();
   const pathname = usePathname();
   const internalDashboard = isInternalDashboardPath(pathname);
   const [show, setShow] = useState(false);
@@ -136,8 +138,8 @@ export default function CookieBanner() {
             <div className="flex-1 flex items-center gap-2.5">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c47d8e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-70"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               <p className="text-xs leading-normal" style={{ color: dark ? 'rgba(255,255,255,.7)' : 'rgba(28,27,25,.7)' }}>
-                We use essential cookies to keep you signed in. Non-essential cookies (analytics, advertising) are only used with your consent.{' '}
-                <a href="/cookie" className="font-semibold" style={{ color: dark ? '#c47d8e' : '#8b4a5e' }}>Cookie policy</a>
+                {tr("We use essential cookies to keep you signed in. Non-essential cookies (analytics, advertising) are only used with your consent.")}{' '}
+                <a href="/cookie" className="font-semibold" style={{ color: dark ? '#c47d8e' : '#8b4a5e' }}>{tr("Cookie policy")}</a>
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -145,7 +147,7 @@ export default function CookieBanner() {
                 onClick={openSheet}
                 className="flex-1 sm:flex-none py-[7px] px-2 text-xs font-semibold cursor-pointer bg-transparent border-none"
                 style={{ color: dark ? 'rgba(255,255,255,.7)' : 'rgba(28,27,25,.75)' }}
-              >Cookie settings</button>
+              >{tr("Cookie settings")}</button>
               <button
                 onClick={() => save({ analytics: false, advertising: false })}
                 className="flex-1 sm:flex-none py-[7px] px-[18px] rounded-lg text-xs font-medium cursor-pointer bg-transparent transition-transform duration-200 hover:-translate-y-px"
@@ -153,11 +155,11 @@ export default function CookieBanner() {
                   color: dark ? 'rgba(255,255,255,.7)' : 'rgba(28,27,25,.75)',
                   border: `1px solid ${dark ? 'rgba(255,255,255,.24)' : 'rgba(28,27,25,.25)'}`,
                 }}
-              >Decline</button>
+              >{tr("Decline")}</button>
               <button
                 onClick={() => save({ analytics: true, advertising: true })}
                 className="flex-1 sm:flex-none py-[7px] px-[18px] rounded-lg text-xs font-medium cursor-pointer bg-accent text-white transition-transform duration-200 hover:-translate-y-px"
-              >Accept</button>
+              >{tr("Accept")}</button>
             </div>
           </div>
         </div>

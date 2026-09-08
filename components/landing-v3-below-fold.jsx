@@ -107,16 +107,16 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
   // not formatted strings: the currency switcher decides how they are shown.
   const TIERS = [
     { name: "Budget", tfor: tr("For tests, views and volume"), price: 1559, chip: tr("Lowest price"), pop: false, li: [["ok",tr("Cheapest rate per 1,000")],["ok",tr("Tested source, fast start")],["no",tr("No refill cover")]], fine: tr("Best when a drop wouldn't hurt: views, tests, big cheap pushes.") },
-    { name: "Standard", tfor: tr("For everyday growth"), price: 2720, chip: tr("Most picked"), pop: true, li: [["ok",tr("Balanced speed and retention")],["ok","30-day refill cover"],["ok",tr("Our default recommendation")]], fine: tr("Where most orders land. Reliable enough to build a page on.") },
+    { name: "Standard", tfor: tr("For everyday growth"), price: 2720, chip: tr("Most picked"), pop: true, li: [["ok",tr("Balanced speed and retention")],["ok",tr("30-day refill cover")],["ok",tr("Our default recommendation")]], fine: tr("Where most orders land. Reliable enough to build a page on.") },
     { name: "Premium", tfor: tr("For accounts that matter"), price: 5675, chip: tr("Top quality"), pop: false, li: [["ok",tr("Highest-quality sources")],["ok",tr("Longest refill cover")],["ok",tr("Slowest to drop, most natural")]], fine: tr("For brands, artists and anyone whose numbers get looked at.") },
   ];
   // Half Pidgin, half plain English — the plain ones still read Nigerian through
   // what they say (a 2am WhatsApp reply, naira pricing) rather than through
   // grammar, so the Pidgin reads as deliberate instead of as a theme.
   const QUOTES = [
-    ["I no go lie, I first think say na scam. I try am with small money, e land sharp sharp. Now every new drop, na Nitro I dey run.","Chioma A.",tr("Fashion Brand Owner"),"CA","#c47d8e"],
-    ["I messaged them at 2am expecting to hear back the next morning. Someone replied within minutes. That is why I stayed.","Aisha B.",tr("Content Creator"),"AB","#6ee7b7"],
-    ["I don try plenty panels. Na here my order dey start before I even close the page. And na naira, no dollar wahala.","Kola D.","E-commerce Seller","KD","#fbbf24"],
+    [tr("I no go lie, I first think say na scam. I try am with small money, e land sharp sharp. Now every new drop, na Nitro I dey run."),"Chioma A.",tr("Fashion Brand Owner"),"CA","#c47d8e"],
+    [tr("I messaged them at 2am expecting to hear back the next morning. Someone replied within minutes. That is why I stayed."),"Aisha B.",tr("Content Creator"),"AB","#6ee7b7"],
+    [tr("I don try plenty panels. Na here my order dey start before I even close the page. And na naira, no dollar wahala."),"Kola D.",tr("E-commerce Seller"),"KD","#fbbf24"],
   ];
 
   const { currency } = useLocale() || { currency: "NGN" };
@@ -167,10 +167,10 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
         <div className="lv3-glow" style={{ width: 460, height: 460, bottom: -160, left: -120, background: dark ? "rgba(96,165,250,.08)" : "rgba(96,165,250,.14)" }}/>
         <div className="lv3-grain"/>
         <section id="tiers" className="snap-section relative max-w-[1200px] mx-auto py-[88px] px-[60px] max-desktop:py-16 max-desktop:px-10 max-md:py-[52px] max-md:px-5">
-          <div className="lv3-sh" data-reveal><span className="num">01</span><h2>Pick your <span className="serif">quality.</span></h2></div>
-          <p className="lv3-sub" data-reveal="1" style={{ color: soft }}>Every service comes in three tiers. Same platforms, same wallet, different sourcing and different cover. You always know what you're buying.</p>
+          <div className="lv3-sh" data-reveal><span className="num">01</span><h2>{tr("Pick your")} <span className="serif">{tr("quality.")}</span></h2></div>
+          <p className="lv3-sub" data-reveal="1" style={{ color: soft }}>{tr("Every service comes in three tiers. Same platforms, same wallet, different sourcing and different cover. You always know what you're buying.")}</p>
           <div data-reveal="2" className="flex flex-wrap gap-x-[22px] gap-y-2 mt-7 mb-[30px] ml-[30px] max-md:ml-0 max-md:gap-x-3.5">
-            <div className="w-full text-[13px] font-bold mb-0.5">All tiers include:</div>
+            <div className="w-full text-[13px] font-bold mb-0.5">{tr("All tiers include:")}</div>
             {[currency === "NGN" ? tr("Naira pricing, no FX markup") : tr("Prices shown in your currency"),tr("Starts in under 60 seconds"),tr("Live order tracking"),tr("Real humans on WhatsApp")].map(x => <span key={x} className="inline-flex items-center gap-[7px] text-[13.5px]" style={{ color: soft }}><span style={{ color: "#c47d8e" }}><Check/></span>{x}</span>)}
           </div>
           <div data-reveal="3" className="grid grid-cols-3 max-desktop:grid-cols-2 max-md:grid-cols-1 gap-[18px] items-stretch">
@@ -194,7 +194,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
               </div>
             ); })}
           </div>
-          <div className="mt-6 ml-[30px] max-md:ml-0 text-[13.5px]" style={{ color: soft }}>Prices shown are Instagram followers per 1,000. <a href="/pricing" className="font-bold no-underline" style={{ color: "#c47d8e" }}>See every platform →</a></div>
+          <div className="mt-6 ml-[30px] max-md:ml-0 text-[13.5px]" style={{ color: soft }}>{tr("Prices shown are Instagram followers per 1,000.")} <a href="/pricing" className="font-bold no-underline" style={{ color: "#c47d8e" }}>{tr("See every platform →")}</a></div>
         </section>
       </div>
 
@@ -203,10 +203,10 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
         <div className="lv3-dots"/>
         <div className="lv3-glow" style={{ width: 560, height: 560, top: -180, left: "30%", background: "rgba(196,125,142,.18)" }}/>
         <section id="curated" className="snap-section relative max-w-[1200px] mx-auto py-[88px] px-[60px] max-desktop:py-16 max-desktop:px-10 max-md:py-[52px] max-md:px-5">
-          <div className="lv3-sh" data-reveal><span className="num">02</span><h2>Stop testing panels. <span className="serif">{tr("We already did.")}</span></h2></div>
+          <div className="lv3-sh" data-reveal><span className="num">02</span><h2>{tr("Stop testing panels.")} <span className="serif">{tr("We already did.")}</span></h2></div>
           <div className="grid grid-cols-[1fr_1.1fr] max-desktop:grid-cols-1 gap-[60px] max-desktop:gap-[34px] items-center mt-2">
             <div>
-              <p className="lv3-sub" data-reveal="1" style={{ color: soft }}>Most people find good services the expensive way: buy from five panels, watch three drop, chase refunds from two. Nitro tests every service before it's listed, sorts it into a tier you can understand, and pulls it the moment quality slips.</p>
+              <p className="lv3-sub" data-reveal="1" style={{ color: soft }}>{tr("Most people find good services the expensive way: buy from five panels, watch three drop, chase refunds from two. Nitro tests every service before it's listed, sorts it into a tier you can understand, and pulls it the moment quality slips.")}</p>
               <div data-reveal="2" className="flex flex-col gap-3 mt-[26px] ml-[30px] max-md:ml-0">
                 {[[<><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></>,tr("Tested before it's listed"),tr("Real orders, real retention checks. If it doesn't hold, it never goes up.")],[<><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></>,tr("Retested, and delisted when it slips"),tr("Suppliers change. When one degrades, the service comes down until it passes again.")],[<><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></>,tr("Three tiers, zero guesswork"),tr("Budget, Standard, Premium. Not 400 lookalike listings with mystery names.")]].map(([ico, b, s], i) => (
                   <div key={i} className="flex gap-3 items-start">
@@ -219,7 +219,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
             <div data-reveal="2" data-funnel="1" className="grid grid-cols-[1fr_44px_1fr] max-md:grid-cols-1 gap-3 max-md:gap-2.5 items-center">
               <div className="flex flex-col gap-2">
                 <div className="text-[10.5px] font-extrabold tracking-[1.4px] uppercase text-center mb-0.5" style={{ color: muted }}>{tr("Everywhere else")}</div>
-                {[["Panel A · IG Followers",tr("Dropped 40%"),"bad"],["Panel B · IG Followers",tr("Never delivered"),"bad"],["Panel C · IG Followers","3 days late","meh"],["Panel D · IG Followers",tr("Refund pending"),"meh"],["Panel E · IG Followers",tr("Actually good"),"ok"]].map(([n, s, k], i) => (
+                {[["Panel A · IG Followers",tr("Dropped 40%"),"bad"],["Panel B · IG Followers",tr("Never delivered"),"bad"],["Panel C · IG Followers",tr("3 days late"),"meh"],["Panel D · IG Followers",tr("Refund pending"),"meh"],["Panel E · IG Followers",tr("Actually good"),"ok"]].map(([n, s, k], i) => (
                   <div key={n} className={"lv3-pcard" + (i < dimmed ? " dim" : "")} style={{ background: panel, border: `1px solid ${brd}`, color: text }}>
                     <span className="font-bold flex-1">{n}</span>
                     <span className="lv3-ps" style={k === "bad" ? { background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.1)", color: dark ? "#fca5a5" : "#dc2626" } : k === "meh" ? { background: dark ? "rgba(224,164,88,.14)" : "rgba(217,119,6,.12)", color: dark ? "#e0a458" : "#d97706" } : { background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.1)", color: dark ? "#6ee7b7" : "#059669" }}>{s}</span>
@@ -247,9 +247,9 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
         <div className="lv3-glow" style={{ width: 560, height: 560, bottom: -280, right: "8%", background: dark ? "rgba(242,184,102,.08)" : "rgba(242,184,102,.16)" }}/>
         <div className="lv3-grain"/>
         <section id="how" className="snap-section relative max-w-[1200px] mx-auto py-[88px] px-[60px] max-desktop:py-16 max-desktop:px-10 max-md:py-[52px] max-md:px-5">
-          <div className="lv3-sh" data-reveal><span className="num">03</span><h2>Three steps, <span className="serif">no waiting.</span></h2></div>
+          <div className="lv3-sh" data-reveal><span className="num">03</span><h2>{tr("Three steps,")} <span className="serif">{tr("no waiting.")}</span></h2></div>
           <div data-reveal="1" className="grid grid-cols-3 max-md:grid-cols-1 gap-10 max-desktop:gap-6 max-md:gap-[22px] mt-9 ml-[30px] max-md:ml-0">
-            {[["/01",tr("Fund your wallet"),`Card, transfer or crypto. From ${money(1000)}, and your first deposit earns up to ${money(MAX_BONUS_NAIRA, { round: "down" })} free.`],["/02",tr("Paste your link"),"Pick the service and tier, paste the post or profile, choose instant or gradual delivery."],["/03",tr("Watch it deliver"),"Progress live on your dashboard, usually within minutes. Refill cover on Standard and Premium."]].map(([n, h, p]) => (
+            {[["/01",tr("Fund your wallet"),<>{tr("Card, transfer or crypto. From")} {money(1000)}{tr(", and your first deposit earns up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free.")}</>],["/02",tr("Paste your link"),tr("Pick the service and tier, paste the post or profile, choose instant or gradual delivery.")],["/03",tr("Watch it deliver"),tr("Progress live on your dashboard, usually within minutes. Refill cover on Standard and Premium.")]].map(([n, h, p]) => (
               <div key={n}><div className="m text-xs font-bold mb-3" style={{ color: "#c47d8e" }}>{n}</div><h4 className="text-lg font-bold mb-2">{h}</h4><p className="text-[14.5px] leading-[1.6]" style={{ color: soft }}>{p}</p></div>
             ))}
           </div>
@@ -263,8 +263,8 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
         <div className="lv3-glow" style={{ width: 520, height: 520, bottom: -240, right: -120, background: dark ? "rgba(196,125,142,.1)" : "rgba(255,255,255,.55)" }}/>
         <div className="lv3-grain"/>
         <section id="reviews" className="snap-section relative max-w-[1200px] mx-auto py-[88px] px-[60px] max-desktop:py-16 max-desktop:px-10 max-md:py-[52px] max-md:px-5">
-          <div className="lv3-sh" data-reveal><span className="num">04</span><h2>Creators who <span className="serif">trust us.</span></h2></div>
-          <p className="lv3-sub" data-reveal="1" style={{ color: soft }}>Real reviews from Nigerian creators and businesses growing with Nitro. Tap the video.</p>
+          <div className="lv3-sh" data-reveal><span className="num">04</span><h2>{tr("Creators who")} <span className="serif">{tr("trust us.")}</span></h2></div>
+          <p className="lv3-sub" data-reveal="1" style={{ color: soft }}>{tr("Real reviews from Nigerian creators and businesses growing with Nitro. Tap the video.")}</p>
           <div className="lv3-bento" data-reveal="2">
             <div className="lv3-bcard flex flex-col justify-center min-h-[340px] max-md:min-h-0 overflow-hidden py-[34px] px-9 max-md:py-[26px] max-md:px-[22px]" style={{ gridArea: "feat", background: panel, border: `1px solid ${brd}` }}>
               <div className="absolute -top-2.5 left-[22px] serif text-[160px] leading-none select-none" style={{ color: "rgba(196,125,142,.2)" }}>“</div>
@@ -290,12 +290,12 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
             </div>
             <div className="lv3-bcard flex flex-col gap-2.5" style={{ gridArea: "r1", background: panel, border: `1px solid ${brd}` }}>
               <div className="flex gap-0.5">{[0,1,2,3,4].map(i => <Star key={i} c="#fbbf24"/>)}</div>
-              <p className="text-sm leading-[1.55] flex-1 m-0">"Every song I drop, I run the views here first. Three months now, e never fail me once."</p>
+              <p className="text-sm leading-[1.55] flex-1 m-0">tr("Every song I drop, I run the views here first. Three months now, e never fail me once.")</p>
               <div className="flex items-center gap-[9px] text-[12.5px]" style={{ color: muted }}><i className="not-italic w-7 h-7 rounded-[9px] flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: "#e0a458" }}>TM</i><div><b className="block text-[13px]" style={{ color: text }}>Tunde M.</b>{tr("Music Producer")}</div></div>
             </div>
             <div className="lv3-bcard flex flex-col gap-2.5" style={{ gridArea: "r2", background: panel, border: `1px solid ${brd}` }}>
-              <span className="inline-flex self-start py-[3px] px-[9px] rounded-full text-[10.5px] font-extrabold" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.1)", color: dark ? "#6ee7b7" : "#059669" }}>Saves ₦50K monthly</span>
-              <p className="text-sm leading-[1.55] flex-1 m-0">"I run social media for 12 clients. The bulk pricing alone saves me ₦50,000 every month."</p>
+              <span className="inline-flex self-start py-[3px] px-[9px] rounded-full text-[10.5px] font-extrabold" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.1)", color: dark ? "#6ee7b7" : "#059669" }}>{tr("Saves ₦50K monthly")}</span>
+              <p className="text-sm leading-[1.55] flex-1 m-0">tr("I run social media for 12 clients. The bulk pricing alone saves me ₦50,000 every month.")</p>
               <div className="flex items-center gap-[9px] text-[12.5px]" style={{ color: muted }}><i className="not-italic w-7 h-7 rounded-[9px] flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: "#a5b4fc" }}>EN</i><div><b className="block text-[13px]" style={{ color: text }}>Emeka N.</b>{tr("Digital Marketer")}</div></div>
             </div>
             <div className="lv3-bcard text-white flex flex-col justify-center gap-1.5 overflow-hidden" style={{ gridArea: "stat", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", border: "none" }}>
@@ -318,10 +318,10 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
           <div className="relative z-[2] max-w-[1100px] mx-auto grid grid-cols-[1.15fr_.85fr] max-desktop:grid-cols-1 gap-[50px] max-desktop:gap-[34px] items-center pt-[84px] px-[60px] pb-[76px] max-desktop:!pt-16 max-desktop:!px-10 max-desktop:!pb-[60px] max-md:!pt-14 max-md:!px-[22px] max-md:!pb-[52px]">
             <div>
               <div data-reveal className="text-[11px] font-bold tracking-[3px] uppercase mb-4" style={{ color: dark ? "#c47d8e" : "rgba(255,255,255,.72)" }}>{tr("No card. No contract. No waiting.")}</div>
-              <h2 data-reveal="1" className="text-[clamp(36px,4.6vw,62px)] font-bold text-white leading-[1.02] -tracking-[2.4px] m-0">Your audience <br/><span className="serif italic font-normal -tracking-[.5px]">won't grow itself.</span></h2>
-              <p data-reveal="2" className="text-[16.5px] leading-[1.7] max-w-[480px] mt-[18px] mb-[26px]" style={{ color: "rgba(255,255,255,.82)" }}>Every minute you wait, someone with worse content and better numbers is getting the deal, the booking, the follow. Fund a wallet, pick a tier, watch it move.</p>
+              <h2 data-reveal="1" className="text-[clamp(36px,4.6vw,62px)] font-bold text-white leading-[1.02] -tracking-[2.4px] m-0">{tr("Your audience")} <br/><span className="serif italic font-normal -tracking-[.5px]">{tr("won't grow itself.")}</span></h2>
+              <p data-reveal="2" className="text-[16.5px] leading-[1.7] max-w-[480px] mt-[18px] mb-[26px]" style={{ color: "rgba(255,255,255,.82)" }}>{tr("Every minute you wait, someone with worse content and better numbers is getting the deal, the booking, the follow. Fund a wallet, pick a tier, watch it move.")}</p>
               <div data-reveal="3" className="flex gap-3 flex-wrap items-center max-md:flex-col max-md:items-stretch">
-                <a href="/signup" onClick={e => { e.preventDefault(); setModal("signup"); }} className="py-4 px-[34px] rounded-full text-[15.5px] font-extrabold no-underline text-center transition-transform duration-200 hover:scale-[1.04]" style={{ background: "#fff", color: "#1a1a1a", boxShadow: "0 10px 32px rgba(0,0,0,.2)" }}>Start Growing Now →</a>
+                <a href="/signup" onClick={e => { e.preventDefault(); setModal("signup"); }} className="py-4 px-[34px] rounded-full text-[15.5px] font-extrabold no-underline text-center transition-transform duration-200 hover:scale-[1.04]" style={{ background: "#fff", color: "#1a1a1a", boxShadow: "0 10px 32px rgba(0,0,0,.2)" }}>{tr("Start Growing Now →")}</a>
                 {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 py-[15px] px-6 rounded-full text-[14.5px] font-bold text-white no-underline transition-colors duration-200" style={{ background: "rgba(37,211,102,.2)", border: "1px solid rgba(37,211,102,.5)" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d={WA_PATH}/></svg>{tr("Ask us anything")}</a>}
               </div>
               <div data-reveal="3" className="flex items-center gap-3 mt-[26px] text-[13px]" style={{ color: "rgba(255,255,255,.8)" }}>
@@ -332,12 +332,12 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
             <div data-reveal="2" className="relative rounded-[22px] p-[26px] text-white backdrop-blur-[14px]" style={{ background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.28)" }}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-11 h-11 rounded-[13px] flex items-center justify-center shrink-0" style={{ background: "#fff", color: "#8b4a5e" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></div>
-                <div><b className="block text-base font-extrabold">{tr("Your first push is on us")}</b><span className="text-[12.5px]" style={{ opacity: .85 }}>Up to ₦1,500 in promo credit, first deposit</span></div>
+                <div><b className="block text-base font-extrabold">{tr("Your first push is on us")}</b><span className="text-[12.5px]" style={{ opacity: .85 }}>{tr("Up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("in promo credit, first deposit")}</span></div>
               </div>
               <ul className="list-none p-0 m-0 flex flex-col gap-[9px]">
-                {[`Fund from ${money(1000)} by card, transfer or crypto`,tr("Pick Budget, Standard or Premium per order"),tr("Delivery starts in under 60 seconds"),tr("Undelivered orders refund automatically")].map(x => <li key={x} className="flex gap-[9px] text-[13.5px] items-start leading-[1.45]"><span className="mt-[3px]"><Check/></span>{x}</li>)}
+                {[<>{tr("Fund from")} {money(1000)} {tr("by card, transfer or crypto")}</>,tr("Pick Budget, Standard or Premium per order"),tr("Delivery starts in under 60 seconds"),tr("Undelivered orders refund automatically")].map(x => <li key={x} className="flex gap-[9px] text-[13.5px] items-start leading-[1.45]"><span className="mt-[3px]"><Check/></span>{x}</li>)}
               </ul>
-              <div className="mt-4 pt-3.5 flex justify-between gap-2.5 flex-wrap text-[11.5px]" style={{ borderTop: "1px solid rgba(255,255,255,.22)", opacity: .85 }}><span>{tr("Account in 30 seconds")}</span><b className="m">0 monthly fees</b></div>
+              <div className="mt-4 pt-3.5 flex justify-between gap-2.5 flex-wrap text-[11.5px]" style={{ borderTop: "1px solid rgba(255,255,255,.22)", opacity: .85 }}><span>{tr("Account in 30 seconds")}</span><b className="m">{tr("0 monthly fees")}</b></div>
             </div>
           </div>
         </div>
@@ -394,7 +394,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
               {/* Row 3: baseline */}
               <div className="lv3-ft-base">
                 <span className="m">{"©"} {new Date().getFullYear()>2025?`2025–${new Date().getFullYear()}`:"2025"} The Nitro NG · RC 9514845</span>
-                <span>Built in Lagos 🇳🇬</span>
+                <span>{tr("Built in Lagos 🇳🇬")}</span>
               </div>
 
             </div>
