@@ -215,7 +215,7 @@ export default function EarnPage({ dark, t }) {
                         </div>
                       </div>
                     </div>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: dark ? 'rgba(196,125,142,.12)' : 'rgba(196,125,142,.08)', color: t.accent }}>₦{(w.amount / 100).toLocaleString()}</span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: dark ? 'rgba(196,125,142,.12)' : 'rgba(196,125,142,.08)', color: t.accent }}>{money(w.amount / 100, { round: "down" })}</span>
                   </div>
                 ))}
               </div>

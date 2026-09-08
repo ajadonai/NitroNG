@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
-import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
+// import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
 import { PhoneField } from "./phone-field";
 import { useMoney } from "./locale";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
@@ -252,8 +252,14 @@ function LandingInner({ initialAuthQuery }){
               {[["Tiers","tiers"],["Why curated","curated"],["How it works","how"],["Reviews","reviews"]].map(([l,id])=><button key={l} onClick={()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"})} className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{color:"rgba(255,255,255,.75)"}}>{l}</button>)}<a href="/resellers" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:"rgba(255,255,255,.75)"}}>Resellers</a><a href="/blog" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:"rgba(255,255,255,.75)"}}>Blog</a>
           </div>
           <div className="nav-right flex items-center gap-2.5">
-            <CurrencySwitcher />
-            <LanguageSwitcher />
+            {/* Currency and language are hidden until the switch is finished —
+            Trip's call, 8 Sep 2026. Uncomment both, and the import above, to
+            put them back. The provider stays mounted: every price still goes
+            through the formatter, which prints naira with no control present.
+            See the note in components/locale.jsx about people who already
+            chose a currency before this was switched off. */}
+            {/* <CurrencySwitcher /> */}
+            {/* <LanguageSwitcher /> */}
             <ThemeToggle dark={dark} onToggle={toggleTheme} />
             <button onClick={()=>setModal("login")} className="nav-login-btn py-[7px] px-5 text-sm font-semibold cursor-pointer border-none">Log in</button>
             <button type="button" onClick={()=>setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="nav-burger desktop:hidden"><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /></button><button onClick={()=>setModal("signup")} className="nav-signup-btn max-desktop:!hidden py-[7px] px-5 border-none text-sm font-semibold cursor-pointer" style={{background:"#fff",color:"#1a1a1a"}}>Get started</button>
@@ -292,7 +298,7 @@ function LandingInner({ initialAuthQuery }){
 
               {/* CTAs — desktop/tablet */}
               <div className="fu fd3 flex gap-[18px] items-center flex-wrap max-desktop:!hidden">
-                <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hero-cta-btn inline-flex items-center gap-2 py-[15px] px-[26px] rounded-xl text-[15px] font-bold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(0,0,0,.22)]" style={{background:dark?"linear-gradient(135deg,#c47d8e,#8b5e6b)":"#fff",color:dark?"#fff":"#1a1a1a"}}>🎁 Start with {money(MAX_BONUS_NAIRA)} free credit →</a>
+                <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hero-cta-btn inline-flex items-center gap-2 py-[15px] px-[26px] rounded-xl text-[15px] font-bold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(0,0,0,.22)]" style={{background:dark?"linear-gradient(135deg,#c47d8e,#8b5e6b)":"#fff",color:dark?"#fff":"#1a1a1a"}}>🎁 Start with {money(MAX_BONUS_NAIRA, { round: "down" })} free credit →</a>
                 <a href="/pricing" onClick={e=>{e.preventDefault();document.getElementById("tiers")?.scrollIntoView({behavior:"smooth",block:"start"})}} className="text-[15px] font-semibold no-underline pb-0.5" style={{color:dark?t.text:"#fff",borderBottom:`1.5px solid ${dark?"rgba(255,255,255,.2)":"rgba(255,255,255,.5)"}`}}>See the tiers</a>
               </div>
 
@@ -308,7 +314,7 @@ function LandingInner({ initialAuthQuery }){
                   </div>
                   <div className="hc-gift">
                     <span className="hc-gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></span>
-                    <span><b>Up to {money(MAX_BONUS_NAIRA)} in free promo credit</b><i>to give your next post a real push</i></span>
+                    <span><b>Up to {money(MAX_BONUS_NAIRA, { round: "down" })} in free promo credit</b><i>to give your next post a real push</i></span>
                   </div>
                   <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hc-cta hero-cta-pulse no-underline">Create free account →</a>
                   <div className="hc-login">Already have an account? <a href="/?login=1" onClick={e=>{e.preventDefault();setModal("login")}}>Log in</a></div>

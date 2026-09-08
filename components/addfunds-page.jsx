@@ -6,7 +6,9 @@ import { useToast } from "./toast";
 import { fN, fHeld, fD } from "../lib/format";
 import { useMoney, useLocale } from "./locale";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
-import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
+import { depositPresets } from "../lib/currency";
+import { BONUS_PRESETS, bonusPresetsFor, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
+import { nairaPerUnit } from "../lib/currency";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { PointsModal } from "./rewards";
 import NitroLoader from "./nitro-loader";
@@ -110,7 +112,6 @@ function txDesc(tx) {
   return tx.reference || "";
 }
 
-const PRESETS = [1000, 2000, 5000, 10000, 20000, 50000];
 
 const ACCEPTED_TYPES = [
   { label: "Cards", short: "Cards", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
@@ -295,13 +296,15 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     const naira = raw === "" ? null : loc.toNaira(raw);
     setAmount(naira === null ? "" : String(naira));
   };
-  // A preset is a naira figure; the box shows its equivalent.
-  const setPreset = (naira) => {
-    setAmount(String(naira));
-    if (fxReady) {
-      const shown = loc.toDisplay(naira);
-      setTyped(shown === null ? "" : String(Number(shown.toFixed(2))));
-    }
+  // Quick-picks are already in the currency on screen, so tapping one fills the
+  // box with it as typed and the naira charge is derived, exactly as if the
+  // customer had keyed it themselves. In naira the two are the same figure.
+  const presets = depositPresets(fxReady ? currency : "NGN");
+  const setPreset = (value) => {
+    if (!fxReady) { setAmount(String(value)); return; }
+    setTyped(String(value));
+    const naira = loc.toNaira(value);
+    setAmount(naira === null ? "" : String(naira));
   };
   const valid = numAmount >= 1000;
   const balance = user?.balance || 0;
@@ -311,8 +314,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   const pendingTotal = pendingDeposits.reduce((s, tx) => s + (tx.amount || 0), 0);
   const hasNonManualProgress = pendingDeposits.some(tx => tx.method !== 'manual');
   const pendingSummaryText = hasNonManualProgress
-    ? `${pendingDeposits.length} deposit${pendingDeposits.length === 1 ? '' : 's'}${pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ''} in progress`
-    : `${pendingDeposits.length} pending deposit${pendingDeposits.length === 1 ? '' : 's'}${pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ''} awaiting confirmation`;
+    ? `${pendingDeposits.length} deposit${pendingDeposits.length === 1 ? '' : 's'}${pendingTotal > 0 ? ` · ${money(pendingTotal, { round: "down" })}` : ''} in progress`
+    : `${pendingDeposits.length} pending deposit${pendingDeposits.length === 1 ? '' : 's'}${pendingTotal > 0 ? ` · ${money(pendingTotal, { round: "down" })}` : ''} awaiting confirmation`;
 
   // Coupon state
   const [showCoupon, setShowCoupon] = useState(false);
@@ -470,6 +473,31 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     }
   };
 
+  // Which bonus ladder applies is decided by the rail the money arrives on, not
+  // by the currency on screen — crypto is dollar-denominated, so a first
+  // deposit there is scored on the dollar ladder (lib/welcome-bonus.js). The
+  // figures are still shown in whatever currency the customer is reading, so a
+  // Nigerian paying crypto sees the dollar ladder rendered in naira. Bonuses
+  // round down, so the card never promises more than the rail will pay.
+  // The rail decides which ladder applies. Crypto is dollar-denominated today;
+  // when Flutterwave collects in cedi or shillings this is where that rail
+  // names its currency, and everything below follows without further change.
+  const railCurrency = method === "crypto" ? "USD" : "NGN";
+  const cryptoRail = railCurrency !== "NGN";
+  // A Nigerian reading the site in naira never triggers the rate fetch, but the
+  // dollar ladder cannot be shown in naira without it. Asking here costs one
+  // small cached request, and only for people who picked crypto.
+  useEffect(() => { if (cryptoRail) loc?.ensureRates?.(); }, [cryptoRail, loc]);
+  const railRate = cryptoRail ? nairaPerUnit(railCurrency, loc?.fx || {}) : null;
+  const railLadder = cryptoRail ? bonusPresetsFor(railCurrency) : null;
+  const bonusCards = (railLadder && railRate > 0)
+    ? railLadder.map(p => ({
+        amount: Math.ceil(p.amount * railRate),
+        bonus: Math.floor(p.bonus * railRate),   // never promise more than the rail pays
+        tag: p.tag,
+      }))
+    : BONUS_PRESETS;
+
   const welcomeEligible = user?.welcomeBonusEligible;
   const topup = !welcomeEligible ? user?.topupBonus : null;
   const cryptoPresentation = cryptoPaymentPresentation(cryptoResult || { status: cryptoStatus });
@@ -536,7 +564,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       {welcomeEligible && (
         <>
           <div className="grid grid-cols-3 gap-2 mb-3 pt-2">
-            {BONUS_PRESETS.map(p => {
+            {bonusCards.map(p => {
               const sel = numAmount === p.amount;
               const total = p.amount + p.bonus;
               return (
@@ -568,9 +596,9 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       )}
       {!welcomeEligible && (
         <div className="grid grid-cols-3 gap-2 max-md:gap-1.5 mb-3">
-          {PRESETS.map(p => (
+          {presets.map(p => (
             <button key={p} onClick={() => setPreset(p)} className="m py-[13px] max-desktop:py-[11px] max-md:py-2.5 rounded-[10px] text-base max-desktop:text-[15px] max-md:text-sm font-semibold text-center cursor-pointer transition-[border-color,background-color,color,transform] duration-150 hover:translate-y-[-1px]" style={{ border: `1px solid ${numAmount === p ? t.accent : t.cardBorder}`, background: numAmount === p ? (dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)") : "transparent", color: numAmount === p ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.45)") }}>
-              {fxReady ? money(p) : `₦${p >= 1000 ? `${p / 1000}K` : p}`}
+              {fxReady ? loc.fmtNative(p) : `₦${p >= 1000 ? `${p / 1000}K` : p}`}
             </button>
           ))}
         </div>
@@ -838,14 +866,14 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               {[
                 ["Deposit", <b key="d" className="m text-[13px] font-semibold text-t-text">{valid ? money(numAmount) : money(0)}</b>],
                 ["Fee", <b key="f" className="text-[13px] font-semibold text-t-text">Free</b>],
-                couponApplied && discount > 0 ? ["Coupon bonus", <b key="c" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{fN(discount / 100)}</b>] : null,
+                couponApplied && discount > 0 ? ["Coupon bonus", <b key="c" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(discount / 100, { round: "down" })}</b>] : null,
                 wb > 0 ? ["Welcome bonus", <b key="w" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(wb, { round: "down" })}</b>] : null,
               ].filter(Boolean).map(([label, val], i) => (
                 <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}><span>{label}</span>{val}</div>
               ))}
               <div className="flex items-center justify-between gap-3 py-3" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
                 <span className="text-[13px] font-semibold text-t-text">{extra > 0 ? "You get" : "Total"}</span>
-                <b className="m text-[18px] font-bold" style={{ color: valid ? t.text : t.textMuted }}>{valid ? fN(numAmount + extra) : "—"}</b>
+                <b className="m text-[18px] font-bold" style={{ color: valid ? t.text : t.textMuted }}>{valid ? money(numAmount + extra, { round: "down" }) : "—"}</b>
               </div>
             </div>
           ); })()}
@@ -1084,7 +1112,7 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
               </div>
               <div className="text-right shrink-0">
                 <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: rowColor }}>
-                  {txAmountPrefix(tx)}{fN(tx.amount)}
+                  {txAmountPrefix(tx)}{money(tx.amount, { round: tx.amount < 0 ? "up" : "down" })}
                 </div>
                 <div className="text-[11px] mt-0.5 text-t-text-muted">{tx.date ? fD(tx.date, true) : ""}</div>
               </div>
@@ -1134,7 +1162,7 @@ export function AddFundsSidebar({ txs, dark }) {
       <RailCard>
         {deposits.length === 0 ? <RailEmpty>No deposits yet.</RailEmpty> : deposits.map(tx => {
           const [ini, name] = METHOD[tx.method] || ["DP", tx.method ? tx.method.charAt(0).toUpperCase() + tx.method.slice(1) : "Deposit"];
-          return <RailRow key={tx.id || tx.reference} tile={ini} title={name} sub={`${tx.createdAt || tx.date ? fD(tx.createdAt || tx.date, true) : ""} · ${STATUS[tx.status] || tx.status}`} right={fN(Math.abs(tx.amount || 0))} />;
+          return <RailRow key={tx.id || tx.reference} tile={ini} title={name} sub={`${tx.createdAt || tx.date ? fD(tx.createdAt || tx.date, true) : ""} · ${STATUS[tx.status] || tx.status}`} right={money(Math.abs(tx.amount || 0), { round: (tx.amount || 0) < 0 ? "up" : "down" })} />;
         })}
       </RailCard>
     </div>

@@ -99,9 +99,9 @@ export const PLATFORM_GROUPS = [
 export const PLATFORMS = PLATFORM_GROUPS.flatMap(g => g.platforms);
 
 const TS = {
-  Budget: { bg: "#fef7ed", border: "#e8d5b8", text: "#854F0B", bgD: "#2d2210", borderD: "#5a4020", grad: "linear-gradient(135deg,#e0a458,#b45309)", label: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
-  Standard: { bg: "#eef4fb", border: "#b8d0e8", text: "#185FA5", bgD: "#0f1e30", borderD: "#1e4070", grad: "linear-gradient(135deg,#60a5fa,#2563eb)", label: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
-  Premium: { bg: "#f5eef5", border: "#d4b8d4", text: "#534AB7", bgD: "#221535", borderD: "#3d2060", grad: "linear-gradient(135deg,#a78bfa,#7c3aed)", label: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg> },
+  Budget: { bg: "#fef7ed", border: "#e8d5b8", text: "#854F0B", textD: "#f0c98a", bgD: "#2d2210", borderD: "#5a4020", grad: "linear-gradient(135deg,#e0a458,#b45309)", label: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
+  Standard: { bg: "#eef4fb", border: "#b8d0e8", text: "#185FA5", textD: "#93c5fd", bgD: "#0f1e30", borderD: "#1e4070", grad: "linear-gradient(135deg,#60a5fa,#2563eb)", label: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
+  Premium: { bg: "#f5eef5", border: "#d4b8d4", text: "#534AB7", textD: "#c4b5fd", bgD: "#221535", borderD: "#3d2060", grad: "linear-gradient(135deg,#a78bfa,#7c3aed)", label: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg> },
 };
 
 const PROV_COLORS = { mtp: "#ef4444", jap: "#3b82f6", dao: "#22c55e" };
@@ -133,7 +133,7 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, wa
           const displayPrice = promoOff > 0 ? Math.round(tier.price * (1 - promoOff)) : tier.price;
           const inCart = bulk ? (cartCounts?.[`${svc.id}:${tier.tier}`] || 0) : 0;
           return (
-            <button key={tier.tier} onClick={e => onPickTier(tier, e)} aria-pressed={isSel} className="no-tier-chip relative flex items-center gap-2 min-w-0 rounded-xl py-2 px-2 md:px-2.5 border-[1.5px] border-solid cursor-pointer font-[inherit] text-left transition-all duration-150 ease-in-out" style={{ background: dark ? s.bgD : s.bg, borderColor: isSel ? s.text : (dark ? s.borderD : s.border), color: s.text, boxShadow: isSel ? `0 0 0 2px ${s.text}` : undefined }}>
+            <button key={tier.tier} onClick={e => onPickTier(tier, e)} aria-pressed={isSel} className="no-tier-chip relative flex items-center gap-2 min-w-0 rounded-xl py-2 px-2 md:px-2.5 border-[1.5px] border-solid cursor-pointer font-[inherit] text-left transition-all duration-150 ease-in-out" style={{ background: dark ? s.bgD : s.bg, borderColor: isSel ? (dark ? s.textD : s.text) : (dark ? s.borderD : s.border), color: dark ? s.textD : s.text, boxShadow: isSel ? `0 0 0 2px ${dark ? s.textD : s.text}` : undefined }}>
               <span className="w-5 h-5 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: s.grad }}>{s.label}</span>
               {inCart > 0 && <span className="absolute -top-[7px] -right-[6px] min-w-[20px] h-5 px-1.5 rounded-full text-[10.5px] font-bold flex items-center justify-center" style={{ background: dark ? "#f4f1ed" : "#1c1b19", color: dark ? "#0b0e1a" : "#fff", border: `2px solid ${dark ? "#1a1329" : "#fff"}` }}>×{inCart}</span>}
               <span className="flex flex-col items-start gap-[2px] leading-none min-w-0">
@@ -1145,7 +1145,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           <div className="min-w-0 flex-1">
             <div className="text-[15px] max-md:text-sm font-semibold whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: t.text }}>{selSvc?.name}</div>
             <div className="text-sm mt-px">
-              <span className="font-semibold" style={{ color: TS[selTier.tier].text }}>{TS[selTier.tier].label} {selTier.tier}</span>
+              <span className="font-semibold" style={{ color: dark ? TS[selTier.tier].textD : TS[selTier.tier].text }}>{TS[selTier.tier].label} {selTier.tier}</span>
               <span style={{ color: t.textMuted }}> · {money(selTier.price)}</span>
             </div>
           </div>
@@ -1697,7 +1697,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-semibold truncate" style={{ color: bulkChrome.text }}>{o.name || o.service || o.link}</div>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      {o.tier && <span className="text-[11px] font-semibold py-0.5 px-1.5 rounded-md shrink-0" style={{ background: dark ? TS[o.tier]?.bgD : TS[o.tier]?.bg, color: TS[o.tier]?.text }}>{o.tier}</span>}
+                      {o.tier && <span className="text-[11px] font-semibold py-0.5 px-1.5 rounded-md shrink-0" style={{ background: dark ? TS[o.tier]?.bgD : TS[o.tier]?.bg, color: dark ? TS[o.tier]?.textD : TS[o.tier]?.text }}>{o.tier}</span>}
                       <span className="text-[11px]" style={{ color: bulkChrome.muted, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{(o.qty || 0).toLocaleString()}</span>
                     </div>
                   </div>
@@ -1771,7 +1771,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               <div className="flex items-center gap-2.5">
                 <span className="flex items-center justify-center w-5 h-5 shrink-0 [&_svg]:w-[18px] [&_svg]:h-[18px]" style={{ color: t.textMuted }}>{PLATFORMS.find(pl => pl.id === row.platform)?.icon}</span>
                 <div className="text-[13px] font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{row.name}</div>
-                <span className="text-[11px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={{ background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: TS[row.tier]?.text }}>{row.tier}</span>
+                <span className="text-[11px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={{ background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: dark ? TS[row.tier]?.textD : TS[row.tier]?.text }}>{row.tier}</span>
                 <span className="text-[11px] max-w-[120px] truncate font-[JetBrains_Mono,monospace] hidden md:inline" style={{ color: t.textMuted }}>{linkPreview}</span>
                 <span className="text-[13px] font-medium shrink-0" style={{ color: t.textMuted }}>{money(rowPrice)}</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1785,7 +1785,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               <div className="flex items-center gap-2.5 mb-3">
                 <span className="flex items-center justify-center w-5 h-5 shrink-0 [&_svg]:w-[18px] [&_svg]:h-[18px]" style={{ color: t.textMuted }}>{PLATFORMS.find(pl => pl.id === row.platform)?.icon}</span>
                 <div className="text-[13px] font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{row.name}</div>
-                <span className="text-[11px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={{ background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: TS[row.tier]?.text }}>{row.tier}</span>
+                <span className="text-[11px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={{ background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: dark ? TS[row.tier]?.textD : TS[row.tier]?.text }}>{row.tier}</span>
                 {hasValidLink && <button onClick={() => updateRow(idx, { expanded: false })} className="w-[24px] h-[24px] rounded-full bg-transparent border border-solid flex items-center justify-center shrink-0 p-0 cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>}
                 <button onClick={() => removeRow(idx)} disabled={loading} className="w-[24px] h-[24px] rounded-full bg-transparent border border-solid flex items-center justify-center text-[11px] shrink-0 p-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>

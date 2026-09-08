@@ -240,7 +240,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
         <section id="how" className="snap-section relative max-w-[1200px] mx-auto py-[88px] px-[60px] max-desktop:py-16 max-desktop:px-10 max-md:py-[52px] max-md:px-5">
           <div className="lv3-sh" data-reveal><span className="num">03</span><h2>Three steps, <span className="serif">no waiting.</span></h2></div>
           <div data-reveal="1" className="grid grid-cols-3 max-md:grid-cols-1 gap-10 max-desktop:gap-6 max-md:gap-[22px] mt-9 ml-[30px] max-md:ml-0">
-            {[["/01","Fund your wallet",`Card, transfer or crypto. From ${money(1000)}, and your first deposit earns up to ${money(MAX_BONUS_NAIRA)} free.`],["/02","Paste your link","Pick the service and tier, paste the post or profile, choose instant or gradual delivery."],["/03","Watch it deliver","Progress live on your dashboard, usually within minutes. Refill cover on Standard and Premium."]].map(([n, h, p]) => (
+            {[["/01","Fund your wallet",`Card, transfer or crypto. From ${money(1000)}, and your first deposit earns up to ${money(MAX_BONUS_NAIRA, { round: "down" })} free.`],["/02","Paste your link","Pick the service and tier, paste the post or profile, choose instant or gradual delivery."],["/03","Watch it deliver","Progress live on your dashboard, usually within minutes. Refill cover on Standard and Premium."]].map(([n, h, p]) => (
               <div key={n}><div className="m text-xs font-bold mb-3" style={{ color: "#c47d8e" }}>{n}</div><h4 className="text-lg font-bold mb-2">{h}</h4><p className="text-[14.5px] leading-[1.6]" style={{ color: soft }}>{p}</p></div>
             ))}
           </div>

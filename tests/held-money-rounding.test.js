@@ -34,6 +34,19 @@ describe("money someone holds never rounds up", () => {
     expect(read("components/m/payouts-page.jsx")).toContain("fHeld(data?.availableBalance || 0)");
   });
 
+
+  it("the welcome bonus never rounds up — it is a promise, not a price", () => {
+    // ₦1,500 ÷ 1529 = $0.98103. Rounded like a price it reads $0.99, which
+    // offers a cent that is not given. Trip caught this on the landing hero
+    // after it was already fixed on the dashboard, so it is checked across
+    // every surface that quotes the figure.
+    const dir = path.join(process.cwd(), "components");
+    const offenders = fs.readdirSync(dir, { recursive: true })
+      .filter(f => typeof f === "string" && f.endsWith(".jsx"))
+      .filter(f => fs.readFileSync(path.join(dir, f), "utf8").includes("money(MAX_BONUS_NAIRA)"));
+    expect(offenders).toEqual([]);
+  });
+
   it("leaves the shortfall rounding up — never understate what must be added", () => {
     const form = read("components/order-form.jsx");
     expect(form).toContain('Balance {money(balance, { round: "down" })} · short by {money(price - balance)}');

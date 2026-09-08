@@ -17,7 +17,17 @@ function componentsMissingHook(source) {
   let name = "<module>";
   let hasHook = false;
   let usedAt = 0;
-  const flush = () => { if (usedAt && !hasHook) missing.push(`${name} (line ${usedAt})`); };
+  let hookAt = 0;
+  // Two ways to get this wrong, and both ship: no hook at all ("money is not
+  // defined"), or a hook declared BELOW the first use, where a const is still
+  // in its temporal dead zone when a memo above it runs ("Cannot access 'money'
+  // before initialization"). The second one took down every dashboard render in
+  // production, so ordering is checked too.
+  const flush = () => {
+    if (!usedAt) return;
+    if (!hasHook) missing.push(`${name} (line ${usedAt}) — no useMoney()`);
+    else if (hookAt > usedAt) missing.push(`${name} — useMoney() on line ${hookAt} is below its first use on line ${usedAt}`);
+  };
 
   // A call, or the formatter handed to a helper as an argument — the second is
   // how the wallet broke the second time, and matching only calls missed it.
@@ -32,8 +42,9 @@ function componentsMissingHook(source) {
       ? ""
       : raw.replace(/'[^']*'|"[^"]*"|`[^`]*`/g, "''");
     const m = line.match(COMPONENT_START);
-    if (m) { flush(); name = m[1] || m[2]; hasHook = false; usedAt = 0; }
-    if (/const money = useMoney\(\)/.test(line) || PARAM.test(line)) hasHook = true;
+    if (m) { flush(); name = m[1] || m[2]; hasHook = false; usedAt = 0; hookAt = 0; }
+    if (/const money = useMoney\(\)/.test(line)) { hasHook = true; if (!hookAt) hookAt = i + 1; }
+    else if (PARAM.test(line)) { hasHook = true; if (!hookAt) hookAt = 1; }
     if (!usedAt && USE.test(line) && !line.includes("useMoney")) usedAt = i + 1;
   });
   flush();

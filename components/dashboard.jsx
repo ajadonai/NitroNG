@@ -7,7 +7,7 @@ import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
 import { useMoney } from "./locale";
 import { DEFAULT_COUNTRY, validatePhone } from "../lib/phone-countries";
 import { PhoneField } from "./phone-field";
-import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
+// import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
 import { NitroWordmark } from "./nitro-logo";
 import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
@@ -338,6 +338,11 @@ export default function Dashboard({ initialData }) {
 
 function DashboardInner({ initialData }) {
   const { dark, setDark, toggleTheme, t: baseT, themeMode, setThemeMode } = useTheme();
+  // Declared up here, not beside the other formatters further down: the
+  // notification memo builds its transaction lines with it around line 690, and
+  // a `const` below that point is still in its temporal dead zone when the memo
+  // runs. That shipped, and every dashboard render threw.
+  const money = useMoney();
   const applyThemeMode = (mode) => {
     setThemeMode(mode);
     try { localStorage.setItem("nitro-theme", mode); } catch {}
@@ -688,14 +693,14 @@ function DashboardInner({ initialData }) {
       }),
       ...txs.filter(tx => tx.type === "deposit" && tx.status === "Completed" && tx.date && new Date(tx.date) >= cutoff).map(tx => ({
         id: `dep-${tx.id || tx.reference}`, type: "deposit", title: "Funds added",
-        desc: `${fN(tx.amount)} added via ${tx.method || "Flutterwave"}`,
+        desc: `${money(tx.amount, { round: "down" })} added via ${tx.method || "Flutterwave"}`,
         time: tx.date ? fD(tx.date) : "", ts: new Date(tx.date),
         color: dark_ ? "#6ee7b7" : "#059669",
         icon: "dollar",
       })),
       ...txs.filter(tx => (tx.type === "bonus" || tx.type === "admin_credit" || tx.type === "referral") && tx.date && new Date(tx.date) >= cutoff).map(tx => ({
         id: `bonus-${tx.id || tx.reference}`, type: "reward", title: tx.type === "referral" ? "Referral bonus" : tx.type === "bonus" ? "Reward received!" : "Balance credited",
-        desc: `${fN(tx.amount)} — ${(tx.description || "Bonus from Nitro").replace(/\s*\[[^\]]+\]\s*/g, " ").trim()}`,
+        desc: `${money(tx.amount, { round: "down" })} — ${(tx.description || "Bonus from Nitro").replace(/\s*\[[^\]]+\]\s*/g, " ").trim()}`,
         time: tx.date ? fD(tx.date) : "", ts: new Date(tx.date),
         color: dark_ ? "#e0a458" : "#d97706",
         icon: "gift",
@@ -770,7 +775,6 @@ function DashboardInner({ initialData }) {
 
 
   /* Theme — provided by ThemeProvider */
-  const money = useMoney();
 
   /* Refresh dashboard data */
   const refreshDashboard = async () => {
@@ -1282,8 +1286,14 @@ function DashboardInner({ initialData }) {
           </div>
         </div>
         <div className="dash-nav-right">
-          <CurrencySwitcher />
-          <LanguageSwitcher />
+          {/* Currency and language are hidden until the switch is finished —
+          Trip's call, 8 Sep 2026. Uncomment both, and the import above, to
+          put them back. The provider stays mounted: every price still goes
+          through the formatter, which prints naira with no control present.
+          See the note in components/locale.jsx about people who already
+          chose a currency before this was switched off. */}
+          {/* <CurrencySwitcher /> */}
+          {/* <LanguageSwitcher /> */}
           {/* Balance pill — desktop only. Balance as a number, Top up as the action inside it.
               The balance converts on the same rate as every price, so "can I afford
               this" has the same answer whichever unit is on screen. */}
@@ -1517,7 +1527,7 @@ function DashboardInner({ initialData }) {
               <div className="text-[11px] truncate text-t-text-muted">{user?.email || ""}</div>
             </div>
             <div className="text-right shrink-0">
-              <div className="m text-[15px] font-bold leading-tight text-t-text">₦{Math.round(user?.balance || 0).toLocaleString()}</div>
+              <div className="m text-[15px] font-bold leading-tight text-t-text">{money(user?.balance || 0, { round: "down" })}</div>
               <div className="text-[10px] font-bold uppercase tracking-[1px] text-t-text-muted">wallet</div>
             </div>
             <button type="button" aria-label="Top up wallet" onClick={() => { setActive("add-funds"); setMoreOpen(false); }} className="nitro-money-btn w-[30px] h-[30px] flex items-center justify-center shrink-0">
