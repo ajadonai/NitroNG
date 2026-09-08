@@ -316,7 +316,7 @@ function LandingInner({ initialAuthQuery }){
                   "You will be charged ₦…" line they meet at the wallet. */}
                 {currency === "NGN"
                   ? tr("Paid in naira, delivered in minutes, tested before you ever see it, and real people on WhatsApp")
-                  : tr("Charged in naira at checkout, delivered in minutes, tested before you ever see it, and real people on WhatsApp")} {tr("when you need them.")}</p>
+                  : tr("Delivered in minutes, tested before you ever see it, and real people on WhatsApp")} {tr("when you need them.")}</p>
 
               {/* CTAs — desktop/tablet */}
               <div className="fu fd3 flex gap-[18px] items-center flex-wrap max-desktop:!hidden">
