@@ -32,15 +32,19 @@ export const LANGUAGES = [
 ];
 
 /**
- * The nav switchers are commented out of every bar until the currency work is
- * finished (Trip's call, 8 Sep 2026). This is the other half of that: anyone
- * who picked a currency while the control was live still has it in
+ * The currency and language controls: off in production until the switch is
+ * finished (Trip's call, 8 Sep 2026), on locally so it can be worked on.
+ * NODE_ENV is inlined at build time, so a production build ships neither the
+ * buttons nor this branch. Replace the expression with `true` on the day it
+ * goes live.
+ *
+ * It gates two things, and the second is the one that is easy to miss: anyone
+ * who chose a currency while the buttons were live still has it in
  * localStorage, and with nothing on screen to change it they would be stuck
- * reading dollars with no way back. While this is false the saved choice is
- * ignored and everyone sees naira. Their preference is not deleted — flip this
- * true along with the nav buttons and it comes back.
+ * reading dollars with no way back. So the saved choice is ignored while the
+ * controls are hidden. Ignored, not deleted — it returns when they do.
  */
-const SWITCHER_LIVE = false;
+export const SWITCHER_LIVE = process.env.NODE_ENV === "development";
 
 const CURRENCY_KEY = "nitro-currency";
 const LANG_KEY = "nitro-lang";

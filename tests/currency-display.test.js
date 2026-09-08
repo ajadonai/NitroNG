@@ -223,21 +223,18 @@ describe("display currency — one deposit rate, read both ways", () => {
     });
   });
 
-  describe("active vs merely supported — the pre-Flutterwave gate", () => {
-    // GBP/GHS/KES convert correctly today (the math and the cross rates are
-    // ready) but nobody can actually pay Nitro in them: Flutterwave is
-    // hardcoded to NGN and the only foreign rail is dollar-denominated USDT.
-    // `active` is what the switcher gates on; it must not be conflated with
-    // "this module knows how to convert it", which conversion still needs.
-    it("only NGN and USD are active until a rail exists for the rest", () => {
-      expect(isActive("NGN")).toBe(true);
-      expect(isActive("USD")).toBe(true);
-      expect(isActive("GBP")).toBe(false);
-      expect(isActive("GHS")).toBe(false);
-      expect(isActive("KES")).toBe(false);
+  describe("active vs merely supported", () => {
+    // All five are offered now (8 Sep 2026). `active` gates only what the
+    // PICKER shows — the unit prices are read in. It never gated conversion,
+    // and it does not gate payment: Flutterwave still collects naira and the
+    // only foreign rail is USDT, which is why the deposit box prints the naira
+    // that will actually be charged underneath whatever you are reading.
+    it("offers every currency the switcher lists", () => {
+      for (const code of CURRENCY_CODES) expect(isActive(code), code).toBe(true);
     });
 
-    it("an inactive currency still converts — the rail is missing, not the maths", () => {
+    it("still refuses to convert without a rate, active or not", () => {
+      expect(convertFromNaira(2490, { code: "GBP", depositRate: 1151, usdRates: {} })).toBeNull();
       expect(convertFromNaira(2490, { code: "GBP", depositRate: 1151, usdRates: { GBP: 0.74 } })).not.toBeNull();
     });
 
@@ -268,8 +265,14 @@ describe("display currency — one deposit rate, read both ways", () => {
       expect(canDisplay("USD", { depositRate: 1151 })).toBe(true);
     });
 
-    it("an inactive currency is never offered, rate or no rate", () => {
-      expect(canDisplay("GBP", { depositRate: 1151, usdRates: { GBP: 0.74 } })).toBe(false);
+    it("a currency turned off is never offered, rate or no rate", () => {
+      // Nothing is off today, so this turns one off to prove the gate still
+      // works — it is what protects the picker if a rail is ever withdrawn.
+      const was = CURRENCIES.GBP.active;
+      CURRENCIES.GBP.active = false;
+      try {
+        expect(canDisplay("GBP", { depositRate: 1151, usdRates: { GBP: 0.74 } })).toBe(false);
+      } finally { CURRENCIES.GBP.active = was; }
     });
 
     it("activating a currency offers it only once its cross rate exists", () => {
