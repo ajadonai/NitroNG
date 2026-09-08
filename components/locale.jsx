@@ -31,6 +31,17 @@ export const LANGUAGES = [
   { code: "fr", label: "Français", flag: "🇫🇷", available: false },
 ];
 
+/**
+ * The nav switchers are commented out of every bar until the currency work is
+ * finished (Trip's call, 8 Sep 2026). This is the other half of that: anyone
+ * who picked a currency while the control was live still has it in
+ * localStorage, and with nothing on screen to change it they would be stuck
+ * reading dollars with no way back. While this is false the saved choice is
+ * ignored and everyone sees naira. Their preference is not deleted — flip this
+ * true along with the nav buttons and it comes back.
+ */
+const SWITCHER_LIVE = false;
+
 const CURRENCY_KEY = "nitro-currency";
 const LANG_KEY = "nitro-lang";
 const EMPTY_FX = { depositRate: null, usdRates: {} };
@@ -45,6 +56,7 @@ export function LocaleProvider({ children }) {
   // is also what quietly reverts anyone who chose a currency before it was
   // turned back off, without a jarring "your currency was reset" moment.
   useEffect(() => {
+    if (!SWITCHER_LIVE) return;
     try { const c = localStorage.getItem(CURRENCY_KEY); if (isActive(c)) setCurrencyState(c); } catch {}
     try { const l = localStorage.getItem(LANG_KEY); if (LANGUAGES.some(x => x.code === l && x.available)) setLangState(l); } catch {}
   }, []);
@@ -106,14 +118,18 @@ export function LocaleProvider({ children }) {
     (naira) => convertFromNaira(naira, { code: currency, depositRate: fx.depositRate, usdRates: fx.usdRates }),
     [currency, fx],
   );
+  // Formats a figure that is ALREADY in the display currency — the deposit
+  // quick-picks, which are native to each currency rather than converted.
+  const fmtNative = useCallback((amount) => formatMoney(amount, currency), [currency]);
+
   const toNaira = useCallback(
     (amount) => convertToNaira(amount, { code: currency, depositRate: fx.depositRate, usdRates: fx.usdRates }),
     [currency, fx],
   );
 
   const value = useMemo(
-    () => ({ currency, setCurrency, lang, setLang, fx, fxPending, fmt, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
-    [currency, setCurrency, lang, setLang, fx, fxPending, fmt, toDisplay, toNaira, ensureRates],
+    () => ({ currency, setCurrency, lang, setLang, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
+    [currency, setCurrency, lang, setLang, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates],
   );
 
   return <LocaleCtx.Provider value={value}>{children}</LocaleCtx.Provider>;

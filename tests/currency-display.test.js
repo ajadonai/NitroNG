@@ -8,6 +8,12 @@ import {
   depositRateForPremium,
   impliedPremiumPercent,
   isActive,
+  CURRENCY_CODES,
+  depositPresets,
+  DEPOSIT_PRESETS,
+  MIN_DEPOSIT_NAIRA,
+  MAX_DEPOSIT_NAIRA,
+  convertToNaira,
   canDisplay,
   formatMoney,
   formatDisplayPrice,
@@ -328,6 +334,41 @@ describe("display currency — one deposit rate, read both ways", () => {
           }
         }
       }
+    });
+  });
+
+  describe("deposit quick-picks are native to each currency, not converted", () => {
+    // Live rates the day this was written. The point of the ladders is that
+    // every button is a figure someone would type AND one the gateway will
+    // accept — a quick-pick that fails on tap is worse than no quick-pick.
+    const RATES = { depositRate: 1529, usdRates: { GBP: 0.739722, GHS: 11.364734, KES: 129.384717 } };
+
+    it("offers a ladder for every currency the switcher lists", () => {
+      expect(Object.keys(DEPOSIT_PRESETS).sort()).toEqual([...CURRENCY_CODES].sort());
+    });
+
+    it("is not the naira ladder converted — nobody chooses $32.70", () => {
+      const asUsd = DEPOSIT_PRESETS.NGN.map(n => convertFromNaira(n, { ...RATES, code: "USD" }));
+      expect(asUsd).not.toEqual(DEPOSIT_PRESETS.USD);
+      expect(DEPOSIT_PRESETS.USD.every(Number.isInteger)).toBe(true);
+    });
+
+    it("every button clears the gateway minimum once converted to naira", () => {
+      for (const code of CURRENCY_CODES) {
+        for (const preset of depositPresets(code)) {
+          const naira = convertToNaira(preset, { ...RATES, code });
+          expect(naira, `${code} ${preset}`).toBeGreaterThanOrEqual(MIN_DEPOSIT_NAIRA);
+          expect(naira, `${code} ${preset}`).toBeLessThanOrEqual(MAX_DEPOSIT_NAIRA);
+        }
+      }
+    });
+
+    it("climbs, and falls back to naira for anything unknown", () => {
+      for (const code of CURRENCY_CODES) {
+        const p = depositPresets(code);
+        expect(p).toEqual([...p].sort((a, b) => a - b));
+      }
+      expect(depositPresets("XYZ")).toEqual(DEPOSIT_PRESETS.NGN);
     });
   });
 
