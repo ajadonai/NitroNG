@@ -2,8 +2,8 @@
 import { useState, useEffect, useCallback, useMemo, createContext, useContext } from "react";
 import { NitroWordmark } from "./nitro-logo";
 import { PublicNavSheet, PUBLIC_LINKS } from "./public-nav-sheet";
-import { LocaleProvider } from "./locale";
-// import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
+import { LocaleProvider, SWITCHER_LIVE } from "./locale";
+import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
 import { usePathname } from "next/navigation";
 
 // ── Theme context ──
@@ -209,14 +209,10 @@ export default function SharedNav({ action = "back" }) {
             Log Out
           </button>
         )}
-        {/* Currency and language are hidden until the switch is finished —
-        Trip's call, 8 Sep 2026. Uncomment both, and the import above, to
-        put them back. The provider stays mounted: every price still goes
-        through the formatter, which prints naira with no control present.
-        See the note in components/locale.jsx about people who already
-        chose a currency before this was switched off. */}
-        {/* <CurrencySwitcher /> */}
-        {/* <LanguageSwitcher /> */}
+        {/* Local only until the currency switch is finished — see SWITCHER_LIVE
+            in components/locale.jsx. A production build drops both. */}
+        {SWITCHER_LIVE && <CurrencySwitcher />}
+        {SWITCHER_LIVE && <LanguageSwitcher />}
         <ThemeToggle dark={dark} onToggle={toggleTheme} />
         {/* The menu is the outermost control, where a thumb expects it. */}
         <button type="button" onClick={() => setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="nav-burger desktop:hidden"><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /></button>

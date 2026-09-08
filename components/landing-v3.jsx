@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
-// import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
+import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
+import { SWITCHER_LIVE } from "./locale";
 import { PhoneField } from "./phone-field";
 import { useMoney } from "./locale";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
@@ -252,14 +253,10 @@ function LandingInner({ initialAuthQuery }){
               {[["Tiers","tiers"],["Why curated","curated"],["How it works","how"],["Reviews","reviews"]].map(([l,id])=><button key={l} onClick={()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"})} className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{color:"rgba(255,255,255,.75)"}}>{l}</button>)}<a href="/resellers" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:"rgba(255,255,255,.75)"}}>Resellers</a><a href="/blog" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:"rgba(255,255,255,.75)"}}>Blog</a>
           </div>
           <div className="nav-right flex items-center gap-2.5">
-            {/* Currency and language are hidden until the switch is finished —
-            Trip's call, 8 Sep 2026. Uncomment both, and the import above, to
-            put them back. The provider stays mounted: every price still goes
-            through the formatter, which prints naira with no control present.
-            See the note in components/locale.jsx about people who already
-            chose a currency before this was switched off. */}
-            {/* <CurrencySwitcher /> */}
-            {/* <LanguageSwitcher /> */}
+            {/* Local only until the currency switch is finished — see SWITCHER_LIVE
+                in components/locale.jsx. A production build drops both. */}
+            {SWITCHER_LIVE && <CurrencySwitcher />}
+            {SWITCHER_LIVE && <LanguageSwitcher />}
             <ThemeToggle dark={dark} onToggle={toggleTheme} />
             <button onClick={()=>setModal("login")} className="nav-login-btn py-[7px] px-5 text-sm font-semibold cursor-pointer border-none">Log in</button>
             <button type="button" onClick={()=>setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="nav-burger desktop:hidden"><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /></button><button onClick={()=>setModal("signup")} className="nav-signup-btn max-desktop:!hidden py-[7px] px-5 border-none text-sm font-semibold cursor-pointer" style={{background:"#fff",color:"#1a1a1a"}}>Get started</button>

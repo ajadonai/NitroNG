@@ -95,7 +95,15 @@ describe("welcome bonus — one ladder per rail", () => {
     }
   });
 
-  it("is chosen by the rail, never by the display currency", () => {
+  it("is chosen by the customer's market, never by the rail or the display currency", () => {
+    // Country, because the rail was the wrong question: it gave a Nigerian
+    // paying USDT the dollar ladder, and made a US customer hunt for the
+    // payment method before their own ladder appeared. Country is set from the
+    // phone number at signup and only an admin can change it, so nobody picks
+    // their own bonus. The display switcher must never reach this decision.
+    expect(read("lib/deposit-finalization.js")).toContain("currencyForCountry(depositor?.country)");
+    expect(read("components/addfunds-page.jsx")).toContain("currencyForCountry(user?.country)");
+    expect(read("components/addfunds-page.jsx")).not.toContain('method === "crypto" ? "USD"');
     // The guarantee the whole display-currency design rests on: flipping the
     // switcher cannot change what you are paid.
     // Only the dollar-denominated rail names a foreign currency. Flutterwave is

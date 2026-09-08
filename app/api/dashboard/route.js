@@ -118,7 +118,7 @@ export async function GET() {
       where: { id: payload.id },
       select: {
         id: true, name: true, firstName: true, lastName: true, phone: true,
-        email: true, balance: true,
+        email: true, balance: true, country: true,
         referralCode: true, referredBy: true, emailVerified: true, createdAt: true,
         orderTourCompleted: true,
         notifOrders: true, notifPromo: true, notifEmail: true,
@@ -331,6 +331,9 @@ export async function GET() {
         lastName: tc(user.lastName || user.name.split(' ').slice(1).join(' ') || ''),
         phone: user.phone || '',
         email: user.email,
+        // The market this account is in. Decides which welcome-bonus ladder the
+        // wallet shows, and the server credits on the same field.
+        country: user.country || 'NG',
         balance: user.balance / 100,
         emailVerified: user.emailVerified,
         refs: referralCount,
