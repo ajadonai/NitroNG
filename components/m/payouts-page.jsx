@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, Chip, Empty, Fact, Facts, Field, Modal, dateOf, pitVars } from "./kit";
 import { useTheme } from "../shared-nav";
 import { useToast } from "../toast";
-import { fN } from "@/lib/format";
+import { fN, fHeld } from "@/lib/format";
 
 const STATUS = {
   paid: { label: "Paid", kind: "ok" },
@@ -111,7 +111,7 @@ export default function PayoutsPage({ initialData }) {
       <style>{PYO_CSS}</style>
 
       <Facts>
-        <Fact value={fN(data?.availableBalance || 0)} label="Ready to withdraw" sub="request any time" kind="ok" />
+        <Fact value={fHeld(data?.availableBalance || 0)} label="Ready to withdraw" sub="request any time" kind="ok" />
         <Fact value={fN(waiting)} label="Being paid" sub={waitingCount ? `${waitingCount} ${waitingCount === 1 ? "request" : "requests"} in the queue` : "nothing in the queue"} kind={waiting ? "warn" : undefined} />
         <Fact value={fN(sentTotal)} label="Paid out" sub={`${sent.length} ${sent.length === 1 ? "payout" : "payouts"} so far`} />
         <Fact value={fN(data?.minPayout || 0)} label="Minimum" sub="the least you can request" />
@@ -135,7 +135,7 @@ export default function PayoutsPage({ initialData }) {
             <button type="button" className="pt-b pri" disabled={!canRequest || submitting} onClick={handleRequest}>{submitting ? "Sending…" : "Request"}</button>
           </div>
           {submitError && <div className="pt-err">{submitError}</div>}
-          <div className="pt-note">{why || `Your whole available balance is ${fN(data?.availableBalance || 0)}. We pay it into the account below.`}</div>
+          <div className="pt-note">{why || `Your whole available balance is ${fHeld(data?.availableBalance || 0)}. We pay it into the account below.`}</div>
         </div>
       </Card>
 

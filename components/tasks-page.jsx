@@ -1,4 +1,5 @@
 'use client';
+import { useMoney } from "./locale";
 import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from 'react';
 import { useToast } from './toast';
 import { openCardFrame, openCardHeader } from '@/lib/expandable-card';
@@ -26,8 +27,9 @@ const FILTERS = [
   { key: 'rejected', label: 'Rejected' },
 ];
 
-function fmtNaira(kobo) {
-  return '₦' + Math.floor(kobo / 100).toLocaleString();
+// Kobo in. A task reward is money you will be given, so it never rounds up.
+function fmtNaira(kobo, money) {
+  return money(Math.floor(kobo / 100), { round: "down" });
 }
 
 const PLATFORM_NAMES = { x: 'X', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook', youtube: 'YouTube', telegram: 'Telegram', whatsapp: 'WhatsApp', nairaland: 'Nairaland', reddit: 'Reddit', google: 'Google', trustpilot: 'Trustpilot', blog: 'Blog' };
@@ -277,6 +279,7 @@ export default function TasksPage({ dark, t }) {
 }
 
 function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSubmit, submitting, dark, t, accent, border, innerBg, amber, green, red }) {
+  const money = useMoney();
   const icon = PLATFORM_ICONS[task.platform] || { bg: 'rgba(196,125,142,.12)', lbg: 'rgba(196,125,142,.08)', svg: null };
   const isDone = task.userStatus === 'done';
   const isPending = task.userStatus === 'pending';
@@ -294,7 +297,7 @@ function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSub
     : isExhausted || isDepositorsOnly
     ? { background: innerBg, color: t.textMuted }
     : { background: dark ? 'rgba(196,125,142,.13)' : 'rgba(196,125,142,.12)', color: accent, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 };
-  const chipLabel = isDone ? 'Done' : isPending ? 'In review' : isRejected ? 'Rejected' : isExhausted ? 'Pool full' : isDepositorsOnly ? 'Customers only' : fmtNaira(task.reward);
+  const chipLabel = isDone ? 'Done' : isPending ? 'In review' : isRejected ? 'Rejected' : isExhausted ? 'Pool full' : isDepositorsOnly ? 'Customers only' : fmtNaira(task.reward, money);
   const freq = task.frequency === 'daily' ? 'daily' : task.frequency === 'weekly' ? 'weekly' : task.frequency === 'monthly' ? 'monthly' : 'once';
   const SectionHead = ({ children, first: f }) => <div className={`text-[10.5px] font-semibold uppercase tracking-[1px] pb-1.5 ${f ? '' : 'mt-3 pt-3 border-t border-solid'}`} style={{ color: t.textMuted, borderColor: border }}>{children}</div>;
   return (
@@ -311,7 +314,7 @@ function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSub
 
       {expanded && (
         <div className="px-3.5 pb-4" style={{ background: dark ? 'rgba(196,125,142,.06)' : 'rgba(196,125,142,.04)', borderTop: `1px solid ${border}` }}>
-          {isDone && <div className="pt-3 text-[12.5px] leading-[1.5]" style={{ color: green }}>You earned {fmtNaira(task.reward)} credit from this task. It is in your wallet, spend-only, valid for 30 days.</div>}
+          {isDone && <div className="pt-3 text-[12.5px] leading-[1.5]" style={{ color: green }}>You earned {fmtNaira(task.reward, money)} credit from this task. It is in your wallet, spend-only, valid for 30 days.</div>}
           {isPending && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-soft">We are checking your proof. The credit lands as soon as it clears.</div>}
           {isExhausted && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-muted">The reward pool for this month is full. Check back next month.</div>}
           {isDepositorsOnly && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-muted">This one is for customers who have funded their wallet. Add funds and it opens up.</div>}

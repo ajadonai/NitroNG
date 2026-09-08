@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Chip, Empty, Fact, Facts, TierProgress, ago, initialsOf, pitVars } from "./kit";
 import { useTheme } from "../shared-nav";
-import { fN } from "@/lib/format";
+import { fN, fHeld } from "@/lib/format";
 import { copyText } from "@/lib/clipboard";
 
 // held → still in the seven-day window, approved → cleared, voided → reversed.
@@ -33,7 +33,7 @@ export default function DashboardPage({ initialData }) {
       <Facts>
         <Fact value={fN(stats.totalEarned)} label="Earned" sub={`all time · ${stats.conversions} ${stats.conversions === 1 ? "commission" : "commissions"}`} />
         <Fact value={fN(stats.pending)} label="Holding" sub="clears seven days after the order" kind="warn" />
-        <Fact value={fN(stats.availableBalance)} label="Ready to withdraw" sub="request any time" kind="ok" />
+        <Fact value={fHeld(stats.availableBalance)} label="Ready to withdraw" sub="request any time" kind="ok" />
         <Fact value={stats.clicks.toLocaleString()} label="Link clicks" sub={`${stats.activeReferrals} paid ${stats.activeReferrals === 1 ? "referral" : "referrals"}`} />
       </Facts>
 

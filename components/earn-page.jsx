@@ -1,4 +1,5 @@
 'use client';
+import { useMoney } from "./locale";
 import { useState, useEffect, useCallback } from 'react';
 import Game2048 from './game-2048';
 
@@ -10,6 +11,7 @@ const TABS = [
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 export default function EarnPage({ dark, t }) {
+  const money = useMoney();
   const [tab, setTab] = useState('game');
   const [lb, setLb] = useState(null);
   const [videoStatus, setVideoStatus] = useState(null);
@@ -84,18 +86,18 @@ export default function EarnPage({ dark, t }) {
               </div>
               <div className="text-right">
                 <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: t.accent }}>Total</div>
-                <div className="text-lg font-bold" style={{ color: t.accent }}>₦10,500</div>
+                <div className="text-lg font-bold" style={{ color: t.accent }}>{money(10500)}</div>
               </div>
             </div>
 
             {/* Prize slots */}
             <div className="relative px-4 pb-4 grid grid-cols-5 gap-1.5">
               {[
-                { rank: '1st', amount: '₦5,000', medal: '🥇', top: true },
-                { rank: '2nd', amount: '₦3,000', medal: '🥈' },
-                { rank: '3rd', amount: '₦1,500', medal: '🥉' },
-                { rank: '4th', amount: '₦1,000' },
-                { rank: '5th', amount: '₦500' },
+                { rank: '1st', amount: money(5000, { round: "down" }), medal: '🥇', top: true },
+                { rank: '2nd', amount: money(3000, { round: "down" }), medal: '🥈' },
+                { rank: '3rd', amount: money(1500, { round: "down" }), medal: '🥉' },
+                { rank: '4th', amount: money(1000, { round: "down" }) },
+                { rank: '5th', amount: money(500, { round: "down" }) },
               ].map((p, i) => (
                 <div key={i} className="flex flex-col items-center py-2.5 rounded-xl" style={{
                   background: p.top
@@ -239,12 +241,12 @@ export default function EarnPage({ dark, t }) {
                 </span>
               </div>
               <p className="text-[13px] leading-relaxed" style={{ color: t.textMuted }}>
-                Watch short videos to earn ₦{((videoStatus.rewardPerWatch || 1500) / 100).toFixed(0)} per video.
+                Watch short videos to earn {money((videoStatus.rewardPerWatch || 1500) / 100, { round: "down" })} per video.
                 We split ad revenue 50/50 with you.
               </p>
               {videoStatus.remaining > 0 ? (
                 <button className="shimmer-btn w-full py-3 rounded-xl text-sm font-semibold border-none cursor-pointer" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5e6b)`, color: '#fff', boxShadow: '0 4px 16px rgba(196,125,142,.3)' }}>
-                  Watch Video → Earn ₦{((videoStatus.rewardPerWatch || 1500) / 100).toFixed(0)}
+                  Watch Video → Earn {money((videoStatus.rewardPerWatch || 1500) / 100, { round: "down" })}
                 </button>
               ) : (
                 <div className="py-4 text-center text-[13px]" style={{ color: t.textMuted }}>

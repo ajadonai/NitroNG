@@ -1460,6 +1460,11 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   position: fixed; z-index: 10001; width: 250px; padding: 7px;
   background: #fffdfb; border: 1px solid rgba(139,74,94,.14); border-radius: 15px;
   box-shadow: 0 22px 54px rgba(0,0,0,.24); text-align: left;
+  /* Portalled to <body>, so it sits outside every container that sets a text
+     colour — and there is no `body { color }` rule, so without this the menu
+     inherits the browser default black and goes invisible on the dark surface.
+     The token is on <html>, which a body child still reaches. */
+  color: var(--t-text);
 }
 .dark .loc-menu { background: #171126; border-color: rgba(232,180,196,.14); }
 .loc-grab { display: none; }
