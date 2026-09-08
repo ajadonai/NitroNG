@@ -19,16 +19,22 @@ function componentsMissingHook(source) {
   let usedAt = 0;
   const flush = () => { if (usedAt && !hasHook) missing.push(`${name} (line ${usedAt})`); };
 
+  // A call, or the formatter handed to a helper as an argument — the second is
+  // how the wallet broke the second time, and matching only calls missed it.
+  const USE = /(?<![\w.$])money\(|[,(]\s*money\s*[,)]/;
+  const PARAM = /function\s+\w+\s*\([^)]*\bmoney\b|\([^)]*\bmoney\b[^)]*\)\s*=>/;
+
   source.split("\n").forEach((raw, i) => {
-    // Prose mentions the call all over this codebase; only code counts.
-    const trimmed = raw.trim();
-    const line = (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) ? "" : raw;
+    // Prose mentions the word all over this codebase — in comments, and inside
+    // strings ("ordering, money, delivery"). Strip both; only code counts.
+    const t = raw.trim();
+    const line = (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*"))
+      ? ""
+      : raw.replace(/'[^']*'|"[^"]*"|`[^`]*`/g, "''");
     const m = line.match(COMPONENT_START);
     if (m) { flush(); name = m[1] || m[2]; hasHook = false; usedAt = 0; }
-    if (/const money = useMoney\(\)/.test(line)) hasHook = true;
-    // A helper that takes the formatter as an argument supplies its own.
-    if (/function \w+\([^)]*\bmoney\b/.test(line) || /=>\s*$/.test(line) === false && /\(\s*[^)]*\bmoney\b[^)]*\)\s*=>/.test(line)) hasHook = true;
-    if (!usedAt && /[^\w.]money\(/.test(line) && !/useMoney/.test(line)) usedAt = i + 1;
+    if (/const money = useMoney\(\)/.test(line) || PARAM.test(line)) hasHook = true;
+    if (!usedAt && USE.test(line) && !line.includes("useMoney")) usedAt = i + 1;
   });
   flush();
   return missing;

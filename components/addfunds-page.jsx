@@ -984,6 +984,7 @@ function dayKeyWallet(iso) {
 }
 
 function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, dark, t, onRefresh, setConfirmModal, setSenderName }) {
+  const money = useMoney();
   const [filter, setFilter] = useState("all");
   const [dateRange, setDateRange] = useState(null);
   const [page, setPage] = useState(1);
