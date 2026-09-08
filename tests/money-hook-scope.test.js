@@ -10,49 +10,45 @@ import { describe, expect, it } from "vitest";
  * the page renders. That is exactly how the wallet page broke, so it is checked
  * here rather than found by loading every screen.
  */
+// Both formatters come from a hook and are therefore per component, and both
+// have shipped this bug: money() crashed the dashboard twice, tr() crashed the
+// landing page and the auth modal. One check, two names.
+const HOOKS = [
+  { call: /(?<![\w.$])money\(|[,(]\s*money\s*[,)]/, decl: /const money = useMoney\(\)/, name: "useMoney()" },
+  { call: /(?<![\w.$])tr\(/,                          decl: /const tr = useT\(\)/,        name: "useT()" },
+];
+
 const COMPONENT_START = /^(?:export\s+)?(?:default\s+)?function\s+([A-Za-z]\w*)|^(?:export\s+)?const\s+([A-Z]\w*)\s*=\s*(?:\(|function|forwardRef|memo)/;
 
 function componentsMissingHook(source) {
   const missing = [];
-  let name = "<module>";
-  let hasHook = false;
-  let usedAt = 0;
-  let hookAt = 0;
-  // Two ways to get this wrong, and both ship: no hook at all ("money is not
-  // defined"), or a hook declared BELOW the first use, where a const is still
-  // in its temporal dead zone when a memo above it runs ("Cannot access 'money'
-  // before initialization"). The second one took down every dashboard render in
-  // production, so ordering is checked too.
-  const flush = () => {
-    if (!usedAt) return;
-    if (!hasHook) missing.push(`${name} (line ${usedAt}) — no useMoney()`);
-    else if (hookAt > usedAt) missing.push(`${name} — useMoney() on line ${hookAt} is below its first use on line ${usedAt}`);
-  };
+  for (const { call, decl, name: hookName } of HOOKS) {
+    let name = "<module>", hasHook = false, usedAt = 0, hookAt = 0;
+    const flush = () => {
+      if (!usedAt) return;
+      if (!hasHook) missing.push(`${name} (line ${usedAt}) — no ${hookName}`);
+      else if (hookAt > usedAt) missing.push(`${name} — ${hookName} on line ${hookAt} is below its first use on line ${usedAt}`);
+    };
+    const PARAM = /function\s+\w+\s*\([^)]*\b(?:money|tr)\b|\([^)]*\b(?:money|tr)\b[^)]*\)\s*=>/;
 
-  // A call, or the formatter handed to a helper as an argument — the second is
-  // how the wallet broke the second time, and matching only calls missed it.
-  const USE = /(?<![\w.$])money\(|[,(]\s*money\s*[,)]/;
-  const PARAM = /function\s+\w+\s*\([^)]*\bmoney\b|\([^)]*\bmoney\b[^)]*\)\s*=>/;
-
-  source.split("\n").forEach((raw, i) => {
-    // Prose mentions the word all over this codebase — in comments, and inside
-    // strings ("ordering, money, delivery"). Strip both; only code counts.
-    const t = raw.trim();
-    // Quoted strings go. Template literals keep their ${…} parts, because those
-    // are code — the dashboard's TDZ crash was a money() call inside one, and
-    // stripping the whole literal is exactly how this test waved it through.
-    const line = (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*"))
-      ? ""
-      : raw
-          .replace(/`[^`]*`/g, m => (m.match(/\$\{[^}]*\}?/g) || []).join(" "))
-          .replace(/'[^']*'|"[^"]*"/g, "''");
-    const m = line.match(COMPONENT_START);
-    if (m) { flush(); name = m[1] || m[2]; hasHook = false; usedAt = 0; hookAt = 0; }
-    if (/const money = useMoney\(\)/.test(line)) { hasHook = true; if (!hookAt) hookAt = i + 1; }
-    else if (PARAM.test(line)) { hasHook = true; if (!hookAt) hookAt = 1; }
-    if (!usedAt && USE.test(line) && !line.includes("useMoney")) usedAt = i + 1;
-  });
-  flush();
+    source.split("\n").forEach((raw, i) => {
+      // Prose mentions these words all over the codebase — in comments, and
+      // inside strings. Template literals keep their ${…} parts, because those
+      // are code: the dashboard's TDZ crash was a call inside one.
+      const t = raw.trim();
+      const line = (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*"))
+        ? ""
+        : raw
+            .replace(/`[^`]*`/g, m => (m.match(/\$\{[^}]*\}?/g) || []).join(" "))
+            .replace(/'[^']*'|"[^"]*"/g, "''");
+      const m = line.match(COMPONENT_START);
+      if (m) { flush(); name = m[1] || m[2]; hasHook = false; usedAt = 0; hookAt = 0; }
+      if (decl.test(line)) { hasHook = true; if (!hookAt) hookAt = i + 1; }
+      else if (PARAM.test(line)) { hasHook = true; if (!hookAt) hookAt = 1; }
+      if (!usedAt && call.test(line) && !/useMoney|useT/.test(line)) usedAt = i + 1;
+    });
+    flush();
+  }
   return missing;
 }
 
@@ -61,11 +57,11 @@ describe("every component that formats money holds the hook itself", () => {
   const files = fs.readdirSync(dir, { recursive: true })
     .filter(f => typeof f === "string" && f.endsWith(".jsx"));
 
-  it("finds no component calling money() without useMoney()", () => {
+  it("finds no component calling money() or tr() without its hook, or below it", () => {
     const broken = [];
     for (const f of files) {
       const src = fs.readFileSync(path.join(dir, f), "utf8");
-      if (!src.includes("money(")) continue;
+      if (!src.includes("money(") && !src.includes("tr(")) continue;
       for (const c of componentsMissingHook(src)) broken.push(`${f}: ${c}`);
     }
     expect(broken).toEqual([]);

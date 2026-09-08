@@ -99,6 +99,7 @@ const AuthModal = dynamic(() => import("./auth-modal"), { ssr: false });
 const BelowFold = dynamic(() => import('./landing-v3-below-fold'), { ssr: true });
 
 function PwStrength({ pw, dark }) {
+  const tr = useT();
   if (!pw) return <div className="min-h-[20px] mb-1.5" />;
   const hasLen = pw.length >= 8;
   const hasUpper = /[A-Z]/.test(pw);
