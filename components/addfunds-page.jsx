@@ -164,6 +164,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   const [mobileStep, setMobileStep] = useState(1);
   const [gateways, setGateways] = useState([]);
   const [gatewaysLoading, setGatewaysLoading] = useState(true);
+  // How many methods the API left out because they only work from Nigeria.
+  // Comes from the API rather than being inferred here, so the note beneath
+  // the list and the list itself are the same decision.
+  const [hiddenNigeriaOnly, setHiddenNigeriaOnly] = useState(0);
   const [confirmModal, setConfirmModal] = useState(null);
   const [senderName, setSenderName] = useState("");
   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -243,6 +247,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     fetch("/api/payments/gateways").then(r => r.json()).then(d => {
       const gws = d.gateways || [];
       setGateways(gws);
+      setHiddenNigeriaOnly(Number(d.hiddenNigeriaOnly) || 0);
       if (gws.length > 0 && !method) setMethod(gws[0].id);
       setGatewaysLoading(false);
     }).catch(() => setGatewaysLoading(false));
@@ -834,6 +839,13 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               </button>
             ); })}
           </div>
+          {/* Say why, once. A hidden method with no explanation reads as a bug;
+              a hidden method with one reads as the site knowing where you are. */}
+          {!gatewaysLoading && hiddenNigeriaOnly > 0 && (
+            gateways.length > 0
+              ? <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">Card and bank transfer are Nigerian-only for now. USDT works from anywhere, and credits your wallet in naira.</div>
+              : <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">No payment method is available for your country yet. Message us on WhatsApp and we will sort it out.</div>
+          )}
           {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
                 <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2 text-t-text-muted">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
