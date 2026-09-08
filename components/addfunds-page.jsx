@@ -7,7 +7,7 @@ import { fN, fHeld, fD } from "../lib/format";
 import { useMoney, useLocale } from "./locale";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { depositPresets } from "../lib/currency";
-import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
+import { BONUS_PRESETS, USD_BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { PointsModal } from "./rewards";
 import NitroLoader from "./nitro-loader";
@@ -472,6 +472,26 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     }
   };
 
+  // Which bonus ladder applies is decided by the rail the money arrives on, not
+  // by the currency on screen — crypto is dollar-denominated, so a first
+  // deposit there is scored on the dollar ladder (lib/welcome-bonus.js). The
+  // figures are still shown in whatever currency the customer is reading, so a
+  // Nigerian paying crypto sees the dollar ladder rendered in naira. Bonuses
+  // round down, so the card never promises more than the rail will pay.
+  const cryptoRail = method === "crypto";
+  // A Nigerian reading the site in naira never triggers the rate fetch, but the
+  // dollar ladder cannot be shown in naira without it. Asking here costs one
+  // small cached request, and only for people who picked crypto.
+  useEffect(() => { if (cryptoRail) loc?.ensureRates?.(); }, [cryptoRail, loc]);
+  const depositRate = loc?.fx?.depositRate;
+  const bonusCards = (cryptoRail && depositRate > 0)
+    ? USD_BONUS_PRESETS.map(p => ({
+        amount: Math.ceil(p.amount * depositRate),
+        bonus: Math.floor(p.bonus * depositRate),
+        tag: p.tag,
+      }))
+    : BONUS_PRESETS;
+
   const welcomeEligible = user?.welcomeBonusEligible;
   const topup = !welcomeEligible ? user?.topupBonus : null;
   const cryptoPresentation = cryptoPaymentPresentation(cryptoResult || { status: cryptoStatus });
@@ -538,7 +558,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       {welcomeEligible && (
         <>
           <div className="grid grid-cols-3 gap-2 mb-3 pt-2">
-            {BONUS_PRESETS.map(p => {
+            {bonusCards.map(p => {
               const sel = numAmount === p.amount;
               const total = p.amount + p.bonus;
               return (
