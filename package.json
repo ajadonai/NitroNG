@@ -25,7 +25,8 @@
     "lint:ci": "eslint . --quiet",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "NITRO_E2E=1 playwright test"
+    "test:e2e": "NITRO_E2E=1 playwright test",
+    "i18n:report": "node scripts/i18n-report.mjs"
   },
   "keywords": [],
   "author": "",

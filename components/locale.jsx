@@ -1,6 +1,8 @@
 'use client';
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { CURRENCIES, BASE_CURRENCY, isActive, formatDisplayPrice, formatMoney, convertFromNaira, convertToNaira } from "../lib/currency";
+import { LOCALES, LOCALE_CODES, SOURCE_LOCALE, isLocale, makeTranslator } from "../lib/i18n";
+import { fD, fT, fDY, fRel } from "../lib/format";
 
 /**
  * Currency and language, the way theme already works: a preference in
@@ -19,17 +21,22 @@ import { CURRENCIES, BASE_CURRENCY, isActive, formatDisplayPrice, formatMoney, c
 
 const LocaleCtx = createContext(null);
 
-export const LANGUAGES = [
-  { code: "en", label: "English", flag: "🇬🇧", available: true },
-  { code: "pcm", label: "Pidgin", flag: "🇳🇬", available: false },
-  { code: "yo", label: "Yoruba", flag: "🇳🇬", available: false },
-  { code: "ha", label: "Hausa", flag: "🇳🇬", available: false },
-  { code: "ig", label: "Igbo", flag: "🇳🇬", available: false },
-  // Pairs with the Kenyan shilling in the currency menu: a language for each
-  // currency Nitro sells in.
-  { code: "sw", label: "Kiswahili", flag: "🇰🇪", available: false },
-  { code: "fr", label: "Français", flag: "🇫🇷", available: false },
-];
+// A language appears in the picker once its dictionary covers enough of the
+// site to be worth choosing. Empty today: the dictionaries exist but are not
+// filled in, and a half-English French page is worse than an English one.
+// Add a code here when its coverage is good — `npm run i18n:report` says.
+const AVAILABLE_LOCALES = new Set(["pcm", "fr", "sw", "ar"]);
+
+/**
+ * The switcher's list, derived from lib/i18n.js so there is one place a
+ * language exists. `available` is not a property of a language, it is a fact
+ * about whether its dictionary has arrived — English is the source and always
+ * available; the rest turn on when `messages/<code>.json` has enough in it.
+ */
+export const LANGUAGES = LOCALE_CODES.map((code) => ({
+  ...LOCALES[code],
+  available: code === SOURCE_LOCALE || AVAILABLE_LOCALES.has(code),
+}));
 
 /**
  * The currency and language controls: off in production until the switch is
@@ -101,6 +108,62 @@ export function LocaleProvider({ children }) {
     try { localStorage.setItem(CURRENCY_KEY, code); } catch {}
   }, []);
 
+  // The dictionary for the chosen language, fetched once when it is chosen.
+  // English needs none — it is the source — so a Nigerian reading the site in
+  // English never downloads a translation file, which is almost everybody.
+  const [messages, setMessages] = useState({});
+  useEffect(() => {
+    if (lang === SOURCE_LOCALE || !isLocale(lang)) { setMessages({}); return undefined; }
+    let dead = false;
+    import(`../messages/${lang}.json`)
+      .then((m) => { if (!dead) setMessages(m.default || m); })
+      .catch(() => { if (!dead) setMessages({}); });   // falls back to English
+    return () => { dead = true; };
+  }, [lang]);
+
+  // English in, the chosen language out — or the same English back, which is
+  // what makes a missing translation merely untranslated rather than broken.
+  const tr = useMemo(() => makeTranslator(lang, messages), [lang, messages]);
+
+  // Dates bound to the chosen language. Weekday and month names come from Intl
+  // rather than the dictionary, so translating copy never reaches them — a
+  // French page showed "Tuesday, September 8" under "Bonsoir" until this
+  // existed. fRel also carries two actual words, which it takes from here.
+  const dates = useMemo(() => ({
+    d: (v, dateOnly) => fD(v, dateOnly, lang),
+    t: (v) => fT(v, lang),
+    dy: (v) => fDY(v, lang),
+    rel: (v) => fRel(v, lang, {
+      yesterday: tr("Yesterday"),
+      daysAgo: (n) => `${n}${tr("d ago")}`,
+    }),
+  }), [lang, tr]);
+
+  // Tell the document what language it is actually in, and which way it runs.
+  //
+  // Both halves of this were customer-visible bugs, found the same evening on
+  // the Arabic dashboard. The layout ships `lang="en-NG"` because the server
+  // cannot know the choice — it lives in localStorage — so a page of Arabic
+  // was announcing itself as English, and Chrome duly offered to translate it:
+  // "تابع التسليم" came back as "Follow the prayer" and "أرسل طلبك" as "Send
+  // your request", English nonsense sitting in the middle of a modal nobody
+  // could explain. A browser is right to translate a page it is told is in a
+  // language it plainly is not.
+  //
+  // `dir` is the other half. Without it Arabic is laid out left-to-right and
+  // the bidirectional algorithm puts every neutral character in the wrong
+  // place: "Budget (بدون تعويض)" rendered as "Budget (بدون) تعويض)". That is
+  // not the dictionary being wrong, it is the paragraph running the wrong way.
+  //
+  // This is not the whole RTL job — mirroring the nav, the chevrons and the
+  // back arrows is still its own piece of work — but it is the half that stops
+  // sentences being corrupted, and it is three lines.
+  useEffect(() => {
+    const el = document.documentElement;
+    el.lang = lang === SOURCE_LOCALE ? "en-NG" : lang;
+    el.dir = LOCALES[lang]?.dir || "ltr";
+  }, [lang]);
+
   const setLang = useCallback((code) => {
     if (!LANGUAGES.some(x => x.code === code && x.available)) return;
     setLangState(code);
@@ -132,8 +195,8 @@ export function LocaleProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ currency, setCurrency, lang, setLang, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
-    [currency, setCurrency, lang, setLang, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates],
+    () => ({ currency, setCurrency, lang, setLang, tr, dates, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
+    [currency, setCurrency, lang, setLang, tr, dates, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates],
   );
 
   return <LocaleCtx.Provider value={value}>{children}</LocaleCtx.Provider>;
@@ -141,6 +204,39 @@ export function LocaleProvider({ children }) {
 
 export function useLocale() {
   return useContext(LocaleCtx);
+}
+
+/**
+ * The translator, bound to the chosen language.
+ *
+ *     const tr = useT();
+ *     <h2>{tr("Fund your wallet")}</h2>
+ *
+ * Outside the provider — admin, tests, anything server-rendered — it returns
+ * the English unchanged, so it is always safe to call and never needs guarding.
+ */
+export function useT() {
+  const l = useContext(LocaleCtx);
+  return l?.tr ?? ((english) => english);
+}
+
+/**
+ * Date formatters bound to the chosen language.
+ *
+ *     const d = useDates();
+ *     d.d(order.created)      → "8 sept." in French, "8 Sept" in English
+ *
+ * Outside the provider it formats in Nigerian English, the same default the
+ * raw helpers in lib/format.js have always had.
+ */
+export function useDates() {
+  const l = useContext(LocaleCtx);
+  return l?.dates ?? {
+    d: (v, dateOnly) => fD(v, dateOnly),
+    t: (v) => fT(v),
+    dy: (v) => fDY(v),
+    rel: (v) => fRel(v),
+  };
 }
 
 /** A money formatter bound to the current display currency. Outside the

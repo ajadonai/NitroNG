@@ -1,4 +1,5 @@
 import react from "eslint-plugin-react";
+import globals from "globals";
 
 export default [
   {
@@ -18,6 +19,10 @@ export default [
       "demo/**",
       ".agents/**",
       ".codex/**",
+      // Vendored tooling, not application code: minified UMD bundles and
+      // browser-injected detector scripts that carry their own globals.
+      ".claude/skills/**",
+      ".github/skills/**",
     ],
   },
   {
@@ -46,11 +51,23 @@ export default [
       "no-self-compare": "error",
       "no-template-curly-in-string": "warn",
       "no-loss-of-precision": "error",
+      // Every runtime crash this codebase has shipped from a rename or a
+      // half-finished edit has been an undefined identifier: money is not
+      // defined, tr is not defined, creatorCount is not defined — each one
+      // found by a customer or by Trip rather than by a tool. They are all
+      // this rule. It needs the globals below or window, document and fetch
+      // read as undefined and drown the signal.
+      "no-undef": "error",
     },
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: "module",
       parserOptions: { ecmaFeatures: { jsx: true } },
+      globals: {
+        ...globals.browser, ...globals.node, ...globals.es2021,
+        // Loaded by their own script tags, not imported: Meta Pixel and GA.
+        fbq: "readonly", gtag: "readonly",
+      },
     },
   },
   {

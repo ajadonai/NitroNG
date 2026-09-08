@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useMemo, createContext, useContext } from "react";
 import { NitroWordmark } from "./nitro-logo";
 import { PublicNavSheet, PUBLIC_LINKS } from "./public-nav-sheet";
-import { LocaleProvider, SWITCHER_LIVE } from "./locale";
+import { SWITCHER_LIVE } from "./locale";
 import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
 import { usePathname } from "next/navigation";
 
@@ -139,16 +139,14 @@ export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
     sidebarBorder: "var(--t-sidebar-border)",
   }), []);
 
-  // LocaleProvider rides inside ThemeProvider because every page already wraps
-  // itself in this one; nesting here reaches all of them without touching
-  // forty files.
+  // LocaleProvider used to be nested here. It now sits in app/layout.jsx so it
+  // also covers the chrome mounted at the root — a second one here would give
+  // those components their own state, and the picker would stop reaching them.
   return (
     <ThemeCtx.Provider value={{ dark, setDark, toggleTheme, t, loaded, themeMode, setThemeMode }}>
-      <LocaleProvider>
-        {children}
-        {/* The atmosphere: aurora + grain over every page (see .nitro-atmo in globals.css). */}
-        <div aria-hidden="true" className="nitro-atmo" />
-      </LocaleProvider>
+      {children}
+      {/* The atmosphere: aurora + grain over every page (see .nitro-atmo in globals.css). */}
+      <div aria-hidden="true" className="nitro-atmo" />
     </ThemeCtx.Provider>
   );
 }
