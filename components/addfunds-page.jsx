@@ -7,7 +7,8 @@ import { fN, fHeld, fD } from "../lib/format";
 import { useMoney, useLocale } from "./locale";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { depositPresets } from "../lib/currency";
-import { BONUS_PRESETS, USD_BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
+import { BONUS_PRESETS, bonusPresetsFor, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
+import { nairaPerUnit } from "../lib/currency";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { PointsModal } from "./rewards";
 import NitroLoader from "./nitro-loader";
@@ -478,16 +479,21 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   // figures are still shown in whatever currency the customer is reading, so a
   // Nigerian paying crypto sees the dollar ladder rendered in naira. Bonuses
   // round down, so the card never promises more than the rail will pay.
-  const cryptoRail = method === "crypto";
+  // The rail decides which ladder applies. Crypto is dollar-denominated today;
+  // when Flutterwave collects in cedi or shillings this is where that rail
+  // names its currency, and everything below follows without further change.
+  const railCurrency = method === "crypto" ? "USD" : "NGN";
+  const cryptoRail = railCurrency !== "NGN";
   // A Nigerian reading the site in naira never triggers the rate fetch, but the
   // dollar ladder cannot be shown in naira without it. Asking here costs one
   // small cached request, and only for people who picked crypto.
   useEffect(() => { if (cryptoRail) loc?.ensureRates?.(); }, [cryptoRail, loc]);
-  const depositRate = loc?.fx?.depositRate;
-  const bonusCards = (cryptoRail && depositRate > 0)
-    ? USD_BONUS_PRESETS.map(p => ({
-        amount: Math.ceil(p.amount * depositRate),
-        bonus: Math.floor(p.bonus * depositRate),
+  const railRate = cryptoRail ? nairaPerUnit(railCurrency, loc?.fx || {}) : null;
+  const railLadder = cryptoRail ? bonusPresetsFor(railCurrency) : null;
+  const bonusCards = (railLadder && railRate > 0)
+    ? railLadder.map(p => ({
+        amount: Math.ceil(p.amount * railRate),
+        bonus: Math.floor(p.bonus * railRate),   // never promise more than the rail pays
         tag: p.tag,
       }))
     : BONUS_PRESETS;
