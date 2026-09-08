@@ -177,7 +177,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
             {TIERS.map(tier => { const livePrice = pricingData?.heroTiers?.[tier.name]; const s = TIER_STYLE[tier.name]; const tc = dark ? s.textDark : s.text, tbg = dark ? s.bgDark : s.bg, tb = dark ? s.brdDark : s.brd; return (
               <div key={tier.name} className={"lv3-tcard" + (tier.name === "Budget" ? " max-desktop:col-span-2 max-md:col-span-1" : "")} style={{ "--tg": s.grad, background: panel, border: tier.pop ? `1.5px solid ${tb}` : `1px solid ${brd}` }}>
                 <div className="flex items-center justify-between gap-2.5 mb-3.5">
-                  <span className="text-[11px] font-extrabold tracking-[2px] uppercase" style={{ color: muted }}>Tier</span>
+                  <span className="text-[11px] font-extrabold tracking-[2px] uppercase" style={{ color: muted }}>{tr("Tier")}</span>
                   <span className="inline-flex items-center gap-1.5 py-[5px] px-[11px] rounded-full text-[11px] font-extrabold tracking-[.4px]" style={{ background: tbg, color: tc, border: `1px solid ${tb}` }}>{tier.chip}</span>
                 </div>
                 <h3 className="text-[30px] font-extrabold -tracking-[1px] leading-[1.05] flex items-center gap-2.5" style={{ color: text }}>
@@ -290,18 +290,18 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
             </div>
             <div className="lv3-bcard flex flex-col gap-2.5" style={{ gridArea: "r1", background: panel, border: `1px solid ${brd}` }}>
               <div className="flex gap-0.5">{[0,1,2,3,4].map(i => <Star key={i} c="#fbbf24"/>)}</div>
-              <p className="text-sm leading-[1.55] flex-1 m-0">tr("Every song I drop, I run the views here first. Three months now, e never fail me once.")</p>
+              <p className="text-sm leading-[1.55] flex-1 m-0">{tr("Every song I drop, I run the views here first. Three months now, e never fail me once.")}</p>
               <div className="flex items-center gap-[9px] text-[12.5px]" style={{ color: muted }}><i className="not-italic w-7 h-7 rounded-[9px] flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: "#e0a458" }}>TM</i><div><b className="block text-[13px]" style={{ color: text }}>Tunde M.</b>{tr("Music Producer")}</div></div>
             </div>
             <div className="lv3-bcard flex flex-col gap-2.5" style={{ gridArea: "r2", background: panel, border: `1px solid ${brd}` }}>
               <span className="inline-flex self-start py-[3px] px-[9px] rounded-full text-[10.5px] font-extrabold" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.1)", color: dark ? "#6ee7b7" : "#059669" }}>{tr("Saves ₦50K monthly")}</span>
-              <p className="text-sm leading-[1.55] flex-1 m-0">tr("I run social media for 12 clients. The bulk pricing alone saves me ₦50,000 every month.")</p>
+              <p className="text-sm leading-[1.55] flex-1 m-0">{tr("I run social media for 12 clients. The bulk pricing alone saves me ₦50,000 every month.")}</p>
               <div className="flex items-center gap-[9px] text-[12.5px]" style={{ color: muted }}><i className="not-italic w-7 h-7 rounded-[9px] flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: "#a5b4fc" }}>EN</i><div><b className="block text-[13px]" style={{ color: text }}>Emeka N.</b>{tr("Digital Marketer")}</div></div>
             </div>
             <div className="lv3-bcard text-white flex flex-col justify-center gap-1.5 overflow-hidden" style={{ gridArea: "stat", background: "linear-gradient(135deg,#c47d8e,#8b5e6b)", border: "none" }}>
               <div className="absolute rounded-full" style={{ width: 220, height: 220, right: -80, top: -90, background: "rgba(255,255,255,.16)", filter: "blur(30px)" }}/>
               <div className="m text-[38px] font-bold -tracking-[1px] leading-none relative">4.9<small className="text-base font-semibold">★</small></div>
-              <div className="text-[12.5px] relative" style={{ opacity: .9 }}>average across 320+ reviews</div>
+              <div className="text-[12.5px] relative" style={{ opacity: .9 }}>{tr("average across 320+ reviews")}</div>
               <div className="flex mt-2 relative">{[["CA","#c47d8e"],["TM","#e0a458"],["AB","#6ee7b7"],["EN","#a5b4fc"],["BI","#f472b6"],["+","rgba(255,255,255,.25)"]].map(([a, c], i) => <i key={a} className="not-italic w-[26px] h-[26px] rounded-full text-[9px] font-extrabold flex items-center justify-center text-white" style={{ background: c, border: "2px solid rgba(255,255,255,.8)", marginLeft: i ? -8 : 0 }}>{a}</i>)}</div>
             </div>
           </div>
@@ -326,7 +326,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
               </div>
               <div data-reveal="3" className="flex items-center gap-3 mt-[26px] text-[13px]" style={{ color: "rgba(255,255,255,.8)" }}>
                 <div className="flex">{[["TM","#e0a458"],["AB","#6ee7b7"],["EN","#a5b4fc"],["BI","#f472b6"],["KD","#fbbf24"]].map(([a, c], i) => <i key={a} className="not-italic w-[30px] h-[30px] rounded-full text-[10px] font-extrabold flex items-center justify-center text-white" style={{ background: c, border: "2px solid rgba(255,255,255,.9)", marginLeft: i ? -9 : 0 }}>{a}</i>)}</div>
-                <span><b className="text-white">{siteStats?.users || "2,300"}+ creators</b> already here.{processing != null && <> <span className="m">{processing}</span> orders delivering right now.</>}</span>
+                <span><b className="text-white">{siteStats?.users || "2,300"}+ creators</b> already here.{processing != null && <> <span className="m">{processing}</span> {tr("orders delivering right now.")}</>}</span>
               </div>
             </div>
             <div data-reveal="2" className="relative rounded-[22px] p-[26px] text-white backdrop-blur-[14px]" style={{ background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.28)" }}>

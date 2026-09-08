@@ -78,3 +78,27 @@ describe("translation layer", () => {
     expect(src).toContain("AVAILABLE_LOCALES");
   });
 });
+
+/**
+ * A JSX text node mistaken for a quoted string becomes `<p>tr("…")</p>` — the
+ * call rendered as literal text, with the braces missing. Two testimonials
+ * shipped that way and read `tr("I run social media for 12 clients…")` to
+ * anyone who scrolled that far. It lints clean, because it is valid JSX; only
+ * a reader catches it.
+ */
+describe("tr() is never rendered as literal text", () => {
+  it("has no unbraced tr( sitting in a text node", () => {
+    const dir = path.join(process.cwd(), "components");
+    const offenders = [];
+    for (const f of fs.readdirSync(dir, { recursive: true })) {
+      if (typeof f !== "string" || !f.endsWith(".jsx")) continue;
+      const src = fs.readFileSync(path.join(dir, f), "utf8");
+      src.split("\n").forEach((line, i) => {
+        if (/>\s*tr\(/.test(line) || /^\s*tr\("[^"]*"\)\s*$/.test(line)) {
+          offenders.push(`${f}:${i + 1}`);
+        }
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+});

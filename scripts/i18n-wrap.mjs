@@ -48,6 +48,15 @@ const NOT_PROSE = [
   // Comparison operators read as tags: `a > b && c < d` looks exactly like
   // `>text<` to a regex, and the first run duly offered to translate it.
   /&&|\|\||=>|\?\?|\.\w+\(|\breturn\b|\bconst\b|\bawait\b/,
+  // A person's name with an initial: "Blessing I.", "Tunde M." — testimonial
+  // bylines, which stay as the person wrote them.
+  /^[A-Z][a-z]+ [A-Z]\.$/,
+  // Identifiers a customer copies rather than reads: example codes and the
+  // company registration number in the footer.
+  /^e\.g\. |RC ?\d{5,}/,
+  // A service as the catalogue names it, which the API and the order form
+  // both use — translating it here would describe something by another name.
+  /^(Instagram|TikTok|YouTube|X|Facebook|Telegram) (Followers|Likes|Views|Subscribers|Comments|Shares)$/,
   // Brand names travel untranslated.
   /^(Instagram|TikTok|WhatsApp|Telegram|YouTube|Facebook|Twitter|X \(Twitter\)|Google|Nitro|Threads|Twitch|LinkedIn|Snapchat|Spotify)$/,
 ];
@@ -110,12 +119,14 @@ const out = lines.map((line, i) => {
     return line.replace(solo, `{tr(${JSON.stringify(solo)})}`);
   }
 
-  // 2. inline text nodes  >Some words<
-  next = next.replace(/>([^<>{}\n]+)</g, (m, text) => {
+  // 2. inline text nodes  >Some words<  — and the same thing after a JSX
+  //    expression, }Some words<, which is how "Support on WhatsApp" sat in
+  //    plain sight next to an icon through three passes of this script.
+  next = next.replace(/([>}])([^<>{}\n]+)</g, (m, open, text) => {
     const t = text.trim();
     if (!isProse(t) || !record(t, i)) return m;
     const [lead] = text.match(/^\s*/); const [tail] = text.match(/\s*$/);
-    return `>${lead}{tr(${JSON.stringify(t)})}${tail}<`;
+    return `${open}${lead}{tr(${JSON.stringify(t)})}${tail}<`;
   });
 
   // 3. a fragment holding a trailing space:  >Some words{' '}

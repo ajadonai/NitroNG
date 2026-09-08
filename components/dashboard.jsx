@@ -1333,9 +1333,9 @@ function DashboardInner({ initialData }) {
                   </div>
                   <button role="menuitem" onClick={() => { setAvOpen(false); setActive("settings"); }} className="dash-av-gear" aria-label={tr("Settings")} style={{ color: t.textMuted }}>{I.settings}</button>
                 </div>
-                <button role="menuitem" onClick={() => { setAvOpen(false); window.location.href = "/changelog"; }} className="dash-av-item" style={{ color: t.textSoft }}>{I.changelog}What&rsquo;s New</button>
-                <button role="menuitem" onClick={() => { setAvOpen(false); setActive("referrals"); }} className="dash-av-item" style={{ color: t.textSoft }}>{I.referrals}Referrals</button>
-                <button role="menuitem" onClick={() => { setAvOpen(false); if (socialLinks.social_whatsapp_support) window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); }} className="dash-av-item" style={{ color: "#25d366" }}>{I.support}Support on WhatsApp</button>
+                <button role="menuitem" onClick={() => { setAvOpen(false); window.location.href = "/changelog"; }} className="dash-av-item" style={{ color: t.textSoft }}>{I.changelog}{tr("What's New")}</button>
+                <button role="menuitem" onClick={() => { setAvOpen(false); setActive("referrals"); }} className="dash-av-item" style={{ color: t.textSoft }}>{I.referrals}{tr("Referrals")}</button>
+                <button role="menuitem" onClick={() => { setAvOpen(false); if (socialLinks.social_whatsapp_support) window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); }} className="dash-av-item" style={{ color: "#25d366" }}>{I.support}{tr("Support on WhatsApp")}</button>
                 <div className="dash-av-foot" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
                   <ThemePill mode={themeMode} onMode={applyThemeMode} />
                   <button role="menuitem" onClick={handleLogout} className="dash-av-logout" style={{ color: t.textMuted }}>{tr("Log out")}</button>
@@ -1505,7 +1505,7 @@ function DashboardInner({ initialData }) {
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
               {/* The real lifetime count — "Two" only when it is actually two. */}
-              <div className="text-sm font-bold leading-snug text-t-text">{momentCompleted === 2 ? "Two" : Number(momentCompleted || 0).toLocaleString()} orders delivered.<br/>{tr("You&rsquo;re a regular now.")}</div>
+              <div className="text-sm font-bold leading-snug text-t-text">{momentCompleted === 2 ? tr("Two") : Number(momentCompleted || 0).toLocaleString()} {tr("orders delivered.")}<br/>{tr("You&rsquo;re a regular now.")}</div>
               <div className="text-xs leading-[1.5] mt-1 text-t-text-muted">{isIos ? "Keep Nitro one tap away for tracking the next one." : "Put Nitro on your home screen and track the next one in one tap. No app store, no download size."}</div>
             </div>
             <button type="button" aria-label={tr("Dismiss")} onClick={closeInstallMoment} className="shrink-0 w-[26px] h-[26px] rounded-lg flex items-center justify-center border-none cursor-pointer text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>
