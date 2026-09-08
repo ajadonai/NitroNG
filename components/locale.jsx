@@ -106,14 +106,18 @@ export function LocaleProvider({ children }) {
     (naira) => convertFromNaira(naira, { code: currency, depositRate: fx.depositRate, usdRates: fx.usdRates }),
     [currency, fx],
   );
+  // Formats a figure that is ALREADY in the display currency — the deposit
+  // quick-picks, which are native to each currency rather than converted.
+  const fmtNative = useCallback((amount) => formatMoney(amount, currency), [currency]);
+
   const toNaira = useCallback(
     (amount) => convertToNaira(amount, { code: currency, depositRate: fx.depositRate, usdRates: fx.usdRates }),
     [currency, fx],
   );
 
   const value = useMemo(
-    () => ({ currency, setCurrency, lang, setLang, fx, fxPending, fmt, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
-    [currency, setCurrency, lang, setLang, fx, fxPending, fmt, toDisplay, toNaira, ensureRates],
+    () => ({ currency, setCurrency, lang, setLang, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
+    [currency, setCurrency, lang, setLang, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates],
   );
 
   return <LocaleCtx.Provider value={value}>{children}</LocaleCtx.Provider>;

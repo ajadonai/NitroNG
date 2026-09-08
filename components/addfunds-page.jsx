@@ -6,6 +6,7 @@ import { useToast } from "./toast";
 import { fN, fHeld, fD } from "../lib/format";
 import { useMoney, useLocale } from "./locale";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
+import { depositPresets } from "../lib/currency";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { PointsModal } from "./rewards";
@@ -110,7 +111,6 @@ function txDesc(tx) {
   return tx.reference || "";
 }
 
-const PRESETS = [1000, 2000, 5000, 10000, 20000, 50000];
 
 const ACCEPTED_TYPES = [
   { label: "Cards", short: "Cards", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
@@ -295,13 +295,15 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     const naira = raw === "" ? null : loc.toNaira(raw);
     setAmount(naira === null ? "" : String(naira));
   };
-  // A preset is a naira figure; the box shows its equivalent.
-  const setPreset = (naira) => {
-    setAmount(String(naira));
-    if (fxReady) {
-      const shown = loc.toDisplay(naira);
-      setTyped(shown === null ? "" : String(Number(shown.toFixed(2))));
-    }
+  // Quick-picks are already in the currency on screen, so tapping one fills the
+  // box with it as typed and the naira charge is derived, exactly as if the
+  // customer had keyed it themselves. In naira the two are the same figure.
+  const presets = depositPresets(fxReady ? currency : "NGN");
+  const setPreset = (value) => {
+    if (!fxReady) { setAmount(String(value)); return; }
+    setTyped(String(value));
+    const naira = loc.toNaira(value);
+    setAmount(naira === null ? "" : String(naira));
   };
   const valid = numAmount >= 1000;
   const balance = user?.balance || 0;
@@ -568,9 +570,9 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       )}
       {!welcomeEligible && (
         <div className="grid grid-cols-3 gap-2 max-md:gap-1.5 mb-3">
-          {PRESETS.map(p => (
+          {presets.map(p => (
             <button key={p} onClick={() => setPreset(p)} className="m py-[13px] max-desktop:py-[11px] max-md:py-2.5 rounded-[10px] text-base max-desktop:text-[15px] max-md:text-sm font-semibold text-center cursor-pointer transition-[border-color,background-color,color,transform] duration-150 hover:translate-y-[-1px]" style={{ border: `1px solid ${numAmount === p ? t.accent : t.cardBorder}`, background: numAmount === p ? (dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)") : "transparent", color: numAmount === p ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.45)") }}>
-              {fxReady ? money(p) : `₦${p >= 1000 ? `${p / 1000}K` : p}`}
+              {fxReady ? loc.fmtNative(p) : `₦${p >= 1000 ? `${p / 1000}K` : p}`}
             </button>
           ))}
         </div>
