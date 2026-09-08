@@ -1,4 +1,5 @@
 'use client';
+import { useMoney, useLocale } from "./locale";
 import { Modal } from './ui-primitives';
 import { SkelFacts, SkelList } from './skeleton';
 // ─────────────────────────────────────────────────────────────────
@@ -31,7 +32,10 @@ export const STATUS_TIERS = [
 export const WHATSAPP_CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q';
 
 // Compact naira for tight strip lines: ₦2.43m, ₦100k. Full figures live in modals.
-export function fmtCompactNaira(n) {
+// Compaction is a naira habit: "₦2.43m" fits where the full figure will not.
+// A converted total is already short, so outside naira it prints whole.
+export function fmtCompactNaira(n, money, currency = "NGN") {
+  if (money && currency !== "NGN") return money(n);
   if (n >= 1000000) return `₦${parseFloat((n / 1000000).toFixed(2))}m`;
   if (n >= 1000) return `₦${parseFloat((n / 1000).toFixed(1))}k`;
   return `₦${n.toLocaleString()}`;
@@ -85,6 +89,8 @@ function CellLink({ t, onClick, children }) {
 /* ── HOME: rewards strip ── */
 
 export function RewardsStrip({ rewards, dark, t, onStatus, onPoints, onTasks }) {
+  const money = useMoney();
+  const currency = useLocale()?.currency ?? "NGN";
   if (!rewards) return null;
   const { status, points, tasks } = rewards;
   const curTier = STATUS_TIERS.find(ti => ti.key === status.key) || STATUS_TIERS[0];
@@ -105,9 +111,9 @@ export function RewardsStrip({ rewards, dark, t, onStatus, onPoints, onTasks }) 
   );
   return (
     <div className={`grid gap-1.5 mb-[18px] ${TASKS_ENABLED && tasks ? 'grid-cols-3' : 'grid-cols-2'}`}>
-      <Card clr={heroClr} grad={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} barTo={barClr} onClick={onStatus} label="Status" glyph={<CrownGlyph s={14} />} value={status.name} hint={nextTier ? `${fmtCompactNaira(status.remainingToNext)} to ${nextTier.name}` : `${fmtCompactNaira(status.eligibleSpend)} spent`} pct={nextTier ? status.progressPct : 100} />
-      <Card clr={gold} grad="linear-gradient(135deg,#fbbf24,#d97706)" onClick={onPoints} label="Points" glyph={<CoinGlyph s={14} />} value={<span className="m">{points.balance.toLocaleString()} <span className="text-[11px] font-semibold">pts</span></span>} hint={points.redeemable ? `≈ ₦${points.valueNaira.toLocaleString()} ready` : `${points.neededToRedeem.toLocaleString()} more to spend`} pct={points.redeemable ? null : Math.round(points.balance / points.minRedeem * 100)} />
-      {TASKS_ENABLED && tasks && <Card clr={blue} grad="linear-gradient(135deg,#60a5fa,#2563eb)" onClick={onTasks} label="Tasks" glyph={<TaskGlyph s={14} />} value={<span><span className="m">{tasks.available}</span> open</span>} hint={`up to ₦${tasks.topReward.toLocaleString()} credit`} />}
+      <Card clr={heroClr} grad={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} barTo={barClr} onClick={onStatus} label="Status" glyph={<CrownGlyph s={14} />} value={status.name} hint={nextTier ? `${fmtCompactNaira(status.remainingToNext, money, currency)} to ${nextTier.name}` : `${fmtCompactNaira(status.eligibleSpend, money, currency)} spent`} pct={nextTier ? status.progressPct : 100} />
+      <Card clr={gold} grad="linear-gradient(135deg,#fbbf24,#d97706)" onClick={onPoints} label="Points" glyph={<CoinGlyph s={14} />} value={<span className="m">{points.balance.toLocaleString()} <span className="text-[11px] font-semibold">pts</span></span>} hint={points.redeemable ? `≈ ${money(points.valueNaira, { round: "down" })} ready` : `${points.neededToRedeem.toLocaleString()} more to spend`} pct={points.redeemable ? null : Math.round(points.balance / points.minRedeem * 100)} />
+      {TASKS_ENABLED && tasks && <Card clr={blue} grad="linear-gradient(135deg,#60a5fa,#2563eb)" onClick={onTasks} label="Tasks" glyph={<TaskGlyph s={14} />} value={<span><span className="m">{tasks.available}</span> open</span>} hint={`up to ${money(tasks.topReward, { round: "down" })}`} />}
     </div>
   );
 }
@@ -145,6 +151,8 @@ function RewardsPageSkeleton({ dark }) {
 // The whole page in the tier's colour: the rule at the top runs from where you
 // are into where you are going, and the ladder repeats that in miniature.
 export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
+  const money = useMoney();
+  const currency = useLocale()?.currency ?? "NGN";
   if (!rewards) return <RewardsPageSkeleton dark={dark} />;
   const { status, points, tasks, history } = rewards;
   const curIdx = Math.max(0, STATUS_TIERS.findIndex(ti => ti.key === status.key));
@@ -192,8 +200,8 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
             </div>
           )}
           <div className="flex justify-between gap-3 mt-[11px] text-[12.5px] max-md:flex-col max-md:gap-[3px]" style={{ color: t.textMuted }}>
-            <span><b className="m text-[14.5px] font-bold" style={{ color: t.text }}>{fmtCompactNaira(status.eligibleSpend)}</b> counted so far</span>
-            {nextTier && <span><b className="m text-[14.5px] font-bold" style={{ color: t.text }}>{fmtCompactNaira(status.remainingToNext)}</b> to {nextTier.name}</span>}
+            <span><b className="m text-[14.5px] font-bold" style={{ color: t.text }}>{fmtCompactNaira(status.eligibleSpend, money, currency)}</b> counted so far</span>
+            {nextTier && <span><b className="m text-[14.5px] font-bold" style={{ color: t.text }}>{fmtCompactNaira(status.remainingToNext, money, currency)}</b> to {nextTier.name}</span>}
           </div>
         </div>
       </div>
@@ -207,7 +215,7 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
             <span className={KICKER} style={{ color: t.textMuted }}>Nitro Points</span>
           </div>
           <b className="m text-[52px] max-md:text-[44px] font-extrabold leading-none tracking-[-.045em] mt-4 mb-1" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{points.balance.toLocaleString()}</b>
-          <span className="text-[12.5px]" style={{ color: t.textMuted }}>worth ₦{points.valueNaira.toLocaleString()} off your next order</span>
+          <span className="text-[12.5px]" style={{ color: t.textMuted }}>worth {money(points.valueNaira, { round: "down" })} off your next order</span>
           {points.redeemable ? (
             <button onClick={onUsePoints} className="w-full h-10 mt-[18px] border-none rounded-xl text-white text-[13px] font-bold font-[inherit] cursor-pointer transition-transform duration-150 hover:-translate-y-px" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', boxShadow: '0 4px 14px rgba(217,119,6,.32)' }}>
               Use them on an order
@@ -239,7 +247,7 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
                     <b className="text-[13.5px] font-semibold" style={{ color: t.text }}>{tasks.available} task{tasks.available === 1 ? '' : 's'} open</b>
                     <i className="not-italic text-[12px]" style={{ color: t.textMuted }}>Follow, share or review — the credit lands once we check it.</i>
                   </span>
-                  <b className="m text-[13.5px] font-bold whitespace-nowrap" style={{ color: green }}>up to ₦{tasks.topReward.toLocaleString()}</b>
+                  <b className="m text-[13.5px] font-bold whitespace-nowrap" style={{ color: green }}>up to {money(tasks.topReward, { round: "down" })}</b>
                   <button onClick={() => setActive?.('tasks')} className="h-[31px] px-3 rounded-[10px] text-[12px] font-semibold font-[inherit] cursor-pointer" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, color: t.text }}>Do it</button>
                 </>
               ) : (
@@ -277,7 +285,7 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
                     <b className="text-[15px]" style={{ color: tier.color, fontWeight: isNow ? 750 : 600 }}>{tier.name}</b>
                     {isNow && <span className="text-[9.5px] font-bold uppercase tracking-[.9px] rounded-full py-[3px] px-[9px] whitespace-nowrap text-white" style={{ background: tier.color }}>You are here</span>}
                   </span>
-                  <span className="flex-1 min-w-0 truncate text-[13px] max-md:text-[12px]" style={{ color: t.textMuted }}>{tier.min === 0 ? 'Your first order' : `₦${tier.min.toLocaleString()} spent`}</span>
+                  <span className="flex-1 min-w-0 truncate text-[13px] max-md:text-[12px]" style={{ color: t.textMuted }}>{tier.min === 0 ? 'Your first order' : `${money(tier.min)} spent`}</span>
                 </div>
                 <div className="flex items-center gap-3.5 shrink-0 max-md:flex-col max-md:items-end max-md:gap-[3px]">
                   <span className="m w-[100px] max-md:w-auto text-right text-[14.5px] font-bold" style={{ color: t.text }}>{tier.discountPct > 0 ? `${tier.discountPct}%` : '—'}</span>
@@ -396,6 +404,8 @@ function SeeAllLink({ t, onClick }) {
 /* ── Nitro Status modal ── */
 
 export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
+  const money = useMoney();
+  const currency = useLocale()?.currency ?? "NGN";
   if (!open || !rewards) return null;
   const { status } = rewards;
   const curIdx = Math.max(0, STATUS_TIERS.findIndex(ti => ti.key === status.key));
@@ -421,13 +431,13 @@ export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
         <div className="flex flex-col gap-2 mt-3.5">
           <div className="flex items-baseline justify-between gap-3 text-[12.5px]" style={{ color: t.textMuted }}>
             <span>Progress to <b style={{ color: nextClr }}>{nextTier.name}</b></span>
-            <span className="m font-bold whitespace-nowrap" style={{ color: t.text }}>{fmtCompactNaira(status.remainingToNext)} to go</span>
+            <span className="m font-bold whitespace-nowrap" style={{ color: t.text }}>{fmtCompactNaira(status.remainingToNext, money, currency)} to go</span>
           </div>
           <div className="h-[9px] rounded-[5px] overflow-hidden" style={{ background: trackBg(dark) }}>
             <div className="h-full rounded-[5px] transition-[width] duration-500" style={{ width: `${Math.max(3, Math.min(100, status.progressPct))}%`, background: `linear-gradient(90deg, ${heroClr}, ${nextClr})` }} />
           </div>
           <div className="text-[12px]" style={{ color: t.textMuted }}>
-            <b className="m font-bold" style={{ color: t.text }}>₦{status.eligibleSpend.toLocaleString()}</b> of <span className="m">₦{status.nextMin.toLocaleString()}</span>
+            <b className="m font-bold" style={{ color: t.text }}>{money(status.eligibleSpend)}</b> of <span className="m">{money(status.nextMin)}</span>
           </div>
         </div>
       )}
@@ -441,7 +451,7 @@ export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
           <div key={tier.key} className="flex items-center gap-2.5 py-[9px] px-[13px] text-[12.5px]" style={{ borderTop: idx ? `1px solid ${rail}` : 'none', opacity: idx < curIdx ? 0.42 : 1, background: idx === curIdx ? `${tier.color}${dark ? '1a' : '17'}` : 'transparent' }}>
             <span className="w-[9px] h-[9px] rounded-full shrink-0" style={{ background: tier.color }} />
             <b className="font-bold" style={{ color: tier.color }}>{tier.name}</b>
-            <span className="ml-auto text-[11.5px] shrink-0" style={{ color: t.textMuted }}>{tier.minLabel}</span>
+            <span className="ml-auto text-[11.5px] shrink-0" style={{ color: t.textMuted }}>{tier.min === 0 ? tier.minLabel : `${fmtCompactNaira(tier.min, money, currency)}+`}</span>
             <span className="m text-[11.5px] font-bold whitespace-nowrap shrink-0" style={{ color: t.text }}>{tier.discountPct > 0 ? `${tier.discountPct}%` : '—'} off</span>
             <span className="m text-[11.5px] font-bold whitespace-nowrap shrink-0" style={{ color: t.text }}>{tier.pointEarnPct}% back</span>
           </div>
@@ -456,6 +466,8 @@ export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
 /* ── Nitro Points modal ── */
 
 export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive }) {
+  const money = useMoney();
+  const currency = useLocale()?.currency ?? "NGN";
   if (!open || !rewards) return null;
   const { points, history, status } = rewards;
   const gold = dark ? '#fbbf24' : '#d97706';
@@ -471,7 +483,7 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive 
           <div className="m text-[29px] font-extrabold leading-none tracking-[-.03em]" style={{ color: gold }}>
             {points.balance.toLocaleString()} <span className="text-[14px] font-bold">pts</span>
           </div>
-          <div className="text-[12.5px]" style={{ color: t.textMuted }}>≈ ₦{points.valueNaira.toLocaleString()} · 1 point = ₦1</div>
+          <div className="text-[12.5px]" style={{ color: t.textMuted }}>≈ {money(points.valueNaira, { round: "down" })} · 1 point = ₦1</div>
         </div>
       </div>
 
@@ -536,6 +548,8 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive 
 /* ── WALLET: compact points card ── */
 
 export function WalletPointsCard({ rewards, dark, t, onView }) {
+  const money = useMoney();
+  const currency = useLocale()?.currency ?? "NGN";
   if (!rewards) return null;
   const { points } = rewards;
   return (
@@ -545,7 +559,7 @@ export function WalletPointsCard({ rewards, dark, t, onView }) {
         <div className="text-[11px] font-bold uppercase tracking-[.7px]" style={{ color: t.textMuted }}>Nitro Points</div>
         <div className="m text-[15px] font-bold mt-[3px] truncate" style={{ color: t.text }}>
           {points.balance.toLocaleString()} pts{' '}
-          <span className="font-semibold" style={{ color: points.redeemable ? t.green : t.textMuted }}>≈ ₦{points.valueNaira.toLocaleString()}</span>
+          <span className="font-semibold" style={{ color: points.redeemable ? t.green : t.textMuted }}>≈ {money(points.valueNaira, { round: "down" })}</span>
         </div>
         <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>Minimum to spend: <span className="m">{points.minRedeem.toLocaleString()}</span> pts</div>
       </div>

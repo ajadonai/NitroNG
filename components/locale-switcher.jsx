@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CURRENCIES, CURRENCY_CODES } from "../lib/currency";
+import { CURRENCIES, CURRENCY_CODES, canDisplay, isActive } from "../lib/currency";
 import { useLocale, LANGUAGES } from "./locale";
 import { useBodyScrollLock } from "./ui-primitives";
 
@@ -82,11 +82,11 @@ export function CurrencySwitcher() {
   const loc = useLocale();
   const [open, setOpen] = useState(false);
   if (!loc) return null;
-  const { currency, setCurrency } = loc;
+  const { currency, setCurrency, fx, fxPending, ensureRates } = loc;
   const meta = CURRENCIES[currency];
 
   return (
-    <Picker label="Currency" open={open} setOpen={setOpen}
+    <Picker label="Currency" open={open} setOpen={(v) => { if (v) ensureRates?.(); setOpen(v); }}
       trigger={<>
         <span className={`loc-sym${currency === "KES" ? " wide" : ""}`} aria-hidden="true">{meta.symbol}</span>
         <span className="loc-cd">{currency}</span>
@@ -96,13 +96,19 @@ export function CurrencySwitcher() {
       {CURRENCY_CODES.map(code => {
         const c = CURRENCIES[code];
         const on = code === currency;
+        // Offered only if choosing it would actually change the prices: active,
+        // and with a rate to convert by. Otherwise it reads as "Soon" rather
+        // than selecting and silently leaving everything in naira. While the
+        // rates are still in flight we go on `active` alone — an unanswered
+        // request is not the same as a missing rate.
+        const usable = fxPending ? isActive(code) : canDisplay(code, fx);
         return (
-          <button key={code} type="button" role="menuitemradio" aria-checked={on} disabled={!c.active}
-            className={`loc-opt${on ? " on" : ""}${c.active ? "" : " soon"}`}
-            onClick={() => { if (c.active) { setCurrency(code); setOpen(false); } }}>
+          <button key={code} type="button" role="menuitemradio" aria-checked={on} disabled={!usable}
+            className={`loc-opt${on ? " on" : ""}${usable ? "" : " soon"}`}
+            onClick={() => { if (usable) { setCurrency(code); setOpen(false); } }}>
             <span className={`loc-osy${code === "KES" ? " wide" : ""}`} aria-hidden="true">{c.symbol}</span>
             <span className="loc-onm">{c.name}</span>
-            {c.active ? <><span className="loc-ocd">{code}</span>{TICK}</> : <span className="loc-soon">Soon</span>}
+            {usable ? <><span className="loc-ocd">{code}</span>{TICK}</> : <span className="loc-soon">Soon</span>}
           </button>
         );
       })}

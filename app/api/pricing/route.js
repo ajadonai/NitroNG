@@ -74,7 +74,8 @@ export async function GET() {
       });
       if (hero?.tiers?.length) {
         heroTiers = {};
-        for (const ti of hero.tiers) heroTiers[ti.tier] = `₦${Math.round(Number(ti.sellPer1k) / 100).toLocaleString()}`;
+        // Naira, unformatted: the client picks the currency and the symbol.
+        for (const ti of hero.tiers) heroTiers[ti.tier] = Math.round(Number(ti.sellPer1k) / 100);
       }
     } catch {}
 

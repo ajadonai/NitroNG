@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
-import { CURRENCIES, BASE_CURRENCY, isActive, formatDisplayPrice, formatMoney } from "../lib/currency";
+import { CURRENCIES, BASE_CURRENCY, isActive, formatDisplayPrice, formatMoney, convertFromNaira, convertToNaira } from "../lib/currency";
 
 /**
  * Currency and language, the way theme already works: a preference in
@@ -49,17 +49,35 @@ export function LocaleProvider({ children }) {
     try { const l = localStorage.getItem(LANG_KEY); if (LANGUAGES.some(x => x.code === l && x.available)) setLangState(l); } catch {}
   }, []);
 
-  // The rate is only fetched when a foreign currency is on screen. A Nigerian
-  // visitor reading naira never makes this request.
+  // Fetched when a foreign currency is on screen, and on demand when the
+  // picker opens — the menu has to know which currencies it can actually
+  // convert before it offers them. A Nigerian who never opens it makes no
+  // request. The endpoint is small and edge-cached, and this only runs once.
+  const [ratesWanted, setRatesWanted] = useState(false);
+  const [fxFailed, setFxFailed] = useState(false);
+  const ensureRates = useCallback(() => setRatesWanted(true), []);
+
   useEffect(() => {
-    if (currency === BASE_CURRENCY) return undefined;
+    if (currency === BASE_CURRENCY && !ratesWanted) return undefined;
+    if (fx.depositRate !== null) return undefined;
     let dead = false;
     fetch("/api/fx")
       .then(r => (r.ok ? r.json() : null))
-      .then(d => { if (!dead && d) setFx({ depositRate: d.depositRate ?? null, usdRates: d.usdRates || {} }); })
-      .catch(() => {});
+      .then(d => {
+        if (dead) return;
+        if (d) setFx({ depositRate: d.depositRate ?? null, usdRates: d.usdRates || {} });
+        else setFxFailed(true);
+      })
+      .catch(() => { if (!dead) setFxFailed(true); });
     return () => { dead = true; };
-  }, [currency]);
+  }, [currency, ratesWanted, fx.depositRate]);
+
+  // "We have asked and have not heard back." The picker needs the distinction
+  // between no rate and no rate YET: without it, every foreign currency reads
+  // "Soon" for the half-second the fetch takes, which looks like the feature is
+  // off rather than loading. Set from ratesWanted rather than the effect, so it
+  // is already true on the render that opens the menu.
+  const fxPending = (ratesWanted || currency !== BASE_CURRENCY) && fx.depositRate === null && !fxFailed;
 
   const setCurrency = useCallback((code) => {
     if (!isActive(code)) return;
@@ -75,14 +93,27 @@ export function LocaleProvider({ children }) {
 
   // Naira in → the string that goes on screen. With no rate yet (or ever), it
   // prints naira, which is the contract every caller relies on.
+  // `money(n)` is a price and rounds up; `money(n, { round: "down" })` is money
+  // someone holds and rounds down. See the note in lib/currency.js.
   const fmt = useCallback(
-    (naira) => formatDisplayPrice(naira, { code: currency, depositRate: fx.depositRate, usdRates: fx.usdRates }),
+    (naira, opts) => formatDisplayPrice(naira, { code: currency, depositRate: fx.depositRate, usdRates: fx.usdRates, ...opts }),
+    [currency, fx],
+  );
+
+  // The two directions a deposit field needs: naira → what to show in the box,
+  // and back again for what the customer typed. Both null when there is no rate.
+  const toDisplay = useCallback(
+    (naira) => convertFromNaira(naira, { code: currency, depositRate: fx.depositRate, usdRates: fx.usdRates }),
+    [currency, fx],
+  );
+  const toNaira = useCallback(
+    (amount) => convertToNaira(amount, { code: currency, depositRate: fx.depositRate, usdRates: fx.usdRates }),
     [currency, fx],
   );
 
   const value = useMemo(
-    () => ({ currency, setCurrency, lang, setLang, fx, fmt, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
-    [currency, setCurrency, lang, setLang, fx, fmt],
+    () => ({ currency, setCurrency, lang, setLang, fx, fxPending, fmt, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
+    [currency, setCurrency, lang, setLang, fx, fxPending, fmt, toDisplay, toNaira, ensureRates],
   );
 
   return <LocaleCtx.Provider value={value}>{children}</LocaleCtx.Provider>;
@@ -96,5 +127,5 @@ export function useLocale() {
  *  provider (admin, tests) it formats naira, so it is always safe to call. */
 export function useMoney() {
   const l = useContext(LocaleCtx);
-  return l?.fmt ?? ((n) => formatMoney(n, BASE_CURRENCY));
+  return l?.fmt ?? ((n, opts) => formatMoney(n, BASE_CURRENCY, opts));
 }

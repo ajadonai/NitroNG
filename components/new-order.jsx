@@ -9,6 +9,7 @@ import { useToast } from "./toast";
 import { SegPill } from "./seg-pill";
 import InlineAlert from "./inline-alert";
 import NitroLoader from "./nitro-loader";
+import { useMoney, useLocale } from "./locale";
 import { cleanLink } from "../lib/clean-link";
 import { OrderForm as ExtractedOrderForm } from "./order-form";
 import { TASKS_ENABLED } from './rewards';
@@ -119,6 +120,7 @@ const TIER_STACK = {
 };
 
 function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, waNumber, userEmail, orderMode, cartCounts }) {
+  const money = useMoney();
   const promoOff = activePromotion?.active ? activePromotion.discountPercent / 100 : 0;
   const bulk = orderMode === "bulk";
   return (
@@ -136,7 +138,7 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, wa
               {inCart > 0 && <span className="absolute -top-[7px] -right-[6px] min-w-[20px] h-5 px-1.5 rounded-full text-[10.5px] font-bold flex items-center justify-center" style={{ background: dark ? "#f4f1ed" : "#1c1b19", color: dark ? "#0b0e1a" : "#fff", border: `2px solid ${dark ? "#1a1329" : "#fff"}` }}>×{inCart}</span>}
               <span className="flex flex-col items-start gap-[2px] leading-none min-w-0">
                 <span className="text-[11px] md:text-[11.5px] font-semibold truncate max-w-full">{tier.tier}</span>
-                <span className="m text-[12px] md:text-[13px] font-bold whitespace-nowrap">{promoOff > 0 && <span className="line-through font-normal opacity-60 mr-1">₦{tier.price.toLocaleString()}</span>}₦{displayPrice.toLocaleString()}</span>
+                <span className="m text-[12px] md:text-[13px] font-bold whitespace-nowrap">{promoOff > 0 && <span className="line-through font-normal opacity-60 mr-1">{money(tier.price)}</span>}{money(displayPrice)}</span>
                 <span className="text-[10px] opacity-75 whitespace-nowrap">per {tier.per || "1K"}</span>
               </span>
             </button>
@@ -278,6 +280,7 @@ function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick }) {
 }
 
 function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t, orderMode, activePromotion, waNumber, userEmail, first, cartCounts }) {
+  const money = useMoney();
   const isSel = selSvc?.id === svc.id;
   const [explOpen, setExplOpen] = useState(false);
   const [narrow, setNarrow] = useState(false);
@@ -306,8 +309,8 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
         {!isSel && (
           <div className="text-right shrink-0">
             <div className="text-[11px] desktop:text-[11px] mb-0.5" style={{ color: t.textMuted }}>from</div>
-            {activePromotion?.active && <div className="m text-[11px] font-normal line-through" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>₦{lowestPrice.toLocaleString()}</div>}
-            <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{Math.round(lowestPrice * (1 - (activePromotion?.active ? activePromotion.discountPercent / 100 : 0))).toLocaleString()}</div>
+            {activePromotion?.active && <div className="m text-[11px] font-normal line-through" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>{money(lowestPrice)}</div>}
+            <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{money(lowestPrice * (1 - (activePromotion?.active ? activePromotion.discountPercent / 100 : 0)))}</div>
           </div>
         )}
       </div>
@@ -338,10 +341,14 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
 }
 
 
-function compactPrice(n) {
+// The K/M shorthand exists so a five-figure naira total fits a phone. It is a
+// naira habit and does not survive conversion — a dollar total is already short,
+// and compacting it would print "$0.00M" — so it applies to naira only.
+function compactPrice(n, money, currency) {
+  if (currency !== "NGN") return money(n);
   if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
   if (n >= 10_000) return `₦${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
-  return `₦${n.toLocaleString()}`;
+  return money(n);
 }
 
 function getPresets(min, max) {
@@ -495,6 +502,7 @@ export function OrderForMeCard({ waNumber, dark, context, email }) {
 }
 
 export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onNavigate, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal, tourActive, activePromotion, rewards, socialLinks, refreshRewards }) {
+  const money = useMoney();
   const toast = useToast();
   const [filterType, setFilterType] = useState("all");
   const [search, setSearch] = useState("");
@@ -1138,11 +1146,11 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
             <div className="text-[15px] max-md:text-sm font-semibold whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: t.text }}>{selSvc?.name}</div>
             <div className="text-sm mt-px">
               <span className="font-semibold" style={{ color: TS[selTier.tier].text }}>{TS[selTier.tier].label} {selTier.tier}</span>
-              <span style={{ color: t.textMuted }}> · ₦{selTier.price.toLocaleString()}</span>
+              <span style={{ color: t.textMuted }}> · {money(selTier.price)}</span>
             </div>
           </div>
           <div className="flex items-center gap-2.5 shrink-0">
-            <span className="m text-lg max-md:text-base font-semibold whitespace-nowrap" style={{ color: t.accent }}>₦{price.toLocaleString()}</span>
+            <span className="m text-lg max-md:text-base font-semibold whitespace-nowrap" style={{ color: t.accent }}>{money(price)}</span>
             <button onClick={() => setOrderModal(true)} className="py-2.5 px-[22px] max-md:px-[18px] dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">Order</button>
           </div>
         </div>
@@ -1174,11 +1182,11 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 {orderSuccess.link && <div className="rcp-lnk">{String(orderSuccess.link).replace(/^https?:\/\/(www\.)?/, "")}</div>}
                 <div className="rcp-facts">
                   <div className="rcp-f"><span>Quantity</span><b className="m">{(orderSuccess.quantity || 0).toLocaleString()}</b></div>
-                  <div className="rcp-f"><span>Charged</span><b className="m rcp-money">₦{(orderSuccess.charge || 0).toLocaleString()}</b></div>
-                  {orderSuccess.balanceAfter != null && <div className="rcp-f"><span>Balance after</span><b className="m">₦{Math.round(orderSuccess.balanceAfter).toLocaleString()}</b></div>}
+                  <div className="rcp-f"><span>Charged</span><b className="m rcp-money">{money(orderSuccess.charge || 0)}</b></div>
+                  {orderSuccess.balanceAfter != null && <div className="rcp-f"><span>Balance after</span><b className="m">{money(orderSuccess.balanceAfter, { round: "down" })}</b></div>}
                   <div className="rcp-f"><span>Delivery</span><b>{orderSuccess.queued ? "Starts when your active order completes" : formatDeliverySpeed(orderSuccess.speed)}</b></div>
                   {orderSuccess.tier && <div className="rcp-f"><span>Refill</span><b className={orderSuccess.tier === "Budget" ? "rcp-mut" : ""}>{orderSuccess.tier === "Budget" ? "Not on Budget" : orderSuccess.tier === "Standard" ? "Free for 30 days" : "Free for life"}</b></div>}
-                  {orderSuccess.pointsRedeemed > 0 && <div className="rcp-f"><span>Points used</span><b className="m" style={{ color: dark ? "#fbbf24" : "#92400e" }}>₦{orderSuccess.pointsRedeemed.toLocaleString()}</b></div>}
+                  {orderSuccess.pointsRedeemed > 0 && <div className="rcp-f"><span>Points used</span><b className="m" style={{ color: dark ? "#fbbf24" : "#92400e" }}>{money(orderSuccess.pointsRedeemed, { round: "down" })}</b></div>}
                 </div>
                 {/* Promo carousel: one slide at a time, every slide the same height */}
                 {orderSuccess.discordSetup && (
@@ -1484,6 +1492,8 @@ function getRowPrice(row, menuData) {
 }
 
 const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, bounds, cartOpen, onClick }, ref) {
+  const money = useMoney();
+  const currency = useLocale()?.currency ?? "NGN";
   const empty = rows.length === 0;
   const platforms = [...new Set(rows.map(r => r.platform))];
   const total = rows.reduce((s, r) => s + getRowPrice(r, menuData), 0);
@@ -1528,7 +1538,7 @@ const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, b
         {!empty && (
           <div className="flex flex-col items-end gap-px">
             <span className="text-[11px] uppercase tracking-[1.5px] font-medium hidden desktop:block" style={{ color: t.textMuted }}>Total</span>
-            <span className="text-[18px] max-md:text-[15px] font-semibold whitespace-nowrap" style={{ color: t.accent }}>{bp === "sm" ? compactPrice(total) : `₦${total.toLocaleString()}`}</span>
+            <span className="text-[18px] max-md:text-[15px] font-semibold whitespace-nowrap" style={{ color: t.accent }}>{bp === "sm" ? compactPrice(total, money, currency) : money(total)}</span>
           </div>
         )}
         <div className="w-[34px] h-[34px] max-md:w-[30px] max-md:h-[30px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: t.accent }}>
@@ -1550,6 +1560,7 @@ function isDuplicate(rows, idx) {
 }
 
 function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, onClear, onPlace, loading, rowsScrollRef, bulkError, setBulkError, bulkSuccess, setBulkSuccess, onViewOrders, onTopUp, waChannelUrl }) {
+  const money = useMoney();
   const loyaltyDiscount = menuData?.loyaltyDiscount || 0;
   const loyaltyTier = menuData?.loyaltyTier || null;
   const subtotal = rows.reduce((s, r) => s + getRowPrice(r, menuData), 0);
@@ -1625,7 +1636,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
         </div>
         <button onClick={onClear} disabled={loading} className="py-1 px-2.5 rounded-md border border-solid text-[11px] font-medium cursor-pointer bg-transparent font-[inherit] hover:opacity-80 transition-opacity shrink-0 disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderColor: dark ? "rgba(255,255,255,.19)" : "rgba(0,0,0,.18)", color: t.textMuted }}>Clear cart</button>
         <div className="flex items-center gap-3.5 shrink-0">
-          <span className="text-[18px] font-medium" style={{ color: t.accent }}>₦{total.toLocaleString()}</span>
+          <span className="text-[18px] font-medium" style={{ color: t.accent }}>{money(total)}</span>
           <button onClick={onClose} disabled={loading} className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center cursor-pointer border-none p-0 disabled:opacity-40 disabled:cursor-not-allowed transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent }}>
             <span className="w-2 h-2 border-r-2 border-t-2 border-solid rotate-[135deg]" style={{ borderColor: "#fff" }} />
           </button>
@@ -1654,11 +1665,11 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
             </div>
             <div className="flex-1 basis-1/3 min-w-0 border-l border-solid px-[18px] max-[380px]:pr-0" style={{ borderColor: bulkChrome.hair }}>
               <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Charged</div>
-              <div className="mt-1 text-[15px] font-bold truncate" style={{ color: bulkChrome.money, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>₦{(bulkSuccess.totalCharge || 0).toLocaleString()}</div>
+              <div className="mt-1 text-[15px] font-bold truncate" style={{ color: bulkChrome.money, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{money(bulkSuccess.totalCharge || 0)}</div>
             </div>
             <div className="flex-1 basis-1/3 min-w-0 border-l border-solid pl-[18px] max-[380px]:basis-full max-[380px]:border-l-0 max-[380px]:border-t max-[380px]:pt-3 max-[380px]:mt-3 max-[380px]:pl-0" style={{ borderColor: bulkChrome.hair }}>
               <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Balance</div>
-              <div className="mt-1 text-[15px] font-bold truncate" style={{ color: bulkChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{bulkSuccess.newBalance != null ? `₦${bulkSuccess.newBalance.toLocaleString()}` : "—"}</div>
+              <div className="mt-1 text-[15px] font-bold truncate" style={{ color: bulkChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{bulkSuccess.newBalance != null ? money(bulkSuccess.newBalance, { round: "down" }) : "—"}</div>
             </div>
           </div>
 
@@ -1728,7 +1739,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
         <div className="mx-[18px] max-md:mx-3.5 mt-3">
           <InlineAlert type={bulkError.type === "balance" ? "warning" : "error"} dark={dark} onDismiss={() => setBulkError(null)}>
             <div className="font-semibold mb-0.5">{bulkError.type === "balance" ? "Insufficient balance" : "Connection error"}</div>
-            <div className="text-[11px] font-normal" style={{ color: t.textMuted }}>{bulkError.type === "balance" ? `You need ₦${(bulkError.needed || 0).toLocaleString()} more to place these orders.` : bulkError.message}</div>
+            <div className="text-[11px] font-normal" style={{ color: t.textMuted }}>{bulkError.type === "balance" ? `You need ${money(bulkError.needed || 0)} more to place these orders.` : bulkError.message}</div>
             {bulkError.type === "balance" && onTopUp && (
               <button onClick={() => { setBulkError(null); onClose(); onTopUp(); }} className="mt-2 py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fbbf24" : "#d97706", border: `1px solid ${dark ? "rgba(251,191,36,.28)" : "rgba(217,119,6,.2)"}` }}>Top up wallet</button>
             )}
@@ -1762,7 +1773,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                 <div className="text-[13px] font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{row.name}</div>
                 <span className="text-[11px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={{ background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: TS[row.tier]?.text }}>{row.tier}</span>
                 <span className="text-[11px] max-w-[120px] truncate font-[JetBrains_Mono,monospace] hidden md:inline" style={{ color: t.textMuted }}>{linkPreview}</span>
-                <span className="text-[13px] font-medium shrink-0" style={{ color: t.textMuted }}>₦{rowPrice.toLocaleString()}</span>
+                <span className="text-[13px] font-medium shrink-0" style={{ color: t.textMuted }}>{money(rowPrice)}</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
             </div>
@@ -1795,7 +1806,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                     <button key={v} onClick={() => updateRow(idx, { qty: v })} disabled={loading} className="py-[3px] px-2 rounded-full border border-solid text-[11px] font-medium cursor-pointer bg-transparent font-[inherit] disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: row.qty === v ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: row.qty === v ? t.accent : t.textMuted }}>{fQty(v)}</button>
                   ))}
                 </div>
-                <span className="text-[13px] font-medium shrink-0" style={{ color: t.textMuted }}>₦{rowPrice.toLocaleString()}</span>
+                <span className="text-[13px] font-medium shrink-0" style={{ color: t.textMuted }}>{money(rowPrice)}</span>
               </div>
 
               {/* Warnings */}
@@ -1848,8 +1859,8 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
         <div className="py-2.5 px-[18px] max-md:px-3.5 border-t border-solid shrink-0 flex items-center gap-3" style={{ borderColor: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)" }}>
           <div className="flex flex-col min-w-0 flex-1 leading-tight">
             <span className="text-[10.5px] uppercase tracking-[1px] font-semibold" style={{ color: t.textMuted }}>Total · {rows.length} order{rows.length !== 1 ? "s" : ""}</span>
-            <span className="text-[18px] font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>₦{total.toLocaleString()}</span>
-            {discount > 0 && <span className="text-[10.5px]" style={{ color: dark ? "#b4db7a" : "#27500A" }}>Nitro Status discount ({loyaltyDiscount}%) · −₦{discount.toLocaleString()}</span>}
+            <span className="text-[18px] font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{money(total)}</span>
+            {discount > 0 && <span className="text-[10.5px]" style={{ color: dark ? "#b4db7a" : "#27500A" }}>Nitro Status discount ({loyaltyDiscount}%) · −{money(discount, { round: "down" })}</span>}
           </div>
           <button onClick={onPlace} disabled={loading} className="shrink-0 h-[42px] px-4 dash-btn-primary border-none text-[14px] font-semibold cursor-pointer font-[inherit] bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
             {loading && <NitroLoader size={16} mono ariaHidden />}

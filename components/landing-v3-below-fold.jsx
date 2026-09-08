@@ -1,6 +1,8 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { SITE } from '@/lib/site';
+import { useMoney, useLocale } from './locale';
+import { MAX_BONUS_NAIRA } from '@/lib/welcome-bonus';
 
 // Tier colours are the ones the order form uses (components/new-order.jsx), so the landing and the app agree.
 const TIER_STYLE = {
@@ -13,11 +15,12 @@ const TIER_ICON = {
   Standard: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>,
   Premium: <><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></>,
 };
-// "From" prices are Instagram followers per 1,000. Static until /api/pricing exposes per-tier prices (Claude Code: see the note in the PR).
+// "From" prices are Instagram followers per 1,000, in naira. Plain numbers,
+// not formatted strings: the currency switcher decides how they are shown.
 const TIERS = [
-  { name: "Budget", tfor: "For tests, views and volume", price: "₦1,559", chip: "Lowest price", pop: false, li: [["ok","Cheapest rate per 1,000"],["ok","Tested source, fast start"],["no","No refill cover"]], fine: "Best when a drop wouldn't hurt: views, tests, big cheap pushes." },
-  { name: "Standard", tfor: "For everyday growth", price: "₦2,720", chip: "Most picked", pop: true, li: [["ok","Balanced speed and retention"],["ok","30-day refill cover"],["ok","Our default recommendation"]], fine: "Where most orders land. Reliable enough to build a page on." },
-  { name: "Premium", tfor: "For accounts that matter", price: "₦5,675", chip: "Top quality", pop: false, li: [["ok","Highest-quality sources"],["ok","Longest refill cover"],["ok","Slowest to drop, most natural"]], fine: "For brands, artists and anyone whose numbers get looked at." },
+  { name: "Budget", tfor: "For tests, views and volume", price: 1559, chip: "Lowest price", pop: false, li: [["ok","Cheapest rate per 1,000"],["ok","Tested source, fast start"],["no","No refill cover"]], fine: "Best when a drop wouldn't hurt: views, tests, big cheap pushes." },
+  { name: "Standard", tfor: "For everyday growth", price: 2720, chip: "Most picked", pop: true, li: [["ok","Balanced speed and retention"],["ok","30-day refill cover"],["ok","Our default recommendation"]], fine: "Where most orders land. Reliable enough to build a page on." },
+  { name: "Premium", tfor: "For accounts that matter", price: 5675, chip: "Top quality", pop: false, li: [["ok","Highest-quality sources"],["ok","Longest refill cover"],["ok","Slowest to drop, most natural"]], fine: "For brands, artists and anyone whose numbers get looked at." },
 ];
 // Half Pidgin, half plain English — the plain ones still read Nigerian through
 // what they say (a 2am WhatsApp reply, naira pricing) rather than through
@@ -106,6 +109,8 @@ const BF_CSS = `
 `;
 
 export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socialLinks, scrollRoot, pricingData }) {
+  const money = useMoney();
+  const { currency } = useLocale() || { currency: "NGN" };
   const wrapRef = useRef(null);
   const [qi, setQi] = useState(0);
   const [qFade, setQFade] = useState(false);
@@ -157,7 +162,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
           <p className="lv3-sub" data-reveal="1" style={{ color: soft }}>Every service comes in three tiers. Same platforms, same wallet, different sourcing and different cover. You always know what you're buying.</p>
           <div data-reveal="2" className="flex flex-wrap gap-x-[22px] gap-y-2 mt-7 mb-[30px] ml-[30px] max-md:ml-0 max-md:gap-x-3.5">
             <div className="w-full text-[13px] font-bold mb-0.5">All tiers include:</div>
-            {["Naira pricing, no FX markup","Starts in under 60 seconds","Live order tracking","Real humans on WhatsApp"].map(x => <span key={x} className="inline-flex items-center gap-[7px] text-[13.5px]" style={{ color: soft }}><span style={{ color: "#c47d8e" }}><Check/></span>{x}</span>)}
+            {[currency === "NGN" ? "Naira pricing, no FX markup" : "Prices shown in your currency","Starts in under 60 seconds","Live order tracking","Real humans on WhatsApp"].map(x => <span key={x} className="inline-flex items-center gap-[7px] text-[13.5px]" style={{ color: soft }}><span style={{ color: "#c47d8e" }}><Check/></span>{x}</span>)}
           </div>
           <div data-reveal="3" className="grid grid-cols-3 max-desktop:grid-cols-2 max-md:grid-cols-1 gap-[18px] items-stretch">
             {TIERS.map(tier => { const livePrice = pricingData?.heroTiers?.[tier.name]; const s = TIER_STYLE[tier.name]; const tc = dark ? s.textDark : s.text, tbg = dark ? s.bgDark : s.bg, tb = dark ? s.brdDark : s.brd; return (
@@ -170,7 +175,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
                   <span className="w-8 h-8 rounded-[10px] inline-flex items-center justify-center shrink-0 text-white" style={{ background: s.grad }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{TIER_ICON[tier.name]}</svg></span>{tier.name}
                 </h3>
                 <div className="text-sm mt-1.5 min-h-[22px]" style={{ color: soft }}>{tier.tfor}</div>
-                <div className="flex items-baseline gap-1.5 mt-[18px]"><b className="m text-[34px] font-extrabold -tracking-[1.5px]" style={{ color: tc }}>{livePrice || tier.price}</b><span className="text-[13px]" style={{ color: muted }}>/ 1,000 Instagram followers</span></div>
+                <div className="flex items-baseline gap-1.5 mt-[18px]"><b className="m text-[34px] font-extrabold -tracking-[1.5px]" style={{ color: tc }}>{money(livePrice ?? tier.price)}</b><span className="text-[13px]" style={{ color: muted }}>/ 1,000 Instagram followers</span></div>
                 <div className="h-px my-[20px] mb-4" style={{ background: hair }}/>
                 <ul className="list-none p-0 m-0 flex flex-col gap-[11px] flex-1">
                   {tier.li.map(([k, x]) => <li key={x} className="flex gap-2.5 text-sm leading-[1.5]" style={{ color: k === "no" ? muted : text }}><span className="mt-[3px]" style={{ color: k === "no" ? muted : tc }}>{k === "no" ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="6" y1="12" x2="18" y2="12"/></svg> : <Check size={15}/>}</span><span>{x}</span></li>)}
@@ -235,7 +240,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
         <section id="how" className="snap-section relative max-w-[1200px] mx-auto py-[88px] px-[60px] max-desktop:py-16 max-desktop:px-10 max-md:py-[52px] max-md:px-5">
           <div className="lv3-sh" data-reveal><span className="num">03</span><h2>Three steps, <span className="serif">no waiting.</span></h2></div>
           <div data-reveal="1" className="grid grid-cols-3 max-md:grid-cols-1 gap-10 max-desktop:gap-6 max-md:gap-[22px] mt-9 ml-[30px] max-md:ml-0">
-            {[["/01","Fund your wallet","Card, transfer or crypto. From ₦1,000, and your first deposit earns up to ₦1,500 free."],["/02","Paste your link","Pick the service and tier, paste the post or profile, choose instant or gradual delivery."],["/03","Watch it deliver","Progress live on your dashboard, usually within minutes. Refill cover on Standard and Premium."]].map(([n, h, p]) => (
+            {[["/01","Fund your wallet",`Card, transfer or crypto. From ${money(1000)}, and your first deposit earns up to ${money(MAX_BONUS_NAIRA)} free.`],["/02","Paste your link","Pick the service and tier, paste the post or profile, choose instant or gradual delivery."],["/03","Watch it deliver","Progress live on your dashboard, usually within minutes. Refill cover on Standard and Premium."]].map(([n, h, p]) => (
               <div key={n}><div className="m text-xs font-bold mb-3" style={{ color: "#c47d8e" }}>{n}</div><h4 className="text-lg font-bold mb-2">{h}</h4><p className="text-[14.5px] leading-[1.6]" style={{ color: soft }}>{p}</p></div>
             ))}
           </div>
@@ -321,7 +326,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
                 <div><b className="block text-base font-extrabold">Your first push is on us</b><span className="text-[12.5px]" style={{ opacity: .85 }}>Up to ₦1,500 in promo credit, first deposit</span></div>
               </div>
               <ul className="list-none p-0 m-0 flex flex-col gap-[9px]">
-                {["Fund from ₦1,000 by card, transfer or crypto","Pick Budget, Standard or Premium per order","Delivery starts in under 60 seconds","Undelivered orders refund automatically"].map(x => <li key={x} className="flex gap-[9px] text-[13.5px] items-start leading-[1.45]"><span className="mt-[3px]"><Check/></span>{x}</li>)}
+                {[`Fund from ${money(1000)} by card, transfer or crypto`,"Pick Budget, Standard or Premium per order","Delivery starts in under 60 seconds","Undelivered orders refund automatically"].map(x => <li key={x} className="flex gap-[9px] text-[13.5px] items-start leading-[1.45]"><span className="mt-[3px]"><Check/></span>{x}</li>)}
               </ul>
               <div className="mt-4 pt-3.5 flex justify-between gap-2.5 flex-wrap text-[11.5px]" style={{ borderTop: "1px solid rgba(255,255,255,.22)", opacity: .85 }}><span>Account in 30 seconds</span><b className="m">0 monthly fees</b></div>
             </div>

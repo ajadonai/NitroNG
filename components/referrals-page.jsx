@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from "react";
 import { RailSec, RailCard, RailFact, RailStep } from "./rail";
-import { fN, fD } from "../lib/format";
+import { fN, fHeld, fD } from "../lib/format";
 import { Avatar } from "./avatar";
 import { copyText as copyToClipboard } from '@/lib/clipboard';
 import CashReferralsPage from "./referrals-cash-page";
@@ -123,7 +123,7 @@ export default function ReferralsPage({ user, dark, t }) {
         {[
           ["Friends Invited", String(totalRefs), dark ? "#a5b4fc" : "#4f46e5"],
           ["Active", String(activeRefs), t.green],
-          ["Total Bonus", fN(totalEarnings), t.accent],
+          ["Total Bonus", fHeld(totalEarnings), t.accent],
           ["Available", fN(totalEarnings), t.green],
         ].map(([label, val, color]) => (
           <div key={label} className="p-3 desktop:p-3.5 rounded-[10px] desktop:rounded-xl" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
