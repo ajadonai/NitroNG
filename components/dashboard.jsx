@@ -7,7 +7,7 @@ import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
 import { useMoney } from "./locale";
 import { DEFAULT_COUNTRY, validatePhone } from "../lib/phone-countries";
 import { PhoneField } from "./phone-field";
-import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
+// import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
 import { NitroWordmark } from "./nitro-logo";
 import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
@@ -1282,8 +1282,14 @@ function DashboardInner({ initialData }) {
           </div>
         </div>
         <div className="dash-nav-right">
-          <CurrencySwitcher />
-          <LanguageSwitcher />
+          {/* Currency and language are hidden until the switch is finished —
+          Trip's call, 8 Sep 2026. Uncomment both, and the import above, to
+          put them back. The provider stays mounted: every price still goes
+          through the formatter, which prints naira with no control present.
+          See the note in components/locale.jsx about people who already
+          chose a currency before this was switched off. */}
+          {/* <CurrencySwitcher /> */}
+          {/* <LanguageSwitcher /> */}
           {/* Balance pill — desktop only. Balance as a number, Top up as the action inside it.
               The balance converts on the same rate as every price, so "can I afford
               this" has the same answer whichever unit is on screen. */}

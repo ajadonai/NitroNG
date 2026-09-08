@@ -31,6 +31,17 @@ export const LANGUAGES = [
   { code: "fr", label: "Français", flag: "🇫🇷", available: false },
 ];
 
+/**
+ * The nav switchers are commented out of every bar until the currency work is
+ * finished (Trip's call, 8 Sep 2026). This is the other half of that: anyone
+ * who picked a currency while the control was live still has it in
+ * localStorage, and with nothing on screen to change it they would be stuck
+ * reading dollars with no way back. While this is false the saved choice is
+ * ignored and everyone sees naira. Their preference is not deleted — flip this
+ * true along with the nav buttons and it comes back.
+ */
+const SWITCHER_LIVE = false;
+
 const CURRENCY_KEY = "nitro-currency";
 const LANG_KEY = "nitro-lang";
 const EMPTY_FX = { depositRate: null, usdRates: {} };
@@ -45,6 +56,7 @@ export function LocaleProvider({ children }) {
   // is also what quietly reverts anyone who chose a currency before it was
   // turned back off, without a jarring "your currency was reset" moment.
   useEffect(() => {
+    if (!SWITCHER_LIVE) return;
     try { const c = localStorage.getItem(CURRENCY_KEY); if (isActive(c)) setCurrencyState(c); } catch {}
     try { const l = localStorage.getItem(LANG_KEY); if (LANGUAGES.some(x => x.code === l && x.available)) setLangState(l); } catch {}
   }, []);
