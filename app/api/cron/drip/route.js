@@ -3,7 +3,7 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { placeOrder, checkOrder, checkOrders } from '@/lib/smm';
-import { tgDripTimeout } from '@/lib/telegram';
+import { tgDripTimeout, tgFlush } from '@/lib/telegram';
 import { isInWindow, snapToWindow, sliceCommentsForBatch } from '@/lib/drip-feed';
 import { computeDripRollup, normalizeProviderStatus, applyDripRollup } from '@/lib/drip-completion';
 import { findSameLinkDispatchBlocker, isActiveOrderConflict, wouldCreateCycle } from '@/lib/order-queue';
@@ -607,11 +607,13 @@ export async function GET(req) {
     }
   } catch (err) {
     log.error('Drip cron', err.message);
+    await tgFlush();
     return Response.json({ error: err.message, stats }, { status: 500 });
   }
 
   const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
   if (elapsed > 50) log.warn('Drip cron', `Approaching maxDuration: ${elapsed}s`);
   log.info('Drip cron', `${elapsed}s — dispatched ${stats.dispatched}, synced ${stats.synced}, rolledUp ${stats.rolledUp}`);
+  await tgFlush();
   return Response.json({ ok: true, stats });
 }

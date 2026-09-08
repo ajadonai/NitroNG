@@ -3,7 +3,7 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { watBounds } from '@/lib/format';
-import { tgDigest } from '@/lib/telegram';
+import { tgDigest, tgFlush } from '@/lib/telegram';
 import { getBearerToken } from '@/lib/bearer-token';
 import { getRevenue } from '@/lib/revenue';
 
@@ -112,9 +112,12 @@ export async function GET(req) {
       monthOrders: monthOrderCount.toLocaleString(),
     });
 
+    await tgFlush();
+
     return Response.json({ ok: true });
   } catch (err) {
     log.error('Digest cron', err.message);
+    await tgFlush();
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

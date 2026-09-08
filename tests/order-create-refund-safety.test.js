@@ -164,6 +164,8 @@ vi.mock('@/lib/meta-capi', () => ({
 }));
 vi.mock('next/headers', () => ({ headers: vi.fn(async () => new Headers()) }));
 vi.mock('@/lib/telegram', () => ({
+  tgFlush: vi.fn(() => Promise.resolve([])),
+ 
   tgNewOrder: vi.fn(),
   tgOutreachAlert: vi.fn(),
   tgRefundAlert: vi.fn(),

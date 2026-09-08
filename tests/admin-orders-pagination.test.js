@@ -25,7 +25,9 @@ vi.mock('@/lib/email', () => ({ sendEmail: vi.fn(), walletCreditEmail: vi.fn() }
 vi.mock('@/lib/smm', () => ({ checkOrder: vi.fn(), cancelOrder: vi.fn(), refillOrder: vi.fn(), isProviderConfigured: () => false, getProviderName: () => 'mtp' }));
 vi.mock('@/lib/commissions', () => ({ voidCommissions: vi.fn() }));
 vi.mock('@/lib/clean-link', () => ({ cleanLink: (l) => l }));
-vi.mock('@/lib/telegram', () => ({ tgRefundAlert: vi.fn() }));
+vi.mock('@/lib/telegram', () => ({
+  tgFlush: vi.fn(() => Promise.resolve([])),
+  tgRefundAlert: vi.fn() }));
 
 const mockRequireAdmin = vi.fn();
 vi.mock('@/lib/admin', () => ({

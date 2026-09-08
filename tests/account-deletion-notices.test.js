@@ -65,6 +65,8 @@ vi.mock('@/lib/email', async importOriginal => {
   return { ...actual, sendEmail: (...args) => mocks.sendEmail(...args) };
 });
 vi.mock('@/lib/telegram', () => ({
+  tgFlush: vi.fn(() => Promise.resolve([])),
+ 
   tgUserDeletionRequested: (...args) => mocks.telegramDeletion(...args),
 }));
 vi.mock('@/lib/smm', () => ({ cancelOrder: vi.fn(), isProviderConfigured: vi.fn(() => false) }));

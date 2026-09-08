@@ -18,6 +18,8 @@ vi.mock('@/lib/meta-capi', () => ({
   loadStoredCapiIdentity: vi.fn(async () => ({})),
   persistFbTouch: vi.fn(async () => {}), trackDeposit: mocks.trackDeposit }));
 vi.mock('@/lib/telegram', () => ({
+  tgFlush: vi.fn(() => Promise.resolve([])),
+ 
   tgPayment: mocks.tgPayment,
   tgBonusWithheld: mocks.tgBonusWithheld,
   tgOutreachAlert: mocks.tgOutreachAlert,

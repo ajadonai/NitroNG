@@ -5,7 +5,7 @@ import { log } from '@/lib/logger';
 import { reportOperationalFailure } from '@/lib/monitoring';
 import { getBalance } from '@/lib/smm';
 import { sendEmail, emailWrap, emailRow, emailDataBox, sendNudgeIdleFunds, sendNudgeIdleBalance, sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6, sendWinback30Email, sendWinback60Email } from '@/lib/email';
-import { tgProviderBalance, tgDailySummary } from '@/lib/telegram';
+import { tgProviderBalance, tgDailySummary, tgFlush } from '@/lib/telegram';
 import { releaseHeldCommissions } from '@/lib/commissions';
 import { expireBonusCredits, grantWinbackCredit } from '@/lib/bonus-credit';
 import { getTierConfig } from '@/lib/affiliate-settings';
@@ -16,6 +16,7 @@ export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
   const secret = req.headers.get('authorization')?.replace('Bearer ', '');
   if (secret !== process.env.CRON_SECRET) {
+    await tgFlush();
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -612,6 +613,8 @@ export async function GET(req) {
   const bals = results.balance?.balances || {};
   Object.entries(bals).forEach(([k, v]) => { if (v.balance != null) summary[`${k.toUpperCase()} bal`] = `$${v.balance.toFixed(2)}`; });
   if (Object.keys(summary).length) tgDailySummary(summary);
+
+  await tgFlush();
 
   return Response.json({ success: true, ...results });
 }

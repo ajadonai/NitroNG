@@ -6,7 +6,7 @@ import { log } from '@/lib/logger';
 import { checkOrder } from '@/lib/smm';
 import { sendEmail, walletCreditEmail, batchCompletionEmail } from '@/lib/email';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
-import { tgRefund, tgOrderCancelled, tgRefundAlert } from '@/lib/telegram';
+import { tgRefund, tgOrderCancelled, tgRefundAlert, tgFlush } from '@/lib/telegram';
 import { createCommission, voidCommissions } from '@/lib/commissions';
 import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo, awardPointsOnCompletion } from '@/lib/nitro-rewards';
 import {
@@ -69,6 +69,7 @@ export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
   const secret = getBearerToken(req);
   if (secret !== process.env.CRON_SECRET) {
+    await tgFlush();
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -703,10 +704,13 @@ export async function GET(req) {
       headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
     }).catch(() => {});
 
+    await tgFlush();
+
     return Response.json({ success: true, ...stats });
 
   } catch (err) {
     log.error('Cron orders', err.message);
+    await tgFlush();
     return Response.json({ error: err.message, ...stats }, { status: 500 });
   }
 }

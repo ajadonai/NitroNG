@@ -74,6 +74,8 @@ vi.mock('@/lib/order-queue', () => ({
   findOpenSameLinkOrder: (...args) => mocks.findOpenSameLinkOrder(...args),
 }));
 vi.mock('@/lib/telegram', () => ({
+  tgFlush: vi.fn(() => Promise.resolve([])),
+ 
   tgNewOrder: (...args) => mocks.tgNewOrder(...args),
 }));
 vi.mock('@/lib/nitro-rewards', () => ({

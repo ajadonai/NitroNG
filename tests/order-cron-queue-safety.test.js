@@ -43,6 +43,8 @@ vi.mock('@/lib/email', () => ({
 }));
 vi.mock('@/lib/bulk-dispatch', () => ({ placeWithProvider: (...args) => mocks.placeWithProvider(...args) }));
 vi.mock('@/lib/telegram', () => ({
+  tgFlush: vi.fn(() => Promise.resolve([])),
+ 
   tgRefund: (...args) => mocks.tgRefund(...args),
   tgOrderCancelled: vi.fn(),
   tgRefundAlert: (...args) => mocks.tgRefundAlert(...args),

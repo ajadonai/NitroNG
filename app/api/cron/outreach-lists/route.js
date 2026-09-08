@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { watBounds } from '@/lib/format';
 import { log } from '@/lib/logger';
-import { tgOutreach } from '@/lib/telegram';
+import { tgOutreach, tgFlush } from '@/lib/telegram';
 import { sendOutreach as ifySendOutreach } from '@/lib/ify/outreach';
 import { poolWhere } from '@/lib/outreach-pool';
 import { isOutreachPaused } from '@/lib/outreach-pause';
@@ -89,12 +89,14 @@ export async function GET(req) {
   const authHeader = req.headers.get('authorization');
   const secret = process.env.CRON_SECRET;
   if (!secret || (token !== secret && authHeader !== `Bearer ${secret}`)) {
+    await tgFlush();
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   if (await isOutreachPaused()) return Response.json({ ok: true, paused: true });
 
   const touch = req.nextUrl.searchParams.get('touch');
   if (!touch || !TOUCHES[touch]) {
+    await tgFlush();
     return Response.json({ error: 'Invalid touch param. Use: day1, day3, day7, winback' }, { status: 400 });
   }
 
@@ -237,9 +239,11 @@ export async function GET(req) {
     }
 
     log.info('Outreach Lists', `${touch}: ${results.sent} users`);
+    await tgFlush();
     return Response.json({ ok: true, ...results });
   } catch (err) {
     log.error('Outreach Lists', `${touch}: ${err.message}`);
+    await tgFlush();
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

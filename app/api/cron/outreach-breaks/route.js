@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { watBounds } from '@/lib/format';
 import { log } from '@/lib/logger';
-import { sendOutreach } from '@/lib/telegram';
+import { sendOutreach, tgFlush } from '@/lib/telegram';
 import { row, pct } from '@/lib/outreach-format';
 import { isOutreachPaused } from '@/lib/outreach-pause';
 
@@ -31,6 +31,7 @@ export async function GET(req) {
   const authHeader = req.headers.get('authorization');
   const secret = process.env.CRON_SECRET;
   if (!secret || (token !== secret && authHeader !== `Bearer ${secret}`)) {
+    await tgFlush();
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
   if (await isOutreachPaused()) return Response.json({ ok: true, paused: true });
@@ -67,9 +68,11 @@ export async function GET(req) {
 
     await sendOutreach(buildBreakMessage(moment.kind, { total, done, left, reached }), GENERAL);
     log.info('Outreach Breaks', moment.kind);
+    await tgFlush();
     return Response.json({ ok: true, sent: moment.kind });
   } catch (err) {
     log.error('Outreach Breaks', err.message);
+    await tgFlush();
     return Response.json({ error: err.message }, { status: 500 });
   }
 }
