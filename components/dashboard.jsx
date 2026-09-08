@@ -307,7 +307,7 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
       </div>
       {/* Filter tabs */}
       <div className="px-3.5 pb-2.5">
-        <SegPill value={filter} options={[{value: "all", label: "All"}, {value: "order", label: "Orders"}, {value: "deposit", label: "Deposits"}]} onChange={setFilter} dark={dark} t={t} fill />
+        <SegPill value={filter} options={[{value: "all", label: tr("All")}, {value: "order", label: tr("Orders")}, {value: "deposit", label: tr("Deposits")}]} onChange={setFilter} dark={dark} t={t} fill />
       </div>
       <div className="h-px bg-t-card-border" />
       {/* List */}
@@ -1359,8 +1359,8 @@ function DashboardInner({ initialData }) {
                 // Account-level items (referrals, what's new, settings, log out) live
                 // behind the avatar on desktop and in the More sheet on mobile.
                 const byId = Object.fromEntries(NAV_ITEMS.map(n => [n.id, n]));
-                const browse = isReseller ? { id: "catalogue", label: "Catalogue" } : { id: "resellers", label: "Resellers", href: "/resellers" };
-                const hq = { id: "lab", label: isReseller ? "Reseller HQ" : "API access" };
+                const browse = isReseller ? { id: "catalogue", label: tr("Catalogue") } : { id: "resellers", label: tr("Resellers"), href: "/resellers" };
+                const hq = { id: "lab", label: isReseller ? tr("Reseller HQ") : tr("API access") };
                 const sections = [
                   ["Order", [byId.overview, byId.services, byId.orders]],
                   ["Money", [byId["add-funds"], byId.rewards, byId.tasks]],
@@ -1544,9 +1544,9 @@ function DashboardInner({ initialData }) {
           <div className="rail-sec"><span>{tr("Earn")}</span></div>
           <div className="grid grid-cols-3 gap-2">
             {[
-              { id: "referrals", label: "Referrals", hint: "invite friends, both earn", bg: dark ? "#12211a" : "#f0f6ef", brd: dark ? "#1e3a2b" : "#d5e6d3", chip: dark ? "#1a3325" : "#dcecd9", ic: dark ? "#6ee7b7" : "#2e7d4f" },
-              { id: "rewards", label: "Rewards", hint: "daily streaks, free credit", bg: dark ? "#241b0e" : "#fdf3e4", brd: dark ? "#453317" : "#f0dfc0", chip: dark ? "#3a2b12" : "#f7e5c4", ic: dark ? "#e0a458" : "#b45309" },
-              { id: "tasks", label: "Tasks", hint: "post, tweet, get paid", bg: dark ? "#101d30" : "#eef4fb", brd: dark ? "#1e3a5c" : "#cfe0f0", chip: dark ? "#16293f" : "#dce9f7", ic: dark ? "#60a5fa" : "#2563eb" },
+              { id: "referrals", label: tr("Referrals"), hint: tr("invite friends, both earn"), bg: dark ? "#12211a" : "#f0f6ef", brd: dark ? "#1e3a2b" : "#d5e6d3", chip: dark ? "#1a3325" : "#dcecd9", ic: dark ? "#6ee7b7" : "#2e7d4f" },
+              { id: "rewards", label: tr("Rewards"), hint: tr("daily streaks, free credit"), bg: dark ? "#241b0e" : "#fdf3e4", brd: dark ? "#453317" : "#f0dfc0", chip: dark ? "#3a2b12" : "#f7e5c4", ic: dark ? "#e0a458" : "#b45309" },
+              { id: "tasks", label: tr("Tasks"), hint: tr("post, tweet, get paid"), bg: dark ? "#101d30" : "#eef4fb", brd: dark ? "#1e3a5c" : "#cfe0f0", chip: dark ? "#16293f" : "#dce9f7", ic: dark ? "#60a5fa" : "#2563eb" },
             ].map(tl => (
               <button key={tl.id} type="button" onClick={() => { setActive(tl.id); setMoreOpen(false); }} className="flex flex-col items-start gap-1.5 p-[11px] pb-2.5 rounded-[14px] cursor-pointer text-left font-[inherit]" style={{ background: tl.bg, border: `1px solid ${tl.brd}` }}>
                 <span className="w-[30px] h-[30px] rounded-[9px] flex items-center justify-center" style={{ background: tl.chip, color: tl.ic }}>{I[tl.id]}</span>
@@ -1560,16 +1560,16 @@ function DashboardInner({ initialData }) {
           {(() => {
             const chev = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-30"><polyline points="9 18 15 12 9 6"/></svg>;
             const rows = [
-              { header: "Browse" },
-              isReseller ? { id: "catalogue", label: "Catalogue" } : { id: "resellers", label: "Resellers", href: "/resellers" },
-              { id: "lab", label: isReseller ? "Reseller HQ" : "API access" },
-              { id: "guide", label: "Blog" },
-              { id: "changelog", label: "What's New", href: "/changelog", badge: changelogNew },
-              { header: "Account" },
-              ...(!isStandalone && (a2hsReady || isIos) ? [{ id: "a2hs", label: "Add to Home Screen", pwa: true }] : []),
-              { id: "support", label: "WhatsApp support", wa: true },
-              { id: "settings", label: "Settings" },
-              { id: "logout", label: "Log out", out: true },
+              { header: tr("Browse") },
+              isReseller ? { id: "catalogue", label: tr("Catalogue") } : { id: "resellers", label: tr("Resellers"), href: "/resellers" },
+              { id: "lab", label: isReseller ? tr("Reseller HQ") : tr("API access") },
+              { id: "guide", label: tr("Blog") },
+              { id: "changelog", label: tr("What's New"), href: "/changelog", badge: changelogNew },
+              { header: tr("Account") },
+              ...(!isStandalone && (a2hsReady || isIos) ? [{ id: "a2hs", label: tr("Add to Home Screen"), pwa: true }] : []),
+              { id: "support", label: tr("WhatsApp support"), wa: true },
+              { id: "settings", label: tr("Settings") },
+              { id: "logout", label: tr("Log out"), out: true },
             ];
             return rows.map(item => {
               if (item.header) return <div key={item.header} className="rail-sec"><span>{item.header}</span></div>;
