@@ -1086,7 +1086,7 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
               </div>
               <div className="text-right shrink-0">
                 <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: rowColor }}>
-                  {txAmountPrefix(tx)}{fN(tx.amount)}
+                  {txAmountPrefix(tx)}{money(tx.amount, { round: tx.amount < 0 ? "up" : "down" })}
                 </div>
                 <div className="text-[11px] mt-0.5 text-t-text-muted">{tx.date ? fD(tx.date, true) : ""}</div>
               </div>
