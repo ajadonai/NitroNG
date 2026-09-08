@@ -688,14 +688,14 @@ function DashboardInner({ initialData }) {
       }),
       ...txs.filter(tx => tx.type === "deposit" && tx.status === "Completed" && tx.date && new Date(tx.date) >= cutoff).map(tx => ({
         id: `dep-${tx.id || tx.reference}`, type: "deposit", title: "Funds added",
-        desc: `${fN(tx.amount)} added via ${tx.method || "Flutterwave"}`,
+        desc: `${money(tx.amount, { round: "down" })} added via ${tx.method || "Flutterwave"}`,
         time: tx.date ? fD(tx.date) : "", ts: new Date(tx.date),
         color: dark_ ? "#6ee7b7" : "#059669",
         icon: "dollar",
       })),
       ...txs.filter(tx => (tx.type === "bonus" || tx.type === "admin_credit" || tx.type === "referral") && tx.date && new Date(tx.date) >= cutoff).map(tx => ({
         id: `bonus-${tx.id || tx.reference}`, type: "reward", title: tx.type === "referral" ? "Referral bonus" : tx.type === "bonus" ? "Reward received!" : "Balance credited",
-        desc: `${fN(tx.amount)} — ${(tx.description || "Bonus from Nitro").replace(/\s*\[[^\]]+\]\s*/g, " ").trim()}`,
+        desc: `${money(tx.amount, { round: "down" })} — ${(tx.description || "Bonus from Nitro").replace(/\s*\[[^\]]+\]\s*/g, " ").trim()}`,
         time: tx.date ? fD(tx.date) : "", ts: new Date(tx.date),
         color: dark_ ? "#e0a458" : "#d97706",
         icon: "gift",
@@ -1517,7 +1517,7 @@ function DashboardInner({ initialData }) {
               <div className="text-[11px] truncate text-t-text-muted">{user?.email || ""}</div>
             </div>
             <div className="text-right shrink-0">
-              <div className="m text-[15px] font-bold leading-tight text-t-text">₦{Math.round(user?.balance || 0).toLocaleString()}</div>
+              <div className="m text-[15px] font-bold leading-tight text-t-text">{money(user?.balance || 0, { round: "down" })}</div>
               <div className="text-[10px] font-bold uppercase tracking-[1px] text-t-text-muted">wallet</div>
             </div>
             <button type="button" aria-label="Top up wallet" onClick={() => { setActive("add-funds"); setMoreOpen(false); }} className="nitro-money-btn w-[30px] h-[30px] flex items-center justify-center shrink-0">

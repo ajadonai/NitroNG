@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { RailSec, RailCard, RailFact, RailStep } from "./rail";
 import { fN, fHeld, fD } from "../lib/format";
+import { useMoney } from "./locale";
 import { Avatar } from "./avatar";
 import { copyText as copyToClipboard } from '@/lib/clipboard';
 import CashReferralsPage from "./referrals-cash-page";
@@ -33,13 +34,14 @@ function useRefSettings() {
   return s;
 }
 
-function fK(kobo) { return fN(kobo / 100); }
+const fK = (kobo, money) => money(kobo / 100, { round: "down" });
 
 
 /* ═══════════════════════════════════════════ */
 /* ═══ REFERRALS PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
 export default function ReferralsPage({ user, dark, t }) {
+  const money = useMoney();
   const [copied, setCopied] = useState(null);
   const [page, setPage] = useState(1);
   const ref = useRefSettings();
@@ -70,7 +72,7 @@ export default function ReferralsPage({ user, dark, t }) {
   const steps = [
     ["1", "Share your link", "Send your referral link to friends"],
     ["2", "They deposit", ref.minDeposit > 0 ? `Your friend deposits ${fK(ref.minDeposit)} or more` : "Your friend makes their first deposit"],
-    ["3", "You both earn", `You get ${fK(ref.referrer)} and they get ${fK(ref.invitee)}`],
+    ["3", "You both earn", `You get ${fK(ref.referrer)} and they get ${fK(ref.invitee, money)}`],
   ];
 
   return (
@@ -88,7 +90,7 @@ export default function ReferralsPage({ user, dark, t }) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6"/><path d="M2 8h20v4H2z"/><path d="M12 20V8"/></svg>
           <div>
             <div className="text-sm font-medium text-t-text">Your referral bonus is waiting</div>
-            <div className="text-[13px] mt-0.5 text-t-text-muted">Deposit {fN(user.refMinDeposit)} or more to unlock your {fK(ref.invitee)} welcome bonus</div>
+            <div className="text-[13px] mt-0.5 text-t-text-muted">Deposit {money(user.refMinDeposit)} or more to unlock your {fK(ref.invitee)} welcome bonus</div>
           </div>
         </div>
       )}
@@ -124,7 +126,7 @@ export default function ReferralsPage({ user, dark, t }) {
           ["Friends Invited", String(totalRefs), dark ? "#a5b4fc" : "#4f46e5"],
           ["Active", String(activeRefs), t.green],
           ["Total Bonus", fHeld(totalEarnings), t.accent],
-          ["Available", fN(totalEarnings), t.green],
+          ["Available", money(totalEarnings, { round: "down" }), t.green],
         ].map(([label, val, color]) => (
           <div key={label} className="p-3 desktop:p-3.5 rounded-[10px] desktop:rounded-xl" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
             <div className="text-xs desktop:text-[13px] uppercase tracking-[0.5px] mb-1 text-t-text-muted">{label}</div>
@@ -155,7 +157,7 @@ export default function ReferralsPage({ user, dark, t }) {
                 <span>{r.joined ? fD(r.joined) : ""}</span>
               </div>
             </div>
-            <div className="m text-[15px] desktop:text-base font-semibold shrink-0 text-t-green">+{fN(r.bonus || 0)}</div>
+            <div className="m text-[15px] desktop:text-base font-semibold shrink-0 text-t-green">+{money(r.bonus || 0, { round: "down" })}</div>
           </div>
         )) : (
           <div className="p-10 text-center">
@@ -231,6 +233,7 @@ function RewardBreakdown({ rs, t }) {
 /* ═══ REFERRALS RIGHT SIDEBAR             ═══ */
 /* ═══════════════════════════════════════════ */
 export function ReferralsSidebar({ user, dark, t }) {
+  const money = useMoney();
   const ref = useRefSettings();
   const referrals = user?.referralList || [];
   const totalEarnings = user?.earnings || 0;
@@ -253,7 +256,7 @@ export function ReferralsSidebar({ user, dark, t }) {
       <RailSec>Your performance</RailSec>
       <RailCard>
         <RailFact label="Referrals" value={String(totalRefs)} />
-        <RailFact label="Total earned" value={fN(totalEarnings)} color={t.accent} />
+        <RailFact label="Total earned" value={money(totalEarnings, { round: "down" })} color={t.accent} />
         <RailFact label="Sign-up rate" value={totalRefs > 0 ? `${Math.round(activeRefs / totalRefs * 100)}%` : "0%"} />
       </RailCard>
     </div>

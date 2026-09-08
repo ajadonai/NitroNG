@@ -451,7 +451,7 @@ export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
           <div key={tier.key} className="flex items-center gap-2.5 py-[9px] px-[13px] text-[12.5px]" style={{ borderTop: idx ? `1px solid ${rail}` : 'none', opacity: idx < curIdx ? 0.42 : 1, background: idx === curIdx ? `${tier.color}${dark ? '1a' : '17'}` : 'transparent' }}>
             <span className="w-[9px] h-[9px] rounded-full shrink-0" style={{ background: tier.color }} />
             <b className="font-bold" style={{ color: tier.color }}>{tier.name}</b>
-            <span className="ml-auto text-[11.5px] shrink-0" style={{ color: t.textMuted }}>{tier.min === 0 ? tier.minLabel : `${fmtCompactNaira(tier.min, money, currency)}+`}</span>
+            <span className="ml-auto text-[11.5px] shrink-0" style={{ color: t.textMuted }}>{tier.min === 0 ? `${money(0)}+` : `${fmtCompactNaira(tier.min, money, currency)}+`}</span>
             <span className="m text-[11.5px] font-bold whitespace-nowrap shrink-0" style={{ color: t.text }}>{tier.discountPct > 0 ? `${tier.discountPct}%` : '—'} off</span>
             <span className="m text-[11.5px] font-bold whitespace-nowrap shrink-0" style={{ color: t.text }}>{tier.pointEarnPct}% back</span>
           </div>

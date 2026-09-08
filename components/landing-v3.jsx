@@ -292,7 +292,7 @@ function LandingInner({ initialAuthQuery }){
 
               {/* CTAs — desktop/tablet */}
               <div className="fu fd3 flex gap-[18px] items-center flex-wrap max-desktop:!hidden">
-                <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hero-cta-btn inline-flex items-center gap-2 py-[15px] px-[26px] rounded-xl text-[15px] font-bold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(0,0,0,.22)]" style={{background:dark?"linear-gradient(135deg,#c47d8e,#8b5e6b)":"#fff",color:dark?"#fff":"#1a1a1a"}}>🎁 Start with {money(MAX_BONUS_NAIRA)} free credit →</a>
+                <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hero-cta-btn inline-flex items-center gap-2 py-[15px] px-[26px] rounded-xl text-[15px] font-bold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(0,0,0,.22)]" style={{background:dark?"linear-gradient(135deg,#c47d8e,#8b5e6b)":"#fff",color:dark?"#fff":"#1a1a1a"}}>🎁 Start with {money(MAX_BONUS_NAIRA, { round: "down" })} free credit →</a>
                 <a href="/pricing" onClick={e=>{e.preventDefault();document.getElementById("tiers")?.scrollIntoView({behavior:"smooth",block:"start"})}} className="text-[15px] font-semibold no-underline pb-0.5" style={{color:dark?t.text:"#fff",borderBottom:`1.5px solid ${dark?"rgba(255,255,255,.2)":"rgba(255,255,255,.5)"}`}}>See the tiers</a>
               </div>
 
@@ -308,7 +308,7 @@ function LandingInner({ initialAuthQuery }){
                   </div>
                   <div className="hc-gift">
                     <span className="hc-gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></span>
-                    <span><b>Up to {money(MAX_BONUS_NAIRA)} in free promo credit</b><i>to give your next post a real push</i></span>
+                    <span><b>Up to {money(MAX_BONUS_NAIRA, { round: "down" })} in free promo credit</b><i>to give your next post a real push</i></span>
                   </div>
                   <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hc-cta hero-cta-pulse no-underline">Create free account →</a>
                   <div className="hc-login">Already have an account? <a href="/?login=1" onClick={e=>{e.preventDefault();setModal("login")}}>Log in</a></div>

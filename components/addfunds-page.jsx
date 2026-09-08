@@ -311,8 +311,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   const pendingTotal = pendingDeposits.reduce((s, tx) => s + (tx.amount || 0), 0);
   const hasNonManualProgress = pendingDeposits.some(tx => tx.method !== 'manual');
   const pendingSummaryText = hasNonManualProgress
-    ? `${pendingDeposits.length} deposit${pendingDeposits.length === 1 ? '' : 's'}${pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ''} in progress`
-    : `${pendingDeposits.length} pending deposit${pendingDeposits.length === 1 ? '' : 's'}${pendingTotal > 0 ? ` · ${fN(pendingTotal)}` : ''} awaiting confirmation`;
+    ? `${pendingDeposits.length} deposit${pendingDeposits.length === 1 ? '' : 's'}${pendingTotal > 0 ? ` · ${money(pendingTotal, { round: "down" })}` : ''} in progress`
+    : `${pendingDeposits.length} pending deposit${pendingDeposits.length === 1 ? '' : 's'}${pendingTotal > 0 ? ` · ${money(pendingTotal, { round: "down" })}` : ''} awaiting confirmation`;
 
   // Coupon state
   const [showCoupon, setShowCoupon] = useState(false);
