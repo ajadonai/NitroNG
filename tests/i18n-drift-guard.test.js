@@ -87,7 +87,7 @@ describe("translation drift", () => {
 
 /** Every tr("…") in the app — the same read scripts/i18n-report.mjs does. */
 function sourceStrings() {
-  const CALL = /\btr\(\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\s*\)/g;
+  const CALL = /\b(?:tr|msg)\(\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\s*\)/g;
   const out = new Set();
   const walk = (dir) => {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -106,3 +106,39 @@ function sourceStrings() {
   for (const d of ["components", "app"]) if (fs.existsSync(d)) walk(d);
   return [...out];
 }
+
+/**
+ * Emphasis markers, checked in every language.
+ *
+ * <Emph> rebuilds `*bold*` inside a translated sentence, which is what lets a
+ * sentence with an emphasised word in the middle stay ONE string — the
+ * alternative being three fragments reassembled in English's word order, which
+ * is nonsense in French and worse in Arabic.
+ *
+ * The cost is a convention a translation has to respect. A dropped or added
+ * asterisk bolds the rest of the line, so the pairs are counted here rather
+ * than noticed on a customer's screen.
+ */
+describe("emphasis markers", () => {
+  const dicts = LOCALE_CODES.filter((c) => c !== SOURCE_LOCALE)
+    .map((c) => [c, JSON.parse(fs.readFileSync(`messages/${c}.json`, "utf8"))]);
+
+  it("pairs every marker, in the English and in all four translations", () => {
+    const bad = [];
+    const count = (s) => (s.match(/\*/g) || []).length;
+
+    for (const english of sourceStrings()) {
+      if (!english.includes("*")) continue;
+      if (count(english) % 2) bad.push(`en: ${english}`);
+      for (const [code, d] of dicts) {
+        const hit = d[english];
+        if (typeof hit !== "string") continue;
+        if (count(hit) % 2) bad.push(`${code}: ${hit}`);
+        // A sentence that emphasises nothing in one language is a translator
+        // dropping the markup, not a style choice — the bold is part of the copy.
+        if (count(hit) === 0) bad.push(`${code}: lost its emphasis — ${hit}`);
+      }
+    }
+    expect(bad, "Unbalanced or missing *emphasis* markers:\n" + bad.join("\n")).toEqual([]);
+  });
+});

@@ -174,3 +174,27 @@ export function Field({ label, id, hint, error, dark, className = "", ...inputPr
     </div>
   );
 }
+
+/**
+ * A translated sentence with a word or two emphasised inside it.
+ *
+ *   <Emph>{tr("It can *stop short* of the full number")}</Emph>
+ *
+ * The alternative was what this codebase did first: break the sentence at the
+ * <b> and wrap each piece, giving the translator "It can", "stop short" and
+ * "of the full number" as three separate strings to reassemble in an order
+ * English chose. French does not put those clauses in that order and Arabic
+ * does not either, so the pieces come back correct one by one and nonsense
+ * once joined. A sentence is the smallest unit a translator can actually work
+ * with, so the emphasis travels inside it and the markup is rebuilt here.
+ *
+ * Odd segments are emphasised, which means a stray unmatched `*` bolds the
+ * rest of the line rather than throwing. That is the right failure: visible,
+ * harmless, and obvious to whoever reads the page.
+ */
+export function Emph({ children, weight = 600 }) {
+  if (typeof children !== "string") return children;
+  return children.split("*").map((part, i) => (
+    i % 2 ? <b key={i} style={{ color: "var(--t-text)", fontWeight: weight }}>{part}</b> : part
+  ));
+}
