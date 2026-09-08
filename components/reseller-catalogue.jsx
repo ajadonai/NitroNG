@@ -1,4 +1,5 @@
 'use client';
+import { useMoney } from "./locale";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { RailSec, RailCard } from "./rail";
 import { useBodyScrollLock } from "./ui-primitives";
@@ -14,7 +15,10 @@ const GRADE_META = {
 };
 
 
-const naira = (n) => `₦${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+// Reseller prices come from the same catalogue and are paid from the same naira
+// wallet, so they follow the display currency like every other price. The
+// formatter is passed in because this helper sits outside the components.
+const naira = (n, money) => money(Number(n || 0));
 
 // The legend content, shared by the mobile collapsible and the desktop sidebar.
 function GradeLegendBody({ dark, t }) {
@@ -63,6 +67,7 @@ const ROW_CSS = `
 `;
 
 export default function ResellerCataloguePage({ dark, t }) {
+  const money = useMoney();
   const [state, setState] = useState({ status: "loading" });
   const [view, setView] = useState("curated");
   const [openCats, setOpenCats] = useState({});
@@ -447,7 +452,7 @@ export default function ResellerCataloguePage({ dark, t }) {
             </div>
 
             <div className="grid grid-cols-2 gap-2 mb-4">
-              {[["Price / 1k", naira(drawer.price)], ["Min – Max", `${drawer.min.toLocaleString()} – ${drawer.max.toLocaleString()}`],
+              {[["Price / 1k", naira(drawer.price, money)], ["Min – Max", `${drawer.min.toLocaleString()} – ${drawer.max.toLocaleString()}`],
                 ["Refill", drawer.refill ? "Supported" : "Not offered"], ["Cancel", drawer.cancel ? "Supported" : "Not offered"]].map(([label, value]) => (
                 <div key={label} className="rounded-[10px] py-2.5 px-3" style={{ background: cardBg, border: `1px solid ${border}` }}>
                   <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: t.textMuted }}>{label}</div>

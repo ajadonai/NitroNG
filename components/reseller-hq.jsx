@@ -166,6 +166,7 @@ function ProspectInner() {
 
 /* ── Member: the dashboard tab ── */
 export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
+  const money = useMoney();
   const toast = useToast();
   const [key, setKey] = useState(null);
   const [catalog, setCatalog] = useState('curated');
@@ -206,9 +207,9 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
       {wholesale && stats && (
         <div className="rhq-stats">
           <div className="rhq-stt"><b>{stats.orders.toLocaleString()}</b><span>Orders · {stats.windowDays} days</span><i>{stats.apiOrders.toLocaleString()} through the API</i></div>
-          <div className="rhq-stt"><b>₦{stats.spend.toLocaleString()}</b><span>Spend</span><i>last {stats.windowDays} days</i></div>
-          <div className="rhq-stt"><b className="ok">₦{stats.saved.toLocaleString()}</b><span>Saved vs retail</span><i>your rate: −{stats.discount}%</i></div>
-          <div className="rhq-stt"><b>₦{stats.balance.toLocaleString()}</b><span>Wallet</span><i>tops up like any account</i></div>
+          <div className="rhq-stt"><b>{money(stats.spend)}</b><span>Spend</span><i>last {stats.windowDays} days</i></div>
+          <div className="rhq-stt"><b className="ok">{money(stats.saved, { round: "down" })}</b><span>Saved vs retail</span><i>your rate: −{stats.discount}%</i></div>
+          <div className="rhq-stt"><b>{money(stats.balance, { round: "down" })}</b><span>Wallet</span><i>tops up like any account</i></div>
         </div>
       )}
       <div className="rhq-keystrip">
@@ -234,7 +235,7 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
       {wholesale && !full && <div className="rhq-acts"><a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-g" style={{ color: dark ? '#4ade80' : '#16a34a' }}>{WA_ICON} Ask for the full list</a></div>}
       {rates.length > 0 && <>
         <SecHead label="Your rates today" sub="Per 1,000 · retail struck through" />
-        <div className="rhq-rates">{rates.map(([name, retail, price]) => <div key={name} className="rhq-rate"><span>{name}</span><b><s>₦{Number(retail).toLocaleString()}</s>₦{Number(price).toLocaleString()}</b></div>)}</div>
+        <div className="rhq-rates">{rates.map(([name, retail, price]) => <div key={name} className="rhq-rate"><span>{name}</span><b><s>{money(Number(retail))}</s>{money(Number(price))}</b></div>)}</div>
       </>}
       <SecHead label="Questions" sub="The ones that matter" />
       <Faq items={FAQ} />

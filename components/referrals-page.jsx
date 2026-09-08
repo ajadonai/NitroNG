@@ -125,7 +125,7 @@ export default function ReferralsPage({ user, dark, t }) {
         {[
           ["Friends Invited", String(totalRefs), dark ? "#a5b4fc" : "#4f46e5"],
           ["Active", String(activeRefs), t.green],
-          ["Total Bonus", fHeld(totalEarnings), t.accent],
+          ["Total Bonus", money(totalEarnings, { round: "down" }), t.accent],
           ["Available", money(totalEarnings, { round: "down" }), t.green],
         ].map(([label, val, color]) => (
           <div key={label} className="p-3 desktop:p-3.5 rounded-[10px] desktop:rounded-xl" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
