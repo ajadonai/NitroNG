@@ -139,6 +139,31 @@ export function LocaleProvider({ children }) {
     }),
   }), [lang, tr]);
 
+  // Tell the document what language it is actually in, and which way it runs.
+  //
+  // Both halves of this were customer-visible bugs, found the same evening on
+  // the Arabic dashboard. The layout ships `lang="en-NG"` because the server
+  // cannot know the choice — it lives in localStorage — so a page of Arabic
+  // was announcing itself as English, and Chrome duly offered to translate it:
+  // "تابع التسليم" came back as "Follow the prayer" and "أرسل طلبك" as "Send
+  // your request", English nonsense sitting in the middle of a modal nobody
+  // could explain. A browser is right to translate a page it is told is in a
+  // language it plainly is not.
+  //
+  // `dir` is the other half. Without it Arabic is laid out left-to-right and
+  // the bidirectional algorithm puts every neutral character in the wrong
+  // place: "Budget (بدون تعويض)" rendered as "Budget (بدون) تعويض)". That is
+  // not the dictionary being wrong, it is the paragraph running the wrong way.
+  //
+  // This is not the whole RTL job — mirroring the nav, the chevrons and the
+  // back arrows is still its own piece of work — but it is the half that stops
+  // sentences being corrupted, and it is three lines.
+  useEffect(() => {
+    const el = document.documentElement;
+    el.lang = lang === SOURCE_LOCALE ? "en-NG" : lang;
+    el.dir = LOCALES[lang]?.dir || "ltr";
+  }, [lang]);
+
   const setLang = useCallback((code) => {
     if (!LANGUAGES.some(x => x.code === code && x.available)) return;
     setLangState(code);
