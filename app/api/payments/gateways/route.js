@@ -2,15 +2,24 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { log } from "@/lib/logger";
 
-// `nigeriaOnly` is a fact about the rail, not a preference. Flutterwave is
-// hardcoded to NGN; ALATPay, Monnify and KoraPay collect through Nigerian
-// banks; manual transfer is a Nigerian account number. Only USDT works from
-// anywhere. Signup accepts five countries, so without this a customer in
-// London met six methods, five of which could only fail — and found out by
-// failing. A gateway id we do not recognise is treated as Nigerian, since
-// every rail added so far has been.
+// `nigeriaOnly` is a fact about the rail, not a preference — whether it can
+// take money from outside Nigeria at all.
+//
+// Flutterwave is charged in NGN, and an international card pays an NGN charge
+// perfectly well: the cardholder's own bank does the conversion. So it stays
+// visible everywhere, and only its Nigerian halves (bank transfer, mobile
+// money) are unavailable abroad — `abroadDesc` says so rather than listing
+// methods that will not work. I had this wrong when the gate first shipped and
+// hid Flutterwave from every foreign account, which removed the one card path
+// they had.
+//
+// The Nigerian bank rails are genuinely local: ALATPay and Monnify debit
+// Nigerian accounts and manual transfer is a Nigerian account number. KoraPay
+// takes cards but whether it accepts foreign ones is unconfirmed, so it stays
+// hidden until someone checks — a method that fails is worse than one that is
+// missing. An unrecognised gateway is treated as Nigerian for the same reason.
 const DEFAULTS = {
-  flutterwave: { name: 'Flutterwave', desc: 'Cards, Bank Transfer, Mobile Money', priority: 1, nigeriaOnly: true },
+  flutterwave: { name: 'Flutterwave', desc: 'Cards, Bank Transfer, Mobile Money', abroadDesc: 'Card payment', priority: 1, nigeriaOnly: false },
   alatpay: { name: 'ALATPay (Wema)', desc: 'Direct bank debit', priority: 2, nigeriaOnly: true },
   monnify: { name: 'Monnify', desc: 'Auto-confirmed bank transfer', priority: 3, nigeriaOnly: true },
   korapay: { name: 'KoraPay', desc: 'Cards, Bank Transfer', priority: 4, nigeriaOnly: true },
@@ -52,7 +61,7 @@ export async function GET() {
           gateways.push({
             id,
             name: data.name || def.name || id,
-            desc: data.desc || def.desc || '',
+            desc: (abroad && def.abroadDesc) || data.desc || def.desc || '',
             priority: data.priority ?? def.priority ?? 99,
           });
         }

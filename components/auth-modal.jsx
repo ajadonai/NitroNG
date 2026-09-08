@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import NitroLoader from './nitro-loader';
+import { useT } from './locale';
 import { NitroWordmark } from './nitro-logo';
 import { DEFAULT_COUNTRY, getCountry, validatePhone } from '../lib/phone-countries';
 import { PhoneField } from './phone-field';
@@ -20,6 +21,7 @@ function Lbl({ t, htmlFor, children }) {
 }
 
 function PwStrength({ pw, t }) {
+  const tr = useT();
   const checks = [
     pw.length >= 8,
     /[A-Z]/.test(pw),
@@ -27,10 +29,10 @@ function PwStrength({ pw, t }) {
     /[^A-Za-z0-9]/.test(pw),
   ];
   const score = checks.filter(Boolean).length;
-  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+  const labels = ['', tr("Weak"), tr("Fair"), tr("Good"), tr("Strong")];
   const colors = ['', '#dc2626', '#d97706', '#2563eb', '#059669'];
   const tooShort = pw.length < 6;
-  const label = tooShort ? 'Too short' : labels[score] || '';
+  const label = tooShort ? tr("Too short") : labels[score] || '';
   const color = tooShort ? '#dc2626' : colors[score] || '';
   const fill = tooShort ? 1 : score;
 
@@ -63,6 +65,21 @@ function PwStrength({ pw, t }) {
 
 // Opt-in two-panel shell (landing v3). Desktop: brand panel + the usual card. Mobile: the usual card with a slim brand strip.
 function ElevatedShell({ elevated, dark, mode, children }) {
+  // The count was typed in as "2,300+" and left there: the real figure is 7.8K,
+  // so the modal was understating the site by more than three times to every
+  // person deciding whether to sign up. Same endpoint the landing page uses;
+  // nothing is shown until it answers, because a wrong number is worse than
+  // no number.
+  const [creatorCount, setCreatorCount] = useState(null);
+  useEffect(() => {
+    let dead = false;
+    fetch("/api/site-info")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!dead && d?.stats?.users) setCreatorCount(d.stats.users); })
+      .catch(() => {});
+    return () => { dead = true; };
+  }, []);
+  const tr = useT();
   const money = useMoney();
   // Outside the provider (a bare render in a test) this falls back to naira,
   // which is also the right default.
@@ -73,15 +90,15 @@ function ElevatedShell({ elevated, dark, mode, children }) {
       <div className="max-md:hidden relative overflow-hidden text-white flex flex-col p-[30px] pb-[26px]" style={{ background: 'linear-gradient(160deg,#c47d8e 0%,#a3586b 55%,#7a3d52 100%)' }}>
         <div className="absolute rounded-full pointer-events-none" style={{ width: 260, height: 260, right: -90, top: -80, background: 'rgba(255,220,200,.35)', filter: 'blur(70px)' }}/>
         <span className="nitro-mark self-start h-7 px-3 inline-flex items-center relative" style={{ background: 'rgba(255,255,255,.16)' }}><NitroWordmark height={12} color="#fff" /></span>
-        <h3 className="serif italic font-medium text-[34px] leading-[1.1] mt-auto mb-3 relative">{mode === 'login' ? "Welcome back. Let's run it up." : mode === 'signup' ? 'Your first push is on us.' : 'No stress. Let\'s get you back in.'}</h3>
-        <p className="text-[13px] leading-[1.6] relative" style={{ opacity: .86 }}>{mode === 'login' ? 'Your wallet, your orders and your tiers are exactly where you left them.' : mode === 'signup' ? 'Tested services, naira prices, delivery in minutes. Account in 30 seconds.' : 'Tell us the email on the account and we will send a reset link.'}</p>
+        <h3 className="serif italic font-medium text-[34px] leading-[1.1] mt-auto mb-3 relative">{mode === 'login' ? tr("Welcome back. Let's run it up.") : mode === 'signup' ? tr("Your first push is on us.") : 'No stress. Let\'s get you back in.'}</h3>
+        <p className="text-[13px] leading-[1.6] relative" style={{ opacity: .86 }}>{mode === 'login' ? tr("Your wallet, your orders and your tiers are exactly where you left them.") : mode === 'signup' ? tr("Tested services, naira prices, delivery in minutes. Account in 30 seconds.") : tr("Tell us the email on the account and we will send a reset link.")}</p>
         <ul className="list-none p-0 m-0 mt-[18px] flex flex-col gap-[9px] relative">
-          {[currency === 'NGN' ? 'Naira pricing, no FX markup' : 'Prices shown in your currency', 'Starts in under 60 seconds', 'Real humans on WhatsApp'].map(x => <li key={x} className="flex gap-[9px] text-[13px] items-center"><i className="not-italic w-5 h-5 rounded-full inline-flex items-center justify-center shrink-0 text-[11px]" style={{ background: 'rgba(255,255,255,.18)' }}>✓</i>{x}</li>)}
+          {[currency === 'NGN' ? tr("Naira pricing, no FX markup") : tr("Prices shown in your currency"), tr("Starts in under 60 seconds"), tr("Real humans on WhatsApp")].map(x => <li key={x} className="flex gap-[9px] text-[13px] items-center"><i className="not-italic w-5 h-5 rounded-full inline-flex items-center justify-center shrink-0 text-[11px]" style={{ background: 'rgba(255,255,255,.18)' }}>✓</i>{x}</li>)}
         </ul>
-        {mode === 'signup' && <div className="mt-5 py-3 px-3.5 rounded-[14px] text-[12.5px] leading-[1.45] relative" style={{ background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.26)' }}><b className="block text-[13.5px]">🎁 Up to {money(MAX_BONUS_NAIRA, { round: "down" })} free promo credit</b>on your first deposit, straight into your wallet.</div>}
+        {mode === 'signup' && <div className="mt-5 py-3 px-3.5 rounded-[14px] text-[12.5px] leading-[1.45] relative" style={{ background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.26)' }}><b className="block text-[13.5px]">🎁 Up to {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free promo credit")}</b>{tr("on your first deposit, straight into your wallet.")}</div>}
         <div className="flex items-center gap-2.5 mt-[18px] text-xs relative" style={{ opacity: .9 }}>
           <div className="flex">{[['TM','#e0a458'],['AO','#6ee7b7'],['EN','#a5b4fc'],['BI','#f472b6']].map(([a, c], i) => <i key={a} className="not-italic w-[22px] h-[22px] rounded-full text-[8px] font-extrabold flex items-center justify-center" style={{ background: c, border: '2px solid rgba(255,255,255,.9)', marginLeft: i ? -7 : 0 }}>{a}</i>)}</div>
-          <span>2,300+ creators already here</span>
+          <span>{creatorCount ? `${creatorCount}+ ` : ""}{tr("creators already here")}</span>
         </div>
       </div>
       {children}
@@ -90,6 +107,7 @@ function ElevatedShell({ elevated, dark, mode, children }) {
 }
 
 function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode, resetToken: resetTokenProp, elevated = false }) {
+  const tr = useT();
   const money = useMoney();
   const [method, setMethod] = useState('email');
   const [showPw, setShowPw] = useState(false);
@@ -203,7 +221,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
     setError('');
     const contact = method === 'email' ? email : phone;
     if (!contact || !pw) {
-      setError('Please fill in all fields');
+      setError(tr("Please fill in all fields"));
       return;
     }
     setAuthLoading(true);
@@ -223,14 +241,14 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
           window.location.href = '/banned';
           return;
         }
-        setError(data.error || 'Login failed');
+        setError(data.error || tr("Login failed"));
         setAuthLoading(false);
         return;
       }
       window.location.replace('/dashboard');
     } catch (err) {
       console.error('[Login Error]', err);
-      setError('Network error. Check your connection and try again.');
+      setError(tr("Network error. Check your connection and try again."));
       setAuthLoading(false);
     }
   };
@@ -238,19 +256,19 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
   const handleSignup = async () => {
     setError('');
     if (!name || !email || !pw) {
-      setError('Please fill in all fields');
+      setError(tr("Please fill in all fields"));
       return;
     }
     if (pw.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError(tr("Password must be at least 6 characters"));
       return;
     }
     if (pw !== pw2) {
-      setError("Passwords don't match");
+      setError(tr("Passwords don't match"));
       return;
     }
     if (!agree) {
-      setError('Please agree to the Terms of Service');
+      setError(tr("Please agree to the Terms of Service"));
       return;
     }
     setAuthLoading(true);
@@ -272,7 +290,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Signup failed');
+        setError(data.error || tr("Signup failed"));
         setAuthLoading(false);
         return;
       }
@@ -280,7 +298,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       setTimeout(() => window.location.replace('/dashboard'), 300);
     } catch (err) {
       console.error('[Signup Error]', err);
-      setError('Network error. Check your connection and try again.');
+      setError(tr("Network error. Check your connection and try again."));
       setAuthLoading(false);
     }
   };
@@ -288,7 +306,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
   const handleForgot = async () => {
     setError('');
     if (!email) {
-      setError('Please enter your email');
+      setError(tr("Please enter your email"));
       return;
     }
     setAuthLoading(true);
@@ -300,23 +318,23 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Failed to send reset link');
+        setError(data.error || tr("Failed to send reset link"));
         setAuthLoading(false);
         return;
       }
       setForgotSent(true);
       setAuthLoading(false);
     } catch {
-      setError('Something went wrong.');
+      setError(tr("Something went wrong."));
       setAuthLoading(false);
     }
   };
 
   const handleReset = async () => {
     setError('');
-    if (!pw || pw.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (!pw || pw.length < 6) { setError(tr("Password must be at least 6 characters")); return; }
     if (pw !== pw2) { setError('Passwords do not match'); return; }
-    if (!resetToken) { setError('Invalid reset link. Please request a new one.'); return; }
+    if (!resetToken) { setError(tr("Invalid reset link. Please request a new one.")); return; }
     setAuthLoading(true);
     try {
       const res = await fetch('/api/auth/reset-password', {
@@ -325,12 +343,12 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
         body: JSON.stringify({ token: resetToken, password: pw }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Reset failed'); setAuthLoading(false); return; }
+      if (!res.ok) { setError(data.error || tr("Reset failed")); setAuthLoading(false); return; }
       setResetDone(true);
       setAuthLoading(false);
       window.history.replaceState({}, '', '/');
     } catch {
-      setError('Something went wrong.');
+      setError(tr("Something went wrong."));
       setAuthLoading(false);
     }
   };
@@ -347,7 +365,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
   const handleSignupDetails = () => {
     setError('');
     if (!firstName || !lastName) {
-      setError('Please enter your first and last name');
+      setError(tr("Please enter your first and last name"));
       return;
     }
     if (method === 'email' && (!email || !validEmail)) {
@@ -359,7 +377,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       return;
     }
     if (phoneTaken) {
-      setError('This WhatsApp number is already in use');
+      setError(tr("This WhatsApp number is already in use"));
       return;
     }
     setName(`${firstName} ${lastName}`);
@@ -380,7 +398,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
     <button
       onClick={toggle}
       type="button"
-      aria-label={show ? 'Hide password' : 'Show password'}
+      aria-label={show ? tr("Hide password") : tr("Show password")}
       className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent p-0.5"
       style={{ color: t.textMuted }}
     >
@@ -433,7 +451,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
           color: method === 'email' ? t.accent : t.textMuted,
         }}
       >
-        Email
+        {tr("Email")}
       </button>
       <button
         type="button"
@@ -444,7 +462,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
           color: method === 'phone' ? t.accent : t.textMuted,
         }}
       >
-        Phone
+        {tr("Phone")}
       </button>
     </div>
   );
@@ -460,7 +478,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={mode === 'signup' ? 'Create account' : 'Log in'}
+        aria-label={mode === 'signup' ? tr("Create account") : tr("Log in")}
         onClick={(e) => e.stopPropagation()}
         className={elevated
           ? "auth-card w-full max-h-[90dvh] overflow-y-auto overflow-x-hidden px-8 py-9 max-md:py-6 relative"
@@ -474,10 +492,10 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
         }}
       >
         {elevated && <div className="md:hidden relative flex items-center justify-center -mt-6 -mx-8 mb-[18px] py-3.5 px-[52px] text-white text-center" style={{ background: 'linear-gradient(135deg,#c47d8e,#a3586b)' }}>
-          <span className="text-[12.5px] font-semibold" style={{ opacity: .92 }}>{mode === 'signup' ? `🎁 ${money(MAX_BONUS_NAIRA, { round: "down" })} free credit on your first deposit` : 'Welcome back'}</span>
+          <span className="text-[12.5px] font-semibold" style={{ opacity: .92 }}>{mode === 'signup' ? `🎁 ${money(MAX_BONUS_NAIRA, { round: "down" })} free credit on your first deposit` : tr("Welcome back")}</span>
           <button
             type="button"
-            aria-label="Close authentication dialog"
+            aria-label={tr("Close authentication dialog")}
             onClick={onClose}
             className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center leading-none text-white transition-opacity duration-150 hover:opacity-80"
             style={{ background: 'rgba(255,255,255,.18)' }}
@@ -488,7 +506,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
         {/* Close button — quiet ghost circle; on the elevated phone layout the bar above carries its own close */}
         <button
           type="button"
-          aria-label="Close authentication dialog"
+          aria-label={tr("Close authentication dialog")}
           onClick={onClose}
           className={`auth-close absolute top-3.5 right-3.5 w-8 h-8 rounded-full flex items-center justify-center leading-none transition-opacity duration-150 hover:opacity-70 ${elevated ? 'max-md:hidden' : ''}`}
           style={{
@@ -505,14 +523,14 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
           style={{ color: t.text }}
         >
           {mode === 'login'
-            ? "Let's run it up"
+            ? tr("Let's run it up")
             : mode === 'forgot'
               ? 'Forgot password?'
               : mode === 'reset'
-                ? 'Reset password'
+                ? tr("Reset password")
                 : step === 1
-                  ? 'Create Account'
-                  : 'Secure Your Account'}
+                  ? tr("Create Account")
+                  : tr("Secure Your Account")}
         </h2>
 
         {/* Subheading */}
@@ -521,18 +539,18 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
           style={{ color: t.textSoft }}
         >
           {mode === 'login'
-            ? 'Log in and start boosting'
+            ? tr("Log in and start boosting")
             : mode === 'forgot'
               ? forgotSent
-                ? 'Check your email'
-                : 'Enter your email for reset link'
+                ? tr("Check your email")
+                : tr("Enter your email for reset link")
               : mode === 'reset'
                 ? resetDone
-                  ? 'You are all set'
-                  : 'Choose a new password'
+                  ? tr("You are all set")
+                  : tr("Choose a new password")
                 : step === 1
-                  ? 'Step 1 of 2 — Your details'
-                  : 'Step 2 of 2 — Set your password'}
+                  ? tr("Step 1 of 2 — Your details")
+                  : tr("Step 2 of 2 — Set your password")}
         </p>
 
         {/* Error bar — rendered only while there is an error, so idle modals carry no reserved gap */}
@@ -590,7 +608,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                   fill="#EA4335"
                 />
               </svg>
-              Continue with Google
+              {tr("Continue with Google")}
             </button>
 
             {/* Divider */}
@@ -607,7 +625,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 className="text-[13px] font-medium"
                 style={{ color: t.textMuted }}
               >
-                or
+                {tr("or")}
               </span>
               <div
                 className="flex-1 h-px"
@@ -621,7 +639,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
 
             {/* Email / Phone input */}
             <Lbl t={t} htmlFor="login-identity">
-              {method === 'email' ? 'Email Address' : 'Phone Number'}
+              {method === 'email' ? tr("Email Address") : tr("Phone Number")}
             </Lbl>
             {method === 'email' ? (
               <input
@@ -648,14 +666,14 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             )}
 
             {/* Password */}
-            <Lbl t={t} htmlFor="login-password">Password</Lbl>
+            <Lbl t={t} htmlFor="login-password">{tr("Password")}</Lbl>
             <div className="relative mb-4">
               <input
                 id="login-password"
                 name="password"
                 value={pw}
                 onChange={(e) => setPw(e.target.value.slice(0, 128))}
-                placeholder="Enter password"
+                placeholder={tr("Enter password")}
                 maxLength={128}
                 type={showPw ? 'text' : 'password'}
                 autoComplete="current-password"
@@ -685,7 +703,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                   className="text-[13px]"
                   style={{ color: t.textSoft }}
                 >
-                  Remember me
+                  {tr("Remember me")}
                 </span>
               </label>
               <button
@@ -694,7 +712,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 className="bg-transparent text-[13px] font-medium"
                 style={{ color: t.accent }}
               >
-                Forgot password?
+                {tr("Forgot password?")}
               </button>
             </div>
 
@@ -711,7 +729,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               {authLoading && (
                 <NitroLoader size={16} mono ariaHidden />
               )}
-              {authLoading ? 'Logging in...' : 'Log In'}
+              {authLoading ? tr("Logging in...") : tr("Log In")}
             </button>
 
             {/* Switch to signup */}
@@ -719,14 +737,14 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               className="text-center text-sm"
               style={{ color: t.textSoft }}
             >
-              Don&apos;t have an account?{' '}
+              {tr("Don't have an account?")}{' '}
               <button
                 type="button"
                 onClick={() => setMode('signup')}
                 className="bg-transparent font-semibold text-sm"
                 style={{ color: t.accent }}
               >
-                Sign Up Free
+                {tr("Sign Up Free")}
               </button>
             </div>
           </>
@@ -767,7 +785,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                   fill="#EA4335"
                 />
               </svg>
-              Sign up with Google
+              {tr("Sign up with Google")}
             </button>
 
             {/* Divider */}
@@ -784,7 +802,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 className="text-[13px] font-medium"
                 style={{ color: t.textMuted }}
               >
-                or
+                {tr("or")}
               </span>
               <div
                 className="flex-1 h-px"
@@ -799,7 +817,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             {/* First / Last name */}
             <div className="flex gap-2.5 mb-4">
               <div className="flex-1">
-                <Lbl t={t} htmlFor="signup-first">First Name</Lbl>
+                <Lbl t={t} htmlFor="signup-first">{tr("First Name")}</Lbl>
                 <input
                   id="signup-first"
                   name="firstName"
@@ -811,7 +829,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                         .slice(0, 50)
                     )
                   }
-                  placeholder="First"
+                  placeholder={tr("First")}
                   maxLength={50}
                   type="text"
                   autoComplete="given-name"
@@ -824,7 +842,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 />
               </div>
               <div className="flex-1">
-                <Lbl t={t} htmlFor="signup-last">Last Name</Lbl>
+                <Lbl t={t} htmlFor="signup-last">{tr("Last Name")}</Lbl>
                 <input
                   id="signup-last"
                   name="lastName"
@@ -836,7 +854,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                         .slice(0, 50)
                     )
                   }
-                  placeholder="Last"
+                  placeholder={tr("Last")}
                   maxLength={50}
                   type="text"
                   autoComplete="family-name"
@@ -851,7 +869,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             </div>
 
             {/* Email */}
-            <Lbl t={t} htmlFor="signup-email">Email Address</Lbl>
+            <Lbl t={t} htmlFor="signup-email">{tr("Email Address")}</Lbl>
             <input
               id="signup-email"
               name="email"
@@ -875,28 +893,28 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                   className="text-xs"
                   style={{ color: dark ? '#fca5a5' : '#dc2626' }}
                 >
-                  Please enter a valid email
+                  {tr("Please enter a valid email")}
                 </span>
               ) : email && validEmail && emailTaken ? (
                 <span
                   className="text-xs"
                   style={{ color: dark ? '#fca5a5' : '#dc2626' }}
                 >
-                  This email is already in use
+                  {tr("This email is already in use")}
                 </span>
               ) : email && validEmail && emailChecking ? (
                 <span
                   className="text-xs"
                   style={{ color: t.textMuted }}
                 >
-                  Checking...
+                  {tr("Checking...")}
                 </span>
               ) : null}
             </div>
 
             {/* WhatsApp number */}
             <Lbl t={t} htmlFor="signup-phone">
-              WhatsApp Number <span style={{ color: dark ? '#fca5a5' : '#dc2626' }}>*</span>
+              {tr("WhatsApp Number")} <span style={{ color: dark ? '#fca5a5' : '#dc2626' }}>*</span>
             </Lbl>
             <div className="mb-1">
               <PhoneField id="signup-phone" country={country} onCountry={setCountry} value={phone} onValue={setPhone} t={t} dark={dark} />
@@ -908,15 +926,15 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 </span>
               ) : phone && validPhone && phoneTaken ? (
                 <span className="text-[11px]" style={{ color: dark ? '#fca5a5' : '#dc2626' }}>
-                  This number is already in use
+                  {tr("This number is already in use")}
                 </span>
               ) : phone && validPhone && phoneChecking ? (
                 <span className="text-[11px]" style={{ color: t.textMuted }}>
-                  Checking...
+                  {tr("Checking...")}
                 </span>
               ) : (
                 <span className="text-[11px]" style={{ color: t.textMuted }}>
-                  We'll reach you here for order updates
+                  {tr("We'll reach you here for order updates")}
                 </span>
               )}
             </div>
@@ -927,7 +945,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]"
               style={{ background: t.btnPrimary }}
             >
-              Continue →
+              {tr("Continue →")}
             </button>
 
             {/* Switch to login */}
@@ -935,14 +953,14 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               className="text-center text-sm"
               style={{ color: t.textSoft }}
             >
-              Already have an account?{' '}
+              {tr("Already have an account?")}{' '}
               <button
                 type="button"
                 onClick={() => setMode('login')}
                 className="bg-transparent font-semibold text-sm"
                 style={{ color: t.accent }}
               >
-                Log In
+                {tr("Log In")}
               </button>
             </div>
 
@@ -964,12 +982,12 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
         {mode === 'signup' && step === 2 && (
           <>
             {/* Password */}
-            <Lbl t={t} htmlFor="signup-password">Password</Lbl>
+            <Lbl t={t} htmlFor="signup-password">{tr("Password")}</Lbl>
             <div className="relative mb-1">
               <input
                 id="signup-password"
                 name="password"
-                placeholder="Min. 6 characters"
+                placeholder={tr("Min. 6 characters")}
                 value={pw}
                 onChange={(e) => setPw(e.target.value.slice(0, 128))}
                 type={showPw ? 'text' : 'password'}
@@ -987,19 +1005,19 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             <PwStrength pw={pw} t={t} />
             {pw && pw.length < 6 && (
               <div className="text-[11px] mb-1 leading-[1.5]" style={{ color: t.textMuted }}>
-                Use 6+ characters with a mix of uppercase, numbers, and symbols for a strong password.
+                {tr("Use 6+ characters with a mix of uppercase, numbers, and symbols for a strong password.")}
               </div>
             )}
 
             {/* Confirm password */}
-            <Lbl t={t} htmlFor="signup-confirm">Confirm Password</Lbl>
+            <Lbl t={t} htmlFor="signup-confirm">{tr("Confirm Password")}</Lbl>
             <div className="relative mb-1">
               <input
                 id="signup-confirm"
                 name="passwordConfirmation"
                 value={pw2}
                 onChange={(e) => setPw2(e.target.value.slice(0, 128))}
-                placeholder="Re-enter password"
+                placeholder={tr("Re-enter password")}
                 maxLength={128}
                 type={showPw2 ? 'text' : 'password'}
                 autoComplete="new-password"
@@ -1031,7 +1049,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                   className="text-xs"
                   style={{ color: dark ? '#6ee7b7' : '#059669' }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> Passwords match
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> {tr("Passwords match")}
                 </div>
               ) : pwMismatch ? (
                 <div
@@ -1097,7 +1115,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                   className="no-underline"
                   style={{ color: t.accent }}
                 >
-                  Terms
+                  {tr("Terms")}
                 </a>{' '}
                 and{' '}
                 <a
@@ -1105,7 +1123,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                   className="no-underline"
                   style={{ color: t.accent }}
                 >
-                  Privacy Policy
+                  {tr("Privacy Policy")}
                 </a>
               </span>
             </label>
@@ -1123,7 +1141,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               {authLoading && (
                 <NitroLoader size={16} mono ariaHidden />
               )}
-              {authLoading ? 'Creating...' : 'Create Account'}
+              {authLoading ? tr("Creating...") : tr("Create Account")}
             </button>
 
             {/* Back button */}
@@ -1153,23 +1171,23 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
         {/* ====== RESET MODE — FORM ====== */}
         {mode === 'reset' && !resetDone && (
           <>
-            <Lbl t={t} htmlFor="reset-pw">New Password</Lbl>
+            <Lbl t={t} htmlFor="reset-pw">{tr("New Password")}</Lbl>
             <div className="relative mb-1">
-              <input id="reset-pw" name="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value.slice(0, 128))} placeholder="Enter new password" type={showPw ? 'text' : 'password'} className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none pr-11" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+              <input id="reset-pw" name="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value.slice(0, 128))} placeholder={tr("Enter new password")} type={showPw ? 'text' : 'password'} className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none pr-11" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
               <EyeBtn show={showPw} toggle={() => setShowPw(!showPw)} />
             </div>
             <PwStrength pw={pw} t={t} />
 
-            <Lbl t={t} htmlFor="reset-pw2">Confirm Password</Lbl>
+            <Lbl t={t} htmlFor="reset-pw2">{tr("Confirm Password")}</Lbl>
             <div className="relative mb-5">
-              <input id="reset-pw2" name="passwordConfirmation" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value.slice(0, 128))} placeholder="Confirm new password" type={showPw2 ? 'text' : 'password'} className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none pr-11" style={{ background: t.inputBg, border: `1px solid ${pwMismatch ? '#dc2626' : t.inputBorder}`, color: t.text }} />
+              <input id="reset-pw2" name="passwordConfirmation" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value.slice(0, 128))} placeholder={tr("Confirm new password")} type={showPw2 ? 'text' : 'password'} className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none pr-11" style={{ background: t.inputBg, border: `1px solid ${pwMismatch ? '#dc2626' : t.inputBorder}`, color: t.text }} />
               <EyeBtn show={showPw2} toggle={() => setShowPw2(!showPw2)} />
-              {pwMismatch && <p className="text-[11px] mt-1 font-medium" style={{ color: '#dc2626' }}>Passwords do not match</p>}
+              {pwMismatch && <p className="text-[11px] mt-1 font-medium" style={{ color: '#dc2626' }}>{tr("Passwords do not match")}</p>}
             </div>
 
             <button type="submit" disabled={authLoading || !pw || !pwMatch} className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: authLoading ? '#999' : t.btnPrimary, opacity: authLoading || !pw || !pwMatch ? 0.7 : 1 }}>
               {authLoading && <NitroLoader size={16} mono ariaHidden />}
-              {authLoading ? 'Resetting...' : 'Reset Password'}
+              {authLoading ? tr("Resetting...") : tr("Reset Password")}
             </button>
           </>
         )}
@@ -1180,15 +1198,15 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: dark ? 'rgba(110,231,183,0.1)' : 'rgba(5,150,105,0.06)', border: `2px solid ${t.green}` }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
             </div>
-            <p className="text-[15px] text-center mb-6" style={{ color: t.textSoft }}>Your password has been reset. You can now log in.</p>
-            <button type="button" onClick={() => { setMode('login'); window.history.replaceState({}, '', '/'); }} className="w-full py-3.5 rounded-xl text-white text-base font-semibold" style={{ background: t.btnPrimary }}>Log In</button>
+            <p className="text-[15px] text-center mb-6" style={{ color: t.textSoft }}>{tr("Your password has been reset. You can now log in.")}</p>
+            <button type="button" onClick={() => { setMode('login'); window.history.replaceState({}, '', '/'); }} className="w-full py-3.5 rounded-xl text-white text-base font-semibold" style={{ background: t.btnPrimary }}>{tr("Log In")}</button>
           </div>
         )}
 
         {/* ====== FORGOT MODE — FORM ====== */}
         {mode === 'forgot' && !forgotSent && (
           <>
-            <Lbl t={t} htmlFor="forgot-email">Email Address</Lbl>
+            <Lbl t={t} htmlFor="forgot-email">{tr("Email Address")}</Lbl>
             <input
               id="forgot-email"
               name="email"
@@ -1219,7 +1237,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               {authLoading && (
                 <NitroLoader size={16} mono ariaHidden />
               )}
-              {authLoading ? 'Sending...' : 'Send Reset Link'}
+              {authLoading ? tr("Sending...") : tr("Send Reset Link")}
             </button>
 
             <div
@@ -1233,7 +1251,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 className="bg-transparent font-semibold text-sm"
                 style={{ color: t.accent }}
               >
-                Log In
+                {tr("Log In")}
               </button>
             </div>
           </>
@@ -1268,7 +1286,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               className="text-[15px] text-center mb-1"
               style={{ color: t.textSoft }}
             >
-              Reset link sent to
+              {tr("Reset link sent to")}
             </p>
             <p
               className="text-[15px] font-semibold text-center mb-6"
@@ -1280,7 +1298,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               className="text-sm text-center mb-6"
               style={{ color: t.textMuted }}
             >
-              Check your inbox and spam folder.
+              {tr("Check your inbox and spam folder.")}
             </p>
 
             <button
@@ -1289,7 +1307,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               className="w-full py-3.5 rounded-xl text-white text-base font-semibold"
               style={{ background: t.btnPrimary }}
             >
-              Back to Login
+              {tr("Back to Login")}
             </button>
           </div>
         )}

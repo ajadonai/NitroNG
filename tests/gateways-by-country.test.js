@@ -46,18 +46,30 @@ describe("payment methods follow the customer's country", () => {
     for (const country of ["US", "GB", "GH", "KE"]) {
       mocks.userFindUnique.mockResolvedValue({ country });
       const r = await load();
-      expect(r.gateways.map(g => g.id), country).toEqual(["crypto"]);
-      expect(r.hiddenNigeriaOnly, country).toBe(5);
+      // Flutterwave stays: an international card pays an NGN charge, the
+      // cardholder's bank does the conversion. The Nigerian bank rails go.
+      expect(r.gateways.map(g => g.id), country).toEqual(["flutterwave", "crypto"]);
+      expect(r.hiddenNigeriaOnly, country).toBe(4);
       expect(r.country).toBe(country);
     }
+  });
+
+  it("describes Flutterwave by what actually works abroad", async () => {
+    mocks.userFindUnique.mockResolvedValue({ country: "GB" });
+    const abroad = (await load()).gateways.find(g => g.id === "flutterwave");
+    expect(abroad.desc).toBe("Card payment");
+
+    mocks.userFindUnique.mockResolvedValue({ country: "NG" });
+    const home = (await load()).gateways.find(g => g.id === "flutterwave");
+    expect(home.desc).toBe("Cards, Bank Transfer, Mobile Money");
   });
 
   it("treats a gateway it does not recognise as Nigerian — every rail so far has been", async () => {
     mocks.settingFindMany.mockResolvedValue(enabled([...ALL, "newbank"]));
     mocks.userFindUnique.mockResolvedValue({ country: "GB" });
     const r = await load();
-    expect(r.gateways.map(g => g.id)).toEqual(["crypto"]);
-    expect(r.hiddenNigeriaOnly).toBe(6);
+    expect(r.gateways.map(g => g.id)).toEqual(["flutterwave", "crypto"]);
+    expect(r.hiddenNigeriaOnly).toBe(5);
   });
 
   it("falls back to the Nigerian list with no session or no country on file", async () => {

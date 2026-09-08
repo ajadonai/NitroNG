@@ -10,6 +10,7 @@ import '@fontsource/cormorant-garamond/latin-400-italic.css';
 import '@fontsource/cormorant-garamond/latin-500-italic.css';
 import '@fontsource/cormorant-garamond/latin-700.css';
 import CookieBanner from '@/components/cookie-banner';
+import { LocaleProvider } from '@/components/locale';
 import CAPIPageView from '@/components/capi-tracker';
 import Heartbeat from '@/components/heartbeat';
 import AnalyticsScripts from '@/components/analytics-scripts';
@@ -152,10 +153,17 @@ export default function RootLayout({ children }) {
       <body>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:py-2 focus:px-4 focus:rounded-lg focus:bg-[#c47d8e] focus:text-white focus:text-sm focus:font-semibold focus:no-underline">Skip to main content</a>
         <AnalyticsScripts />
-        <CookieBanner />
-        <CAPIPageView />
-        <Heartbeat />
-        <main id="main-content">{children}</main>
+        {/* Currency and language wrap the whole body, not just the page inside
+            the nav. The cookie banner and anything else mounted at the root are
+            chrome a customer reads too, and while the provider lived further
+            down they sat outside it — useT() fell back to English there, so the
+            banner stayed English in every language. */}
+        <LocaleProvider>
+          <CookieBanner />
+          <CAPIPageView />
+          <Heartbeat />
+          <main id="main-content">{children}</main>
+        </LocaleProvider>
       </body>
     </html>
   );

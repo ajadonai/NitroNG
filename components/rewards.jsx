@@ -1,5 +1,5 @@
 'use client';
-import { useMoney, useLocale } from "./locale";
+import { useMoney, useLocale, useT } from "./locale";
 import { Modal } from './ui-primitives';
 import { SkelFacts, SkelList } from './skeleton';
 // ─────────────────────────────────────────────────────────────────
@@ -89,6 +89,7 @@ function CellLink({ t, onClick, children }) {
 /* ── HOME: rewards strip ── */
 
 export function RewardsStrip({ rewards, dark, t, onStatus, onPoints, onTasks }) {
+  const tr = useT();
   const money = useMoney();
   const currency = useLocale()?.currency ?? "NGN";
   if (!rewards) return null;
@@ -151,6 +152,7 @@ function RewardsPageSkeleton({ dark }) {
 // The whole page in the tier's colour: the rule at the top runs from where you
 // are into where you are going, and the ladder repeats that in miniature.
 export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
+  const tr = useT();
   const money = useMoney();
   const currency = useLocale()?.currency ?? "NGN";
   if (!rewards) return <RewardsPageSkeleton dark={dark} />;
@@ -172,8 +174,8 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
   return (
     <>
       <div className="pb-3.5 max-md:pb-3">
-        <div className="serif text-[32px] max-md:text-[26px] font-semibold leading-none tracking-[-.015em]" style={{ color: t.text }}>Rewards</div>
-        <div className="text-[13px] mt-1.5" style={{ color: t.textMuted }}>What using Nitro gives you back.</div>
+        <div className="serif text-[32px] max-md:text-[26px] font-semibold leading-none tracking-[-.015em]" style={{ color: t.text }}>{tr("Rewards")}</div>
+        <div className="text-[13px] mt-1.5" style={{ color: t.textMuted }}>{tr("What using Nitro gives you back.")}</div>
       </div>
 
       {/* ── Status hero ── */}
@@ -182,10 +184,10 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
         <div className="flex items-start justify-between gap-5 pt-[26px] px-[26px] pb-5 max-md:flex-col max-md:gap-3 max-md:pt-[22px] max-md:px-5 max-md:pb-[18px]" style={{ background: `linear-gradient(135deg, ${heroClr}${dark ? '2b' : '24'}, transparent 66%)` }}>
           <div className="flex flex-col items-start min-w-0">
             <ChipIcon gradient={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} shadow={`0 3px 10px ${heroClr}55`} size={34} radius={10}><CrownGlyph s={17} /></ChipIcon>
-            <div className={`${KICKER} mt-3`} style={{ color: t.textMuted }}>Nitro Status</div>
+            <div className={`${KICKER} mt-3`} style={{ color: t.textMuted }}>{tr("Nitro Status")}</div>
             <div className="serif text-[58px] max-md:text-[46px] font-semibold leading-[.92] tracking-[-.025em] mt-1.5" style={{ color: heroClr }}>{status.name}</div>
             <p className="text-[14px] leading-[1.55] mt-3 mb-0 max-w-[52ch]" style={{ color: t.textMuted }}>
-              {status.discountPct > 0 && <><b className="m text-[15px] font-bold" style={{ color: t.text }}>{status.discountPct}%</b> off every order · </>}
+              {status.discountPct > 0 && <><b className="m text-[15px] font-bold" style={{ color: t.text }}>{status.discountPct}%</b> {tr("off every order ·")} </>}
               <b className="m text-[15px] font-bold" style={{ color: t.text }}>{status.pointEarnPct}%</b> of what you spend comes back as points
             </p>
           </div>
@@ -200,7 +202,7 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
             </div>
           )}
           <div className="flex justify-between gap-3 mt-[11px] text-[12.5px] max-md:flex-col max-md:gap-[3px]" style={{ color: t.textMuted }}>
-            <span><b className="m text-[14.5px] font-bold" style={{ color: t.text }}>{fmtCompactNaira(status.eligibleSpend, money, currency)}</b> counted so far</span>
+            <span><b className="m text-[14.5px] font-bold" style={{ color: t.text }}>{fmtCompactNaira(status.eligibleSpend, money, currency)}</b> {tr("counted so far")}</span>
             {nextTier && <span><b className="m text-[14.5px] font-bold" style={{ color: t.text }}>{fmtCompactNaira(status.remainingToNext, money, currency)}</b> to {nextTier.name}</span>}
           </div>
         </div>
@@ -212,23 +214,23 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
           <div className="absolute left-0 right-0 top-0 h-1" style={{ background: 'linear-gradient(90deg,#fbbf24,#d97706)' }} />
           <div className="flex items-center gap-[11px]">
             <ChipIcon gradient="linear-gradient(135deg,#fbbf24,#d97706)" shadow="0 3px 10px rgba(217,119,6,.35)" size={30} radius={9}><CoinGlyph s={15} /></ChipIcon>
-            <span className={KICKER} style={{ color: t.textMuted }}>Nitro Points</span>
+            <span className={KICKER} style={{ color: t.textMuted }}>{tr("Nitro Points")}</span>
           </div>
           <b className="m text-[52px] max-md:text-[44px] font-extrabold leading-none tracking-[-.045em] mt-4 mb-1" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{points.balance.toLocaleString()}</b>
-          <span className="text-[12.5px]" style={{ color: t.textMuted }}>worth {money(points.valueNaira, { round: "down" })} off your next order</span>
+          <span className="text-[12.5px]" style={{ color: t.textMuted }}>worth {money(points.valueNaira, { round: "down" })} {tr("off your next order")}</span>
           {points.redeemable ? (
             <button onClick={onUsePoints} className="w-full h-10 mt-[18px] border-none rounded-xl text-white text-[13px] font-bold font-[inherit] cursor-pointer transition-transform duration-150 hover:-translate-y-px" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', boxShadow: '0 4px 14px rgba(217,119,6,.32)' }}>
-              Use them on an order
+              {tr("Use them on an order")}
             </button>
           ) : (
             <div className="rounded-xl py-3 px-3.5 mt-[18px]" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${t.cardBorder}` }}>
-              <div className="text-[11.5px]" style={{ color: t.textSoft }}>Earn <b style={{ color: gold }}>{points.neededToRedeem.toLocaleString()} more</b> points to start spending</div>
+              <div className="text-[11.5px]" style={{ color: t.textSoft }}>{tr("Earn")} <b style={{ color: gold }}>{points.neededToRedeem.toLocaleString()} more</b> {tr("points to start spending")}</div>
               <div className="h-1 rounded-full overflow-hidden mt-2" style={{ background: trackBg(dark) }}>
                 <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round(points.balance / points.minRedeem * 100))}%`, background: gold }} />
               </div>
             </div>
           )}
-          <p className="text-[11.5px] leading-[1.5] mt-3 mb-0" style={{ color: t.textMuted }}>Earned on every completed order. Spend from {points.minRedeem.toLocaleString()} points.</p>
+          <p className="text-[11.5px] leading-[1.5] mt-3 mb-0" style={{ color: t.textMuted }}>Earned on every completed order. Spend from {points.minRedeem.toLocaleString()} {tr("points.")}</p>
         </div>
 
         {showTasks && (
@@ -236,8 +238,8 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
             <div className="absolute left-0 right-0 top-0 h-1" style={{ background: 'linear-gradient(90deg,#60a5fa,#2563eb)' }} />
             <div className="flex items-center gap-[11px] py-4 px-[18px]" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
               <ChipIcon gradient="linear-gradient(135deg,#60a5fa,#2563eb)" shadow="0 3px 10px rgba(37,99,235,.32)" size={30} radius={9}><TaskGlyph s={15} /></ChipIcon>
-              <span className={KICKER} style={{ color: t.textMuted }}>Earn without spending</span>
-              <span className="ml-auto"><CellLink t={t} onClick={() => setActive?.('tasks')}>All tasks</CellLink></span>
+              <span className={KICKER} style={{ color: t.textMuted }}>{tr("Earn without spending")}</span>
+              <span className="ml-auto"><CellLink t={t} onClick={() => setActive?.('tasks')}>{tr("All tasks")}</CellLink></span>
             </div>
             {/* The payload carries the first few open tasks; the count is the fallback. */}
             <div className="flex items-center gap-3 py-[13px] px-[18px]">
@@ -245,15 +247,15 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
                 <>
                   <span className="flex flex-col gap-0.5 flex-1 min-w-0">
                     <b className="text-[13.5px] font-semibold" style={{ color: t.text }}>{tasks.available} task{tasks.available === 1 ? '' : 's'} open</b>
-                    <i className="not-italic text-[12px]" style={{ color: t.textMuted }}>Follow, share or review — the credit lands once we check it.</i>
+                    <i className="not-italic text-[12px]" style={{ color: t.textMuted }}>{tr("Follow, share or review — the credit lands once we check it.")}</i>
                   </span>
                   <b className="m text-[13.5px] font-bold whitespace-nowrap" style={{ color: green }}>up to {money(tasks.topReward, { round: "down" })}</b>
-                  <button onClick={() => setActive?.('tasks')} className="h-[31px] px-3 rounded-[10px] text-[12px] font-semibold font-[inherit] cursor-pointer" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, color: t.text }}>Do it</button>
+                  <button onClick={() => setActive?.('tasks')} className="h-[31px] px-3 rounded-[10px] text-[12px] font-semibold font-[inherit] cursor-pointer" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, color: t.text }}>{tr("Do it")}</button>
                 </>
               ) : (
                 <span className="flex flex-col gap-0.5">
-                  <b className="text-[13.5px] font-semibold" style={{ color: t.text }}>No tasks open right now</b>
-                  <i className="not-italic text-[12px]" style={{ color: t.textMuted }}>New ones land every few weeks.</i>
+                  <b className="text-[13.5px] font-semibold" style={{ color: t.text }}>{tr("No tasks open right now")}</b>
+                  <i className="not-italic text-[12px]" style={{ color: t.textMuted }}>{tr("New ones land every few weeks.")}</i>
                 </span>
               )}
             </div>
@@ -263,13 +265,13 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
 
       {/* ── Status ladder ── */}
       <div className="rounded-[18px] overflow-hidden mb-3.5" style={card}>
-        <CardHead t={t} title="Status ladder" hint="spend more, pay less, earn faster" />
+        <CardHead t={t} title={tr("Status ladder")} hint="spend more, pay less, earn faster" />
         <div className="flex items-center gap-3.5 py-2.5 px-5 max-md:hidden text-[10px] font-bold uppercase tracking-[1.1px]" style={{ borderBottom: `1px solid ${t.cardBorder}`, color: t.textMuted }}>
           <span className="w-[26px] shrink-0" />
-          <span className="flex-1 min-w-0">Tier</span>
-          <span className="flex-1 min-w-0">Reach it at</span>
-          <span className="w-[100px] text-right shrink-0">Discount</span>
-          <span className="w-[100px] text-right shrink-0">Points back</span>
+          <span className="flex-1 min-w-0">{tr("Tier")}</span>
+          <span className="flex-1 min-w-0">{tr("Reach it at")}</span>
+          <span className="w-[100px] text-right shrink-0">{tr("Discount")}</span>
+          <span className="w-[100px] text-right shrink-0">{tr("Points back")}</span>
         </div>
         <div className="flex flex-col py-0.5">
           {STATUS_TIERS.map((tier, idx) => {
@@ -283,7 +285,7 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
                 <div className="flex-1 min-w-0 flex items-center gap-3.5 max-md:flex-col max-md:items-start max-md:gap-[3px]">
                   <span className="flex-1 min-w-0 flex items-center gap-2.5 max-md:w-full">
                     <b className="text-[15px]" style={{ color: tier.color, fontWeight: isNow ? 750 : 600 }}>{tier.name}</b>
-                    {isNow && <span className="text-[9.5px] font-bold uppercase tracking-[.9px] rounded-full py-[3px] px-[9px] whitespace-nowrap text-white" style={{ background: tier.color }}>You are here</span>}
+                    {isNow && <span className="text-[9.5px] font-bold uppercase tracking-[.9px] rounded-full py-[3px] px-[9px] whitespace-nowrap text-white" style={{ background: tier.color }}>{tr("You are here")}</span>}
                   </span>
                   <span className="flex-1 min-w-0 truncate text-[13px] max-md:text-[12px]" style={{ color: t.textMuted }}>{tier.min === 0 ? 'Your first order' : `${money(tier.min)} spent`}</span>
                 </div>
@@ -299,7 +301,7 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
 
       {/* ── Points history — the latest entries the API returns, unpaged ── */}
       <div className="rounded-[18px] overflow-hidden" style={card}>
-        <CardHead t={t} title="Points history" hint={rows.length ? `${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}` : null} />
+        <CardHead t={t} title={tr("Points history")} hint={rows.length ? `${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}` : null} />
         {rows.length ? rows.map((h, i) => {
           const kind = h.kind === 'spent' ? 'spent' : h.kind === 'reversed' ? 'reversed' : 'earned';
           const clr = kind === 'earned' ? green : kind === 'spent' ? amber : red;
@@ -314,7 +316,7 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
             </div>
           );
         }) : (
-          <div className="text-[12px] py-7 text-center" style={{ color: t.textMuted }}>Points activity will appear here after your first order.</div>
+          <div className="text-[12px] py-7 text-center" style={{ color: t.textMuted }}>{tr("Points activity will appear here after your first order.")}</div>
         )}
       </div>
     </>
@@ -324,6 +326,7 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
 /* ── HOME: channel lane ── */
 
 export function ChannelLane({ dark, t, socialLinks }) {
+  const tr = useT();
   const telegram = socialLinks?.social_telegram_support;
   const waChannel = socialLinks?.social_whatsapp_channel || WHATSAPP_CHANNEL_URL;
   const cards = [
@@ -331,8 +334,8 @@ export function ChannelLane({ dark, t, socialLinks }) {
       key: 'wa',
       href: waChannel,
       gradient: 'linear-gradient(135deg,#25d366,#128c7e)',
-      title: 'Follow us on WhatsApp',
-      sub: 'Deal days and delivery news, first.',
+      title: tr("Follow us on WhatsApp"),
+      sub: tr("Deal days and delivery news, first."),
       icon: (
         <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff" opacity=".95"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg>
       ),
@@ -341,8 +344,8 @@ export function ChannelLane({ dark, t, socialLinks }) {
       key: 'tg',
       href: telegram.startsWith('http') ? telegram : `https://t.me/${telegram.replace(/^@/, '')}`,
       gradient: 'linear-gradient(135deg,#2aabee,#1e7fc4)',
-      title: 'Join the Telegram',
-      sub: 'Service updates and community.',
+      title: tr("Join the Telegram"),
+      sub: tr("Service updates and community."),
       icon: (
         <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff" opacity=".95"><path d="M21.9 4.6c.3-1.2-.9-2-1.9-1.6L2.7 9.6c-1.2.5-1.1 2.2.1 2.6l4.4 1.4 1.7 5.3c.3 1 1.6 1.3 2.3.5l2.4-2.5 4.5 3.3c.9.7 2.2.2 2.4-.9l2.4-14.7zM9.4 13.1l8.3-5.2c.4-.2.7.3.4.6l-6.8 6.2-.3 3-1.6-4.6z"/></svg>
       ),
@@ -378,11 +381,12 @@ export function ChannelLane({ dark, t, socialLinks }) {
 /* ── modal shell (matches the How-it-works popup exactly) ── */
 
 function ModalShell({ open, onClose, dark, t, title, children }) {
+  const tr = useT();
   return (
     <Modal open={open} onClose={onClose} dark={dark} maxWidth={420} title={title} bare>
       <div className="py-4 px-5 flex items-center justify-between shrink-0" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
         <div className="serif text-[21px] font-semibold leading-none" style={{ color: t.text }}>{title}</div>
-        <button onClick={onClose} aria-label="Close" className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent" style={{ borderColor: dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)', color: t.textSoft }}>
+        <button onClick={onClose} aria-label={tr("Close")} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent" style={{ borderColor: dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)', color: t.textSoft }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       </div>
@@ -394,9 +398,10 @@ function ModalShell({ open, onClose, dark, t, title, children }) {
 /* ── the link both pop-ups end with ── */
 
 function SeeAllLink({ t, onClick }) {
+  const tr = useT();
   return (
     <button onClick={onClick} className="block w-full bg-transparent border-none cursor-pointer font-[inherit] text-[12.5px] font-semibold text-center pt-4 hover:underline" style={{ color: t.accent }}>
-      See everything in Rewards ›
+      {tr("See everything in Rewards ›")}
     </button>
   );
 }
@@ -404,6 +409,7 @@ function SeeAllLink({ t, onClick }) {
 /* ── Nitro Status modal ── */
 
 export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
+  const tr = useT();
   const money = useMoney();
   const currency = useLocale()?.currency ?? "NGN";
   if (!open || !rewards) return null;
@@ -415,13 +421,13 @@ export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
   const nextClr = nextTier ? nextTier.color : heroClr;
   const rail = railLine(dark);
   return (
-    <ModalShell open={open} onClose={onClose} dark={dark} t={t} title="Nitro Status">
+    <ModalShell open={open} onClose={onClose} dark={dark} t={t} title={tr("Nitro Status")}>
       <div className="flex items-center gap-3.5 rounded-[15px] p-4" style={{ background: `${heroClr}${dark ? '1a' : '12'}`, border: `1px solid ${heroClr}${dark ? '40' : '33'}` }}>
         <ChipIcon gradient={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} shadow={`0 4px 12px ${heroClr}45`} size={40} radius={11}><CrownGlyph s={19} /></ChipIcon>
         <div className="flex flex-col gap-[3px] min-w-0">
           <div className="serif text-[30px] font-semibold leading-none" style={{ color: heroClr }}>{status.name}</div>
           <div className="text-[12.5px]" style={{ color: t.textMuted }}>
-            {status.discountPct > 0 && <><b className="m font-bold" style={{ color: t.text }}>{status.discountPct}%</b> off · </>}
+            {status.discountPct > 0 && <><b className="m font-bold" style={{ color: t.text }}>{status.discountPct}%</b> {tr("off ·")} </>}
             <b className="m font-bold" style={{ color: t.text }}>{status.pointEarnPct}%</b> points on every order
           </div>
         </div>
@@ -430,8 +436,8 @@ export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
       {nextTier && (
         <div className="flex flex-col gap-2 mt-3.5">
           <div className="flex items-baseline justify-between gap-3 text-[12.5px]" style={{ color: t.textMuted }}>
-            <span>Progress to <b style={{ color: nextClr }}>{nextTier.name}</b></span>
-            <span className="m font-bold whitespace-nowrap" style={{ color: t.text }}>{fmtCompactNaira(status.remainingToNext, money, currency)} to go</span>
+            <span>{tr("Progress to")} <b style={{ color: nextClr }}>{nextTier.name}</b></span>
+            <span className="m font-bold whitespace-nowrap" style={{ color: t.text }}>{fmtCompactNaira(status.remainingToNext, money, currency)} {tr("to go")}</span>
           </div>
           <div className="h-[9px] rounded-[5px] overflow-hidden" style={{ background: trackBg(dark) }}>
             <div className="h-full rounded-[5px] transition-[width] duration-500" style={{ width: `${Math.max(3, Math.min(100, status.progressPct))}%`, background: `linear-gradient(90deg, ${heroClr}, ${nextClr})` }} />
@@ -443,7 +449,7 @@ export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
       )}
 
       <p className="text-[12.5px] leading-[1.55] mt-3.5 mb-0" style={{ color: t.textSoft }}>
-        Spend more to unlock higher tiers — bigger discounts, more points back.
+        {tr("Spend more to unlock higher tiers — bigger discounts, more points back.")}
       </p>
 
       <div className="flex flex-col rounded-[14px] overflow-hidden mt-3.5" style={{ border: `1px solid ${t.cardBorder}` }}>
@@ -466,6 +472,7 @@ export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
 /* ── Nitro Points modal ── */
 
 export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive }) {
+  const tr = useT();
   const money = useMoney();
   const currency = useLocale()?.currency ?? "NGN";
   if (!open || !rewards) return null;
@@ -476,7 +483,7 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive 
   const red = dark ? '#fca5a5' : '#c62828';
   const recent = (history || []).slice(0, 3);
   return (
-    <ModalShell open={open} onClose={onClose} dark={dark} t={t} title="Nitro Points">
+    <ModalShell open={open} onClose={onClose} dark={dark} t={t} title={tr("Nitro Points")}>
       <div className="flex items-center gap-3.5 rounded-[15px] p-4" style={{ background: dark ? 'rgba(251,191,36,.09)' : 'rgba(251,191,36,.1)', border: `1px solid ${dark ? 'rgba(251,191,36,.28)' : 'rgba(217,119,6,.22)'}` }}>
         <ChipIcon gradient="linear-gradient(135deg,#fbbf24,#d97706)" shadow="0 5px 12px rgba(217,119,6,.3)" size={40} radius={11}><CoinGlyph s={19} /></ChipIcon>
         <div className="flex flex-col gap-[3px] min-w-0">
@@ -493,12 +500,12 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive 
 
       <div className="grid grid-cols-2 gap-2.5 mt-3.5">
         <div className="flex flex-col rounded-[13px] py-3 px-3.5" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${t.cardBorder}` }}>
-          <span className={KICKER} style={{ color: t.textMuted }}>Earn rate</span>
+          <span className={KICKER} style={{ color: t.textMuted }}>{tr("Earn rate")}</span>
           <b className="m text-[21px] font-extrabold tracking-[-.02em] mt-[3px]" style={{ color: gold }}>{status?.pointEarnPct ?? 0.5}%</b>
-          <span className="text-[11.5px]" style={{ color: t.textMuted }}>of every order</span>
+          <span className="text-[11.5px]" style={{ color: t.textMuted }}>{tr("of every order")}</span>
         </div>
         <div className="flex flex-col rounded-[13px] py-3 px-3.5" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${t.cardBorder}` }}>
-          <span className={KICKER} style={{ color: t.textMuted }}>Minimum to spend</span>
+          <span className={KICKER} style={{ color: t.textMuted }}>{tr("Minimum to spend")}</span>
           <b className="m text-[21px] font-extrabold tracking-[-.02em] mt-[3px]" style={{ color: t.text }}>{points.minRedeem.toLocaleString()}</b>
           <span className="text-[11.5px]" style={{ color: t.textMuted }}>points</span>
         </div>
@@ -507,7 +514,7 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive 
       <div className="mt-3.5">
         {points.redeemable ? (
           <button onClick={onUse} className="block w-full h-11 border-none rounded-xl text-white text-[13px] font-bold font-[inherit] cursor-pointer transition-transform duration-150 hover:-translate-y-px" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', boxShadow: '0 4px 14px rgba(217,119,6,.32)' }}>
-            Use on next order
+            {tr("Use on next order")}
           </button>
         ) : (
           <div className="rounded-xl py-3 px-3.5 text-center" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${t.cardBorder}` }}>
@@ -522,7 +529,7 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive 
       </div>
 
       <div className="flex flex-col gap-[7px] mt-4">
-        <span className={KICKER} style={{ color: t.textMuted }}>Recent</span>
+        <span className={KICKER} style={{ color: t.textMuted }}>{tr("Recent")}</span>
         {recent.length ? recent.map((h, i) => {
           const kind = h.kind === 'spent' ? 'spent' : h.kind === 'reversed' ? 'reversed' : 'earned';
           const clr = kind === 'earned' ? green : kind === 'spent' ? amber : red;
@@ -535,7 +542,7 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive 
           );
         }) : (
           <div className="text-[12px] py-3 text-center rounded-lg" style={{ color: t.textMuted, background: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.02)' }}>
-            Points activity will appear here after your first order.
+            {tr("Points activity will appear here after your first order.")}
           </div>
         )}
       </div>
@@ -548,6 +555,7 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive 
 /* ── WALLET: compact points card ── */
 
 export function WalletPointsCard({ rewards, dark, t, onView }) {
+  const tr = useT();
   const money = useMoney();
   const currency = useLocale()?.currency ?? "NGN";
   if (!rewards) return null;
@@ -556,14 +564,14 @@ export function WalletPointsCard({ rewards, dark, t, onView }) {
     <div className="flex items-center gap-[11px] rounded-[14px] max-md:rounded-xl py-3.5 px-4 mb-4" style={cardStyle(dark)}>
       <ChipIcon gradient="linear-gradient(135deg,#fbbf24,#d97706)"><CoinGlyph /></ChipIcon>
       <div className="flex-1 min-w-0">
-        <div className="text-[11px] font-bold uppercase tracking-[.7px]" style={{ color: t.textMuted }}>Nitro Points</div>
+        <div className="text-[11px] font-bold uppercase tracking-[.7px]" style={{ color: t.textMuted }}>{tr("Nitro Points")}</div>
         <div className="m text-[15px] font-bold mt-[3px] truncate" style={{ color: t.text }}>
           {points.balance.toLocaleString()} pts{' '}
           <span className="font-semibold" style={{ color: points.redeemable ? t.green : t.textMuted }}>≈ {money(points.valueNaira, { round: "down" })}</span>
         </div>
-        <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>Minimum to spend: <span className="m">{points.minRedeem.toLocaleString()}</span> pts</div>
+        <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{tr("Minimum to spend:")} <span className="m">{points.minRedeem.toLocaleString()}</span> pts</div>
       </div>
-      <CellLink t={t} onClick={onView}>View points</CellLink>
+      <CellLink t={t} onClick={onView}>{tr("View points")}</CellLink>
     </div>
   );
 }
