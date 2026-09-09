@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, createContext, useContext, useCallback } from "react";
+import { useT } from "../locale";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeProvider, useTheme } from "../shared-nav";
 import { ToastProvider } from "../toast";
@@ -51,6 +52,7 @@ const SUBS = {
 };
 
 function ShellInner({ children, member }) {
+  const tr = useT();
   const { dark, toggleTheme, t } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
@@ -81,7 +83,7 @@ function ShellInner({ children, member }) {
 
   const brand = <span className="pt-brand">NITRO<em>The Pit</em></span>;
   const themeBtn = (
-    <button type="button" className="pt-icb" onClick={toggleTheme} aria-label="Switch theme">
+    <button type="button" className="pt-icb" onClick={toggleTheme} aria-label={tr("Switch theme")}>
       {dark
         ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
         : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>}
@@ -96,14 +98,14 @@ function ShellInner({ children, member }) {
           {brand}
           <span className="pt-tops">
             {themeBtn}
-            <button type="button" className="pt-icb" onClick={handleLogout} aria-label="Log out">{LOGOUT_ICON}</button>
+            <button type="button" className="pt-icb" onClick={handleLogout} aria-label={tr("Log out")}>{LOGOUT_ICON}</button>
             <a href="/pit/settings" onClick={(e) => { e.preventDefault(); nav("/pit/settings"); }} className="pt-av">{initials}</a>
           </span>
         </div>
         <div className="pt-wrap">
           <aside className="pt-rail">
             <span className="pt-bhead">{brand}{themeBtn}</span>
-            <div className="pt-sec"><span>Earning</span></div>
+            <div className="pt-sec"><span>{tr("Earning")}</span></div>
             {items.map(item => (
               <a
                 key={item.key}
@@ -117,7 +119,7 @@ function ShellInner({ children, member }) {
             <span className="pt-foot">
               <span className="pt-av">{initials}</span>
               <span className="pt-tt"><b>{member?.name}</b><i>{standing}</i></span>
-              <button type="button" className="pt-icb" onClick={handleLogout} aria-label="Log out">{LOGOUT_ICON}</button>
+              <button type="button" className="pt-icb" onClick={handleLogout} aria-label={tr("Log out")}>{LOGOUT_ICON}</button>
             </span>
           </aside>
 

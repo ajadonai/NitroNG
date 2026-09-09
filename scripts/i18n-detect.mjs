@@ -275,7 +275,26 @@ export function scan(raw) {
   const found = [];        // wrappable right here
   const moduleScope = [];  // must move inside a component first
 
+  // A string already inside tr() or msg() is handled and must not be counted
+  // again. tr() is kept out by the shapes themselves — every one of them
+  // excludes braces, and tr("…") always sits inside them — but msg() marks
+  // module-scope data where there are no braces to rely on, so
+  // `q: msg("Do you need my password?")` still matched as if it were bare.
+  //
+  // The effect was quiet and only visible in the totals: every msg() string in
+  // the app was counted as outstanding work, so the backlog read larger than it
+  // was and app/services/[platform] appeared to have 117 strings left when
+  // almost all of them were already marked and translated.
+  const handled = (text, i) => {
+    const line = lines[i];
+    if (!line) return false;
+    const q = JSON.stringify(text).slice(1, -1);
+    return line.includes(`msg("${q}")`) || line.includes(`msg('${text}')`)
+        || line.includes(`tr("${q}")`) || line.includes(`tr('${text}')`);
+  };
+
   const record = (text, i) => {
+    if (handled(text, i)) return false;
     const at = { text, line: i + 1 };
     if (!mask[i]) { moduleScope.push(at); return false; }
     found.push(at);
@@ -379,9 +398,10 @@ export function scan(raw) {
     //     passed through, so a half-wrapped ternary cannot become tr(tr("…")).
     next = next.replace(/(^|[^=$])(\{[^{}]*\?[^{}]*\})/g, (m, pre, expr) => {
       const done = expr.replace(
-        /tr\(\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*\)|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'/g,
-        (q, dq, sq) => {
+        /(=?)(?:tr\(\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*\)|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')/g,
+        (q, eq, dq, sq) => {
           const t = dq ?? sq;
+          if (eq === "=") return q;          // an attribute value, not prose
           if (t === undefined || !isProse(t) || !record(t, i)) return q;
           return `tr(${JSON.stringify(t)})`;
         });

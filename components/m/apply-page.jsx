@@ -1,10 +1,12 @@
 "use client";
 import { useState } from "react";
+import { useT } from "../locale";
 import { useRouter } from "next/navigation";
 import { ThemeProvider, useTheme } from "../shared-nav";
 import { PitAuthFrame, PitLabel, PitInput, PitTextarea, PitEye, PitButton, PitBack, PitError, PitFoot, PitLink } from "./login-page";
 
 function Inner() {
+  const tr = useT();
   const { t } = useTheme();
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -95,13 +97,13 @@ function Inner() {
 
   const backToStep1 = () => { setStep(1); setError(""); setVerifyCode(""); setVerifyToken(null); };
 
-  const optional = <span className="font-normal normal-case tracking-normal" style={{ color: t.textMuted }}>(optional)</span>;
+  const optional = <span className="font-normal normal-case tracking-normal" style={{ color: t.textMuted }}>{tr("(optional)")}</span>;
 
   if (submitted) {
     return (
-      <PitAuthFrame side="steps" title="You're in the queue" sub="We'll review your application and reach out once you're approved. This usually takes less than 24 hours.">
+      <PitAuthFrame side="steps" title={tr("You're in the queue")} sub={tr("We'll review your application and reach out once you're approved. This usually takes less than 24 hours.")}>
         <PitFoot>
-          <PitLink href="/pit/login" onNav={() => router.push("/pit/login")}>Back to sign in</PitLink>
+          <PitLink href="/pit/login" onNav={() => router.push("/pit/login")}>{tr("Back to sign in")}</PitLink>
         </PitFoot>
       </PitAuthFrame>
     );
@@ -109,31 +111,31 @@ function Inner() {
 
   if (step === "verify") {
     return (
-      <PitAuthFrame side="steps" eyebrow="Step 1 of 2" title="Verify your email" sub="We found a Nitro account with this email. Enter the 6-digit code we sent to verify it's you.">
+      <PitAuthFrame side="steps" eyebrow="Step 1 of 2" title={tr("Verify your email")} sub={tr("We found a Nitro account with this email. Enter the 6-digit code we sent to verify it's you.")}>
         <PitError>{error}</PitError>
 
-        <PitLabel>Verification code</PitLabel>
+        <PitLabel>{tr("Verification code")}</PitLabel>
         <PitInput value={verifyCode} onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="123456" inputMode="numeric" autoComplete="one-time-code" className="text-center tracking-[6px] m" />
 
-        <PitButton type="button" onClick={submitCode} disabled={verifying} loading={verifying}>{verifying ? "Verifying..." : "Verify"}</PitButton>
-        <PitBack onClick={backToStep1}>&larr; Back</PitBack>
+        <PitButton type="button" onClick={submitCode} disabled={verifying} loading={verifying}>{verifying ? tr("Verifying...") : tr("Verify")}</PitButton>
+        <PitBack onClick={backToStep1}><span className="dir-flip">←</span> {tr("Back")}</PitBack>
       </PitAuthFrame>
     );
   }
 
   if (step === 1) {
     return (
-      <PitAuthFrame side="steps" eyebrow="Step 1 of 2" title="Join the Pit" sub="Tell us who you are. We approve by hand, usually the same day.">
+      <PitAuthFrame side="steps" eyebrow="Step 1 of 2" title={tr("Join the Pit")} sub={tr("Tell us who you are. We approve by hand, usually the same day.")}>
         <PitError>{error}</PitError>
 
         <div className="grid grid-cols-2 gap-2.5">
           <div>
-            <PitLabel>First name</PitLabel>
-            <PitInput value={form.firstName} onChange={set("firstName")} required placeholder="First name" maxLength={30} />
+            <PitLabel>{tr("First name")}</PitLabel>
+            <PitInput value={form.firstName} onChange={set("firstName")} required placeholder={tr("First name")} maxLength={30} />
           </div>
           <div>
-            <PitLabel>Last name</PitLabel>
-            <PitInput value={form.lastName} onChange={set("lastName")} required placeholder="Last name" maxLength={30} />
+            <PitLabel>{tr("Last name")}</PitLabel>
+            <PitInput value={form.lastName} onChange={set("lastName")} required placeholder={tr("Last name")} maxLength={30} />
           </div>
         </div>
 
@@ -146,31 +148,31 @@ function Inner() {
           <PitEye shown={showPw} onToggle={() => setShowPw(!showPw)} />
         </div>
 
-        <PitButton type="button" onClick={goStep2} disabled={loading} loading={loading}>{loading ? "Checking..." : "Continue"}</PitButton>
+        <PitButton type="button" onClick={goStep2} disabled={loading} loading={loading}>{loading ? tr("Checking...") : tr("Continue")}</PitButton>
 
         <PitFoot>
-          Already applied? <PitLink href="/pit/login" onNav={() => router.push("/pit/login")}>Sign in</PitLink>
+          Already applied? <PitLink href="/pit/login" onNav={() => router.push("/pit/login")}>{tr("Sign in")}</PitLink>
         </PitFoot>
       </PitAuthFrame>
     );
   }
 
   return (
-    <PitAuthFrame side="steps" eyebrow="Step 2 of 2" title="Almost there" sub="A bit more about you, so we know where you will promote.">
+    <PitAuthFrame side="steps" eyebrow="Step 2 of 2" title={tr("Almost there")} sub={tr("A bit more about you, so we know where you will promote.")}>
       <PitError>{error}</PitError>
 
       <form onSubmit={submit} className="flex flex-col">
-        <PitLabel>Phone {optional}</PitLabel>
+        <PitLabel>{tr("Phone")} {optional}</PitLabel>
         <PitInput type="tel" value={form.phone} onChange={set("phone")} placeholder="08012345678" />
 
         <PitLabel>X (Twitter) {optional}</PitLabel>
-        <PitInput value={form.xHandle} onChange={set("xHandle")} placeholder="@yourhandle" />
+        <PitInput value={form.xHandle} onChange={set("xHandle")} placeholder={tr("@yourhandle")} />
 
-        <PitLabel>Why do you want to join? {optional}</PitLabel>
-        <PitTextarea value={form.whyApply} onChange={set("whyApply")} placeholder="Tell us about your audience and how you'd promote Nitro..." rows={3} />
+        <PitLabel>{tr("Why do you want to join?")} {optional}</PitLabel>
+        <PitTextarea value={form.whyApply} onChange={set("whyApply")} placeholder={tr("Tell us about your audience and how you'd promote Nitro...")} rows={3} />
 
-        <PitButton type="submit" disabled={loading} loading={loading}>{loading ? "Submitting..." : "Submit application"}</PitButton>
-        <PitBack onClick={backToStep1}>&larr; Back to step 1</PitBack>
+        <PitButton type="submit" disabled={loading} loading={loading}>{loading ? tr("Submitting...") : tr("Submit application")}</PitButton>
+        <PitBack onClick={backToStep1}><span className="dir-flip">←</span> {tr("Back to step 1")}</PitBack>
       </form>
     </PitAuthFrame>
   );

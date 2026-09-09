@@ -3,6 +3,7 @@
 // stylesheet the shell prints, and the primitives (facts row, card, rows, chips,
 // buttons, modal) the six pages are built from.
 import { useEffect } from "react";
+import { useT } from "../locale";
 
 // ── CSS variables ──
 // Solid card colour, never a translucent token, so nothing shows through a card.
@@ -85,6 +86,7 @@ export function Empty({ children }) {
 // The rule: fixed backdrop that closes on click, page behind locked and inert,
 // Escape closes, the surface is solid, and it is a bottom sheet on phones.
 export function Modal({ open, onClose, title, sub, children, footer, wide }) {
+  const tr = useT();
   useEffect(() => {
     if (!open) return undefined;
     const prev = document.body.style.overflow;
@@ -99,7 +101,7 @@ export function Modal({ open, onClose, title, sub, children, footer, wide }) {
       <div className={"pt-md" + (wide ? " wide" : "")} role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
         <div className="pt-mdh">
           <div className="pt-mdt"><b>{title}</b>{sub ? <i>{sub}</i> : null}</div>
-          <button type="button" className="pt-b sm" onClick={onClose}>Close</button>
+          <button type="button" className="pt-b sm" onClick={onClose}>{tr("Close")}</button>
         </div>
         <div className="pt-mdb">{children}</div>
         {footer ? <div className="pt-mdf">{footer}</div> : null}
@@ -123,11 +125,12 @@ export function Field({ label, value, onChange, type = "text", placeholder, hint
 const DEFAULT_TIER_CONFIG = { starter: { rate: 30, min: 0 }, growth: { rate: 40, min: 30 }, pro: { rate: 50, min: 100 }, leadSplit: 40 };
 
 export function TierProgress({ tier, activeCount, tierConfig }) {
+  const tr = useT();
   const cfg = tierConfig || DEFAULT_TIER_CONFIG;
   const steps = [
-    { key: "starter", label: "Starter", rate: cfg.starter?.rate || 30, min: 0 },
-    { key: "growth", label: "Growth", rate: cfg.growth?.rate || 40, min: cfg.growth?.min || 30 },
-    { key: "pro", label: "Pro", rate: cfg.pro?.rate || 50, min: cfg.pro?.min || 100 },
+    { key: "starter", label: tr("Starter"), rate: cfg.starter?.rate || 30, min: 0 },
+    { key: "growth", label: tr("Growth"), rate: cfg.growth?.rate || 40, min: cfg.growth?.min || 30 },
+    { key: "pro", label: tr("Pro"), rate: cfg.pro?.rate || 50, min: cfg.pro?.min || 100 },
   ];
   const currentIdx = Math.max(0, steps.findIndex(s => s.key === tier));
   const nextStep = steps[currentIdx + 1] || null;
@@ -136,7 +139,7 @@ export function TierProgress({ tier, activeCount, tierConfig }) {
   const pct = Math.min(100, Math.max(2, nextStep ? (activeCount / top) * 100 : 100));
   return (
     <section className="pt-card">
-      <header><h3>Your tier</h3><span className="pt-cnt">your rate goes up with paid referrals</span></header>
+      <header><h3>{tr("Your tier")}</h3><span className="pt-cnt">{tr("your rate goes up with paid referrals")}</span></header>
       <div className="pt-steps">
         {steps.map((s, i) => (
           <span key={s.key} className={"pt-ts" + (i < currentIdx ? " done" : i === currentIdx ? " on" : "")}>
@@ -149,7 +152,7 @@ export function TierProgress({ tier, activeCount, tierConfig }) {
       <div className="pt-tbar"><i style={{ width: `${pct}%` }} /></div>
       <div className="pt-tnote">
         <span>{nextStep ? `${remaining} more paid ${remaining === 1 ? "referral" : "referrals"} to ${nextStep.label}.` : "You are on the top tier."}</span>
-        <span className="m">{activeCount} paid so far</span>
+        <span className="m">{activeCount} {tr("paid so far")}</span>
       </div>
     </section>
   );

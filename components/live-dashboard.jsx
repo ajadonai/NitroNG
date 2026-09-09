@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useT } from "./locale";
 
 function timeOnSite(firstSeen) {
   const s = Math.floor((Date.now() - new Date(firstSeen).getTime()) / 1000);
@@ -109,6 +110,7 @@ function DeviceGlyph({ ua }) {
 }
 
 function Row({ s, expanded, onToggle, isNew }) {
+  const tr = useT();
   const signal = conversionSignal(s);
   const device = deviceInfo(s.ua);
   const intent = pageIntent(s.page);
@@ -120,10 +122,10 @@ function Row({ s, expanded, onToggle, isNew }) {
       <button type="button" className="lv-row" onClick={onToggle} aria-expanded={expanded}>
         <span className="lv-dev"><DeviceGlyph ua={s.ua} /></span>
         <span className="lv-main">
-          <span><span className="lv-who">{u?.name || 'Guest'}</span><span className={`lv-sig lv-${cls}`}><i className="lv-dot" />{SIG_LABEL[signal.label] || signal.label}</span></span>
+          <span><span className="lv-who">{u?.name || tr("Guest")}</span><span className={`lv-sig lv-${cls}`}><i className="lv-dot" />{SIG_LABEL[signal.label] || signal.label}</span></span>
           <span className="lv-meta"><span className="lv-page">{pageName(s.page)}</span>{intent && <span className="lv-int">{intent.label}</span>}</span>
         </span>
-        <span className="lv-time m">{timeOnSite(s.firstSeen)} on site<small>seen {timeAgo(s.lastSeen)}</small></span>
+        <span className="lv-time m">{timeOnSite(s.firstSeen)} {tr("on site")}<small>seen {timeAgo(s.lastSeen)}</small></span>
         <span className="lv-bal m">{customer ? naira(u.balance) : ''}</span>
         <span className="lv-ord m">{customer ? `${u.orderCount} order${u.orderCount === 1 ? '' : 's'}` : ''}</span>
         <span className="lv-chev" />
@@ -132,12 +134,12 @@ function Row({ s, expanded, onToggle, isNew }) {
         <div className="lv-detail">
           <div className="lv-facts">
             {customer ? (<>
-              Joined {timeAgo(u.joined)} · {naira(u.totalDeposited)} deposited · {device.label}{u.source ? ` · via ${u.source}` : ''}<br />{u.email}
-            </>) : u ? (<>Admin · {device.label}<br />{u.email}</>) : (<>{device.label} · on site {timeOnSite(s.firstSeen)}</>)}
+              Joined {timeAgo(u.joined)} · {naira(u.totalDeposited)} {tr("deposited ·")} {device.label}{u.source ? ` · via ${u.source}` : ''}<br />{u.email}
+            </>) : u ? (<>{tr("Admin ·")} {device.label}<br />{u.email}</>) : (<>{device.label} {tr("· on site")} {timeOnSite(s.firstSeen)}</>)}
           </div>
           {customer && u.recentOrders?.length > 0 && (
             <div className="lv-recs">
-              <h4>Recent orders</h4>
+              <h4>{tr("Recent orders")}</h4>
               {u.recentOrders.map(o => (
                 <div className="lv-rec" key={o.id}><span>{o.service}{o.tier ? ` · ${o.tier}` : ''}</span><span className="m">{naira(o.charge)}</span><span className="lv-ago m">{timeAgo(o.date)}</span></div>
               ))}
@@ -152,6 +154,7 @@ function Row({ s, expanded, onToggle, isNew }) {
 const PAGE_CLS = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5'];
 
 export default function LiveDashboard() {
+  const tr = useT();
   const [sessions, setSessions] = useState([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -222,13 +225,13 @@ export default function LiveDashboard() {
     <div ref={containerRef} className="lv">
       <style>{CSS}</style>
       <header className="lv-top">
-        <div className="lv-brand"><span className="lv-mark">N</span><h1>Live</h1></div>
+        <div className="lv-brand"><span className="lv-mark">N</span><h1>{tr("Live")}</h1></div>
         <div className="lv-state">
           {error
-            ? <span className="lv-live lv-lost"><i className="lv-dot bad" />CONNECTION LOST</span>
+            ? <span className="lv-live lv-lost"><i className="lv-dot bad" />{tr("CONNECTION LOST")}</span>
             : <span className="lv-live"><i className="lv-dot ok beat" />LIVE</span>}
           <span className="lv-ago m">{loading ? '…' : `${secondsAgo}s`}</span>
-          <button type="button" onClick={toggleFullscreen} className="lv-fs" aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
+          <button type="button" onClick={toggleFullscreen} className="lv-fs" aria-label={isFullscreen ? tr("Exit fullscreen") : tr("Fullscreen")}>
             {isFullscreen
               ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /></svg>
               : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /></svg>}
@@ -237,28 +240,28 @@ export default function LiveDashboard() {
       </header>
 
       <section className="lv-now">
-        <div className="lv-tc lv-hero"><div className="lv-tl">Online now</div><div className="lv-pv"><span className="lv-val m">{count}</span><span className="lv-pn m">{peak}<small>peak this session</small></span></div></div>
-        <div className="lv-tc"><div className="lv-tl">Logged in</div><div className="lv-val m">{loggedIn}</div></div>
-        <div className="lv-tc"><div className="lv-tl">Guests</div><div className="lv-val m">{guests}</div></div>
-        <div className="lv-tc"><div className="lv-tl">Hot</div><div className="lv-val m hot">{hot}</div></div>
+        <div className="lv-tc lv-hero"><div className="lv-tl">{tr("Online now")}</div><div className="lv-pv"><span className="lv-val m">{count}</span><span className="lv-pn m">{peak}<small>{tr("peak this session")}</small></span></div></div>
+        <div className="lv-tc"><div className="lv-tl">{tr("Logged in")}</div><div className="lv-val m">{loggedIn}</div></div>
+        <div className="lv-tc"><div className="lv-tl">{tr("Guests")}</div><div className="lv-val m">{guests}</div></div>
+        <div className="lv-tc"><div className="lv-tl">{tr("Hot")}</div><div className="lv-val m hot">{hot}</div></div>
       </section>
 
       <section className="lv-where">
-        <header><h3>Where they are</h3><span className="lv-cnt">{count} {count === 1 ? 'person' : 'people'}</span></header>
+        <header><h3>{tr("Where they are")}</h3><span className="lv-cnt">{count} {count === 1 ? 'person' : 'people'}</span></header>
         {pages.length > 0 ? (<>
           <div className="lv-stack">{pages.map(([name, c], i) => <i key={name} style={{ width: `${(c / shown) * 100}%` }} className={`lv-${PAGE_CLS[i]}`} />)}</div>
           <div className="lv-leg">{pages.map(([name, c], i) => <span key={name}><i className={`lv-sw lv-${PAGE_CLS[i]}`} />{name} <b className="m">{c}</b></span>)}</div>
-        </>) : <div className="lv-empty">{loading ? 'Connecting…' : 'No one on the site right now.'}</div>}
+        </>) : <div className="lv-empty">{loading ? tr("Connecting…") : tr("No one on the site right now.")}</div>}
       </section>
 
       <section className="lv-people">
         <header>
-          <h3>People</h3>
-          <span className="lv-legend"><i className="lv-dot ok" />Hot: has funds and has ordered <i className="lv-dot run" />Has funds / returning <i className="lv-dot ac" />New or admin <i className="lv-dot dim" />Guest</span>
+          <h3>{tr("People")}</h3>
+          <span className="lv-legend"><i className="lv-dot ok" />{tr("Hot: has funds and has ordered")} <i className="lv-dot run" />{tr("Has funds / returning")} <i className="lv-dot ac" />{tr("New or admin")} <i className="lv-dot dim" />{tr("Guest")}</span>
         </header>
         <div className="lv-rows">
-          {loading ? <div className="lv-empty">Connecting…</div>
-            : sessions.length === 0 ? <div className="lv-empty">No one online right now.</div>
+          {loading ? <div className="lv-empty">{tr("Connecting…")}</div>
+            : sessions.length === 0 ? <div className="lv-empty">{tr("No one online right now.")}</div>
             : sessions.map(s => <Row key={s.sessionId} s={s} expanded={!!expanded[s.sessionId]} onToggle={() => toggle(s.sessionId)} isNew={newIds.has(s.sessionId)} />)}
         </div>
       </section>
