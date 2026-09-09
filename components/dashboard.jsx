@@ -5,6 +5,7 @@ import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
 import { useMoney, useT } from "./locale";
+import { msg } from "../lib/i18n";
 import { DEFAULT_COUNTRY, validatePhone } from "../lib/phone-countries";
 import { PhoneField } from "./phone-field";
 import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
@@ -151,37 +152,39 @@ const I = {
 };
 
 // Rendered through tr(item.label) at the point of use, because these sit at
-// module scope where a hook cannot reach. The scanner reads code and cannot
-// follow a variable, so their dictionary entries are written by hand — and
-// these are the labels a customer reads on every single page, so a missing one
+// module scope where a hook cannot reach. msg() marks them so the scanner can
+// see them without following a variable — before it existed these entries were
+// maintained by hand and showed up as orphans, which meant nothing would have
+// warned if the English here changed. These are the labels a customer reads on
+// every single page, so a missing one
 // is the most visible gap there is.
 const NAV_ITEMS = [
-  { id: "overview", label: "Home" },
-  { id: "services", label: "New Order" },
-  { id: "orders", label: "History" },
-  { id: "add-funds", label: "Wallet" },
-  { id: "guide", label: "Blog" },
-  { id: "changelog", label: "What's New", href: "/changelog" },
-  { id: "referrals", label: "Referrals" },
-  { id: "rewards", label: "Rewards" },
-  { id: "tasks", label: "Tasks" },
-  { id: "support", label: "Support" },
-  { id: "settings", label: "Settings" },
+  { id: "overview", label: msg("Home") },
+  { id: "services", label: msg("New Order") },
+  { id: "orders", label: msg("History") },
+  { id: "add-funds", label: msg("Wallet") },
+  { id: "guide", label: msg("Blog") },
+  { id: "changelog", label: msg("What's New"), href: "/changelog" },
+  { id: "referrals", label: msg("Referrals") },
+  { id: "rewards", label: msg("Rewards") },
+  { id: "tasks", label: msg("Tasks") },
+  { id: "support", label: msg("Support") },
+  { id: "settings", label: msg("Settings") },
 ];
 
 const BOTTOM_TABS = [
-  { id: "overview", label: "Home" },
-  { id: "add-funds", label: "Wallet" },
-  { id: "services", label: "New Order", primary: true },
-  { id: "orders", label: "History" },
-  { id: "more", label: "More" },
+  { id: "overview", label: msg("Home") },
+  { id: "add-funds", label: msg("Wallet") },
+  { id: "services", label: msg("New Order"), primary: true },
+  { id: "orders", label: msg("History") },
+  { id: "more", label: msg("More") },
 ];
 const MoreIcon = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>;
 const OrderIcon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 
 const WAITLIST_META = {
-  audit: { icon: I.audit, title: "Be the first to audit your account", desc: "We're building a tool that analyzes your social media — follower quality, engagement rate, growth trends, and more. Join the waitlist to get early access." },
-  cleanup: { icon: I.cleanup, title: "Be the first to clean up your account", desc: "Mass unfollow ghost followers, non-followers, and inactive accounts — all from your Nitro dashboard. Join the waitlist to get early access." },
+  audit: { icon: I.audit, title: msg("Be the first to audit your account"), desc: msg("We're building a tool that analyzes your social media — follower quality, engagement rate, growth trends, and more. Join the waitlist to get early access.") },
+  cleanup: { icon: I.cleanup, title: msg("Be the first to clean up your account"), desc: msg("Mass unfollow ghost followers, non-followers, and inactive accounts — all from your Nitro dashboard. Join the waitlist to get early access.") },
 };
 
 function WaitlistPage({ feature, dark, t }) {
