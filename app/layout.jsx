@@ -142,8 +142,15 @@ export default function RootLayout({ children }) {
     creator: { "@type": "Organization", name: "The Nitro NG" },
   };
 
+  // dir is required here, not decorative: postcss-rtlcss scopes every rule that
+  // has a physical side to [dir=ltr] or [dir=rtl], so a document with no dir
+  // attribute matches neither and loses its padding, margins and alignment. The
+  // server cannot know the reader's choice — it lives in localStorage — so it
+  // sends the default and components/locale.jsx corrects it on mount for
+  // Arabic. This also means the first paint, and every crawler, gets a laid-out
+  // page instead of an unstyled one.
   return (
-    <html lang="en-NG" suppressHydrationWarning>
+    <html lang="en-NG" dir="ltr" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://sentry.io" crossOrigin="anonymous" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }} />
