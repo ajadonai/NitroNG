@@ -214,7 +214,7 @@ export function isProse(s) {
  * Not every name: `id`, `name`, `key`, `type`, `variant` and `value` carry
  * identifiers that break when translated.
  */
-const PROSE_NAMES = "label|title|desc|description|heading|subheading|subtitle|sub|subtext|caption|hint|tooltip|cta|blurb|summary|note|body|placeholder|empty|error|aria-label|alt";
+const PROSE_NAMES = "label|title|desc|description|heading|subheading|subtitle|sub|subtext|caption|hint|tooltip|cta|blurb|summary|note|body|placeholder|empty|error|aria-label|alt|message|confirmLabel|cancelLabel";
 
 /** A quoted string, either quote style, allowing the other quote inside it. */
 const QUOTED = `(?:"((?:[^"\\\\]|\\\\.)*)"|'((?:[^'\\\\]|\\\\.)*)')`;
@@ -382,6 +382,19 @@ export function scan(raw) {
           return `tr(${JSON.stringify(t)})`;
         });
       return pre + done;
+    });
+
+    // 5c. a ternary inside a prose-carrying prop:
+    //     sub={themeMode === "auto" ? "Auto: …" : "Choose how Nitro looks"}
+    next = next.replace(new RegExp(`\\b(${PROSE_NAMES})=(\\{[^{}]*\\?[^{}]*\\})`, 'g'), (m, name, expr) => {
+      const done = expr.replace(
+        /tr\(\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*\)|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'/g,
+        (q, dq, sq) => {
+          const t = dq ?? sq;
+          if (t === undefined || !isProse(t) || !record(t, i)) return q;
+          return `tr(${JSON.stringify(t)})`;
+        });
+      return `${name}=${done}`;
     });
 
     // 5. a quoted value on a prose-ish key — the shape that hid the three

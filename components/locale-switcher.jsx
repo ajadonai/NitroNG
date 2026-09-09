@@ -2,7 +2,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CURRENCIES, CURRENCY_CODES, canDisplay, isActive } from "../lib/currency";
-import { useLocale, LANGUAGES } from "./locale";
+import { useLocale, useT, LANGUAGES } from "./locale";
 import { useBodyScrollLock } from "./ui-primitives";
 
 /**
@@ -80,6 +80,7 @@ function Picker({ label, trigger, children, open, setOpen }) {
 
 export function CurrencySwitcher() {
   const loc = useLocale();
+  const tr = useT();
   const [open, setOpen] = useState(false);
   if (!loc) return null;
   const { currency, setCurrency, fx, fxPending, ensureRates } = loc;
@@ -92,7 +93,23 @@ export function CurrencySwitcher() {
         <span className="loc-cd">{currency}</span>
         {CHEV}
       </>}>
-      <div className="loc-sec">Show prices in</div>
+      <div className="loc-sec">{tr("Show prices in")}</div>
+      <CurrencyOptions onPick={() => setOpen(false)} />
+    </Picker>
+  );
+}
+
+/**
+ * The currency rows on their own, so a popover and a settings modal can show
+ * the same list. Rendered by CurrencySwitcher above and by the settings page.
+ */
+export function CurrencyOptions({ onPick }) {
+  const loc = useLocale();
+  const tr = useT();
+  if (!loc) return null;
+  const { currency, setCurrency, fx, fxPending } = loc;
+  return (
+    <>
       {CURRENCY_CODES.map(code => {
         const c = CURRENCIES[code];
         const on = code === currency;
@@ -105,19 +122,20 @@ export function CurrencySwitcher() {
         return (
           <button key={code} type="button" role="menuitemradio" aria-checked={on} disabled={!usable}
             className={`loc-opt${on ? " on" : ""}${usable ? "" : " soon"}`}
-            onClick={() => { if (usable) { setCurrency(code); setOpen(false); } }}>
+            onClick={() => { if (usable) { setCurrency(code); onPick?.(); } }}>
             <span className={`loc-osy${code === "KES" ? " wide" : ""}`} aria-hidden="true">{c.symbol}</span>
             <span className="loc-onm">{c.name}</span>
-            {usable ? <><span className="loc-ocd">{code}</span>{TICK}</> : <span className="loc-soon">Soon</span>}
+            {usable ? <><span className="loc-ocd">{code}</span>{TICK}</> : <span className="loc-soon">{tr("Soon")}</span>}
           </button>
         );
       })}
-    </Picker>
+    </>
   );
 }
 
 export function LanguageSwitcher() {
   const loc = useLocale();
+  const tr = useT();
   const [open, setOpen] = useState(false);
   if (!loc) return null;
   const { lang, setLang } = loc;
@@ -130,19 +148,32 @@ export function LanguageSwitcher() {
         <span className="loc-cd">{current.code.toUpperCase().slice(0, 2)}</span>
         {CHEV}
       </>}>
-      <div className="loc-sec">Language</div>
+      <div className="loc-sec">{tr("Language")}</div>
+      <LanguageOptions onPick={() => setOpen(false)} />
+    </Picker>
+  );
+}
+
+/** The language rows on their own — see CurrencyOptions. */
+export function LanguageOptions({ onPick }) {
+  const loc = useLocale();
+  const tr = useT();
+  if (!loc) return null;
+  const { lang, setLang } = loc;
+  return (
+    <>
       {LANGUAGES.map(l => {
         const on = l.code === lang;
         return (
           <button key={l.code} type="button" role="menuitemradio" aria-checked={on} disabled={!l.available}
             className={`loc-opt${on ? " on" : ""}${l.available ? "" : " soon"}`}
-            onClick={() => { if (l.available) { setLang(l.code); setOpen(false); } }}>
+            onClick={() => { if (l.available) { setLang(l.code); onPick?.(); } }}>
             <span className="loc-ofg" aria-hidden="true">{l.flag}</span>
             <span className="loc-onm">{l.label}</span>
-            {l.available ? TICK : <span className="loc-soon">Soon</span>}
+            {l.available ? TICK : <span className="loc-soon">{tr("Soon")}</span>}
           </button>
         );
       })}
-    </Picker>
+    </>
   );
 }

@@ -1577,3 +1577,10 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 [dir="rtl"] .dir-flip { display: inline-block; transform: scaleX(-1); }
 /*rtl:ignore*/
 [dir="rtl"] .rr-jump i, [dir="rtl"] .rr-link-chev { display: inline-block; transform: scaleX(-1); }
+
+/* The language and currency lists when they sit inside a settings modal rather
+   than a popover. The rows are the same markup either way — only the frame
+   changes — so this just undoes the popover's own card treatment and lets the
+   modal provide it. */
+.loc-inmodal { display: flex; flex-direction: column; gap: 2px; margin: -4px 0; }
+.loc-inmodal .loc-opt { width: 100%; border-radius: 10px; padding: 11px 12px; }

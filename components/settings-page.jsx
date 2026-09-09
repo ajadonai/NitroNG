@@ -11,8 +11,9 @@ import { SITE } from "../lib/site";
 import { Avatar } from "./avatar";
 import { copyText } from '@/lib/clipboard';
 import { ThemePill } from "./shared-nav";
-import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
-import { SWITCHER_LIVE } from "./locale";
+import { CurrencyOptions, LanguageOptions } from "./locale-switcher";
+import { SWITCHER_LIVE, useLocale, LANGUAGES } from "./locale";
+import { CURRENCIES } from "../lib/currency";
 
 function SettingsModal({ open, onClose, title, subtitle, icon, dark, t, children }) {
   return (
@@ -119,6 +120,13 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
   const [pwModalOpen, setPwModalOpen] = useState(false);
   const [notifModalOpen, setNotifModalOpen] = useState(false);
   const [sessionsModalOpen, setSessionsModalOpen] = useState(false);
+  const [langModalOpen, setLangModalOpen] = useState(false);
+  const [currencyModalOpen, setCurrencyModalOpen] = useState(false);
+  // Read only — the pickers themselves set these. Used for the value shown on
+  // the row, so somebody can see what they are on without opening anything.
+  const loc = useLocale();
+  const currentLang = LANGUAGES.find(l => l.code === loc?.lang) || LANGUAGES[0];
+  const currentCurrency = CURRENCIES[loc?.currency] || null;
 
   // Sessions state
   const [sessions, setSessions] = useState([]);
@@ -192,7 +200,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <div className="rounded-[14px] px-3.5 mb-[18px]" style={card}>
           {[["Email", user?.email || "—", false], ["Phone", user?.phone || "—", true], ["Referral code", user?.refCode || "—", true]].map(([label, val, mono], i) => (
             <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}>
-              <span>{label}</span>
+              <span>{tr(label)}</span>
               <span className="flex items-center gap-1.5 min-w-0"><b className={`text-[13px] font-semibold truncate text-t-text${mono ? " m" : ""}`}>{val}</b>{label === "Referral code" && user?.refCode && <button onClick={copyCode} aria-label={tr("Copy referral code")} className="w-6 h-6 rounded-[7px] flex items-center justify-center cursor-pointer bg-transparent text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</button>}</span>
             </div>
           ))}
@@ -206,7 +214,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
           <Row id="set-change-password" first icon={I_LOCK} title={tr("Change password")} sub={tr("Keep your account secure")} onClick={() => setPwModalOpen(true)} dark={dark} t={t} />
           <Row id="set-notifications" icon={I_BELL} title={tr("Notifications")} sub={tr("Orders, promos, email")} onClick={() => setNotifModalOpen(true)} dark={dark} t={t} />
-          <Row id="set-active-sessions" icon={I_DEV} title={tr("Active sessions")} sub={sessionsLoading ? <Bone dark={dark} w={140} h={9} style={{ display: "inline-block", verticalAlign: "middle" }} /> : `${sessions.length} device${sessions.length !== 1 ? "s" : ""}${sessions.find(x => x.current)?.deviceType ? ` · this ${sessions.find(x => x.current).deviceType}` : ""}`} onClick={() => setSessionsModalOpen(true)} dark={dark} t={t} />
+          <Row id="set-active-sessions" icon={I_DEV} title={tr("Active sessions")} sub={sessionsLoading ? <Bone dark={dark} w={140} h={9} style={{ display: "inline-block", verticalAlign: "middle" }} /> : `${sessions.length} ${sessions.length === 1 ? tr("device") : tr("devices")}${sessions.find(x => x.current)?.deviceType ? ` · ${tr("this")} ${sessions.find(x => x.current).deviceType}` : ""}`} onClick={() => setSessionsModalOpen(true)} dark={dark} t={t} />
         </div>
 
         </div>
@@ -214,17 +222,19 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         {/* ── Appearance ── */}
         <SectionHead>{tr("Appearance")}</SectionHead>
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
-          <Row id="set-theme" first icon={dark ? I_MOON : I_SUN} title={tr("Theme")} sub={themeMode === "auto" ? "Auto: light 6:30am to 6:30pm, dark otherwise" : "Choose how Nitro looks"} dark={dark} t={t}
+          <Row id="set-theme" first icon={dark ? I_MOON : I_SUN} title={tr("Theme")} sub={themeMode === "auto" ? tr("Auto: light 6:30am to 6:30pm, dark otherwise") : tr("Choose how Nitro looks")} dark={dark} t={t}
             right={<ThemePill mode={themeMode} onMode={applyTheme} />} />
           {SWITCHER_LIVE && (
             <Row id="set-language" icon={I_GLOBE} title={tr("Language")}
               sub={tr("What language the site reads in")} dark={dark} t={t}
-              right={<LanguageSwitcher />} />
+              onClick={() => setLangModalOpen(true)}
+              right={<span className="flex items-center gap-1.5"><span className="text-[13px] font-semibold text-t-text">{currentLang.label}</span>{I_CHEV}</span>} />
           )}
-          {SWITCHER_LIVE && (
+          {SWITCHER_LIVE && currentCurrency && (
             <Row id="set-currency" icon={I_COIN} title={tr("Currency")}
               sub={tr("What prices are shown in. Your wallet stays in naira.")} dark={dark} t={t}
-              right={<CurrencySwitcher />} />
+              onClick={() => setCurrencyModalOpen(true)}
+              right={<span className="flex items-center gap-1.5"><span className="text-[13px] font-semibold text-t-text">{loc.currency}</span>{I_CHEV}</span>} />
           )}
         </div>
 
@@ -244,7 +254,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         {/* ── Log out, delete ── */}
         <div className="rounded-[14px] overflow-hidden mb-4" style={card}>
           <Row id="set-account" first icon={I_OUT} title={tr("Log out")} onClick={async () => {
-            const ok = await confirm({ title: tr("Log Out"), message: "You will be logged out of this device.", confirmLabel: "Log Out" });
+            const ok = await confirm({ title: tr("Log Out"), message: tr("You will be logged out of this device."), confirmLabel: tr("Log Out") });
             if (ok) {
               let res;
               try {
@@ -271,7 +281,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
                   <input type="password" id="delete-account-password" autoComplete="current-password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder={tr("Your password")} className="flex-1 min-w-40 py-2.5 px-3.5 rounded-lg text-sm outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)"}` }} />
                   <button onClick={async () => {
                     if (!deletePassword) return;
-                    const ok = await confirm({ title: "Delete Your Account", message: "Your account will be scheduled for deletion in 30 days. During this period you cannot log in or sign up with this email. Contact support@nitro.ng before the deadline to cancel. After 30 days, your personal details will be permanently removed and the account cannot be restored. Financial records required for legal and accounting purposes are retained without your contact details.", confirmLabel: "Delete Account", danger: true, requireType: "DELETE" });
+                    const ok = await confirm({ title: "Delete Your Account", message: tr("Your account will be scheduled for deletion in 30 days. During this period you cannot log in or sign up with this email. Contact support@nitro.ng before the deadline to cancel. After 30 days, your personal details will be permanently removed and the account cannot be restored. Financial records required for legal and accounting purposes are retained without your contact details."), confirmLabel: tr("Delete Account"), danger: true, requireType: "DELETE" });
                     if (ok) {
                       try {
                         const res = await fetch("/api/auth/delete-account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: deletePassword }) });
@@ -294,6 +304,14 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
 
         </div>
         {/* ── PASSWORD MODAL ── */}
+        <SettingsModal open={langModalOpen} onClose={() => setLangModalOpen(false)} title={tr("Language")} subtitle={tr("What language the site reads in")} icon={I_GLOBE} dark={dark} t={t}>
+          <div className="loc-inmodal"><LanguageOptions onPick={() => setLangModalOpen(false)} /></div>
+        </SettingsModal>
+
+        <SettingsModal open={currencyModalOpen} onClose={() => setCurrencyModalOpen(false)} title={tr("Currency")} subtitle={tr("What prices are shown in. Your wallet stays in naira.")} icon={I_COIN} dark={dark} t={t}>
+          <div className="loc-inmodal"><CurrencyOptions onPick={() => setCurrencyModalOpen(false)} /></div>
+        </SettingsModal>
+
         <SettingsModal open={pwModalOpen} onClose={() => setPwModalOpen(false)} title={tr("Change password")} subtitle={tr("Keep your account secure")} icon={I_LOCK} dark={dark} t={t}>
           <div className="mb-3">
             <label htmlFor="pw-current" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">{tr("Current password")}</label>
@@ -369,8 +387,18 @@ export function SettingsSidebar() {
     <div className="rr">
       <RailSec>{tr("On this page")}</RailSec>
       <RailCard>
-        {[["Change password", "set-change-password"], ["Notifications", "set-notifications"], ["Theme", "set-theme"], ["Active sessions", "set-active-sessions"], ["System status", "set-status"], ["API access", "set-api"], ["Log out", "set-account"], ["Account", "set-danger-zone"]].map(([label, id]) => (
-          <RailJump key={id} label={label} onClick={() => jump(id)} />
+        {[
+          ["Change password", "set-change-password"],
+          ["Notifications", "set-notifications"],
+          ["Active sessions", "set-active-sessions"],
+          ["Theme", "set-theme"],
+          ...(SWITCHER_LIVE ? [["Language", "set-language"], ["Currency", "set-currency"]] : []),
+          ["API access", "set-api"],
+          ["System status", "set-status"],
+          ["Log out", "set-account"],
+          ["Account", "set-danger-zone"],
+        ].map(([label, id]) => (
+          <RailJump key={id} label={tr(label)} onClick={() => jump(id)} />
         ))}
       </RailCard>
     </div>
