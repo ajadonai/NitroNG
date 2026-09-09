@@ -114,6 +114,10 @@ export const NOT_PROSE = [
   // A CSS selector inside a <style> block: ".rcp-ck svg", ".rcp-f:first-child",
   // ".tx-col.is-off:hover". Nothing a customer reads starts with a dot.
   /^\.|^[a-z]+:(?:first|last|nth|hover|focus|before|after)/,
+  // A JS error class, compared by name: err?.name === "TimeoutError".
+  /^[A-Z]\w*Error$/,
+  // An HTTP method and endpoint shown as an example: "POST nitro.ng/api/v2".
+  /^(GET|POST|PUT|PATCH|DELETE|HEAD)\s/,
   // SVG and CSS keyword values that are not words on a page.
   /^(currentColor|round|butt|square|miter|bevel|evenodd|nonzero|inherit|initial|unset)$/,
   // A tracking identifier: the Google Ads conversion label
@@ -165,6 +169,12 @@ export const DELIBERATELY_ENGLISH = new Map([
   ["Standard", "A tier name — see Budget."],
   ["Premium", "A tier name — see Budget."],
   ["Hi Nitro, I need help", "The WhatsApp prefill. Addressed to the support desk in Lagos, not to the customer reading it."],
+  ["Spark", "A Nitro Status tier name, and an identity value: ShieldBadge compares tier === \"Spark\" to decide what to draw. Same rule as Budget."],
+  ["Pulse", "A Nitro Status tier name — see Spark."],
+  ["Boost", "A Nitro Status tier name — see Spark."],
+  ["Surge", "A Nitro Status tier name — see Spark."],
+  ["Apex", "A Nitro Status tier name — see Spark."],
+  ["Legend", "A Nitro Status tier name — see Spark."],
 ]);
 
 /** Is this a sentence a customer reads, and is it ours to translate? */
@@ -204,7 +214,7 @@ export function isProse(s) {
  * Not every name: `id`, `name`, `key`, `type`, `variant` and `value` carry
  * identifiers that break when translated.
  */
-const PROSE_NAMES = "label|title|desc|description|heading|subheading|subtitle|sub|subtext|caption|hint|tooltip|cta|blurb|summary|note|body|placeholder|empty|error|aria-label|alt";
+const PROSE_NAMES = "label|title|desc|description|heading|subheading|subtitle|sub|subtext|caption|hint|tooltip|cta|blurb|summary|note|body|placeholder|empty|error|aria-label|alt|message|confirmLabel|cancelLabel";
 
 /** A quoted string, either quote style, allowing the other quote inside it. */
 const QUOTED = `(?:"((?:[^"\\\\]|\\\\.)*)"|'((?:[^'\\\\]|\\\\.)*)')`;
@@ -372,6 +382,19 @@ export function scan(raw) {
           return `tr(${JSON.stringify(t)})`;
         });
       return pre + done;
+    });
+
+    // 5c. a ternary inside a prose-carrying prop:
+    //     sub={themeMode === "auto" ? "Auto: …" : "Choose how Nitro looks"}
+    next = next.replace(new RegExp(`\\b(${PROSE_NAMES})=(\\{[^{}]*\\?[^{}]*\\})`, 'g'), (m, name, expr) => {
+      const done = expr.replace(
+        /tr\(\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*\)|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'/g,
+        (q, dq, sq) => {
+          const t = dq ?? sq;
+          if (t === undefined || !isProse(t) || !record(t, i)) return q;
+          return `tr(${JSON.stringify(t)})`;
+        });
+      return `${name}=${done}`;
     });
 
     // 5. a quoted value on a prose-ish key — the shape that hid the three
