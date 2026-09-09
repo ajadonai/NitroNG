@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from "react";
+import { useT } from "./locale";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter } from './shared-nav';
 import { fD } from '@/lib/markdown';
@@ -14,6 +15,7 @@ export default function BlogListing(props) {
 }
 
 function BlogListingInner({ initialPosts, initialCategories, initialTotalPages }) {
+  const tr = useT();
   const { dark, t } = useTheme();
   const [posts, setPosts] = useState(initialPosts);
   const [categories, setCategories] = useState(initialCategories);
@@ -62,18 +64,18 @@ function BlogListingInner({ initialPosts, initialCategories, initialTotalPages }
       <div className="bl-wrap">
         <div className="bl-hero">
           <span className="bl-eye">The Nitro Blog</span>
-          <h1 className="bl-h1">Tips, guides and updates</h1>
-          <p className="bl-lede">Everything we have learned about growing an audience in Nigeria — written for the people doing the growing.</p>
+          <h1 className="bl-h1">{tr("Tips, guides and updates")}</h1>
+          <p className="bl-lede">{tr("Everything we have learned about growing an audience in Nigeria — written for the people doing the growing.")}</p>
           <div className="bl-search">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search articles…" aria-label="Search articles" />
-            {search && <button type="button" aria-label="Clear search" onClick={() => { setSearch(""); setPage(1); }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+            <input type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder={tr("Search articles…")} aria-label={tr("Search articles")} />
+            {search && <button type="button" aria-label={tr("Clear search")} onClick={() => { setSearch(""); setPage(1); }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
           </div>
         </div>
 
         {categories.length > 1 && (
           <div className="bl-chips">
-            <button type="button" className={`bl-chip${activeCat === "all" ? " on" : ""}`} onClick={() => changeCat("all")}>All</button>
+            <button type="button" className={`bl-chip${activeCat === "all" ? " on" : ""}`} onClick={() => changeCat("all")}>{tr("All")}</button>
             {categories.map(cat => (
               <button type="button" key={cat} className={`bl-chip${activeCat === cat ? " on" : ""}`} onClick={() => changeCat(cat)}>{cat}</button>
             ))}
@@ -82,7 +84,7 @@ function BlogListingInner({ initialPosts, initialCategories, initialTotalPages }
 
         <div className="bl-grid">
           {loading ? (
-            <div className="bl-empty">Loading posts…</div>
+            <div className="bl-empty">{tr("Loading posts…")}</div>
           ) : posts.length > 0 ? posts.map(p => (
             <a key={p.id} href={'/blog/' + p.slug} className="bl-card">
               <span className="bl-thumb" style={p.thumbnail ? { backgroundImage: `url(${p.thumbnail})` } : undefined} />
@@ -94,17 +96,17 @@ function BlogListingInner({ initialPosts, initialCategories, initialTotalPages }
               </span>
             </a>
           )) : (
-            <div className="bl-empty">Nothing matches{search ? ` "${search}"` : ""} — try another word or category.</div>
+            <div className="bl-empty">{tr("Nothing matches")}{search ? ` "${search}"` : ""} {tr("— try another word or category.")}</div>
           )}
         </div>
 
         {totalPages > 1 && (
           <div className="bl-pages">
-            <button type="button" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>← Prev</button>
+            <button type="button" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>{tr("← Prev")}</button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
               <button type="button" key={n} className={n === page ? "on" : ""} onClick={() => setPage(n)}>{n}</button>
             ))}
-            <button type="button" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next <span className="dir-flip">→</span></button>
+            <button type="button" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>{tr("Next")} <span className="dir-flip">→</span></button>
           </div>
         )}
       </div>

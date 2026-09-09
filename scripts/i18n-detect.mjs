@@ -169,6 +169,7 @@ export const DELIBERATELY_ENGLISH = new Map([
   ["Standard", "A tier name — see Budget."],
   ["Premium", "A tier name — see Budget."],
   ["Hi Nitro, I need help", "The WhatsApp prefill. Addressed to the support desk in Lagos, not to the customer reading it."],
+  ["The Pit", "The name of the affiliate programme. It travels untranslated the way Nitro does — inside a sentence it stays as it is, and on its own it is not a phrase to translate."],
   ["Spark", "A Nitro Status tier name, and an identity value: ShieldBadge compares tier === \"Spark\" to decide what to draw. Same rule as Budget."],
   ["Pulse", "A Nitro Status tier name — see Spark."],
   ["Boost", "A Nitro Status tier name — see Spark."],
