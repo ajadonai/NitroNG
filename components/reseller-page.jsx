@@ -1,5 +1,6 @@
 'use client';
 import { ThemeProvider, useTheme } from './shared-nav';
+import { useT } from "./locale";
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 
 export default function ResellerView() {
@@ -7,6 +8,7 @@ export default function ResellerView() {
 }
 
 function ResellerInner() {
+  const tr = useT();
   const { dark, t } = useTheme();
   const accent = '#c47d8e';
   const border = dark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.08)';
@@ -24,13 +26,13 @@ function ResellerInner() {
         <div className="text-center pt-14 pb-10 max-md:pt-10 max-md:pb-8 px-6">
           <span className="text-xs font-semibold tracking-[2px] uppercase block mb-3" style={{ color: accent }}>The Pit</span>
           <h1 className="text-[clamp(26px,5vw,40px)] font-semibold mb-4 leading-tight max-w-[600px] mx-auto" style={{ color: t.text, fontFamily: "'Cormorant Garamond',serif" }}>
-            Earn money promoting Nitro
+            {tr("Earn money promoting Nitro")}
           </h1>
           <p className="text-[15px] leading-relaxed max-w-[520px] mx-auto mb-6" style={{ color: t.textSoft }}>
-            The Pit is Nitro's affiliate programme. Share your link, earn commission on every order from people you refer. No upfront cost, no inventory, no customer service. Just promotion and payouts.
+            {tr("The Pit is Nitro's affiliate programme. Share your link, earn commission on every order from people you refer. No upfront cost, no inventory, no customer service. Just promotion and payouts.")}
           </p>
           <a href="/pit/apply" className="inline-block px-7 py-3 rounded-full text-[13px] font-semibold text-white no-underline transition-opacity hover:opacity-90" style={{ background: accent }}>
-            Apply to The Pit
+            {tr("Apply to The Pit")}
           </a>
         </div>
 
@@ -38,7 +40,7 @@ function ResellerInner() {
 
           {/* How it works */}
           <section className="mb-14">
-            <h2 className="text-lg font-semibold mb-5" style={{ color: t.text }}>How it works</h2>
+            <h2 className="text-lg font-semibold mb-5" style={{ color: t.text }}>{tr("How it works")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 ['1. Apply', 'Fill in a short form. We review applications within 48 hours. Once approved, you get access to The Pit dashboard.'],
@@ -55,15 +57,15 @@ function ResellerInner() {
 
           {/* Commission tiers */}
           <section className="mb-14">
-            <h2 className="text-lg font-semibold mb-2" style={{ color: t.text }}>Commission tiers</h2>
+            <h2 className="text-lg font-semibold mb-2" style={{ color: t.text }}>{tr("Commission tiers")}</h2>
             <p className="text-[13px] mb-5 leading-[1.6]" style={{ color: t.textSoft }}>
-              Commission is calculated on profit, not gross revenue. As you bring in more converting referrals, your rate increases automatically.
+              {tr("Commission is calculated on profit, not gross revenue. As you bring in more converting referrals, your rate increases automatically.")}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { tier: 'Starter', rate: '30%', threshold: 'From day one', desc: 'Every new member starts here. Earn 30% of profit on every order your referrals place.' },
-                { tier: 'Growth', rate: '40%', threshold: '30+ conversions', desc: 'Once 30 of your referrals have placed orders, your rate jumps to 40%.' },
-                { tier: 'Pro', rate: '50%', threshold: '100+ conversions', desc: 'At 100 converting referrals, you earn half the profit on every order. This is the highest tier.' },
+                { tier: 'Starter', rate: '30%', threshold: 'From day one', desc: tr("Every new member starts here. Earn 30% of profit on every order your referrals place.") },
+                { tier: 'Growth', rate: '40%', threshold: '30+ conversions', desc: tr("Once 30 of your referrals have placed orders, your rate jumps to 40%.") },
+                { tier: 'Pro', rate: '50%', threshold: '100+ conversions', desc: tr("At 100 converting referrals, you earn half the profit on every order. This is the highest tier.") },
               ].map(t => (
                 <div key={t.tier} className="rounded-xl p-5 text-center" style={{ background: subtleBg, border: `1px solid ${subtleBorder}` }}>
                   <div className="text-[28px] font-bold mb-1" style={{ color: accent }}>{t.rate}</div>
@@ -77,7 +79,7 @@ function ResellerInner() {
 
           {/* What you get */}
           <section className="mb-14">
-            <h2 className="text-lg font-semibold mb-5" style={{ color: t.text }}>What you get</h2>
+            <h2 className="text-lg font-semibold mb-5" style={{ color: t.text }}>{tr("What you get")}</h2>
             <div className="flex flex-col gap-3">
               {[
                 ['Real-time dashboard', 'See clicks, signups, orders and commissions as they happen. No waiting for end-of-month reports.'],
@@ -96,22 +98,22 @@ function ResellerInner() {
 
           {/* Who it's for */}
           <section className="mb-14">
-            <h2 className="text-lg font-semibold mb-2" style={{ color: t.text }}>Who The Pit is for</h2>
+            <h2 className="text-lg font-semibold mb-2" style={{ color: t.text }}>{tr("Who The Pit is for")}</h2>
             <div className="text-[13px] leading-[1.7] flex flex-col gap-3 mt-4" style={{ color: t.textSoft }}>
-              <p><strong style={{ color: dark ? '#e5e5e5' : '#1c1b19' }}>Social media managers</strong> who already advise clients on growth. Recommend Nitro, earn commission when they order.</p>
-              <p><strong style={{ color: dark ? '#e5e5e5' : '#1c1b19' }}>Content creators with an audience.</strong> If people trust your recommendations, a single post or story can generate referrals that keep earning for months.</p>
-              <p><strong style={{ color: dark ? '#e5e5e5' : '#1c1b19' }}>Community admins.</strong> WhatsApp group admins, Telegram channel owners, forum moderators. If your community includes people who buy social media promotion, your link earns every time they do.</p>
-              <p><strong style={{ color: dark ? '#e5e5e5' : '#1c1b19' }}>Anyone with reach.</strong> No minimum audience. If you can get people to click a link and try Nitro, you earn on every order they place going forward.</p>
+              <p><strong style={{ color: dark ? '#e5e5e5' : '#1c1b19' }}>{tr("Social media managers")}</strong> {tr("who already advise clients on growth. Recommend Nitro, earn commission when they order.")}</p>
+              <p><strong style={{ color: dark ? '#e5e5e5' : '#1c1b19' }}>{tr("Content creators with an audience.")}</strong> {tr("If people trust your recommendations, a single post or story can generate referrals that keep earning for months.")}</p>
+              <p><strong style={{ color: dark ? '#e5e5e5' : '#1c1b19' }}>{tr("Community admins.")}</strong> {tr("WhatsApp group admins, Telegram channel owners, forum moderators. If your community includes people who buy social media promotion, your link earns every time they do.")}</p>
+              <p><strong style={{ color: dark ? '#e5e5e5' : '#1c1b19' }}>{tr("Anyone with reach.")}</strong> {tr("No minimum audience. If you can get people to click a link and try Nitro, you earn on every order they place going forward.")}</p>
             </div>
           </section>
 
           {/* What it's not */}
           <section className="mb-14">
-            <h2 className="text-lg font-semibold mb-2" style={{ color: t.text }}>What The Pit is not</h2>
+            <h2 className="text-lg font-semibold mb-2" style={{ color: t.text }}>{tr("What The Pit is not")}</h2>
             <div className="text-[13px] leading-[1.7] flex flex-col gap-3 mt-4" style={{ color: t.textSoft }}>
-              <p>The Pit is an <strong style={{ color: dark ? '#e5e5e5' : '#1c1b19' }}>affiliate programme</strong>, not a child panel or wholesale API. You do not place orders on behalf of clients. You do not set your own prices. You do not handle delivery or support.</p>
-              <p>You share a link. People sign up and use Nitro normally. You earn a percentage of the profit on their orders. That is the entire model.</p>
-              <p>If you are looking for a child panel where you resell services under your own brand, that is a different product and we do not offer it. Read <a href="/blog/what-is-a-child-panel-smm" className="underline" style={{ color: accent }}>what is a child panel</a> to understand the difference.</p>
+              <p>{tr("The Pit is an")} <strong style={{ color: dark ? '#e5e5e5' : '#1c1b19' }}>{tr("affiliate programme")}</strong>, not a child panel or wholesale API. You do not place orders on behalf of clients. You do not set your own prices. You do not handle delivery or support.</p>
+              <p>{tr("You share a link. People sign up and use Nitro normally. You earn a percentage of the profit on their orders. That is the entire model.")}</p>
+              <p>{tr("If you are looking for a child panel where you resell services under your own brand, that is a different product and we do not offer it. Read")} <a href="/blog/what-is-a-child-panel-smm" className="underline" style={{ color: accent }}>{tr("what is a child panel")}</a> {tr("to understand the difference.")}</p>
             </div>
           </section>
 
@@ -139,16 +141,16 @@ function ResellerInner() {
 
           {/* CTA */}
           <section className="text-center py-10 rounded-2xl mb-10" style={{ background: subtleBg, border: `1px solid ${subtleBorder}` }}>
-            <h2 className="text-xl font-semibold mb-3" style={{ color: dark ? '#e5e5e5' : '#1c1b19', fontFamily: "'Cormorant Garamond',serif" }}>Ready to start earning?</h2>
-            <p className="text-[13px] mb-5 max-w-[400px] mx-auto" style={{ color: t.textSoft }}>Applications take two minutes. No upfront cost, ever.</p>
+            <h2 className="text-xl font-semibold mb-3" style={{ color: dark ? '#e5e5e5' : '#1c1b19', fontFamily: "'Cormorant Garamond',serif" }}>{tr("Ready to start earning?")}</h2>
+            <p className="text-[13px] mb-5 max-w-[400px] mx-auto" style={{ color: t.textSoft }}>{tr("Applications take two minutes. No upfront cost, ever.")}</p>
             <a href="/pit/apply" className="inline-block px-7 py-3 rounded-full text-[13px] font-semibold text-white no-underline transition-opacity hover:opacity-90" style={{ background: accent }}>
-              Apply to The Pit
+              {tr("Apply to The Pit")}
             </a>
           </section>
 
           {/* Related reading */}
           <section>
-            <h2 className="text-lg font-semibold mb-4" style={{ color: t.text }}>Related reading</h2>
+            <h2 className="text-lg font-semibold mb-4" style={{ color: t.text }}>{tr("Related reading")}</h2>
             <div className="flex flex-col gap-2">
               {[
                 ['/blog/how-to-start-smm-reseller-business-nigeria', 'How to Start an SMM Reseller Business in Nigeria'],

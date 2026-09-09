@@ -219,8 +219,8 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
 
         </div>
         <div>
-        {/* ── Appearance ── */}
-        <SectionHead>{tr("Appearance")}</SectionHead>
+        {/* ── Preferences: theme, language, currency ── */}
+        <SectionHead>{tr("Preferences")}</SectionHead>
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
           <Row id="set-theme" first icon={dark ? I_MOON : I_SUN} title={tr("Theme")} sub={themeMode === "auto" ? tr("Auto: light 6:30am to 6:30pm, dark otherwise") : tr("Choose how Nitro looks")} dark={dark} t={t}
             right={<ThemePill mode={themeMode} onMode={applyTheme} />} />
