@@ -94,7 +94,10 @@ export const NOT_PROSE = [
   /\b(?:className|onClick|style|aria-|data-)\b/,
   // Comparison operators read as tags: `a > b && c < d` looks exactly like
   // `>text<` to a regex, and the first run duly offered to translate it.
-  /&&|\|\||=>|\?\?|\w\(|\breturn\b|\bconst\b|\bawait\b/,
+  // `===` and a ternary opening an array are both code that reads as a text
+  // node once a nearby `<svg …>` supplies the `>`: the funds page offered
+  // `: g.id === "crypto" ?` and `0 ? ["Coupon bonus",` for translation.
+  /&&|\|\||=>|\?\?|===|!==|\?\s*\[|\w\(|\breturn\b|\bconst\b|\bawait\b/,
   // A person's name with an initial: "Blessing I.", "Tunde M." — testimonial
   // bylines, which stay as the person wrote them.
   /^[A-Z][a-z]+ [A-Z]\.$/,
@@ -182,7 +185,11 @@ const PROSE_ATTR = new RegExp(`\\b(${PROSE_NAMES})=${QUOTED}`, "g");
 
 /** tr() is a hook, so a string outside a component cannot simply be wrapped —
  *  it has to be moved inside one first. Those are reported, never rewritten. */
-const COMPONENT_START = /^(?:export\s+)?(?:default\s+)?function\s+[A-Za-z]\w*|^(?:export\s+)?const\s+[A-Z]\w*\s*=\s*(?:\(|function|forwardRef|memo)/;
+// Capital initial, both forms. React names components that way, and the rule
+// earns its keep: `function txStatusMeta(tx, dk)` is a plain helper called from
+// a render, and the older `[A-Za-z]` here let the wrapper put tr() inside it —
+// where tr is not a parameter, not in scope, and a ReferenceError on first use.
+const COMPONENT_START = /^(?:export\s+)?(?:default\s+)?function\s+[A-Z]\w*|^(?:export\s+)?const\s+[A-Z]\w*\s*=\s*(?:\(|function|forwardRef|memo)/;
 
 function componentMask(lines) {
   const mask = new Array(lines.length).fill(false);

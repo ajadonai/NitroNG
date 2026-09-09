@@ -4,7 +4,8 @@ import { RailSec, RailCard, RailRow, RailStep, RailEmpty } from "./rail";
 import { useBodyScrollLock } from "./ui-primitives";
 import { useToast } from "./toast";
 import { fN, fHeld, fD } from "../lib/format";
-import { useMoney, useLocale } from "./locale";
+import { useMoney, useT, useLocale } from "./locale";
+import { msg } from "../lib/i18n";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { depositPresets } from "../lib/currency";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
@@ -24,15 +25,15 @@ import {
 import { copyText } from '@/lib/clipboard';
 
 const TX_META = {
-  deposit:      { label: "Deposit",       icon: "↓", clr: dk => dk ? "#6ee7b7" : "#059669" },
-  order:        { label: "Order",         icon: "↑", clr: dk => dk ? "#fca5a5" : "#dc2626" },
-  referral:     { label: "Referral bonus",icon: "★", clr: () => "#c47d8e" },
-  refund:       { label: "Refund",        icon: "↩", clr: dk => dk ? "#fcd34d" : "#d97706" },
-  admin_credit: { label: "Admin credit",  icon: "＋", clr: dk => dk ? "#a5b4fc" : "#4f46e5" },
-  admin_gift:   { label: "Gift",          icon: "✦", clr: dk => dk ? "#f0abfc" : "#a855f7" },
-  admin_debit:  { label: "Adjustment",    icon: "↑", clr: dk => dk ? "#fca5a5" : "#dc2626" },
-  bonus:        { label: "Task reward",   icon: "✦", clr: dk => dk ? "#f0abfc" : "#a855f7" },
-  bonus_expired:{ label: "Credit expired",icon: "↑", clr: dk => dk ? "#a1a1aa" : "#71717a" },
+  deposit:      { label: msg("Deposit"),       icon: "↓", clr: dk => dk ? "#6ee7b7" : "#059669" },
+  order:        { label: msg("Order"),         icon: "↑", clr: dk => dk ? "#fca5a5" : "#dc2626" },
+  referral:     { label: msg("Referral bonus"),icon: "★", clr: () => "#c47d8e" },
+  refund:       { label: msg("Refund"),        icon: "↩", clr: dk => dk ? "#fcd34d" : "#d97706" },
+  admin_credit: { label: msg("Admin credit"),  icon: "＋", clr: dk => dk ? "#a5b4fc" : "#4f46e5" },
+  admin_gift:   { label: msg("Gift"),          icon: "✦", clr: dk => dk ? "#f0abfc" : "#a855f7" },
+  admin_debit:  { label: msg("Adjustment"),    icon: "↑", clr: dk => dk ? "#fca5a5" : "#dc2626" },
+  bonus:        { label: msg("Task reward"),   icon: "✦", clr: dk => dk ? "#f0abfc" : "#a855f7" },
+  bonus_expired:{ label: msg("Credit expired"),icon: "↑", clr: dk => dk ? "#a1a1aa" : "#71717a" },
 };
 function txClr(type, dk) { return (TX_META[type] || TX_META.order).clr(dk); }
 function isFlutterwaveDeposit(tx) {
@@ -64,28 +65,28 @@ function txRowClr(tx, dk) {
   if (tx.status === "Cancelled") return dk ? "#a1a1aa" : "#71717a";
   return txClr(tx.type, dk);
 }
-function txStatusMeta(tx, dk) {
+function txStatusMeta(tx, dk, tr) {
   const paymentState = txPaymentState(tx);
   const status = paymentState || tx.status;
   // A Flutterwave checkout the user closed before paying never becomes a
   // transaction on their side. That is not a failure, and red is the wrong colour for it.
   if (status === "Failed" && /provider_not_found/.test(tx.note || "")) {
-    return { label: "Not completed", color: dk ? "#a1a1aa" : "#71717a", bg: dk ? "rgba(161,161,170,.12)" : "rgba(113,113,122,.08)" };
+    return { label: tr("Not completed"), color: dk ? "#a1a1aa" : "#71717a", bg: dk ? "rgba(161,161,170,.12)" : "rgba(113,113,122,.08)" };
   }
   const styles = {
-    [PAYMENT_STATES.VERIFYING]: { label: "Verifying", color: dk ? "#a5b4fc" : "#4f46e5", bg: dk ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.08)" },
-    [PAYMENT_STATES.PROVIDER_PENDING]: { label: "Pending", color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
-    [PAYMENT_STATES.RETRYABLE]: { label: "Retrying", color: dk ? "#fdba74" : "#ea580c", bg: dk ? "rgba(253,186,116,.12)" : "rgba(234,88,12,.08)" },
-    [PAYMENT_STATES.REVIEW]: { label: "Manual review", color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
-    [PAYMENT_STATES.FAILED]: { label: "Failed", color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
-    Processing: { label: "Processing", color: dk ? "#a5b4fc" : "#4f46e5", bg: dk ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.08)" },
-    Pending: { label: "Pending", color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
-    Expired: { label: "Expired", color: dk ? "#fdba74" : "#ea580c", bg: dk ? "rgba(253,186,116,.12)" : "rgba(234,88,12,.08)" },
-    Review: { label: "Manual review", color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
-    Refunded: { label: "Refunded", color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
-    Failed: { label: "Failed", color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
-    Rejected: { label: "Rejected", color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
-    Cancelled: { label: "Cancelled", color: dk ? "#a1a1aa" : "#71717a", bg: dk ? "rgba(161,161,170,.12)" : "rgba(113,113,122,.08)" },
+    [PAYMENT_STATES.VERIFYING]: { label: tr("Verifying"), color: dk ? "#a5b4fc" : "#4f46e5", bg: dk ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.08)" },
+    [PAYMENT_STATES.PROVIDER_PENDING]: { label: tr("Pending"), color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
+    [PAYMENT_STATES.RETRYABLE]: { label: tr("Retrying"), color: dk ? "#fdba74" : "#ea580c", bg: dk ? "rgba(253,186,116,.12)" : "rgba(234,88,12,.08)" },
+    [PAYMENT_STATES.REVIEW]: { label: tr("Manual review"), color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
+    [PAYMENT_STATES.FAILED]: { label: tr("Failed"), color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
+    Processing: { label: tr("Processing"), color: dk ? "#a5b4fc" : "#4f46e5", bg: dk ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.08)" },
+    Pending: { label: tr("Pending"), color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
+    Expired: { label: tr("Expired"), color: dk ? "#fdba74" : "#ea580c", bg: dk ? "rgba(253,186,116,.12)" : "rgba(234,88,12,.08)" },
+    Review: { label: tr("Manual review"), color: dk ? "#fcd34d" : "#d97706", bg: dk ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)" },
+    Refunded: { label: tr("Refunded"), color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
+    Failed: { label: tr("Failed"), color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
+    Rejected: { label: tr("Rejected"), color: dk ? "#fca5a5" : "#dc2626", bg: dk ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)" },
+    Cancelled: { label: tr("Cancelled"), color: dk ? "#a1a1aa" : "#71717a", bg: dk ? "rgba(161,161,170,.12)" : "rgba(113,113,122,.08)" },
   };
   return styles[status] || null;
 }
@@ -113,16 +114,16 @@ function txDesc(tx) {
 
 
 const ACCEPTED_TYPES = [
-  { label: "Cards", short: "Cards", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
-  { label: "Bank Transfer", short: "Transfer", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg> },
-  { label: "Crypto", short: "Crypto", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-6.083-1.072m6.083 1.072.347-1.969M7.116 16.676l-2.576-.454M9.21 4.835l-.347 1.97m0 0-2.576-.455"/></svg> },
-  { label: "Mobile Money", short: "Mobile", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> },
+  { label: msg("Cards"), short: msg("Cards"), icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
+  { label: msg("Bank Transfer"), short: msg("Transfer"), icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg> },
+  { label: msg("Crypto"), short: msg("Crypto"), icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-6.083-1.072m6.083 1.072.347-1.969M7.116 16.676l-2.576-.454M9.21 4.835l-.347 1.97m0 0-2.576-.455"/></svg> },
+  { label: msg("Mobile Money"), short: msg("Mobile"), icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> },
 ];
 
 const GW_META = {
-  flutterwave: { desc: "Card, bank transfer", speed: "Fast" },
-  crypto: { desc: "USDT via TRC-20", speed: "5–30 min" },
-  manual: { desc: "Transfer from any bank", speed: "15–60 min" },
+  flutterwave: { desc: msg("Card, bank transfer"), speed: msg("Fast") },
+  crypto: { desc: msg("USDT via TRC-20"), speed: msg("5–30 min") },
+  manual: { desc: msg("Transfer from any bank"), speed: msg("15–60 min") },
 };
 
 /* ═══════════════════════════════════════════ */
@@ -149,6 +150,7 @@ export function recoverableFlutterwaveDeposits(txs, excludedReference = null) {
 }
 
 export default function AddFundsPage({ user, txs, transactionsTotal, walletSummary, dark, t, paymentStatus, setPaymentStatus, gatewayReturnReference, onPlaceOrder, onRefresh }) {
+  const tr = useT();
   const money = useMoney();
   const loc = useLocale();
   const currency = loc?.currency ?? "NGN";
@@ -503,12 +505,12 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(196,125,142,.18)' : 'rgba(196,125,142,.12)' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
               </div>
-              <div className="text-[13px] font-semibold text-accent">Top-up bonus</div>
+              <div className="text-[13px] font-semibold text-accent">{tr("Top-up bonus")}</div>
               <span className="ml-auto text-[10px] font-bold uppercase tracking-[.06em] py-[3px] px-2 rounded-full text-t-text-muted" style={{ background: dark ? 'rgba(255,255,255,.06)' : '#fff', border: `1px solid ${t.cardBorder}` }}>{topup.month}</span>
             </div>
             <div className="flex items-baseline gap-2 mt-3 flex-wrap">
               <b className="m text-[24px] font-bold text-t-text">{fN2(topup.total)}</b>
-              <span className="text-[12.5px] text-t-text-muted">topped up this month</span>
+              <span className="text-[12.5px] text-t-text-muted">{tr("topped up this month")}</span>
             </div>
             <div className="relative mt-2.5 pb-10">
               <div className="relative h-[9px] rounded-[5px]" style={{ background: dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)' }}>
@@ -529,8 +531,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             </div>
             <div className="text-[13px] leading-[1.5] text-t-text-soft">
               {allDone
-                ? <>All unlocked this month — <b style={{ color: okColor }}>{fN2(topup.unlockedAmount)}</b> earned. Fresh ladder on the 1st.</>
-                : <>{topup.unlockedAmount > 0 && <><b style={{ color: okColor }}>{fN2(topup.unlockedAmount)} unlocked</b> · </>}<b className="m text-t-text">{fN2(topup.next.toGo)}</b> more unlocks <b className="text-accent">{fN2(topup.next.prize)}</b>.</>}
+                ? <>{tr("All unlocked this month —")} <b style={{ color: okColor }}>{fN2(topup.unlockedAmount)}</b> {tr("earned. Fresh ladder on the 1st.")}</>
+                : <>{topup.unlockedAmount > 0 && <><b style={{ color: okColor }}>{fN2(topup.unlockedAmount)} unlocked</b> · </>}<b className="m text-t-text">{fN2(topup.next.toGo)}</b> {tr("more unlocks")} <b className="text-accent">{fN2(topup.next.prize)}</b>.</>}
             </div>
           </div>
         );
@@ -541,8 +543,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
           </div>
           <div>
-            <div className="text-[13px] font-semibold text-accent">Welcome bonus</div>
-            <div className="text-[13px] mt-0.5 text-t-text-soft leading-[1.45]">Your first deposit earns up to {money(MAX_BONUS_NAIRA, { round: "down" })} free. The more you add, the bigger the bonus.</div>
+            <div className="text-[13px] font-semibold text-accent">{tr("Welcome bonus")}</div>
+            <div className="text-[13px] mt-0.5 text-t-text-soft leading-[1.45]">Your first deposit earns up to {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free. The more you add, the bigger the bonus.")}</div>
           </div>
         </div>
       )}
@@ -557,19 +559,19 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   {p.tag && <span className="absolute -top-2 left-2 text-[9.5px] font-bold uppercase tracking-[.04em] py-[2px] px-1.5 rounded-full text-white whitespace-nowrap" style={{ background: t.accent }}>{p.tag}</span>}
                   <div className="m text-[15px] font-bold" style={{ color: t.text }}>{money(p.amount)}</div>
                   <div className="text-[12px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(p.bonus, { round: "down" })} free</div>
-                  <div className="text-[10.5px] text-t-text-muted">{money(total, { round: "down" })} to spend</div>
+                  <div className="text-[10.5px] text-t-text-muted">{money(total, { round: "down" })} {tr("to spend")}</div>
                 </button>
               );
             })}
           </div>
           <div className="flex items-center gap-3 mb-3 max-md:mb-2.5">
             <div className="flex-1 h-px bg-t-card-border" />
-            <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-t-text-muted">or enter amount</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-t-text-muted">{tr("or enter amount")}</span>
             <div className="flex-1 h-px bg-t-card-border" />
           </div>
         </>
       )}
-      <div className="flex items-baseline justify-between mb-1.5"><span className="text-[12.5px] font-semibold text-t-text">Amount</span><span className="text-[11px] text-t-text-muted">min {money(1000)}</span></div>
+      <div className="flex items-baseline justify-between mb-1.5"><span className="text-[12.5px] font-semibold text-t-text">{tr("Amount")}</span><span className="text-[11px] text-t-text-muted">min {money(1000)}</span></div>
       <div className="flex items-center gap-1 py-3.5 px-[18px] max-desktop:py-3 max-desktop:px-4 max-md:py-3 max-md:px-3.5 rounded-xl mb-4 max-md:mb-3" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${amount ? t.accent : t.cardBorder}` }}>
         <span className="m text-[28px] max-desktop:text-[22px] max-md:text-xl font-semibold" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.4)" }}>{boxSymbol}</span>
         <input type="number" value={boxValue} onChange={e => setBox(e.target.value)} placeholder="0" className="m border-none text-[28px] max-desktop:text-[28px] max-md:text-2xl font-semibold w-full outline-none bg-transparent placeholder:opacity-[.12] text-t-text" />
@@ -595,7 +597,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.08)' }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={dark ? '#6ee7b7' : '#059669'} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
             </div>
-            <span className="text-[13px] font-semibold" style={{ color: dark ? '#6ee7b7' : '#059669' }}>+{money(wb, { round: "down" })} welcome bonus will be added</span>
+            <span className="text-[13px] font-semibold" style={{ color: dark ? '#6ee7b7' : '#059669' }}>+{money(wb, { round: "down" })} {tr("welcome bonus will be added")}</span>
           </div>
         );
       })()}
@@ -611,8 +613,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             </div>
             <span className="text-[13px] font-medium text-t-text-soft">
               {cur > 0
-                ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add {money(diff)} more</button> and get <strong className="text-accent">{money(nt.bonus, { round: "down" })} free</strong> instead of {money(cur, { round: "down" })}.</>
-                : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add {money(diff)} more</button> to unlock your <strong className="text-accent">{money(nt.bonus, { round: "down" })} welcome bonus</strong>.</>
+                ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add {money(diff)} more</button> {tr("and get")} <strong className="text-accent">{money(nt.bonus, { round: "down" })} free</strong> instead of {money(cur, { round: "down" })}.</>
+                : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add {money(diff)} more</button> {tr("to unlock your")} <strong className="text-accent">{money(nt.bonus, { round: "down" })} {tr("welcome bonus")}</strong>.</>
               }
             </span>
           </div>
@@ -627,7 +629,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.08)' }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={okColor} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
               </div>
-              <span className="text-[13px] font-semibold" style={{ color: okColor }}>This deposit unlocks your {prize} top-up bonus</span>
+              <span className="text-[13px] font-semibold" style={{ color: okColor }}>This deposit unlocks your {prize} {tr("top-up bonus")}</span>
             </div>
           );
         }
@@ -638,7 +640,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             </div>
             <span className="text-[13px] font-medium text-t-text-soft">
-              This takes you to <strong className="m">{money(projected / 100)}</strong> of {money(topup.next.min / 100)} — <button onClick={() => setAmount(String(fullAdd))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>deposit {money(fullAdd)}</button> to unlock <strong className="text-accent">₦{prize}</strong>.
+              This takes you to <strong className="m">{money(projected / 100)}</strong> of {money(topup.next.min / 100)} — <button onClick={() => setAmount(String(fullAdd))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>deposit {money(fullAdd)}</button> {tr("to unlock")} <strong className="text-accent">₦{prize}</strong>.
             </span>
           </div>
         );
@@ -662,13 +664,13 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.14)" }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
             </div>
-            Have a coupon code?
+            {tr("Have a coupon code?")}
           </button>
         ) : (
           <div className="py-2.5 px-3 rounded-lg" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}` }}>
             <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-[1px] text-accent">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
-              Coupon Code
+              {tr("Coupon Code")}
             </div>
             <div className="flex gap-2">
               <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} placeholder="e.g. NITRO20" className="m flex-1 py-[9px] px-3 rounded-lg text-[13px] tracking-[1.5px] outline-none text-t-text font-[JetBrains_Mono,monospace] transition-[border-color] duration-200" style={{ background: dark ? "rgba(255,255,255,.08)" : "#fff", border: `1.5px solid ${couponCode.trim() ? t.accent : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)")}` }} />
@@ -685,7 +687,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           </div>
           <span className="font-semibold"><span className="m tracking-[1px]" style={{ fontFamily: "'JetBrains Mono',monospace" }}>{couponApplied.code}</span> · {couponApplied.type === "percent" ? `${couponApplied.value}%` : `+${money(couponApplied.value, { round: "down" })}`} bonus</span>
-          <button onClick={removeCoupon} className="ml-auto bg-transparent border-none text-[11px] font-semibold cursor-pointer py-1 px-2 rounded-md transition-all duration-200 hover:-translate-y-px" style={{ color: dark ? "#fca5a5" : "#dc2626", background: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.05)" }}>Remove</button>
+          <button onClick={removeCoupon} className="ml-auto bg-transparent border-none text-[11px] font-semibold cursor-pointer py-1 px-2 rounded-md transition-all duration-200 hover:-translate-y-px" style={{ color: dark ? "#fca5a5" : "#dc2626", background: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.05)" }}>{tr("Remove")}</button>
         </div>
       </div>
     )
@@ -693,10 +695,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
 
   const AcceptedRow = ({ centered }) => (
     <div className={`flex items-center gap-1.5 flex-wrap ${centered ? "justify-center mt-4" : ""}`}>
-      <span className={`text-[13px] text-t-text-muted ${centered ? "hidden" : "hidden desktop:inline"}`}>We accept:</span>
+      <span className={`text-[13px] text-t-text-muted ${centered ? "hidden" : "hidden desktop:inline"}`}>{tr("We accept:")}</span>
       {ACCEPTED_TYPES.map(({ label, short, icon }) => (
         <span key={label} className="text-xs py-[3px] px-2 rounded-md font-medium whitespace-nowrap inline-flex items-center gap-1" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.8)", border: `1px solid ${t.cardBorder}`, color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.45)" }}>
-          {icon}<span className="max-md:hidden">{label}</span><span className="hidden max-md:inline">{short}</span>
+          {icon}<span className="max-md:hidden">{tr(label)}</span><span className="hidden max-md:inline">{tr(short)}</span>
         </span>
       ))}
     </div>
@@ -713,7 +715,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     ? paymentStatus
     : null;
   const paymentNoticeTone = paymentNotice?.type === "info" ? {
-    title: "Verifying payment",
+    title: tr("Verifying payment"),
     color: dark ? "#a5b4fc" : "#4f46e5",
     background: dark ? "linear-gradient(135deg, rgba(99,102,241,.12), rgba(99,102,241,.04))" : "linear-gradient(135deg, rgba(79,70,229,.08), rgba(79,70,229,.02))",
     border: dark ? "rgba(165,180,252,.2)" : "rgba(79,70,229,.16)",
@@ -725,7 +727,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     border: dark ? "rgba(252,211,77,.2)" : "rgba(217,119,6,.16)",
     symbol: "!",
   } : {
-    title: "Payment unsuccessful",
+    title: tr("Payment unsuccessful"),
     color: dark ? "#fca5a5" : "#dc2626",
     background: dark ? "linear-gradient(135deg, rgba(239,68,68,.10), rgba(239,68,68,.04))" : "linear-gradient(135deg, rgba(220,38,38,.07), rgba(220,38,38,.02))",
     border: dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.15)",
@@ -757,15 +759,15 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       )}
 
       <div className="pb-3.5 max-md:pb-2">
-        <div className="text-[22px] max-desktop:text-lg font-semibold mb-0.5 text-t-text">Wallet</div>
-        <div className="text-[15px] max-md:text-sm text-t-text-muted">Top up your balance to place orders</div>
+        <div className="text-[22px] max-desktop:text-lg font-semibold mb-0.5 text-t-text">{tr("Wallet")}</div>
+        <div className="text-[15px] max-md:text-sm text-t-text-muted">{tr("Top up your balance to place orders")}</div>
         <div className="page-divider bg-t-card-border" />
       </div>
 
       {/* ═══ DESKTOP + TABLET: side by side ═══ */}
       {/* ── Balance ── */}
       <div className="rounded-[14px] p-4 mb-2" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
-        <div className="text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted">Balance</div>
+        <div className="text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted">{tr("Balance")}</div>
         <div className="m text-[30px] desktop:text-[34px] font-bold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.01em" }}>{fHeld(balance)}</div>
         {lastFunded && <div className="text-[11px] mt-1.5 text-t-text-muted">Last funded {fD(lastFunded.date, true)}</div>}
         <div className="px-0">
@@ -785,8 +787,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   <div className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ background: dark ? "#fcd34d" : "#d97706" }} />
                   <span className="flex-1">{pendingSummaryText}</span>
                   {awaitingTx && <>
-                    <button onClick={async () => { try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: awaitingTx.reference }) }); } catch {} onRefresh?.(); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>Cancel</button>
-                    <button onClick={() => { setConfirmModal(awaitingTx); setSenderName(""); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.12)", color: dark ? "#fcd34d" : "#d97706" }}>Sent</button>
+                    <button onClick={async () => { try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: awaitingTx.reference }) }); } catch {} onRefresh?.(); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)", color: dark ? "#fca5a5" : "#dc2626" }}>{tr("Cancel")}</button>
+                    <button onClick={() => { setConfirmModal(awaitingTx); setSenderName(""); }} className="py-0.5 px-2 rounded-md text-[11px] font-semibold cursor-pointer shrink-0 border-none transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(252,211,77,.15)" : "rgba(217,119,6,.12)", color: dark ? "#fcd34d" : "#d97706" }}>{tr("Sent")}</button>
                   </>}
                 </div>
               );
@@ -796,15 +798,15 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       {rewards?.points && (() => { const p = rewards.points; return (
         <div className="flex items-center gap-2.5 rounded-xl py-2.5 px-3" style={{ background: dark ? "#2d2210" : "#fef7ed", border: `1px solid ${dark ? "#5a4020" : "#e8d5b8"}`, color: dark ? "#e0a458" : "#854F0B" }}>
           <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-white" style={{ background: "linear-gradient(135deg,#fbbf24,#d97706)" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg></span>
-          <span className="flex flex-col gap-px flex-1 min-w-0"><b className="text-[13px] font-semibold"><span className="m">{(p.balance || 0).toLocaleString()}</span> Nitro Points</b><small className="text-[11px] opacity-80 truncate">{p.redeemable ? `≈ ${money(p.valueNaira || 0, { round: "down" })} ready to spend on your next order` : `${(p.neededToRedeem || 0).toLocaleString()} more to spend`}</small></span>
-          <button onClick={() => setPointsOpen(true)} className="bg-transparent border-none cursor-pointer text-[12px] font-semibold p-0 font-[inherit]" style={{ color: "inherit" }}>View</button>
+          <span className="flex flex-col gap-px flex-1 min-w-0"><b className="text-[13px] font-semibold"><span className="m">{(p.balance || 0).toLocaleString()}</span> {tr("Nitro Points")}</b><small className="text-[11px] opacity-80 truncate">{p.redeemable ? `≈ ${money(p.valueNaira || 0, { round: "down" })} ready to spend on your next order` : `${(p.neededToRedeem || 0).toLocaleString()} more to spend`}</small></span>
+          <button onClick={() => setPointsOpen(true)} className="bg-transparent border-none cursor-pointer text-[12px] font-semibold p-0 font-[inherit]" style={{ color: "inherit" }}>{tr("View")}</button>
         </div>
       ); })()}
 
       {/* ── The flow: amount, then pay. Two steps on a phone, side by side on desktop. ── */}
       <div className="desktop:grid desktop:grid-cols-2 desktop:gap-4 desktop:items-start mt-4">
         <div className={mobileStep === 2 ? "max-desktop:hidden" : ""}>
-          <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-0.5 pb-1.5 text-t-text-muted">Add funds</div>
+          <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-0.5 pb-1.5 text-t-text-muted">{tr("Add funds")}</div>
           <div className="rounded-[14px] p-4" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
             {amountInput}
             {couponSection}
@@ -816,8 +818,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         </div>
 
         <div className={mobileStep === 1 ? "max-desktop:hidden" : ""}>
-          <button onClick={() => setMobileStep(1)} className="desktop:hidden inline-flex items-center gap-1.5 bg-transparent border-none text-[12.5px] font-semibold cursor-pointer p-0 mb-2.5 text-accent font-[inherit]">← Change amount</button>
-          <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-0.5 pb-1.5 text-t-text-muted">Pay with</div>
+          <button onClick={() => setMobileStep(1)} className="desktop:hidden inline-flex items-center gap-1.5 bg-transparent border-none text-[12.5px] font-semibold cursor-pointer p-0 mb-2.5 text-accent font-[inherit]">{tr("← Change amount")}</button>
+          <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-0.5 pb-1.5 text-t-text-muted">{tr("Pay with")}</div>
           <div className="rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
             {gatewaysLoading ? (
               [1, 2, 3].map(i => (
@@ -833,7 +835,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[13.5px] font-semibold" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
-                  <div className="text-[11.5px] text-t-text-muted">{[meta.desc, meta.speed].filter(Boolean).join(" · ")}</div>
+                  <div className="text-[11.5px] text-t-text-muted">{[meta.desc, meta.speed].filter(Boolean).map(tr).join(" · ")}</div>
                 </div>
                 <span className="w-[18px] h-[18px] rounded-full shrink-0" style={{ border: `2px solid ${sel ? t.accent : t.cardBorder}`, background: sel ? t.accent : "transparent", boxShadow: sel ? `inset 0 0 0 4px ${dark ? "#1a1329" : "#fff"}` : "none" }} />
               </button>
@@ -843,13 +845,13 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               a hidden method with one reads as the site knowing where you are. */}
           {!gatewaysLoading && hiddenNigeriaOnly > 0 && (
             gateways.length > 0
-              ? <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">Bank transfer and mobile money are Nigerian-only for now. Card and USDT work from anywhere, and credit your wallet in naira.</div>
-              : <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">No payment method is available for your country yet. Message us on WhatsApp and we will sort it out.</div>
+              ? <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">{tr("Bank transfer and mobile money are Nigerian-only for now. Card and USDT work from anywhere, and credit your wallet in naira.")}</div>
+              : <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">{tr("No payment method is available for your country yet. Message us on WhatsApp and we will sort it out.")}</div>
           )}
           {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
                 <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2 text-t-text-muted">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  <span className="text-[11px] leading-snug">If our bank isn't on your app, try <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold text-accent bg-transparent border-none p-0 font-[inherit] text-[inherit]">Manual Transfer</button> as a backup.</span>
+                  <span className="text-[11px] leading-snug">{tr("If our bank isn't on your app, try")} <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold text-accent bg-transparent border-none p-0 font-[inherit] text-[inherit]">{tr("Manual Transfer")}</button> {tr("as a backup.")}</span>
                 </div>
               )}
 
@@ -857,9 +859,9 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <div className="rounded-[14px] px-3.5 mt-3" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
               {[
                 ["Deposit", <b key="d" className="m text-[13px] font-semibold text-t-text">{valid ? money(numAmount) : money(0)}</b>],
-                ["Fee", <b key="f" className="text-[13px] font-semibold text-t-text">Free</b>],
-                couponApplied && discount > 0 ? ["Coupon bonus", <b key="c" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(discount / 100, { round: "down" })}</b>] : null,
-                wb > 0 ? ["Welcome bonus", <b key="w" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(wb, { round: "down" })}</b>] : null,
+                ["Fee", <b key="f" className="text-[13px] font-semibold text-t-text">{tr("Free")}</b>],
+                couponApplied && discount > 0 ? [tr("Coupon bonus"), <b key="c" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(discount / 100, { round: "down" })}</b>] : null,
+                wb > 0 ? [tr("Welcome bonus"), <b key="w" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(wb, { round: "down" })}</b>] : null,
               ].filter(Boolean).map(([label, val], i) => (
                 <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}><span>{label}</span>{val}</div>
               ))}
@@ -872,23 +874,23 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           <div className="mt-3">
             <PayButton onClick={handlePay} disabled={!valid || loading} loading={loading} text={loading ? "Processing..." : valid ? `Pay ${fN(numAmount)}` : "Enter an amount"} />
           </div>
-          <div className="text-center text-[11.5px] mt-2 text-t-text-muted">Payments are 100% secure. Your balance updates the moment it clears.</div>
+          <div className="text-center text-[11.5px] mt-2 text-t-text-muted">{tr("Payments are 100% secure. Your balance updates the moment it clears.")}</div>
         </div>
       </div>
       {/* ═══ CRYPTO PAYMENT MODAL ═══ */}
       {cryptoModal && (
         <div onClick={() => { if (cryptoIsTerminal) { stopCryptoPolling(); setCryptoModal(null); } }} onKeyDown={e=>{if(e.key==='Escape'&&cryptoIsTerminal){stopCryptoPolling();setCryptoModal(null)}}} className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45 overflow-y-auto">
-          <div role="dialog" aria-modal="true" aria-label="Crypto payment" onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] my-auto" style={{ background: dark ? "#140d1e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+          <div role="dialog" aria-modal="true" aria-label={tr("Crypto payment")} onClick={e => e.stopPropagation()} className="w-full max-w-[420px] rounded-2xl p-6 animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] my-auto" style={{ background: dark ? "#140d1e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             {cryptoPresentation.kind === "credited" ? (
               <>
                 <div className="text-center py-5">
                   <div className="mb-3 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
                   <div className="text-lg font-semibold mb-1.5 text-t-text">{cryptoPresentation.title}</div>
-                  <div className="text-sm text-t-text-muted">{money(cryptoResult?.amount ?? cryptoModal.amountNgn, { round: "down" })} has been added to your wallet</div>
+                  <div className="text-sm text-t-text-muted">{money(cryptoResult?.amount ?? cryptoModal.amountNgn, { round: "down" })} {tr("has been added to your wallet")}</div>
                 </div>
                 <div className="flex max-md:flex-col gap-3">
-                  <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); window.location.reload(); }} className="flex-1 py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Done</button>
-                  {onPlaceOrder && <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onPlaceOrder(); }} className="flex-1 py-3 rounded-[10px] border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)] font-[inherit]">Place an order</button>}
+                  <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); window.location.reload(); }} className="flex-1 py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>{tr("Done")}</button>
+                  {onPlaceOrder && <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onPlaceOrder(); }} className="flex-1 py-3 rounded-[10px] border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)] font-[inherit]">{tr("Place an order")}</button>}
                 </div>
               </>
             ) : cryptoPresentation.kind === "review" ? (
@@ -899,7 +901,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   <div className="text-sm leading-normal text-t-text-muted">{cryptoPresentation.message}</div>
                   {cryptoResult?.reference && <div className="m text-[11px] mt-3 break-all text-t-text-muted">Reference: {cryptoResult.reference}</div>}
                 </div>
-                <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Close</button>
+                <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>{tr("Close")}</button>
               </>
             ) : cryptoPresentation.kind === "failed" ? (
               <>
@@ -908,28 +910,28 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   <div className="text-lg font-semibold mb-1.5 text-t-text">{cryptoPresentation.title}</div>
                   <div className="text-sm leading-normal text-t-text-muted">{cryptoPresentation.message}</div>
                 </div>
-                <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Try another method</button>
+                <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>{tr("Try another method")}</button>
               </>
             ) : (
               <>
-                <div className="text-base font-semibold mb-1 text-t-text">Send USDT (TRC-20)</div>
-                <div className="text-[13px] mb-4 text-t-text-muted">Send exactly the amount below to this address</div>
+                <div className="text-base font-semibold mb-1 text-t-text">{tr("Send USDT (TRC-20)")}</div>
+                <div className="text-[13px] mb-4 text-t-text-muted">{tr("Send exactly the amount below to this address")}</div>
 
                 <div className="p-3.5 rounded-[10px] mb-3 text-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.04)", border: `1px solid ${t.cardBorder}` }}>
-                  <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1 text-t-text-muted">Amount to send</div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1 text-t-text-muted">{tr("Amount to send")}</div>
                   <div className="m text-[28px] font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{cryptoModal.payAmount} USDT</div>
                   <div className="text-xs mt-0.5 text-t-text-muted">≈ ${cryptoModal.amountUsd} USD · {fN(cryptoModal.amountNgn)}{Number(cryptoModal.amountUsd) > 0 && <> · ₦{Math.round(Number(cryptoModal.amountNgn) / Number(cryptoModal.amountUsd)).toLocaleString()} per $1</>}</div>
                   {/* The one sentence in the product that shows both currencies:
                       said here, before the money moves, so nobody meets the rate after. */}
-                  <div className="text-[11px] mt-2 text-t-text-muted">Your wallet is credited in naira at this rate.</div>
+                  <div className="text-[11px] mt-2 text-t-text-muted">{tr("Your wallet is credited in naira at this rate.")}</div>
                 </div>
 
                 <div className="mb-3">
-                  <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1 text-t-text-muted">TRC-20 Address</div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1 text-t-text-muted">{tr("TRC-20 Address")}</div>
                   <div className="py-2.5 px-3 rounded-lg text-xs leading-normal break-all text-t-text font-[JetBrains_Mono,monospace]" style={{ background: dark ? "#160f22" : "#f8f8f8", border: `1px solid ${t.cardBorder}` }}>
                     {cryptoModal.payAddress}
                   </div>
-                  <button onClick={() => { copyText(cryptoModal.payAddress); }} className="mt-1.5 py-1.5 px-3.5 rounded-md bg-transparent text-xs font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent font-[inherit]" style={{ border: `1px solid ${t.accent}` }}>Copy address</button>
+                  <button onClick={() => { copyText(cryptoModal.payAddress); }} className="mt-1.5 py-1.5 px-3.5 rounded-md bg-transparent text-xs font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent font-[inherit]" style={{ border: `1px solid ${t.accent}` }}>{tr("Copy address")}</button>
                 </div>
 
                 <div className="py-2.5 px-3.5 rounded-lg mb-3.5" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.06)", border: `1px solid ${dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.14)"}` }}>
@@ -939,10 +941,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                       {cryptoStatus === "Confirming" ? "Payment detected — confirming on blockchain..." : "Waiting for payment..."}
                     </span>
                   </div>
-                  <div className="text-[11px] mt-1 text-t-text-muted">We check automatically every 15 seconds. Do not close this page.</div>
+                  <div className="text-[11px] mt-1 text-t-text-muted">{tr("We check automatically every 15 seconds. Do not close this page.")}</div>
                 </div>
 
-                <button onClick={async () => { stopCryptoPolling(); try { await fetch("/api/payments/crypto", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: cryptoModal.reference }) }); } catch {} setCryptoModal(null); onRefresh?.(); }} className="w-full py-2.5 rounded-lg bg-transparent text-sm font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text-muted font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>Cancel</button>
+                <button onClick={async () => { stopCryptoPolling(); try { await fetch("/api/payments/crypto", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: cryptoModal.reference }) }); } catch {} setCryptoModal(null); onRefresh?.(); }} className="w-full py-2.5 rounded-lg bg-transparent text-sm font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text-muted font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>{tr("Cancel")}</button>
               </>
             )}
           </div>
@@ -961,9 +963,9 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           <div className="w-full max-w-[420px] rounded-2xl overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ background: dark ? "#140d1e" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"}`, boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }} onClick={e => e.stopPropagation()}>
             <div className="h-1.5" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }} />
             <div className="p-5">
-              <div className="text-base font-semibold mb-1 text-t-text">Confirm Payment</div>
-              <div className="text-[13px] mb-4 text-t-text-muted">You're confirming a deposit of <span className="font-semibold text-t-text">{fN(confirmModal.amount)}</span></div>
-              <label className="text-[11px] font-medium mb-1.5 block text-t-text-muted">Account name you sent from</label>
+              <div className="text-base font-semibold mb-1 text-t-text">{tr("Confirm Payment")}</div>
+              <div className="text-[13px] mb-4 text-t-text-muted">{tr("You're confirming a deposit of")} <span className="font-semibold text-t-text">{fN(confirmModal.amount)}</span></div>
+              <label className="text-[11px] font-medium mb-1.5 block text-t-text-muted">{tr("Account name you sent from")}</label>
               <input value={senderName} onChange={e => setSenderName(e.target.value)} placeholder="e.g. John Doe" autoFocus className="w-full py-2.5 px-3 rounded-lg text-sm outline-none text-t-text font-[inherit]" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} />
               <button onClick={async () => {
                 if (!senderName.trim()) return;
@@ -979,7 +981,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 setConfirmLoading(true);
                 try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: confirmModal.reference }) }); } catch {}
                 setConfirmModal(null); setConfirmLoading(false); onRefresh?.();
-              }} disabled={confirmLoading} className="w-full py-2 mt-2 rounded-lg bg-transparent text-[13px] font-medium cursor-pointer border-none" style={{ color: dark ? "#fca5a5" : "#dc2626", fontFamily: "inherit", opacity: confirmLoading ? .5 : 1 }}>Cancel this deposit</button>
+              }} disabled={confirmLoading} className="w-full py-2 mt-2 rounded-lg bg-transparent text-[13px] font-medium cursor-pointer border-none" style={{ color: dark ? "#fca5a5" : "#dc2626", fontFamily: "inherit", opacity: confirmLoading ? .5 : 1 }}>{tr("Cancel this deposit")}</button>
             </div>
           </div>
         </div>
@@ -1004,6 +1006,7 @@ function dayKeyWallet(iso) {
 }
 
 function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, dark, t, onRefresh, setConfirmModal, setSenderName }) {
+  const tr = useT();
   const money = useMoney();
   const [filter, setFilter] = useState("all");
   const [dateRange, setDateRange] = useState(null);
@@ -1060,14 +1063,14 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
     <div className="mt-6 desktop:mt-8">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div>
-          <div className="text-base desktop:text-lg font-semibold text-t-text">Wallet History</div>
-          <div className="text-[13px] text-t-text-muted">{total} transaction{total === 1 ? "" : "s"} · last 6 months</div>
+          <div className="text-base desktop:text-lg font-semibold text-t-text">{tr("Wallet History")}</div>
+          <div className="text-[13px] text-t-text-muted">{total} transaction{total === 1 ? "" : "s"} {tr("· last 6 months")}</div>
         </div>
         <div className="flex gap-1.5 flex-wrap">
           <DateRangePicker dark={dark} t={t} value={dateRange} onChange={(v) => { setDateRange(v); setPage(1); }} />
           <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} options={[
-            { value: "all", label: "All" },
-            ...txTypes.map(f => ({ value: f, label: txLabel(f) })),
+            { value: "all", label: tr("All") },
+            ...txTypes.map(f => ({ value: f, label: tr(txLabel(f)) })),
           ]} />
         </div>
       </div>
@@ -1075,11 +1078,11 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="py-2.5 px-3 rounded-xl text-center" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.15)" : "rgba(5,150,105,.1)"}` }}>
-          <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">Funded</div>
+          <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">{tr("Funded")}</div>
           <div className="m text-[15px] font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{fNShort(totalIn, money)}</div>
         </div>
         <div className="py-2.5 px-3 rounded-xl text-center" style={{ background: dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)", border: `1px solid ${dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)"}` }}>
-          <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">Spent</div>
+          <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">{tr("Spent")}</div>
           <div className="m text-[15px] font-bold" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>-{fNShort(totalOut, money)}</div>
         </div>
       </div>
@@ -1089,7 +1092,7 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
         {historyTxs.length > 0 ? historyTxs.map((tx, i) => {
           const dk = dayKeyWallet(tx.date); const prev = i > 0 ? dayKeyWallet(historyTxs[i - 1].date) : null;
           const dayLabel = dk && dk !== prev ? <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-3.5 pt-3 pb-1 text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}>{dk}</div> : null;
-          const statusMeta = txStatusMeta(tx, dark);
+          const statusMeta = txStatusMeta(tx, dark, tr);
           const rowColor = txRowClr(tx, dark);
           return (
             <Fragment key={tx.id}>{dayLabel}<div className="flex items-center gap-2.5 desktop:gap-3.5 py-3 px-3.5 desktop:py-3.5 desktop:px-[18px]" style={{ borderBottom: i < historyTxs.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: statusMeta ? `${rowColor}${dark ? "0a" : "08"}` : (tx.orderStatus && !["Completed","Cancelled"].includes(tx.orderStatus)) ? (dark ? "rgba(252,211,77,.04)" : "rgba(217,119,6,.03)") : "transparent" }}>
@@ -1138,21 +1141,22 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
 /* ═══ ADD FUNDS RIGHT SIDEBAR             ═══ */
 /* ═══════════════════════════════════════════ */
 export function AddFundsSidebar({ txs, dark }) {
+  const tr = useT();
   const money = useMoney();
   const METHOD = { manual: ["BT", "Bank transfer"], crypto: ["CR", "Crypto"], flutterwave: ["CD", "Card"], paystack: ["CD", "Card"], monnify: ["BT", "Bank transfer"], korapay: ["CD", "Card"], alatpay: ["BT", "Bank transfer"] };
   const STATUS = { Completed: "Cleared", Pending: "Waiting", Failed: "Failed", Rejected: "Rejected", Expired: "Expired", Processing: "Processing" };
   const deposits = (txs || []).filter(tx => tx.type === "deposit").slice(0, 5);
   return (
     <div className="rr">
-      <RailSec>How it works</RailSec>
+      <RailSec>{tr("How it works")}</RailSec>
       <RailCard>
-        <RailStep n="1" title="Enter an amount" sub={`${money(500)} or more`} />
-        <RailStep n="2" title="Pick how to pay" sub="Bank transfer, card, crypto" />
-        <RailStep n="3" title="Pay" sub="Your balance updates at once" />
+        <RailStep n="1" title={tr("Enter an amount")} sub={`${money(500)} or more`} />
+        <RailStep n="2" title={tr("Pick how to pay")} sub={tr("Bank transfer, card, crypto")} />
+        <RailStep n="3" title={tr("Pay")} sub={tr("Your balance updates at once")} />
       </RailCard>
-      <RailSec>Recent deposits</RailSec>
+      <RailSec>{tr("Recent deposits")}</RailSec>
       <RailCard>
-        {deposits.length === 0 ? <RailEmpty>No deposits yet.</RailEmpty> : deposits.map(tx => {
+        {deposits.length === 0 ? <RailEmpty>{tr("No deposits yet.")}</RailEmpty> : deposits.map(tx => {
           const [ini, name] = METHOD[tx.method] || ["DP", tx.method ? tx.method.charAt(0).toUpperCase() + tx.method.slice(1) : "Deposit"];
           return <RailRow key={tx.id || tx.reference} tile={ini} title={name} sub={`${tx.createdAt || tx.date ? fD(tx.createdAt || tx.date, true) : ""} · ${STATUS[tx.status] || tx.status}`} right={money(Math.abs(tx.amount || 0), { round: (tx.amount || 0) < 0 ? "up" : "down" })} />;
         })}
