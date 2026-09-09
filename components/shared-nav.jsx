@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useMemo, createContext, useContext } from "react";
 import { NitroWordmark } from "./nitro-logo";
 import { PublicNavSheet, PUBLIC_LINKS } from "./public-nav-sheet";
-import { SWITCHER_LIVE } from "./locale";
+import { SWITCHER_LIVE, useT } from "./locale";
 import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
 import { usePathname } from "next/navigation";
 
@@ -36,8 +36,9 @@ const TP_ICONS = {
   night: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>,
 };
 export function ThemePill({ mode = "auto", onMode, className = "" }) {
+  const tr = useT();
   return (
-    <div role="group" aria-label="Theme" className={`theme-pill ${className}`} data-m={mode}>
+    <div role="group" aria-label={tr("Theme")} className={`theme-pill ${className}`} data-m={mode}>
       <span className="tp-hl" aria-hidden="true" />
       {[["auto", "Auto"], ["day", "Light"], ["night", "Dark"]].map(([id, label]) => (
         <button key={id} type="button" onClick={() => onMode?.(id)} aria-pressed={mode === id} aria-label={label} title={label}
@@ -154,6 +155,7 @@ export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
 // ── Shared Nav ──
 // action prop: "back" | "login" | "logout" | null
 export default function SharedNav({ action = "back" }) {
+  const tr = useT();
   const { dark, toggleTheme, t } = useTheme();
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
@@ -183,7 +185,7 @@ export default function SharedNav({ action = "back" }) {
         <span className="nitro-mark md:hidden w-[34px] h-[34px] flex items-center justify-center" style={{ background: t.grad }}><svg width="13" height="14" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></span>
         <span className="nitro-mark max-md:hidden h-7 px-3 flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
       </a>
-      <nav aria-label="Primary" className="max-desktop:hidden flex items-center gap-1">
+      <nav aria-label={tr("Primary")} className="max-desktop:hidden flex items-center gap-1">
         {PUBLIC_LINKS.map(l => <a key={l.href} href={l.href} aria-current={pathname === l.href || (l.href !== "/" && pathname?.startsWith(l.href + "/")) ? "page" : undefined} className="pub-link text-sm font-medium py-1.5 px-3 rounded-lg no-underline" style={{ color: t.soft }}>{l.label}</a>)}
       </nav>
       <div className="flex items-center gap-3">
@@ -193,18 +195,18 @@ export default function SharedNav({ action = "back" }) {
         {action === "back" && (
           <a href="/" className="text-sm font-medium flex items-center gap-1" style={{ color: t.soft }}>
             <svg className="dir-flip" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
-            Back
+            {tr("Back")}
           </a>
         )}
         {action === "login" && (
           <a href="/?login=1" className="text-sm font-medium flex items-center gap-1" style={{ color: t.soft }}>
-            Log In
+            {tr("Log In")}
           </a>
         )}
         {action === "logout" && (
           <button onClick={handleLogout} className="text-sm font-medium flex items-center gap-1 bg-transparent" style={{ color: t.soft }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            Log Out
+            {tr("Log Out")}
           </button>
         )}
         {/* Local only until the currency switch is finished — see SWITCHER_LIVE
@@ -213,7 +215,7 @@ export default function SharedNav({ action = "back" }) {
         {SWITCHER_LIVE && <LanguageSwitcher />}
         <ThemeToggle dark={dark} onToggle={toggleTheme} />
         {/* The menu is the outermost control, where a thumb expects it. */}
-        <button type="button" onClick={() => setNavOpen(true)} aria-label="Open menu" aria-expanded={navOpen} className="nav-burger desktop:hidden"><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /></button>
+        <button type="button" onClick={() => setNavOpen(true)} aria-label={tr("Open menu")} aria-expanded={navOpen} className="nav-burger desktop:hidden"><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /></button>
       </div>
     </nav>
     <PublicNavSheet open={navOpen} onClose={() => setNavOpen(false)} dark={dark} toggleTheme={toggleTheme} />
@@ -222,6 +224,7 @@ export default function SharedNav({ action = "back" }) {
 
 // ── Shared Footer ──
 export function SharedFooter() {
+  const tr = useT();
   const { t, dark } = useTheme();
   const [sl, setSl] = useState({});
   const [platformCount, setPlatformCount] = useState(0);
@@ -250,7 +253,7 @@ export function SharedFooter() {
                 the whole brand column — the full footer width on a phone. */}
             <span className="nitro-mark h-7 px-3 inline-flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
           </div>
-          <p className="text-[13px] leading-[1.7] max-w-[260px] mb-5" style={{ color: dark ? "rgba(244,241,237,.45)" : "rgba(28,27,25,.5)" }}>We handle the numbers so you can handle the content. {platformCount?`${platformCount}+`:"140+"} service types, Naira pricing, fast delivery.</p>
+          <p className="text-[13px] leading-[1.7] max-w-[260px] mb-5" style={{ color: dark ? "rgba(244,241,237,.45)" : "rgba(28,27,25,.5)" }}>{tr("We handle the numbers so you can handle the content.")} {platformCount?`${platformCount}+`:"140+"} {tr("service types, Naira pricing, fast delivery.")}</p>
           <div className="flex gap-2.5">
             <a href={`https://instagram.com/${igHandle}`} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={socialBtn} style={{ background: dark ? "rgba(225,48,108,.08)" : "rgba(225,48,108,.06)", border: `0.5px solid ${dark ? "rgba(225,48,108,.18)" : "rgba(225,48,108,.14)"}` }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
             <a href={`https://x.com/${xHandle}`} target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className={socialBtn} style={{ background: dark ? "rgba(255,255,255,.10)" : "rgba(0,0,0,.06)", border: `0.5px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: dark ? "rgba(244,241,237,.5)" : "rgba(28,27,25,.45)" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
@@ -261,7 +264,7 @@ export function SharedFooter() {
 
         {/* Product */}
         <div>
-          <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{ color: headingColor }}>Product</div>
+          <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{ color: headingColor }}>{tr("Product")}</div>
           {[["Pricing", "/pricing"], ["Services", "/services"], ["Quality", "/quality"], ["Reviews", "/reviews"], ["Resellers", "/resellers"], ["The Pit", "/pit"], ["About", "/about"], ["Blog", "/blog"], ["What's New", "/changelog"]].map(([l, h]) => (
             <a key={l} href={h} className={linkCls} style={{ color: linkColor }}>{l}</a>
           ))}
@@ -269,21 +272,21 @@ export function SharedFooter() {
 
         {/* Company */}
         <div>
-          <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{ color: headingColor }}>Company</div>
+          <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{ color: headingColor }}>{tr("Company")}</div>
           {[["Help", "/help"], ["FAQ", "/faq"], ["Contact", "/contact"], ["Terms", "/terms"], ["Privacy", "/privacy"], ["Refund", "/refund"], ["Cookies", "/cookie"]].map(([l, h]) => (
             <a key={l} href={h} className={linkCls} style={{ color: linkColor }}>{l}</a>
           ))}
-          <button onClick={() => window.dispatchEvent(new CustomEvent('nitro-cookie-settings'))} className={`${linkCls} bg-transparent border-0 cursor-pointer p-0 text-left`} style={{ color: linkColor }}>Cookie settings</button>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('nitro-cookie-settings'))} className={`${linkCls} bg-transparent border-0 cursor-pointer p-0 text-left`} style={{ color: linkColor }}>{tr("Cookie settings")}</button>
         </div>
 
         {/* Get in touch */}
         <div>
-          <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{ color: headingColor }}>Get in touch</div>
+          <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{ color: headingColor }}>{tr("Get in touch")}</div>
           <a href="mailto:support@nitro.ng" className={linkCls} style={{ color: linkColor }}>support@nitro.ng</a>
-          {waNum && <a href={`https://wa.me/${waNum}`} target="_blank" rel="noopener noreferrer" className={linkCls} style={{ color: linkColor }}>WhatsApp Support</a>}
+          {waNum && <a href={`https://wa.me/${waNum}`} target="_blank" rel="noopener noreferrer" className={linkCls} style={{ color: linkColor }}>{tr("WhatsApp Support")}</a>}
           <a href="https://stats.uptimerobot.com/PvHE3u4psX" target="_blank" rel="noopener noreferrer" className={`${linkCls} flex items-center gap-1.5`} style={{ color: linkColor }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Status Page
+            {tr("Status Page")}
           </a>
         </div>
       </div>
@@ -294,7 +297,7 @@ export function SharedFooter() {
       {/* Bottom bar */}
       <div className="flex justify-between items-center max-md:flex-col max-md:gap-2 max-md:text-center max-w-[1100px] mx-auto">
         <span className="text-xs" style={{ color: dark ? "rgba(244,241,237,.35)" : "rgba(28,27,25,.4)" }}>© {new Date().getFullYear() > 2025 ? `2025–${new Date().getFullYear()}` : "2025"} The Nitro NG. All rights reserved. RC 9514845</span>
-        <span className="text-xs" style={{ color: dark ? "rgba(244,241,237,.3)" : "rgba(28,27,25,.35)" }}>Built in Lagos 🇳🇬</span>
+        <span className="text-xs" style={{ color: dark ? "rgba(244,241,237,.3)" : "rgba(28,27,25,.35)" }}>{tr("Built in Lagos 🇳🇬")}</span>
       </div>
       {/* Floating WhatsApp button */}
       {waNum && (
@@ -302,7 +305,7 @@ export function SharedFooter() {
           href={`https://wa.me/${waNum}`}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Chat on WhatsApp"
+          aria-label={tr("Chat on WhatsApp")}
           className="fixed bottom-6 right-6 max-md:bottom-5 max-md:right-4 z-[90] w-14 h-14 max-md:w-12 max-md:h-12 rounded-full flex items-center justify-center no-underline transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(37,211,102,.35)]"
           style={{ background: "#25d366", boxShadow: "0 4px 16px rgba(37,211,102,.3)" }}
         >

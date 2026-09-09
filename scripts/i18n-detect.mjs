@@ -88,7 +88,7 @@ export const NOT_PROSE = [
   /^https?:|^\/|^#|^data:/,             // urls, anchors
   /^[A-Z_]+$/,                          // CONSTANTS
   /[{}<>$`]/,                           // embedded code
-  /^rgba?\(|^linear-gradient|^\d+px|^var\(/,
+  /^rgba?\(|^linear-gradient|^-?[\d.]+(px|rem|em|%)\b|^var\(/,
   // A CSS duration, so a transition or animation shorthand is not offered for
   // translation: "transform .15s", "progress-pulse 2.8s ease-in-out infinite".
   /(^|\s)[\d.]+m?s(\s|$)/,
@@ -97,10 +97,10 @@ export const NOT_PROSE = [
   // silently broken the animation that referenced it.
   /^@[a-z-]+\s/i,
   // A font stack: "'JetBrains Mono', monospace".
-  /\b(monospace|sans-serif|ui-monospace|system-ui|cursive)\b/,
+  /\b(serif|monospace|ui-monospace|system-ui|cursive)\b/,
   // A CSS selector inside a <style> block: ".rcp-ck svg", ".rcp-f:first-child",
   // ".tx-col.is-off:hover". Nothing a customer reads starts with a dot.
-  /^\./,
+  /^\.|^[a-z]+:(?:first|last|nth|hover|focus|before|after)/,
   // SVG and CSS keyword values that are not words on a page.
   /^(currentColor|round|butt|square|miter|bevel|evenodd|nonzero|inherit|initial|unset)$/,
   // A tracking identifier: the Google Ads conversion label
