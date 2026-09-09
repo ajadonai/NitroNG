@@ -1,25 +1,27 @@
 "use client";
 import { Modal } from "./ui-primitives";
+import { useT } from "./locale";
+import { msg } from "../lib/i18n";
 
 // The public site's primary links for the desktop top nav, in one place so the
 // landing bar and SharedNav cannot drift apart.
 export const PUBLIC_LINKS = [
-  { label: "Services", href: "/services", hint: "30+ platforms" },
-  { label: "Pricing", href: "/pricing", hint: "per 1,000" },
-  { label: "Resellers", href: "/resellers", hint: "wholesale" },
-  { label: "Blog", href: "/blog" },
+  { label: msg("Services"), href: "/services", hint: msg("30+ platforms") },
+  { label: msg("Pricing"), href: "/pricing", hint: msg("per 1,000") },
+  { label: msg("Resellers"), href: "/resellers", hint: msg("wholesale") },
+  { label: msg("Blog"), href: "/blog" },
 ];
 
 // The mobile hamburger list — the same everywhere so the sheet reads identically
 // on the landing page and on every other public page. Section links use root
 // hashes so they scroll in place on the landing and navigate home from elsewhere.
 export const SHEET_LINKS = [
-  { label: "Tiers", href: "/#tiers", hint: "Budget · Standard · Premium" },
-  { label: "Why curated", href: "/#curated", hint: "what we filter out", em: "curated" },
-  { label: "How it works", href: "/#how", hint: "3 steps" },
-  { label: "Reviews", href: "/#reviews", hint: "4.9★" },
-  { label: "Resellers", href: "/resellers", hint: "wholesale", sub: true },
-  { label: "Blog", href: "/blog", sub: true },
+  { label: msg("Tiers"), href: "/#tiers", hint: msg("Budget · Standard · Premium") },
+  { label: msg("Why curated"), href: "/#curated", hint: msg("what we filter out"), em: "curated" },
+  { label: msg("How it works"), href: "/#how", hint: msg("3 steps") },
+  { label: msg("Reviews"), href: "/#reviews", hint: msg("4.9★") },
+  { label: msg("Resellers"), href: "/resellers", hint: msg("wholesale"), sub: true },
+  { label: msg("Blog"), href: "/blog", sub: true },
 ];
 
 const SHEET_CSS = `
@@ -40,6 +42,7 @@ const SHEET_CSS = `
  * vs section links) and { em: "word" } to set that word in the italic rose serif.
  */
 export function PublicNavSheet({ open, onClose, dark, onLogin, onSignup, links = SHEET_LINKS, liveCount = null }) {
+  const tr = useT();
   // A section link scrolls in place when its target exists on this page (the
   // landing), and otherwise navigates home to that section.
   const go = (href) => (e) => {
@@ -49,7 +52,7 @@ export function PublicNavSheet({ open, onClose, dark, onLogin, onSignup, links =
     onClose();
   };
   return (
-    <Modal open={open} onClose={onClose} title="Menu" dark={dark} variant="sheet">
+    <Modal open={open} onClose={onClose} title={tr("Menu")} dark={dark} variant="sheet">
       <style>{SHEET_CSS}</style>
       <div className="relative flex flex-col flex-1 overflow-hidden" style={{ background: dark ? "#050710" : "#2a1a22", color: "#f6ecee" }}>
         {/* grain + glow + ghost wordmark — decoration, not content */}
@@ -60,24 +63,27 @@ export function PublicNavSheet({ open, onClose, dark, onLogin, onSignup, links =
         <div className="relative z-[2] flex flex-col flex-1 px-6 pt-[18px] pb-[26px] md:px-11 md:pt-[22px] md:pb-8">
           <div className="flex items-center justify-between">
             <span className="inline-flex items-center h-7 px-3 rounded-[9px] text-[13px] font-extrabold tracking-[.04em] text-white" style={{ background: "rgba(255,255,255,.1)", border: "1px solid rgba(246,217,222,.18)" }}>NITRO</span>
-            <button type="button" onClick={onClose} aria-label="Close menu"
+            <button type="button" onClick={onClose} aria-label={tr("Close menu")}
               className="w-[34px] h-[34px] rounded-full flex items-center justify-center cursor-pointer border-none transition-opacity duration-150 hover:opacity-80"
               style={{ background: "rgba(255,255,255,.1)", color: "#f6ecee" }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
 
-          <nav aria-label="Primary" className="mt-3.5 flex flex-col">
+          <nav aria-label={tr("Primary")} className="mt-3.5 flex flex-col">
             {links.map((l, i) => (
               <a key={l.href} href={l.href} onClick={go(l.href)}
                 className="pns-l flex items-baseline justify-between gap-3 no-underline"
                 style={{ animationDelay: `${i * 40}ms`, color: "#f6ecee", padding: l.sub ? "10px 0" : "13px 0", borderBottom: i < links.length - 1 ? "1px solid rgba(246,217,222,.1)" : "none" }}>
                 <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 500, letterSpacing: "-.5px", lineHeight: 1.05, fontSize: l.sub ? 22 : 36, color: l.sub ? "rgba(246,236,238,.78)" : "#f6ecee" }}>
-                  {l.em && l.label.includes(l.em)
-                    ? <>{l.label.slice(0, l.label.indexOf(l.em))}<em className="italic" style={{ color: "#e8a0b2" }}>{l.em}</em>{l.label.slice(l.label.indexOf(l.em) + l.em.length)}</>
-                    : l.label}
+                  {(() => {
+                    const label = tr(l.label);
+                    if (!l.em || !label.includes(l.em)) return label;
+                    const at = label.indexOf(l.em);
+                    return <>{label.slice(0, at)}<em className="italic" style={{ color: "#e8a0b2" }}>{l.em}</em>{label.slice(at + l.em.length)}</>;
+                  })()}
                 </span>
-                {l.hint && <span className="text-[11.5px] font-semibold whitespace-nowrap" style={{ color: "rgba(246,236,238,.42)", letterSpacing: ".4px", fontFamily: "Outfit, system-ui, sans-serif" }}>{l.hint}</span>}
+                {l.hint && <span className="text-[11.5px] font-semibold whitespace-nowrap" style={{ color: "rgba(246,236,238,.42)", letterSpacing: ".4px", fontFamily: "Outfit, system-ui, sans-serif" }}>{tr(l.hint)}</span>}
               </a>
             ))}
           </nav>
@@ -86,7 +92,7 @@ export function PublicNavSheet({ open, onClose, dark, onLogin, onSignup, links =
             <div className="flex items-center gap-2 mt-[18px] text-xs font-bold" style={{ color: "#4be284" }}>
               <i aria-hidden="true" className="pns-dot w-[7px] h-[7px] rounded-full" style={{ background: "#4be284" }} />
               <b className="m">{liveCount}</b>
-              <span className="font-medium" style={{ color: "rgba(246,236,238,.5)" }}>orders delivering right now</span>
+              <span className="font-medium" style={{ color: "rgba(246,236,238,.5)" }}>{tr("orders delivering right now")}</span>
             </div>
           )}
 
@@ -94,11 +100,11 @@ export function PublicNavSheet({ open, onClose, dark, onLogin, onSignup, links =
 
           <div className="md:max-w-[420px] md:w-full md:mx-auto">
             {onSignup
-              ? <button type="button" onClick={onSignup} className="w-full py-[15px] rounded-full text-[15px] font-extrabold border-none cursor-pointer flex items-center justify-center gap-2" style={{ background: "#fff", color: "#1a1a1a", boxShadow: "0 10px 26px rgba(0,0,0,.25)" }}>🎁 Create free account</button>
-              : <a href="/?signup=1" className="w-full py-[15px] rounded-full text-[15px] font-extrabold text-center no-underline flex items-center justify-center gap-2" style={{ background: "#fff", color: "#1a1a1a", boxShadow: "0 10px 26px rgba(0,0,0,.25)" }}>🎁 Create free account</a>}
+              ? <button type="button" onClick={onSignup} className="w-full py-[15px] rounded-full text-[15px] font-extrabold border-none cursor-pointer flex items-center justify-center gap-2" style={{ background: "#fff", color: "#1a1a1a", boxShadow: "0 10px 26px rgba(0,0,0,.25)" }}>{tr("🎁 Create free account")}</button>
+              : <a href="/?signup=1" className="w-full py-[15px] rounded-full text-[15px] font-extrabold text-center no-underline flex items-center justify-center gap-2" style={{ background: "#fff", color: "#1a1a1a", boxShadow: "0 10px 26px rgba(0,0,0,.25)" }}>{tr("🎁 Create free account")}</a>}
             {onLogin
-              ? <button type="button" onClick={onLogin} className="w-full py-[13px] rounded-full text-sm font-semibold bg-transparent cursor-pointer mt-2.5" style={{ border: "1px solid rgba(246,217,222,.22)", color: "#f6ecee" }}>Log in</button>
-              : <a href="/?login=1" className="block w-full py-[13px] rounded-full text-sm font-semibold text-center no-underline mt-2.5" style={{ border: "1px solid rgba(246,217,222,.22)", color: "#f6ecee" }}>Log in</a>}
+              ? <button type="button" onClick={onLogin} className="w-full py-[13px] rounded-full text-sm font-semibold bg-transparent cursor-pointer mt-2.5" style={{ border: "1px solid rgba(246,217,222,.22)", color: "#f6ecee" }}>{tr("Log in")}</button>
+              : <a href="/?login=1" className="block w-full py-[13px] rounded-full text-sm font-semibold text-center no-underline mt-2.5" style={{ border: "1px solid rgba(246,217,222,.22)", color: "#f6ecee" }}>{tr("Log in")}</a>}
           </div>
         </div>
       </div>
