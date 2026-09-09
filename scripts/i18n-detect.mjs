@@ -94,6 +94,14 @@ export const NOT_PROSE = [
   /(^|\s)[\d.]+m?s(\s|$)/,
   // A font stack: "'JetBrains Mono', monospace".
   /\b(monospace|sans-serif|ui-monospace|system-ui|cursive)\b/,
+  // SVG and CSS keyword values that are not words on a page.
+  /^(currentColor|round|butt|square|miter|bevel|evenodd|nonzero|inherit|initial|unset)$/,
+  // A tracking identifier: the Google Ads conversion label
+  // "AW-18121451903/9P3HCL_TlaMcEP_S_cBD".
+  /^[A-Z]{2}-\d{5,}/,
+  // A fragment that starts mid-expression, or arithmetic: ", icon:" and
+  // "(p + (dx" both reached the list before these.
+  /^[,;:]|^\([a-z]\s*[+\-*/]/,
   /^[\w.-]+@|^[\w-]+\.(com|ng|io|js|json)$/,
   /^(true|false|null|undefined|none|auto|flex|grid|button|submit|text|email|password|tel|number)$/i,
   /\b(?:className|onClick|style|aria-|data-)\b/,
