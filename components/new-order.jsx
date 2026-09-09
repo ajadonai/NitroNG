@@ -1465,8 +1465,22 @@ function MobileGuide({ dark, t }) {
           <div style={{ height: 1, background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)" }} />
 
           <div className="py-2 px-2.5 rounded-lg border border-solid" style={{ background: dark ? "rgba(74,222,128,.1)" : "rgba(22,163,74,.06)", borderColor: dark ? "rgba(74,222,128,.18)" : "rgba(22,163,74,.12)" }}>
-            <span className="font-semibold" style={{ color: dark ? "#4ade80" : "#16a34a" }}>🇳🇬 Nigerian Services</span>
-            <span className="ml-1">— Look for the flag! Local engagement for Naija creators.</span>
+            <span className="font-semibold" style={{ color: dark ? "#4ade80" : "#16a34a" }}>🇳🇬 {tr("Nigerian")}</span>
+            <span className="ml-1">— {tr("Real local engagement for Naija accounts")}</span>
+          </div>
+
+          {/* 13 services already ship with 🇺🇸 in the name, and 116 carry no flag
+              at all — the biggest group in the catalogue. Both were unexplained. */}
+          <div className="py-2 px-2.5 rounded-lg border border-solid" style={{ background: dark ? "rgba(96,165,250,.1)" : "rgba(37,99,235,.06)", borderColor: dark ? "rgba(96,165,250,.2)" : "rgba(37,99,235,.14)" }}>
+            <span className="font-semibold" style={{ color: dark ? "#60a5fa" : "#2563eb" }}>🇺🇸 {tr("American")}</span>
+            <span className="ml-1">— {tr("A US audience, for reaching people over there")}</span>
+          </div>
+
+          {/* Slate, not amber: two thirds of the catalogue lives here and it is a
+              fact about targeting, not a warning about quality. */}
+          <div className="py-2 px-2.5 rounded-lg border border-solid" style={{ background: dark ? "rgba(159,176,192,.09)" : "rgba(91,107,124,.06)", borderColor: dark ? "rgba(159,176,192,.2)" : "rgba(91,107,124,.14)" }}>
+            <span className="font-semibold" style={{ color: dark ? "#9fb0c0" : "#5b6b7c" }}>{tr("No flag")}</span>
+            <span className="ml-1">— {tr("A worldwide mix. Not aimed at any one country")}</span>
           </div>
 
           <div className="py-2 px-2.5 rounded-lg border border-solid" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderColor: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>
@@ -1893,7 +1907,16 @@ export function ServicesSidebar() {
       <RailCard>
         <RailStep n="1" title={tr("Profile set to public")} sub={tr("No refunds for private profiles")} />
         <RailStep n="2" title={tr("Start small")} sub={tr("Test a Budget tier first")} />
-        <RailStep n="🇳🇬" title={tr("Flag means Nigerian audience")} sub={tr("Real local engagement for Naija accounts")} />
+      </RailCard>
+
+      {/* The flags are a legend, not a sequence, so they leave the numbered list
+          and get their own heading. Running 1, 2, 🇳🇬, 🇺🇸, 🌍 down one card would
+          say these are five steps to follow in order, and they are not. */}
+      <RailSec>{tr("Service flags")}</RailSec>
+      <RailCard>
+        <RailStep n="🇳🇬" title={tr("Nigerian")} sub={tr("Real local engagement for Naija accounts")} />
+        <RailStep n="🇺🇸" title={tr("American")} sub={tr("A US audience, for reaching people over there")} />
+        <RailStep n="🌍" title={tr("No flag")} sub={tr("A worldwide mix. Not aimed at any one country")} />
       </RailCard>
       <RailSec>{tr("Bulk")}</RailSec>
       <RailNote>{tr("Up to 50 orders in one checkout. Anything that fails is retried, then refunded.")}</RailNote>
