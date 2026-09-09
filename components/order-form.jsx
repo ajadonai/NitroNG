@@ -247,7 +247,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               <span className="text-[11px] font-semibold" style={{ color: dark ? "#60a5fa" : "#2563eb" }}>{tr("Traffic Targeting")}</span>
             </div>
             <div className="mb-2.5">
-              <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[5px]" style={{ color: t.textMuted }}>{tr("Country")} <span className="font-normal normal-case tracking-normal">(where the visitors come from)</span></label>
+              <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[5px]" style={{ color: t.textMuted }}>{tr("Country")} <span className="font-normal normal-case tracking-normal">{tr("(where the visitors come from)")}</span></label>
               <select disabled={orderLoading} value={trafficConfig.country} onChange={e => setTrafficConfig(c => ({ ...c, country: e.target.value }))} className="w-full py-2 px-3 rounded-lg border border-solid text-[13px] outline-none box-border font-[inherit] disabled:opacity-50 cursor-pointer" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#160f22" : "#fff", color: t.text }}>
                 <option value="">{tr("Choose a target…")}</option>
                 <option value="WW">{tr("Worldwide")}</option>
@@ -292,14 +292,14 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         )}
         {showComments && (
           <div className="mb-3.5">
-            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{isReview ? "Reviews" : "Comments"} <span className="font-normal normal-case tracking-normal text-[11px]">({needsComments ? "required, one per line" : "optional, one per line"})</span></label>
+            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{isReview ? tr("Reviews") : tr("Comments")} <span className="font-normal normal-case tracking-normal text-[11px]">({needsComments ? tr("required, one per line") : tr("optional, one per line")})</span></label>
             <textarea disabled={orderLoading} placeholder={isReview ? "Great service, highly recommend!\nFast delivery and excellent quality\nBest experience I've had, 5 stars" : "Great content!\nLove this post!\nAmazing work, keep it up\nThis is fire"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#160f22" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
             <div className="text-[11px] mt-1" style={{ color: commentShort ? (dark ? "#fca5a5" : "#dc2626") : (isCustomComment && commentLines > 0 && qtyNum > commentLines && !commentShort) ? (dark ? "#fcd34d" : "#b45309") : t.textMuted }}>{commentShort ? `Need at least ${minCommentLines} unique ${isReview ? "reviews" : "comments"} — you have ${commentLines}` : (isCustomComment && commentLines > 0 && qtyNum > commentLines) ? `${commentLines} unique ${isReview ? "reviews" : "comments"} · will rotate to fill ${qtyNum} quantity` : commentLines > 0 ? `${commentLines} ${isReview ? "reviews" : "comments"} entered · we'll cycle through them` : needsComments ? `Enter at least ${minCommentLines} unique comments, one per line` : `Leave empty to use provider's comments`}</div>
           </div>
         )}
         {needsUsernames && (
           <div className="mb-3.5">
-            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{tr("Usernames to mention")} <span className="font-normal normal-case tracking-normal text-[11px]">(one per line, without @)</span></label>
+            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{tr("Usernames to mention")} <span className="font-normal normal-case tracking-normal text-[11px]">{tr("(one per line, without @)")}</span></label>
             <textarea disabled={orderLoading} placeholder={"username1\nusername2\nusername3"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={4} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#160f22" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
             <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{(comments || "").split("\n").filter(l => l.trim()).length} {tr("usernames entered")}</div>
           </div>
@@ -317,7 +317,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         )}
         {needsKeywords && (
           <div className="mb-3.5">
-            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{tr("Search Keywords")} <span className="font-normal normal-case tracking-normal text-[11px]">(required, one per line)</span></label>
+            <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{tr("Search Keywords")} <span className="font-normal normal-case tracking-normal text-[11px]">{tr("(required, one per line)")}</span></label>
             <textarea disabled={orderLoading} placeholder={"best nigerian services\nnigeria social media growth\nbuy instagram followers nigeria"} value={comments || ""} onChange={e => setComments(e.target.value)} rows={3} className="m w-full py-2.5 px-3 rounded-lg border border-solid text-[13px] leading-[1.5] outline-none box-border font-[inherit] resize-y disabled:opacity-50" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)", background: dark ? "#160f22" : "#fff", color: t.text, fontFamily: "'JetBrains Mono', monospace" }} />
             <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{(comments || "").split("\n").filter(l => l.trim()).length || 0} {tr("keywords entered")}</div>
           </div>
@@ -350,7 +350,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-semibold" style={{ color: t.text }}>{tr("Gradual delivery")}</div>
-                <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{dripOn ? "Spread across days, looks natural" : "Large delivery may flag the target account"}</div>
+                <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{dripOn ? tr("Spread across days, looks natural") : tr("Large delivery may flag the target account")}</div>
               </div>
             </div>
             )}

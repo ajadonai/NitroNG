@@ -5,6 +5,7 @@ import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
 import { useMoney, useT } from "./locale";
+import { msg } from "../lib/i18n";
 import { DEFAULT_COUNTRY, validatePhone } from "../lib/phone-countries";
 import { PhoneField } from "./phone-field";
 import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
@@ -151,37 +152,39 @@ const I = {
 };
 
 // Rendered through tr(item.label) at the point of use, because these sit at
-// module scope where a hook cannot reach. The scanner reads code and cannot
-// follow a variable, so their dictionary entries are written by hand — and
-// these are the labels a customer reads on every single page, so a missing one
+// module scope where a hook cannot reach. msg() marks them so the scanner can
+// see them without following a variable — before it existed these entries were
+// maintained by hand and showed up as orphans, which meant nothing would have
+// warned if the English here changed. These are the labels a customer reads on
+// every single page, so a missing one
 // is the most visible gap there is.
 const NAV_ITEMS = [
-  { id: "overview", label: "Home" },
-  { id: "services", label: "New Order" },
-  { id: "orders", label: "History" },
-  { id: "add-funds", label: "Wallet" },
-  { id: "guide", label: "Blog" },
-  { id: "changelog", label: "What's New", href: "/changelog" },
-  { id: "referrals", label: "Referrals" },
-  { id: "rewards", label: "Rewards" },
-  { id: "tasks", label: "Tasks" },
-  { id: "support", label: "Support" },
-  { id: "settings", label: "Settings" },
+  { id: "overview", label: msg("Home") },
+  { id: "services", label: msg("New Order") },
+  { id: "orders", label: msg("History") },
+  { id: "add-funds", label: msg("Wallet") },
+  { id: "guide", label: msg("Blog") },
+  { id: "changelog", label: msg("What's New"), href: "/changelog" },
+  { id: "referrals", label: msg("Referrals") },
+  { id: "rewards", label: msg("Rewards") },
+  { id: "tasks", label: msg("Tasks") },
+  { id: "support", label: msg("Support") },
+  { id: "settings", label: msg("Settings") },
 ];
 
 const BOTTOM_TABS = [
-  { id: "overview", label: "Home" },
-  { id: "add-funds", label: "Wallet" },
-  { id: "services", label: "New Order", primary: true },
-  { id: "orders", label: "History" },
-  { id: "more", label: "More" },
+  { id: "overview", label: msg("Home") },
+  { id: "add-funds", label: msg("Wallet") },
+  { id: "services", label: msg("New Order"), primary: true },
+  { id: "orders", label: msg("History") },
+  { id: "more", label: msg("More") },
 ];
 const MoreIcon = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>;
 const OrderIcon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
 
 const WAITLIST_META = {
-  audit: { icon: I.audit, title: "Be the first to audit your account", desc: "We're building a tool that analyzes your social media — follower quality, engagement rate, growth trends, and more. Join the waitlist to get early access." },
-  cleanup: { icon: I.cleanup, title: "Be the first to clean up your account", desc: "Mass unfollow ghost followers, non-followers, and inactive accounts — all from your Nitro dashboard. Join the waitlist to get early access." },
+  audit: { icon: I.audit, title: msg("Be the first to audit your account"), desc: msg("We're building a tool that analyzes your social media — follower quality, engagement rate, growth trends, and more. Join the waitlist to get early access.") },
+  cleanup: { icon: I.cleanup, title: msg("Be the first to clean up your account"), desc: msg("Mass unfollow ghost followers, non-followers, and inactive accounts — all from your Nitro dashboard. Join the waitlist to get early access.") },
 };
 
 function WaitlistPage({ feature, dark, t }) {
@@ -244,7 +247,7 @@ function WaitlistPage({ feature, dark, t }) {
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={tr("Enter your email")} className="w-full py-2.5 px-3 rounded-[10px] text-sm font-[inherit] outline-none box-border text-t-text" style={{ background: dark ? "rgba(255,255,255,.09)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}` }} />
             </div>
             <button type="submit" disabled={submitting || !email.trim()} className="w-full py-2.5 rounded-[10px] text-sm font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px bg-accent text-white" style={{ opacity: submitting || !email.trim() ? 0.5 : 1 }}>
-              {submitting ? "Joining…" : "Join the waitlist"}
+              {submitting ? tr("Joining…") : tr("Join the waitlist")}
             </button>
           </form>
         )}
@@ -701,7 +704,7 @@ function DashboardInner({ initialData }) {
         };
       }),
       ...txs.filter(tx => tx.type === "deposit" && tx.status === "Completed" && tx.date && new Date(tx.date) >= cutoff).map(tx => ({
-        id: `dep-${tx.id || tx.reference}`, type: "deposit", title: "Funds added",
+        id: `dep-${tx.id || tx.reference}`, type: "deposit", title: tr("Funds added"),
         desc: `${money(tx.amount, { round: "down" })} added via ${tx.method || "Flutterwave"}`,
         time: tx.date ? fD(tx.date) : "", ts: new Date(tx.date),
         color: dark_ ? "#6ee7b7" : "#059669",
@@ -716,7 +719,7 @@ function DashboardInner({ initialData }) {
       })),
       ...unreadTickets.map(tk => ({
         id: `tkt-${tk.id}`, type: "ticket",
-        title: "New message from support",
+        title: tr("New message from support"),
         desc: tk.subject || "You have an unread support message",
         time: tk.updated ? fD(tk.updated) : "", ts: new Date(tk.updated),
         color: dark_ ? "#a5b4fc" : "#4f46e5",
@@ -1328,7 +1331,7 @@ function DashboardInner({ initialData }) {
                 <div className="dash-av-head" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
                   <Avatar size={34} ring />
                   <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-semibold truncate text-t-text">{user?.name || "Your account"}</div>
+                    <div className="text-[13px] font-semibold truncate text-t-text">{user?.name || tr("Your account")}</div>
                     <div className="text-[11px] truncate text-t-text-muted">{user?.email || ""}</div>
                   </div>
                   <button role="menuitem" onClick={() => { setAvOpen(false); setActive("settings"); }} className="dash-av-gear" aria-label={tr("Settings")} style={{ color: t.textMuted }}>{I.settings}</button>
@@ -1425,7 +1428,7 @@ function DashboardInner({ initialData }) {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Welcome back, {firstName}</div>
-                <div className="text-sm text-t-text-muted">{orderSummary.total === 0 ? "Place your first order in under a minute." : "Here's your dashboard at a glance."}</div>
+                <div className="text-sm text-t-text-muted">{orderSummary.total === 0 ? tr("Place your first order in under a minute.") : tr("Here's your dashboard at a glance.")}</div>
               </div>
               <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">{tr("Balance")}</div>
@@ -1506,7 +1509,7 @@ function DashboardInner({ initialData }) {
             <div className="flex-1 min-w-0">
               {/* The real lifetime count — "Two" only when it is actually two. */}
               <div className="text-sm font-bold leading-snug text-t-text">{momentCompleted === 2 ? tr("Two") : Number(momentCompleted || 0).toLocaleString()} {tr("orders delivered.")}<br/>{tr("You&rsquo;re a regular now.")}</div>
-              <div className="text-xs leading-[1.5] mt-1 text-t-text-muted">{isIos ? "Keep Nitro one tap away for tracking the next one." : "Put Nitro on your home screen and track the next one in one tap. No app store, no download size."}</div>
+              <div className="text-xs leading-[1.5] mt-1 text-t-text-muted">{isIos ? tr("Keep Nitro one tap away for tracking the next one.") : tr("Put Nitro on your home screen and track the next one in one tap. No app store, no download size.")}</div>
             </div>
             <button type="button" aria-label={tr("Dismiss")} onClick={closeInstallMoment} className="shrink-0 w-[26px] h-[26px] rounded-lg flex items-center justify-center border-none cursor-pointer text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -1528,7 +1531,7 @@ function DashboardInner({ initialData }) {
           <div className="flex items-center gap-2.5 p-3 rounded-2xl" style={{ background: dark ? "linear-gradient(135deg,#1d1a2a,#1a1626)" : "linear-gradient(135deg,#faf3f4,#f4ebe6)", border: `1px solid ${dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.18)"}` }}>
             <Avatar size={40} ring />
             <div className="min-w-0 flex-1">
-              <div className="text-[13.5px] font-bold truncate text-t-text">{user?.name || "Your account"}</div>
+              <div className="text-[13.5px] font-bold truncate text-t-text">{user?.name || tr("Your account")}</div>
               <div className="text-[11px] truncate text-t-text-muted">{user?.email || ""}</div>
             </div>
             <div className="text-right shrink-0">
@@ -1727,7 +1730,7 @@ function DashboardInner({ initialData }) {
                 color: validatePhone(phonePromptCc, phonePromptVal).ok ? "#fff" : t.textMuted,
                 opacity: phonePromptSaving ? 0.7 : 1,
               }}
-            >{phonePromptSaving ? "Saving…" : "Save"}</button>
+            >{phonePromptSaving ? tr("Saving…") : tr("Save")}</button>
             </>}
           </div>
         </div>
@@ -1769,7 +1772,7 @@ function DashboardInner({ initialData }) {
                 color: tosChecked ? "#fff" : t.textMuted,
                 opacity: tosAccepting ? 0.7 : 1,
               }}
-            >{tosAccepting ? "Accepting…" : "Accept & Continue"}</button>
+            >{tosAccepting ? tr("Accepting…") : tr("Accept & Continue")}</button>
           </div>
         </div>
       )}
