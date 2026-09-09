@@ -217,7 +217,7 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
             <span className={KICKER} style={{ color: t.textMuted }}>{tr("Nitro Points")}</span>
           </div>
           <b className="m text-[52px] max-md:text-[44px] font-extrabold leading-none tracking-[-.045em] mt-4 mb-1" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{points.balance.toLocaleString()}</b>
-          <span className="text-[12.5px]" style={{ color: t.textMuted }}>worth {money(points.valueNaira, { round: "down" })} {tr("off your next order")}</span>
+          <span className="text-[12.5px]" style={{ color: t.textMuted }}>{tr("worth")} {money(points.valueNaira, { round: "down" })} {tr("off your next order")}</span>
           {points.redeemable ? (
             <button onClick={onUsePoints} className="w-full h-10 mt-[18px] border-none rounded-xl text-white text-[13px] font-bold font-[inherit] cursor-pointer transition-transform duration-150 hover:-translate-y-px" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', boxShadow: '0 4px 14px rgba(217,119,6,.32)' }}>
               {tr("Use them on an order")}
