@@ -1,10 +1,12 @@
 "use client";
 import { useState } from "react";
+import { useT } from "../locale";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ThemeProvider } from "../shared-nav";
 import { PitAuthFrame, PitLabel, PitInput, PitEye, PitButton, PitError, PitFoot, PitLink } from "./login-page";
 
 function Inner() {
+  const tr = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -49,13 +51,13 @@ function Inner() {
 
   const backToLogin = (
     <PitFoot>
-      <PitLink href="/pit/login" onNav={() => router.push("/pit/login")}>Back to sign in</PitLink>
+      <PitLink href="/pit/login" onNav={() => router.push("/pit/login")}>{tr("Back to sign in")}</PitLink>
     </PitFoot>
   );
 
   if (done) {
     return (
-      <PitAuthFrame side="earn" title="Password reset" sub="Your password has been updated. You can now sign in with your new password.">
+      <PitAuthFrame side="earn" title={tr("Password reset")} sub={tr("Your password has been updated. You can now sign in with your new password.")}>
         {backToLogin}
       </PitAuthFrame>
     );
@@ -63,7 +65,7 @@ function Inner() {
 
   if (sent) {
     return (
-      <PitAuthFrame side="earn" title="Check your email" sub="If an account exists with that email, we've sent a reset link. It expires in 30 minutes.">
+      <PitAuthFrame side="earn" title={tr("Check your email")} sub={tr("If an account exists with that email, we've sent a reset link. It expires in 30 minutes.")}>
         {backToLogin}
       </PitAuthFrame>
     );
@@ -71,30 +73,30 @@ function Inner() {
 
   if (token) {
     return (
-      <PitAuthFrame side="earn" title="New password" sub="Choose a new password for your account.">
+      <PitAuthFrame side="earn" title={tr("New password")} sub={tr("Choose a new password for your account.")}>
         <PitError>{error}</PitError>
         <form onSubmit={resetPassword} className="flex flex-col">
-          <PitLabel>New password</PitLabel>
+          <PitLabel>{tr("New password")}</PitLabel>
           <div className="relative">
             <PitInput type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required placeholder="Min. 6 characters" className="pr-11" />
             <PitEye shown={showPw} onToggle={() => setShowPw(!showPw)} />
           </div>
-          <PitButton type="submit" disabled={loading} loading={loading}>{loading ? "Resetting..." : "Reset password"}</PitButton>
+          <PitButton type="submit" disabled={loading} loading={loading}>{loading ? tr("Resetting...") : tr("Reset password")}</PitButton>
         </form>
       </PitAuthFrame>
     );
   }
 
   return (
-    <PitAuthFrame side="earn" title="Forgot password" sub="Enter your email and we'll send a reset link.">
+    <PitAuthFrame side="earn" title={tr("Forgot password")} sub={tr("Enter your email and we'll send a reset link.")}>
       <PitError>{error}</PitError>
       <form onSubmit={requestReset} className="flex flex-col">
         <PitLabel>Email</PitLabel>
         <PitInput type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com" autoComplete="email" />
-        <PitButton type="submit" disabled={loading} loading={loading}>{loading ? "Sending..." : "Send reset link"}</PitButton>
+        <PitButton type="submit" disabled={loading} loading={loading}>{loading ? tr("Sending...") : tr("Send reset link")}</PitButton>
       </form>
       <PitFoot>
-        Remember your password? <PitLink href="/pit/login" onNav={() => router.push("/pit/login")}>Sign in</PitLink>
+        Remember your password? <PitLink href="/pit/login" onNav={() => router.push("/pit/login")}>{tr("Sign in")}</PitLink>
       </PitFoot>
     </PitAuthFrame>
   );

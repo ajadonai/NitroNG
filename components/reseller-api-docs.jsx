@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useT } from "./locale";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { useToast } from './toast';
@@ -14,9 +15,10 @@ export function ResellerApiDocsDashboard({ dark, t, onNavigate }) {
 }
 
 export function ResellerApiDocsSidebar({ dark, t }) {
+  const tr = useT();
   return (
     <div className="flex flex-col gap-0">
-      <div className="rad-sb-head text-t-text-muted" style={{ background: dark ? 'rgba(96,165,250,.12)' : 'rgba(37,99,235,.08)' }}>Quick reference</div>
+      <div className="rad-sb-head text-t-text-muted" style={{ background: dark ? 'rgba(96,165,250,.12)' : 'rgba(37,99,235,.08)' }}>{tr("Quick reference")}</div>
       {[
         ['Base URL', 'https://nitro.ng/api/v2'],
         ['Method', 'POST · form-encoded'],
@@ -27,7 +29,7 @@ export function ResellerApiDocsSidebar({ dark, t }) {
           <div className="text-xs text-t-text-muted font-mono">{desc}</div>
         </div>
       ))}
-      <div className="rad-sb-head mt-2 text-t-text-muted" style={{ background: dark ? 'rgba(96,165,250,.12)' : 'rgba(37,99,235,.08)' }}>Endpoints</div>
+      <div className="rad-sb-head mt-2 text-t-text-muted" style={{ background: dark ? 'rgba(96,165,250,.12)' : 'rgba(37,99,235,.08)' }}>{tr("Endpoints")}</div>
       {['services', 'add', 'status', 'refill', 'balance', 'cancel'].map(action => (
         <div key={action} className="rad-sb-item" style={{ background: dark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.02)' }}>
           <div className="text-sm font-mono font-semibold text-t-text">{action}</div>
@@ -76,6 +78,7 @@ function pyCode(params) {
 }
 
 function CodeBlock({ params, lang, setLang, onCopy }) {
+  const tr = useT();
   const code = lang === 'curl' ? curlCode(params) : lang === 'php' ? phpCode(params) : pyCode(params);
   return (
     <div className="rad-codewrap">
@@ -85,7 +88,7 @@ function CodeBlock({ params, lang, setLang, onCopy }) {
             <button key={id} onClick={() => setLang(id)} className={lang === id ? 'on' : ''}>{label}</button>
           ))}
         </div>
-        <button className="rad-copybtn" onClick={() => onCopy(code)}>Copy</button>
+        <button className="rad-copybtn" onClick={() => onCopy(code)}>{tr("Copy")}</button>
       </div>
       <pre className="rad-code-pre">{code}</pre>
     </div>
@@ -93,19 +96,21 @@ function CodeBlock({ params, lang, setLang, onCopy }) {
 }
 
 function ResponseBlock({ json }) {
+  const tr = useT();
   return (
     <>
-      <div className="rad-rlab">Response</div>
+      <div className="rad-rlab">{tr("Response")}</div>
       <div className="rad-resp"><pre className="rad-resp-pre">{json}</pre></div>
     </>
   );
 }
 
 function ParamTable({ rows }) {
+  const tr = useT();
   return (
     <div className="rad-ptable">
       <table>
-        <thead><tr><th>Parameter</th><th>Description</th></tr></thead>
+        <thead><tr><th>{tr("Parameter")}</th><th>{tr("Description")}</th></tr></thead>
         <tbody>
           {rows.map(([param, required, desc]) => (
             <tr key={param}>
@@ -134,6 +139,7 @@ function Callout({ variant, children }) {
 }
 
 function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
+  const tr = useT();
   const theme = useTheme();
   const dark = darkProp ?? theme.dark;
   const t = tProp ?? theme.t;
@@ -272,10 +278,10 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
         <div className={embedded ? '' : 'px-4 sm:px-6 flex-1'}>
           <div className="rad-frame">
             <div className="rad-topbar">
-              <span className="rad-wm">nitro<span>API documentation</span></span>
+              <span className="rad-wm">nitro<span>{tr("API documentation")}</span></span>
               <div className="flex gap-2.5 items-center">
-                <button className="rad-pill-link" onClick={() => onNavigate ? onNavigate('lab') : null}>Reseller HQ</button>
-                <button className="rad-pill-link primary" onClick={() => onNavigate ? onNavigate('overview') : null}>Dashboard</button>
+                <button className="rad-pill-link" onClick={() => onNavigate ? onNavigate('lab') : null}>{tr("Reseller HQ")}</button>
+                <button className="rad-pill-link primary" onClick={() => onNavigate ? onNavigate('overview') : null}>{tr("Dashboard")}</button>
               </div>
             </div>
 
@@ -305,42 +311,42 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
               <div className="rad-doc" ref={docRef}>
                 {/* Hero */}
                 <div>
-                  <span className="rad-eyebrow">API v2</span>
+                  <span className="rad-eyebrow">{tr("API v2")}</span>
                   <h1 className="rad-hero-title">The Nitro API</h1>
-                  <p className="rad-hero-desc">One endpoint, six actions, the standard format every SMM panel speaks. Point your panel or code at the base URL below with your key, and orders flow at reseller rates with full natural delivery speed.</p>
+                  <p className="rad-hero-desc">{tr("One endpoint, six actions, the standard format every SMM panel speaks. Point your panel or code at the base URL below with your key, and orders flow at reseller rates with full natural delivery speed.")}</p>
                   <div className="rad-basecard">
-                    <div><div className="bl">Base URL</div><div className="bv" style={{ fontFamily: "'JetBrains Mono',ui-monospace,monospace" }}>https://nitro.ng/api/v2</div></div>
-                    <div><div className="bl">Method</div><div className="bv">POST · form-encoded</div></div>
-                    <div><div className="bl">Response</div><div className="bv">JSON</div></div>
-                    <div><div className="bl">Currency</div><div className="bv">NGN, from your wallet</div></div>
+                    <div><div className="bl">{tr("Base URL")}</div><div className="bv" style={{ fontFamily: "'JetBrains Mono',ui-monospace,monospace" }}>https://nitro.ng/api/v2</div></div>
+                    <div><div className="bl">{tr("Method")}</div><div className="bv">POST · form-encoded</div></div>
+                    <div><div className="bl">{tr("Response")}</div><div className="bv">JSON</div></div>
+                    <div><div className="bl">{tr("Currency")}</div><div className="bv">{tr("NGN, from your wallet")}</div></div>
                   </div>
                 </div>
 
                 {/* Getting started */}
                 <div className="rad-sec" id="start">
-                  <h2>Getting started</h2>
-                  <div className="rad-desc">Every request is a <code>POST</code> to the base URL with your <code>key</code> and an <code>action</code>. Running ready-made panel software? Paste the base URL and your key into its provider settings, hit sync, and skip straight to setting your margins. Building custom? The six actions below are everything.</div>
+                  <h2>{tr("Getting started")}</h2>
+                  <div className="rad-desc">{tr("Every request is a")} <code>POST</code> {tr("to the base URL with your")} <code>key</code> {tr("and an")} <code>action</code>. Running ready-made panel software? Paste the base URL and your key into its provider settings, hit sync, and skip straight to setting your margins. Building custom? The six actions below are everything.</div>
                   <CodeBlock params={[['key', 'YOUR_API_KEY'], ['action', 'balance']]} lang={lang} setLang={setLang} onCopy={copyText} />
                   <ResponseBlock json={'{"balance": "124500.00", "currency": "NGN"}'} />
                 </div>
 
                 {/* Authentication */}
                 <div className="rad-sec" id="auth">
-                  <h2>Authentication</h2>
-                  <div className="rad-desc">Your key is in <b style={{ color: t.text }}>Settings</b> on every verified account; wholesale rates arrive by approval. It identifies your account, applies your reseller rates, and charges your Nitro wallet. Keep it server-side and never in client code or public repos. Regenerating from the Lab kills the old key immediately.</div>
-                  <Callout variant="rose"><b>Orders are never delayed by gradual delivery.</b> API orders run at full natural provider speed. Keep your wallet funded ahead of your sales and fulfilment starts the moment an order lands.</Callout>
+                  <h2>{tr("Authentication")}</h2>
+                  <div className="rad-desc">{tr("Your key is in")} <b style={{ color: t.text }}>{tr("Settings")}</b> {tr("on every verified account; wholesale rates arrive by approval. It identifies your account, applies your reseller rates, and charges your Nitro wallet. Keep it server-side and never in client code or public repos. Regenerating from the Lab kills the old key immediately.")}</div>
+                  <Callout variant="rose"><b>{tr("Orders are never delayed by gradual delivery.")}</b> {tr("API orders run at full natural provider speed. Keep your wallet funded ahead of your sales and fulfilment starts the moment an order lands.")}</Callout>
                 </div>
 
                 {/* Catalogs */}
                 <div className="rad-sec" id="catalogs">
-                  <h2>Catalogs &amp; rates</h2>
-                  <div className="rad-desc">Your key serves the catalogue on your account, curated by default and the full list on request: <b style={{ color: t.text }}>Nitro Curated</b> ({curatedCount ? `${curatedCount} tested` : 'tested'} services in Budget, Standard and Premium tiers) or the <b style={{ color: t.text }}>Full Catalogue</b> (thousands of raw provider services). The <code>services</code> action always returns your current list at your current reseller rates. Rates improve automatically as your monthly volume climbs the ladder.</div>
+                  <h2>{tr("Catalogs & rates")}</h2>
+                  <div className="rad-desc">{tr("Your key serves the catalogue on your account, curated by default and the full list on request:")} <b style={{ color: t.text }}>{tr("Nitro Curated")}</b> ({curatedCount ? `${curatedCount} tested` : 'tested'} {tr("services in Budget, Standard and Premium tiers) or the")} <b style={{ color: t.text }}>{tr("Full Catalogue")}</b> {tr("(thousands of raw provider services). The")} <code>services</code> {tr("action always returns your current list at your current reseller rates. Rates improve automatically as your monthly volume climbs the ladder.")}</div>
                 </div>
 
                 {/* services */}
                 <div className="rad-sec" id="services">
                   <h2><span className="mth">POST</span> services</h2>
-                  <div className="rad-desc">Returns your service list with live pricing. Sync this into your panel, then set your own margins on top.</div>
+                  <div className="rad-desc">{tr("Returns your service list with live pricing. Sync this into your panel, then set your own margins on top.")}</div>
                   <ParamTable rows={[
                     ['key', true, 'Your API key'],
                     ['action', true, '<code>services</code>'],
@@ -372,13 +378,13 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
     "description": "Members join your server but appear offline. Your server invite link must be set to never expire. Required setup before ordering: 1. Add the bot to your server: https://nowon.tools 2. Set verification level to None or Low ..."
   }
 ]`} />
-                  <Callout variant="blue"><b>Read <code>description</code> before you sell a service.</b> It carries what the buyer must do first: the Discord bot setup, which link to paste, the traffic-targeting and comment parameters. Show it on your order page. <code>type</code> is the standard panel type (<code>Default</code>, <code>Custom Comments</code>, <code>SEO</code>, <code>Package</code>) so your panel asks for the right extra fields.</Callout>
+                  <Callout variant="blue"><b>{tr("Read")} <code>description</code> {tr("before you sell a service.")}</b> {tr("It carries what the buyer must do first: the Discord bot setup, which link to paste, the traffic-targeting and comment parameters. Show it on your order page.")} <code>type</code> {tr("is the standard panel type (")}<code>{tr("Default")}</code>, <code>{tr("Custom Comments")}</code>, <code>SEO</code>, <code>{tr("Package")}</code>{tr(") so your panel asks for the right extra fields.")}</Callout>
                 </div>
 
                 {/* add */}
                 <div className="rad-sec" id="add">
                   <h2><span className="mth">POST</span> add</h2>
-                  <div className="rad-desc">Places an order. The charge is <code>rate × quantity ÷ 1000</code>, deducted from your wallet at your reseller rate.</div>
+                  <div className="rad-desc">{tr("Places an order. The charge is")} <code>{tr("rate × quantity ÷ 1000")}</code>, deducted from your wallet at your reseller rate.</div>
                   <ParamTable rows={[
                     ['key', true, 'Your API key'],
                     ['action', true, '<code>add</code>'],
@@ -388,20 +394,20 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
                     ['comments', false, 'Comment services (<code>type</code> Custom Comments): one comment per line; quantity is the number of lines'],
                     ['usernames', false, 'Mention services: usernames, one per line'],
                     ['keywords', false, 'SEO services: search terms, one per line'],
-                    ['country', false, 'Traffic services: 2-letter country code, <code>WW</code> for worldwide, or a continent (<code>AFR</code>, <code>ASI</code>, <code>EUR</code>, <code>NAM</code>, <code>SAM</code>, <code>MEA</code>)'],
+                    ['country', false, 'Traffic services: 2-letter country code, <code>WW</code> {tr("for worldwide, or a continent (")}<code>AFR</code>, <code>ASI</code>, <code>EUR</code>, <code>NAM</code>, <code>SAM</code>, <code>MEA</code>)'],
                     ['device', false, 'Traffic services: <code>all</code>, <code>mobile</code> or <code>desktop</code>. Defaults to all'],
                     ['keyword', false, 'Traffic services: search term the visits appear to come from. Leave out for direct visits'],
                     ['referrer', false, 'Traffic services: referring site the visits appear to come from. Leave out for direct visits'],
                   ]} />
                   <CodeBlock params={[['key', 'YOUR_API_KEY'], ['action', 'add'], ['service', '3877'], ['link', 'https://instagram.com/client'], ['quantity', '1000']]} lang={lang} setLang={setLang} onCopy={copyText} />
                   <ResponseBlock json={'{"order": 4211}'} />
-                  <Callout variant="blue"><b>Insufficient balance?</b> The order is rejected with an error, nothing is queued and nothing is charged. Top up and resend.</Callout>
+                  <Callout variant="blue"><b>{tr("Insufficient balance?")}</b> {tr("The order is rejected with an error, nothing is queued and nothing is charged. Top up and resend.")}</Callout>
                 </div>
 
                 {/* status */}
                 <div className="rad-sec" id="status">
                   <h2><span className="mth">POST</span> status</h2>
-                  <div className="rad-desc">Order state, start count and remains. Pass one order ID, or up to 100 comma-separated IDs to poll in bulk. Statuses: <code>Pending</code>, <code>In progress</code>, <code>Completed</code>, <code>Partial</code>, <code>Canceled</code>, <code>Refunded</code>.</div>
+                  <div className="rad-desc">{tr("Order state, start count and remains. Pass one order ID, or up to 100 comma-separated IDs to poll in bulk. Statuses:")} <code>{tr("Pending")}</code>, <code>{tr("In progress")}</code>, <code>{tr("Completed")}</code>, <code>{tr("Partial")}</code>, <code>{tr("Canceled")}</code>, <code>{tr("Refunded")}</code>.</div>
                   <ParamTable rows={[
                     ['key', true, 'Your API key'],
                     ['action', true, '<code>status</code>'],
@@ -421,7 +427,7 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
                 {/* refill */}
                 <div className="rad-sec" id="refill">
                   <h2><span className="mth">POST</span> refill</h2>
-                  <div className="rad-desc">Triggers a refill on an eligible order (services with <code>refill: true</code>). Free within the service refill window.</div>
+                  <div className="rad-desc">{tr("Triggers a refill on an eligible order (services with")} <code>{tr("refill: true")}</code>{tr("). Free within the service refill window.")}</div>
                   <ParamTable rows={[
                     ['key', true, 'Your API key'],
                     ['action', true, '<code>refill</code>'],
@@ -434,7 +440,7 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
                 {/* balance */}
                 <div className="rad-sec" id="balance">
                   <h2><span className="mth">POST</span> balance</h2>
-                  <div className="rad-desc">Your current wallet balance. Poll it to gate spend in your own panel before accepting customer orders.</div>
+                  <div className="rad-desc">{tr("Your current wallet balance. Poll it to gate spend in your own panel before accepting customer orders.")}</div>
                   <ParamTable rows={[
                     ['key', true, 'Your API key'],
                     ['action', true, '<code>balance</code>'],
@@ -446,7 +452,7 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
                 {/* cancel */}
                 <div className="rad-sec" id="cancel">
                   <h2><span className="mth">POST</span> cancel</h2>
-                  <div className="rad-desc">Requests cancellation on eligible orders (services with <code>cancel: true</code>) that haven&apos;t completed. Cancelled remains refund to your wallet automatically.</div>
+                  <div className="rad-desc">{tr("Requests cancellation on eligible orders (services with")} <code>{tr("cancel: true")}</code>{tr(") that haven't completed. Cancelled remains refund to your wallet automatically.")}</div>
                   <ParamTable rows={[
                     ['key', true, 'Your API key'],
                     ['action', true, '<code>cancel</code>'],
@@ -461,11 +467,11 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
 
                 {/* Errors */}
                 <div className="rad-sec" id="errors">
-                  <h2>Errors</h2>
-                  <div className="rad-desc">Errors come back as JSON with an <code>error</code> field and a 200 status, the SMM panel convention your software already expects.</div>
+                  <h2>{tr("Errors")}</h2>
+                  <div className="rad-desc">{tr("Errors come back as JSON with an")} <code>error</code> {tr("field and a 200 status, the SMM panel convention your software already expects.")}</div>
                   <div className="rad-ptable rad-errtable">
                     <table>
-                      <thead><tr><th>Error</th><th>Meaning</th></tr></thead>
+                      <thead><tr><th>{tr("Error")}</th><th>{tr("Meaning")}</th></tr></thead>
                       <tbody>
                         {ERRORS.map(([err, meaning]) => (
                           <tr key={err}>
@@ -481,16 +487,16 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
 
                 {/* Limits */}
                 <div className="rad-sec" id="limits">
-                  <h2>Limits</h2>
-                  <div className="rad-desc">Generous and boring, the way limits should be: up to <b style={{ color: t.text }}>300 requests per minute</b> per key. Normal panel traffic never touches this. Poll <code>status</code> in bulk with the <code>orders</code> parameter instead of one call per order, and cache <code>services</code> for a few minutes rather than fetching per pageview.</div>
-                  <Callout variant="blue"><b>Need more?</b> Scale-tier resellers can request higher limits. Message us on WhatsApp from your dashboard.</Callout>
+                  <h2>{tr("Limits")}</h2>
+                  <div className="rad-desc">{tr("Generous and boring, the way limits should be: up to")} <b style={{ color: t.text }}>{tr("300 requests per minute")}</b> {tr("per key. Normal panel traffic never touches this. Poll")} <code>status</code> {tr("in bulk with the")} <code>orders</code> {tr("parameter instead of one call per order, and cache")} <code>services</code> {tr("for a few minutes rather than fetching per pageview.")}</div>
+                  <Callout variant="blue"><b>{tr("Need more?")}</b> {tr("Scale-tier resellers can request higher limits. Message us on WhatsApp from your dashboard.")}</Callout>
                 </div>
 
                 {/* Footer CTA */}
                 <div className="rad-foot">
                   <div>
-                    <h3>Key not generated yet?</h3>
-                    <p>Your key is already in Settings. Message support for wholesale; once approved, the same key returns lower rates.</p>
+                    <h3>{tr("Key not generated yet?")}</h3>
+                    <p>{tr("Your key is already in Settings. Message support for wholesale; once approved, the same key returns lower rates.")}</p>
                   </div>
                   <button className="rad-foot-btn" onClick={() => onNavigate ? onNavigate('lab') : null}>Open Reseller HQ</button>
                 </div>

@@ -1,10 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useT } from "../locale";
 import { useRouter } from "next/navigation";
 import { ThemeProvider, useTheme } from "../shared-nav";
 import { PitAuthFrame, PitLabel, PitInput, PitButton, PitError, PitFoot, PitLink } from "./login-page";
 
 function Inner({ token }) {
+  const tr = useT();
   const { t } = useTheme();
   const router = useRouter();
   const [invite, setInvite] = useState(null);
@@ -52,21 +54,21 @@ function Inner({ token }) {
   };
 
   if (checking) {
-    return <PitAuthFrame side="steps" title="Join the crew" sub="Verifying invite..." />;
+    return <PitAuthFrame side="steps" title={tr("Join the crew")} sub={tr("Verifying invite...")} />;
   }
 
   if (pageError) {
     return (
-      <PitAuthFrame side="steps" title="Invite issue" sub={pageError}>
+      <PitAuthFrame side="steps" title={tr("Invite issue")} sub={pageError}>
         <PitFoot>
-          <PitLink href="/pit/login" onNav={() => router.push("/pit/login")}>Go to sign in</PitLink>
+          <PitLink href="/pit/login" onNav={() => router.push("/pit/login")}>{tr("Go to sign in")}</PitLink>
         </PitFoot>
       </PitAuthFrame>
     );
   }
 
   return (
-    <PitAuthFrame side="steps" title="Join the crew" sub={`Welcome, ${invite.name}. Set a password to get started.`}>
+    <PitAuthFrame side="steps" title={tr("Join the crew")} sub={`Welcome, ${invite.name}. Set a password to get started.`}>
       <PitError>{error}</PitError>
 
       <form onSubmit={submit} className="flex flex-col">
@@ -76,16 +78,16 @@ function Inner({ token }) {
         <PitLabel>Password</PitLabel>
         <PitInput type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Min. 6 characters" />
 
-        <PitLabel>Confirm password</PitLabel>
-        <PitInput type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required placeholder="Re-enter password" />
+        <PitLabel>{tr("Confirm password")}</PitLabel>
+        <PitInput type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required placeholder={tr("Re-enter password")} />
 
-        <PitLabel>Phone number <span className="font-normal normal-case tracking-normal" style={{ color: t.textMuted }}>(optional)</span></PitLabel>
+        <PitLabel>{tr("Phone number")} <span className="font-normal normal-case tracking-normal" style={{ color: t.textMuted }}>{tr("(optional)")}</span></PitLabel>
         <PitInput type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. 08012345678" />
 
-        <PitLabel>X (Twitter) handle <span className="font-normal normal-case tracking-normal" style={{ color: t.textMuted }}>(optional)</span></PitLabel>
-        <PitInput value={xHandle} onChange={e => setXHandle(e.target.value)} placeholder="@yourhandle" />
+        <PitLabel>{tr("X (Twitter) handle")} <span className="font-normal normal-case tracking-normal" style={{ color: t.textMuted }}>{tr("(optional)")}</span></PitLabel>
+        <PitInput value={xHandle} onChange={e => setXHandle(e.target.value)} placeholder={tr("@yourhandle")} />
 
-        <PitButton type="submit" disabled={loading} loading={loading}>{loading ? "Joining..." : "Join crew"}</PitButton>
+        <PitButton type="submit" disabled={loading} loading={loading}>{loading ? tr("Joining...") : tr("Join crew")}</PitButton>
       </form>
     </PitAuthFrame>
   );

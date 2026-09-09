@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useT } from "../locale";
 import { useRouter } from "next/navigation";
 import { ThemeProvider, useTheme, ThemeToggle } from "../shared-nav";
 
@@ -106,9 +107,10 @@ export function PitTextarea({ className = "", style, onFocus, onBlur, ...rest })
 }
 
 export function PitEye({ shown, onToggle }) {
+  const tr = useT();
   const { t } = useTheme();
   return (
-    <button type="button" onClick={onToggle} aria-label={shown ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none p-0.5" style={{ color: t.textMuted }}>
+    <button type="button" onClick={onToggle} aria-label={shown ? tr("Hide password") : tr("Show password")} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none p-0.5" style={{ color: t.textMuted }}>
       {shown ? (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
       ) : (
@@ -119,6 +121,7 @@ export function PitEye({ shown, onToggle }) {
 }
 
 export function PitButton({ loading, children, className = "", style, ...rest }) {
+  const tr = useT();
   const { t } = useTheme();
   return (
     <button
@@ -177,6 +180,7 @@ export function PitLink({ href, onNav, className = "", children }) {
 // ── Sign in ──
 
 function Inner() {
+  const tr = useT();
   const { t } = useTheme();
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -212,7 +216,7 @@ function Inner() {
   };
 
   return (
-    <PitAuthFrame side="earn" title="Welcome back" sub="Sign in to your crew account.">
+    <PitAuthFrame side="earn" title={tr("Welcome back")} sub={tr("Sign in to your crew account.")}>
       <PitError>{error}</PitError>
       <PitNotice>{statusMsg}</PitNotice>
 
@@ -222,19 +226,19 @@ function Inner() {
 
         <PitLabel>Password</PitLabel>
         <div className="relative">
-          <PitInput type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Enter password" className="pr-11" />
+          <PitInput type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required placeholder={tr("Enter password")} className="pr-11" />
           <PitEye shown={showPw} onToggle={() => setShowPw(!showPw)} />
         </div>
 
         <div className="text-right mt-2">
-          <a href="/pit/reset-password" onClick={(e) => { e.preventDefault(); router.push("/pit/reset-password"); }} className="text-[12.5px] font-semibold no-underline" style={{ color: t.accent }}>Forgot password?</a>
+          <a href="/pit/reset-password" onClick={(e) => { e.preventDefault(); router.push("/pit/reset-password"); }} className="text-[12.5px] font-semibold no-underline" style={{ color: t.accent }}>{tr("Forgot password?")}</a>
         </div>
 
-        <PitButton type="submit" disabled={loading} loading={loading}>{loading ? "Signing in..." : "Sign in"}</PitButton>
+        <PitButton type="submit" disabled={loading} loading={loading}>{loading ? tr("Signing in...") : tr("Sign in")}</PitButton>
       </form>
 
       <PitFoot>
-        Not in the crew yet? <PitLink href="/pit/apply" onNav={() => router.push("/pit/apply")}>Apply</PitLink>
+        Not in the crew yet? <PitLink href="/pit/apply" onNav={() => router.push("/pit/apply")}>{tr("Apply")}</PitLink>
       </PitFoot>
     </PitAuthFrame>
   );

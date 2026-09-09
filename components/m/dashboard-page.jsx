@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useT } from "../locale";
 import { useRouter } from "next/navigation";
 import { Card, Chip, Empty, Fact, Facts, TierProgress, ago, initialsOf, pitVars } from "./kit";
 import { useTheme } from "../shared-nav";
@@ -15,6 +16,7 @@ const STATUS = {
 };
 
 export default function DashboardPage({ initialData }) {
+  const tr = useT();
   const { dark, t } = useTheme();
   const router = useRouter();
   const [copied, setCopied] = useState(null);
@@ -31,21 +33,21 @@ export default function DashboardPage({ initialData }) {
       <style>{DSH_CSS}</style>
 
       <Facts>
-        <Fact value={fN(stats.totalEarned)} label="Earned" sub={`all time · ${stats.conversions} ${stats.conversions === 1 ? "commission" : "commissions"}`} />
-        <Fact value={fN(stats.pending)} label="Holding" sub="clears seven days after the order" kind="warn" />
-        <Fact value={fHeld(stats.availableBalance)} label="Ready to withdraw" sub="request any time" kind="ok" />
-        <Fact value={stats.clicks.toLocaleString()} label="Link clicks" sub={`${stats.activeReferrals} paid ${stats.activeReferrals === 1 ? "referral" : "referrals"}`} />
+        <Fact value={fN(stats.totalEarned)} label={tr("Earned")} sub={`all time · ${stats.conversions} ${stats.conversions === 1 ? "commission" : "commissions"}`} />
+        <Fact value={fN(stats.pending)} label={tr("Holding")} sub={tr("clears seven days after the order")} kind="warn" />
+        <Fact value={fHeld(stats.availableBalance)} label={tr("Ready to withdraw")} sub={tr("request any time")} kind="ok" />
+        <Fact value={stats.clicks.toLocaleString()} label={tr("Link clicks")} sub={`${stats.activeReferrals} paid ${stats.activeReferrals === 1 ? "referral" : "referrals"}`} />
       </Facts>
 
       {role !== "chief" && <TierProgress tier={tier.name} activeCount={stats.activeReferrals} tierConfig={tierConfig} />}
 
       <Card
-        title="Recent commissions"
+        title={tr("Recent commissions")}
         cnt="the last few · seven-day hold before they clear"
-        act={recentCommissions.length > 0 ? <a href="/pit/commissions" onClick={(e) => { e.preventDefault(); router.push("/pit/commissions"); }} className="pt-lnk">All commissions ›</a> : null}
+        act={recentCommissions.length > 0 ? <a href="/pit/commissions" onClick={(e) => { e.preventDefault(); router.push("/pit/commissions"); }} className="pt-lnk">{tr("All commissions ›")}</a> : null}
       >
         {recentCommissions.length === 0 ? (
-          <Empty>Nothing yet. Share a link and the first one lands here.</Empty>
+          <Empty>{tr("Nothing yet. Share a link and the first one lands here.")}</Empty>
         ) : (
           <div className="pt-list">
             {recentCommissions.map((c) => {
@@ -54,7 +56,7 @@ export default function DashboardPage({ initialData }) {
               return (
                 <div key={c.id} className="pt-r cm">
                   <span className="pt-av sm">{c.type === "team" && c.memberName ? initialsOf(c.memberName) : c.slug.slice(0, 2).toUpperCase()}</span>
-                  <span className="pt-tt"><b>{who}</b><i>{c.slug} · order {fN(c.orderCharge)}</i></span>
+                  <span className="pt-tt"><b>{who}</b><i>{c.slug} {tr("· order")} {fN(c.orderCharge)}</i></span>
                   <Chip kind={s.kind}>{s.label}</Chip>
                   <span className={"pt-num m" + (c.status === "voided" ? " bad" : "")}>{fN(c.amount)}</span>
                   <span className="pt-c">{ago(c.createdAt)}</span>
@@ -66,12 +68,12 @@ export default function DashboardPage({ initialData }) {
       </Card>
 
       <Card
-        title="Your links"
+        title={tr("Your links")}
         cnt="tap a link to copy it"
-        act={role === "chief" ? <a href="/pit/links" onClick={(e) => { e.preventDefault(); router.push("/pit/links"); }} className="pt-lnk">All links ›</a> : null}
+        act={role === "chief" ? <a href="/pit/links" onClick={(e) => { e.preventDefault(); router.push("/pit/links"); }} className="pt-lnk">{tr("All links ›")}</a> : null}
       >
         {links.length === 0 ? (
-          <Empty>No link yet. Your chief hands you one.</Empty>
+          <Empty>{tr("No link yet. Your chief hands you one.")}</Empty>
         ) : (
           <div className="pt-list">
             {links.map((l) => (
@@ -82,7 +84,7 @@ export default function DashboardPage({ initialData }) {
                     {copied === l.slug ? "Copied" : `nitro.ng/?via=${l.slug} ⧉`}
                   </button>
                 </span>
-                <Chip kind={l.enabled ? "ok" : "dim"}>{l.enabled ? "Live" : "Paused"}</Chip>
+                <Chip kind={l.enabled ? "ok" : "dim"}>{l.enabled ? tr("Live") : tr("Paused")}</Chip>
               </div>
             ))}
           </div>

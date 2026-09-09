@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import { useT } from "../locale";
 import { Card, Chip, Empty, Fact, Facts, Field, Modal, initialsOf, longDate, pitVars } from "./kit";
 import { useTheme } from "../shared-nav";
 import { useToast } from "../toast";
@@ -8,6 +9,7 @@ import { fN } from "@/lib/format";
 import { copyText } from '@/lib/clipboard';
 
 export default function TeamPage({ initialData }) {
+  const tr = useT();
   const { dark, t } = useTheme();
   const toast = useToast();
   const [data, setData] = useState(initialData);
@@ -100,7 +102,7 @@ export default function TeamPage({ initialData }) {
   const pending = members.filter((m) => m.status === "pending");
 
   useHeaderAction(useMemo(() => (
-    <button type="button" className="pt-b pri" onClick={() => { setShowInvite(true); setInviteResult(null); setInvError(null); }}>+ Invite someone</button>
+    <button type="button" className="pt-b pri" onClick={() => { setShowInvite(true); setInviteResult(null); setInvError(null); }}>{tr("+ Invite someone")}</button>
   ), []));
 
   const earned = approved.reduce((n, m) => n + m.totalEarned, 0);
@@ -112,14 +114,14 @@ export default function TeamPage({ initialData }) {
       <style>{TEM_CSS}</style>
 
       <Facts>
-        <Fact value={String(approved.length)} label="In your crew" sub={pending.length ? `${pending.length} waiting` : "nobody waiting"} kind={pending.length ? "warn" : undefined} />
-        <Fact value={fN(earned)} label="They earned" sub="all time, between them" kind="ok" />
-        <Fact value={sales.toLocaleString()} label="Their sales" sub="orders through their links" />
-        <Fact value={links.toLocaleString()} label="Their links" sub="running for you" />
+        <Fact value={String(approved.length)} label={tr("In your crew")} sub={pending.length ? `${pending.length} waiting` : "nobody waiting"} kind={pending.length ? "warn" : undefined} />
+        <Fact value={fN(earned)} label={tr("They earned")} sub={tr("all time, between them")} kind="ok" />
+        <Fact value={sales.toLocaleString()} label={tr("Their sales")} sub={tr("orders through their links")} />
+        <Fact value={links.toLocaleString()} label={tr("Their links")} sub={tr("running for you")} />
       </Facts>
 
       {pending.length > 0 && (
-        <Card title="Waiting" cnt="send the link again, or take it back">
+        <Card title={tr("Waiting")} cnt="send the link again, or take it back">
           <div className="pt-list" style={{ opacity: refreshing ? 0.6 : 1, transition: "opacity 200ms" }}>
             {pending.map((m) => (
               <div key={m.id}>
@@ -130,14 +132,14 @@ export default function TeamPage({ initialData }) {
                     {m.inviteExpired ? "Link expired" : m.hasPendingInvite ? "Invited, not joined" : `Asked ${longDate(m.createdAt)}`}
                   </Chip>
                   <span className="pt-acts">
-                    <button type="button" className="pt-b sm pri" disabled={actionLoading === m.id} onClick={() => handleResend(m.id)}>Send the link again</button>
-                    <button type="button" className="pt-b sm bad" disabled={actionLoading === m.id} onClick={() => handleRevoke(m.id, m.name)}>Take it back</button>
+                    <button type="button" className="pt-b sm pri" disabled={actionLoading === m.id} onClick={() => handleResend(m.id)}>{tr("Send the link again")}</button>
+                    <button type="button" className="pt-b sm bad" disabled={actionLoading === m.id} onClick={() => handleRevoke(m.id, m.name)}>{tr("Take it back")}</button>
                   </span>
                 </div>
                 {resendResult?.memberId === m.id && (
                   <div className="tem-inv">
                     <span className="m">{resendResult.inviteUrl}</span>
-                    <button type="button" className="pt-b sm" onClick={() => copyInvite(resendResult.inviteUrl)}>{copied ? "Copied" : "Copy"}</button>
+                    <button type="button" className="pt-b sm" onClick={() => copyInvite(resendResult.inviteUrl)}>{copied ? tr("Copied") : tr("Copy")}</button>
                   </div>
                 )}
               </div>
@@ -146,9 +148,9 @@ export default function TeamPage({ initialData }) {
         </Card>
       )}
 
-      <Card title="Your crew" cnt="what each one has brought in">
+      <Card title={tr("Your crew")} cnt="what each one has brought in">
         {approved.length === 0 ? (
-          <Empty>Nobody in the crew yet. Invite someone and their earnings show up here.</Empty>
+          <Empty>{tr("Nobody in the crew yet. Invite someone and their earnings show up here.")}</Empty>
         ) : (
           <div className="pt-list" style={{ opacity: refreshing ? 0.6 : 1, transition: "opacity 200ms" }}>
             {approved.map((m) => (
@@ -167,24 +169,24 @@ export default function TeamPage({ initialData }) {
       <Modal
         open={showInvite}
         onClose={() => { setShowInvite(false); setInvName(""); setInvEmail(""); setInvError(null); setInviteResult(null); }}
-        title={inviteResult ? "The link is ready" : "Invite someone"}
-        sub={inviteResult ? "Send it to them yourself. It stops working after seven days." : "They get a link to finish signing up."}
+        title={inviteResult ? tr("The link is ready") : tr("Invite someone")}
+        sub={inviteResult ? tr("Send it to them yourself. It stops working after seven days.") : tr("They get a link to finish signing up.")}
         footer={inviteResult ? (
-          <button type="button" className="pt-b pri" onClick={() => { setInviteResult(null); setShowInvite(false); }}>Done</button>
+          <button type="button" className="pt-b pri" onClick={() => { setInviteResult(null); setShowInvite(false); }}>{tr("Done")}</button>
         ) : (<>
           {invError && <span className="pt-err">{invError}</span>}
-          <button type="button" className="pt-b" onClick={() => { setShowInvite(false); setInvName(""); setInvEmail(""); setInvError(null); }}>Cancel</button>
-          <button type="button" className="pt-b pri" disabled={inviting} onClick={handleInvite}>{inviting ? "Sending…" : "Send invite"}</button>
+          <button type="button" className="pt-b" onClick={() => { setShowInvite(false); setInvName(""); setInvEmail(""); setInvError(null); }}>{tr("Cancel")}</button>
+          <button type="button" className="pt-b pri" disabled={inviting} onClick={handleInvite}>{inviting ? tr("Sending…") : tr("Send invite")}</button>
         </>)}
       >
         {inviteResult ? <>
-          <div className="pt-note">The invite link for <b>{inviteResult.name}</b>:</div>
+          <div className="pt-note">{tr("The invite link for")} <b>{inviteResult.name}</b>:</div>
           <div className="tem-inv" style={{ marginTop: 10 }}>
             <span className="m">{inviteResult.inviteUrl}</span>
-            <button type="button" className="pt-b sm" onClick={() => copyInvite()}>{copied ? "Copied" : "Copy"}</button>
+            <button type="button" className="pt-b sm" onClick={() => copyInvite()}>{copied ? tr("Copied") : tr("Copy")}</button>
           </div>
         </> : <>
-          <Field label="Name" value={invName} onChange={setInvName} placeholder="Their full name" autoFocus />
+          <Field label={tr("Name")} value={invName} onChange={setInvName} placeholder={tr("Their full name")} autoFocus />
           <Field label="Email" value={invEmail} onChange={setInvEmail} type="email" placeholder="them@example.com" />
         </>}
       </Modal>
