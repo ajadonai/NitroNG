@@ -10,10 +10,20 @@ import '@fontsource/cormorant-garamond/latin-400-italic.css';
 import '@fontsource/cormorant-garamond/latin-500-italic.css';
 import '@fontsource/cormorant-garamond/latin-700.css';
 import CookieBanner from '@/components/cookie-banner';
+import { headers } from 'next/headers';
+import { LOCALES, isLocale, SOURCE_LOCALE } from '@/lib/i18n';
 import { LocaleProvider } from '@/components/locale';
+import fr from '@/messages/fr.json';
+import sw from '@/messages/sw.json';
+import ar from '@/messages/ar.json';
 import CAPIPageView from '@/components/capi-tracker';
 import Heartbeat from '@/components/heartbeat';
 import AnalyticsScripts from '@/components/analytics-scripts';
+
+// Only the locales that have their own URLs. Pidgin is deliberately absent: it
+// is a comfort language for people already signed in, not one anybody searches
+// in, so it has no route and needs no server-side dictionary.
+const ROUTE_MESSAGES = { fr, sw, ar };
 
 export const metadata = {
   title: {
@@ -77,7 +87,13 @@ export const viewport = {
   themeColor: '#080b14',
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  // Set by proxy.js on /fr, /sw and /ar. A server component cannot read the
+  // pathname, so this is how the locale reaches the first render — and the
+  // first render is the only one a crawler ever sees.
+  const routeLocale = (await headers()).get('x-nitro-locale');
+  const locale = isLocale(routeLocale) && routeLocale !== SOURCE_LOCALE ? routeLocale : null;
+  const meta = locale ? LOCALES[locale] : null;
   const orgSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -109,7 +125,10 @@ export default function RootLayout({ children }) {
     name: "The Nitro NG",
     url: "https://nitro.ng",
     description: "Content promotion and digital marketing platform for Nigerian creators and businesses. Manage campaigns, track results, Naira pricing.",
-    inLanguage: "en",
+    // Must agree with <html lang>. Telling Google the page is English while it
+    // is served in French is the kind of contradiction that gets a whole
+    // hreflang cluster discounted.
+    inLanguage: locale || "en",
   };
 
   const appSchema = {
@@ -142,15 +161,22 @@ export default function RootLayout({ children }) {
     creator: { "@type": "Organization", name: "The Nitro NG" },
   };
 
-  // dir is required here, not decorative: postcss-rtlcss scopes every rule that
-  // has a physical side to [dir=ltr] or [dir=rtl], so a document with no dir
-  // attribute matches neither and loses its padding, margins and alignment. The
-  // server cannot know the reader's choice — it lives in localStorage — so it
-  // sends the default and components/locale.jsx corrects it on mount for
-  // Arabic. This also means the first paint, and every crawler, gets a laid-out
-  // page instead of an unstyled one.
+  // lang and dir are both load-bearing.
+  //
+  // dir, because postcss-rtlcss scopes every rule that has a physical side to
+  // [dir=ltr] or [dir=rtl]: a document with no dir attribute matches neither and
+  // loses its padding, margins and alignment entirely.
+  //
+  // lang, because a page that claims to be English while showing Arabic gets
+  // offered for translation by the browser, which is how "تابع التسليم" once
+  // came back as "Follow the prayer" in the middle of a modal.
+  //
+  // On /fr, /sw and /ar the server knows both from the URL. Everywhere else it
+  // cannot — the choice lives in localStorage — so it sends the English default
+  // and components/locale.jsx corrects it on mount. Either way the first paint,
+  // and every crawler, gets a laid-out page in a language it was told about.
   return (
-    <html lang="en-NG" dir="ltr" suppressHydrationWarning>
+    <html lang={locale || 'en-NG'} dir={meta?.dir || 'ltr'} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://sentry.io" crossOrigin="anonymous" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }} />
@@ -165,7 +191,7 @@ export default function RootLayout({ children }) {
             chrome a customer reads too, and while the provider lived further
             down they sat outside it — useT() fell back to English there, so the
             banner stayed English in every language. */}
-        <LocaleProvider>
+        <LocaleProvider initialLang={locale} initialMessages={locale ? ROUTE_MESSAGES[locale] : undefined}>
           <CookieBanner />
           <CAPIPageView />
           <Heartbeat />

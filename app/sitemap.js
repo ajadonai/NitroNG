@@ -15,8 +15,19 @@ const PLATFORM_SLUGS = {
 export default async function sitemap() {
   const base = 'https://nitro.ng';
 
+  // The landing page in the languages that have their own URL. They carry the
+  // same priority as the English one because they are the same page, not a
+  // lesser version of it — and alternates/hreflang on each page is what ties
+  // the four together. Only the landing page is listed: a locale URL is added
+  // here when that page is genuinely translated, never before, because a
+  // French URL serving English is duplicate content in the wrong language.
+  const localeHome = ['fr', 'sw', 'ar'].map((code) => ({
+    url: `${base}/${code}`, lastModified: '2026-09-09', changeFrequency: 'weekly', priority: 1.0,
+  }));
+
   const staticPages = [
     { url: base, lastModified: '2025-01-01', changeFrequency: 'weekly', priority: 1.0 },
+    ...localeHome,
     { url: `${base}/blog`, lastModified: '2025-01-01', changeFrequency: 'weekly', priority: 0.8 },
     { url: `${base}/pricing`, lastModified: '2025-01-01', changeFrequency: 'weekly', priority: 0.8 },
     { url: `${base}/services`, lastModified: '2025-07-01', changeFrequency: 'weekly', priority: 0.8 },

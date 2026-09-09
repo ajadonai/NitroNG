@@ -57,9 +57,21 @@ const CURRENCY_KEY = "nitro-currency";
 const LANG_KEY = "nitro-lang";
 const EMPTY_FX = { depositRate: null, usdRates: {} };
 
-export function LocaleProvider({ children }) {
+/**
+ * initialLang and initialMessages come from the server on a locale route —
+ * /fr, /sw, /ar. They exist for one reason: Google indexes what is
+ * server-rendered. Without them the provider starts in English, renders an
+ * English page, and only switches after hydration, so a French URL would be an
+ * English page as far as a crawler is concerned. That is worse than having no
+ * French URL at all, because it is duplicate content in the wrong language.
+ *
+ * On the English site both are undefined and nothing changes: the provider
+ * starts at "en" and reads the reader's saved choice on mount, as before.
+ */
+export function LocaleProvider({ children, initialLang, initialMessages }) {
+  const routeLocale = isLocale(initialLang) && initialLang !== SOURCE_LOCALE ? initialLang : null;
   const [currency, setCurrencyState] = useState(BASE_CURRENCY);
-  const [lang, setLangState] = useState("en");
+  const [lang, setLangState] = useState(routeLocale || "en");
   const [fx, setFx] = useState(EMPTY_FX);
 
   // Saved preferences, read once. Anything unrecognised falls back to the
@@ -69,6 +81,9 @@ export function LocaleProvider({ children }) {
   useEffect(() => {
     if (!SWITCHER_LIVE) return;
     try { const c = localStorage.getItem(CURRENCY_KEY); if (isActive(c)) setCurrencyState(c); } catch {}
+    // A locale in the URL outranks a saved preference: /fr is French for
+    // everybody, including someone who last read the site in Pidgin.
+    if (routeLocale) return;
     try { const l = localStorage.getItem(LANG_KEY); if (LANGUAGES.some(x => x.code === l && x.available)) setLangState(l); } catch {}
   }, []);
 
@@ -111,9 +126,13 @@ export function LocaleProvider({ children }) {
   // The dictionary for the chosen language, fetched once when it is chosen.
   // English needs none — it is the source — so a Nigerian reading the site in
   // English never downloads a translation file, which is almost everybody.
-  const [messages, setMessages] = useState({});
+  // Seeded from the server on a locale route, so the very first render is
+  // already translated and the client never downloads a dictionary it was
+  // handed. Everywhere else it starts empty and is fetched on demand.
+  const [messages, setMessages] = useState(routeLocale && initialMessages ? initialMessages : {});
   useEffect(() => {
     if (lang === SOURCE_LOCALE || !isLocale(lang)) { setMessages({}); return undefined; }
+    if (lang === routeLocale && initialMessages) return undefined;
     let dead = false;
     import(`../messages/${lang}.json`)
       .then((m) => { if (!dead) setMessages(m.default || m); })
