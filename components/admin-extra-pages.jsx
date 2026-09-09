@@ -227,7 +227,8 @@ const ROLE_INFO = {
 };
 const ASSIGNABLE_ROLES = ["admin", "support", "finance"];
 const ALL_PAGES = [
-  { id:"overview", label:"Overview", g:"Main" },{ id:"orders", label:"Orders", g:"Main" },{ id:"users", label:"Users", g:"Main" },{ id:"leaderboard", label:"Leaderboard", g:"Main" },{ id:"tickets", label:"Tickets", g:"Main" },
+  { id:"overview", label:"Overview", g:"Main" },{ id:"orders", label:"Orders", g:"Main" },{ id:"users", label:"Users", g:"Main" },{ id:"leaderboard", label:"Leaderboard", g:"Main" },/* tickets: support moved to WhatsApp — the page is legacy read-only and is
+     deliberately not offered here, so nobody can be granted it by accident */,
   { id:"services", label:"Services", g:"Catalog" },{ id:"menu-builder", label:"Menu Builder", g:"Catalog" },{ id:"pricing", label:"Pricing", g:"Catalog" },{ id:"blog", label:"Blog", g:"Catalog" },
   { id:"payments", label:"Payments", g:"Finance" },{ id:"finance", label:"Finance", g:"Finance" },{ id:"financials", label:"Breakdown (Finance)", g:"Finance" },{ id:"rewards", label:"Rewards", g:"Finance" },
   { id:"refills", label:"Refills", g:"Main" },{ id:"outreach", label:"Outreach", g:"Marketing" },
@@ -261,8 +262,8 @@ const GRANTABLE_ACTIONS = [
   { id: "api.sync", label: "Sync Provider Data", g: "System" },
 ];
 const DEFAULT_PAGES = {
-  admin: ["overview","orders","users","leaderboard","tickets","menu-builder","services","pricing","blog","alerts","rewards","finance","activity","promotions","acquisition","issues","crew","changelog","notifications","tasks","outreach","refills"],
-  support: ["overview","tickets","users","orders"],
+  admin: ["overview","orders","users","leaderboard","menu-builder","services","pricing","blog","alerts","rewards","finance","activity","promotions","acquisition","issues","crew","changelog","notifications","tasks","outreach","refills"],
+  support: ["overview","users","orders"],
   finance: ["overview","orders","finance","financials","payments","leaderboard"],
   staff: ["overview","outreach","orders","refills","users"],
 };
