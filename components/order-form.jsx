@@ -309,7 +309,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <label className="text-[11px] tracking-[0.5px] uppercase font-semibold block mb-[6px]" style={{ color: t.textMuted }}>{tr("Answer option")}</label>
             <div className="flex gap-1.5">
               {[1, 2, 3, 4].map(n => (
-                <button key={n} type="button" disabled={orderLoading} onClick={() => setComments(String(n))} className="flex-1 py-2.5 px-0 rounded-lg text-sm font-semibold cursor-pointer border border-solid disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: (comments || "") === String(n) ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"), background: (comments || "") === String(n) ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: (comments || "") === String(n) ? t.accent : t.textMuted }}>Option {n}</button>
+                <button key={n} type="button" disabled={orderLoading} onClick={() => setComments(String(n))} className="flex-1 py-2.5 px-0 rounded-lg text-sm font-semibold cursor-pointer border border-solid disabled:opacity-40 transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: (comments || "") === String(n) ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"), background: (comments || "") === String(n) ? (dark ? "#2a1a22" : "#fdf2f4") : "transparent", color: (comments || "") === String(n) ? t.accent : t.textMuted }}>{tr("Option")} {n}</button>
               ))}
             </div>
             <div className="text-[11px] mt-1" style={{ color: t.textMuted }}>{tr("Select which poll answer to vote for")}</div>
@@ -362,7 +362,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-semibold" style={{ color: t.text }}>Use Nitro Points</div>
-                <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{pointsBalance.toLocaleString()} pts available · saves {money(Math.min(pointsBalance, priceBeforePoints), { round: "down" })}</div>
+                <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{pointsBalance.toLocaleString()} {tr("pts available · saves")} {money(Math.min(pointsBalance, priceBeforePoints), { round: "down" })}</div>
               </div>
             </div>
             )}
@@ -395,8 +395,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <div className="flex flex-col flex-1 min-w-0 leading-tight">
               <span className="text-[10.5px] uppercase tracking-[1px] font-semibold" style={{ color: t.textMuted }}>{tr("Total")}</span>
               <span className="text-[20px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{hasCut && <span className="text-[12px] font-normal line-through mr-1.5" style={{ color: t.textMuted }}>{money(basePrice)}</span>}{money(price)}</span>
-              {discountAmount > 0 && <span className="text-[11px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Nitro Status {loyaltyDiscount}% · −{money(discountAmount, { round: "down" })}</span>}
-              {cappedPromoDiscount > 0 && <span className="text-[11px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}>Discount {activePromotion.discountPercent}% · −{money(cappedPromoDiscount, { round: "down" })}</span>}
+              {discountAmount > 0 && <span className="text-[11px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{tr("Nitro Status")} {loyaltyDiscount}% · −{money(discountAmount, { round: "down" })}</span>}
+              {cappedPromoDiscount > 0 && <span className="text-[11px]" style={{ color: dark ? "#f9a8d4" : "#be185d" }}>{tr("Discount")} {activePromotion.discountPercent}% · −{money(cappedPromoDiscount, { round: "down" })}</span>}
               {pointsDiscount > 0 && <span className="text-[11px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{money(pointsDiscount, { round: "down" })} {tr("in points applied")}</span>}
               {short && <span className="text-[11px]" style={{ color: dark ? "#fcd34d" : "#b45309" }}>{tr("Balance")} {money(balance, { round: "down" })} · {tr("short by")} {money(price - balance)}</span>}
             </div>
@@ -452,7 +452,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           </>) : (
           <div className="flex items-center justify-center gap-1.5 mb-3 py-2 rounded-lg text-[11px]" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)", color: t.textMuted }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-            Fixed at {clampedDays} days for this order size
+            Fixed at {clampedDays} {tr("days for this order size")}
           </div>
           )}
           <div className="rounded-[10px] p-2.5 mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", borderColor: t.cardBorder }}>

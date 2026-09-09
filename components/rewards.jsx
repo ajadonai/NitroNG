@@ -112,9 +112,9 @@ export function RewardsStrip({ rewards, dark, t, onStatus, onPoints, onTasks }) 
   );
   return (
     <div className={`grid gap-1.5 mb-[18px] ${TASKS_ENABLED && tasks ? 'grid-cols-3' : 'grid-cols-2'}`}>
-      <Card clr={heroClr} grad={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} barTo={barClr} onClick={onStatus} label={tr("Status")} glyph={<CrownGlyph s={14} />} value={status.name} hint={nextTier ? `${fmtCompactNaira(status.remainingToNext, money, currency)} to ${nextTier.name}` : `${fmtCompactNaira(status.eligibleSpend, money, currency)} spent`} pct={nextTier ? status.progressPct : 100} />
-      <Card clr={gold} grad="linear-gradient(135deg,#fbbf24,#d97706)" onClick={onPoints} label={tr("Points")} glyph={<CoinGlyph s={14} />} value={<span className="m">{points.balance.toLocaleString()} <span className="text-[11px] font-semibold">pts</span></span>} hint={points.redeemable ? `≈ ${money(points.valueNaira, { round: "down" })} ready` : `${points.neededToRedeem.toLocaleString()} more to spend`} pct={points.redeemable ? null : Math.round(points.balance / points.minRedeem * 100)} />
-      {TASKS_ENABLED && tasks && <Card clr={blue} grad="linear-gradient(135deg,#60a5fa,#2563eb)" onClick={onTasks} label={tr("Tasks")} glyph={<TaskGlyph s={14} />} value={<span><span className="m">{tasks.available}</span> open</span>} hint={`up to ${money(tasks.topReward, { round: "down" })}`} />}
+      <Card clr={heroClr} grad={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} barTo={barClr} onClick={onStatus} label={tr("Status")} glyph={<CrownGlyph s={14} />} value={status.name} hint={nextTier ? `${fmtCompactNaira(status.remainingToNext, money, currency)} ${tr("to")} ${nextTier.name}` : `${fmtCompactNaira(status.eligibleSpend, money, currency)} ${tr("spent")}`} pct={nextTier ? status.progressPct : 100} />
+      <Card clr={gold} grad="linear-gradient(135deg,#fbbf24,#d97706)" onClick={onPoints} label={tr("Points")} glyph={<CoinGlyph s={14} />} value={<span className="m">{points.balance.toLocaleString()} <span className="text-[11px] font-semibold">pts</span></span>} hint={points.redeemable ? `≈ ${money(points.valueNaira, { round: "down" })} ${tr("ready")}` : `${points.neededToRedeem.toLocaleString()} ${tr("more to spend")}`} pct={points.redeemable ? null : Math.round(points.balance / points.minRedeem * 100)} />
+      {TASKS_ENABLED && tasks && <Card clr={blue} grad="linear-gradient(135deg,#60a5fa,#2563eb)" onClick={onTasks} label={tr("Tasks")} glyph={<TaskGlyph s={14} />} value={<span><span className="m">{tasks.available}</span> open</span>} hint={`${tr("up to")} ${money(tasks.topReward, { round: "down" })}`} />}
     </div>
   );
 }
@@ -188,11 +188,11 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
             <div className="serif text-[58px] max-md:text-[46px] font-semibold leading-[.92] tracking-[-.025em] mt-1.5" style={{ color: heroClr }}>{status.name}</div>
             <p className="text-[14px] leading-[1.55] mt-3 mb-0 max-w-[52ch]" style={{ color: t.textMuted }}>
               {status.discountPct > 0 && <><b className="m text-[15px] font-bold" style={{ color: t.text }}>{status.discountPct}%</b> {tr("off every order ·")} </>}
-              <b className="m text-[15px] font-bold" style={{ color: t.text }}>{status.pointEarnPct}%</b> of what you spend comes back as points
+              <b className="m text-[15px] font-bold" style={{ color: t.text }}>{status.pointEarnPct}%</b> {tr("of what you spend comes back as points")}
             </p>
           </div>
           {nextTier && (
-            <span className="text-[11.5px] font-bold rounded-full py-1.5 px-3 shrink-0 whitespace-nowrap" style={{ color: nextClr, background: `${nextClr}${dark ? '2b' : '26'}` }}>Next: {nextTier.name}</span>
+            <span className="text-[11.5px] font-bold rounded-full py-1.5 px-3 shrink-0 whitespace-nowrap" style={{ color: nextClr, background: `${nextClr}${dark ? '2b' : '26'}` }}>{tr("Next:")} {nextTier.name}</span>
           )}
         </div>
         <div className="px-[26px] pb-[22px] max-md:px-5 max-md:pb-5">
@@ -230,7 +230,7 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
               </div>
             </div>
           )}
-          <p className="text-[11.5px] leading-[1.5] mt-3 mb-0" style={{ color: t.textMuted }}>Earned on every completed order. Spend from {points.minRedeem.toLocaleString()} {tr("points.")}</p>
+          <p className="text-[11.5px] leading-[1.5] mt-3 mb-0" style={{ color: t.textMuted }}>{tr("Earned on every completed order. Spend from")} {points.minRedeem.toLocaleString()} {tr("points.")}</p>
         </div>
 
         {showTasks && (
@@ -246,10 +246,10 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
               {tasks.available > 0 ? (
                 <>
                   <span className="flex flex-col gap-0.5 flex-1 min-w-0">
-                    <b className="text-[13.5px] font-semibold" style={{ color: t.text }}>{tasks.available} task{tasks.available === 1 ? '' : 's'} open</b>
+                    <b className="text-[13.5px] font-semibold" style={{ color: t.text }}>{tasks.available} {tasks.available === 1 ? tr("task open") : tr("tasks open")}</b>
                     <i className="not-italic text-[12px]" style={{ color: t.textMuted }}>{tr("Follow, share or review — the credit lands once we check it.")}</i>
                   </span>
-                  <b className="m text-[13.5px] font-bold whitespace-nowrap" style={{ color: green }}>up to {money(tasks.topReward, { round: "down" })}</b>
+                  <b className="m text-[13.5px] font-bold whitespace-nowrap" style={{ color: green }}>{tr("up to")} {money(tasks.topReward, { round: "down" })}</b>
                   <button onClick={() => setActive?.('tasks')} className="h-[31px] px-3 rounded-[10px] text-[12px] font-semibold font-[inherit] cursor-pointer" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, color: t.text }}>{tr("Do it")}</button>
                 </>
               ) : (
@@ -287,7 +287,7 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
                     <b className="text-[15px]" style={{ color: tier.color, fontWeight: isNow ? 750 : 600 }}>{tier.name}</b>
                     {isNow && <span className="text-[9.5px] font-bold uppercase tracking-[.9px] rounded-full py-[3px] px-[9px] whitespace-nowrap text-white" style={{ background: tier.color }}>{tr("You are here")}</span>}
                   </span>
-                  <span className="flex-1 min-w-0 truncate text-[13px] max-md:text-[12px]" style={{ color: t.textMuted }}>{tier.min === 0 ? 'Your first order' : `${money(tier.min)} spent`}</span>
+                  <span className="flex-1 min-w-0 truncate text-[13px] max-md:text-[12px]" style={{ color: t.textMuted }}>{tier.min === 0 ? tr("Your first order") : `${money(tier.min)} ${tr("spent")}`}</span>
                 </div>
                 <div className="flex items-center gap-3.5 shrink-0 max-md:flex-col max-md:items-end max-md:gap-[3px]">
                   <span className="m w-[100px] max-md:w-auto text-right text-[14.5px] font-bold" style={{ color: t.text }}>{tier.discountPct > 0 ? `${tier.discountPct}%` : '—'}</span>
@@ -428,7 +428,7 @@ export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
           <div className="serif text-[30px] font-semibold leading-none" style={{ color: heroClr }}>{status.name}</div>
           <div className="text-[12.5px]" style={{ color: t.textMuted }}>
             {status.discountPct > 0 && <><b className="m font-bold" style={{ color: t.text }}>{status.discountPct}%</b> {tr("off ·")} </>}
-            <b className="m font-bold" style={{ color: t.text }}>{status.pointEarnPct}%</b> points on every order
+            <b className="m font-bold" style={{ color: t.text }}>{status.pointEarnPct}%</b> {tr("points on every order")}
           </div>
         </div>
       </div>
@@ -495,7 +495,7 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive 
       </div>
 
       <p className="text-[12.5px] leading-[1.55] mt-3.5 mb-0" style={{ color: t.textSoft }}>
-        Every order earns points. Once you reach {points.minRedeem.toLocaleString()} you can spend them like cash on your next order.
+        Every order earns points. Once you reach {points.minRedeem.toLocaleString()} {tr("you can spend them like cash on your next order.")}
       </p>
 
       <div className="grid grid-cols-2 gap-2.5 mt-3.5">
@@ -519,7 +519,7 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive 
         ) : (
           <div className="rounded-xl py-3 px-3.5 text-center" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${t.cardBorder}` }}>
             <div className="text-[11.5px]" style={{ color: t.textSoft }}>
-              Earn <b style={{ color: gold }}>{points.neededToRedeem.toLocaleString()} more</b> points to start spending
+              Earn <b style={{ color: gold }}>{points.neededToRedeem.toLocaleString()} more</b> {tr("points to start spending")}
             </div>
             <div className="h-1 rounded-full overflow-hidden mt-2" style={{ background: trackBg(dark) }}>
               <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round(points.balance / points.minRedeem * 100))}%`, background: gold }} />
