@@ -5,7 +5,8 @@ import { useBodyScrollLock } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
-import { useMoney } from "./locale";
+import { useMoney, useT } from "./locale";
+import { msg } from "../lib/i18n";
 import { fN, fD, fT } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { NotSureHelp } from "./new-order";
@@ -14,13 +15,14 @@ import { copyText } from '@/lib/clipboard';
 import { openCardFrame, openCardHeader } from '@/lib/expandable-card';
 
 function CopyId({ value, dark, mono = true }) {
+  const tr = useT();
   const [copied, setCopied] = useState(false);
   if (!value) return null;
   return (
     <span
       className="text-sm font-semibold cursor-pointer inline-flex items-center gap-1 transition-opacity hover:opacity-70"
       style={{ color: copied ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#e5e0db" : "#1a1a1a"), fontFamily: mono ? "var(--font-mono, monospace)" : "inherit" }}
-      title="Click to copy"
+      title={tr("Click to copy")}
       onClick={e => { e.stopPropagation(); copyText(String(value)); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
     >
       {value}
@@ -102,29 +104,29 @@ function isAttention(o) {
 }
 
 const TX_META = {
-  deposit:      { label: "Deposit",       icon: "↓", clr: dk => dk ? "#6ee7b7" : "#059669" },
-  order:        { label: "Order",         icon: "↑", clr: dk => dk ? "#fca5a5" : "#dc2626" },
-  referral:     { label: "Referral bonus",icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>, clr: () => "#c47d8e" },
-  refund:       { label: "Refund",        icon: "↩", clr: dk => dk ? "#fcd34d" : "#d97706" },
-  admin_credit: { label: "Admin credit",  icon: "＋", clr: dk => dk ? "#a5b4fc" : "#4f46e5" },
-  admin_gift:   { label: "Gift",          icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>, clr: dk => dk ? "#f0abfc" : "#a855f7" },
-  bonus:        { label: "Task reward",   icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>, clr: dk => dk ? "#f0abfc" : "#a855f7" },
-  bonus_expired:{ label: "Credit expired",icon: "↑", clr: dk => dk ? "#a1a1aa" : "#71717a" },
+  deposit:      { label: msg("Deposit"),       icon: "↓", clr: dk => dk ? "#6ee7b7" : "#059669" },
+  order:        { label: msg("Order"),         icon: "↑", clr: dk => dk ? "#fca5a5" : "#dc2626" },
+  referral:     { label: msg("Referral bonus"),icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>, clr: () => "#c47d8e" },
+  refund:       { label: msg("Refund"),        icon: "↩", clr: dk => dk ? "#fcd34d" : "#d97706" },
+  admin_credit: { label: msg("Admin credit"),  icon: "＋", clr: dk => dk ? "#a5b4fc" : "#4f46e5" },
+  admin_gift:   { label: msg("Gift"),          icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>, clr: dk => dk ? "#f0abfc" : "#a855f7" },
+  bonus:        { label: msg("Task reward"),   icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>, clr: dk => dk ? "#f0abfc" : "#a855f7" },
+  bonus_expired:{ label: msg("Credit expired"),icon: "↑", clr: dk => dk ? "#a1a1aa" : "#71717a" },
 };
 function txClr(type, dk) { return (TX_META[type] || TX_META.order).clr(dk); }
 function txIcon(type) { return (TX_META[type] || TX_META.order).icon; }
 function txLabel(type) { return (TX_META[type] || { label: type }).label; }
-function txDesc(tx) {
+function txDesc(tx, tr) {
   if (tx.description && tx.description !== tx.reference) return tx.description.replace(/\s*\[[^\]]+\]\s*$/, "");
   if (tx.type === "order" && tx.reference) {
     const ref = tx.reference;
-    if (ref.startsWith("BULK-")) return `Bulk order ${ref}`;
-    return `Order ${ref}`;
+    if (ref.startsWith("BULK-")) return `${tr("Bulk order")} ${ref}`;
+    return `${tr("Order")} ${ref}`;
   }
-  if (tx.type === "refund") return tx.reference ? `Refund for ${tx.reference.replace(/^(ADM-)?REF-/, "")}` : "Order refund";
-  if (tx.type === "deposit") return tx.reference || "Wallet top-up";
-  if (tx.type === "referral") return "Referral commission";
-  if (tx.type === "admin_credit" || tx.type === "admin_gift") return (tx.description || "Credited by Nitro Team").replace(/\s*\[[^\]]+\]\s*/g, " ").trim();
+  if (tx.type === "refund") return tx.reference ? `${tr("Refund for")} ${tx.reference.replace(/^(ADM-)?REF-/, "")}` : tr("Order refund");
+  if (tx.type === "deposit") return tx.reference || tr("Wallet top-up");
+  if (tx.type === "referral") return tr("Referral commission");
+  if (tx.type === "admin_credit" || tx.type === "admin_gift") return (tx.description || tr("Credited by Nitro Team")).replace(/\s*\[[^\]]+\]\s*/g, " ").trim();
   return tx.reference || "";
 }
 
@@ -146,8 +148,21 @@ function DayLabel({ label, dark }) {
 
 /** The summary as rows: label left, value right. Used by the header dropdown and the sidebar. */
 
+/* Every status the Badge can be handed, registered with msg() so the report
+   demands a translation for each. Badge is given a raw value off the order
+   record and the scanner cannot follow a variable, so without this the status
+   pill would translate only for as long as someone remembered to keep the
+   dictionaries in step by hand. msg() returns its argument, so these stay
+   usable as the identity values sClr/sBg/sBrd compare against. */
+const STATUS_LABEL = {
+  Pending: msg("Pending"),   Processing: msg("Processing"), Completed: msg("Completed"),
+  Partial: msg("Partial"),   Cancelled: msg("Cancelled"),   Failed: msg("Failed"),
+  Rejected: msg("Rejected"), Queued: msg("Queued"),
+};
+
 function Badge({ status, dark }) {
-  return <span className="text-[11px] font-semibold py-0.5 px-1.5 rounded-[5px] border-[0.5px] whitespace-nowrap inline-block leading-tight" style={{ background: sBg(status, dark), color: sClr(status, dark), borderColor: sBrd(status, dark) }}>{status}</span>;
+  const tr = useT();
+  return <span className="text-[11px] font-semibold py-0.5 px-1.5 rounded-[5px] border-[0.5px] whitespace-nowrap inline-block leading-tight" style={{ background: sBg(status, dark), color: sClr(status, dark), borderColor: sBrd(status, dark) }}>{tr(STATUS_LABEL[status] || status)}</span>;
 }
 
 function ProgressBar({ order, dark, detailed }) {
@@ -188,6 +203,7 @@ function ProgressBar({ order, dark, detailed }) {
 
 
 function DotMenu({ items, dark, t, loading }) {
+  const tr = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const btnRef = useRef(null);
@@ -217,7 +233,7 @@ function DotMenu({ items, dark, t, loading }) {
 
   return (
     <div ref={ref} className="dot-menu-root">
-      <button ref={btnRef} onPointerDown={handleOpen} className="w-9 h-9 max-md:w-10 max-md:h-10 flex items-center justify-center rounded-md border-none cursor-pointer bg-transparent text-t-text-muted" style={{ opacity: loading ? .5 : 1, touchAction: "none" }} aria-label="Actions">
+      <button ref={btnRef} onPointerDown={handleOpen} className="w-9 h-9 max-md:w-10 max-md:h-10 flex items-center justify-center rounded-md border-none cursor-pointer bg-transparent text-t-text-muted" style={{ opacity: loading ? .5 : 1, touchAction: "none" }} aria-label={tr("Actions")}>
         {loading ? <NitroLoader size={14} mono ariaHidden /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>}
       </button>
       {open && (
@@ -259,6 +275,7 @@ function refillEligible(o) {
 }
 
 function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, toast, onNavigate, waNum, onViewComments, doRefill, refillLoading }) {
+  const tr = useT();
   const money = useMoney();
   const qty = o.quantity || 0;
   const isCancelled = o.status === "Cancelled";
@@ -275,7 +292,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
   const reportIssueButton = waNum ? (
     <a href={`https://wa.me/${waNum}?text=${waMessage}`} target="_blank" rel="noopener noreferrer" className="m flex items-center gap-1.5 text-[12px] font-semibold cursor-pointer no-underline border-none rounded-lg py-1.5 px-3 text-white" style={{ background: "#25d366" }}>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.3 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.76-.72 2-1.42.25-.7.25-1.3.18-1.42-.08-.13-.28-.2-.58-.35zM12.05 21.8h-.01a9.87 9.87 0 01-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.85 9.85 0 01-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88a9.83 9.83 0 016.99 2.9 9.82 9.82 0 012.9 7c0 5.45-4.45 9.87-9.9 9.87z"/></svg>
-      Get help
+      {tr("Get help")}
     </a>
   ) : null;
 
@@ -296,7 +313,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       {o.comments && (
         <button onClick={(e) => { e.stopPropagation(); onViewComments?.(o.comments); }} className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-t-text-soft" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)" }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-          View comments
+          {tr("View comments")}
         </button>
       )}
 
@@ -308,7 +325,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         return (
           <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
             <div className="flex items-center justify-between text-[11px] mb-1.5">
-              <span className="text-t-text-muted">{isCancelled ? "Cancelled" : waiting ? (isQueued ? "Queued" : "Waiting to start") : "Delivered"}</span>
+              <span className="text-t-text-muted">{isCancelled ? tr("Cancelled") : waiting ? (isQueued ? tr("Queued") : tr("Waiting to start")) : tr("Delivered")}</span>
               {!waiting && <span className="m font-semibold" style={{ color: barColor }}>{delivered.toLocaleString()} / {qty.toLocaleString()}</span>}
             </div>
             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
@@ -319,7 +336,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
             {isActive && estTime && (
               <div className="flex items-center gap-1.5 mt-2.5 py-1.5 px-2.5 rounded-md w-fit" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.07)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}` }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span className="text-[11px] desktop:text-[11px] font-medium" style={{ color: dark ? "rgba(196,125,142,.85)" : "rgba(160,80,100,.75)" }}>Est. {estTime}</span>
+                <span className="text-[11px] desktop:text-[11px] font-medium" style={{ color: dark ? "rgba(196,125,142,.85)" : "rgba(160,80,100,.75)" }}>{tr("Est.")} {estTime}</span>
               </div>
             )}
           </div>
@@ -331,8 +348,8 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         <div className="mb-3 py-2.5 px-3 rounded-lg flex items-start gap-2.5" style={{ background: dark ? "rgba(34,197,94,.08)" : "rgba(34,197,94,.04)", border: `1px solid ${dark ? "rgba(34,197,94,.18)" : "rgba(34,197,94,.12)"}` }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           <div>
-            <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#6ee7b7" : "#059669" }}>Your order is complete!</div>
-            <div className="text-[11px] leading-[1.55]" style={{ color: dark ? "#a09b95" : "#555250" }}>If you notice a small dip in the next few days, don't worry — platforms routinely clean up inactive accounts and it's completely normal.{refillEligible(o) ? <strong style={{ color: dark ? "#e5e0db" : "#1a1a1a" }}> Use the Request Refill button below to top up at no extra cost.</strong> : o.refill ? <strong style={{ color: dark ? "#e5e0db" : "#1a1a1a" }}> Your refill window for this order has ended.</strong> : null}</div>
+            <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{tr("Your order is complete!")}</div>
+            <div className="text-[11px] leading-[1.55]" style={{ color: dark ? "#a09b95" : "#555250" }}>{tr("If you notice a small dip in the next few days, don't worry — platforms routinely clean up inactive accounts and it's completely normal.")}{refillEligible(o) ? <strong style={{ color: dark ? "#e5e0db" : "#1a1a1a" }}> {tr("Use the Request Refill button below to top up at no extra cost.")}</strong> : o.refill ? <strong style={{ color: dark ? "#e5e0db" : "#1a1a1a" }}> {tr("Your refill window for this order has ended.")}</strong> : null}</div>
           </div>
         </div>
       )}
@@ -342,8 +359,8 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         <div className="mb-3 py-2.5 px-3 rounded-lg flex items-start gap-2.5" style={{ background: dark ? "rgba(245,158,11,.08)" : "rgba(245,158,11,.04)", border: `1px solid ${dark ? "rgba(245,158,11,.18)" : "rgba(245,158,11,.12)"}` }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
           <div>
-            <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#fbbf24" : "#d97706" }}>Partial delivery</div>
-            <div className="text-[11px] leading-[1.55]" style={{ color: dark ? "#a09b95" : "#555250" }}>Part of your order has been delivered and the rest has been refunded to your wallet. This usually happens when a provider runs out of capacity mid-delivery — it's not an error. You can use the refunded balance to place a new order anytime.</div>
+            <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#fbbf24" : "#d97706" }}>{tr("Partial delivery")}</div>
+            <div className="text-[11px] leading-[1.55]" style={{ color: dark ? "#a09b95" : "#555250" }}>{tr("Part of your order has been delivered and the rest has been refunded to your wallet. This usually happens when a provider runs out of capacity mid-delivery — it's not an error. You can use the refunded balance to place a new order anytime.")}</div>
           </div>
         </div>
       )}
@@ -353,7 +370,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(165,180,252,.08)" : "rgba(79,70,229,.04)", border: `1px solid ${dark ? "rgba(165,180,252,.18)" : "rgba(79,70,229,.12)"}` }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#a5b4fc" : "#4f46e5"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           <div className="text-[11px]" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>
-            You have another order running on this same link. This one will start automatically once it completes — no action needed.
+            {tr("You have another order running on this same link. This one will start automatically once it completes — no action needed.")}
           </div>
         </div>
       )}
@@ -429,7 +446,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
         <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: bg, border: `1px solid ${brd}` }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">{isNeutral ? <><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></> : <><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></>}</svg>
           <div className="text-[11px]" style={{ color: clr }}>
-            {msg}{guide && <>{" "}<a href="/blog/how-to-find-the-right-link" target="_blank" style={{ color: clr, textDecoration: "underline", fontWeight: 600 }}>Learn more</a></>}
+            {msg}{guide && <>{" "}<a href="/blog/how-to-find-the-right-link" target="_blank" style={{ color: clr, textDecoration: "underline", fontWeight: 600 }}>{tr("Learn more")}</a></>}
           </div>
         </div>);
       })()}
@@ -442,7 +459,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
             : (hasData && !isComplete) ? ["Delivered", <span key="d" className="m text-[13px] text-t-text-muted"><b className="font-semibold text-t-text">{delivered.toLocaleString()}</b> of {qty.toLocaleString()}</span>]
             : ["Quantity", <b key="q" className="m text-[13px] font-semibold text-t-text">{qty.toLocaleString()}</b>],
           [isCancelled ? "Refunded" : "Charge", <b key="c" className="m text-[13px] font-semibold" style={{ color: isCancelled ? (dark ? "#6ee7b7" : "#059669") : t.text }}>{money(o.charge)}</b>],
-          ["Start count", o.startCount != null ? <b key="s" className="m text-[13px] font-semibold text-t-text">{o.startCount.toLocaleString()}</b> : <span key="s" className="text-[12.5px] text-t-text-muted">Not yet</span>],
+          ["Start count", o.startCount != null ? <b key="s" className="m text-[13px] font-semibold text-t-text">{o.startCount.toLocaleString()}</b> : <span key="s" className="text-[12.5px] text-t-text-muted">{tr("Not yet")}</span>],
           o.link ? ["Link", <a key="l" href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="text-[12.5px] font-medium no-underline truncate max-w-[200px] desktop:max-w-[420px] text-t-text-soft">{o.link.replace(/^https?:\/\/(www\.)?/, "")}</a>] : null,
         ].filter(Boolean).map(([label, val], i) => (
           <div key={label} className="flex items-center justify-between gap-3 py-2 text-[12.5px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
@@ -456,23 +473,23 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       <div className="flex items-center gap-2 flex-wrap py-1.5 px-1">
         {(o.status === "Processing" || o.status === "Pending") && (
           <>
-            <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.07)", color: dark ? "#a5b4fc" : "#4f46e5" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}Check</button>
-            {o.status === "Pending" && !o.apiOrderId && <button onClick={async () => { const ok = await confirm({ title: "Cancel Order", message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancel</button>}
+            <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.07)", color: dark ? "#a5b4fc" : "#4f46e5" }}>{actionLoading === o.id ? <Spinner size={14} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}{tr("Check")}</button>
+            {o.status === "Pending" && !o.apiOrderId && <button onClick={async () => { const ok = await confirm({ title: tr("Cancel Order"), message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>{tr("Cancel")}</button>}
           </>
         )}
         {(o.status === "Completed" || o.status === "Cancelled") && !o.offerDisabled && (
-          <button onClick={async () => { const ok = await confirm({ title: "Reorder", message: `Reorder ${o.service}? ${money(o.charge || 0)} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)" }}>{actionLoading === o.id ? <Spinner size={14} color={t.accent} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}Reorder</button>
+          <button onClick={async () => { const ok = await confirm({ title: tr("Reorder"), message: `Reorder ${o.service}? ${money(o.charge || 0)} will be charged from your wallet.`, confirmLabel: "Place Reorder" }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)" }}>{actionLoading === o.id ? <Spinner size={14} color={t.accent} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}{tr("Reorder")}</button>
         )}
         {o.refillRequestedAt && refillEligible(o) && (
           <span className="m flex items-center gap-1.5 text-[11px] font-semibold rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.06)", color: dark ? "#fcd34d" : "#d97706" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
-            Refill in Progress
+            {tr("Refill in Progress")}
           </span>
         )}
         {!o.refillRequestedAt && refillEligible(o) && (
-          <button onClick={async () => { const ok = await confirm({ title: "Request Refill", message: "If your count dropped after delivery, we'll top it back up at no extra cost. This may take a few hours.", confirmLabel: "Request Refill" }); if (ok) doRefill(o.id); }} disabled={refillLoading === o.id} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(34,197,94,.12)" : "rgba(34,197,94,.07)", color: dark ? "#6ee7b7" : "#059669" }}>
+          <button onClick={async () => { const ok = await confirm({ title: tr("Request Refill"), message: "If your count dropped after delivery, we'll top it back up at no extra cost. This may take a few hours.", confirmLabel: "Request Refill" }); if (ok) doRefill(o.id); }} disabled={refillLoading === o.id} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(34,197,94,.12)" : "rgba(34,197,94,.07)", color: dark ? "#6ee7b7" : "#059669" }}>
             {refillLoading === o.id ? <Spinner size={14} color={dark ? "#6ee7b7" : "#059669"} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>}
-            Request Refill
+            {tr("Request Refill")}
           </button>
         )}
         {reportIssueButton}
@@ -484,6 +501,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
 
 /* ── Batch row ── */
 function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast, onNavigate, waNum, onViewComments, doRefill, refillLoading }) {
+  const tr = useT();
   const hasAttentionOrders = batch.orders.some(isAttention);
   const totalCharge = batch.orders.reduce((s, o) => s + (o.charge || 0), 0);
   const isLoading = batchActionLoading === batch.batchId;
@@ -523,17 +541,17 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
         <div style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", borderLeft: `3px solid ${accentColor}`, borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}` }}>
           {/* Batch action bar */}
           <div className="flex items-center gap-5 py-2.5 px-4 desktop:px-5" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <span className="text-[11px] uppercase tracking-[1px] font-medium mr-auto text-t-text-muted">Bulk actions</span>
+            <span className="text-[11px] uppercase tracking-[1px] font-medium mr-auto text-t-text-muted">{tr("Bulk actions")}</span>
             {hasActive && (
               <button onClick={() => doBatchAction(batch.batchId, "check")} disabled={isLoading} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(165,180,252,.12)" : "rgba(79,70,229,.07)", color: dark ? "#a5b4fc" : "#4f46e5", opacity: isLoading ? .5 : 1 }}>
-                {isLoading ? <Spinner size={12} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}Check all
+                {isLoading ? <Spinner size={12} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}{tr("Check all")}
               </button>
             )}
             {hasCancellable && (
-              <button onClick={async () => { const ok = await confirm({ title: "Cancel Bulk Order", message: `Cancel all pending orders in ${batch.batchId} that haven't been sent to providers yet? Your wallet will be refunded.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancel all</button>
+              <button onClick={async () => { const ok = await confirm({ title: "Cancel Bulk Order", message: `Cancel all pending orders in ${batch.batchId} that haven't been sent to providers yet? Your wallet will be refunded.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>{tr("Cancel all")}</button>
             )}
             {hasReorderable && (
-              <button onClick={async () => { const ok = await confirm({ title: "Reorder Bulk", message: `Reorder all completed/cancelled orders from ${batch.batchId}?`, confirmLabel: "Reorder All" }); if (ok) doBatchAction(batch.batchId, "reorder_completed"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Reorder all</button>
+              <button onClick={async () => { const ok = await confirm({ title: tr("Reorder Bulk"), message: `Reorder all completed/cancelled orders from ${batch.batchId}?`, confirmLabel: "Reorder All" }); if (ok) doBatchAction(batch.batchId, "reorder_completed"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>{tr("Reorder all")}</button>
             )}
           </div>
 
@@ -567,13 +585,14 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
 const PER_PAGE_OPTIONS = [25, 50, 100];
 
 function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
+  const tr = useT();
   const totalPages = Math.ceil(total / perPage);
   if (total <= 25) return null;
   return (
     <div className="flex justify-between items-center mt-3.5 flex-wrap gap-2">
       <div className="flex items-center gap-2 text-[13px] desktop:text-sm">
-        <span className="text-t-text-muted">Show</span>
-        <select aria-label="Orders per page" value={perPage} onChange={e => { const v = Number(e.target.value); setPerPage(v); setPage(1); try { localStorage.setItem("nitro-per-page", String(v)); } catch {} fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ perPagePreference: v }) }).catch(() => {}); }} className="m py-1 px-2 rounded-md text-sm outline-none border bg-t-card-bg border-t-card-border text-t-text">
+        <span className="text-t-text-muted">{tr("Show")}</span>
+        <select aria-label={tr("Orders per page")} value={perPage} onChange={e => { const v = Number(e.target.value); setPerPage(v); setPage(1); try { localStorage.setItem("nitro-per-page", String(v)); } catch {} fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ perPagePreference: v }) }).catch(() => {}); }} className="m py-1 px-2 rounded-md text-sm outline-none border bg-t-card-bg border-t-card-border text-t-text">
           {PER_PAGE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
         </select>
         <span className="text-t-text-muted">{total} total</span>
@@ -604,6 +623,7 @@ function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
 /* ═══ ORDERS PAGE                         ═══ */
 /* ═══════════════════════════════════════════ */
 export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, orderSummary, txs, dark, t, onNavigate, onRefresh, waNum, email }) {
+  const tr = useT();
   const money = useMoney();
   const [sumOpen, setSumOpen] = useState(false);
   const sumRef = useRef(null);
@@ -779,13 +799,13 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       <div className="pb-2 desktop:pb-3">
         <div className="flex justify-between items-start gap-3">
           <div>
-            <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Orders</div>
-            <div className="text-sm desktop:text-[15px] text-t-text-muted">Track delivery, refunds, and reorders</div>
+            <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">{tr("Orders")}</div>
+            <div className="text-sm desktop:text-[15px] text-t-text-muted">{tr("Track delivery, refunds, and reorders")}</div>
           </div>
           {/* Summary, closed until asked for */}
           <div ref={sumRef} className="relative shrink-0">
             <button onClick={() => setSumOpen(v => !v)} aria-expanded={sumOpen} aria-controls="orders-summary" className="flex items-center gap-1.5 h-9 px-3 rounded-xl cursor-pointer text-[12.5px] font-medium text-t-text-soft" style={{ background: dark ? "rgba(255,255,255,.06)" : "#fff", border: `1px solid ${t.cardBorder}` }}>
-              Summary
+              {tr("Summary")}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: sumOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }}><path d="m6 9 6 6 6-6"/></svg>
             </button>
             {sumOpen && (
@@ -802,15 +822,15 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       <div className="flex items-center gap-2 desktop:gap-3 mb-2 desktop:mb-3 flex-nowrap desktop:flex-wrap min-w-0">
         <div className="flex-1 min-w-0 desktop:min-w-[200px]">
           <div className="relative">
-            <input aria-label="Search orders" placeholder="Search orders…" value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full min-w-0 py-2 desktop:py-2.5 px-3 desktop:px-3.5 pr-8 rounded-[10px] border border-t-card-border text-[13px] desktop:text-sm font-[inherit] outline-none box-border text-t-text" style={{ background: dark ? "rgba(255,255,255,.09)" : "#fff" }} />
-            {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setOPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+            <input aria-label={tr("Search orders")} placeholder={tr("Search orders…")} value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full min-w-0 py-2 desktop:py-2.5 px-3 desktop:px-3.5 pr-8 rounded-[10px] border border-t-card-border text-[13px] desktop:text-sm font-[inherit] outline-none box-border text-t-text" style={{ background: dark ? "rgba(255,255,255,.09)" : "#fff" }} />
+            {search && <button aria-label={tr("Clear search")} onClick={() => { setSearch(""); setOPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
           </div>
-          {searchTooShort && <div className="text-[11px] desktop:text-xs mt-1 text-t-text-muted">Type at least 2 characters to search.</div>}
+          {searchTooShort && <div className="text-[11px] desktop:text-xs mt-1 text-t-text-muted">{tr("Type at least 2 characters to search.")}</div>}
         </div>
         <DateRangePicker dark={dark} t={t} value={dateRange} onChange={(v) => { setDateRange(v); setOPage(1); }} />
         <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setOPage(1); setExpanded(null); }} options={
           ["all", "active", "Completed", "Processing", "Pending", "Partial", "attention", "Cancelled"].map(f => ({
-            value: f, label: f === "all" ? "All" : f === "active" ? "Active" : f === "attention" ? "Needs attention" : f,
+            value: f, label: f === "all" ? tr("All") : f === "active" ? tr("Active") : f === "attention" ? tr("Needs attention") : tr(STATUS_LABEL[f] || f),
           }))
         } />
       </div>
@@ -818,8 +838,8 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       {/* Result count */}
       {hasFilters && (
         <div className="text-[11px] desktop:text-[13px] mb-2 text-t-text-muted">
-          Showing {pagedGroups.length} of {total} matching result{total === 1 ? "" : "s"} ({matchingOrdersTotal} order{matchingOrdersTotal === 1 ? "" : "s"})
-          {hasFilters && <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="ml-2 underline cursor-pointer bg-transparent border-none font-[inherit] text-[11px] desktop:text-[13px] text-accent">Clear filters</button>}
+          Showing {pagedGroups.length} of {total} {tr("matching result")}{total === 1 ? "" : "s"} ({matchingOrdersTotal} order{matchingOrdersTotal === 1 ? "" : "s"})
+          {hasFilters && <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="ml-2 underline cursor-pointer bg-transparent border-none font-[inherit] text-[11px] desktop:text-[13px] text-accent">{tr("Clear filters")}</button>}
         </div>
       )}
 
@@ -827,7 +847,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       {(() => { const n = orders.filter(o => o.status === "Processing" || o.status === "Pending").length; return n > 0 && (
         <div className="desktop:hidden flex items-center gap-2 mb-2.5 px-0.5 text-[12px] text-t-text-muted">
           <span className="w-[7px] h-[7px] rounded-full animate-pulse shrink-0" style={{ background: "#4f46e5" }} />
-          {n} order{n === 1 ? "" : "s"} delivering<span className="opacity-50">·</span>usually 0–6 hrs, up to 24
+          {n} order{n === 1 ? "" : "s"} delivering<span className="opacity-50">·</span>{tr("usually 0–6 hrs, up to 24")}
         </div>
       ); })()}
 
@@ -871,14 +891,14 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
           <div className="py-10 px-6 text-center text-t-text-muted">
             {hasFilters ? (
               <>
-                <div className="text-base font-semibold mb-1 text-t-text-soft">No orders match your filters</div>
-                <div className="text-[13px] text-t-text-muted">Try adjusting your search or filters</div>
-                <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="mt-3 py-1.5 px-4 rounded-lg text-[13px] font-semibold cursor-pointer border bg-transparent border-t-card-border text-accent">Clear all filters</button>
+                <div className="text-base font-semibold mb-1 text-t-text-soft">{tr("No orders match your filters")}</div>
+                <div className="text-[13px] text-t-text-muted">{tr("Try adjusting your search or filters")}</div>
+                <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="mt-3 py-1.5 px-4 rounded-lg text-[13px] font-semibold cursor-pointer border bg-transparent border-t-card-border text-accent">{tr("Clear all filters")}</button>
               </>
             ) : (
               <>
-                <div className="text-base font-semibold mb-1 text-t-text-soft">No orders yet</div>
-                <div className="text-[13px] text-t-text-muted mb-3">Your orders will show up here once you start boosting</div>
+                <div className="text-base font-semibold mb-1 text-t-text-soft">{tr("No orders yet")}</div>
+                <div className="text-[13px] text-t-text-muted mb-3">{tr("Your orders will show up here once you start boosting")}</div>
                 <NotSureHelp waNumber={waNum} dark={dark} t={t} email={email} />
               </>
             )}
@@ -888,7 +908,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       <Pagination total={total} page={oPage} setPage={setOPage} perPage={perPage} setPerPage={setPerPage} t={t} />
 
       {viewComments && (
-        <Modal open onClose={() => setViewComments(null)} dark={dark} maxWidth={448} title="Submitted comments"
+        <Modal open onClose={() => setViewComments(null)} dark={dark} maxWidth={448} title={tr("Submitted comments")}
           icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>}>
           <pre className="m-0 text-[13px] leading-[1.65] whitespace-pre-wrap break-words text-t-text-soft font-[inherit]">{viewComments}</pre>
         </Modal>
@@ -901,23 +921,24 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
 /* ═══ ORDERS RIGHT SIDEBAR                ═══ */
 /* ═══════════════════════════════════════════ */
 export function OrdersSidebar({ orders, orderSummary, dark }) {
+  const tr = useT();
   const money = useMoney();
   const activeCount = orderSummary?.active || 0;
   const attentionCount = orderSummary?.attention || 0;
   return (
     <div className="rr">
-      <RailSec>Your orders</RailSec>
+      <RailSec>{tr("Your orders")}</RailSec>
       <RailCard>
-        <RailFact label="Total" value={String(orderSummary?.total ?? 0)} />
-        <RailFact label="Delivering now" value={String(activeCount)} color={activeCount ? (dark ? "#a5b4fc" : "#4f46e5") : undefined} />
-        {attentionCount > 0 && <RailFact label="Needs attention" value={String(attentionCount)} color={dark ? "#fdba74" : "#c2410c"} />}
-        <RailFact label="Completed" value={String(orderSummary?.completed || 0)} />
-        <RailFact label="Spent" value={money(orderSummary?.spent || 0)} />
+        <RailFact label={tr("Total")} value={String(orderSummary?.total ?? 0)} />
+        <RailFact label={tr("Delivering now")} value={String(activeCount)} color={activeCount ? (dark ? "#a5b4fc" : "#4f46e5") : undefined} />
+        {attentionCount > 0 && <RailFact label={tr("Needs attention")} value={String(attentionCount)} color={dark ? "#fdba74" : "#c2410c"} />}
+        <RailFact label={tr("Completed")} value={String(orderSummary?.completed || 0)} />
+        <RailFact label={tr("Spent")} value={money(orderSummary?.spent || 0)} />
       </RailCard>
-      {activeCount > 0 && <RailNote>Delivery takes 0 to 6 hours, up to 24 in a few cases. Speed requests are looked at after the first 6 hours.</RailNote>}
-      <RailSec>Recent</RailSec>
+      {activeCount > 0 && <RailNote>{tr("Delivery takes 0 to 6 hours, up to 24 in a few cases. Speed requests are looked at after the first 6 hours.")}</RailNote>}
+      <RailSec>{tr("Recent")}</RailSec>
       <RailCard>
-        {orders.length === 0 ? <RailEmpty>No orders yet.</RailEmpty> : orders.slice(0, 5).map(o => (
+        {orders.length === 0 ? <RailEmpty>{tr("No orders yet.")}</RailEmpty> : orders.slice(0, 5).map(o => (
           <RailRow key={o.id} tile={<PlatformIcon platform={o.platform} dark={dark} size={16} />} title={o.service} sub={`${o.created ? fD(o.created, true) : ""}${o.tier ? ` · ${o.tier}` : ""}${o.status ? ` · ${o.status}` : ""}`} right={o.charge != null ? money(o.charge) : null} />
         ))}
       </RailCard>
