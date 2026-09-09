@@ -49,7 +49,11 @@ describe("money someone holds never rounds up", () => {
 
   it("leaves the shortfall rounding up — never understate what must be added", () => {
     const form = read("components/order-form.jsx");
-    expect(form).toContain('Balance {money(balance, { round: "down" })} · short by {money(price - balance)}');
+    // The sentence around these two figures is split for translation, so the
+    // words between them move. What must not move is the direction of each
+    // rounding: the balance down (never show more than is held), the shortfall
+    // up (never understate what must be added).
+    expect(form).toMatch(/\{money\(balance, \{ round: "down" \}\)\}[^\n]*\{money\(price - balance\)\}/);
   });
 
   it("does not round the balance before formatting it, which is what rounded it up", () => {

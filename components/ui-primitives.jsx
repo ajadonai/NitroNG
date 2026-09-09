@@ -192,9 +192,9 @@ export function Field({ label, id, hint, error, dark, className = "", ...inputPr
  * rest of the line rather than throwing. That is the right failure: visible,
  * harmless, and obvious to whoever reads the page.
  */
-export function Emph({ children, weight = 600 }) {
+export function Emph({ children, weight = 600, color = "var(--t-text)" }) {
   if (typeof children !== "string") return children;
   return children.split("*").map((part, i) => (
-    i % 2 ? <b key={i} style={{ color: "var(--t-text)", fontWeight: weight }}>{part}</b> : part
+    i % 2 ? <b key={i} style={{ color, fontWeight: weight }}>{part}</b> : part
   ));
 }
