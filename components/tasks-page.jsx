@@ -1,5 +1,6 @@
 'use client';
-import { useMoney } from "./locale";
+import { useMoney, useT } from "./locale";
+import { msg } from "../lib/i18n";
 import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from 'react';
 import { useToast } from './toast';
 import { openCardFrame, openCardHeader } from '@/lib/expandable-card';
@@ -20,11 +21,11 @@ const PLATFORM_ICONS = {
 };
 
 const FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'open', label: 'New' },
-  { key: 'pending', label: 'In review' },
-  { key: 'done', label: 'Done' },
-  { key: 'rejected', label: 'Rejected' },
+  { key: 'all', label: msg('All') },
+  { key: 'open', label: msg('New') },
+  { key: 'pending', label: msg('In review') },
+  { key: 'done', label: msg('Done') },
+  { key: 'rejected', label: msg('Rejected') },
 ];
 
 // Kobo in. A task reward is money you will be given, so it never rounds up.
@@ -62,6 +63,7 @@ function proofPlaceholder(proofType, platform) {
 }
 
 export default function TasksPage({ dark, t }) {
+  const tr = useT();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
@@ -189,12 +191,12 @@ export default function TasksPage({ dark, t }) {
       {/* Header, with the summary closed until asked for */}
       <div className="flex justify-between items-start gap-3 pb-2 desktop:pb-3">
         <div>
-          <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Tasks</div>
-          <div className="text-sm desktop:text-[15px] text-t-text-muted">Small tasks, free credit</div>
+          <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">{tr("Tasks")}</div>
+          <div className="text-sm desktop:text-[15px] text-t-text-muted">{tr("Small tasks, free credit")}</div>
         </div>
         <div ref={sumRef} className="relative shrink-0">
           <button onClick={() => setSumOpen(v => !v)} aria-expanded={sumOpen} className="flex items-center gap-1.5 h-9 px-3 rounded-xl cursor-pointer text-[12.5px] font-medium text-t-text-soft" style={card}>
-            Summary
+            {tr("Summary")}
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: sumOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="m6 9 6 6 6-6"/></svg>
           </button>
           {sumOpen && (
@@ -216,14 +218,14 @@ export default function TasksPage({ dark, t }) {
         ))}
       </div>
       <div className="flex items-center gap-1.5 flex-wrap mb-3 px-0.5 text-[12px] text-t-text-muted">
-        <span>Spend-only credit</span><span className="opacity-50">·</span><span>{stats.expiryDays || 30} day expiry</span><span className="opacity-50">·</span><span>Fake accounts rejected</span>
+        <span>{tr("Spend-only credit")}</span><span className="opacity-50">·</span><span>{stats.expiryDays || 30} {tr("day expiry")}</span><span className="opacity-50">·</span><span>{tr("Fake accounts rejected")}</span>
       </div>
 
       {/* Filter bar */}
       <div className="flex items-center gap-2.5 mb-2 min-h-[34px]">
         <span className="text-[12px] text-t-text-muted">
           {filtered.length} task{filtered.length !== 1 ? 's' : ''}
-          {filter !== 'all' && <button onClick={() => setFilter('all')} className="bg-transparent border-none cursor-pointer font-[inherit] text-[12px] font-medium ml-1.5 underline p-0" style={{ color: accent }}>Show all</button>}
+          {filter !== 'all' && <button onClick={() => setFilter('all')} className="bg-transparent border-none cursor-pointer font-[inherit] text-[12px] font-medium ml-1.5 underline p-0" style={{ color: accent }}>{tr("Show all")}</button>}
         </span>
         <div className="relative ml-auto" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setFilterOpen(false); }}>
           <button onClick={() => setFilterOpen(!filterOpen)} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[12.5px] font-medium cursor-pointer font-[inherit] text-t-text-soft" style={card}>
@@ -237,7 +239,7 @@ export default function TasksPage({ dark, t }) {
               <span className="fixed inset-0 z-40" onClick={() => setFilterOpen(false)} />
               <div className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-[10px] overflow-hidden min-w-[150px] py-1" style={{ background: dark ? '#1a1d2e' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.14)'}`, boxShadow: '0 8px 32px rgba(0,0,0,.18)' }}>
               {FILTERS.map(f => (
-                <button key={f.key} onClick={() => { setFilter(f.key); setFilterOpen(false); }} className="block w-full text-left py-[7px] px-3 text-[13px] bg-transparent border-none cursor-pointer font-[inherit] whitespace-nowrap" style={{ color: f.key === filter ? accent : t.text, fontWeight: f.key === filter ? 600 : 400 }}>{f.label}</button>
+                <button key={f.key} onClick={() => { setFilter(f.key); setFilterOpen(false); }} className="block w-full text-left py-[7px] px-3 text-[13px] bg-transparent border-none cursor-pointer font-[inherit] whitespace-nowrap" style={{ color: f.key === filter ? accent : t.text, fontWeight: f.key === filter ? 600 : 400 }}>{tr(f.label)}</button>
               ))}
               </div>
             </>
@@ -279,6 +281,7 @@ export default function TasksPage({ dark, t }) {
 }
 
 function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSubmit, submitting, dark, t, accent, border, innerBg, amber, green, red }) {
+  const tr = useT();
   const money = useMoney();
   const icon = PLATFORM_ICONS[task.platform] || { bg: 'rgba(196,125,142,.12)', lbg: 'rgba(196,125,142,.08)', svg: null };
   const isDone = task.userStatus === 'done';
@@ -314,17 +317,17 @@ function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSub
 
       {expanded && (
         <div className="px-3.5 pb-4" style={{ background: dark ? 'rgba(196,125,142,.06)' : 'rgba(196,125,142,.04)', borderTop: `1px solid ${border}` }}>
-          {isDone && <div className="pt-3 text-[12.5px] leading-[1.5]" style={{ color: green }}>You earned {fmtNaira(task.reward, money)} credit from this task. It is in your wallet, spend-only, valid for 30 days.</div>}
-          {isPending && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-soft">We are checking your proof. The credit lands as soon as it clears.</div>}
-          {isExhausted && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-muted">The reward pool for this month is full. Check back next month.</div>}
-          {isDepositorsOnly && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-muted">This one is for customers who have funded their wallet. Add funds and it opens up.</div>}
+          {isDone && <div className="pt-3 text-[12.5px] leading-[1.5]" style={{ color: green }}>You earned {fmtNaira(task.reward, money)} {tr("credit from this task. It is in your wallet, spend-only, valid for 30 days.")}</div>}
+          {isPending && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-soft">{tr("We are checking your proof. The credit lands as soon as it clears.")}</div>}
+          {isExhausted && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-muted">{tr("The reward pool for this month is full. Check back next month.")}</div>}
+          {isDepositorsOnly && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-muted">{tr("This one is for customers who have funded their wallet. Add funds and it opens up.")}</div>}
           {isRejected && <div className="pt-3 text-[12.5px] leading-[1.5]" style={{ color: dark ? '#fdba74' : '#c2410c' }}>{task.rejectionReason || 'Your proof did not match. Do the task again and resend it.'}</div>}
 
           {(task.userStatus === 'open' || isRejected) && (
             <>
-              <div className="pt-3"><SectionHead first>Do it</SectionHead></div>
+              <div className="pt-3"><SectionHead first>{tr("Do it")}</SectionHead></div>
               <div className="text-[13px] leading-[1.6] text-t-text-soft">{task.instructions}</div>
-              <SectionHead>Proof</SectionHead>
+              <SectionHead>{tr("Proof")}</SectionHead>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -339,7 +342,7 @@ function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSub
                   onBlur={e => { e.target.style.borderColor = dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.12)'; }}
                 />
                 <button onClick={onSubmit} disabled={submitting || !proof.trim()} className="h-10 px-[18px] rounded-[10px] text-[13px] font-bold shrink-0 border-none cursor-pointer text-white disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: accent }}>
-                  {submitting ? 'Sending...' : 'Submit'}
+                  {submitting ? tr("Sending...") : 'Submit'}
                 </button>
               </div>
             </>
