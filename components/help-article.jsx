@@ -84,7 +84,7 @@ function HelpArticleInner({ post, related }) {
       <div className="hg-wrap flex-1">
         <div className="hg-crumb">
           <a href="/help">Help centre</a>
-          <i aria-hidden="true">›</i>
+          <i aria-hidden="true"><span className="dir-flip">›</span></i>
           <span>{topic}</span>
         </div>
 

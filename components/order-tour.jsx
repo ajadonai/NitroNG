@@ -277,7 +277,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
           animation: "otWelcomeFadeIn 0.35s cubic-bezier(.4,0,.2,1)",
         }}>
           <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4" style={{ background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.07)", color: accent }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            <svg className="dir-flip" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
           </div>
           <div className="text-lg font-bold mb-1" style={{ color: text }}>{tr("Ready to place an order?")}</div>
           <div className="text-[13px] leading-[1.6] mb-3" style={{ color: sub }}>{tr("Quick walkthrough — takes about 15 seconds.")}</div>

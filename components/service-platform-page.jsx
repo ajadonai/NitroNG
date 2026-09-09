@@ -17,7 +17,7 @@ export function Crumbs({ items }) {
     <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-[12px]" style={{ color: t.muted }}>
       {items.map(({ label, href }, i) => (
         <span key={label} className="flex items-center gap-1.5">
-          {i > 0 && <i className="not-italic opacity-50" aria-hidden="true">›</i>}
+          {i > 0 && <i className="not-italic opacity-50" aria-hidden="true"><span className="dir-flip">›</span></i>}
           {href
             ? <a href={href} className="font-semibold no-underline" style={{ color: t.accent }}>{label}</a>
             : <span aria-current="page">{label}</span>}

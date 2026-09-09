@@ -383,7 +383,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
                 return (
                   <div className="inline-flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg mb-3 text-[11px] font-semibold" style={{ background: dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.07)", color: dark ? "#6ee7b7" : "#059669" }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-                    {tr("Deposit")} {money(tier.amount)} → {money(tier.amount + bonus, { round: "down" })} {tr("to spend")}
+                    {tr("Deposit")} {money(tier.amount)} <span className="dir-flip">→</span> {money(tier.amount + bonus, { round: "down" })} {tr("to spend")}
                   </div>
                 );
               })()}
@@ -409,7 +409,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         </>) : (<>
           {/* Step 2: Drip config — replaces entire form body */}
           <div className="flex items-center gap-2 mb-3 cursor-pointer select-none" onClick={() => setDripStep(1)} style={{ WebkitTapHighlightColor: "transparent" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#a09b95" : "#555250"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg className="dir-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#a09b95" : "#555250"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             <span className="text-[13px] font-semibold" style={{ color: dark ? "#a09b95" : "#555250" }}>{tr("Delivery schedule")}</span>
           </div>
           <div className="flex items-start gap-2.5 rounded-xl py-2.5 px-3 mb-3" style={{ background: dark ? "rgba(74,222,128,.06)" : "rgba(22,163,74,.04)", border: `1px solid ${dark ? "rgba(74,222,128,.12)" : "rgba(22,163,74,.1)"}` }}>

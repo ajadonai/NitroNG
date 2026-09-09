@@ -1560,3 +1560,20 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .loc-pill { color: #201b19; }
 .dark .loc-pill { color: #f6f1ee; }
 .dark .nav-burger { color: #f6f1ee; }
+
+/* Arrows and chevrons point the way the reader travels, so they mirror with
+   the text. Layout is handled by postcss-rtlcss at build time, but a glyph is
+   not layout — a chevron drawn pointing right keeps pointing right no matter
+   which side of the screen it lands on, which is how "Continue →" ended up
+   pointing back the way an Arabic reader came from.
+
+   rtl:ignore keeps postcss-rtlcss off this rule: it already understands
+   transforms, and left to itself it would emit a [dir=ltr] copy that flips the
+   icons in English instead. */
+/*rtl:ignore*/
+/* inline-block is load-bearing: transform does not apply to a display:inline
+   element, so an arrow sitting inline in a sentence silently refused to flip
+   while the same glyph inside a flex button flipped fine. */
+[dir="rtl"] .dir-flip { display: inline-block; transform: scaleX(-1); }
+/*rtl:ignore*/
+[dir="rtl"] .rr-jump i, [dir="rtl"] .rr-link-chev { display: inline-block; transform: scaleX(-1); }

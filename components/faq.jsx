@@ -103,7 +103,7 @@ function FAQInner() {
                         className="w-full flex justify-between items-center gap-2.5 py-3.5 px-[18px] bg-transparent border-none cursor-pointer text-left"
                       >
                         <span className="text-[15px] font-semibold transition-colors duration-200" style={{ color: isOpen ? ACCENT : t.text }}>{question}</span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isOpen ? ACCENT : t.textMuted} strokeWidth="2" strokeLinecap="round" className="shrink-0" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isOpen ? ACCENT : t.textMuted} strokeWidth="2" strokeLinecap="round" className="dir-flip shrink-0" aria-hidden="true">
                           <path d="M5 12h14" />
                           {!isOpen && <path d="M12 5v14" />}
                         </svg>

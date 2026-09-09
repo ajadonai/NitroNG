@@ -310,7 +310,7 @@ export function DateRangePicker({ dark, t, value, onChange, presets, defaultPres
           <div style={{ padding: "12px 14px", flex: 1, minWidth: 260 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
               <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: 6, color: t.textSoft, fontSize: 15 }} onMouseEnter={e => e.currentTarget.style.background = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.05)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+                <svg className="dir-flip" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
               </button>
               <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{monthNames(lang)[viewMonth]} {viewYear}</span>
               <button onClick={nextMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: 6, color: t.textSoft, fontSize: 15 }} onMouseEnter={e => e.currentTarget.style.background = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.05)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>

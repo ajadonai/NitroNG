@@ -128,7 +128,7 @@ function HelpListingInner({ articles }) {
                     <b className="text-[14.5px] font-semibold" style={{ color: t.text }}>{a.title}</b>
                     {a.excerpt && <span className="text-[12.5px] leading-[1.45]" style={{ color: t.muted }}>{a.excerpt}</span>}
                   </span>
-                  <span aria-hidden="true" className="text-[18px] shrink-0" style={{ color: t.muted }}>›</span>
+                  <span aria-hidden="true" className="text-[18px] shrink-0" style={{ color: t.muted }}><span className="dir-flip">›</span></span>
                 </a>
               ))}
             </div>

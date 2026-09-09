@@ -110,7 +110,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
           <div className="m text-[32px] desktop:text-[36px] font-extrabold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.03em" }}>{money(balance, { round: "down" })}</div>
         </div>
         <div className="flex max-md:flex-col gap-1.5 shrink-0">
-          <button onClick={() => setActive("add-funds")} className="nitro-money-btn h-[34px] px-3.5 border-none text-[13px] font-semibold cursor-pointer inline-flex items-center gap-1.5 justify-center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>{tr("Top up")}</button>
+          <button onClick={() => setActive("add-funds")} className="nitro-money-btn h-[34px] px-3.5 border-none text-[13px] font-semibold cursor-pointer inline-flex items-center gap-1.5 justify-center"><svg className="dir-flip" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>{tr("Top up")}</button>
           <button onClick={() => setActive("services")} className="h-[34px] px-3.5 rounded-[10px] text-[13px] font-semibold cursor-pointer border border-solid inline-flex items-center justify-center text-t-text" style={{ background: "transparent", borderColor: t.cardBorder }}>{tr("New order")}</button>
         </div>
       </div>
@@ -121,7 +121,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
           <span className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0 text-white" style={{ background: primaryAction.gift ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : t.accent }}>
             {primaryAction.gift
               ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
-              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>}
+              : <svg className="dir-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>}
           </span>
           <span className="flex flex-col gap-px flex-1 min-w-0"><b className="text-[13.5px] font-semibold text-t-text">{primaryAction.label}</b><small className="text-[11.5px] text-t-text-muted">{primaryAction.sub}</small></span>
         </button>
