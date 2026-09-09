@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useT } from "../locale";
 import { Card, Chip, Empty, Fact, Facts, Field, Modal, dateOf, pitVars } from "./kit";
 import { useTheme } from "../shared-nav";
 import { useToast } from "../toast";
@@ -17,6 +18,7 @@ const SENT = ["paid", "completed"];
 const WAITING = ["pending", "processing"];
 
 export default function PayoutsPage({ initialData }) {
+  const tr = useT();
   const { dark, t } = useTheme();
   const toast = useToast();
   const [data, setData] = useState(initialData);
@@ -111,15 +113,15 @@ export default function PayoutsPage({ initialData }) {
       <style>{PYO_CSS}</style>
 
       <Facts>
-        <Fact value={fHeld(data?.availableBalance || 0)} label="Ready to withdraw" sub="request any time" kind="ok" />
-        <Fact value={fN(waiting)} label="Being paid" sub={waitingCount ? `${waitingCount} ${waitingCount === 1 ? "request" : "requests"} in the queue` : "nothing in the queue"} kind={waiting ? "warn" : undefined} />
-        <Fact value={fN(sentTotal)} label="Paid out" sub={`${sent.length} ${sent.length === 1 ? "payout" : "payouts"} so far`} />
-        <Fact value={fN(data?.minPayout || 0)} label="Minimum" sub="the least you can request" />
+        <Fact value={fHeld(data?.availableBalance || 0)} label={tr("Ready to withdraw")} sub={tr("request any time")} kind="ok" />
+        <Fact value={fN(waiting)} label={tr("Being paid")} sub={waitingCount ? `${waitingCount} ${waitingCount === 1 ? "request" : "requests"} in the queue` : "nothing in the queue"} kind={waiting ? "warn" : undefined} />
+        <Fact value={fN(sentTotal)} label={tr("Paid out")} sub={`${sent.length} ${sent.length === 1 ? "payout" : "payouts"} so far`} />
+        <Fact value={fN(data?.minPayout || 0)} label={tr("Minimum")} sub={tr("the least you can request")} />
       </Facts>
 
-      <Card title="Request a payout" cnt="it goes to the account below">
+      <Card title={tr("Request a payout")} cnt="it goes to the account below">
         <div className="pt-cb">
-          <label className="pt-lbl">Amount</label>
+          <label className="pt-lbl">{tr("Amount")}</label>
           <div className="pyo-req">
             <span className="pyo-cur">₦</span>
             <input
@@ -131,8 +133,8 @@ export default function PayoutsPage({ initialData }) {
               onChange={(e) => { setAmount(e.target.value); setSubmitError(null); }}
               placeholder={String(Math.floor(data?.minPayout || 0))}
             />
-            <button type="button" className="pt-b sm" onClick={() => setAmount(String(Math.floor(data?.availableBalance || 0)))}>All of it</button>
-            <button type="button" className="pt-b pri" disabled={!canRequest || submitting} onClick={handleRequest}>{submitting ? "Sending…" : "Request"}</button>
+            <button type="button" className="pt-b sm" onClick={() => setAmount(String(Math.floor(data?.availableBalance || 0)))}>{tr("All of it")}</button>
+            <button type="button" className="pt-b pri" disabled={!canRequest || submitting} onClick={handleRequest}>{submitting ? tr("Sending…") : tr("Request")}</button>
           </div>
           {submitError && <div className="pt-err">{submitError}</div>}
           <div className="pt-note">{why || `Your whole available balance is ${fHeld(data?.availableBalance || 0)}. We pay it into the account below.`}</div>
@@ -140,14 +142,14 @@ export default function PayoutsPage({ initialData }) {
       </Card>
 
       {data && (
-        <Card title="Where it goes" cnt="required before you can request" act={data.hasBankDetails ? <button type="button" className="pt-b sm" onClick={openBankModal}>Change</button> : <button type="button" className="pt-b sm pri" onClick={openBankModal}>Add</button>}>
+        <Card title={tr("Where it goes")} cnt="required before you can request" act={data.hasBankDetails ? <button type="button" className="pt-b sm" onClick={openBankModal}>{tr("Change")}</button> : <button type="button" className="pt-b sm pri" onClick={openBankModal}>{tr("Add")}</button>}>
           <div className="pt-cb">
             {data.hasBankDetails ? (
               <div className="pt-frow">
                 <span className="pt-tt"><b>{data.bankName} · {data.bankAccountNo}</b><i>{data.bankAccountName}</i></span>
               </div>
             ) : (
-              <div className="pt-note">No account on file yet. Add one and you can request a payout.</div>
+              <div className="pt-note">{tr("No account on file yet. Add one and you can request a payout.")}</div>
             )}
           </div>
         </Card>
@@ -156,23 +158,23 @@ export default function PayoutsPage({ initialData }) {
       <Modal
         open={bankOpen}
         onClose={() => setBankOpen(false)}
-        title={data?.hasBankDetails ? "Change where it goes" : "Where should it go"}
-        sub="The name on the account has to be yours."
+        title={data?.hasBankDetails ? tr("Change where it goes") : tr("Where should it go")}
+        sub={tr("The name on the account has to be yours.")}
         footer={<>
           {bankError && <span className="pt-err">{bankError}</span>}
-          <button type="button" className="pt-b" onClick={() => setBankOpen(false)}>Cancel</button>
-          <button type="button" className="pt-b pri" disabled={bankSaving} onClick={handleBankSave}>{bankSaving ? "Saving…" : "Save"}</button>
+          <button type="button" className="pt-b" onClick={() => setBankOpen(false)}>{tr("Cancel")}</button>
+          <button type="button" className="pt-b pri" disabled={bankSaving} onClick={handleBankSave}>{bankSaving ? tr("Saving…") : tr("Save")}</button>
         </>}
       >
-        <Field label="Bank" value={bankName} onChange={setBankName} placeholder="e.g. GTBank" />
-        <Field label="Account number" value={bankAccountNo} onChange={setBankAccountNo} placeholder="0123456789" />
-        <Field label="Account name" value={bankAccountName} onChange={setBankAccountName} placeholder="The full name on the account" />
-        <Field label="Your password" type="password" value={bankPassword} onChange={setBankPassword} placeholder="Confirm it is you" hint="We ask because this is where your money goes." />
+        <Field label={tr("Bank")} value={bankName} onChange={setBankName} placeholder="e.g. GTBank" />
+        <Field label={tr("Account number")} value={bankAccountNo} onChange={setBankAccountNo} placeholder="0123456789" />
+        <Field label={tr("Account name")} value={bankAccountName} onChange={setBankAccountName} placeholder={tr("The full name on the account")} />
+        <Field label={tr("Your password")} type="password" value={bankPassword} onChange={setBankPassword} placeholder={tr("Confirm it is you")} hint={tr("We ask because this is where your money goes.")} />
       </Modal>
 
-      <Card title="Past payouts" cnt="newest first, with the reference">
+      <Card title={tr("Past payouts")} cnt="newest first, with the reference">
         {payouts.length === 0 ? (
-          <Empty>Nothing yet. Your first payout shows up here with its reference.</Empty>
+          <Empty>{tr("Nothing yet. Your first payout shows up here with its reference.")}</Empty>
         ) : (
           <div className="pt-list" style={{ opacity: refreshing ? 0.6 : 1, transition: "opacity 200ms" }}>
             {payouts.map((p) => {

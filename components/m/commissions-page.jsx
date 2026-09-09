@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback } from "react";
+import { useT } from "../locale";
 import { Card, Chip, Empty, Fact, Facts, dateOf, initialsOf, pitVars } from "./kit";
 import { SkelBar, SkelFacts, SkelList } from "../skeleton";
 import { useTheme } from "../shared-nav";
@@ -28,6 +29,7 @@ function daysLeft(iso) {
 }
 
 export default function CommissionsPage({ member, initialData }) {
+  const tr = useT();
   const { dark, t } = useTheme();
   const [filter, setFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -57,10 +59,10 @@ export default function CommissionsPage({ member, initialData }) {
 
       {loading && !data ? <><SkelFacts dark={dark} /><SkelBar dark={dark} search={false} pills={4} /><SkelList dark={dark} rows={6} title rowH={58} /></> : <>
         <Facts>
-          <Fact value={fN(member?.totalEarned || 0)} label="Earned" sub="all time" />
-          <Fact value={fN(member?.totalPaid || 0)} label="Paid out" sub="already in your bank" kind="ok" />
-          <Fact value={(data?.total || 0).toLocaleString()} label="Commissions" sub={filter === "all" ? "every one of them" : `${FILTERS.find(f => f.key === filter)?.label.toLowerCase()} only`} />
-          <Fact value={`${member?.commissionRate || 0}%`} label="Your rate" sub="of the pot on every order" />
+          <Fact value={fN(member?.totalEarned || 0)} label={tr("Earned")} sub={tr("all time")} />
+          <Fact value={fN(member?.totalPaid || 0)} label={tr("Paid out")} sub={tr("already in your bank")} kind="ok" />
+          <Fact value={(data?.total || 0).toLocaleString()} label={tr("Commissions")} sub={filter === "all" ? "every one of them" : `${FILTERS.find(f => f.key === filter)?.label.toLowerCase()} only`} />
+          <Fact value={`${member?.commissionRate || 0}%`} label={tr("Your rate")} sub={tr("of the pot on every order")} />
         </Facts>
 
         <div className="pt-bar">
@@ -73,16 +75,16 @@ export default function CommissionsPage({ member, initialData }) {
         </div>
 
         {error ? (
-          <Card title="Commissions" cnt="something got in the way">
+          <Card title={tr("Commissions")} cnt="something got in the way">
             <Empty>
               {error}
-              <div style={{ marginTop: 12 }}><button type="button" className="pt-b sm" onClick={() => load(filter, page)}>Try again</button></div>
+              <div style={{ marginTop: 12 }}><button type="button" className="pt-b sm" onClick={() => load(filter, page)}>{tr("Try again")}</button></div>
             </Empty>
           </Card>
         ) : (
-          <Card title="Commissions" cnt="newest first · a commission clears seven days after the order">
+          <Card title={tr("Commissions")} cnt="newest first · a commission clears seven days after the order">
             {rows.length === 0 ? (
-              <Empty>{filter === "all" ? "Nothing yet. When someone orders through your link, it lands here." : "Nothing under that filter."}</Empty>
+              <Empty>{filter === "all" ? tr("Nothing yet. When someone orders through your link, it lands here.") : tr("Nothing under that filter.")}</Empty>
             ) : <>
               <div className="pt-list" style={{ opacity: loading ? 0.6 : 1, transition: "opacity 150ms" }}>
                 {rows.map((c) => {
@@ -94,7 +96,7 @@ export default function CommissionsPage({ member, initialData }) {
                       <span className="pt-av sm">{c.type === "team" && c.memberName ? initialsOf(c.memberName) : c.slug.slice(0, 2).toUpperCase()}</span>
                       <span className="pt-tt">
                         <b>{who}</b>
-                        <i>{c.slug} · order {fN(c.orderCharge)} · {c.rate}%{isChief && c.type === "team" ? " · crew" : ""}</i>
+                        <i>{c.slug} {tr("· order")} {fN(c.orderCharge)} · {c.rate}%{isChief && c.type === "team" ? tr(" · crew") : ""}</i>
                       </span>
                       <Chip kind={s.kind}>{left != null ? `Holding, ${left} ${left === 1 ? "day" : "days"} left` : s.label}</Chip>
                       <span className={"pt-num m" + (c.status === "voided" ? " bad" : "")}>{c.status === "voided" ? `−${fN(c.amount)}` : fN(c.amount)}</span>
@@ -107,9 +109,9 @@ export default function CommissionsPage({ member, initialData }) {
                 <div className="pt-pg">
                   <span className="pt-cnt m">{(page - 1) * 20 + 1}–{(page - 1) * 20 + rows.length} of {data.total.toLocaleString()}</span>
                   <span className="pt-pgn">
-                    <button type="button" className="pt-ib" disabled={page <= 1 || loading} onClick={() => changePage(page - 1)} aria-label="Previous page">‹</button>
+                    <button type="button" className="pt-ib" disabled={page <= 1 || loading} onClick={() => changePage(page - 1)} aria-label={tr("Previous page")}>‹</button>
                     <span className="pt-cnt m">{page} / {data.pages}</span>
-                    <button type="button" className="pt-ib" disabled={page >= data.pages || loading} onClick={() => changePage(page + 1)} aria-label="Next page"><span className="dir-flip">›</span></button>
+                    <button type="button" className="pt-ib" disabled={page >= data.pages || loading} onClick={() => changePage(page + 1)} aria-label={tr("Next page")}><span className="dir-flip">›</span></button>
                   </span>
                 </div>
               )}

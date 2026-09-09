@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useT } from "../locale";
 import { Card, Chip, Empty, Fact, Facts, Field, Modal, initialsOf, longDate, pitVars } from "./kit";
 import { useTheme } from "../shared-nav";
 import { useToast } from "../toast";
@@ -12,6 +13,7 @@ function slugify(s) {
 
 /* ── Create link ── */
 function CreateModal({ open, onClose, onCreated, team, leadSplit }) {
+  const tr = useT();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
@@ -105,29 +107,29 @@ function CreateModal({ open, onClose, onCreated, team, leadSplit }) {
     <Modal
       open={open}
       onClose={onClose}
-      title="New tracking link"
-      sub="One link per place you promote. Keep it, or hand it to someone in your crew."
+      title={tr("New tracking link")}
+      sub={tr("One link per place you promote. Keep it, or hand it to someone in your crew.")}
       wide
       footer={<>
         {error && <span className="pt-err">{error}</span>}
-        <button type="button" className="pt-b" onClick={onClose}>Cancel</button>
-        <button type="button" className="pt-b pri" disabled={!canCreate} onClick={handleCreate}>{creating ? "Creating…" : "Create link"}</button>
+        <button type="button" className="pt-b" onClick={onClose}>{tr("Cancel")}</button>
+        <button type="button" className="pt-b pri" disabled={!canCreate} onClick={handleCreate}>{creating ? tr("Creating…") : tr("Create link")}</button>
       </>}
     >
-      <Field label="Link name" value={name} onChange={onNameChange} placeholder="e.g. IG business owners" hint="So you recognise it later." />
-      <label className="pt-lbl">Link slug</label>
+      <Field label={tr("Link name")} value={name} onChange={onNameChange} placeholder="e.g. IG business owners" hint={tr("So you recognise it later.")} />
+      <label className="pt-lbl">{tr("Link slug")}</label>
       <div className="lnk-slug">
-        <span className="m">nitro.ng/?via=</span>
+        <span className="m">{tr("nitro.ng/?via=")}</span>
         <input className="m" value={slug} onChange={e => onSlugChange(e.target.value)} placeholder="ig-business-owners" />
       </div>
       <div className={"pt-hint" + (slugStatus === "ok" ? " ok" : slugStatus === "taken" ? " bad" : "")}>{hint}</div>
 
-      <label className="pt-lbl">Whose link is it</label>
+      <label className="pt-lbl">{tr("Whose link is it")}</label>
       <div className="lnk-pick">
         <button type="button" className={"lnk-op" + (assignee === "self" ? " on" : "")} onClick={() => setAssignee("self")}>
           <span className="pt-av sm">{initialsOf("You")}</span>
-          <span className="pt-tt"><b>Yourself</b><i>Run it as your own link</i></span>
-          <span className="pt-c">100% you</span>
+          <span className="pt-tt"><b>{tr("Yourself")}</b><i>{tr("Run it as your own link")}</i></span>
+          <span className="pt-c">{tr("100% you")}</span>
         </button>
         {team.map(m => (
           <button key={m.id} type="button" className={"lnk-op" + (assignee === m.id ? " on" : "")} onClick={() => setAssignee(m.id)}>
@@ -146,6 +148,7 @@ function CreateModal({ open, onClose, onCreated, team, leadSplit }) {
 const ACTION_LABELS = { created: "created", reassigned: "reassigned", paused: "paused", resumed: "resumed", deleted: "deleted" };
 
 function LinkDetail({ link, isSelf, copied, onCopy, onReassign, onArchive }) {
+  const tr = useT();
   const [logs, setLogs] = useState(null);
   useEffect(() => {
     fetch(`/api/pit/links?logs=${link.id}`).then(r => r.json()).then(d => setLogs(d.logs || [])).catch(() => setLogs([]));
@@ -155,14 +158,14 @@ function LinkDetail({ link, isSelf, copied, onCopy, onReassign, onArchive }) {
     <div className="lnk-x">
       <div className="lnk-url">
         <span className="m">nitro.ng/?via={link.slug}</span>
-        <button type="button" className="pt-b sm" onClick={() => onCopy(link.slug)}>{copied === link.slug ? "Copied" : "Copy"}</button>
+        <button type="button" className="pt-b sm" onClick={() => onCopy(link.slug)}>{copied === link.slug ? tr("Copied") : tr("Copy")}</button>
       </div>
       <div className="lnk-tiles">
-        <span><b className="m">{link.clicks.toLocaleString()}</b><i>Clicks</i></span>
-        <span><b className="m">{link.commissions.toLocaleString()}</b><i>Paid</i></span>
-        <span><b className="m">{rate}%</b><i>Of clicks</i></span>
+        <span><b className="m">{link.clicks.toLocaleString()}</b><i>{tr("Clicks")}</i></span>
+        <span><b className="m">{link.commissions.toLocaleString()}</b><i>{tr("Paid")}</i></span>
+        <span><b className="m">{rate}%</b><i>{tr("Of clicks")}</i></span>
       </div>
-      <div className="pt-note">Assigned to {isSelf ? "you" : link.affiliateName || "nobody"} · made {longDate(link.createdAt)}</div>
+      <div className="pt-note">{tr("Assigned to")} {isSelf ? "you" : link.affiliateName || "nobody"} {tr("· made")} {longDate(link.createdAt)}</div>
       {logs && logs.length > 0 && (
         <div className="lnk-log">
           {logs.map(log => (
@@ -175,8 +178,8 @@ function LinkDetail({ link, isSelf, copied, onCopy, onReassign, onArchive }) {
         </div>
       )}
       <div className="lnk-xf">
-        <button type="button" className="pt-b sm" onClick={() => onReassign(link)}>Hand it to someone</button>
-        <button type="button" className="pt-b sm bad" onClick={() => onArchive(link.id)}>Delete</button>
+        <button type="button" className="pt-b sm" onClick={() => onReassign(link)}>{tr("Hand it to someone")}</button>
+        <button type="button" className="pt-b sm bad" onClick={() => onArchive(link.id)}>{tr("Delete")}</button>
       </div>
     </div>
   );
@@ -184,6 +187,7 @@ function LinkDetail({ link, isSelf, copied, onCopy, onReassign, onArchive }) {
 
 /* ── Page ── */
 export default function LinksPage({ initialData }) {
+  const tr = useT();
   const { dark, t } = useTheme();
   const toast = useToast();
   const [data, setData] = useState(initialData);
@@ -202,7 +206,7 @@ export default function LinksPage({ initialData }) {
   const leadSplit = data?.leadSplit || 40;
 
   useHeaderAction(useMemo(() => (
-    <button type="button" className="pt-b pri" onClick={() => setShowCreate(true)}>+ New link</button>
+    <button type="button" className="pt-b pri" onClick={() => setShowCreate(true)}>{tr("+ New link")}</button>
   ), []));
 
   const reload = () => {
@@ -278,29 +282,29 @@ export default function LinksPage({ initialData }) {
       <style>{LNK_CSS}</style>
 
       <Facts>
-        <Fact value={clicks.toLocaleString()} label="Clicks" sub={`across ${allLinks.length} ${allLinks.length === 1 ? "link" : "links"}`} />
-        <Fact value={paid.toLocaleString()} label="Paid" sub={clicks ? `${((paid / clicks) * 100).toFixed(1)}% of clicks` : "no clicks yet"} kind="ok" />
-        <Fact value={String(allLinks.length)} label="Links" sub={`${live} live, ${allLinks.length - live} paused`} />
-        <Fact value={best ? best.name : "—"} label="Busiest link" sub={best ? `${best.clicks.toLocaleString()} clicks` : "nothing to compare yet"} mono={false} />
+        <Fact value={clicks.toLocaleString()} label={tr("Clicks")} sub={`across ${allLinks.length} ${allLinks.length === 1 ? "link" : "links"}`} />
+        <Fact value={paid.toLocaleString()} label={tr("Paid")} sub={clicks ? `${((paid / clicks) * 100).toFixed(1)}% of clicks` : "no clicks yet"} kind="ok" />
+        <Fact value={String(allLinks.length)} label={tr("Links")} sub={`${live} live, ${allLinks.length - live} paused`} />
+        <Fact value={best ? best.name : "—"} label={tr("Busiest link")} sub={best ? `${best.clicks.toLocaleString()} clicks` : "nothing to compare yet"} mono={false} />
       </Facts>
 
       {allLinks.length > 0 && (
         <div className="pt-bar">
           <label className="pt-srch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search a link, a slug or a person" />
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder={tr("Search a link, a slug or a person")} />
           </label>
-          <select className="pt-sel" value={filter} onChange={e => setFilter(e.target.value)} aria-label="Filter links">
-            <option value="all">All</option>
-            <option value="active">Live</option>
-            <option value="paused">Paused</option>
+          <select className="pt-sel" value={filter} onChange={e => setFilter(e.target.value)} aria-label={tr("Filter links")}>
+            <option value="all">{tr("All")}</option>
+            <option value="active">{tr("Live")}</option>
+            <option value="paused">{tr("Paused")}</option>
           </select>
-          <select className="pt-sel" value={sort} onChange={e => setSort(e.target.value)} aria-label="Sort links">
-            <option value="new">Newest</option>
-            <option value="old">Oldest</option>
-            <option value="clicks">Most clicks</option>
-            <option value="conv">Most paid</option>
-            <option value="rate">Best rate</option>
+          <select className="pt-sel" value={sort} onChange={e => setSort(e.target.value)} aria-label={tr("Sort links")}>
+            <option value="new">{tr("Newest")}</option>
+            <option value="old">{tr("Oldest")}</option>
+            <option value="clicks">{tr("Most clicks")}</option>
+            <option value="conv">{tr("Most paid")}</option>
+            <option value="rate">{tr("Best rate")}</option>
           </select>
           <span className="pt-cnt">{filtered.length} {filtered.length === 1 ? "link" : "links"}</span>
         </div>
@@ -311,28 +315,28 @@ export default function LinksPage({ initialData }) {
       <Modal
         open={!!reassignLink}
         onClose={() => setReassignLink(null)}
-        title="Hand this link over"
+        title={tr("Hand this link over")}
         sub={reassignLink?.name}
         footer={<>
-          <button type="button" className="pt-b" onClick={() => setReassignLink(null)}>Cancel</button>
-          <button type="button" className="pt-b pri" onClick={handleReassign}>Hand it over</button>
+          <button type="button" className="pt-b" onClick={() => setReassignLink(null)}>{tr("Cancel")}</button>
+          <button type="button" className="pt-b pri" onClick={handleReassign}>{tr("Hand it over")}</button>
         </>}
       >
-        <label className="pt-lbl">Whose link is it now</label>
+        <label className="pt-lbl">{tr("Whose link is it now")}</label>
         <select className="pt-in" value={reassignTo} onChange={(e) => setReassignTo(e.target.value)}>
-          <option value="">Me</option>
+          <option value="">{tr("Me")}</option>
           {team.map((m) => (<option key={m.id} value={m.id}>{m.name}</option>))}
         </select>
       </Modal>
 
-      <Card title="Links" cnt="tap the short link to copy it">
+      <Card title={tr("Links")} cnt="tap the short link to copy it">
         {allLinks.length === 0 ? (
-          <Empty>No links yet. Make one and start tracking.</Empty>
+          <Empty>{tr("No links yet. Make one and start tracking.")}</Empty>
         ) : filtered.length === 0 ? (
-          <Empty>No link matches that.</Empty>
+          <Empty>{tr("No link matches that.")}</Empty>
         ) : <>
           <div className="pt-lh">
-            <span>Link</span><span className="r">Clicks</span><span className="r">Paid</span><span>Whose</span><span /><span />
+            <span>{tr("Link")}</span><span className="r">{tr("Clicks")}</span><span className="r">{tr("Paid")}</span><span>{tr("Whose")}</span><span /><span />
           </div>
           <div className="pt-list" style={{ opacity: refreshing ? 0.6 : 1, transition: "opacity 200ms" }}>
             {filtered.map((link) => {
@@ -348,11 +352,11 @@ export default function LinksPage({ initialData }) {
                     </span>
                     <span className="pt-num m">{link.clicks.toLocaleString()}</span>
                     <span className="pt-num m">{link.commissions.toLocaleString()}</span>
-                    <span className="pt-c">{isSelf ? "You" : link.affiliateName || "Nobody"}</span>
-                    <Chip kind={link.enabled ? "ok" : "dim"}>{link.enabled ? "Live" : "Paused"}</Chip>
+                    <span className="pt-c">{isSelf ? tr("You") : link.affiliateName || tr("Nobody")}</span>
+                    <Chip kind={link.enabled ? "ok" : "dim"}>{link.enabled ? tr("Live") : tr("Paused")}</Chip>
                     <span className="pt-acts">
-                      <button type="button" className="pt-b sm" onClick={() => setExpandedId(expandedId === link.id ? null : link.id)}>Stats</button>
-                      <button type="button" className="pt-b sm" onClick={() => toggleEnabled(link.id, link.enabled)}>{link.enabled ? "Pause" : "Start"}</button>
+                      <button type="button" className="pt-b sm" onClick={() => setExpandedId(expandedId === link.id ? null : link.id)}>{tr("Stats")}</button>
+                      <button type="button" className="pt-b sm" onClick={() => toggleEnabled(link.id, link.enabled)}>{link.enabled ? tr("Pause") : tr("Start")}</button>
                     </span>
                   </div>
                   {expandedId === link.id && (

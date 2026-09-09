@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { useT } from "../locale";
 import { Card, Field, Modal, pitVars } from "./kit";
 import { useTheme } from "../shared-nav";
 import { useToast } from "../toast";
@@ -16,6 +17,7 @@ function Row({ title, sub, action }) {
 }
 
 function Socials({ member, toast }) {
+  const tr = useT();
   const [tgLoading, setTgLoading] = useState(false);
   const [tgLinked, setTgLinked] = useState(member.telegramLinked);
   const [tgHandle, setTgHandle] = useState(member.telegramHandle || null);
@@ -134,21 +136,21 @@ function Socials({ member, toast }) {
 
   return (
     <>
-      <Card title="Socials" cnt="so we can tag you when your link does well">
+      <Card title={tr("Socials")} cnt="so we can tag you when your link does well">
         <div className="pt-cb">
           <Row
             title="X"
             sub={xHandle ? `@${xHandle}` : "Not connected"}
             action={xHandle
-              ? <button type="button" className="pt-b sm bad" onClick={() => setDisconnectTarget("twitter")}>Disconnect</button>
-              : <button type="button" className="pt-b sm" onClick={() => { setXInput(""); setXError(null); setXOpen(true); }}>Connect</button>}
+              ? <button type="button" className="pt-b sm bad" onClick={() => setDisconnectTarget("twitter")}>{tr("Disconnect")}</button>
+              : <button type="button" className="pt-b sm" onClick={() => { setXInput(""); setXError(null); setXOpen(true); }}>{tr("Connect")}</button>}
           />
           <Row
             title="Telegram"
             sub={tgLinked ? (tgHandle ? `@${tgHandle}` : "Connected") : "Not connected"}
             action={tgLinked
-              ? <button type="button" className="pt-b sm bad" onClick={() => setDisconnectTarget("telegram")}>Disconnect</button>
-              : <button type="button" className="pt-b sm" disabled={tgLoading} onClick={tgConnect}>{tgLoading ? "Waiting…" : "Connect"}</button>}
+              ? <button type="button" className="pt-b sm bad" onClick={() => setDisconnectTarget("telegram")}>{tr("Disconnect")}</button>
+              : <button type="button" className="pt-b sm" disabled={tgLoading} onClick={tgConnect}>{tgLoading ? tr("Waiting…") : tr("Connect")}</button>}
           />
           {tgError && <div className="pt-err">{tgError}</div>}
         </div>
@@ -159,7 +161,7 @@ function Socials({ member, toast }) {
         onClose={() => setDisconnectTarget(null)}
         title={`Disconnect ${disconnectTarget === "twitter" ? "X" : "Telegram"}?`}
         footer={<>
-          <button type="button" className="pt-b" onClick={() => setDisconnectTarget(null)}>Cancel</button>
+          <button type="button" className="pt-b" onClick={() => setDisconnectTarget(null)}>{tr("Cancel")}</button>
           <button
             type="button"
             className="pt-b pri"
@@ -170,7 +172,7 @@ function Socials({ member, toast }) {
               if (target === "twitter") await xDisconnect();
               else await tgDisconnect();
             }}
-          >Disconnect</button>
+          >{tr("Disconnect")}</button>
         </>}
       >
         <div className="pt-note">
@@ -181,21 +183,22 @@ function Socials({ member, toast }) {
       <Modal
         open={xOpen}
         onClose={() => setXOpen(false)}
-        title="Connect X"
-        sub="The handle you post from."
+        title={tr("Connect X")}
+        sub={tr("The handle you post from.")}
         footer={<>
           {xError && <span className="pt-err">{xError}</span>}
-          <button type="button" className="pt-b" onClick={() => setXOpen(false)}>Cancel</button>
-          <button type="button" className="pt-b pri" disabled={xLoading} onClick={xConnect}>{xLoading ? "Saving…" : "Connect"}</button>
+          <button type="button" className="pt-b" onClick={() => setXOpen(false)}>{tr("Cancel")}</button>
+          <button type="button" className="pt-b pri" disabled={xLoading} onClick={xConnect}>{xLoading ? tr("Saving…") : tr("Connect")}</button>
         </>}
       >
-        <Field label="Your handle" value={xInput} onChange={setXInput} placeholder="@yourhandle" autoFocus />
+        <Field label={tr("Your handle")} value={xInput} onChange={setXInput} placeholder={tr("@yourhandle")} autoFocus />
       </Modal>
     </>
   );
 }
 
 export default function SettingsPage({ member }) {
+  const tr = useT();
   const { dark, t } = useTheme();
   const toast = useToast();
 
@@ -278,22 +281,22 @@ export default function SettingsPage({ member }) {
     <div className="set" style={pitVars(dark, t)}>
       <style>{SET_CSS}</style>
 
-      <Card title="Account" cnt="how we reach you">
+      <Card title={tr("Account")} cnt="how we reach you">
         <div className="pt-cb">
           <Row title={member.name} sub={standing} />
           <Row title="Email" sub={member.email} />
           <Row title="WhatsApp" sub={member.phone || "Not on file"} />
-          <Row title="Password" sub="Change it whenever you like" action={<button type="button" className="pt-b sm" onClick={() => { setCurrentPw(""); setNewPw(""); setPwError(null); setPwOpen(true); }}>Change</button>} />
-          <div className="pt-note">Your name, email and WhatsApp are set by your chief. Ask them to change one.</div>
+          <Row title="Password" sub={tr("Change it whenever you like")} action={<button type="button" className="pt-b sm" onClick={() => { setCurrentPw(""); setNewPw(""); setPwError(null); setPwOpen(true); }}>{tr("Change")}</button>} />
+          <div className="pt-note">{tr("Your name, email and WhatsApp are set by your chief. Ask them to change one.")}</div>
         </div>
       </Card>
 
-      <Card title="Bank" cnt="where payouts go">
+      <Card title={tr("Bank")} cnt="where payouts go">
         <div className="pt-cb">
           {hasBankDetails ? (
-            <Row title={`${savedBank.name} · ${savedBank.no}`} sub={savedBank.acct} action={<button type="button" className="pt-b sm" onClick={openBankModal}>Change</button>} />
+            <Row title={`${savedBank.name} · ${savedBank.no}`} sub={savedBank.acct} action={<button type="button" className="pt-b sm" onClick={openBankModal}>{tr("Change")}</button>} />
           ) : (
-            <Row title="No account on file" sub="Required before you can request a payout" action={<button type="button" className="pt-b sm pri" onClick={openBankModal}>Add</button>} />
+            <Row title={tr("No account on file")} sub={tr("Required before you can request a payout")} action={<button type="button" className="pt-b sm pri" onClick={openBankModal}>{tr("Add")}</button>} />
           )}
         </div>
       </Card>
@@ -303,32 +306,32 @@ export default function SettingsPage({ member }) {
       <Modal
         open={bankOpen}
         onClose={() => setBankOpen(false)}
-        title={hasBankDetails ? "Change where payouts go" : "Where should payouts go"}
-        sub="Your password confirms it is you."
+        title={hasBankDetails ? tr("Change where payouts go") : tr("Where should payouts go")}
+        sub={tr("Your password confirms it is you.")}
         footer={<>
           {bankError && <span className="pt-err">{bankError}</span>}
-          <button type="button" className="pt-b" onClick={() => setBankOpen(false)}>Cancel</button>
-          <button type="button" className="pt-b pri" disabled={bankSaving} onClick={handleBankSave}>{bankSaving ? "Saving…" : "Save"}</button>
+          <button type="button" className="pt-b" onClick={() => setBankOpen(false)}>{tr("Cancel")}</button>
+          <button type="button" className="pt-b pri" disabled={bankSaving} onClick={handleBankSave}>{bankSaving ? tr("Saving…") : tr("Save")}</button>
         </>}
       >
-        <Field label="Bank" value={bankName} onChange={setBankName} placeholder="e.g. GTBank" />
-        <Field label="Account number" value={bankAccountNo} onChange={setBankAccountNo} placeholder="0123456789" />
-        <Field label="Account name" value={bankAccountName} onChange={setBankAccountName} placeholder="The full name on the account" />
-        <Field label="Your password" value={bankPassword} onChange={setBankPassword} type="password" placeholder="Required to save" />
+        <Field label={tr("Bank")} value={bankName} onChange={setBankName} placeholder="e.g. GTBank" />
+        <Field label={tr("Account number")} value={bankAccountNo} onChange={setBankAccountNo} placeholder="0123456789" />
+        <Field label={tr("Account name")} value={bankAccountName} onChange={setBankAccountName} placeholder={tr("The full name on the account")} />
+        <Field label={tr("Your password")} value={bankPassword} onChange={setBankPassword} type="password" placeholder={tr("Required to save")} />
       </Modal>
 
       <Modal
         open={pwOpen}
         onClose={() => setPwOpen(false)}
-        title="Change your password"
+        title={tr("Change your password")}
         footer={<>
           {pwError && <span className="pt-err">{pwError}</span>}
-          <button type="button" className="pt-b" onClick={() => setPwOpen(false)}>Cancel</button>
-          <button type="button" className="pt-b pri" disabled={pwSaving} onClick={handlePwSave}>{pwSaving ? "Saving…" : "Save"}</button>
+          <button type="button" className="pt-b" onClick={() => setPwOpen(false)}>{tr("Cancel")}</button>
+          <button type="button" className="pt-b pri" disabled={pwSaving} onClick={handlePwSave}>{pwSaving ? tr("Saving…") : tr("Save")}</button>
         </>}
       >
-        <Field label="Current password" value={currentPw} onChange={setCurrentPw} type="password" autoFocus />
-        <Field label="New password" value={newPw} onChange={setNewPw} type="password" placeholder="At least 6 characters" />
+        <Field label={tr("Current password")} value={currentPw} onChange={setCurrentPw} type="password" autoFocus />
+        <Field label={tr("New password")} value={newPw} onChange={setNewPw} type="password" placeholder={tr("At least 6 characters")} />
       </Modal>
     </div>
   );
