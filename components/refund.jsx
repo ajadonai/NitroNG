@@ -1,5 +1,6 @@
 'use client';
 import { ThemeProvider } from './shared-nav';
+import { useT } from "./locale";
 import { LegalLayout } from './legal-layout';
 
 export default function Refund(){
@@ -7,6 +8,7 @@ export default function Refund(){
 }
 
 function RefundInner(){
+  const tr = useT();
   const sections=[
     ["Overview","Refunds for orders on Nitro are credited to your Nitro wallet, which lets us process them instantly, and your balance can be used for any future order on the platform. Money in your wallet stays in your wallet: it is spent on Nitro rather than paid back out."],
     ["Automatic refunds","You are refunded automatically in the following cases: you cancel a pending order before processing begins (full refund), we cancel or are unable to place your order (full refund), or your order is only partially delivered (you are refunded for the undelivered portion). These refunds are automatic and require no action from you."],
@@ -24,9 +26,9 @@ function RefundInner(){
     "Refills on eligible services are free.",
   ];
   const related=[
-    {title:"Terms of service",desc:"The rules of the service",href:"/terms"},
-    {title:"Privacy policy",desc:"What we keep and why",href:"/privacy"},
-    {title:"Cookie policy",desc:"What the site remembers",href:"/cookie"},
+    {title: tr("Terms of service"),desc: tr("The rules of the service"),href:"/terms"},
+    {title: tr("Privacy policy"),desc: tr("What we keep and why"),href:"/privacy"},
+    {title: tr("Cookie policy"),desc: tr("What the site remembers"),href:"/cookie"},
   ];
-  return <LegalLayout label="Policy" title="Refund policy" date="September 7, 2026" summary={summary} sections={sections} related={related}/>;
+  return <LegalLayout label={tr("Policy")} title={tr("Refund policy")} date="September 7, 2026" summary={summary} sections={sections} related={related}/>;
 }

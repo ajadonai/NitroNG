@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useT } from "./locale";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 
@@ -33,6 +34,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 const num = n => (typeof n === 'number' ? n.toLocaleString('en-US') : '—');
 
 function AboutInner({ stats }) {
+  const tr = useT();
   const { t } = useTheme();
 
   const [active, setActive] = useState(SECTIONS[0][0]);
@@ -70,9 +72,9 @@ function AboutInner({ stats }) {
       <div className="flex-1 w-full max-w-[920px] mx-auto px-7 pt-11 pb-14 max-md:px-4 max-md:pt-7 max-md:pb-10 flex flex-col gap-[26px] max-md:gap-5">
 
         <header className="flex flex-col gap-2.5">
-          <span style={eyebrow}>About</span>
-          <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>Built in Lagos, for Nigeria</h1>
-          <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>Nitro is a content promotion platform for Nigerian creators, businesses and marketers. Naira prices, Nigerian banks, real people on WhatsApp.</p>
+          <span style={eyebrow}>{tr("About")}</span>
+          <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>{tr("Built in Lagos, for Nigeria")}</h1>
+          <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>{tr("Nitro is a content promotion platform for Nigerian creators, businesses and marketers. Naira prices, Nigerian banks, real people on WhatsApp.")}</p>
         </header>
 
         <div className="ab-stats rounded-[14px]" style={card}>
@@ -87,7 +89,7 @@ function AboutInner({ stats }) {
 
         <div className="grid grid-cols-[220px_1fr] gap-9 items-start max-md:grid-cols-1 max-md:gap-[18px]">
           <aside className="sticky top-5 flex flex-col gap-0.5 max-md:hidden">
-            <span style={{ ...eyebrow, marginBottom: 8 }}>On this page</span>
+            <span style={{ ...eyebrow, marginBottom: 8 }}>{tr("On this page")}</span>
             {SECTIONS.map(([id, h]) => {
               const on = id === active;
               return (
@@ -96,7 +98,7 @@ function AboutInner({ stats }) {
             })}
           </aside>
           <details className="md:hidden rounded-xl px-3.5 py-2.5 text-[13px]" style={card}>
-            <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>On this page · {SECTIONS.length} sections</summary>
+            <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>{tr("On this page ·")} {SECTIONS.length} sections</summary>
             {SECTIONS.map(([id, h]) => (
               <a key={id} href={`#${id}`} className="block py-1.5 no-underline" style={{ color: t.muted, borderTop: `1px solid ${t.cardBorder}` }}>{h}</a>
             ))}
@@ -104,27 +106,27 @@ function AboutInner({ stats }) {
 
           <article className="flex flex-col gap-[22px] max-w-[66ch] min-w-0">
             <section id="what-we-do" className="scroll-mt-24">
-              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>What we do</h2>
+              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>{tr("What we do")}</h2>
               <p className="m-0 mb-3 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>
-                We make social media growth simple. Whether you're a creator trying to hit your first 10,000 followers, a business building credibility online, or a marketer managing multiple brands — Nitro handles the numbers so you can focus on your content.
+                {tr("We make social media growth simple. Whether you're a creator trying to hit your first 10,000 followers, a business building credibility online, or a marketer managing multiple brands — Nitro handles the numbers so you can focus on your content.")}
               </p>
               <p className="m-0 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>
-                We offer 140+ service types across 28 platforms including Instagram, TikTok, YouTube, X, Facebook, Telegram, and Spotify. Every service is priced in Naira with no dollar conversion, no hidden fees, and no password required — just your public profile link.
+                {tr("We offer 140+ service types across 28 platforms including Instagram, TikTok, YouTube, X, Facebook, Telegram, and Spotify. Every service is priced in Naira with no dollar conversion, no hidden fees, and no password required — just your public profile link.")}
               </p>
             </section>
 
             <section id="why-nitro-exists" className="scroll-mt-24">
-              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>Why Nitro exists</h2>
+              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>{tr("Why Nitro exists")}</h2>
               <p className="m-0 mb-3 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>
-                Most SMM panels are built for a global audience — dollar pricing, international payment gateways that reject Nigerian cards, and support teams in different time zones. We built Nitro because Nigerian creators and businesses deserve a growth tool that works for them.
+                {tr("Most SMM panels are built for a global audience — dollar pricing, international payment gateways that reject Nigerian cards, and support teams in different time zones. We built Nitro because Nigerian creators and businesses deserve a growth tool that works for them.")}
               </p>
               <p className="m-0 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>
-                That means Naira pricing from day one. Bank transfers, Flutterwave, and crypto for payments. Support that responds in minutes, not days. And a clean, modern dashboard that doesn't feel like it was built in 2015.
+                {tr("That means Naira pricing from day one. Bank transfers, Flutterwave, and crypto for payments. Support that responds in minutes, not days. And a clean, modern dashboard that doesn't feel like it was built in 2015.")}
               </p>
             </section>
 
             <section id="how-we-are-different" className="scroll-mt-24">
-              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>How we are different</h2>
+              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>{tr("How we are different")}</h2>
               <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
                 {DIFFERENT.map(([title, desc]) => (
                   <div key={title} className="flex flex-col rounded-xl px-4 py-3.5" style={card}>
@@ -136,7 +138,7 @@ function AboutInner({ stats }) {
             </section>
 
             <section id="company-details" className="scroll-mt-24">
-              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>Company details</h2>
+              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>{tr("Company details")}</h2>
               <div className="rounded-[14px] overflow-hidden" style={card}>
                 {DETAILS.map(([label, value, mono], i) => (
                   <div key={label} className="flex items-center justify-between gap-2.5 px-[18px] py-3.5" style={{ borderTop: i ? `1px solid ${t.cardBorder}` : undefined }}>
@@ -151,10 +153,10 @@ function AboutInner({ stats }) {
 
         <div className="flex items-center gap-3 rounded-[14px] px-[18px] py-4 max-md:flex-col max-md:items-stretch" style={card}>
           <span className="flex flex-col gap-0.5">
-            <b className="text-[15px]" style={{ color: t.text }}>Ready to grow your socials?</b>
-            <span className="text-[13px]" style={{ color: t.soft }}>Join the thousands of Nigerian creators already on Nitro.</span>
+            <b className="text-[15px]" style={{ color: t.text }}>{tr("Ready to grow your socials?")}</b>
+            <span className="text-[13px]" style={{ color: t.soft }}>{tr("Join the thousands of Nigerian creators already on Nitro.")}</span>
           </span>
-          <a href="/signup" className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>Create a free account</a>
+          <a href="/signup" className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>{tr("Create a free account")}</a>
         </div>
       </div>
       <SharedFooter />

@@ -38,7 +38,7 @@ describe('unconfirmed bank transfers', () => {
 
   it('shows the amount once on the details step, in the field you can copy', () => {
     const sheet = read('components/manual-transfer-sheet.jsx');
-    const details = sheet.slice(sheet.indexOf('Bank transfer</div>'), sheet.indexOf('Who sent it?'));
+    const details = sheet.slice(sheet.indexOf('tr("Bank transfer")}</div>'), sheet.indexOf('Who sent it?'));
     expect(details.match(/fN\(manualModal\.amount\)/g) || []).toHaveLength(1);
   });
 
@@ -48,7 +48,7 @@ describe('unconfirmed bank transfers', () => {
 
   it('keeps the confirm sheet on the one modal layer, above the mobile dock', () => {
     const sheet = read('components/manual-transfer-sheet.jsx');
-    expect(sheet).toContain('aria-label="Bank transfer"');
+    expect(sheet).toContain('aria-label={tr("Bank transfer")}');
     expect(sheet).toMatch(/fixed inset-0 z-\[200\][^"]*items-end md:items-center/);
   });
 

@@ -1033,7 +1033,7 @@ function DashboardInner({ initialData }) {
       reference: ref,
       paymentState: PAYMENT_STATES.VERIFYING,
       transactionStatus: null,
-      message: "We’re confirming your payment with Flutterwave.",
+      message: tr("We’re confirming your payment with Flutterwave."),
     });
 
     async function verify() {
@@ -1080,7 +1080,7 @@ function DashboardInner({ initialData }) {
           paymentState: PAYMENT_STATES.RETRYABLE,
           transactionStatus: null,
           retryable: true,
-          message: "We couldn’t reach Flutterwave. Your payment is safe and can be checked again.",
+          message: tr("We couldn’t reach Flutterwave. Your payment is safe and can be checked again."),
         }, ref));
       }
     }
@@ -1282,7 +1282,7 @@ function DashboardInner({ initialData }) {
       <nav className="dash-nav" style={{ background: dark ? "rgba(14,9,22,.9)" : "rgba(248,245,241,.92)", borderBottom: `0.5px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
         <div className="dash-nav-left">
           {/* Mobile/tablet: hamburger + logo as one button to toggle sidebar */}
-          <button className="dash-menu-btn" onClick={() => setLeftOpen(!leftOpen)} aria-label={leftOpen ? "Close menu" : "Open menu"}>
+          <button className="dash-menu-btn" onClick={() => setLeftOpen(!leftOpen)} aria-label={leftOpen ? tr("Close menu") : tr("Open menu")}>
             <div className="dash-hamburger-bars" style={{ opacity: leftOpen ? 0 : 1, position: leftOpen ? "absolute" : "relative" }}>
               <div className="h-0.5 rounded-[1px] w-4 bg-accent" />
               <div className="h-0.5 rounded-[1px] w-[11px] bg-accent" />
@@ -1510,7 +1510,7 @@ function DashboardInner({ initialData }) {
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
               {/* The real lifetime count — "Two" only when it is actually two. */}
-              <div className="text-sm font-bold leading-snug text-t-text">{momentCompleted === 2 ? tr("Two") : Number(momentCompleted || 0).toLocaleString()} {tr("orders delivered.")}<br/>{tr("You&rsquo;re a regular now.")}</div>
+              <div className="text-sm font-bold leading-snug text-t-text">{momentCompleted === 2 ? tr("Two") : Number(momentCompleted || 0).toLocaleString()} {tr("orders delivered.")}<br/>{tr("You’re a regular now.")}</div>
               <div className="text-xs leading-[1.5] mt-1 text-t-text-muted">{isIos ? tr("Keep Nitro one tap away for tracking the next one.") : tr("Put Nitro on your home screen and track the next one in one tap. No app store, no download size.")}</div>
             </div>
             <button type="button" aria-label={tr("Dismiss")} onClick={closeInstallMoment} className="shrink-0 w-[26px] h-[26px] rounded-lg flex items-center justify-center border-none cursor-pointer text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>

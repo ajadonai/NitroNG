@@ -13,9 +13,10 @@ import { useMoney } from './locale';
 // rather than growing a second copy.
 
 export function Crumbs({ items }) {
+  const tr = useT();
   const { t } = useTheme();
   return (
-    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-[12px]" style={{ color: t.muted }}>
+    <nav aria-label={tr("Breadcrumb")} className="flex flex-wrap items-center gap-1.5 text-[12px]" style={{ color: t.muted }}>
       {items.map(({ label, href }, i) => (
         <span key={label} className="flex items-center gap-1.5">
           {i > 0 && <i className="not-italic opacity-50" aria-hidden="true"><span className="dir-flip">›</span></i>}
@@ -31,6 +32,7 @@ export function Crumbs({ items }) {
 // Sticky list on a desktop, a <details> under 768px. Same markup shape as
 // LegalLayout so both surfaces behave identically.
 export function Contents({ items }) {
+  const tr = useT();
   const { t } = useTheme();
   const key = items.map(i => i.id).join('|');
   const [active, setActive] = useState(items[0]?.id);
@@ -54,7 +56,7 @@ export function Contents({ items }) {
   return (
     <>
       <aside className="sticky top-5 flex flex-col gap-0.5 max-md:hidden">
-        <span style={{ ...eyebrow, marginBottom: 8 }}>On this page</span>
+        <span style={{ ...eyebrow, marginBottom: 8 }}>{tr("On this page")}</span>
         {items.map(({ id, label }) => {
           const on = id === active;
           return (
@@ -63,7 +65,7 @@ export function Contents({ items }) {
         })}
       </aside>
       <details className="md:hidden rounded-xl px-3.5 py-2.5 text-[13px]" style={cardStyle(t)}>
-        <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>On this page · {items.length} {items.length === 1 ? 'section' : 'sections'}</summary>
+        <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>{tr("On this page ·")} {items.length} {items.length === 1 ? 'section' : 'sections'}</summary>
         {items.map(({ id, label }) => (
           <a key={id} href={`#${id}`} className="block py-1.5 no-underline" style={{ color: t.muted, borderTop: `1px solid ${t.cardBorder}` }}>{label}</a>
         ))}
@@ -174,11 +176,12 @@ export function sectionOf(href) {
 }
 
 export function RelatedTiles({ items }) {
+  const tr = useT();
   const { t } = useTheme();
   if (!items.length) return null;
   return (
     <div>
-      <span style={{ ...eyebrowStyle(t), marginBottom: 10 }}>Related</span>
+      <span style={{ ...eyebrowStyle(t), marginBottom: 10 }}>{tr("Related")}</span>
       <div className="grid grid-cols-3 gap-3 max-md:grid-cols-1">
         {items.map(({ href, label, note }) => (
           <a key={href} href={href} className="flex flex-col gap-1 rounded-xl px-4 py-3.5 no-underline transition-transform duration-200 hover:-translate-y-px" style={cardStyle(t)}>
@@ -272,10 +275,10 @@ function ServicePlatformInner({ platform, services = [], copy: rawCopy = {}, nex
   const hasFaq = copy.faq?.length > 0;
 
   const toc = [
-    hasGet && { id: 'what-you-can-get', label: 'What you can get' },
-    { id: 'how-to-buy', label: 'How to buy' },
-    hasWhy && { id: 'why-nitro', label: 'Why Nitro' },
-    hasFaq && { id: 'questions', label: 'Questions' },
+    hasGet && { id: 'what-you-can-get', label: tr("What you can get") },
+    { id: 'how-to-buy', label: tr("How to buy") },
+    hasWhy && { id: 'why-nitro', label: tr("Why Nitro") },
+    hasFaq && { id: 'questions', label: tr("Questions") },
   ].filter(Boolean);
 
   // whatYouGet is a flat list of sentences; where one carries an em dash the
@@ -287,12 +290,12 @@ function ServicePlatformInner({ platform, services = [], copy: rawCopy = {}, nex
 
   const related = [
     ...relatedLinks.map(({ href, label }) => ({ href, label })),
-    ...(nextPlatform ? [{ href: `/services/${nextPlatform.slug}`, label: `Browse ${nextPlatform.name} services`, note: 'Next platform' }] : []),
+    ...(nextPlatform ? [{ href: `/services/${nextPlatform.slug}`, label: `Browse ${nextPlatform.name} services`, note: tr("Next platform") }] : []),
   ];
 
   return (
     <PageShell>
-      <Crumbs items={[{ label: 'Services', href: '/services' }, { label: platform }]} />
+      <Crumbs items={[{ label: tr("Services"), href: '/services' }, { label: platform }]} />
 
       <header className="flex flex-col gap-2.5">
         <span style={eyebrow}>{platform} · {services.length} {services.length === 1 ? 'service' : 'services'}</span>
@@ -304,8 +307,8 @@ function ServicePlatformInner({ platform, services = [], copy: rawCopy = {}, nex
         <div>
           <div className="rounded-[14px] overflow-hidden" style={card}>
             <div className="flex items-baseline justify-between gap-2.5 px-[18px] py-3" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-              <b className="text-[15px] font-semibold" style={{ color: t.text }}>{platform} services and prices</b>
-              <span className="text-[12px] text-right" style={{ color: t.muted }}>per 1,000</span>
+              <b className="text-[15px] font-semibold" style={{ color: t.text }}>{platform} {tr("services and prices")}</b>
+              <span className="text-[12px] text-right" style={{ color: t.muted }}>{tr("per 1,000")}</span>
             </div>
             {services.map((s, i) => (
               <div key={s.type} className="flex items-center justify-between gap-2.5 px-[18px] py-3.5" style={{ borderTop: i === 0 ? 'none' : `1px solid ${t.cardBorder}` }}>
@@ -318,7 +321,7 @@ function ServicePlatformInner({ platform, services = [], copy: rawCopy = {}, nex
             ))}
           </div>
           <div className="mt-2.5">
-            <PinkButton href="/signup" full>Start growing on {platform}</PinkButton>
+            <PinkButton href="/signup" full>{tr("Start growing on")} {platform}</PinkButton>
           </div>
         </div>
       )}
@@ -327,7 +330,7 @@ function ServicePlatformInner({ platform, services = [], copy: rawCopy = {}, nex
         <Contents items={toc} />
         <article className="flex flex-col gap-[22px] max-w-[66ch] min-w-0">
           {hasGet && (
-            <Section id="what-you-can-get" title="What you can get">
+            <Section id="what-you-can-get" title={tr("What you can get")}>
               <Tiles items={tiles} />
             </Section>
           )}
@@ -340,7 +343,7 @@ function ServicePlatformInner({ platform, services = [], copy: rawCopy = {}, nex
             </Section>
           )}
           {hasFaq && (
-            <Section id="questions" title="Frequently asked questions">
+            <Section id="questions" title={tr("Frequently asked questions")}>
               <Accordion items={copy.faq} />
             </Section>
           )}
@@ -349,7 +352,7 @@ function ServicePlatformInner({ platform, services = [], copy: rawCopy = {}, nex
 
       <RelatedTiles items={related} />
 
-      <AskCard title="Not sure which tier?" body="Start with Budget on a small order and move up. Or ask us on WhatsApp." />
+      <AskCard title={tr("Not sure which tier?")} body={tr("Start with Budget on a small order and move up. Or ask us on WhatsApp.")} />
     </PageShell>
   );
 }

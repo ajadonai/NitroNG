@@ -229,8 +229,14 @@ describe("display currency — one deposit rate, read both ways", () => {
     // and it does not gate payment: Flutterwave still collects naira and the
     // only foreign rail is USDT, which is why the deposit box prints the naira
     // that will actually be charged underneath whatever you are reading.
-    it("offers every currency the switcher lists", () => {
-      for (const code of CURRENCY_CODES) expect(isActive(code), code).toBe(true);
+    it("offers naira and marks the other four Soon", () => {
+      // The four foreign units are a product gate, not broken maths: the picker
+      // renders its Soon branch for anything inactive. Flipping one back to
+      // true in lib/currency.js is the whole of shipping it.
+      expect(isActive("NGN")).toBe(true);
+      for (const code of CURRENCY_CODES.filter((c) => c !== "NGN")) {
+        expect(isActive(code), code).toBe(false);
+      }
     });
 
     it("still refuses to convert without a rate, active or not", () => {
@@ -261,8 +267,20 @@ describe("display currency — one deposit rate, read both ways", () => {
     });
 
     it("dollars need the deposit rate", () => {
-      expect(canDisplay("USD", {})).toBe(false);
-      expect(canDisplay("USD", { depositRate: 1151 })).toBe(true);
+      // USD is gated off today, so activate it here: the point of this test is
+      // the rate requirement, which must keep holding for whenever it ships.
+      const was = CURRENCIES.USD.active;
+      CURRENCIES.USD.active = true;
+      try {
+        expect(canDisplay("USD", {})).toBe(false);
+        expect(canDisplay("USD", { depositRate: 1151 })).toBe(true);
+      } finally {
+        CURRENCIES.USD.active = was;
+      }
+    });
+
+    it("an inactive currency is not offered even with a live rate", () => {
+      expect(canDisplay("USD", { depositRate: 1151 })).toBe(false);
     });
 
     it("a currency turned off is never offered, rate or no rate", () => {

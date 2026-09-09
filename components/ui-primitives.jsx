@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from "react";
+import { useT } from "./locale";
 
 /**
  * Shared UI primitives.
@@ -66,6 +67,7 @@ export function ModalBtn({ kind = "quiet", dark, className = "", style: styleOve
 }
 
 export function Modal({ open, onClose, title, subtitle, icon, intent = "accent", footer, children, dark, maxWidth = 480, labelledBy, variant = "dialog", bare = false }) {
+  const tr = useT();
   const sheet = variant === "sheet";
   // The full anatomy — icon chip, title, subtitle, X, footer — renders when a
   // dialog passes a title without `bare`. Bare callers keep their own layout.
@@ -97,7 +99,7 @@ export function Modal({ open, onClose, title, subtitle, icon, intent = "accent",
   const line = dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)";
   return (
     <div className={sheet ? "fixed inset-0 z-[300]" : "fixed inset-0 z-[300] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-[6px]"}>
-      <button type="button" aria-label="Close dialog" onClick={onClose}
+      <button type="button" aria-label={tr("Close dialog")} onClick={onClose}
         className="absolute inset-0 border-none cursor-default" style={{ background: "rgba(0,0,0,.55)" }} />
       <div
         ref={panelRef}
@@ -130,7 +132,7 @@ export function Modal({ open, onClose, title, subtitle, icon, intent = "accent",
                 <div className="text-[15px] font-bold leading-tight" style={{ color: ink }}>{title}</div>
                 {subtitle && <div className="text-[12.5px] mt-0.5 leading-relaxed" style={{ color: mut }}>{subtitle}</div>}
               </div>
-              <button type="button" onClick={onClose} aria-label="Close" className={`w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 cursor-pointer ${FOCUS_RING}`} style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${line}`, color: mut }}>
+              <button type="button" onClick={onClose} aria-label={tr("Close")} className={`w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 cursor-pointer ${FOCUS_RING}`} style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${line}`, color: mut }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
               </button>
             </div>

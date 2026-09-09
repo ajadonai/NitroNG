@@ -1,5 +1,6 @@
 'use client';
 import { useMoney } from "./locale";
+import { useT } from "./locale";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { RailSec, RailCard } from "./rail";
 import { useBodyScrollLock } from "./ui-primitives";
@@ -22,12 +23,13 @@ const naira = (n, money) => money(Number(n || 0));
 
 // The legend content, shared by the mobile collapsible and the desktop sidebar.
 function GradeLegendBody({ dark, t }) {
+  const tr = useT();
   const border = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)";
   return (
     <>
       <div className="flex flex-wrap gap-2 mb-3">
         {[...Object.entries(GRADE_META).map(([k, m]) => ({ k, dot: m.dot, label: m.label, letter: m.letter, tint: `${m.dot}1f` })),
-          { k: "none", dot: null, label: "Not graded", tint: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }].map(c => (
+          { k: "none", dot: null, label: tr("Not graded"), tint: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)" }].map(c => (
           <span key={c.k} className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[11px] font-semibold"
             style={{ background: c.tint, color: dark ? "#cfc9c2" : "#555250", border: `1px solid ${c.dot ? `${c.dot}55` : border}` }}>
             {c.dot
@@ -38,7 +40,7 @@ function GradeLegendBody({ dark, t }) {
         ))}
       </div>
       <div className="text-[13px] leading-relaxed" style={{ color: t.textMuted }}>
-        Not every service carries a grade — an ungraded service is <span style={{ fontWeight: 600, color: dark ? "#cfc9c2" : "#555250" }}>not a lesser one</span>,
+        Not every service carries a grade — an ungraded service is <span style={{ fontWeight: 600, color: dark ? "#cfc9c2" : "#555250" }}>{tr("not a lesser one")}</span>,
         grading just isn&rsquo;t available across the whole catalogue. Judge ungraded services on refill terms and price;
         many are among the strongest performers.
       </div>
@@ -49,9 +51,10 @@ function GradeLegendBody({ dark, t }) {
 // Rendered by the dashboard's right rail on desktop, matching the other pages'
 // sidebar pattern.
 export function ResellerCatalogueSidebar({ dark, t }) {
+  const tr = useT();
   return (
     <div className="rr">
-      <RailSec>Quality grades</RailSec>
+      <RailSec>{tr("Quality grades")}</RailSec>
       <RailCard style={{ padding: "6px 14px" }}>
         <GradeLegendBody dark={dark} t={t} />
       </RailCard>
@@ -67,6 +70,7 @@ const ROW_CSS = `
 `;
 
 export default function ResellerCataloguePage({ dark, t }) {
+  const tr = useT();
   const money = useMoney();
   const [state, setState] = useState({ status: "loading" });
   const [view, setView] = useState("curated");
@@ -156,7 +160,7 @@ export default function ResellerCataloguePage({ dark, t }) {
   if (state.status === "loading") {
     const sk = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
     return (
-      <div aria-busy="true" aria-live="polite" aria-label="Loading catalogue">
+      <div aria-busy="true" aria-live="polite" aria-label={tr("Loading catalogue")}>
         {/* legend */}
         <div className="rounded-xl mb-4 py-3 px-4 flex items-center justify-between" style={{ background: cardBg, border: `1px solid ${border}` }}>
           <div className={`${sk} w-[120px] h-[13px]`} />
@@ -190,15 +194,15 @@ export default function ResellerCataloguePage({ dark, t }) {
   if (state.status === "denied") {
     return (
       <div className="p-10 rounded-2xl text-center" style={{ background: cardBg, border: `1px solid ${border}` }}>
-        <div className="text-base font-semibold mb-2" style={{ color: t.text }}>Reseller access required</div>
+        <div className="text-base font-semibold mb-2" style={{ color: t.text }}>{tr("Reseller access required")}</div>
         <div className="text-sm max-w-[420px] mx-auto" style={{ color: t.textMuted }}>
-          The catalogue is for approved resellers. Message our support on WhatsApp and tell us about your business to get set up.
+          {tr("The catalogue is for approved resellers. Message our support on WhatsApp and tell us about your business to get set up.")}
         </div>
       </div>
     );
   }
   if (state.status === "error") {
-    return <div className="p-10 rounded-2xl text-center text-sm" style={{ background: cardBg, border: `1px solid ${border}`, color: t.textMuted }}>Could not load the catalogue. Refresh to try again.</div>;
+    return <div className="p-10 rounded-2xl text-center text-sm" style={{ background: cardBg, border: `1px solid ${border}`, color: t.textMuted }}>{tr("Could not load the catalogue. Refresh to try again.")}</div>;
   }
 
   const { data } = state;
@@ -212,7 +216,7 @@ export default function ResellerCataloguePage({ dark, t }) {
     const m = grade && GRADE_META[grade];
     if (!m) {
       return (
-        <span aria-label="Ungraded" title="Ungraded"
+        <span aria-label={tr("Ungraded")} title={tr("Ungraded")}
           className="inline-flex items-center justify-center text-[11px] font-bold shrink-0"
           style={{
             width: 18, height: 18, borderRadius: 5,
@@ -251,7 +255,7 @@ export default function ResellerCataloguePage({ dark, t }) {
       </span>
       <span className="text-right flex-shrink-0 w-[86px]">
         <span className="block text-[15px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: "tabular-nums" }}>{naira(s.price)}</span>
-        <span className="text-[11px]" style={{ color: t.textMuted }}>per 1k</span>
+        <span className="text-[11px]" style={{ color: t.textMuted }}>{tr("per 1k")}</span>
       </span>
       <svg className="flex-shrink-0 max-md:hidden" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
     </button>
@@ -261,14 +265,14 @@ export default function ResellerCataloguePage({ dark, t }) {
     <>
       <style>{ROW_CSS}</style>
       <div className="pb-2 desktop:pb-3.5 mb-3">
-        <div className="text-lg desktop:text-[22px] font-semibold" style={{ color: t.text }}>Catalogue</div>
+        <div className="text-lg desktop:text-[22px] font-semibold" style={{ color: t.text }}>{tr("Catalogue")}</div>
         <div className="text-sm desktop:text-[15px] max-md:text-xs mt-0.5" style={{ color: t.textMuted }}>
-          Browse and copy service IDs. Order curated services from New Order, or anything here through the API.
+          {tr("Browse and copy service IDs. Order curated services from New Order, or anything here through the API.")}
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
         <div className="flex items-center gap-2.5 mt-3 py-2 px-3 rounded-xl text-[12px]" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", border: "1px solid rgba(196,125,142,.3)", color: t.textSoft }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c47d8e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true"><path d="m21 2-2 2m-7.6 7.6a5.5 5.5 0 11-7.8 7.8 5.5 5.5 0 017.8-7.8zm0 0L19 3l2 2-3 3"/></svg>
-          <span>Ordering by API? Your key is in <b style={{ color: t.text }}>Settings</b>, the base URL is <b className="m" style={{ color: t.text }}>nitro.ng/api/v2</b>, and the <a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="font-semibold text-accent">docs</a> cover all six actions.</span>
+          <span>{tr("Ordering by API? Your key is in")} <b style={{ color: t.text }}>{tr("Settings")}</b>, the base URL is <b className="m" style={{ color: t.text }}>nitro.ng/api/v2</b>, and the <a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="font-semibold text-accent">docs</a> {tr("cover all six actions.")}</span>
         </div>
       </div>
 
@@ -279,7 +283,7 @@ export default function ResellerCataloguePage({ dark, t }) {
           className="w-full flex items-center justify-between py-3 px-4 cursor-pointer border-none text-left" style={{ background: "none" }}>
           <span className="text-sm font-semibold inline-flex items-center gap-1.5" style={{ color: t.text }}>
             <span className="flex gap-0.5">{Object.values(GRADE_META).map(m => <span key={m.dot} style={{ width: 7, height: 7, borderRadius: 99, background: m.dot, display: "inline-block" }} />)}</span>
-            Quality grades
+            {tr("Quality grades")}
           </span>
           <svg className={`cat-chev${legendOpen ? " open" : ""}`} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
         </button>
@@ -321,8 +325,8 @@ export default function ResellerCataloguePage({ dark, t }) {
           </svg>
           <span className="text-[13px] leading-snug" style={{ color: t.textSoft }}>
             {view === "curated"
-              ? <>Covered by Nitro&rsquo;s refill guarantee. Order these from New Order or the API.</>
-              : <>Sold as listed. Each service carries only its own refill and cancel terms, shown on every row. API only.</>}
+              ? <>{tr("Covered by Nitro’s refill guarantee. Order these from New Order or the API.")}</>
+              : <>{tr("Sold as listed. Each service carries only its own refill and cancel terms, shown on every row. API only.")}</>}
           </span>
         </div>
       )}
@@ -355,7 +359,7 @@ export default function ResellerCataloguePage({ dark, t }) {
                   </span>
                   <span className="text-right flex-shrink-0 w-[86px]">
                     <span className="block text-[15px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace", fontVariantNumeric: "tabular-nums" }}>{naira(tier.price)}</span>
-                    <span className="text-[11px]" style={{ color: t.textMuted }}>per 1k</span>
+                    <span className="text-[11px]" style={{ color: t.textMuted }}>{tr("per 1k")}</span>
                   </span>
                 </div>
               ))}
@@ -367,18 +371,18 @@ export default function ResellerCataloguePage({ dark, t }) {
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            aria-label="Search the catalogue by service name or ID"
+            aria-label={tr("Search the catalogue by service name or ID")}
             type="search"
             autoComplete="off"
             spellCheck={false}
-            placeholder="Search by name or service ID…"
+            placeholder={tr("Search by name or service ID…")}
             className="w-full md:max-w-[420px] py-2.5 px-3.5 rounded-[10px] text-[13px] outline-none mb-4 focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40"
             style={{ background: cardBg, border: `1px solid ${border}`, color: t.text }}
           />
           {results !== null ? (
             <div className="rounded-[14px] overflow-hidden" style={{ background: cardBg, border: `1px solid ${border}` }}>
               {results.length === 0
-                ? <div className="py-8 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>Nothing matches &ldquo;{query.trim()}&rdquo;.</div>
+                ? <div className="py-8 px-4 text-center text-[13px]" style={{ color: t.textMuted }}>{tr("Nothing matches “")}{query.trim()}{tr("”.")}</div>
                 : results.map(fullRow)}
             </div>
           ) : (
@@ -395,7 +399,7 @@ export default function ResellerCataloguePage({ dark, t }) {
                     ? (<>
                       {catRows[c.name].rows.length
                         ? catRows[c.name].rows.map(fullRow)
-                        : <div className="py-6 px-4 text-[13px]" style={{ color: t.textMuted }}>Nothing available in this category right now.</div>}
+                        : <div className="py-6 px-4 text-[13px]" style={{ color: t.textMuted }}>{tr("Nothing available in this category right now.")}</div>}
                       {catRows[c.name].loadingMore && <SkelList dark={dark} rows={3} bare avatar={false} rowH={44} />}
                       {catRows[c.name].hasMore && (
                         <button onClick={() => loadMore(c.name)} disabled={catRows[c.name].loadingMore}
@@ -428,26 +432,26 @@ export default function ResellerCataloguePage({ dark, t }) {
       {/* detail drawer */}
       {drawer && (
         <div className="fixed inset-0 z-[300]">
-          <button type="button" aria-label="Close service details"
+          <button type="button" aria-label={tr("Close service details")}
             className="absolute inset-0 border-none cursor-default"
             style={{ background: "rgba(0,0,0,.45)" }} onClick={() => setDrawer(null)} />
           <div role="dialog" aria-modal="true" aria-label={`${drawer.label} details`}
             className="absolute right-0 top-0 bottom-0 w-full max-w-[400px] p-6 overflow-y-auto"
             style={{ background: dark ? "#16121a" : "#fdfcfb", borderLeft: `1px solid ${border}`, overscrollBehavior: "contain" }}>
             <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">{gradeDot(drawer.grade)}<span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: t.textMuted }}>{drawer.grade ? GRADE_META[drawer.grade].label : "Not graded"}</span></div>
-              <button onClick={() => setDrawer(null)} aria-label="Close" className="border-none cursor-pointer text-[15px]" style={{ background: "none", color: t.textMuted }}>×</button>
+              <div className="flex items-center gap-2">{gradeDot(drawer.grade)}<span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: t.textMuted }}>{drawer.grade ? GRADE_META[drawer.grade].label : tr("Not graded")}</span></div>
+              <button onClick={() => setDrawer(null)} aria-label={tr("Close")} className="border-none cursor-pointer text-[15px]" style={{ background: "none", color: t.textMuted }}>×</button>
             </div>
 
             <div className="text-[15px] font-semibold mb-4 leading-snug" style={{ color: t.text }}>{drawer.label}</div>
 
             {/* the thing they came for */}
             <div className="rounded-[12px] p-4 mb-4" style={{ background: softBg }}>
-              <div className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: t.textMuted }}>Service ID — use this in API calls</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: t.textMuted }}>{tr("Service ID — use this in API calls")}</div>
               <div className="flex items-center justify-between">
                 <span className="text-[28px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{drawer.id}</span>
                 <button onClick={() => { copyText(String(drawer.id)); setCopied(true); }}
-                  className="py-1.5 px-3 rounded-lg text-[11px] font-semibold border-none cursor-pointer transition-colors" style={{ background: copied ? "#16a34a" : t.accent, color: "#fff" }}>{copied ? "Copied" : "Copy"}</button>
+                  className="py-1.5 px-3 rounded-lg text-[11px] font-semibold border-none cursor-pointer transition-colors" style={{ background: copied ? "#16a34a" : t.accent, color: "#fff" }}>{copied ? tr("Copied") : tr("Copy")}</button>
               </div>
             </div>
 
@@ -470,7 +474,7 @@ export default function ResellerCataloguePage({ dark, t }) {
             )}
 
             <div className="text-[13px] leading-relaxed" style={{ color: t.textMuted }}>
-              Full-catalogue services carry the provider&rsquo;s own terms{drawer.refill ? "" : " and no refill guarantee"}. Order through the API using the ID above.
+              Full-catalogue services carry the provider&rsquo;s own terms{drawer.refill ? "" : tr(" and no refill guarantee")}. Order through the API using the ID above.
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useT } from "./locale";
 import { useTheme } from './shared-nav';
 
 // One icon map for every public catalogue surface. Keys are the platform names
@@ -88,6 +89,7 @@ export function useWhatsAppLink() {
 }
 
 export function AskCard({ title, body }) {
+  const tr = useT();
   const { t } = useTheme();
   const waLink = useWhatsAppLink();
   return (
@@ -96,7 +98,7 @@ export function AskCard({ title, body }) {
         <b className="text-[15px]" style={{ color: t.text }}>{title}</b>
         <span className="text-[13px]" style={{ color: t.soft }}>{body}</span>
       </span>
-      <PinkButton href={waLink || '/contact'} external={!!waLink}>WhatsApp us</PinkButton>
+      <PinkButton href={waLink || '/contact'} external={!!waLink}>{tr("WhatsApp us")}</PinkButton>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { useT } from "./locale";
 
 // Nine times out of ten this is an operational notice, so it is drawn as a
 // status line, not an alert box: a dot in the type colour, the type as one
@@ -31,6 +32,7 @@ const CSS = `
 `;
 
 export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", onDismiss, preview = false }) {
+  const tr = useT();
   const [dismissed, setDismissed] = useState(new Set());
   const [leaving, setLeaving] = useState(null);
 
@@ -103,8 +105,8 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
           <svg className="dir-flip" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </a>
       )}
-      {visible.length > 1 && <span className="an-cnt">1 of {visible.length}</span>}
-      <button type="button" onClick={() => { if (!preview) dismiss(alert); }} className="an-x" aria-label="Dismiss" tabIndex={preview ? -1 : 0}>
+      {visible.length > 1 && <span className="an-cnt">{tr("1 of")} {visible.length}</span>}
+      <button type="button" onClick={() => { if (!preview) dismiss(alert); }} className="an-x" aria-label={tr("Dismiss")} tabIndex={preview ? -1 : 0}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>

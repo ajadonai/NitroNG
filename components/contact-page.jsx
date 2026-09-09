@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useT } from "./locale";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { SITE } from '../lib/site';
@@ -31,6 +32,7 @@ export default function ContactView() {
 }
 
 function ContactInner() {
+  const tr = useT();
   const { t } = useTheme();
   const [open, setOpen] = useState(QUESTIONS[0][0]);
   const [active, setActive] = useState(SECTIONS[0][0]);
@@ -69,40 +71,40 @@ function ContactInner() {
       <main className="flex-1 w-full max-w-[920px] mx-auto px-7 pt-11 pb-14 max-md:px-4 max-md:pt-7 max-md:pb-10 flex flex-col gap-[26px] max-md:gap-5">
 
         <header className="flex flex-col gap-2.5">
-          <span style={eyebrow}>Contact</span>
-          <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>Talk to a person</h1>
-          <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>WhatsApp is the fast way. Email is the written way. We answer every day, quickest between 9am and 10pm Lagos time.</p>
+          <span style={eyebrow}>{tr("Contact")}</span>
+          <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>{tr("Talk to a person")}</h1>
+          <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>{tr("WhatsApp is the fast way. Email is the written way. We answer every day, quickest between 9am and 10pm Lagos time.")}</p>
         </header>
 
         <div className="grid grid-cols-[1.3fr_1fr_1fr] gap-3 max-md:grid-cols-1">
           <div className={channel} style={{ ...card, borderColor: t.accent }}>
             <span style={eyebrow}>WhatsApp</span>
-            <b className="text-[16px] font-semibold" style={{ color: t.text }}>Fastest</b>
-            <span className="text-[13px] leading-[1.5] flex-1" style={{ color: t.muted }}>Our main support channel. Typical reply time is minutes during Lagos working hours, longer late at night and on Sundays. Send your order ID if your question is about a specific order.</span>
-            <a href={waLink} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>Message us</a>
+            <b className="text-[16px] font-semibold" style={{ color: t.text }}>{tr("Fastest")}</b>
+            <span className="text-[13px] leading-[1.5] flex-1" style={{ color: t.muted }}>{tr("Our main support channel. Typical reply time is minutes during Lagos working hours, longer late at night and on Sundays. Send your order ID if your question is about a specific order.")}</span>
+            <a href={waLink} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>{tr("Message us")}</a>
           </div>
           <div className={channel} style={card}>
             <span style={eyebrow}>Email</span>
             <a href={`mailto:${SITE.email.support}`} className="text-[16px] font-semibold no-underline" style={{ color: t.text }}>{SITE.email.support}</a>
-            <span className="text-[13px] leading-[1.5]" style={{ color: t.muted }}>Better for anything that needs attachments, invoices or a written record. Replies usually take a few hours rather than minutes.</span>
+            <span className="text-[13px] leading-[1.5]" style={{ color: t.muted }}>{tr("Better for anything that needs attachments, invoices or a written record. Replies usually take a few hours rather than minutes.")}</span>
           </div>
           <div className={channel} style={card}>
-            <span style={eyebrow}>Social</span>
+            <span style={eyebrow}>{tr("Social")}</span>
             <b className="text-[16px] font-semibold" style={{ color: t.text }}>@{SITE.social.instagram} · @{SITE.social.twitter}</b>
-            <span className="text-[13px] leading-[1.5]" style={{ color: t.muted }}>On Instagram and X. Fine for general questions. Please do not send order details or account information over social DMs.</span>
+            <span className="text-[13px] leading-[1.5]" style={{ color: t.muted }}>{tr("On Instagram and X. Fine for general questions. Please do not send order details or account information over social DMs.")}</span>
           </div>
         </div>
 
         <div className="grid grid-cols-[220px_1fr] gap-9 items-start max-md:grid-cols-1 max-md:gap-[18px]">
           <aside className="sticky top-5 flex flex-col gap-0.5 max-md:hidden">
-            <span style={{ ...eyebrow, marginBottom: 8 }}>On this page</span>
+            <span style={{ ...eyebrow, marginBottom: 8 }}>{tr("On this page")}</span>
             {SECTIONS.map(([id, label]) => {
               const on = id === active;
               return <a key={id} href={`#${id}`} className="text-[13px] leading-[1.35] px-2.5 py-1.5 no-underline" style={{ color: on ? t.text : t.muted, borderLeft: `2px solid ${on ? t.accent : t.cardBorder}`, fontWeight: on ? 600 : 400 }}>{label}</a>;
             })}
           </aside>
           <details className="md:hidden rounded-xl px-3.5 py-2.5 text-[13px]" style={card}>
-            <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>On this page · {SECTIONS.length} sections</summary>
+            <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>{tr("On this page ·")} {SECTIONS.length} sections</summary>
             {SECTIONS.map(([id, label]) => (
               <a key={id} href={`#${id}`} className="block py-1.5 no-underline" style={{ color: t.muted, borderTop: `1px solid ${t.cardBorder}` }}>{label}</a>
             ))}
@@ -111,8 +113,8 @@ function ContactInner() {
           <article className="flex flex-col gap-[22px] max-w-[66ch] min-w-0">
 
             <section id="before-you-message" className="scroll-mt-24">
-              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={{ color: t.text }}>Before you message</h2>
-              <p className="m-0 mb-3 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>Four things come up constantly. If yours is one of them, this is faster than waiting.</p>
+              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={{ color: t.text }}>{tr("Before you message")}</h2>
+              <p className="m-0 mb-3 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>{tr("Four things come up constantly. If yours is one of them, this is faster than waiting.")}</p>
               <div className="rounded-[14px] overflow-hidden" style={card}>
                 {QUESTIONS.map(([q, a], i) => {
                   const isOpen = open === q;
@@ -138,8 +140,8 @@ function ContactInner() {
             </section>
 
             <section id="what-to-include" className="scroll-mt-24">
-              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={{ color: t.text }}>What to include</h2>
-              <p className="m-0 mb-3 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>You will get a faster answer with:</p>
+              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={{ color: t.text }}>{tr("What to include")}</h2>
+              <p className="m-0 mb-3 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>{tr("You will get a faster answer with:")}</p>
               <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
                 {INCLUDE.map(([label, note]) => (
                   <span key={label} className="flex flex-col gap-0.5 rounded-xl px-4 py-3.5" style={card}>
@@ -151,9 +153,9 @@ function ContactInner() {
             </section>
 
             <section id="when-we-are-around" className="scroll-mt-24">
-              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={{ color: t.text }}>When we are around</h2>
-              <p className="m-0 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>We answer every day. Realistically, replies are fastest between roughly 9am and 10pm West Africa Time, which is when most of our customers are active. Outside that window we still respond, just not always immediately.</p>
-              <p className="m-0 mt-3 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>We are based in Lagos, Nigeria. The Nitro NG is a registered Nigerian company.</p>
+              <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={{ color: t.text }}>{tr("When we are around")}</h2>
+              <p className="m-0 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>{tr("We answer every day. Realistically, replies are fastest between roughly 9am and 10pm West Africa Time, which is when most of our customers are active. Outside that window we still respond, just not always immediately.")}</p>
+              <p className="m-0 mt-3 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>{tr("We are based in Lagos, Nigeria. The Nitro NG is a registered Nigerian company.")}</p>
             </section>
 
           </article>
@@ -161,10 +163,10 @@ function ContactInner() {
 
         <div className="flex items-center gap-3 rounded-[14px] px-[18px] py-4 max-md:flex-col max-md:items-stretch" style={card}>
           <span className="flex flex-col gap-0.5">
-            <b className="text-[15px]" style={{ color: t.text }}>Ready?</b>
-            <span className="text-[13px]" style={{ color: t.soft }}>Open WhatsApp and tell us what is going on.</span>
+            <b className="text-[15px]" style={{ color: t.text }}>{tr("Ready?")}</b>
+            <span className="text-[13px]" style={{ color: t.soft }}>{tr("Open WhatsApp and tell us what is going on.")}</span>
           </span>
-          <a href={waLink} target="_blank" rel="noopener noreferrer" className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>Message us</a>
+          <a href={waLink} target="_blank" rel="noopener noreferrer" className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>{tr("Message us")}</a>
         </div>
 
       </main>

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useT } from "./locale";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 
@@ -36,6 +37,7 @@ const REFILLS = [
 ];
 
 function ReviewsInner() {
+  const tr = useT();
   const { t } = useTheme();
 
   const [stats, setStats] = useState(null);
@@ -86,9 +88,9 @@ function ReviewsInner() {
       <div className="flex-1 w-full max-w-[920px] mx-auto px-7 pt-11 pb-14 max-md:px-4 max-md:pt-7 max-md:pb-10 flex flex-col gap-[26px] max-md:gap-5">
 
         <header className="flex flex-col gap-2.5">
-          <span style={eyebrow}>Reviews</span>
-          <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>What customers say, and what they complain about</h1>
-          <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>No star ratings we wrote ourselves. The numbers below come out of our own system, and the complaints are the real ones.</p>
+          <span style={eyebrow}>{tr("Reviews")}</span>
+          <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>{tr("What customers say, and what they complain about")}</h1>
+          <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>{tr("No star ratings we wrote ourselves. The numbers below come out of our own system, and the complaints are the real ones.")}</p>
         </header>
 
         {facts.length > 0 && (
@@ -105,7 +107,7 @@ function ReviewsInner() {
 
         <div className="grid grid-cols-[220px_1fr] gap-9 items-start max-md:grid-cols-1 max-md:gap-[18px]">
           <aside className="sticky top-5 flex flex-col gap-0.5 max-md:hidden">
-            <span style={{ ...eyebrow, marginBottom: 8 }}>On this page</span>
+            <span style={{ ...eyebrow, marginBottom: 8 }}>{tr("On this page")}</span>
             {SECTIONS.map(([id, short]) => {
               const on = id === active;
               return (
@@ -114,7 +116,7 @@ function ReviewsInner() {
             })}
           </aside>
           <details className="md:hidden rounded-xl px-3.5 py-2.5 text-[13px]" style={card}>
-            <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>On this page · {SECTIONS.length} sections</summary>
+            <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>{tr("On this page ·")} {SECTIONS.length} sections</summary>
             {SECTIONS.map(([id, short]) => (
               <a key={id} href={`#${id}`} className="block py-1.5 no-underline" style={{ color: t.muted, borderTop: `1px solid ${t.cardBorder}` }}>{short}</a>
             ))}
@@ -155,19 +157,19 @@ function ReviewsInner() {
 
             <section id={SECTIONS[3][0]} className="scroll-mt-24">
               <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>{SECTIONS[3][2]}</h2>
-              <p className="text-[15.5px] leading-[1.7] m-0" style={{ color: t.soft }}>We launched recently. We do not have five years of history and we are not going to pretend otherwise.</p>
-              <p className="text-[15.5px] leading-[1.7] mt-3 mb-0" style={{ color: t.soft }}>Our third-party review footprint is thin. Our catalogue is smaller than the big panels. Our delivery estimates on individual services need work. And support, while fast, is a small team, so at 3am on a Sunday you may be waiting.</p>
-              <p className="text-[15.5px] leading-[1.7] mt-3 mb-0" style={{ color: t.soft }}>Do not decide from this page — we wrote it, so it is not evidence. Deposit ₦1,000, which is our minimum and deliberately low for exactly this reason, and buy one small order. Watch whether it starts, whether the tracker matches your real count, and how fast WhatsApp answers. That tells you more in an afternoon than any review page.</p>
+              <p className="text-[15.5px] leading-[1.7] m-0" style={{ color: t.soft }}>{tr("We launched recently. We do not have five years of history and we are not going to pretend otherwise.")}</p>
+              <p className="text-[15.5px] leading-[1.7] mt-3 mb-0" style={{ color: t.soft }}>{tr("Our third-party review footprint is thin. Our catalogue is smaller than the big panels. Our delivery estimates on individual services need work. And support, while fast, is a small team, so at 3am on a Sunday you may be waiting.")}</p>
+              <p className="text-[15.5px] leading-[1.7] mt-3 mb-0" style={{ color: t.soft }}>{tr("Do not decide from this page — we wrote it, so it is not evidence. Deposit ₦1,000, which is our minimum and deliberately low for exactly this reason, and buy one small order. Watch whether it starts, whether the tracker matches your real count, and how fast WhatsApp answers. That tells you more in an afternoon than any review page.")}</p>
             </section>
           </article>
         </div>
 
         <div className="flex items-center gap-3 rounded-[14px] px-[18px] py-4 max-md:flex-col max-md:items-stretch" style={card}>
           <span className="flex flex-col gap-0.5">
-            <b className="text-[15px]" style={{ color: t.text }}>Something we got wrong?</b>
-            <span className="text-[13px]" style={{ color: t.soft }}>Tell us on WhatsApp. Complaints on this page came from customers.</span>
+            <b className="text-[15px]" style={{ color: t.text }}>{tr("Something we got wrong?")}</b>
+            <span className="text-[13px]" style={{ color: t.soft }}>{tr("Tell us on WhatsApp. Complaints on this page came from customers.")}</span>
           </span>
-          <a href={waLink || '/contact'} target={waLink ? '_blank' : undefined} rel={waLink ? 'noopener noreferrer' : undefined} className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>WhatsApp us</a>
+          <a href={waLink || '/contact'} target={waLink ? '_blank' : undefined} rel={waLink ? 'noopener noreferrer' : undefined} className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>{tr("WhatsApp us")}</a>
         </div>
       </div>
       <SharedFooter />

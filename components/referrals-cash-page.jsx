@@ -1,5 +1,6 @@
 'use client';
 import { useState } from "react";
+import { useT } from "./locale";
 import { useToast } from "./toast";
 import { copyText } from '@/lib/clipboard';
 
@@ -17,6 +18,7 @@ const initials = n => (n || "?").split(" ").map(w => w[0]).slice(0, 2).join("").
 const fD = d => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
 export default function CashReferralsPage({ data, dark, t, onRefresh }) {
+  const tr = useT();
   const toast = useToast();
   const [method, setMethod] = useState("cash");
   const [bank, setBank] = useState({ bankName: "", bankAccountNo: "", bankAccountName: "" });
@@ -45,29 +47,29 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
   const copy = () => { try { copyText(link); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {} };
 
   const STATUS = {
-    available: { label: "Earned", clr: green, bg: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)" },
-    paid: { label: "Paid out", clr: green, bg: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)" },
-    credited: { label: "To wallet", clr: green, bg: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)" },
-    requested: { label: "Paying out", clr: amber, bg: dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)" },
-    held: { label: "Clearing", clr: amber, bg: dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)" },
-    voided: { label: "Reversed", clr: t.textMuted, bg: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" },
+    available: { label: tr("Earned"), clr: green, bg: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)" },
+    paid: { label: tr("Paid out"), clr: green, bg: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)" },
+    credited: { label: tr("To wallet"), clr: green, bg: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)" },
+    requested: { label: tr("Paying out"), clr: amber, bg: dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)" },
+    held: { label: tr("Clearing"), clr: amber, bg: dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)" },
+    voided: { label: tr("Reversed"), clr: t.textMuted, bg: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" },
   };
 
   return (
     <>
       <div className="pb-2 desktop:pb-3.5">
-        <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Referrals</div>
-        <div className="text-sm desktop:text-[15px] text-t-text-muted">{fN(data.amount)} cash for every friend who funds their account</div>
+        <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">{tr("Referrals")}</div>
+        <div className="text-sm desktop:text-[15px] text-t-text-muted">{fN(data.amount)} {tr("cash for every friend who funds their account")}</div>
         <div className="page-divider bg-t-card-border" />
       </div>
 
       {/* Hero */}
       <div className="rounded-2xl p-4 desktop:p-5 mb-4" style={{ background: dark ? "linear-gradient(135deg,rgba(196,125,142,.18),rgba(139,94,107,.08))" : "linear-gradient(135deg,rgba(196,125,142,.12),rgba(139,94,107,.05))", border: `1px solid ${dark ? "rgba(196,125,142,.35)" : "rgba(196,125,142,.28)"}` }}>
-        <div className="text-[16px] font-bold text-t-text">Invite a friend, get paid actual cash.</div>
-        <div className="text-[13px] mt-1 leading-relaxed text-t-text-muted">They deposit {fN(250000)} or more, you earn {fN(data.amount)} — to your bank, not just your wallet. They still get their welcome bonus too.</div>
+        <div className="text-[16px] font-bold text-t-text">{tr("Invite a friend, get paid actual cash.")}</div>
+        <div className="text-[13px] mt-1 leading-relaxed text-t-text-muted">{tr("They deposit")} {fN(250000)} {tr("or more, you earn")} {fN(data.amount)} {tr("— to your bank, not just your wallet. They still get their welcome bonus too.")}</div>
         <div className="flex gap-2 mt-3">
           <div className="m flex-1 min-w-0 py-2 px-3 rounded-[10px] text-[13px] overflow-hidden text-ellipsis whitespace-nowrap text-t-text-soft" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${t.cardBorder}` }}>{link}</div>
-          <button onClick={copy} className="py-2 px-3.5 rounded-[10px] text-[13px] font-semibold cursor-pointer whitespace-nowrap shrink-0 border-none text-white" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>{copied ? "Copied" : "Copy link"}</button>
+          <button onClick={copy} className="py-2 px-3.5 rounded-[10px] text-[13px] font-semibold cursor-pointer whitespace-nowrap shrink-0 border-none text-white" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>{copied ? tr("Copied") : tr("Copy link")}</button>
         </div>
       </div>
 
@@ -83,7 +85,7 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
 
       {/* Get paid */}
       <div className="rounded-2xl overflow-hidden mb-4" style={card}>
-        <div className="py-2.5 px-4 text-[11px] font-bold uppercase tracking-[1.2px] text-t-text-muted" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>Get paid</div>
+        <div className="py-2.5 px-4 text-[11px] font-bold uppercase tracking-[1.2px] text-t-text-muted" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>{tr("Get paid")}</div>
         <div className="p-3.5 flex flex-col gap-2.5">
           {[["cash", "Cash to my bank", `From ${fN(data.minPayout)} · arrives within 2 days`, `${fN(data.amount)} / friend`], ["wallet", "Wallet credit, instantly", "No minimum · spends on any service", `${fN(data.walletAmount)} / friend`]].map(([id, title, sub, amt]) => (
             <button key={id} onClick={() => setMethod(id)} className="flex items-center gap-3 rounded-xl p-3 text-left cursor-pointer font-[inherit] w-full" style={{ background: "transparent", border: `1px solid ${method === id ? t.accent : t.cardBorder}`, boxShadow: method === id ? `0 0 0 1px ${t.accent} inset` : "none" }}>
@@ -103,9 +105,9 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
               </div>
               {overLine && (
                 <div className="grid grid-cols-1 desktop:grid-cols-3 gap-2">
-                  <input value={bank.bankName} onChange={e => setBank(b => ({ ...b, bankName: e.target.value }))} placeholder="Bank (e.g. Opay)" className="h-[38px] px-3 rounded-[10px] text-[13px] outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${t.cardBorder}` }} />
-                  <input value={bank.bankAccountNo} onChange={e => setBank(b => ({ ...b, bankAccountNo: e.target.value.replace(/\D/g, "").slice(0, 10) }))} placeholder="Account number" inputMode="numeric" className="m h-[38px] px-3 rounded-[10px] text-[13px] outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${t.cardBorder}` }} />
-                  <input value={bank.bankAccountName} onChange={e => setBank(b => ({ ...b, bankAccountName: e.target.value }))} placeholder="Account name" className="h-[38px] px-3 rounded-[10px] text-[13px] outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${t.cardBorder}` }} />
+                  <input value={bank.bankName} onChange={e => setBank(b => ({ ...b, bankName: e.target.value }))} placeholder={tr("Bank (e.g. Opay)")} className="h-[38px] px-3 rounded-[10px] text-[13px] outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${t.cardBorder}` }} />
+                  <input value={bank.bankAccountNo} onChange={e => setBank(b => ({ ...b, bankAccountNo: e.target.value.replace(/\D/g, "").slice(0, 10) }))} placeholder={tr("Account number")} inputMode="numeric" className="m h-[38px] px-3 rounded-[10px] text-[13px] outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${t.cardBorder}` }} />
+                  <input value={bank.bankAccountName} onChange={e => setBank(b => ({ ...b, bankAccountName: e.target.value }))} placeholder={tr("Account name")} className="h-[38px] px-3 rounded-[10px] text-[13px] outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${t.cardBorder}` }} />
                 </div>
               )}
               <button disabled={busy || !overLine || (overLine && (!bank.bankName || bank.bankAccountNo.length !== 10 || !bank.bankAccountName))} onClick={() => act({ action: "payout", ...bank }, "Cash-out requested")} className="h-[42px] rounded-xl text-[13.5px] font-semibold border-none cursor-pointer text-white disabled:cursor-default" style={{ background: overLine ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"), color: overLine ? "#fff" : t.textMuted, opacity: busy ? .6 : 1 }}>
@@ -122,9 +124,9 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
 
       {/* Friends */}
       <div className="rounded-2xl overflow-hidden mb-4" style={card}>
-        <div className="py-2.5 px-4 flex justify-between items-baseline text-[11px] font-bold uppercase tracking-[1.2px] text-t-text-muted" style={{ borderBottom: `1px solid ${t.cardBorder}` }}><span>Your friends</span><span className="normal-case tracking-normal font-normal text-[11.5px]">newest first</span></div>
+        <div className="py-2.5 px-4 flex justify-between items-baseline text-[11px] font-bold uppercase tracking-[1.2px] text-t-text-muted" style={{ borderBottom: `1px solid ${t.cardBorder}` }}><span>{tr("Your friends")}</span><span className="normal-case tracking-normal font-normal text-[11.5px]">{tr("newest first")}</span></div>
         {data.earnings.length === 0 && data.waiting.length === 0 ? (
-          <div className="p-8 text-center text-[13.5px] text-t-text-muted">No referrals yet. Share your link — the first friend who funds their account earns you {fN(data.amount)}.</div>
+          <div className="p-8 text-center text-[13.5px] text-t-text-muted">{tr("No referrals yet. Share your link — the first friend who funds their account earns you")} {fN(data.amount)}.</div>
         ) : (
           <>
             {data.earnings.map(e => {
@@ -141,8 +143,8 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
             {data.waiting.map((w, i) => (
               <div key={i} className="flex items-center gap-2.5 py-2.5 px-3.5" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` }}>
                 <span className="w-8 h-8 rounded-[10px] inline-flex items-center justify-center text-[11px] font-extrabold shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textMuted }}>{initials(w.friend)}</span>
-                <span className="flex-1 min-w-0"><b className="block text-[13px] font-semibold truncate text-t-text">{w.friend}</b><i className="block not-italic text-[11px] text-t-text-muted">Signed up {fD(w.signedUp)} · no deposit yet</i></span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.4px] py-0.5 px-2 rounded-full shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textMuted }}>Waiting</span>
+                <span className="flex-1 min-w-0"><b className="block text-[13px] font-semibold truncate text-t-text">{w.friend}</b><i className="block not-italic text-[11px] text-t-text-muted">{tr("Signed up")} {fD(w.signedUp)} {tr("· no deposit yet")}</i></span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.4px] py-0.5 px-2 rounded-full shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", color: t.textMuted }}>{tr("Waiting")}</span>
               </div>
             ))}
           </>
@@ -152,17 +154,17 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
       {/* Past payouts */}
       {data.payouts.length > 0 && (
         <div className="rounded-2xl overflow-hidden mb-4" style={card}>
-          <div className="py-2.5 px-4 text-[11px] font-bold uppercase tracking-[1.2px] text-t-text-muted" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>Past payouts</div>
+          <div className="py-2.5 px-4 text-[11px] font-bold uppercase tracking-[1.2px] text-t-text-muted" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>{tr("Past payouts")}</div>
           {data.payouts.map(p => (
             <div key={p.id} className="flex items-center gap-2.5 py-2.5 px-3.5" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"}` }}>
               <span className="flex-1 min-w-0"><b className="block text-[13px] font-semibold text-t-text">{fN(p.amount)} to {p.bank} {p.accountNo}</b><i className="block not-italic text-[11px] text-t-text-muted">{fD(p.createdAt)}{p.reference ? ` · ref ${p.reference}` : ""}</i></span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.4px] py-0.5 px-2 rounded-full shrink-0" style={p.status === "completed" ? { background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)", color: green } : p.status === "rejected" ? { background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.07)", color: dark ? "#fca5a5" : "#dc2626" } : { background: dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)", color: amber }}>{p.status === "completed" ? "Paid" : p.status === "rejected" ? "Returned" : "On the way"}</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.4px] py-0.5 px-2 rounded-full shrink-0" style={p.status === "completed" ? { background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)", color: green } : p.status === "rejected" ? { background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.07)", color: dark ? "#fca5a5" : "#dc2626" } : { background: dark ? "rgba(251,191,36,.12)" : "rgba(217,119,6,.08)", color: amber }}>{p.status === "completed" ? tr("Paid") : p.status === "rejected" ? tr("Returned") : tr("On the way")}</span>
             </div>
           ))}
         </div>
       )}
 
-      <p className="text-[11.5px] leading-relaxed text-t-text-muted">Earnings clear {data.holdDays} days after your friend's deposit. Self-referrals and same-device sign-ups don't count, and a refunded deposit takes its earning with it.</p>
+      <p className="text-[11.5px] leading-relaxed text-t-text-muted">{tr("Earnings clear")} {data.holdDays} {tr("days after your friend's deposit. Self-referrals and same-device sign-ups don't count, and a refunded deposit takes its earning with it.")}</p>
     </>
   );
 }

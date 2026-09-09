@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { useT } from "./locale";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { trackViewContent } from './capi-tracker';
@@ -19,6 +20,7 @@ const tierNote = s => {
 };
 
 function PricingInner({ platforms }) {
+  const tr = useT();
   const money = useMoney();
   const { t } = useTheme();
   const sorted = useMemo(() => [...platforms].sort((a, b) => b.services.length - a.services.length), [platforms]);
@@ -54,21 +56,21 @@ function PricingInner({ platforms }) {
         <div className="flex-1 w-full max-w-[920px] mx-auto px-7 pt-11 pb-14 max-md:px-4 max-md:pt-7 max-md:pb-10 flex flex-col gap-[26px] max-md:gap-5">
 
           <header className="flex flex-col gap-2.5">
-            <span style={eyebrow}>Pricing</span>
-            <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>Every price in naira, before you sign up</h1>
+            <span style={eyebrow}>{tr("Pricing")}</span>
+            <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>{tr("Every price in naira, before you sign up")}</h1>
             <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>
-              {sorted.length > 0 ? `${serviceCount} services across ${sorted.length} platforms. ` : ''}Three tiers on most of them: Budget, Standard with a 30-day refill, Premium with refill for life. Pick a platform to see the list.
+              {sorted.length > 0 ? `${serviceCount} services across ${sorted.length} platforms. ` : ''}{tr("Three tiers on most of them: Budget, Standard with a 30-day refill, Premium with refill for life. Pick a platform to see the list.")}
             </p>
           </header>
 
           <TierCards />
 
           {sorted.length === 0 ? (
-            <div className="text-center py-16" style={{ color: t.muted }}>Loading pricing...</div>
+            <div className="text-center py-16" style={{ color: t.muted }}>{tr("Loading pricing...")}</div>
           ) : (
             <>
               <div className="flex flex-col gap-3">
-                <span style={eyebrow}>Pick a platform</span>
+                <span style={eyebrow}>{tr("Pick a platform")}</span>
                 <div className="grid grid-cols-4 gap-2.5 max-md:grid-cols-2">
                   {sorted.map(p => {
                     const on = selected?.platform === p.platform;
@@ -93,7 +95,7 @@ function PricingInner({ platforms }) {
                   <div className="rounded-[14px] overflow-hidden" style={card}>
                     <div className="flex items-baseline justify-between gap-2.5 px-[18px] py-3" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
                       <b className="text-[15px] font-semibold" style={{ color: t.text }}>{selected.platform}</b>
-                      <span className="text-[12px] text-right" style={{ color: t.muted }}>{selected.services.length} {selected.services.length === 1 ? 'service' : 'services'} · prices per 1,000</span>
+                      <span className="text-[12px] text-right" style={{ color: t.muted }}>{selected.services.length} {selected.services.length === 1 ? 'service' : 'services'} {tr("· prices per 1,000")}</span>
                     </div>
                     {selected.services.map((s, i) => (
                       <div key={s.type} className="flex items-center justify-between gap-2.5 px-[18px] py-3.5" style={{ borderTop: i === 0 ? 'none' : `1px solid ${t.cardBorder}` }}>
@@ -106,14 +108,14 @@ function PricingInner({ platforms }) {
                     ))}
                   </div>
                   <div className="mt-2.5">
-                    <PinkButton href="/signup" full>Start growing on {selected.platform}</PinkButton>
+                    <PinkButton href="/signup" full>{tr("Start growing on")} {selected.platform}</PinkButton>
                   </div>
                 </div>
               )}
             </>
           )}
 
-          <AskCard title="Not sure which tier?" body="Start with Budget on a small order, move up if you like it. Or ask us on WhatsApp." />
+          <AskCard title={tr("Not sure which tier?")} body={tr("Start with Budget on a small order, move up if you like it. Or ask us on WhatsApp.")} />
         </div>
         <SharedFooter />
       </div>

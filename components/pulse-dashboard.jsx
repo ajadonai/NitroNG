@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useT } from "./locale";
 import NitroLoader from './nitro-loader';
 import { platformBrand } from '@/lib/platform-brand';
 
@@ -46,13 +47,15 @@ function DayLine({ values }) {
   );
 }
 function Axis({ nowHour }) {
-  return <div className="pl-ax"><span>00:00</span><span>06:00</span><span>12:00</span><span>now · {String(nowHour).padStart(2, '0')}:00</span></div>;
+  const tr = useT();
+  return <div className="pl-ax"><span>00:00</span><span>06:00</span><span>12:00</span><span>{tr("now ·")} {String(nowHour).padStart(2, '0')}:00</span></div>;
 }
 
 function Figure({ kind, label, value, delta, series, nowHour, note }) {
+  const tr = useT();
   return (
     <div className={`pl-tc pl-${kind}`}>
-      <div className="pl-tl">{label}<span className="pl-vs"><Delta value={delta} /> vs yesterday</span></div>
+      <div className="pl-tl">{label}<span className="pl-vs"><Delta value={delta} /> {tr("vs yesterday")}</span></div>
       <div className="pl-val m">{value}{note ? <span className="pl-note">{note}</span> : null}</div>
       <DayLine values={series} />
       <Axis nowHour={nowHour} />
@@ -61,11 +64,12 @@ function Figure({ kind, label, value, delta, series, nowHour, note }) {
 }
 
 function People({ data }) {
+  const tr = useT();
   const y = data.newUsersYesterday || 0;
   const change = y === 0 ? (data.newUsersToday > 0 ? null : 0) : Math.round(((data.newUsersToday - y) / y) * 100);
   return (
     <div className="pl-tc pl-ppl">
-      <div className="pl-tl">People<span className="pl-vs"><Delta value={change} /> vs yesterday&apos;s {y}</span></div>
+      <div className="pl-tl">{tr("People")}<span className="pl-vs"><Delta value={change} /> {tr("vs yesterday’s")} {y}</span></div>
       <div className="pl-pv"><span className="pl-val m">{num(data.totalUsers)}</span><span className="pl-pn m">+{num(data.newUsersToday)}<small>today</small></span></div>
       <DayLine values={(data.todayHours || []).map(h => h.newUsers)} />
       <Axis nowHour={data.nowHour || 0} />
@@ -78,9 +82,10 @@ function ListHead({ title, sub }) {
 }
 
 function LiveList({ data }) {
+  const tr = useT();
   return (
     <section className="pl-list">
-      <ListHead title="Live" sub={`${num(data.ordersToday)} today · ${num(data.processing)} running`} />
+      <ListHead title={tr("Live")} sub={`${num(data.ordersToday)} today · ${num(data.processing)} running`} />
       <div className="pl-rows">
         {(data.recentOrders || []).map(o => (
           <div className="pl-row" key={o.id}>
@@ -91,16 +96,17 @@ function LiveList({ data }) {
             <i className={`pl-dot pl-${DOT[o.status] || 'wait'}`} title={o.status} />
           </div>
         ))}
-        {!(data.recentOrders || []).length && <div className="pl-empty">No orders yet today</div>}
+        {!(data.recentOrders || []).length && <div className="pl-empty">{tr("No orders yet today")}</div>}
       </div>
     </section>
   );
 }
 function MoneyIn({ data }) {
+  const tr = useT();
   const todayCount = (data.recentDeposits || []).filter(d => new Date(d.created).toDateString() === new Date().toDateString()).length;
   return (
     <section className="pl-list">
-      <ListHead title="Money in" sub={`${naira(data.depositsToday)} today${todayCount ? ` · ${todayCount}+` : ''}`} />
+      <ListHead title={tr("Money in")} sub={`${naira(data.depositsToday)} today${todayCount ? ` · ${todayCount}+` : ''}`} />
       <div className="pl-rows">
         {(data.recentDeposits || []).map(d => (
           <div className="pl-row" key={d.id}>
@@ -110,17 +116,18 @@ function MoneyIn({ data }) {
             <span className="pl-amt m pl-in">+{naira(d.amount)}</span>
           </div>
         ))}
-        {!(data.recentDeposits || []).length && <div className="pl-empty">No deposits yet today</div>}
+        {!(data.recentDeposits || []).length && <div className="pl-empty">{tr("No deposits yet today")}</div>}
       </div>
     </section>
   );
 }
 function Refunds({ data }) {
+  const tr = useT();
   const list = data.recentRefunds || [];
   const total = list.reduce((s, r) => s + (r.refunded || 0), 0);
   return (
     <section className="pl-list">
-      <ListHead title="Refunds" sub={`${list.length} recent · ${naira(total)}`} />
+      <ListHead title={tr("Refunds")} sub={`${list.length} recent · ${naira(total)}`} />
       <div className="pl-rows">
         {list.map(r => (
           <div className="pl-row pl-two" key={r.id}>
@@ -130,13 +137,14 @@ function Refunds({ data }) {
             <span className="pl-amt m pl-out">−{naira(r.refunded)}</span>
           </div>
         ))}
-        {!list.length && <div className="pl-empty">Nothing refunded recently</div>}
+        {!list.length && <div className="pl-empty">{tr("Nothing refunded recently")}</div>}
       </div>
     </section>
   );
 }
 
 function Month({ data }) {
+  const tr = useT();
   const markup = data.monthCost > 0 ? Math.round((data.monthProfit / data.monthCost) * 100) : 0;
   const avg = data.monthOrders > 0 ? data.monthRevenue / data.monthOrders : 0;
   const repeat = data.monthActiveUsers > 0 ? Math.round(((data.monthRepeatUsers || 0) / data.monthActiveUsers) * 100) : 0;
@@ -153,7 +161,7 @@ function Month({ data }) {
   ];
   return (
     <section className="pl-month">
-      <header><h3>This month</h3><span className="pl-cnt">1–{day} {monthName}</span></header>
+      <header><h3>{tr("This month")}</h3><span className="pl-cnt">1–{day} {monthName}</span></header>
       <div className="pl-mfs">{facts.map(([l, v]) => <div className="pl-mf" key={l}><div className="pl-mv m">{v}</div><div className="pl-ml">{l}</div></div>)}</div>
     </section>
   );
@@ -162,20 +170,21 @@ function Month({ data }) {
 const STATUS_ORDER = ['Completed', 'Cancelled', 'Processing', 'Partial', 'Pending', 'Refunded'];
 const STATUS_CLS = { Completed: 'ok', Cancelled: 'bad', Processing: 'run', Partial: 'warn', Pending: 'wait', Refunded: 'bad' };
 function Bars({ data }) {
+  const tr = useT();
   const plats = data.topPlatforms || []; const ptot = plats.reduce((s, p) => s + p.orders, 0) || 1;
   const merged = {};
-  (data.byStatus || []).forEach(s => { const k = ['Failed', 'Rejected'].includes(s.status) ? 'Cancelled' : s.status; merged[k] = (merged[k] || 0) + s.count; });
+  (data.byStatus || []).forEach(s => { const k = [tr("Failed"), tr("Rejected")].includes(s.status) ? tr("Cancelled") : s.status; merged[k] = (merged[k] || 0) + s.count; });
   const stats = STATUS_ORDER.filter(k => merged[k]).map(k => [k, merged[k], STATUS_CLS[k] || 'wait']);
   const stot = stats.reduce((s, [, c]) => s + c, 0) || 1;
   return (
     <section className="pl-bars">
       <div className="pl-bar">
-        <header><h3>Platforms</h3><span className="pl-cnt">this month</span></header>
+        <header><h3>{tr("Platforms")}</h3><span className="pl-cnt">{tr("this month")}</span></header>
         <div className="pl-stack">{plats.map((p, i) => <i key={p.name} style={{ width: `${(p.orders / ptot) * 100}%`, background: platformBrand(p.name, { index: i }) }} />)}</div>
         <div className="pl-leg">{plats.map((p, i) => <span key={p.name}><i className="pl-sw" style={{ background: platformBrand(p.name, { index: i }) }} />{p.name} <b className="m">{Math.round((p.orders / ptot) * 100)}%</b></span>)}</div>
       </div>
       <div className="pl-bar">
-        <header><h3>Order status</h3><span className="pl-cnt">30 days</span></header>
+        <header><h3>{tr("Order status")}</h3><span className="pl-cnt">{tr("30 days")}</span></header>
         <div className="pl-stack">{stats.map(([k, c, cls]) => <i key={k} style={{ width: `${(c / stot) * 100}%` }} className={`pl-${cls}`} />)}</div>
         <div className="pl-leg">{stats.map(([k, c, cls]) => <span key={k}><i className={`pl-sw pl-${cls}`} />{k} <b className="m">{Math.round((c / stot) * 100)}%</b></span>)}</div>
       </div>
@@ -184,6 +193,7 @@ function Bars({ data }) {
 }
 
 export default function PulseDashboard() {
+  const tr = useT();
   const [data, setData] = useState(null);
   const [secondsAgo, setSecondsAgo] = useState(0);
   const [error, setError] = useState(false);
@@ -215,7 +225,7 @@ export default function PulseDashboard() {
       <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0b0e17', fontFamily: 'Outfit, system-ui, sans-serif' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
           <NitroLoader size={72} />
-          <div style={{ color: '#5c6170', fontSize: 11 }}>Connecting to live data…</div>
+          <div style={{ color: '#5c6170', fontSize: 11 }}>{tr("Connecting to live data…")}</div>
         </div>
       </div>
     );
@@ -230,10 +240,10 @@ export default function PulseDashboard() {
         <div className="pl-state">
           {data.processing > 0 && <span className="pl-chip"><i className="pl-dot pl-run" />{num(data.processing)} running</span>}
           {error
-            ? <span className="pl-live pl-lost"><i className="pl-dot pl-bad" />CONNECTION LOST</span>
+            ? <span className="pl-live pl-lost"><i className="pl-dot pl-bad" />{tr("CONNECTION LOST")}</span>
             : <span className="pl-live"><i className="pl-dot pl-ok pl-beat" />LIVE</span>}
           <span className="pl-ago m">{secondsAgo}s</span>
-          <button type="button" onClick={toggleFullscreen} className="pl-fs" aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
+          <button type="button" onClick={toggleFullscreen} className="pl-fs" aria-label={isFullscreen ? tr("Exit fullscreen") : tr("Fullscreen")}>
             {isFullscreen
               ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /></svg>
               : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /></svg>}
@@ -243,10 +253,10 @@ export default function PulseDashboard() {
 
       <section className="pl-today">
         <People data={data} />
-        <Figure kind="rev" label="Revenue" value={naira(data.revenueToday)} delta={data.revenueChange} series={H.map(h => h.revenue)} nowHour={nowHour} />
-        <Figure kind="pro" label="Profit" value={naira(data.profitToday)} note={data.costToday > 0 ? `${Math.round((data.profitToday / data.costToday) * 100)}% on cost` : null} delta={data.profitChange} series={H.map(h => h.profit)} nowHour={nowHour} />
-        <Figure kind="ord" label="Orders" value={num(data.ordersToday)} delta={data.ordersChange} series={H.map(h => h.orders)} nowHour={nowHour} />
-        <Figure kind="dep" label="Deposits" value={naira(data.depositsToday)} delta={data.depositsChange} series={H.map(h => h.deposits)} nowHour={nowHour} />
+        <Figure kind="rev" label={tr("Revenue")} value={naira(data.revenueToday)} delta={data.revenueChange} series={H.map(h => h.revenue)} nowHour={nowHour} />
+        <Figure kind="pro" label={tr("Profit")} value={naira(data.profitToday)} note={data.costToday > 0 ? `${Math.round((data.profitToday / data.costToday) * 100)}% on cost` : null} delta={data.profitChange} series={H.map(h => h.profit)} nowHour={nowHour} />
+        <Figure kind="ord" label={tr("Orders")} value={num(data.ordersToday)} delta={data.ordersChange} series={H.map(h => h.orders)} nowHour={nowHour} />
+        <Figure kind="dep" label={tr("Deposits")} value={naira(data.depositsToday)} delta={data.depositsChange} series={H.map(h => h.deposits)} nowHour={nowHour} />
       </section>
 
       <div className="pl-mid">
