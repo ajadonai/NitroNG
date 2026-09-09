@@ -45,13 +45,21 @@ export const SCANNED = ['components', 'app'];
  *   api   — route handlers. Error strings there are read by developers and by
  *           the reseller API, which is documented in English on purpose.
  *   tests — obviously.
+ *   tickets — support is handled on WhatsApp. components/support-page.jsx and
+ *           the ticket routes are a read-only view of old data that will be
+ *           deleted in a cleanup pass, and CLAUDE.md says not to touch them.
+ *           They are excluded here because a scanner that ranks files by
+ *           untranslated strings kept surfacing support-page.jsx near the top
+ *           of "what is left", and it was proposed as work twice. An
+ *           instruction not to do something does not help if the tooling keeps
+ *           putting it on the list.
  *   locale routes — app/fr, app/sw and app/ar hold each page's title and
  *           description already written in that language. They are the
  *           translation, not something awaiting one, and there is no hook to
  *           wrap them in: metadata is resolved on the server before any
  *           component exists.
  */
-export const NOT_SCANNED = [/(^|\/)admin[-/]/, /^app\/api\//, /\.test\./, /\/m\/.*\.test\./, /^app\/(fr|sw|ar)\//];
+export const NOT_SCANNED = [/(^|\/)admin[-/]/, /^app\/api\//, /\.test\./, /\/m\/.*\.test\./, /^app\/(fr|sw|ar)\//, /support-page|ticket/];
 
 const isScanned = (rel) => !NOT_SCANNED.some((re) => re.test(rel));
 
