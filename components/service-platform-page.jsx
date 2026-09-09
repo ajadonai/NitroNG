@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { ThemeProvider, useTheme } from './shared-nav';
+import { useT } from './locale';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { trackViewContent } from './capi-tracker';
 import { AskCard, PinkButton, priceRange, eyebrowStyle, cardStyle } from './platform-card';
@@ -223,7 +224,35 @@ export default function ServicePlatformView({ platform, services, copy, nextPlat
   return <ThemeProvider><ServicePlatformInner platform={platform} services={services} copy={copy} nextPlatform={nextPlatform} relatedLinks={relatedLinks} /></ThemeProvider>;
 }
 
-function ServicePlatformInner({ platform, services = [], copy = {}, nextPlatform, relatedLinks = [] }) {
+/**
+ * The page's copy in the reader's language.
+ *
+ * The strings arrive from app/services/[platform]/page.jsx marked with msg(),
+ * which is only a marker — it returns its argument so the scanner can see the
+ * text without a hook being called at module scope. This is where they are
+ * actually translated, once, so everything below works with copy that is
+ * already in the right language and no component has to remember to do it.
+ *
+ * The page's <title> and meta description are deliberately NOT here. Those are
+ * resolved on the server for the English URL and are what ranks in Nigerian
+ * search; this file only changes what a reader sees once they are on the page.
+ */
+function translateCopy(copy, tr) {
+  const line = (v) => (typeof v === 'string' ? tr(v) : v);
+  return {
+    ...copy,
+    h1: line(copy.h1),
+    heroDesc: line(copy.heroDesc),
+    mainService: line(copy.mainService),
+    whatYouGet: (copy.whatYouGet || []).map(line),
+    whySection: (copy.whySection || []).map(line),
+    faq: (copy.faq || []).map((x) => ({ ...x, q: line(x.q), a: line(x.a) })),
+  };
+}
+
+function ServicePlatformInner({ platform, services = [], copy: rawCopy = {}, nextPlatform, relatedLinks = [] }) {
+  const tr = useT();
+  const copy = translateCopy(rawCopy, tr);
   const money = useMoney();
   const { t } = useTheme();
   const card = cardStyle(t);
