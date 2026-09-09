@@ -37,16 +37,16 @@ const PLATFORM_NAMES = { x: 'X', instagram: 'Instagram', tiktok: 'TikTok', faceb
 
 
 
-function proofLabel(proofType, platform) {
+function proofLabel(proofType, platform, tr) {
   const name = PLATFORM_NAMES[platform] || platform;
   if (proofType === 'handle') return `${name} handle`;
-  if (proofType === 'link') return 'Link to your post';
-  if (proofType === 'phone') return 'WhatsApp number';
-  if (proofType === 'text') return 'Name on the review';
-  return 'Screenshot link';
+  if (proofType === 'link') return tr('Link to your post');
+  if (proofType === 'phone') return tr('WhatsApp number');
+  if (proofType === 'text') return tr('Name on the review');
+  return tr('Screenshot link');
 }
-function bandOf(rewardKobo) {
-  return rewardKobo <= 10000 ? 'Follow and join' : rewardKobo <= 25000 ? 'Share' : 'Write and recommend';
+function bandOf(rewardKobo, tr) {
+  return rewardKobo <= 10000 ? tr('Follow and join') : rewardKobo <= 25000 ? tr('Share') : tr('Write and recommend');
 }
 
 function proofPlaceholder(proofType, platform) {
@@ -211,7 +211,7 @@ export default function TasksPage({ dark, t }) {
 
       {/* How it works: three steps, then the fine print on one line */}
       <div className="grid grid-cols-3 gap-1.5 mb-2">
-        {[['1', 'Do a task'], ['2', 'Submit proof'], ['3', 'Credit lands']].map(([n, label]) => (
+        {[['1', tr('Do a task')], ['2', tr('Submit proof')], ['3', tr('Credit lands')]].map(([n, label]) => (
           <div key={n} className="flex items-center gap-2 py-2 px-2.5 rounded-xl text-[12px] font-medium whitespace-nowrap text-t-text-soft" style={card}>
             <span className="w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 text-[10.5px] font-bold text-white" style={{ background: accent }}>{n}</span>{label}
           </div>
@@ -229,7 +229,7 @@ export default function TasksPage({ dark, t }) {
         </span>
         <div className="relative ml-auto" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setFilterOpen(false); }}>
           <button onClick={() => setFilterOpen(!filterOpen)} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[12.5px] font-medium cursor-pointer font-[inherit] text-t-text-soft" style={card}>
-            {activeFilter.label}
+            {tr(activeFilter.label)}
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           {filterOpen && (
@@ -255,8 +255,8 @@ export default function TasksPage({ dark, t }) {
       ) : (
         <div className="rounded-[14px] overflow-hidden" style={card}>
           {[...filtered].sort((a, b) => a.reward - b.reward).map((task, i, arr) => {
-            const band = bandOf(task.reward);
-            const showBand = i === 0 || bandOf(arr[i - 1].reward) !== band;
+            const band = bandOf(task.reward, tr);
+            const showBand = i === 0 || bandOf(arr[i - 1].reward, tr) !== band;
             return (
               <Fragment key={task.id}>
                 {showBand && <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-3.5 pt-3 pb-1 text-t-text-muted" style={{ background: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.025)', borderTop: i > 0 ? `1px solid ${border}` : 'none' }}>{band}</div>}
@@ -309,7 +309,7 @@ function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSub
         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? icon.bg : icon.lbg, opacity: dimmed ? .5 : 1 }}>{icon.svg}</div>
         <div className="flex-1 min-w-0" style={{ opacity: dimmed ? .55 : 1 }}>
           <div className="text-[13.5px] font-semibold leading-[1.35] text-t-text">{task.title}</div>
-          <div className="text-[11px] mt-[2px] text-t-text-muted">{proofLabel(task.proofType, task.platform)} · {freq}</div>
+          <div className="text-[11px] mt-[2px] text-t-text-muted">{proofLabel(task.proofType, task.platform, tr)} · {freq}</div>
         </div>
         <span className="shrink-0 text-[11px] font-semibold py-[4px] px-[9px] rounded-full whitespace-nowrap" style={chipStyle}>{chipLabel}</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
@@ -331,7 +331,7 @@ function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSub
               <div className="flex gap-2">
                 <input
                   type="text"
-                  aria-label={proofLabel(task.proofType, task.platform)}
+                  aria-label={proofLabel(task.proofType, task.platform, tr)}
                   placeholder={proofPlaceholder(task.proofType, task.platform)}
                   value={proof}
                   onChange={e => onProofChange(e.target.value)}

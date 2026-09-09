@@ -579,7 +579,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       {/* The charge is naira whatever the box says, so the naira is never
           hidden — it is the figure the bank statement will show. */}
       {fxReady && numAmount > 0 && (
-        <div className="text-[11px] -mt-2 mb-3 text-t-text-muted">{tr("You will be charged")} {fN(numAmount)}</div>
+        <div className="text-[11px] -mt-2 mb-3 text-t-text-muted">{tr("You will be charged")} {money(numAmount)}</div>
       )}
       {!welcomeEligible && (
         <div className="grid grid-cols-3 gap-2 max-md:gap-1.5 mb-3">
@@ -858,7 +858,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           {(() => { const wb = welcomeEligible && valid ? bonusForNaira(numAmount) : 0; const extra = (discount > 0 ? discount / 100 : 0) + wb; return (
             <div className="rounded-[14px] px-3.5 mt-3" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
               {[
-                ["Deposit", <b key="d" className="m text-[13px] font-semibold text-t-text">{valid ? money(numAmount) : money(0)}</b>],
+                [tr("Deposit"), <b key="d" className="m text-[13px] font-semibold text-t-text">{valid ? money(numAmount) : money(0)}</b>],
                 [tr("Fee"), <b key="f" className="text-[13px] font-semibold text-t-text">{tr("Free")}</b>],
                 couponApplied && discount > 0 ? [tr("Coupon bonus"), <b key="c" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(discount / 100, { round: "down" })}</b>] : null,
                 wb > 0 ? [tr("Welcome bonus"), <b key="w" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(wb, { round: "down" })}</b>] : null,
@@ -872,7 +872,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             </div>
           ); })()}
           <div className="mt-3">
-            <PayButton onClick={handlePay} disabled={!valid || loading} loading={loading} text={loading ? "Processing..." : valid ? `Pay ${fN(numAmount)}` : "Enter an amount"} />
+            <PayButton onClick={handlePay} disabled={!valid || loading} loading={loading} text={loading ? tr("Processing...") : valid ? `${tr("Pay")} ${money(numAmount)}` : tr("Enter an amount")} />
           </div>
           <div className="text-center text-[11.5px] mt-2 text-t-text-muted">{tr("Payments are 100% secure. Your balance updates the moment it clears.")}</div>
         </div>
@@ -964,7 +964,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <div className="h-1.5" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }} />
             <div className="p-5">
               <div className="text-base font-semibold mb-1 text-t-text">{tr("Confirm Payment")}</div>
-              <div className="text-[13px] mb-4 text-t-text-muted">{tr("You're confirming a deposit of")} <span className="font-semibold text-t-text">{fN(confirmModal.amount)}</span></div>
+              <div className="text-[13px] mb-4 text-t-text-muted">{tr("You're confirming a deposit of")} <span className="font-semibold text-t-text">{money(confirmModal.amount)}</span></div>
               <label className="text-[11px] font-medium mb-1.5 block text-t-text-muted">{tr("Account name you sent from")}</label>
               <input value={senderName} onChange={e => setSenderName(e.target.value)} placeholder="e.g. John Doe" autoFocus className="w-full py-2.5 px-3 rounded-lg text-sm outline-none text-t-text font-[inherit]" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} />
               <button onClick={async () => {
@@ -1099,7 +1099,7 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
               <div className="w-8 h-8 desktop:w-9 desktop:h-9 rounded-[10px] flex items-center justify-center text-base font-semibold shrink-0" style={{ background: dark ? `${rowColor}15` : `${rowColor}10`, color: rowColor }}>{txIcon(tx.type)}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm desktop:text-[15px] font-medium overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{txLabel(tx.type)}</span>
+                  <span className="text-sm desktop:text-[15px] font-medium overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{tr(txLabel(tx.type))}</span>
                   {statusMeta && <span className="text-[11px] font-semibold py-px px-1.5 rounded" style={{ background: statusMeta.bg, color: statusMeta.color }}>{statusMeta.label}</span>}
                   {tx.orderStatus && !["Completed", "Cancelled"].includes(tx.orderStatus) && <span className="text-[11px] font-semibold py-px px-1.5 rounded" style={{ background: tx.orderStatus === tr("Processing") ? (dark ? "rgba(165,180,252,.12)" : "rgba(99,102,241,.08)") : (dark ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)"), color: tx.orderStatus === tr("Processing") ? (dark ? "#a5b4fc" : "#6366f1") : (dark ? "#fcd34d" : "#d97706") }}>{tx.orderStatus}</span>}
                 </div>
