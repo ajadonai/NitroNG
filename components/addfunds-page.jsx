@@ -97,18 +97,18 @@ function fNShort(v, money) {
   if (money) return money(v, { round: "down" }); const a = Math.abs(v); if (a >= 1e8) return `₦${(a/1e6).toFixed(1).replace(/\.0$/,"")}M`; if (a >= 1e6) return `₦${(a/1e6).toFixed(2).replace(/\.?0+$/,"")}M`; if (a >= 1e5) return `₦${(a/1e3).toFixed(1).replace(/\.0$/,"")}K`; return fN(v); }
 function txIcon(type) { return (TX_META[type] || TX_META.order).icon; }
 function txLabel(type) { return (TX_META[type] || { label: type }).label; }
-function txDesc(tx) {
+function txDesc(tx, tr) {
   if (tx.type === "order" && tx.reference) {
     const platform = tx.description?.match(/— (\S+)/)?.[1];
     const id = tx.reference.startsWith("BULK-") ? `Bulk ${tx.reference}` : tx.reference;
     return platform ? `${id} · ${platform}` : id;
   }
   if (tx.description && tx.description !== tx.reference) return tx.description.replace(/\s*\[[^\]]+\]\s*$/, "");
-  if (tx.type === "refund") return tx.reference ? `Refund for ${tx.reference.replace(/^(ADM-)?REF-/, "")}` : "Order refund";
-  if (tx.type === "deposit") return tx.reference || "Wallet top-up";
-  if (tx.type === "referral") return "Referral commission";
-  if (tx.type === "admin_credit" || tx.type === "admin_gift") return (tx.description || "Credited by Nitro Team").replace(/\s*\[[^\]]+\]\s*/g, " ").trim();
-  if (tx.type === "admin_debit") return (tx.description || "Balance adjustment").replace(/\s*\[[^\]]+\]\s*/g, " ").trim();
+  if (tx.type === "refund") return tx.reference ? `${tr("Refund for")} ${tx.reference.replace(/^(ADM-)?REF-/, "")}` : tr("Order refund");
+  if (tx.type === "deposit") return tx.reference || tr("Wallet top-up");
+  if (tx.type === "referral") return tr("Referral commission");
+  if (tx.type === "admin_credit" || tx.type === "admin_gift") return (tx.description || tr("Credited by Nitro Team")).replace(/\s*\[[^\]]+\]\s*/g, " ").trim();
+  if (tx.type === "admin_debit") return (tx.description || tr("Balance adjustment")).replace(/\s*\[[^\]]+\]\s*/g, " ").trim();
   return tx.reference || "";
 }
 
@@ -556,7 +556,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               const total = p.amount + p.bonus;
               return (
                 <button key={p.amount} onClick={() => setAmount(String(p.amount))} aria-pressed={sel} className="relative flex flex-col items-start gap-[2px] pt-3 pb-2.5 px-2.5 rounded-xl text-left cursor-pointer font-[inherit] min-w-0" style={{ border: `1.5px solid ${sel ? t.accent : t.cardBorder}`, background: sel ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)") : (dark ? "rgba(255,255,255,.04)" : "#fff"), boxShadow: sel ? `0 0 0 2px ${t.accent}` : "none" }}>
-                  {p.tag && <span className="absolute -top-2 left-2 text-[9.5px] font-bold uppercase tracking-[.04em] py-[2px] px-1.5 rounded-full text-white whitespace-nowrap" style={{ background: t.accent }}>{p.tag}</span>}
+                  {p.tag && <span className="absolute -top-2 left-2 text-[9.5px] font-bold uppercase tracking-[.04em] py-[2px] px-1.5 rounded-full text-white whitespace-nowrap" style={{ background: t.accent }}>{tr(p.tag)}</span>}
                   <div className="m text-[15px] font-bold" style={{ color: t.text }}>{money(p.amount)}</div>
                   <div className="text-[12px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(p.bonus, { round: "down" })} free</div>
                   <div className="text-[10.5px] text-t-text-muted">{money(total, { round: "down" })} {tr("to spend")}</div>
@@ -674,7 +674,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             </div>
             <div className="flex gap-2">
               <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} placeholder="e.g. NITRO20" className="m flex-1 py-[9px] px-3 rounded-lg text-[13px] tracking-[1.5px] outline-none text-t-text font-[JetBrains_Mono,monospace] transition-[border-color] duration-200" style={{ background: dark ? "rgba(255,255,255,.08)" : "#fff", border: `1.5px solid ${couponCode.trim() ? t.accent : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)")}` }} />
-              <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} className="py-[9px] px-4 dash-btn-primary text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: couponCode.trim() ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"), color: couponCode.trim() ? "#fff" : t.textMuted, opacity: couponLoading ? .5 : 1 }}>{couponLoading ? "..." : "Apply"}</button>
+              <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} className="py-[9px] px-4 dash-btn-primary text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: couponCode.trim() ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"), color: couponCode.trim() ? "#fff" : t.textMuted, opacity: couponLoading ? .5 : 1 }}>{couponLoading ? "..." : tr("Apply")}</button>
             </div>
             {couponError && <div className="text-xs mt-1.5 flex items-center gap-1" style={{ color: dark ? "#fca5a5" : "#dc2626" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {couponError}</div>}
           </div>
@@ -859,14 +859,14 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <div className="rounded-[14px] px-3.5 mt-3" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
               {[
                 ["Deposit", <b key="d" className="m text-[13px] font-semibold text-t-text">{valid ? money(numAmount) : money(0)}</b>],
-                ["Fee", <b key="f" className="text-[13px] font-semibold text-t-text">{tr("Free")}</b>],
+                [tr("Fee"), <b key="f" className="text-[13px] font-semibold text-t-text">{tr("Free")}</b>],
                 couponApplied && discount > 0 ? [tr("Coupon bonus"), <b key="c" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(discount / 100, { round: "down" })}</b>] : null,
                 wb > 0 ? [tr("Welcome bonus"), <b key="w" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(wb, { round: "down" })}</b>] : null,
               ].filter(Boolean).map(([label, val], i) => (
                 <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}><span>{label}</span>{val}</div>
               ))}
               <div className="flex items-center justify-between gap-3 py-3" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
-                <span className="text-[13px] font-semibold text-t-text">{extra > 0 ? "You get" : "Total"}</span>
+                <span className="text-[13px] font-semibold text-t-text">{extra > 0 ? tr("You get") : tr("Total")}</span>
                 <b className="m text-[18px] font-bold" style={{ color: valid ? t.text : t.textMuted }}>{valid ? money(numAmount + extra, { round: "down" }) : "—"}</b>
               </div>
             </div>
@@ -938,7 +938,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   <div className="flex items-center gap-2">
                     {cryptoPolling && <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#fbbf24" }} />}
                     <span className="text-[13px] font-medium" style={{ color: dark ? "#fbbf24" : "#d97706" }}>
-                      {cryptoStatus === "Confirming" ? "Payment detected — confirming on blockchain..." : "Waiting for payment..."}
+                      {cryptoStatus === tr("Confirming") ? tr("Payment detected — confirming on blockchain...") : tr("Waiting for payment...")}
                     </span>
                   </div>
                   <div className="text-[11px] mt-1 text-t-text-muted">{tr("We check automatically every 15 seconds. Do not close this page.")}</div>
@@ -972,11 +972,11 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 setConfirmLoading(true);
                 try {
                   const r = await fetch("/api/payments/manual", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: confirmModal.reference, senderRef: senderName.trim() }) });
-                  if (r.ok) { toast.success("Payment confirmed", "Your deposit is now awaiting admin verification."); setConfirmModal(null); onRefresh?.(); }
+                  if (r.ok) { toast.success(tr("Payment confirmed"), tr("Your deposit is now awaiting admin verification.")); setConfirmModal(null); onRefresh?.(); }
                   else { const d = await r.json().catch(() => ({})); toast.error("Failed", d.error || "Something went wrong"); }
                 } catch { toast.error("Network error", "Check your connection"); }
                 setConfirmLoading(false);
-              }} disabled={confirmLoading || senderName.trim().length < 2} className="w-full py-2.5 mt-3 rounded-lg border-none text-white text-sm font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ fontFamily: "inherit", opacity: confirmLoading || senderName.trim().length < 2 ? .5 : 1, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>{confirmLoading ? "Confirming..." : "Confirm Payment"}</button>
+              }} disabled={confirmLoading || senderName.trim().length < 2} className="w-full py-2.5 mt-3 rounded-lg border-none text-white text-sm font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ fontFamily: "inherit", opacity: confirmLoading || senderName.trim().length < 2 ? .5 : 1, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>{confirmLoading ? tr("Confirming...") : tr("Confirm Payment")}</button>
               <button onClick={async () => {
                 setConfirmLoading(true);
                 try { await fetch("/api/payments/manual", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: confirmModal.reference }) }); } catch {}
@@ -1064,7 +1064,7 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div>
           <div className="text-base desktop:text-lg font-semibold text-t-text">{tr("Wallet History")}</div>
-          <div className="text-[13px] text-t-text-muted">{total} transaction{total === 1 ? "" : "s"} {tr("· last 6 months")}</div>
+          <div className="text-[13px] text-t-text-muted">{total} {total === 1 ? tr("transaction") : tr("transactions")} {tr("· last 6 months")}</div>
         </div>
         <div className="flex gap-1.5 flex-wrap">
           <DateRangePicker dark={dark} t={t} value={dateRange} onChange={(v) => { setDateRange(v); setPage(1); }} />
@@ -1101,9 +1101,9 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm desktop:text-[15px] font-medium overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{txLabel(tx.type)}</span>
                   {statusMeta && <span className="text-[11px] font-semibold py-px px-1.5 rounded" style={{ background: statusMeta.bg, color: statusMeta.color }}>{statusMeta.label}</span>}
-                  {tx.orderStatus && !["Completed", "Cancelled"].includes(tx.orderStatus) && <span className="text-[11px] font-semibold py-px px-1.5 rounded" style={{ background: tx.orderStatus === "Processing" ? (dark ? "rgba(165,180,252,.12)" : "rgba(99,102,241,.08)") : (dark ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)"), color: tx.orderStatus === "Processing" ? (dark ? "#a5b4fc" : "#6366f1") : (dark ? "#fcd34d" : "#d97706") }}>{tx.orderStatus}</span>}
+                  {tx.orderStatus && !["Completed", "Cancelled"].includes(tx.orderStatus) && <span className="text-[11px] font-semibold py-px px-1.5 rounded" style={{ background: tx.orderStatus === tr("Processing") ? (dark ? "rgba(165,180,252,.12)" : "rgba(99,102,241,.08)") : (dark ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)"), color: tx.orderStatus === tr("Processing") ? (dark ? "#a5b4fc" : "#6366f1") : (dark ? "#fcd34d" : "#d97706") }}>{tx.orderStatus}</span>}
                 </div>
-                <div className="text-[11px] desktop:text-[13px] mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-t-text-muted">{txDesc(tx)}</div>
+                <div className="text-[11px] desktop:text-[13px] mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-t-text-muted">{txDesc(tx, tr)}</div>
               </div>
               <div className="text-right shrink-0">
                 <div className="m text-[13px] desktop:text-[15px] font-bold" style={{ color: rowColor }}>
@@ -1115,8 +1115,8 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
           );
         }) : (
           <div className="p-10 text-center text-[15px] text-t-text-muted">
-            <div className="text-base font-semibold mb-1 text-t-text-soft">{filter !== "all" || dateRange ? "No matching transactions" : "No transactions in the last 6 months"}</div>
-            <div className="text-[15px] text-t-text-muted">{filter !== "all" || dateRange ? "Try adjusting your filters" : "New wallet activity will appear here"}</div>
+            <div className="text-base font-semibold mb-1 text-t-text-soft">{filter !== "all" || dateRange ? tr("No matching transactions") : tr("No transactions in the last 6 months")}</div>
+            <div className="text-[15px] text-t-text-muted">{filter !== "all" || dateRange ? tr("Try adjusting your filters") : tr("New wallet activity will appear here")}</div>
           </div>
         )}
       </div>
