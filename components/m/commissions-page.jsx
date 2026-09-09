@@ -109,7 +109,7 @@ export default function CommissionsPage({ member, initialData }) {
                   <span className="pt-pgn">
                     <button type="button" className="pt-ib" disabled={page <= 1 || loading} onClick={() => changePage(page - 1)} aria-label="Previous page">‹</button>
                     <span className="pt-cnt m">{page} / {data.pages}</span>
-                    <button type="button" className="pt-ib" disabled={page >= data.pages || loading} onClick={() => changePage(page + 1)} aria-label="Next page">›</button>
+                    <button type="button" className="pt-ib" disabled={page >= data.pages || loading} onClick={() => changePage(page + 1)} aria-label="Next page"><span className="dir-flip">›</span></button>
                   </span>
                 </div>
               )}

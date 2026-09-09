@@ -132,7 +132,7 @@ export default function GuidePage({ dark, t }) {
                     <span className="gp-num">{i + 1}</span>
                     <span className="gp-rt"><b>{p.title}</b>{p.excerpt && <i>{p.excerpt}</i>}</span>
                     <span className="gp-when">{p.minutes} min</span>
-                    <i className="gp-chev" aria-hidden="true">›</i>
+                    <i className="gp-chev" aria-hidden="true"><span className="dir-flip">›</span></i>
                   </a>
                 ))}
               </div>

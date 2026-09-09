@@ -23,7 +23,7 @@ export function RailRow({ tile, round = false, title, sub, right, bar, onClick, 
 export function RailStep({ n, title, sub }) {
   return <div className="rr-row"><span className="rr-num">{n}</span><span className="rr-txt"><b>{title}</b>{sub && <i>{sub}</i>}</span></div>;
 }
-export function RailJump({ label, onClick }) { return <button type="button" className="rr-jump" onClick={onClick}><span>{label}</span><i>›</i></button>; }
+export function RailJump({ label, onClick }) { return <button type="button" className="rr-jump" onClick={onClick}><span>{label}</span><i><span className="dir-flip">›</span></i></button>; }
 export function RailNote({ children }) { return <div className="rr-note">{children}</div>; }
 export function RailLink({ children, onClick, href }) {
   if (href) return <a className="rr-link" href={href} target="_blank" rel="noopener noreferrer">{children}</a>;

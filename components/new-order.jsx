@@ -478,7 +478,7 @@ export function NotSureHelp({ waNumber, dark, t, context, email }) {
     >
       {WA_ICON}
       {tr("We can order for you")}
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-70"><polyline points="9 18 15 12 9 6" /></svg>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="dir-flip shrink-0 opacity-70"><polyline points="9 18 15 12 9 6" /></svg>
     </a>
   );
 }
@@ -502,7 +502,7 @@ export function OrderForMeCard({ waNumber, dark, context, email }) {
     >
       <span className="shrink-0 flex" style={{ color: "#25d366" }}>{WA_ICON}</span>
       <span>{tr("Not sure?")} <b className="font-semibold" style={{ color: dark ? "#4ade80" : "#15803d" }}>{tr("We can order for you")}</b></span>
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60"><polyline points="9 18 15 12 9 6" /></svg>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="dir-flip shrink-0 opacity-60"><polyline points="9 18 15 12 9 6" /></svg>
     </a>
   );
 }

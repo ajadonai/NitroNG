@@ -321,7 +321,7 @@ function LandingInner({ initialAuthQuery }){
 
               {/* CTAs — desktop/tablet */}
               <div className="fu fd3 flex gap-[18px] items-center flex-wrap max-desktop:!hidden">
-                <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hero-cta-btn inline-flex items-center gap-2 py-[15px] px-[26px] rounded-xl text-[15px] font-bold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(0,0,0,.22)]" style={{background:dark?"linear-gradient(135deg,#c47d8e,#8b5e6b)":"#fff",color:dark?"#fff":"#1a1a1a"}}>🎁 {tr("Start with")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free credit")} →</a>
+                <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hero-cta-btn inline-flex items-center gap-2 py-[15px] px-[26px] rounded-xl text-[15px] font-bold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(0,0,0,.22)]" style={{background:dark?"linear-gradient(135deg,#c47d8e,#8b5e6b)":"#fff",color:dark?"#fff":"#1a1a1a"}}>🎁 {tr("Start with")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free credit")} <span className="dir-flip">→</span></a>
                 <a href="/pricing" onClick={e=>{e.preventDefault();document.getElementById("tiers")?.scrollIntoView({behavior:"smooth",block:"start"})}} className="text-[15px] font-semibold no-underline pb-0.5" style={{color:dark?t.text:"#fff",borderBottom:`1.5px solid ${dark?"rgba(255,255,255,.2)":"rgba(255,255,255,.5)"}`}}>{tr("See the tiers")}</a>
               </div>
 
@@ -339,7 +339,7 @@ function LandingInner({ initialAuthQuery }){
                     <span className="hc-gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></span>
                     <span><b>{tr("Up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("in free promo credit")}</b><i>{tr("to give your next post a real push")}</i></span>
                   </div>
-                  <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hc-cta hero-cta-pulse no-underline">{tr("Create free account")} →</a>
+                  <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hc-cta hero-cta-pulse no-underline">{tr("Create free account")} <span className="dir-flip">→</span></a>
                   <div className="hc-login">{tr(tr("Already have an account?"))} <a href="/?login=1" onClick={e=>{e.preventDefault();setModal("login")}}>{tr("Log in")}</a></div>
                   <div className="hc-trust">
                     <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>{tr("Trusted by creators")}</span>

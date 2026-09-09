@@ -100,7 +100,7 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
       {action && (
         <a href={action.href || "#"} target="_blank" rel="noopener noreferrer" className="an-act">
           {action.label || "Learn more"}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg className="dir-flip" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </a>
       )}
       {visible.length > 1 && <span className="an-cnt">1 of {visible.length}</span>}

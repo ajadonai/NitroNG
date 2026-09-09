@@ -192,7 +192,7 @@ export default function SharedNav({ action = "back" }) {
             theme, menu — stays anchored to the edge whether or not it appears. */}
         {action === "back" && (
           <a href="/" className="text-sm font-medium flex items-center gap-1" style={{ color: t.soft }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+            <svg className="dir-flip" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
             Back
           </a>
         )}

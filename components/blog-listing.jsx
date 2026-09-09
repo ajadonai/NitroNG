@@ -104,7 +104,7 @@ function BlogListingInner({ initialPosts, initialCategories, initialTotalPages }
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
               <button type="button" key={n} className={n === page ? "on" : ""} onClick={() => setPage(n)}>{n}</button>
             ))}
-            <button type="button" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next →</button>
+            <button type="button" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next <span className="dir-flip">→</span></button>
           </div>
         )}
       </div>

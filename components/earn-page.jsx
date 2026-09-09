@@ -246,7 +246,7 @@ export default function EarnPage({ dark, t }) {
               </p>
               {videoStatus.remaining > 0 ? (
                 <button className="shimmer-btn w-full py-3 rounded-xl text-sm font-semibold border-none cursor-pointer" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5e6b)`, color: '#fff', boxShadow: '0 4px 16px rgba(196,125,142,.3)' }}>
-                  Watch Video → Earn {money((videoStatus.rewardPerWatch || 1500) / 100, { round: "down" })}
+                  Watch Video <span className="dir-flip">→</span> Earn {money((videoStatus.rewardPerWatch || 1500) / 100, { round: "down" })}
                 </button>
               ) : (
                 <div className="py-4 text-center text-[13px]" style={{ color: t.textMuted }}>
