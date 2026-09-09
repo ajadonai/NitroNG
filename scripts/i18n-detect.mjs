@@ -114,6 +114,9 @@ export const NOT_PROSE = [
   // A CSS selector inside a <style> block: ".rcp-ck svg", ".rcp-f:first-child",
   // ".tx-col.is-off:hover". Nothing a customer reads starts with a dot.
   /^\.|^[a-z]+:(?:first|last|nth|hover|focus|before|after)/,
+  // A selector that starts on an element rather than a class:
+  // "details[open] .rhq-faq-chev".
+  /^[a-z]+\[[^\]]+\]/,
   // A JS error class, compared by name: err?.name === "TimeoutError".
   /^[A-Z]\w*Error$/,
   // An HTTP method and endpoint shown as an example: "POST nitro.ng/api/v2".
