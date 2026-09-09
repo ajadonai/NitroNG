@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useT } from "@/components/locale";
 
 const ACCENT = '#c47d8e';
 const BG = '#e9e4dd';
 
 export default function UnsubscribeClient({ token }) {
+  const tr = useT();
   // states: loading | confirm | done | resubscribed | invalid
   const [state, setState] = useState('loading');
   const [email, setEmail] = useState('');
@@ -97,7 +99,7 @@ export default function UnsubscribeClient({ token }) {
               padding: '14px 32px', borderRadius: 14, opacity: busy ? 0.6 : 1,
             }}
           >
-            {busy ? 'Unsubscribing…' : 'Unsubscribe'}
+            {busy ? tr("Unsubscribing…") : tr("Unsubscribe")}
           </button>
         )}
 
@@ -112,14 +114,14 @@ export default function UnsubscribeClient({ token }) {
                 padding: '14px 32px', borderRadius: 14, opacity: busy ? 0.6 : 1,
               }}
             >
-              {busy ? 'Resubscribing…' : 'Resubscribe'}
+              {busy ? tr("Resubscribing…") : tr("Resubscribe")}
             </button>
             <p style={{ marginTop: 16 }}>
               <a
                 href="/dashboard?page=settings#set-notifications"
                 style={{ color: ACCENT, fontSize: 14, textDecoration: 'underline' }}
               >
-                Manage preferences in dashboard
+                {tr("Manage preferences in dashboard")}
               </a>
             </p>
           </div>
@@ -134,7 +136,7 @@ export default function UnsubscribeClient({ token }) {
               padding: '14px 32px', borderRadius: 14,
             }}
           >
-            Go to dashboard
+            {tr("Go to dashboard")}
           </a>
         )}
       </div>

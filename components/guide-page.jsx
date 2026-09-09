@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from "react";
+import { useT } from "./locale";
 import { RailSec, RailNote, RailLink } from "./rail";
 import { SkelBar, SkelList } from "./skeleton";
 
@@ -38,6 +39,7 @@ const RAMP = ["#60a5fa", "#a78bfa", "#fbbf24", "#f472b6", "#5fd0dc", "#34d399"];
 const SEARCH_ICON = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>;
 
 export default function GuidePage({ dark, t }) {
+  const tr = useT();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -87,10 +89,10 @@ export default function GuidePage({ dark, t }) {
 
       <div className="gp-head">
         <div>
-          <div className="gp-title">Guide</div>
-          <div className="gp-sub">How to get the most out of Nitro.</div>
+          <div className="gp-title">{tr("Guide")}</div>
+          <div className="gp-sub">{tr("How to get the most out of Nitro.")}</div>
         </div>
-        <a className="gp-btn" href="/blog" target="_blank" rel="noopener noreferrer">Open the blog</a>
+        <a className="gp-btn" href="/blog" target="_blank" rel="noopener noreferrer">{tr("Open the blog")}</a>
       </div>
 
       {loading ? (
@@ -102,15 +104,15 @@ export default function GuidePage({ dark, t }) {
         </>
       ) : all.length === 0 ? (
         <div className="gp-empty">
-          <b>Guides are on the way</b>
-          <span>Short walkthroughs on ordering, money and delivery are being written. Until they land, WhatsApp is faster.</span>
+          <b>{tr("Guides are on the way")}</b>
+          <span>{tr("Short walkthroughs on ordering, money and delivery are being written. Until they land, WhatsApp is faster.")}</span>
         </div>
       ) : (
         <>
           <div className="gp-bar">
             <label className="gp-srch">
               <span className="gp-si">{SEARCH_ICON}</span>
-              <input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search the guides" aria-label="Search the guides" />
+              <input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder={tr("Search the guides")} aria-label={tr("Search the guides")} />
             </label>
             {topics.length > 1 && (
               <div className="gp-chips">
@@ -125,7 +127,7 @@ export default function GuidePage({ dark, t }) {
 
           {starters.length > 0 && (
             <section className="gp-card">
-              <header><h3>Start here</h3><span className="gp-hint">answers most first questions</span></header>
+              <header><h3>{tr("Start here")}</h3><span className="gp-hint">{tr("answers most first questions")}</span></header>
               <div className="gp-rows">
                 {starters.map((p, i) => (
                   <a key={p.id} className="gp-row" href={`/blog/${p.slug}`} target="_blank" rel="noopener noreferrer">
@@ -140,7 +142,7 @@ export default function GuidePage({ dark, t }) {
           )}
 
           {groups.length === 0 && starters.length === 0 && (
-            <p className="gp-none">Nothing matches that. Try another word, or ask us on WhatsApp below.</p>
+            <p className="gp-none">{tr("Nothing matches that. Try another word, or ask us on WhatsApp below.")}</p>
           )}
 
           {groups.map(([name, items]) => (
@@ -155,7 +157,7 @@ export default function GuidePage({ dark, t }) {
                     <span className="gp-gt">
                       <b>{p.title}</b>
                       {p.excerpt && <i>{p.excerpt}</i>}
-                      <em>{p.minutes} min read</em>
+                      <em>{p.minutes} {tr("min read")}</em>
                     </span>
                   </a>
                 ))}
@@ -166,8 +168,8 @@ export default function GuidePage({ dark, t }) {
       )}
 
       <div className="gp-ask">
-        <span className="gp-rt"><b>Still stuck?</b><i>WhatsApp us — faster than reading, most of the time.</i></span>
-        <a className="gp-btn pri" href={waLink || "/contact"} target={waLink ? "_blank" : undefined} rel={waLink ? "noopener noreferrer" : undefined}>WhatsApp us</a>
+        <span className="gp-rt"><b>{tr("Still stuck?")}</b><i>{tr("WhatsApp us — faster than reading, most of the time.")}</i></span>
+        <a className="gp-btn pri" href={waLink || "/contact"} target={waLink ? "_blank" : undefined} rel={waLink ? "noopener noreferrer" : undefined}>{tr("WhatsApp us")}</a>
       </div>
     </div>
   );
@@ -231,11 +233,12 @@ const GUIDE_CSS = `
 
 // Right sidebar for Guide
 export function GuideSidebar() {
+  const tr = useT();
   return (
     <div className="rr">
-      <RailSec>About the blog</RailSec>
-      <RailNote>Step-by-step guides and tutorials to help you get the most out of Nitro. New ones are added regularly.</RailNote>
-      <RailLink href="/blog">Visit the blog</RailLink>
+      <RailSec>{tr("About the blog")}</RailSec>
+      <RailNote>{tr("Step-by-step guides and tutorials to help you get the most out of Nitro. New ones are added regularly.")}</RailNote>
+      <RailLink href="/blog">{tr("Visit the blog")}</RailLink>
     </div>
   );
 }

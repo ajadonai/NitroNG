@@ -1,5 +1,6 @@
 'use client';
 import { ThemeProvider, useTheme } from './shared-nav';
+import { useT } from "./locale";
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { PlatformCard, PlatformIcon, TierCards, AskCard, fromPrice, eyebrowStyle } from './platform-card';
 import { useMoney } from './locale';
@@ -28,6 +29,7 @@ function Grid({ items }) {
 }
 
 function ServicesHubInner({ platforms }) {
+  const tr = useT();
   const { t } = useTheme();
   const social = platforms.filter(p => p.group === 'social');
   const music = platforms.filter(p => p.group === 'music');
@@ -41,33 +43,33 @@ function ServicesHubInner({ platforms }) {
         <div className="flex-1 w-full max-w-[920px] mx-auto px-7 pt-11 pb-14 max-md:px-4 max-md:pt-7 max-md:pb-10 flex flex-col gap-[26px] max-md:gap-5">
 
           <header className="flex flex-col gap-2.5">
-            <span style={eyebrow}>Services · {platforms.length} {platforms.length === 1 ? 'platform' : 'platforms'}</span>
-            <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>Everything you can grow on Nitro</h1>
+            <span style={eyebrow}>{tr("Services ·")} {platforms.length} {platforms.length === 1 ? 'platform' : 'platforms'}</span>
+            <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>{tr("Everything you can grow on Nitro")}</h1>
             <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>
-              Followers, likes, views, subscribers, streams and more for every major platform. Everything is priced in Naira, paid through any Nigerian bank or card, and delivered to your account without needing a password.
+              {tr("Followers, likes, views, subscribers, streams and more for every major platform. Everything is priced in Naira, paid through any Nigerian bank or card, and delivered to your account without needing a password.")}
             </p>
           </header>
 
           {social.length > 0 && (
             <div className="flex flex-col gap-3">
-              <span style={eyebrow}>Social</span>
+              <span style={eyebrow}>{tr("Social")}</span>
               <Grid items={social} />
             </div>
           )}
 
           {music.length > 0 && (
             <div className="flex flex-col gap-3">
-              <span style={eyebrow}>Music and audio</span>
+              <span style={eyebrow}>{tr("Music and audio")}</span>
               <Grid items={music} />
             </div>
           )}
 
           <div className="flex flex-col gap-3">
-            <span style={eyebrow}>Three tiers, one catalogue</span>
+            <span style={eyebrow}>{tr("Three tiers, one catalogue")}</span>
             <TierCards />
           </div>
 
-          <AskCard title="Want it done for you?" body="Tell us the link and what you want on WhatsApp and we place the order." />
+          <AskCard title={tr("Want it done for you?")} body={tr("Tell us the link and what you want on WhatsApp and we place the order.")} />
         </div>
         <SharedFooter />
       </div>

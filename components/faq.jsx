@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useT } from "./locale";
 import { FAQ_GROUPS } from "@/lib/faq-data";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
@@ -15,6 +16,7 @@ export default function FAQ() {
 }
 
 function FAQInner() {
+  const tr = useT();
   const { t } = useTheme();
   const [open, setOpen] = useState(FAQ_GROUPS[0][1][0][0]);
   const [query, setQuery] = useState("");
@@ -46,9 +48,9 @@ function FAQInner() {
         <main className="flex-1 w-full max-w-[920px] mx-auto px-7 pt-11 pb-14 max-md:px-4 max-md:pt-7 max-md:pb-10 flex flex-col gap-[26px] max-md:gap-5">
 
           <div className="flex flex-col gap-2.5">
-            <span className={eyebrow} style={{ color: ACCENT }}>Help</span>
-            <h1 className="serif font-semibold m-0 text-[clamp(34px,4.6vw,52px)] leading-[1.08] tracking-[-0.01em] text-balance" style={{ color: t.text }}>Questions, answered</h1>
-            <p className="text-[13.5px] m-0" style={{ color: t.textMuted }}>The things people ask before their first order, and after it.</p>
+            <span className={eyebrow} style={{ color: ACCENT }}>{tr("Help")}</span>
+            <h1 className="serif font-semibold m-0 text-[clamp(34px,4.6vw,52px)] leading-[1.08] tracking-[-0.01em] text-balance" style={{ color: t.text }}>{tr("Questions, answered")}</h1>
+            <p className="text-[13.5px] m-0" style={{ color: t.textMuted }}>{tr("The things people ask before their first order, and after it.")}</p>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -58,13 +60,13 @@ function FAQInner() {
                 type="search"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="Search the questions"
-                aria-label="Search the questions"
+                placeholder={tr("Search the questions")}
+                aria-label={tr("Search the questions")}
                 className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm"
                 style={{ color: t.text }}
               />
             </label>
-            <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Topics">
+            <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={tr("Topics")}>
               {TOPICS.map(name => {
                 const on = topic === name;
                 return (
@@ -85,7 +87,7 @@ function FAQInner() {
           </div>
 
           {groups.length === 0 && (
-            <p className="text-sm m-0" style={{ color: t.textMuted }}>Nothing matches that. Try another word, or ask us on WhatsApp below.</p>
+            <p className="text-sm m-0" style={{ color: t.textMuted }}>{tr("Nothing matches that. Try another word, or ask us on WhatsApp below.")}</p>
           )}
 
           {groups.map(([g, qs]) => (
@@ -120,8 +122,8 @@ function FAQInner() {
 
           <div className="flex items-center gap-3 px-[18px] py-4 rounded-[14px] max-md:flex-col max-md:items-stretch" style={{ background: t.cardBg, border: `1px solid ${line}` }}>
             <div className="flex flex-col min-w-0">
-              <span className="text-[15px] font-semibold" style={{ color: t.text }}>Still stuck?</span>
-              <span className="text-[13px]" style={{ color: t.textMuted }}>WhatsApp us, we are there all day.</span>
+              <span className="text-[15px] font-semibold" style={{ color: t.text }}>{tr("Still stuck?")}</span>
+              <span className="text-[13px]" style={{ color: t.textMuted }}>{tr("WhatsApp us, we are there all day.")}</span>
             </div>
             <a
               href={waLink}
@@ -129,7 +131,7 @@ function FAQInner() {
               rel="noopener noreferrer"
               className="ml-auto max-md:ml-0 h-[38px] px-4 rounded-[9px] inline-flex items-center justify-center text-[13px] font-semibold text-white no-underline whitespace-nowrap transition-transform duration-150 hover:-translate-y-px"
               style={{ background: ACCENT }}
-            >WhatsApp us</a>
+            >{tr("WhatsApp us")}</a>
           </div>
 
         </main>

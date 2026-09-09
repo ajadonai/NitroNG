@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { useT } from "./locale";
 import { useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { SITE } from '../lib/site';
@@ -16,6 +17,7 @@ function withEmail(text, email, color) {
 }
 
 export function LegalLayout({ label, title, date, summary = [], sections = [], related = [], action = 'back' }) {
+  const tr = useT();
   const { t } = useTheme();
   const email = SITE.email.general;
   const items = useMemo(() => sections.map(([h, body]) => ({ id: slug(h), title: h, body })), [sections]);
@@ -59,12 +61,12 @@ export function LegalLayout({ label, title, date, summary = [], sections = [], r
         <header className="flex flex-col gap-2.5">
           <span style={eyebrow}>{label}</span>
           <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>{title}</h1>
-          <p className="m-0 text-[13.5px]" style={{ color: t.muted }}>Updated {showDate(date)} · about {minutes} {minutes === 1 ? 'minute' : 'minutes'} to read</p>
+          <p className="m-0 text-[13.5px]" style={{ color: t.muted }}>{tr("Updated")} {showDate(date)} {tr("· about")} {minutes} {minutes === 1 ? 'minute' : 'minutes'} {tr("to read")}</p>
         </header>
 
         {summary.length > 0 && (
           <div className="rounded-xl px-[18px] py-3.5" style={{ ...card, background: "rgba(196,125,142,.08)" }}>
-            <span style={eyebrow}>In plain words</span>
+            <span style={eyebrow}>{tr("In plain words")}</span>
             <ul className="mt-2 mb-0 pl-[18px] text-[14.5px] leading-[1.6] list-disc" style={{ color: t.text }}>
               {summary.map((s, i) => <li key={i} className="my-[3px]">{s}</li>)}
             </ul>
@@ -73,7 +75,7 @@ export function LegalLayout({ label, title, date, summary = [], sections = [], r
 
         <div className="grid grid-cols-[220px_1fr] gap-9 items-start max-md:grid-cols-1 max-md:gap-[18px]">
           <aside className="sticky top-5 flex flex-col gap-0.5 max-md:hidden">
-            <span style={{ ...eyebrow, marginBottom: 8 }}>On this page</span>
+            <span style={{ ...eyebrow, marginBottom: 8 }}>{tr("On this page")}</span>
             {items.map(({ id, title: h }) => {
               const on = id === active;
               return (
@@ -82,7 +84,7 @@ export function LegalLayout({ label, title, date, summary = [], sections = [], r
             })}
           </aside>
           <details className="md:hidden rounded-xl px-3.5 py-2.5 text-[13px]" style={card}>
-            <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>On this page · {items.length} {items.length === 1 ? 'section' : 'sections'}</summary>
+            <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>{tr("On this page ·")} {items.length} {items.length === 1 ? 'section' : 'sections'}</summary>
             {items.map(({ id, title: h }) => (
               <a key={id} href={`#${id}`} className="block py-1.5 no-underline" style={{ color: t.muted, borderTop: `1px solid ${t.cardBorder}` }}>{h}</a>
             ))}
@@ -100,7 +102,7 @@ export function LegalLayout({ label, title, date, summary = [], sections = [], r
 
         {related.length > 0 && (
           <div>
-            <span style={{ ...eyebrow, marginBottom: 10 }}>Related</span>
+            <span style={{ ...eyebrow, marginBottom: 10 }}>{tr("Related")}</span>
             <div className="grid grid-cols-3 gap-3 max-md:grid-cols-1">
               {related.map(({ title: h, desc, href }) => (
                 <a key={href} href={href} className="flex flex-col gap-1 rounded-xl px-4 py-3.5 no-underline transition-transform duration-200 hover:-translate-y-px" style={card}>
@@ -114,10 +116,10 @@ export function LegalLayout({ label, title, date, summary = [], sections = [], r
 
         <div className="flex items-center gap-3 rounded-[14px] px-[18px] py-4 max-md:flex-col max-md:items-stretch" style={card}>
           <span className="flex flex-col gap-0.5">
-            <b className="text-[15px]" style={{ color: t.text }}>A question about this?</b>
-            <span className="text-[13px]" style={{ color: t.soft }}>Message us on WhatsApp, we usually answer in minutes.</span>
+            <b className="text-[15px]" style={{ color: t.text }}>{tr("A question about this?")}</b>
+            <span className="text-[13px]" style={{ color: t.soft }}>{tr("Message us on WhatsApp, we usually answer in minutes.")}</span>
           </span>
-          <a href={waLink || '/contact'} target={waLink ? '_blank' : undefined} rel={waLink ? 'noopener noreferrer' : undefined} className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>WhatsApp us</a>
+          <a href={waLink || '/contact'} target={waLink ? '_blank' : undefined} rel={waLink ? 'noopener noreferrer' : undefined} className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>{tr("WhatsApp us")}</a>
         </div>
       </div>
       <SharedFooter />

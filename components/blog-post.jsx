@@ -99,7 +99,7 @@ function BlogPostInner({ post, backHref, backLabel, related, prev, next }) {
   const PLATFORMS = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['youtube', 'YouTube'], ['facebook', 'Facebook'], ['telegram', 'Telegram'], ['spotify', 'Spotify'], ['twitter', 'X'], [' x ', 'X']];
   const hay = ` ${post.title} ${post.excerpt || ''} `.toLowerCase();
   const platform = (PLATFORMS.find(([k]) => hay.includes(k)) || [])[1];
-  const ctaHtml = `<aside class="rd-cta"><span class="rd-ctat"><b>${platform ? `Growing on ${platform}?` : 'Growing an audience?'}</b><i>{tr("Followers, likes and views from ₦100, sent gradually. We never ask for a password.")}</i></span><a class="rd-ctab" href="/signup">{tr("Start with a free account")}</a></aside>`;
+  const ctaHtml = `<aside class="rd-cta"><span class="rd-ctat"><b>${platform ? `Growing on ${platform}?` : 'Growing an audience?'}</b><i>${tr("Followers, likes and views from ₦100, sent gradually. We never ask for a password.")}</i></span><a class="rd-ctab" href="/signup">${tr("Start with a free account")}</a></aside>`;
   const parts = (post.content || '').split(/(?=<h2[\s>])/i);
   const body = parts.length > 2 ? [parts[0], parts[1], ctaHtml, ...parts.slice(2)].join('') : post.content;
 

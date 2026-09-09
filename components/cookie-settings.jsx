@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useT } from "./locale";
 
 const ACCENT = '#c47d8e';
 
@@ -31,6 +32,7 @@ const ROWS = [
  * `initial` is { analytics, advertising }; `onSave` receives the same shape.
  */
 export default function CookieSettingsSheet({ open, onClose, onSave, dark, initial }) {
+  const tr = useT();
   const [choice, setChoice] = useState({ analytics: false, advertising: false });
 
   useEffect(() => {
@@ -64,8 +66,8 @@ export default function CookieSettingsSheet({ open, onClose, onSave, dark, initi
         style={{ background: dark ? '#171126' : '#ffffff', border: `1px solid ${line}`, boxShadow: '0 24px 60px rgba(0,0,0,.3)', maxHeight: '92dvh', overflowY: 'auto' }}
       >
         <div>
-          <h2 id="cookie-settings-title" className="serif text-[28px] font-semibold leading-tight m-0" style={{ color: text }}>Cookie settings</h2>
-          <p className="text-[13.5px] leading-normal mt-1 mb-0" style={{ color: muted }}>Choose what the site may remember. Necessary ones keep you signed in and cannot be turned off.</p>
+          <h2 id="cookie-settings-title" className="serif text-[28px] font-semibold leading-tight m-0" style={{ color: text }}>{tr("Cookie settings")}</h2>
+          <p className="text-[13.5px] leading-normal mt-1 mb-0" style={{ color: muted }}>{tr("Choose what the site may remember. Necessary ones keep you signed in and cannot be turned off.")}</p>
         </div>
 
         {ROWS.map(r => (
@@ -79,11 +81,11 @@ export default function CookieSettingsSheet({ open, onClose, onSave, dark, initi
         ))}
 
         <div className="flex gap-2 justify-end pt-1.5 max-sm:flex-col" style={{ borderTop: `1px solid ${line}` }}>
-          <button type="button" className={btn} style={ghost} onClick={() => onSave({ analytics: false, advertising: false })}>Only necessary</button>
-          <button type="button" className={btn} style={ghost} onClick={() => onSave({ analytics: true, advertising: true })}>Accept all</button>
-          <button type="button" className={`${btn} text-white border-none`} style={{ background: ACCENT }} onClick={() => onSave(choice)}>Save choices</button>
+          <button type="button" className={btn} style={ghost} onClick={() => onSave({ analytics: false, advertising: false })}>{tr("Only necessary")}</button>
+          <button type="button" className={btn} style={ghost} onClick={() => onSave({ analytics: true, advertising: true })}>{tr("Accept all")}</button>
+          <button type="button" className={`${btn} text-white border-none`} style={{ background: ACCENT }} onClick={() => onSave(choice)}>{tr("Save choices")}</button>
         </div>
-        <a href="/cookie" className="text-[12.5px] font-semibold text-center no-underline" style={{ color: ACCENT }}>Read the cookie policy</a>
+        <a href="/cookie" className="text-[12.5px] font-semibold text-center no-underline" style={{ color: ACCENT }}>{tr("Read the cookie policy")}</a>
       </div>
     </div>
   );

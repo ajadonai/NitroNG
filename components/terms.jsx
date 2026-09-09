@@ -1,5 +1,6 @@
 'use client';
 import { ThemeProvider } from './shared-nav';
+import { useT } from "./locale";
 import { LegalLayout } from './legal-layout';
 import { SITE } from "../lib/site";
 
@@ -8,6 +9,7 @@ export default function Terms(){
 }
 
 function TermsInner(){
+  const tr = useT();
   const sections=[
     ["Acceptance of terms","By creating an account on Nitro (\"the Platform\"), you agree to be bound by these Terms of Service. If you do not agree to these terms, you may not use our services. We reserve the right to update these terms at any time, and continued use of the Platform constitutes acceptance of any modifications."],
     ["Description of services","Nitro is a social media marketing (SMM) platform that provides digital marketing services including but not limited to social media engagement, followers, views, likes, and related promotional services across various platforms. We act as an intermediary between you and third-party service providers. We do not guarantee specific outcomes, and delivery times are estimates only."],
@@ -29,9 +31,9 @@ function TermsInner(){
     "We deliver through providers, so times are estimates.",
   ];
   const related=[
-    {title:"Privacy policy",desc:"What we keep and why",href:"/privacy"},
-    {title:"Refund policy",desc:"When money comes back",href:"/refund"},
-    {title:"Cookie policy",desc:"What the site remembers",href:"/cookie"},
+    {title: tr("Privacy policy"),desc: tr("What we keep and why"),href:"/privacy"},
+    {title: tr("Refund policy"),desc: tr("When money comes back"),href:"/refund"},
+    {title: tr("Cookie policy"),desc: tr("What the site remembers"),href:"/cookie"},
   ];
-  return <LegalLayout label="Legal" title="Terms of service" date="August 29, 2026" summary={summary} sections={sections} related={related} action="back"/>;
+  return <LegalLayout label={tr("Legal")} title={tr("Terms of service")} date="August 29, 2026" summary={summary} sections={sections} related={related} action="back"/>;
 }

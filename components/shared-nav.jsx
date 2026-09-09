@@ -13,8 +13,9 @@ const ThemeCtx = createContext();
     the knob slides across, the sun rotates away and a cratered moon rises
     under twinkling stars. Styled by .nitro-sky in globals.css. */
 export function ThemeToggle({ dark, onToggle, size = "md", className = "" }) {
+  const tr = useT();
   return (
-    <button type="button" onClick={onToggle} role="switch" aria-checked={dark} aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+    <button type="button" onClick={onToggle} role="switch" aria-checked={dark} aria-label={dark ? tr("Switch to light mode") : tr("Switch to dark mode")}
       className={`nitro-sky${dark ? " night" : ""}${size === "lg" ? " lg" : ""} ${className}`}>
       <span className="sky-d" aria-hidden="true" /><span className="sky-n" aria-hidden="true" />
       <span className="cl c1" aria-hidden="true" /><span className="cl c2" aria-hidden="true" />

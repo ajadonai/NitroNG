@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useT } from "./locale";
 import { initGame, move, canMove, hasWon, spawnTile } from '@/lib/game-engine';
 import { useBodyScrollLock } from './ui-primitives';
 
@@ -39,6 +40,7 @@ function getTileStyle(value, dark) {
 }
 
 export default function Game2048({ dark, t, onScoreSubmitted }) {
+  const tr = useT();
   const [board, setBoard] = useState(null);
   const [score, setScore] = useState(0);
   const [bestScore, setBestScore] = useState(0);
@@ -158,19 +160,19 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
       {/* Score bar */}
       <div className="flex items-stretch gap-2 w-full max-w-[340px] mb-3">
         <div className="flex-1 py-2 px-3 rounded-xl" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.025)', border: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)'}` }}>
-          <div className="text-[9px] font-bold uppercase tracking-widest" style={{ color: t.textMuted }}>Score</div>
+          <div className="text-[9px] font-bold uppercase tracking-widest" style={{ color: t.textMuted }}>{tr("Score")}</div>
           <div className="text-xl font-bold tabular-nums" style={{ color: t.text }}>{score.toLocaleString()}</div>
         </div>
         <div className="flex-1 py-2 px-3 rounded-xl" style={{ background: dark ? 'rgba(196,125,142,.08)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.18)' : 'rgba(196,125,142,.1)'}` }}>
-          <div className="text-[9px] font-bold uppercase tracking-widest" style={{ color: t.accent }}>Best</div>
+          <div className="text-[9px] font-bold uppercase tracking-widest" style={{ color: t.accent }}>{tr("Best")}</div>
           <div className="text-xl font-bold tabular-nums" style={{ color: t.accent }}>{bestScore.toLocaleString()}</div>
         </div>
         <div className="flex flex-col gap-1.5 justify-center">
-          <button onClick={() => setShowHelp(true)} className="w-8 h-8 rounded-lg flex items-center justify-center border-none cursor-pointer" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.03)', border: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)'}`, color: t.textMuted }} title="How to play">
+          <button onClick={() => setShowHelp(true)} className="w-8 h-8 rounded-lg flex items-center justify-center border-none cursor-pointer" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.03)', border: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)'}`, color: t.textMuted }} title={tr("How to play")}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           </button>
           {board && !gameOver && !won && (
-            <button onClick={startNewGame} className="w-8 h-8 rounded-lg flex items-center justify-center border-none cursor-pointer" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.03)', border: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)'}`, color: t.textMuted }} title="Restart">
+            <button onClick={startNewGame} className="w-8 h-8 rounded-lg flex items-center justify-center border-none cursor-pointer" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.03)', border: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)'}`, color: t.textMuted }} title={tr("Restart")}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
             </button>
           )}
@@ -218,13 +220,13 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
           {(gameOver || won) && (
             <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center backdrop-blur-sm" style={{ background: dark ? 'rgba(0,0,0,.7)' : 'rgba(255,255,255,.75)' }}>
               <div className="text-3xl mb-2">{won ? '🎉' : '💔'}</div>
-              <div className="text-xl font-bold mb-0.5" style={{ color: won ? t.accent : t.text }}>{won ? 'You reached 2048!' : 'Game Over'}</div>
+              <div className="text-xl font-bold mb-0.5" style={{ color: won ? t.accent : t.text }}>{won ? tr("You reached 2048!") : tr("Game Over")}</div>
               <div className="text-lg font-bold tabular-nums" style={{ color: t.text }}>{score.toLocaleString()} pts</div>
               <div className="text-[11px] mb-5 mt-0.5" style={{ color: t.textMuted }}>
                 {submitting ? 'Saving score...' : submitted ? 'Saved to leaderboard!' : `${moveCount} moves`}
               </div>
               <button onClick={startNewGame} className="shimmer-btn px-7 py-2.5 rounded-xl text-sm font-semibold border-none cursor-pointer" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5e6b)`, color: '#fff', boxShadow: '0 4px 16px rgba(196,125,142,.3)' }}>
-                Play Again
+                {tr("Play Again")}
               </button>
             </div>
           )}
@@ -233,16 +235,16 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
           {!board && !loading && (
             <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center" style={{ background: dark ? 'rgba(0,0,0,.6)' : 'rgba(255,255,255,.6)' }}>
               <div className="text-4xl font-bold mb-1" style={{ color: t.accent, textShadow: '0 2px 12px rgba(196,125,142,.3)' }}>2048</div>
-              <div className="text-xs mb-4" style={{ color: t.textMuted }}>Merge tiles. Climb the leaderboard.</div>
+              <div className="text-xs mb-4" style={{ color: t.textMuted }}>{tr("Merge tiles. Climb the leaderboard.")}</div>
               <button onClick={startNewGame} className="shimmer-btn px-7 py-3 rounded-xl text-sm font-semibold border-none cursor-pointer" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5e6b)`, color: '#fff', boxShadow: '0 4px 16px rgba(196,125,142,.3)' }}>
-                Start Game
+                {tr("Start Game")}
               </button>
             </div>
           )}
 
           {loading && (
             <div className="absolute inset-0 rounded-2xl flex items-center justify-center" style={{ background: dark ? 'rgba(0,0,0,.5)' : 'rgba(255,255,255,.5)' }}>
-              <div className="text-sm font-medium" style={{ color: t.textMuted }}>Starting...</div>
+              <div className="text-sm font-medium" style={{ color: t.textMuted }}>{tr("Starting...")}</div>
             </div>
           )}
         </div>
@@ -265,7 +267,7 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${t.accent}, ${dark ? '#6b3a4a' : '#8b5e6b'})` }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" stroke="none"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                 </div>
-                <h3 className="text-[15px] font-bold" style={{ color: t.text }}>How to Play</h3>
+                <h3 className="text-[15px] font-bold" style={{ color: t.text }}>{tr("How to Play")}</h3>
               </div>
               <button onClick={() => setShowHelp(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border-none cursor-pointer" style={{ background: dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)', color: t.textMuted }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -287,11 +289,11 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
             <div className="relative mt-4 p-3 rounded-xl" style={{ background: dark ? 'rgba(196,125,142,.08)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.08)'}` }}>
               <div className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: t.accent }}>Win Real Money</div>
               <p className="text-[12px] leading-[1.55]" style={{ color: t.textMuted }}>
-                Your best score each month enters the leaderboard. Top 5 players win wallet credit. Play unlimited times — only your highest counts.
+                {tr("Your best score each month enters the leaderboard. Top 5 players win wallet credit. Play unlimited times — only your highest counts.")}
               </p>
             </div>
             <button onClick={() => setShowHelp(false)} className="relative w-full mt-4 py-2.5 rounded-xl text-sm font-semibold border-none cursor-pointer" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5e6b)`, color: '#fff' }}>
-              Got it
+              {tr("Got it")}
             </button>
           </div>
         </div>

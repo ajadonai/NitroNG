@@ -1,5 +1,6 @@
 'use client';
 import { ThemeProvider } from './shared-nav';
+import { useT } from "./locale";
 import { LegalLayout } from './legal-layout';
 import { SITE } from "../lib/site";
 
@@ -8,6 +9,7 @@ export default function Privacy(){
 }
 
 function PrivacyInner(){
+  const tr = useT();
   const sections=[
     ["Who we are",`Nitro is operated by The Nitro Nigeria Limited (RC 9514845), a private company registered in Nigeria with registered address at 1111 Block A, Emcel Gardens, Orchid Road, Lagos, Lagos State, Nigeria. The Nitro Nigeria Limited is the data controller for personal data processed on this Platform. Contact for privacy matters: ${SITE.email.general}.`],
     ["Information we collect","When you use Nitro, we collect information you provide directly, such as your name, email address, phone number, and payment details during registration and transactions. We also automatically collect technical data including your IP address, browser type, device information, operating system, referring URLs, pages viewed, time spent on pages, click patterns, and interaction data. Additionally, we collect transaction data including order history, wallet activity, payment records, and service usage metrics."],
@@ -30,9 +32,9 @@ function PrivacyInner(){
     "Ask us and we delete your account and its data.",
   ];
   const related=[
-    {title:"Terms of service",desc:"The rules of the service",href:"/terms"},
-    {title:"Refund policy",desc:"When money comes back",href:"/refund"},
-    {title:"Cookie policy",desc:"What the site remembers",href:"/cookie"},
+    {title: tr("Terms of service"),desc: tr("The rules of the service"),href:"/terms"},
+    {title: tr("Refund policy"),desc: tr("When money comes back"),href:"/refund"},
+    {title: tr("Cookie policy"),desc: tr("What the site remembers"),href:"/cookie"},
   ];
-  return <LegalLayout label="Legal" title="Privacy policy" date="July 5, 2026" summary={summary} sections={sections} related={related}/>;
+  return <LegalLayout label={tr("Legal")} title={tr("Privacy policy")} date="July 5, 2026" summary={summary} sections={sections} related={related}/>;
 }

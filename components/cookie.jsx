@@ -1,5 +1,6 @@
 'use client';
 import { ThemeProvider } from './shared-nav';
+import { useT } from "./locale";
 import { LegalLayout } from './legal-layout';
 import { SITE } from "../lib/site";
 
@@ -8,6 +9,7 @@ export default function CookiePolicy(){
 }
 
 function CookieInner(){
+  const tr = useT();
   const sections=[
     ["What are cookies","Cookies are small text files that are stored on your device when you visit a website. They help us recognize your browser, remember your preferences, and improve your experience on Nitro. Cookies do not contain personal information like passwords or payment details."],
     ["How we use cookies","Nitro uses cookies for authentication (keeping you logged in across pages and sessions), preferences (remembering your theme choice, language, and display settings), security (protecting against cross-site request forgery and unauthorized access), and analytics (understanding how users interact with our platform to improve our services)."],
@@ -24,9 +26,9 @@ function CookieInner(){
     "You can change your choice any time from the footer.",
   ];
   const related=[
-    {title:"Terms of service",desc:"The rules of the service",href:"/terms"},
-    {title:"Privacy policy",desc:"What we keep and why",href:"/privacy"},
-    {title:"Refund policy",desc:"When money comes back",href:"/refund"},
+    {title: tr("Terms of service"),desc: tr("The rules of the service"),href:"/terms"},
+    {title: tr("Privacy policy"),desc: tr("What we keep and why"),href:"/privacy"},
+    {title: tr("Refund policy"),desc: tr("When money comes back"),href:"/refund"},
   ];
-  return <LegalLayout label="Legal" title="Cookie policy" date="March 23, 2026" summary={summary} sections={sections} related={related}/>;
+  return <LegalLayout label={tr("Legal")} title={tr("Cookie policy")} date="March 23, 2026" summary={summary} sections={sections} related={related}/>;
 }
