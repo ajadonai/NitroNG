@@ -5,11 +5,14 @@ import { SkelList, Bone } from "./skeleton";
 import { Modal } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
+import { useT } from "./locale";
 import { fN } from "../lib/format";
 import { SITE } from "../lib/site";
 import { Avatar } from "./avatar";
 import { copyText } from '@/lib/clipboard';
 import { ThemePill } from "./shared-nav";
+import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
+import { SWITCHER_LIVE } from "./locale";
 
 function SettingsModal({ open, onClose, title, subtitle, icon, dark, t, children }) {
   return (
@@ -51,6 +54,8 @@ const I_LOCK = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strok
 const I_BELL = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>;
 const I_DEV = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>;
 const I_KEY = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m21 2-2 2m-7.6 7.6a5.5 5.5 0 11-7.8 7.8 5.5 5.5 0 017.8-7.8zm0 0L19 3l2 2-3 3"/></svg>;
+const I_GLOBE = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>;
+const I_COIN = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.6 2.6 0 00-2.5-1.5c-1.4 0-2.5.9-2.5 2s1.1 2 2.5 2 2.5.9 2.5 2-1.1 2-2.5 2a2.6 2.6 0 01-2.5-1.5"/><path d="M12 6.5v11"/></svg>;
 const I_PULSE = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>;
 const I_OUT = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>;
 const I_TRASH = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>;
@@ -78,6 +83,7 @@ function SectionHead({ children }) {
 }
 
 export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, setDark }) {
+  const tr = useT();
   const confirm = useConfirm();
   const toast = useToast();
   const [notifOrders, setNotifOrders] = useState(true);
@@ -157,7 +163,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
       const res = await fetch("/api/auth/change-password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ currentPassword: curPw, newPassword: newPw }), signal: AbortSignal.timeout(15000) });
       const data = await res.json();
       if (!res.ok) { toast.error("Failed", data.error || "Password change failed"); } else { toast.success("Password updated", "Your password has been changed"); setCurPw(""); setNewPw(""); setConfirmPw(""); }
-    } catch (err) { toast.error(err?.name === "TimeoutError" ? "Timed out" : "Network error", "Check your connection"); }
+    } catch (err) { toast.error(err?.name === "TimeoutError" ? tr("Timed out") : tr("Network error"), tr("Check your connection")); }
     setPwLoading(false);
   };
 
@@ -168,8 +174,8 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
   return (
     <>
       <div className="pb-3.5 max-md:pb-2">
-        <div className="text-xl max-desktop:text-lg font-semibold mb-0.5 text-t-text">Settings</div>
-        <div className="text-sm text-t-text-muted">Your account and how Nitro looks</div>
+        <div className="text-xl max-desktop:text-lg font-semibold mb-0.5 text-t-text">{tr("Settings")}</div>
+        <div className="text-sm text-t-text-muted">{tr("Your account and how Nitro looks")}</div>
         <div className="page-divider bg-t-card-border" />
       </div>
       <div className="desktop:grid desktop:grid-cols-2 desktop:gap-x-4 desktop:items-start">
@@ -179,7 +185,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <div className="flex items-center gap-3 rounded-[14px] p-3.5 mb-2" style={card}>
           <Avatar size={52} ring />
           <div className="flex flex-col gap-[3px] min-w-0">
-            <div className="text-[16px] font-semibold truncate text-t-text">{user?.name || "User"}</div>
+            <div className="text-[16px] font-semibold truncate text-t-text">{user?.name || tr("User")}</div>
             <div className="flex items-center gap-1 text-[11.5px] font-semibold" style={{ color: user?.badgeColor || t.textMuted }}><ShieldBadge color={user?.badgeColor} size={12} tier={user?.badge} />{user?.badge || "Spark"}</div>
           </div>
         </div>
@@ -187,48 +193,58 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
           {[["Email", user?.email || "—", false], ["Phone", user?.phone || "—", true], ["Referral code", user?.refCode || "—", true]].map(([label, val, mono], i) => (
             <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}>
               <span>{label}</span>
-              <span className="flex items-center gap-1.5 min-w-0"><b className={`text-[13px] font-semibold truncate text-t-text${mono ? " m" : ""}`}>{val}</b>{label === "Referral code" && user?.refCode && <button onClick={copyCode} aria-label="Copy referral code" className="w-6 h-6 rounded-[7px] flex items-center justify-center cursor-pointer bg-transparent text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</button>}</span>
+              <span className="flex items-center gap-1.5 min-w-0"><b className={`text-[13px] font-semibold truncate text-t-text${mono ? " m" : ""}`}>{val}</b>{label === "Referral code" && user?.refCode && <button onClick={copyCode} aria-label={tr("Copy referral code")} className="w-6 h-6 rounded-[7px] flex items-center justify-center cursor-pointer bg-transparent text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</button>}</span>
             </div>
           ))}
-          <div className="py-2 text-[11.5px] text-t-text-muted" style={{ borderTop: `1px solid ${t.cardBorder}` }}>To change these, message support.</div>
+          <div className="py-2 text-[11.5px] text-t-text-muted" style={{ borderTop: `1px solid ${t.cardBorder}` }}>{tr("To change these, message support.")}</div>
         </div>
 
         </div>
         <div>
         {/* ── Account ── */}
-        <SectionHead>Account</SectionHead>
+        <SectionHead>{tr("Account")}</SectionHead>
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
-          <Row id="set-change-password" first icon={I_LOCK} title="Change password" sub="Keep your account secure" onClick={() => setPwModalOpen(true)} dark={dark} t={t} />
-          <Row id="set-notifications" icon={I_BELL} title="Notifications" sub="Orders, promos, email" onClick={() => setNotifModalOpen(true)} dark={dark} t={t} />
-          <Row id="set-active-sessions" icon={I_DEV} title="Active sessions" sub={sessionsLoading ? <Bone dark={dark} w={140} h={9} style={{ display: "inline-block", verticalAlign: "middle" }} /> : `${sessions.length} device${sessions.length !== 1 ? "s" : ""}${sessions.find(x => x.current)?.deviceType ? ` · this ${sessions.find(x => x.current).deviceType}` : ""}`} onClick={() => setSessionsModalOpen(true)} dark={dark} t={t} />
+          <Row id="set-change-password" first icon={I_LOCK} title={tr("Change password")} sub={tr("Keep your account secure")} onClick={() => setPwModalOpen(true)} dark={dark} t={t} />
+          <Row id="set-notifications" icon={I_BELL} title={tr("Notifications")} sub={tr("Orders, promos, email")} onClick={() => setNotifModalOpen(true)} dark={dark} t={t} />
+          <Row id="set-active-sessions" icon={I_DEV} title={tr("Active sessions")} sub={sessionsLoading ? <Bone dark={dark} w={140} h={9} style={{ display: "inline-block", verticalAlign: "middle" }} /> : `${sessions.length} device${sessions.length !== 1 ? "s" : ""}${sessions.find(x => x.current)?.deviceType ? ` · this ${sessions.find(x => x.current).deviceType}` : ""}`} onClick={() => setSessionsModalOpen(true)} dark={dark} t={t} />
         </div>
 
         </div>
         <div>
         {/* ── Appearance ── */}
-        <SectionHead>Appearance</SectionHead>
+        <SectionHead>{tr("Appearance")}</SectionHead>
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
-          <Row id="set-theme" first icon={dark ? I_MOON : I_SUN} title="Theme" sub={themeMode === "auto" ? "Auto: light 6:30am to 6:30pm, dark otherwise" : "Choose how Nitro looks"} dark={dark} t={t}
+          <Row id="set-theme" first icon={dark ? I_MOON : I_SUN} title={tr("Theme")} sub={themeMode === "auto" ? "Auto: light 6:30am to 6:30pm, dark otherwise" : "Choose how Nitro looks"} dark={dark} t={t}
             right={<ThemePill mode={themeMode} onMode={applyTheme} />} />
+          {SWITCHER_LIVE && (
+            <Row id="set-language" icon={I_GLOBE} title={tr("Language")}
+              sub={tr("What language the site reads in")} dark={dark} t={t}
+              right={<LanguageSwitcher />} />
+          )}
+          {SWITCHER_LIVE && (
+            <Row id="set-currency" icon={I_COIN} title={tr("Currency")}
+              sub={tr("What prices are shown in. Your wallet stays in naira.")} dark={dark} t={t}
+              right={<CurrencySwitcher />} />
+          )}
         </div>
 
         </div>
         <div>
         {/* ── More ── */}
-        <SectionHead>More</SectionHead>
+        <SectionHead>{tr("More")}</SectionHead>
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
           {apiKey
-            ? <Row id="set-api" first icon={I_KEY} title="API access" sub={<span className="flex flex-col gap-[3px]"><span className="flex items-center gap-2 flex-wrap"><span className="m" style={{ color: t.text }}>{`${apiKey.slice(0, 9)}••••${apiKey.slice(-4)}`}</span><span className="text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-[6px] rounded-md" style={apiWholesale ? { color: dark ? "#4ade80" : "#15803d", background: dark ? "rgba(74,222,128,.14)" : "rgba(22,163,74,.1)" } : { color: t.textMuted, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)" }}>{apiWholesale ? "Wholesale" : "Retail"}</span></span><span>POST nitro.ng/api/v2</span></span>} onClick={() => { try { copyText(apiKey); toast.success("API key copied"); } catch {} }} right={<span className="flex items-center gap-2"><span className="w-6 h-6 rounded-[7px] flex items-center justify-center text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</span><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[12px] font-semibold no-underline text-accent">Docs</a></span>} dark={dark} t={t} />
-            : <Row id="set-api" first icon={I_KEY} title="API access" sub="Use Nitro from your own platform" right={<span className="text-[10.5px] font-bold uppercase tracking-[.5px] py-[2px] px-2 rounded-md text-accent" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)" }}>Soon</span>} dark={dark} t={t} />}
-          <Row id="set-status" icon={I_PULSE} title="System status" sub="Check that every Nitro service is running" href={SITE.status} right={<span className="w-[9px] h-[9px] rounded-full" style={{ background: "#059669", boxShadow: "0 0 0 3px rgba(5,150,105,.15)" }} />} dark={dark} t={t} />
+            ? <Row id="set-api" first icon={I_KEY} title={tr("API access")} sub={<span className="flex flex-col gap-[3px]"><span className="flex items-center gap-2 flex-wrap"><span className="m" style={{ color: t.text }}>{`${apiKey.slice(0, 9)}••••${apiKey.slice(-4)}`}</span><span className="text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-[6px] rounded-md" style={apiWholesale ? { color: dark ? "#4ade80" : "#15803d", background: dark ? "rgba(74,222,128,.14)" : "rgba(22,163,74,.1)" } : { color: t.textMuted, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)" }}>{apiWholesale ? tr("Wholesale") : tr("Retail")}</span></span><span>POST nitro.ng/api/v2</span></span>} onClick={() => { try { copyText(apiKey); toast.success("API key copied"); } catch {} }} right={<span className="flex items-center gap-2"><span className="w-6 h-6 rounded-[7px] flex items-center justify-center text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</span><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[12px] font-semibold no-underline text-accent">{tr("Docs")}</a></span>} dark={dark} t={t} />
+            : <Row id="set-api" first icon={I_KEY} title={tr("API access")} sub={tr("Use Nitro from your own platform")} right={<span className="text-[10.5px] font-bold uppercase tracking-[.5px] py-[2px] px-2 rounded-md text-accent" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)" }}>{tr("Soon")}</span>} dark={dark} t={t} />}
+          <Row id="set-status" icon={I_PULSE} title={tr("System status")} sub={tr("Check that every Nitro service is running")} href={SITE.status} right={<span className="w-[9px] h-[9px] rounded-full" style={{ background: "#059669", boxShadow: "0 0 0 3px rgba(5,150,105,.15)" }} />} dark={dark} t={t} />
         </div>
 
         </div>
         <div className="desktop:col-span-2">
         {/* ── Log out, delete ── */}
         <div className="rounded-[14px] overflow-hidden mb-4" style={card}>
-          <Row id="set-account" first icon={I_OUT} title="Log out" onClick={async () => {
-            const ok = await confirm({ title: "Log Out", message: "You will be logged out of this device.", confirmLabel: "Log Out" });
+          <Row id="set-account" first icon={I_OUT} title={tr("Log out")} onClick={async () => {
+            const ok = await confirm({ title: tr("Log Out"), message: "You will be logged out of this device.", confirmLabel: "Log Out" });
             if (ok) {
               let res;
               try {
@@ -245,14 +261,14 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
               window.location.replace("/");
             }
           }} dark={dark} t={t} />
-          <Row id="set-danger-zone" icon={I_TRASH} title="Delete account" sub="Scheduled 30 days after you ask" danger onClick={() => setShowDelete(v => !v)} right={showDelete ? null : I_CHEV} dark={dark} t={t} />
+          <Row id="set-danger-zone" icon={I_TRASH} title={tr("Delete account")} sub={tr("Scheduled 30 days after you ask")} danger onClick={() => setShowDelete(v => !v)} right={showDelete ? null : I_CHEV} dark={dark} t={t} />
           {showDelete && (
             <div className="px-3.5 pb-4" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
             {showDelete ? (
               <div className="mt-3">
-                <label htmlFor="delete-account-password" className="block text-[13px] mb-1.5 text-t-text-muted">Enter your password to confirm</label>
+                <label htmlFor="delete-account-password" className="block text-[13px] mb-1.5 text-t-text-muted">{tr("Enter your password to confirm")}</label>
                 <div className="flex gap-2 flex-wrap max-md:flex-wrap">
-                  <input type="password" id="delete-account-password" autoComplete="current-password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder="Your password" className="flex-1 min-w-40 py-2.5 px-3.5 rounded-lg text-sm outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)"}` }} />
+                  <input type="password" id="delete-account-password" autoComplete="current-password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder={tr("Your password")} className="flex-1 min-w-40 py-2.5 px-3.5 rounded-lg text-sm outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)"}` }} />
                   <button onClick={async () => {
                     if (!deletePassword) return;
                     const ok = await confirm({ title: "Delete Your Account", message: "Your account will be scheduled for deletion in 30 days. During this period you cannot log in or sign up with this email. Contact support@nitro.ng before the deadline to cancel. After 30 days, your personal details will be permanently removed and the account cannot be restored. Financial records required for legal and accounting purposes are retained without your contact details.", confirmLabel: "Delete Account", danger: true, requireType: "DELETE" });
@@ -264,13 +280,13 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
                         else { setDeleteError(data.error || "Failed to delete account"); }
                       } catch { setDeleteError("Request failed"); }
                     }
-                  }} className="py-[9px] px-5 rounded-lg border-[0.5px] text-[13px] font-semibold cursor-pointer bg-transparent whitespace-nowrap" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.25)", color: dark ? "#fca5a5" : "#dc2626", opacity: deletePassword ? 1 : .4 }}>Delete my account</button>
-                  <button onClick={() => { setShowDelete(false); setDeletePassword(""); setDeleteError(""); }} className="py-2.5 px-3.5 rounded-lg bg-transparent text-sm cursor-pointer text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>Cancel</button>
+                  }} className="py-[9px] px-5 rounded-lg border-[0.5px] text-[13px] font-semibold cursor-pointer bg-transparent whitespace-nowrap" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.25)", color: dark ? "#fca5a5" : "#dc2626", opacity: deletePassword ? 1 : .4 }}>{tr("Delete my account")}</button>
+                  <button onClick={() => { setShowDelete(false); setDeletePassword(""); setDeleteError(""); }} className="py-2.5 px-3.5 rounded-lg bg-transparent text-sm cursor-pointer text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{tr("Cancel")}</button>
                 </div>
                 {deleteError && <div className="text-[13px] mt-2" style={{ color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline align-middle"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {deleteError}</div>}
               </div>
             ) : (
-              <button onClick={() => setShowDelete(true)} className="py-[9px] px-5 rounded-lg border-[0.5px] text-[13px] font-semibold cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.25)", color: dark ? "#fca5a5" : "#dc2626" }}>Delete my account</button>
+              <button onClick={() => setShowDelete(true)} className="py-[9px] px-5 rounded-lg border-[0.5px] text-[13px] font-semibold cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.25)", color: dark ? "#fca5a5" : "#dc2626" }}>{tr("Delete my account")}</button>
             )}
             </div>
           )}
@@ -278,25 +294,25 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
 
         </div>
         {/* ── PASSWORD MODAL ── */}
-        <SettingsModal open={pwModalOpen} onClose={() => setPwModalOpen(false)} title="Change password" subtitle="Keep your account secure" icon={I_LOCK} dark={dark} t={t}>
+        <SettingsModal open={pwModalOpen} onClose={() => setPwModalOpen(false)} title={tr("Change password")} subtitle={tr("Keep your account secure")} icon={I_LOCK} dark={dark} t={t}>
           <div className="mb-3">
-            <label htmlFor="pw-current" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">Current password</label>
+            <label htmlFor="pw-current" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">{tr("Current password")}</label>
             <input type="password" id="pw-current" autoComplete="current-password" value={curPw} onChange={e => setCurPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
           </div>
           <div className="mb-3">
-            <label htmlFor="pw-new" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">New password</label>
+            <label htmlFor="pw-new" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">{tr("New password")}</label>
             <input type="password" id="pw-new" autoComplete="new-password" value={newPw} onChange={e => setNewPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
           </div>
           <div className="mb-3">
-            <label htmlFor="pw-confirm" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">Confirm new password</label>
+            <label htmlFor="pw-confirm" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">{tr("Confirm new password")}</label>
             <input type="password" id="pw-confirm" autoComplete="new-password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
           </div>
-          <button onClick={changePassword} disabled={pwLoading} className="py-2.5 px-7 dash-btn-primary bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-semibold border-none cursor-pointer mt-1 transition-[transform,box-shadow] duration-200 ease-in-out hover:translate-y-[-1px] hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ opacity: curPw && newPw && confirmPw && !pwLoading ? 1 : .4 }}>{pwLoading ? "Updating..." : "Update password"}</button>
+          <button onClick={changePassword} disabled={pwLoading} className="py-2.5 px-7 dash-btn-primary bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-semibold border-none cursor-pointer mt-1 transition-[transform,box-shadow] duration-200 ease-in-out hover:translate-y-[-1px] hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ opacity: curPw && newPw && confirmPw && !pwLoading ? 1 : .4 }}>{pwLoading ? tr("Updating...") : tr("Update password")}</button>
         </SettingsModal>
 
         {/* ── NOTIFICATIONS MODAL ── */}
-        <SettingsModal open={notifModalOpen} onClose={() => setNotifModalOpen(false)} title="Notifications" subtitle="Orders, promos, email" icon={I_BELL} dark={dark} t={t}>
-          <div className="text-[13px] mb-4 text-t-text-muted">Control what alerts you receive.</div>
+        <SettingsModal open={notifModalOpen} onClose={() => setNotifModalOpen(false)} title={tr("Notifications")} subtitle={tr("Orders, promos, email")} icon={I_BELL} dark={dark} t={t}>
+          <div className="text-[13px] mb-4 text-t-text-muted">{tr("Control what alerts you receive.")}</div>
           {[
             ["Order updates", "Get notified when orders complete or fail", notifOrders, setNotifOrders, "notifOrders"],
             ["Promotions", "Receive offers and discount alerts", notifPromo, setNotifPromo, "notifPromo"],
@@ -313,12 +329,12 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         </SettingsModal>
 
         {/* ── SESSIONS MODAL ── */}
-        <SettingsModal open={sessionsModalOpen} onClose={() => setSessionsModalOpen(false)} title="Active sessions" subtitle="Devices signed in to your account" icon={I_DEV} dark={dark} t={t}>
-          <div className="text-[13px] mb-4 text-t-text-muted">Devices logged into your account. Max 1 web + 1 mobile.</div>
+        <SettingsModal open={sessionsModalOpen} onClose={() => setSessionsModalOpen(false)} title={tr("Active sessions")} subtitle={tr("Devices signed in to your account")} icon={I_DEV} dark={dark} t={t}>
+          <div className="text-[13px] mb-4 text-t-text-muted">{tr("Devices logged into your account. Max 1 web + 1 mobile.")}</div>
           {sessionsLoading ? (
             <SkelList dark={dark} rows={2} bare avatar="square" rowH={56} />
           ) : sessions.length === 0 ? (
-            <div className="text-center text-[13px] py-4 text-t-text-muted">No active sessions</div>
+            <div className="text-center text-[13px] py-4 text-t-text-muted">{tr("No active sessions")}</div>
           ) : sessions.map((s, i, arr) => (
             <div key={s.id} className="flex items-center gap-3 py-3" style={{ borderBottom: i < arr.length - 1 ? `0.5px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: s.current ? (dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)") }}>
@@ -331,12 +347,12 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
               <div className="flex-1">
                 <div className="text-sm font-medium flex items-center gap-1.5 text-t-text">
                   {s.deviceInfo || s.deviceType}
-                  {s.current && <span className="text-[11px] py-px px-1.5 rounded font-semibold border-[.5px]" style={{ background: dark ? "rgba(110,231,183,.14)" : "#ecfdf5", color: t.green, borderColor: dark ? "rgba(110,231,183,.24)" : "#a7f3d0" }}>Current</span>}
+                  {s.current && <span className="text-[11px] py-px px-1.5 rounded font-semibold border-[.5px]" style={{ background: dark ? "rgba(110,231,183,.14)" : "#ecfdf5", color: t.green, borderColor: dark ? "rgba(110,231,183,.24)" : "#a7f3d0" }}>{tr("Current")}</span>}
                   <span className="text-[11px] py-px px-[5px] rounded ml-1" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)", color: t.textMuted }}>{s.deviceType}</span>
                 </div>
                 <div className="text-[13px] mt-0.5 text-t-text-muted">{s.ip || "—"} · {fDSession(s.lastActive)}</div>
               </div>
-              {!s.current && <button onClick={(e) => { e.stopPropagation(); revokeSession(s.id); }} disabled={revoking === s.id} className="py-[5px] px-3 rounded-md text-xs font-semibold border-[0.5px] cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)", color: dark ? "#fca5a5" : "#dc2626" }}>{revoking === s.id ? "..." : "Revoke"}</button>}
+              {!s.current && <button onClick={(e) => { e.stopPropagation(); revokeSession(s.id); }} disabled={revoking === s.id} className="py-[5px] px-3 rounded-md text-xs font-semibold border-[0.5px] cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)", color: dark ? "#fca5a5" : "#dc2626" }}>{revoking === s.id ? "..." : tr("Revoke")}</button>}
             </div>
           ))}
         </SettingsModal>
@@ -347,10 +363,11 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
 }
 
 export function SettingsSidebar() {
+  const tr = useT();
   const jump = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
   return (
     <div className="rr">
-      <RailSec>On this page</RailSec>
+      <RailSec>{tr("On this page")}</RailSec>
       <RailCard>
         {[["Change password", "set-change-password"], ["Notifications", "set-notifications"], ["Theme", "set-theme"], ["Active sessions", "set-active-sessions"], ["System status", "set-status"], ["API access", "set-api"], ["Log out", "set-account"], ["Account", "set-danger-zone"]].map(([label, id]) => (
           <RailJump key={id} label={label} onClick={() => jump(id)} />
