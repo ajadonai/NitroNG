@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useMemo, useCallback, forwardRef } from "react";
 import { RailSec, RailCard, RailStep, RailNote, RailLink } from "./rail";
-import { useBodyScrollLock } from "./ui-primitives";
+import { useBodyScrollLock, Emph } from "./ui-primitives";
 import { trackViewContent } from "./capi-tracker";
 import { fN } from "../lib/format";
 import { formatOrderQuantity as fQty, isValidLink, getLinkPlaceholder } from "../lib/order-form-core";
@@ -9,7 +9,8 @@ import { useToast } from "./toast";
 import { SegPill } from "./seg-pill";
 import InlineAlert from "./inline-alert";
 import NitroLoader from "./nitro-loader";
-import { useMoney, useLocale } from "./locale";
+import { useMoney, useT, useLocale } from "./locale";
+import { msg } from "../lib/i18n";
 import { cleanLink } from "../lib/clean-link";
 import { OrderForm as ExtractedOrderForm } from "./order-form";
 import { TASKS_ENABLED } from './rewards';
@@ -52,7 +53,7 @@ const I = (d, vb = "0 0 24 24") => <svg width="24" height="24" viewBox={vb} fill
 const IS = (d, vb = "0 0 24 24") => <svg width="24" height="24" viewBox={vb} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{d}</svg>;
 
 export const PLATFORM_GROUPS = [
-  { label: "Social Platforms", platforms: [
+  { label: "Social Platforms", tab: msg("Social"), platforms: [
     { id: "instagram", label: "Instagram", icon: IS(<><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></>) },
     { id: "tiktok", label: "TikTok", icon: I(<path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.89 2.89 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.11V9.38a6.33 6.33 0 00-.79-.05A6.34 6.34 0 003.14 15.67 6.34 6.34 0 009.48 22a6.34 6.34 0 006.34-6.34V9.17a8.16 8.16 0 004.77 1.53V7.26a4.85 4.85 0 01-1-.57z"/>) },
     { id: "youtube", label: "YouTube", icon: I(<path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>) },
@@ -76,7 +77,7 @@ export const PLATFORM_GROUPS = [
     { id: "vimeo", label: "Vimeo", icon: I(<path d="M23.977 6.416c-.105 2.338-1.739 5.543-4.894 9.609-3.268 4.247-6.026 6.37-8.29 6.37-1.409 0-2.578-1.294-3.553-3.881L5.322 11.4C4.603 8.816 3.834 7.522 3.01 7.522c-.179 0-.806.378-1.881 1.132L0 7.197c1.185-1.044 2.351-2.084 3.501-3.128C5.08 2.701 6.266 1.984 7.055 1.91c1.867-.18 3.016 1.1 3.447 3.838.465 2.953.789 4.789.971 5.507.539 2.45 1.131 3.674 1.776 3.674.502 0 1.256-.796 2.265-2.385 1.004-1.589 1.54-2.797 1.612-3.628.144-1.371-.395-2.061-1.614-2.061-.574 0-1.167.121-1.777.391 1.186-3.868 3.434-5.757 6.762-5.637 2.473.06 3.628 1.664 3.493 4.797l-.013.01z"/>) },
     { id: "bluesky", label: "Bluesky", icon: I(<path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.596 6.449.764 2.784 3.463 3.444 5.94 3.21-4.069.582-7.672 2.004-2.682 6.936C8.794 24.076 10.39 20.284 12 17.16c1.611 3.124 3.178 6.874 8.132 3.19 5.017-4.95 1.4-6.354-2.682-6.935 2.477.233 5.176-.427 5.94-3.21.218-.8.596-5.76.596-6.45 0-.688-.139-1.86-.902-2.203-.659-.3-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8z"/>) },
   ]},
-  { label: "Music", platforms: [
+  { label: "Music", tab: msg("Music"), platforms: [
     { id: "spotify", label: "Spotify", icon: I(<path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>) },
     { id: "audiomack", label: "Audiomack", icon: I(<path d="M.331 11.378s.542-.089.765.144c.223.233.077.716-.22.724-.296.01-.57.063-.765-.144-.194-.207-.142-.622.22-.724m5.881 3.293c-.052.01-.108-.018-.164-.06-.388-.54-.529-2.392-.707-2.502-.185-.114-.854 1.026-2.186.903-.557-.051-1.124-.412-1.457-.662.031-.42.036-1.403.866-1.083.504.194 1.367.727 2.124-.23.838-1.058 1.3-.751 1.577-.521.277.23.093 1.426.506 1.092.413-.334 2.082-2.41 2.082-2.41s1.292-1.303 1.49.067c.198 1.37 1.04 2.888 1.264 2.844.223-.043 2.822-5.325 3.194-5.666.372-.341 1.625-.296 1.566.578-.06.874-.187 6.308-.187 6.308s-.147 1.531.092.713c.1-.34.206-.645.34-1.002.64-2.054 1.733-5.562 2.278-7.369.125-.433.233-.804.317-1.09l.097-.33c.046-.153.076-.255.086-.281.024-.068.092-.12.188-.157.096-.061.2-.064.317-.067.302-.027.69.012 1.04.112.102 0 .213.037.317.112l.015.01.008.01c.021.015.057.045.098.095l.004.01c.017.021.034.045.052.073.195.286.315.814.195 1.75-.3 2.335-.532 7.14-.532 7.14s-.046.23.436-.782c.016-.035.038-.066.058-.098.026-.017.055-.042.091-.085.297-.355 1.097-.563 1.651-.559.234.028.43.087.546.161.22.333.09 1.562.09 1.562-.461.043-1.34.291-1.652.337-.312.046-.785 2.07-1.443 1.863-.658-.207-2.125-1.127-2.125-1.253 0-.11.115-1.455.146-1.802l.005-.068.002-.014c.021-.273.002-.393-.124-.12-.109.235-.581 1.736-1.108 3.371-.056.143-1.051 3.156-1.182 3.523-.156.426-.287.752-.378.921-.137.187-.323.304-.582.225-.647-.195-1.466-1.089-1.473-1.31-.016-1.25.06-7.973-.242-7.413-.311.574-2.73 4.561-2.73 4.561-.04.01-.07.01-.106.01-.171-.019-.437-.074-.51-.238l-.013-.028-.014-.04c-.033-.11-.046-.229-.075-.327-.108-.365-.281-.888-.463-1.42-.278-.908-.565-1.837-.613-1.94-.092-.2-.227-.116-.347 0-.54.458-1.687 2.48-2.723 2.59"/>) },
     { id: "boomplay", label: "Boomplay", icon: I(<><circle cx="12" cy="12" r="11" stroke="currentColor" strokeWidth="2" fill="none"/><polygon points="10 8 17 12 10 16"/></>) },
@@ -87,7 +88,7 @@ export const PLATFORM_GROUPS = [
     { id: "shazam", label: "Shazam", icon: I(<path d="M12 0C5.373 0-.001 5.371-.001 12c0 6.625 5.374 12 12.001 12s12-5.375 12-12c0-6.629-5.373-12-12-12M9.872 16.736c-1.287 0-2.573-.426-3.561-1.281-1.214-1.049-1.934-2.479-2.029-4.024-.09-1.499.42-2.944 1.436-4.067C6.86 6.101 8.907 4.139 8.993 4.055c.555-.532 1.435-.511 1.966.045.53.557.512 1.439-.044 1.971-.021.02-2.061 1.976-3.137 3.164-.508.564-.764 1.283-.719 2.027.049.789.428 1.529 1.07 2.086.844.73 2.51.891 3.553-.043.619-.559 1.372-1.377 1.38-1.386.52-.567 1.4-.603 1.965-.081.565.52.603 1.402.083 1.969-.035.035-.852.924-1.572 1.572-1.005.902-2.336 1.357-3.666 1.357m8.41-.099c-1.143 1.262-3.189 3.225-3.276 3.309-.27.256-.615.385-.96.385-.368 0-.732-.145-1.006-.43-.531-.559-.512-1.439.044-1.971.021-.02 2.063-1.977 3.137-3.166.508-.563.764-1.283.719-2.027-.048-.789-.428-1.529-1.07-2.084-.844-.73-2.51-.893-3.552.044-.621.556-1.373 1.376-1.38 1.384-.521.566-1.399.604-1.966.084-.564-.521-.604-1.404-.082-1.971.034-.037.85-.926 1.571-1.573 1.979-1.778 5.221-1.813 7.227-.077 1.214 1.051 1.935 2.48 2.028 4.025.092 1.497-.419 2.945-1.434 4.068"/>) },
     { id: "mixcloud", label: "Mixcloud", icon: I(<path d="M2.462 8.596l1.372 6.49h.319l1.372-6.49h2.462v6.808H6.742v-5.68l.232-.81h-.402l-1.43 6.49H2.854l-1.44-6.49h-.391l.222.81v5.68H0V8.596zM24 8.63v1.429L21.257 12 24 13.941v1.43l-3.235-2.329h-.348l-3.226 2.329v-1.43l2.734-1.94-2.733-1.942V8.63l3.225 2.338h.348zm-7.869 2.75v1.24H9.304v-1.24z"/>) },
   ]},
-  { label: "SEO & Reviews", platforms: [
+  { label: "SEO & Reviews", tab: msg("SEO & Reviews"), platforms: [
     { id: "google", label: "Google", icon: I(<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>) },
     { id: "trustpilot", label: "Trustpilot", icon: I(<path d="M12 0l3.09 8.26L22 9.27l-5.5 4.87L18.18 22 12 17.77 5.82 22 7 14.14 1.5 9.27l6.91-1.01L12 0z"/>) },
     { id: "webtraffic", label: "Web Traffic", icon: IS(<><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></>) },
@@ -242,6 +243,7 @@ const TX_CSS = `
 `;
 
 function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick }) {
+  const tr = useT();
   const wide = !narrow;
   const vars = {
     "--card": dark ? "#171126" : "#ffffff", "--soft": dark ? "#111634" : "#faf9f7",
@@ -251,7 +253,7 @@ function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick }) {
   return (
     <section className={`tx${wide ? " wide" : ""}`} style={vars} onClick={e => e.stopPropagation()}>
       <style>{TX_CSS}</style>
-      <p className="tx-lead">All three start about as fast. You are choosing how well the numbers hold, whether we replace drops, and who goes first when we are busy. Tap one to pick it.</p>
+      <p className="tx-lead">{tr("All three start about as fast. You are choosing how well the numbers hold, whether we replace drops, and who goes first when we are busy. Tap one to pick it.")}</p>
       <div className="tx-cols">
         {TX_TIERS.map(d => {
           const tier = tiers.find(x => x.tier === d.key);
@@ -274,12 +276,13 @@ function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick }) {
           );
         })}
       </div>
-      {!wide && <p className="tx-legend"><span>{TX_ICON.people}Profiles</span><span>{TX_ICON.refill}Refill</span><span>{TX_ICON.queue}Queue</span></p>}
+      {!wide && <p className="tx-legend"><span>{TX_ICON.people}{tr("Profiles")}</span><span>{TX_ICON.refill}{tr("Refill")}</span><span>{TX_ICON.queue}{tr("Queue")}</span></p>}
     </section>
   );
 }
 
 function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t, orderMode, activePromotion, waNumber, userEmail, first, cartCounts }) {
+  const tr = useT();
   const money = useMoney();
   const isSel = selSvc?.id === svc.id;
   const [explOpen, setExplOpen] = useState(false);
@@ -325,10 +328,10 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
             ) : (
               <div className="flex-1 flex items-center gap-1.5 text-[11px]" style={{ color: dark ? "#8a8580" : "#757170" }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                Pick a tier to continue
+                {tr("Pick a tier to continue")}
               </div>
             )}
-            <button onClick={e => { e.stopPropagation(); setExplOpen(!explOpen); }} aria-expanded={explOpen} aria-label="What do the tiers mean?" className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold rounded-full py-[3px] px-[9px] border border-solid cursor-pointer font-[inherit] transition-all duration-150 hover:-translate-y-px" style={{ color: dark ? "#8a8580" : "#757170", background: dark ? "rgba(255,255,255,.06)" : "#fff", borderColor: t.cardBorder }}>
+            <button onClick={e => { e.stopPropagation(); setExplOpen(!explOpen); }} aria-expanded={explOpen} aria-label={tr("What do the tiers mean?")} className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold rounded-full py-[3px] px-[9px] border border-solid cursor-pointer font-[inherit] transition-all duration-150 hover:-translate-y-px" style={{ color: dark ? "#8a8580" : "#757170", background: dark ? "rgba(255,255,255,.06)" : "#fff", borderColor: t.cardBorder }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
               {explOpen ? "Close" : "Which tier?"}
             </button>
@@ -461,6 +464,7 @@ const openInPlaceOnPhone = e => {
 };
 
 export function NotSureHelp({ waNumber, dark, t, context, email }) {
+  const tr = useT();
   if (!waNumber) return null;
   return (
     <a
@@ -472,7 +476,7 @@ export function NotSureHelp({ waNumber, dark, t, context, email }) {
       style={{ color: dark ? "#4ade80" : "#15803d", background: dark ? "rgba(37,211,102,.12)" : "rgba(37,211,102,.1)", border: `1px solid ${dark ? "rgba(37,211,102,.3)" : "rgba(22,163,74,.25)"}` }}
     >
       {WA_ICON}
-      We can order for you
+      {tr("We can order for you")}
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-70"><polyline points="9 18 15 12 9 6" /></svg>
     </a>
   );
@@ -484,6 +488,7 @@ export function NotSureHelp({ waNumber, dark, t, context, email }) {
  * to find.
  */
 export function OrderForMeCard({ waNumber, dark, context, email }) {
+  const tr = useT();
   if (!waNumber) return null;
   return (
     <a
@@ -495,13 +500,14 @@ export function OrderForMeCard({ waNumber, dark, context, email }) {
       style={{ color: dark ? "#a8a29a" : "#6b6660", background: dark ? "rgba(37,211,102,.1)" : "rgba(37,211,102,.08)", border: `1px solid ${dark ? "rgba(37,211,102,.26)" : "rgba(22,163,74,.22)"}` }}
     >
       <span className="shrink-0 flex" style={{ color: "#25d366" }}>{WA_ICON}</span>
-      <span>Not sure? <b className="font-semibold" style={{ color: dark ? "#4ade80" : "#15803d" }}>We can order for you</b></span>
+      <span>{tr("Not sure?")} <b className="font-semibold" style={{ color: dark ? "#4ade80" : "#15803d" }}>{tr("We can order for you")}</b></span>
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60"><polyline points="9 18 15 12 9 6" /></svg>
     </a>
   );
 }
 
 export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onNavigate, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal, tourActive, activePromotion, rewards, socialLinks, refreshRewards }) {
+  const tr = useT();
   const money = useMoney();
   const toast = useToast();
   const [filterType, setFilterType] = useState("all");
@@ -1006,8 +1012,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     <div ref={mainRef} style={{ paddingBottom: orderMode === "bulk" && cartRows.length > 0 ? 82 : 0 }}>
       <div className="pb-2 desktop:pb-3.5">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-lg desktop:text-[22px] font-semibold" style={{ color: t.text }}>New Order</div>
-          <div data-tour="no-mode-toggle"><SegPill value={orderMode} options={["single", "bulk"]} onChange={v => { if (!bulkLoading) setOrderMode(v); }} label="Order mode" dark={dark} t={t} /></div>
+          <div className="text-lg desktop:text-[22px] font-semibold" style={{ color: t.text }}>{tr("New Order")}</div>
+          <div data-tour="no-mode-toggle"><SegPill value={orderMode} options={["single", "bulk"]} onChange={v => { if (!bulkLoading) setOrderMode(v); }} label={tr("Order mode")} dark={dark} t={t} /></div>
         </div>
         <div className="text-sm desktop:text-[15px] max-md:text-xs mt-0.5" style={{ color: t.textMuted }}>{menuData ? `${allGroups.length} services across ${Object.keys(platformCounts).length} platforms` : "Browse and order social media services"}</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
@@ -1017,7 +1023,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       {orderMode === "bulk" && (
         <div className="flex items-center gap-2 mb-3 px-0.5 text-[12px]" style={{ color: t.textMuted }}>
           <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: t.accent }} />
-          <span className="font-semibold" style={{ color: t.text }}>Bulk mode</span><span className="opacity-50">·</span>tap a tier to add it to your cart
+          <span className="font-semibold" style={{ color: t.text }}>{tr("Bulk mode")}</span><span className="opacity-50">·</span>tap a tier to add it to your cart
         </div>
       )}
 
@@ -1059,7 +1065,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       <div className="flex gap-0.5 mb-3 border-b border-solid" data-tour="no-platform-tabs" style={{ borderBottomColor: t.cardBorder }}>
         {PLATFORM_GROUPS.map(g => (
           <button key={g.label} onClick={() => { setPlatGroup(g.label); const first = g.platforms.find(p => (platformCounts[p.id] || 0) > 0); if (first) setPlatform(first.id); }} className="py-[7px] px-3 text-[13px] cursor-pointer border-none border-b-2 -mb-px bg-transparent font-[inherit] transition-colors duration-150" style={{ color: platGroup === g.label ? t.text : t.textMuted, fontWeight: platGroup === g.label ? 600 : 500, borderBottomColor: platGroup === g.label ? t.accent : "transparent" }}>
-            {g.label.replace(" Platforms", "")}
+            {tr(g.tab)}
           </button>
         ))}
       </div>
@@ -1122,8 +1128,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {/* ═══ SEARCH ═══ */}
       <div className="relative mb-3.5">
-        <input aria-label="Search services" placeholder={`Search ${activePlat?.label || ""} services...`} value={search} onChange={e => setSearch(e.target.value)} className="w-full py-[9px] px-3 pr-8 desktop:py-2.5 desktop:px-3.5 rounded-[10px] border border-solid text-[13px] desktop:text-sm font-[inherit] outline-none box-border focus:ring-2 focus:ring-[#c47d8e]/20 transition-[border-color,box-shadow] duration-200" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.09)" : "#fff", color: t.text }} />
-        {search && <button aria-label="Clear search" onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+        <input aria-label={tr("Search services")} placeholder={`Search ${activePlat?.label || ""} services...`} value={search} onChange={e => setSearch(e.target.value)} className="w-full py-[9px] px-3 pr-8 desktop:py-2.5 desktop:px-3.5 rounded-[10px] border border-solid text-[13px] desktop:text-sm font-[inherit] outline-none box-border focus:ring-2 focus:ring-[#c47d8e]/20 transition-[border-color,box-shadow] duration-200" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.09)" : "#fff", color: t.text }} />
+        {search && <button aria-label={tr("Clear search")} onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
       </div>
 
       {/* ═══ SERVICE CARDS ═══ */}
@@ -1151,7 +1157,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           </div>
           <div className="flex items-center gap-2.5 shrink-0">
             <span className="m text-lg max-md:text-base font-semibold whitespace-nowrap" style={{ color: t.accent }}>{money(price)}</span>
-            <button onClick={() => setOrderModal(true)} className="py-2.5 px-[22px] max-md:px-[18px] dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">Order</button>
+            <button onClick={() => setOrderModal(true)} className="py-2.5 px-[22px] max-md:px-[18px] dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">{tr("Order")}</button>
           </div>
         </div>
       )}
@@ -1159,7 +1165,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       {/* Order modal — single mode only */}
       {orderMode === "single" && (orderModal || orderSuccess) && hasOrder && (
         <div className="no-modal-overlay flex fixed inset-0 z-[200] items-end justify-center desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); setRedeemPoints(false); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null);setRedeemPoints(false);}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
-          <div role="dialog" aria-modal="true" aria-label="Order summary" className={`w-full overflow-y-auto border border-solid max-h-[calc(100dvh-84px)] desktop:max-h-[90vh] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] ${orderSuccess ? "rounded-t-[26px] desktop:rounded-[26px] desktop:max-w-[460px]" : "rounded-t-[22px] desktop:rounded-[22px] desktop:max-w-[440px]"}`} onClick={e => e.stopPropagation()} style={{ background: orderSuccess ? successChrome.card : (dark ? "#140d1e" : "#fff"), borderColor: orderSuccess ? "transparent" : (dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"), boxShadow: orderSuccess ? "0 30px 80px rgba(20,10,14,.35)" : (dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)") }}>
+          <div role="dialog" aria-modal="true" aria-label={tr("Order summary")} className={`w-full overflow-y-auto border border-solid max-h-[calc(100dvh-84px)] desktop:max-h-[90vh] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] ${orderSuccess ? "rounded-t-[26px] desktop:rounded-[26px] desktop:max-w-[460px]" : "rounded-t-[22px] desktop:rounded-[22px] desktop:max-w-[440px]"}`} onClick={e => e.stopPropagation()} style={{ background: orderSuccess ? successChrome.card : (dark ? "#140d1e" : "#fff"), borderColor: orderSuccess ? "transparent" : (dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"), boxShadow: orderSuccess ? "0 30px 80px rgba(20,10,14,.35)" : (dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)") }}>
             {orderSuccess ? (
               <div className="rcp" style={{ "--card": successChrome.card, "--ink": successChrome.text, "--mut": successChrome.muted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": successChrome.hair, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7", "--ac": t.accent, "--ok": successChrome.money }}>
                 <style>{RCP_CSS}</style>
@@ -1167,7 +1173,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                   <span className="rcp-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
                   <div className="rcp-ht">
                     <b>{orderSuccess.queued ? "Order queued" : "Order placed"}</b>
-                    <button type="button" className="rcp-id m" onClick={() => { copyText(String(orderSuccess.id)); toast.success("Order number copied"); }} aria-label="Copy order number">
+                    <button type="button" className="rcp-id m" onClick={() => { copyText(String(orderSuccess.id)); toast.success("Order number copied"); }} aria-label={tr("Copy order number")}>
                       {orderSuccess.id}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     </button>
                   </div>
@@ -1181,18 +1187,18 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
                 {orderSuccess.link && <div className="rcp-lnk">{String(orderSuccess.link).replace(/^https?:\/\/(www\.)?/, "")}</div>}
                 <div className="rcp-facts">
-                  <div className="rcp-f"><span>Quantity</span><b className="m">{(orderSuccess.quantity || 0).toLocaleString()}</b></div>
-                  <div className="rcp-f"><span>Charged</span><b className="m rcp-money">{money(orderSuccess.charge || 0)}</b></div>
-                  {orderSuccess.balanceAfter != null && <div className="rcp-f"><span>Balance after</span><b className="m">{money(orderSuccess.balanceAfter, { round: "down" })}</b></div>}
-                  <div className="rcp-f"><span>Delivery</span><b>{orderSuccess.queued ? "Starts when your active order completes" : formatDeliverySpeed(orderSuccess.speed)}</b></div>
-                  {orderSuccess.tier && <div className="rcp-f"><span>Refill</span><b className={orderSuccess.tier === "Budget" ? "rcp-mut" : ""}>{orderSuccess.tier === "Budget" ? "Not on Budget" : orderSuccess.tier === "Standard" ? "Free for 30 days" : "Free for life"}</b></div>}
-                  {orderSuccess.pointsRedeemed > 0 && <div className="rcp-f"><span>Points used</span><b className="m" style={{ color: dark ? "#fbbf24" : "#92400e" }}>{money(orderSuccess.pointsRedeemed, { round: "down" })}</b></div>}
+                  <div className="rcp-f"><span>{tr("Quantity")}</span><b className="m">{(orderSuccess.quantity || 0).toLocaleString()}</b></div>
+                  <div className="rcp-f"><span>{tr("Charged")}</span><b className="m rcp-money">{money(orderSuccess.charge || 0)}</b></div>
+                  {orderSuccess.balanceAfter != null && <div className="rcp-f"><span>{tr("Balance after")}</span><b className="m">{money(orderSuccess.balanceAfter, { round: "down" })}</b></div>}
+                  <div className="rcp-f"><span>{tr("Delivery")}</span><b>{orderSuccess.queued ? "Starts when your active order completes" : formatDeliverySpeed(orderSuccess.speed)}</b></div>
+                  {orderSuccess.tier && <div className="rcp-f"><span>{tr("Refill")}</span><b className={orderSuccess.tier === "Budget" ? "rcp-mut" : ""}>{orderSuccess.tier === "Budget" ? "Not on Budget" : orderSuccess.tier === "Standard" ? "Free for 30 days" : "Free for life"}</b></div>}
+                  {orderSuccess.pointsRedeemed > 0 && <div className="rcp-f"><span>{tr("Points used")}</span><b className="m" style={{ color: dark ? "#fbbf24" : "#92400e" }}>{money(orderSuccess.pointsRedeemed, { round: "down" })}</b></div>}
                 </div>
                 {/* Promo carousel: one slide at a time, every slide the same height */}
                 {orderSuccess.discordSetup && (
                   <a href={discordBotUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 mt-3 py-2.5 px-3 rounded-xl no-underline text-[12.5px] leading-[1.4]" style={{ background: dark ? "rgba(88,101,242,.14)" : "rgba(88,101,242,.08)", color: t.text }}>
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "#5865F2" }} />
-                    <span><b style={{ fontWeight: 700 }}>Bot not in the server yet?</b> Add it now, or this order is cancelled — <span style={{ color: "#5865F2", fontWeight: 700 }}>open the bot link</span></span>
+                    <span><Emph weight={700}>{tr("*Bot not in the server yet?* Add it now, or this order is cancelled —")}</Emph> <span style={{ color: "#5865F2", fontWeight: 700 }}>{tr("open the bot link")}</span></span>
                   </a>
                 )}
                 <div className="rcp-car" onMouseEnter={() => setPromoPaused(true)} onMouseLeave={() => setPromoPaused(false)}
@@ -1200,10 +1206,10 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                   onTouchEnd={e => { const sx = promoTouchX.current; promoTouchX.current = null; setPromoPaused(false); if (sx != null) { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 36) setPromoSlide(p => (p + (dx < 0 ? 1 : PROMO_SLIDES.length - 1)) % PROMO_SLIDES.length); } }}>
                   {(() => {
                     const slides = {
-                      wa: { title: "Updates on WhatsApp", sub: "Delivery news and deals, in one channel.", cta: "Follow", c: "#25d366", grad: "linear-gradient(135deg,#2bc76a,#128c46)", href: waChannelUrl, icon: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg> },
-                      ig: { title: "We're on Instagram", sub: "See what we post before you post it.", cta: "Follow", c: "#e1306c", grad: "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", href: `https://instagram.com/${igHandle}`, icon: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg> },
-                      tasks: { title: "Earn while it delivers", sub: "Quick tasks, real promo credit.", cta: "See tasks", c: "#2563eb", grad: "linear-gradient(135deg,#60a5fa,#2563eb)", onClick: () => { setOrderSuccess(null); setOrderModal(false); onNavigate?.("tasks"); }, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> },
-                      reseller: { title: "Ordering for clients?", sub: "Wholesale rates on the account you already have.", cta: "Join", c: t.accent, grad: "linear-gradient(135deg,#d99aa8,#a05468)", href: RESELLER_SLIDE_HREF, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12v8h14v-8"/><path d="M10 20v-5h4v5"/></svg> },
+                      wa: { title: tr("Updates on WhatsApp"), sub: tr("Delivery news and deals, in one channel."), cta: tr("Follow"), c: "#25d366", grad: "linear-gradient(135deg,#2bc76a,#128c46)", href: waChannelUrl, icon: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg> },
+                      ig: { title: tr("We're on Instagram"), sub: tr("See what we post before you post it."), cta: tr("Follow"), c: "#e1306c", grad: "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", href: `https://instagram.com/${igHandle}`, icon: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg> },
+                      tasks: { title: tr("Earn while it delivers"), sub: tr("Quick tasks, real promo credit."), cta: tr("See tasks"), c: "#2563eb", grad: "linear-gradient(135deg,#60a5fa,#2563eb)", onClick: () => { setOrderSuccess(null); setOrderModal(false); onNavigate?.("tasks"); }, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> },
+                      reseller: { title: tr("Ordering for clients?"), sub: tr("Wholesale rates on the account you already have."), cta: tr("Join"), c: t.accent, grad: "linear-gradient(135deg,#d99aa8,#a05468)", href: RESELLER_SLIDE_HREF, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12v8h14v-8"/><path d="M10 20v-5h4v5"/></svg> },
                     };
                     const sl = slides[PROMO_SLIDES[promoSlide]] || slides.wa;
                     const Cta = sl.href ? "a" : "button";
@@ -1224,8 +1230,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                   </div>
                 </div>
                 <div className="rcp-acts">
-                  <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="rcp-btn">Order again</button>
-                  {onViewOrders && <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="rcp-btn rcp-pri">Track this order</button>}
+                  <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="rcp-btn">{tr("Order again")}</button>
+                  {onViewOrders && <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="rcp-btn rcp-pri">{tr("Track this order")}</button>}
                 </div>
               </div>
             ) : (
@@ -1238,22 +1244,22 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       {/* ═══ TIKTOK DISCLAIMER ═══ */}
       {tiktokDisclaimer && (
         <div className="no-modal-overlay flex fixed inset-0 z-[200] items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} style={{ background: "rgba(0,0,0,.45)" }}>
-          <div role="dialog" aria-modal="true" aria-label="TikTok service notice" className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#140d1e" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+          <div role="dialog" aria-modal="true" aria-label={tr("TikTok service notice")} className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#140d1e" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="py-5 px-5">
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: t.text }}><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.89 2.89 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.11V9.38a6.33 6.33 0 00-.79-.05A6.34 6.34 0 003.14 15.67 6.34 6.34 0 009.48 22a6.34 6.34 0 006.34-6.34V9.17a8.16 8.16 0 004.77 1.53V7.26a4.85 4.85 0 01-1-.57z"/></svg>
                 </div>
-                <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>TikTok is the one platform we can’t promise on</div>
+                <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>{tr("TikTok is the one platform we can’t promise on")}</div>
               </div>
               <div className="text-[13px] leading-[1.6] mb-3" style={{ color: t.textMuted }}>
-                TikTok changes how it works often, and every change hits delivery.
+                {tr("TikTok changes how it works often, and every change hits delivery.")}
               </div>
               <div className="flex flex-col gap-2 mb-3">
                 {[
-                  <>An order can come in <b style={{ color: t.text, fontWeight: 600 }}>slowly</b></>,
-                  <>It can <b style={{ color: t.text, fontWeight: 600 }}>stop short</b> of the full number</>,
-                  <>Some of what landed can <b style={{ color: t.text, fontWeight: 600 }}>drop</b> days later, and on TikTok drops are <b style={{ color: t.text, fontWeight: 600 }}>not topped back up</b></>,
+                  <Emph>{tr("An order can come in *slowly*")}</Emph>,
+                  <Emph>{tr("It can *stop short* of the full number")}</Emph>,
+                  <Emph>{tr("Some of what landed can *drop* days later, and on TikTok drops are *not topped back up*")}</Emph>,
                 ].map((line, i) => (
                   <div key={i} className="flex gap-2.5 text-[13px] leading-[1.5]" style={{ color: t.textMuted }}>
                     <span className="w-1.5 h-1.5 rounded-full shrink-0 mt-[7px]" style={{ background: t.accent }} />
@@ -1262,12 +1268,12 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 ))}
               </div>
               <div className="rounded-xl px-3 py-2.5 mb-3 text-[13px] leading-[1.5]" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: t.textMuted }}>
-                <b style={{ color: t.text, fontWeight: 700 }}>Test with a small order first.</b> Once you see it land, go bigger.
+                <Emph weight={700}>{tr("*Test with a small order first.* Once you see it land, go bigger.")}</Emph>
               </div>
               <div className="text-[12.5px] leading-[1.6] mb-4" style={{ color: t.textSoft }}>
-                Placing a TikTok order means you’re okay with this.
+                {tr("Placing a TikTok order means you’re okay with this.")}
               </div>
-              <button onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>I understand</button>
+              <button onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>{tr("I understand")}</button>
             </div>
           </div>
         </div>
@@ -1276,25 +1282,25 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       {/* ═══ YOUTUBE DISCLAIMER ═══ */}
       {youtubeDisclaimer && (
         <div className="no-modal-overlay flex fixed inset-0 z-[200] items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { try { localStorage.setItem('nitro_youtube_disclaimer', String(Date.now())); } catch {} setYoutubeDisclaimer(false); }} style={{ background: "rgba(0,0,0,.45)" }}>
-          <div role="dialog" aria-modal="true" aria-label="YouTube subscriber notice" className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#140d1e" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+          <div role="dialog" aria-modal="true" aria-label={tr("YouTube subscriber notice")} className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#140d1e" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="py-5 px-5">
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: t.text }}><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                 </div>
-                <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>YouTube subscribers come in slowly, on purpose</div>
+                <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>{tr("YouTube subscribers come in slowly, on purpose")}</div>
               </div>
               <div className="text-[13px] leading-[1.6] mb-3" style={{ color: t.textMuted }}>
-                YouTube watches for sudden jumps, so they are added a little at a time. That way the channel keeps them.
+                {tr("YouTube watches for sudden jumps, so they are added a little at a time. That way the channel keeps them.")}
               </div>
               <div className="rounded-[14px] px-3.5 py-3 mb-3" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)" }}>
                 <div className="text-[24px] font-extrabold leading-none -tracking-[.5px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>50 – 500</div>
-                <div className="text-[13px] leading-[1.4] mt-1.5" style={{ color: t.textMuted }}>subscribers a day, until your order is done</div>
+                <div className="text-[13px] leading-[1.4] mt-1.5" style={{ color: t.textMuted }}>{tr("subscribers a day, until your order is done")}</div>
               </div>
               <div className="text-[12.5px] leading-[1.6] mb-4" style={{ color: t.textSoft }}>
-                Nothing to do on your side. You can watch it climb in Orders.
+                {tr("Nothing to do on your side. You can watch it climb in Orders.")}
               </div>
-              <button onClick={() => { try { localStorage.setItem('nitro_youtube_disclaimer', String(Date.now())); } catch {} setYoutubeDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>Got it</button>
+              <button onClick={() => { try { localStorage.setItem('nitro_youtube_disclaimer', String(Date.now())); } catch {} setYoutubeDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>{tr("Got it")}</button>
             </div>
           </div>
         </div>
@@ -1303,15 +1309,15 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       {/* ═══ WEBSITE TRAFFIC GATE ═══ */}
       {trafficGate && (
         <div className="no-modal-overlay flex fixed inset-0 z-[200] items-end desktop:items-center justify-center px-3 pb-[max(12px,env(safe-area-inset-bottom))] desktop:px-4 desktop:pb-0 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setTrafficGate(null)} style={{ background: "rgba(0,0,0,.5)" }}>
-          <div role="dialog" aria-modal="true" aria-label="Before this traffic order goes out" className="w-full max-w-[400px] rounded-[20px] border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#140d1e" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+          <div role="dialog" aria-modal="true" aria-label={tr("Before this traffic order goes out")} className="w-full max-w-[400px] rounded-[20px] border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#140d1e" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="p-[18px] flex flex-col gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: t.accent }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
                 </div>
                 <div className="min-w-0">
-                  <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>Before this order goes out</div>
-                  <div className="text-[13px] leading-[1.5] mt-1" style={{ color: t.textMuted }}>Real visitors are sent to your page. Where you count them decides whether you see them.</div>
+                  <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>{tr("Before this order goes out")}</div>
+                  <div className="text-[13px] leading-[1.5] mt-1" style={{ color: t.textMuted }}>{tr("Real visitors are sent to your page. Where you count them decides whether you see them.")}</div>
                 </div>
               </div>
               <div className="rounded-xl border border-solid overflow-hidden" style={{ borderColor: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)" }}>
@@ -1332,10 +1338,10 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 <span className="w-5 h-5 rounded-md border-[1.5px] border-solid flex items-center justify-center shrink-0" style={{ borderColor: trafficTicked ? t.accent : (dark ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.2)"), background: trafficTicked ? t.accent : "transparent", color: "#fff" }}>
                   {trafficTicked && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                 </span>
-                My site is public and opens without a login
+                {tr("My site is public and opens without a login")}
               </label>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setTrafficGate(null)} className="flex-1 py-3 rounded-xl border border-solid text-sm font-semibold cursor-pointer" style={{ background: "transparent", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.15)", color: t.textMuted }}>Back</button>
+                <button type="button" onClick={() => setTrafficGate(null)} className="flex-1 py-3 rounded-xl border border-solid text-sm font-semibold cursor-pointer" style={{ background: "transparent", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.15)", color: t.textMuted }}>{tr("Back")}</button>
                 <button type="button" disabled={!trafficTicked || orderLoading} onClick={() => { const d = trafficGate.dripDays; setTrafficGate(null); submitOrder(d); }} className="flex-[1.6] py-3 rounded-xl border-none text-sm font-bold cursor-pointer disabled:cursor-not-allowed transition-opacity" style={{ background: t.accent, color: "#fff", opacity: trafficTicked ? 1 : .4 }}>
                   {orderLoading ? "Placing…" : "Place order"}
                 </button>
@@ -1348,28 +1354,28 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       {/* ═══ DISCORD BOT GATE ═══ */}
       {discordGate && (
         <div className="no-modal-overlay flex fixed inset-0 z-[200] items-end desktop:items-center justify-center px-3 pb-[max(12px,env(safe-area-inset-bottom))] desktop:px-4 desktop:pb-0 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setDiscordGate(null)} style={{ background: "rgba(0,0,0,.5)" }}>
-          <div role="dialog" aria-modal="true" aria-label="Discord setup before ordering" className="w-full max-w-[400px] rounded-[20px] border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#140d1e" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+          <div role="dialog" aria-modal="true" aria-label={tr("Discord setup before ordering")} className="w-full max-w-[400px] rounded-[20px] border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#140d1e" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="p-[18px] flex flex-col gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(88,101,242,.14)" : "rgba(88,101,242,.08)", color: "#5865F2" }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.79 19.79 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.865-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.74 19.74 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.058a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.1 13.1 0 01-1.872-.892.077.077 0 01-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.009c.12.099.246.198.373.292a.077.077 0 01-.006.127 12.3 12.3 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.84 19.84 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
                 </div>
                 <div className="min-w-0">
-                  <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>Before this order goes out</div>
-                  <div className="text-[13px] leading-[1.5] mt-1" style={{ color: t.textMuted }}>Discord only delivers into a server the bot is in. Without it the order is cancelled and refunded, every time.</div>
+                  <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>{tr("Before this order goes out")}</div>
+                  <div className="text-[13px] leading-[1.5] mt-1" style={{ color: t.textMuted }}>{tr("Discord only delivers into a server the bot is in. Without it the order is cancelled and refunded, every time.")}</div>
                 </div>
               </div>
               <a href={discordBotUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 py-[13px] rounded-xl text-[14.5px] font-bold no-underline" style={{ background: "#5865F2", color: "#fff" }}>
-                Add the bot to your server
+                {tr("Add the bot to your server")}
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               </a>
-              <div className="text-[10.5px] font-bold uppercase tracking-[.9px] mt-0.5" style={{ color: t.textMuted }}>Then make sure</div>
+              <div className="text-[10.5px] font-bold uppercase tracking-[.9px] mt-0.5" style={{ color: t.textMuted }}>{tr("Then make sure")}</div>
               <div className="flex flex-col gap-[7px]">
                 {[
-                  <>Verification level is <b style={{ color: t.text, fontWeight: 600 }}>None</b> or <b style={{ color: t.text, fontWeight: 600 }}>Low</b> <span style={{ color: t.textSoft, fontSize: 12 }}>Server Settings → Safety Setup</span></>,
-                  <>Anti-raid bots are <b style={{ color: t.text, fontWeight: 600 }}>off</b></>,
-                  <>The invite link is set to <b style={{ color: t.text, fontWeight: 600 }}>never expire</b></>,
-                  <>Nobody bans or kicks members while it runs</>,
+                  <><Emph>{tr("Verification level is *None* or *Low*")}</Emph> <span style={{ color: t.textSoft, fontSize: 12 }}>{tr("Server Settings → Safety Setup")}</span></>,
+                  <Emph>{tr("Anti-raid bots are *off*")}</Emph>,
+                  <Emph>{tr("The invite link is set to *never expire*")}</Emph>,
+                  <>{tr("Nobody bans or kicks members while it runs")}</>,
                 ].map((line, i) => (
                   <div key={i} className="flex gap-2.5 text-[13px] leading-[1.45]" style={{ color: t.textMuted }}>
                     <span className="w-1.5 h-1.5 rounded-full shrink-0 mt-[7px]" style={{ background: "#5865F2" }} />
@@ -1382,10 +1388,10 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 <span className="w-5 h-5 rounded-md border-[1.5px] border-solid flex items-center justify-center shrink-0" style={{ borderColor: discordTicked ? t.accent : (dark ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.2)"), background: discordTicked ? t.accent : "transparent", color: "#fff" }}>
                   {discordTicked && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
                 </span>
-                The bot is in my server
+                {tr("The bot is in my server")}
               </label>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setDiscordGate(null)} className="flex-1 py-3 rounded-xl border border-solid text-sm font-semibold cursor-pointer" style={{ background: "transparent", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.15)", color: t.textMuted }}>Back</button>
+                <button type="button" onClick={() => setDiscordGate(null)} className="flex-1 py-3 rounded-xl border border-solid text-sm font-semibold cursor-pointer" style={{ background: "transparent", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.15)", color: t.textMuted }}>{tr("Back")}</button>
                 <button type="button" disabled={!discordTicked || orderLoading} onClick={() => { const d = discordGate.dripDays; setDiscordGate(null); submitOrder(d); }} className="flex-[1.6] py-3 rounded-xl border-none text-sm font-bold cursor-pointer disabled:cursor-not-allowed transition-opacity" style={{ background: t.accent, color: "#fff", opacity: discordTicked ? 1 : .4 }}>
                   {orderLoading ? "Placing…" : "Place order"}
                 </button>
@@ -1397,20 +1403,20 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {duplicateConfirm && (
         <div className="no-modal-overlay flex fixed inset-0 z-[200] items-center justify-center px-4 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => setDuplicateConfirm(null)} style={{ background: "rgba(0,0,0,.45)" }}>
-          <div role="dialog" aria-modal="true" aria-label="Duplicate order confirmation" className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#140d1e" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
+          <div role="dialog" aria-modal="true" aria-label={tr("Duplicate order confirmation")} className="w-full max-w-[380px] rounded-2xl border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#140d1e" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="py-5 px-5">
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(251,191,36,.12)" }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 </div>
-                <div className="text-base font-semibold" style={{ color: t.text }}>Duplicate order</div>
+                <div className="text-base font-semibold" style={{ color: t.text }}>{tr("Duplicate order")}</div>
               </div>
               <div className="text-[13px] leading-[1.65] mb-4" style={{ color: t.textMuted }}>
                 {duplicateConfirm.message}
               </div>
               <div className="flex gap-2.5">
-                <button onClick={() => setDuplicateConfirm(null)} className="flex-1 py-[11px] rounded-lg border border-solid text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.15)", color: t.text }}>Cancel</button>
-                <button onClick={() => { const d = duplicateConfirm.dripDays; setDuplicateConfirm(null); submitOrder(d, true); }} className="flex-1 py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>Place anyway</button>
+                <button onClick={() => setDuplicateConfirm(null)} className="flex-1 py-[11px] rounded-lg border border-solid text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.15)", color: t.text }}>{tr("Cancel")}</button>
+                <button onClick={() => { const d = duplicateConfirm.dripDays; setDuplicateConfirm(null); submitOrder(d, true); }} className="flex-1 py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>{tr("Place anyway")}</button>
               </div>
             </div>
           </div>
@@ -1429,6 +1435,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 /* ═══ MOBILE/TABLET GUIDE                 ═══ */
 /* ═══════════════════════════════════════════ */
 function MobileGuide({ dark, t }) {
+  const tr = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const TS_MINI = { Budget: { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, color: "#e0a458" }, Standard: { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>, color: "#60a5fa" }, Premium: { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg>, color: "#a78bfa" } };
@@ -1450,9 +1457,9 @@ function MobileGuide({ dark, t }) {
       {open && (
         <div className="px-3.5 pb-3.5 pt-2.5 text-[13px] leading-[1.7] flex flex-col gap-2.5" style={{ color: t.textMuted, borderLeft: `3px solid ${t.accent}`, borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}` }}>
           <div className="text-xs" style={{ color: t.textMuted }}>
-            <div className="mb-[3px]">• Set profile to <b style={{ color: t.text }}>public</b> before ordering — no refunds for private profiles</div>
-            <div className="mb-[3px]">• <b style={{ color: t.text }}>Start small</b> — test Budget first</div>
-            <div>• Not sure which tier? Tap the <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"-1px"}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> for a quick breakdown</div>
+            <div className="mb-[3px]">• <Emph>{tr("Set profile to *public* before ordering — no refunds for private profiles")}</Emph></div>
+            <div className="mb-[3px]">• <Emph>{tr("*Start small* — test Budget first")}</Emph></div>
+            <div>• Not sure which tier? Tap the <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"-1px"}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> {tr("for a quick breakdown")}</div>
           </div>
 
           <div style={{ height: 1, background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)" }} />
@@ -1463,13 +1470,13 @@ function MobileGuide({ dark, t }) {
           </div>
 
           <div className="py-2 px-2.5 rounded-lg border border-solid" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderColor: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>
-            <span className="font-semibold" style={{ color: "#c47d8e" }}>Bulk Orders</span>
-            <span className="ml-1">— Switch to <b style={{ color: t.text }}>Bulk</b> mode to place up to 50 orders in one checkout. Failed orders are retried and refunded automatically.</span>
+            <span className="font-semibold" style={{ color: "#c47d8e" }}>{tr("Bulk Orders")}</span>
+            <span className="ml-1">— <Emph>{tr("Switch to *Bulk* mode to place up to 50 orders in one checkout. Failed orders are retried and refunded automatically.")}</Emph></span>
           </div>
 
           <button onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent("nitro-order-tour")); }} className="py-[9px] px-0 w-full rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit] flex items-center justify-center gap-1.5 border border-solid text-[#c47d8e] transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ borderColor: dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)", background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Need a walkthrough?
+            {tr("Need a walkthrough?")}
           </button>
         </div>
       )}
@@ -1492,6 +1499,7 @@ function getRowPrice(row, menuData) {
 }
 
 const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, bounds, cartOpen, onClick }, ref) {
+  const tr = useT();
   const money = useMoney();
   const currency = useLocale()?.currency ?? "NGN";
   const empty = rows.length === 0;
@@ -1537,7 +1545,7 @@ const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, b
       <div className="flex items-center gap-3.5 shrink-0">
         {!empty && (
           <div className="flex flex-col items-end gap-px">
-            <span className="text-[11px] uppercase tracking-[1.5px] font-medium hidden desktop:block" style={{ color: t.textMuted }}>Total</span>
+            <span className="text-[11px] uppercase tracking-[1.5px] font-medium hidden desktop:block" style={{ color: t.textMuted }}>{tr("Total")}</span>
             <span className="text-[18px] max-md:text-[15px] font-semibold whitespace-nowrap" style={{ color: t.accent }}>{bp === "sm" ? compactPrice(total, money, currency) : money(total)}</span>
           </div>
         )}
@@ -1560,6 +1568,7 @@ function isDuplicate(rows, idx) {
 }
 
 function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, onClear, onPlace, loading, rowsScrollRef, bulkError, setBulkError, bulkSuccess, setBulkSuccess, onViewOrders, onTopUp, waChannelUrl }) {
+  const tr = useT();
   const money = useMoney();
   const loyaltyDiscount = menuData?.loyaltyDiscount || 0;
   const loyaltyTier = menuData?.loyaltyTier || null;
@@ -1623,18 +1632,18 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
   return (
     <>
     <div className="fixed inset-0 z-[55]" onClick={onClose} style={{ background: dark ? "rgba(0,0,0,.45)" : "rgba(0,0,0,.2)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }} />
-    <div role="dialog" aria-modal="true" aria-label="Bulk order cart" aria-busy={loading} className={`fixed max-h-[85vh] max-md:max-h-[78vh] border border-solid flex flex-col z-[60] overflow-hidden ${bulkSuccess ? "rounded-[26px]" : "rounded-[22px]"}`} style={{ left: bounds.left, right: bounds.right, bottom: bounds.bottom, background: bulkSuccess ? bulkChrome.card : (dark ? "#12172a" : "#fff"), borderColor: bulkSuccess ? "transparent" : "rgba(196,125,142,.28)", boxShadow: bulkSuccess ? "0 30px 80px rgba(20,10,14,.35)" : "0 -16px 48px rgba(0,0,0,.22), 0 -4px 12px rgba(0,0,0,.12)" }}>
+    <div role="dialog" aria-modal="true" aria-label={tr("Bulk order cart")} aria-busy={loading} className={`fixed max-h-[85vh] max-md:max-h-[78vh] border border-solid flex flex-col z-[60] overflow-hidden ${bulkSuccess ? "rounded-[26px]" : "rounded-[22px]"}`} style={{ left: bounds.left, right: bounds.right, bottom: bounds.bottom, background: bulkSuccess ? bulkChrome.card : (dark ? "#12172a" : "#fff"), borderColor: bulkSuccess ? "transparent" : "rgba(196,125,142,.28)", boxShadow: bulkSuccess ? "0 30px 80px rgba(20,10,14,.35)" : "0 -16px 48px rgba(0,0,0,.22), 0 -4px 12px rgba(0,0,0,.12)" }}>
       {!bulkSuccess && <div className="md:hidden w-[38px] h-1 rounded-sm mx-auto mt-2.5 -mb-1 shrink-0" style={{ background: "rgba(127,127,127,.35)" }} />}
-      <input ref={fileInputRef} type="file" accept=".txt,text/plain" className="hidden" onChange={handleTxtUpload} aria-label="Upload comments file" />
+      <input ref={fileInputRef} type="file" accept=".txt,text/plain" className="hidden" onChange={handleTxtUpload} aria-label={tr("Upload comments file")} />
 
       {/* Header */}
       {!bulkSuccess && <div className="py-3.5 px-[18px] flex items-center gap-4 border-b border-solid select-none shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}>
         <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: t.accent, color: "#fff" }}><CartIcon /></div>
         <div className="flex flex-col gap-px flex-1 min-w-0">
           <span className="text-[13px] font-medium" style={{ color: t.text }}>{rows.length} {rows.length === 1 ? "order" : "orders"}</span>
-          <span className="text-[11px]" style={{ color: t.textMuted }}>in cart</span>
+          <span className="text-[11px]" style={{ color: t.textMuted }}>{tr("in cart")}</span>
         </div>
-        <button onClick={onClear} disabled={loading} className="py-1 px-2.5 rounded-md border border-solid text-[11px] font-medium cursor-pointer bg-transparent font-[inherit] hover:opacity-80 transition-opacity shrink-0 disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderColor: dark ? "rgba(255,255,255,.19)" : "rgba(0,0,0,.18)", color: t.textMuted }}>Clear cart</button>
+        <button onClick={onClear} disabled={loading} className="py-1 px-2.5 rounded-md border border-solid text-[11px] font-medium cursor-pointer bg-transparent font-[inherit] hover:opacity-80 transition-opacity shrink-0 disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderColor: dark ? "rgba(255,255,255,.19)" : "rgba(0,0,0,.18)", color: t.textMuted }}>{tr("Clear cart")}</button>
         <div className="flex items-center gap-3.5 shrink-0">
           <span className="text-[18px] font-medium" style={{ color: t.accent }}>{money(total)}</span>
           <button onClick={onClose} disabled={loading} className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center cursor-pointer border-none p-0 disabled:opacity-40 disabled:cursor-not-allowed transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent }}>
@@ -1653,34 +1662,34 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-xl font-extrabold tracking-[-.2px]" style={{ color: bulkChrome.text }}>{bulkSuccess.total} order{bulkSuccess.total !== 1 ? "s" : ""} placed</div>
-              <div className="text-[13px] mt-[3px]" style={{ color: bulkChrome.muted }}>Dispatching to providers now</div>
+              <div className="text-[13px] mt-[3px]" style={{ color: bulkChrome.muted }}>{tr("Dispatching to providers now")}</div>
             </div>
           </div>
 
           {/* Stats row */}
           <div className="flex flex-wrap border-y border-solid py-3.5 my-[18px] mb-3.5" style={{ borderColor: bulkChrome.hair }}>
             <div className="flex-1 basis-1/3 min-w-0 pr-3">
-              <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Orders</div>
+              <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>{tr("Orders")}</div>
               <div className="mt-1 text-[15px] font-bold truncate" style={{ color: bulkChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{bulkSuccess.total}</div>
             </div>
             <div className="flex-1 basis-1/3 min-w-0 border-l border-solid px-[18px] max-[380px]:pr-0" style={{ borderColor: bulkChrome.hair }}>
-              <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Charged</div>
+              <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>{tr("Charged")}</div>
               <div className="mt-1 text-[15px] font-bold truncate" style={{ color: bulkChrome.money, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{money(bulkSuccess.totalCharge || 0)}</div>
             </div>
             <div className="flex-1 basis-1/3 min-w-0 border-l border-solid pl-[18px] max-[380px]:basis-full max-[380px]:border-l-0 max-[380px]:border-t max-[380px]:pt-3 max-[380px]:mt-3 max-[380px]:pl-0" style={{ borderColor: bulkChrome.hair }}>
-              <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>Balance</div>
+              <div className="text-[11px] font-extrabold tracking-[1.1px] uppercase" style={{ color: bulkChrome.muted }}>{tr("Balance")}</div>
               <div className="mt-1 text-[15px] font-bold truncate" style={{ color: bulkChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{bulkSuccess.newBalance != null ? money(bulkSuccess.newBalance, { round: "down" }) : "—"}</div>
             </div>
           </div>
 
           {/* Meta rows */}
           <div className="flex items-center justify-between gap-4 py-[3px] text-[13px]" style={{ color: bulkChrome.muted }}>
-            <span>Batch ID</span>
+            <span>{tr("Batch ID")}</span>
             <span className="font-semibold min-w-0 truncate" style={{ color: bulkChrome.text, fontFamily: "'JetBrains Mono','SF Mono','Courier New',monospace" }}>{bulkSuccess.batchId}</span>
           </div>
           {bulkSuccess.loyaltyDiscount > 0 && (
             <div className="flex items-center justify-between gap-4 py-[3px] text-[13px]" style={{ color: bulkChrome.muted }}>
-              <span>Nitro Status discount</span>
+              <span>{tr("Nitro Status discount")}</span>
               <span className="font-semibold text-right min-w-0 truncate" style={{ color: bulkChrome.money }}>{bulkSuccess.loyaltyTier} · {bulkSuccess.loyaltyDiscount}%</span>
             </div>
           )}
@@ -1711,7 +1720,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           </div>
 
           <p className="text-xs leading-[1.65] mt-3 mb-0" style={{ color: bulkChrome.muted }}>
-            Orders are on their way to providers. Pending ones follow automatically, and you can track live status in your order history.
+            {tr("Orders are on their way to providers. Pending ones follow automatically, and you can track live status in your order history.")}
           </p>
 
           {/* WhatsApp channel card */}
@@ -1721,15 +1730,15 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[13px] font-bold" style={{ color: bulkChrome.text }}>Follow The Nitro NG on WhatsApp</div>
-              <div className="text-xs leading-normal mt-0.5" style={{ color: bulkChrome.muted }}>Delivery updates, deal days and service news, straight from us.</div>
+              <div className="text-xs leading-normal mt-0.5" style={{ color: bulkChrome.muted }}>{tr("Delivery updates, deal days and service news, straight from us.")}</div>
             </div>
-            <a href={waChannelUrl || 'https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q'} target="_blank" rel="noopener" className="shrink-0 text-white text-[13px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap hover:!bg-[#128c46]" style={{ background: bulkChrome.wa }}>Follow</a>
+            <a href={waChannelUrl || 'https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q'} target="_blank" rel="noopener" className="shrink-0 text-white text-[13px] font-extrabold no-underline py-[9px] px-[15px] rounded-full whitespace-nowrap hover:!bg-[#128c46]" style={{ background: bulkChrome.wa }}>{tr("Follow")}</a>
           </div>
 
           {/* Action buttons */}
           <div className="flex gap-2.5 w-full mt-5">
-            <button onClick={() => { setBulkSuccess(null); onClose(); }} className="flex-1 py-[13px] px-4 rounded-[14px] text-sm font-bold border border-solid cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: bulkChrome.hair, color: bulkChrome.text }}>Place another</button>
-            {onViewOrders && <button onClick={() => { setBulkSuccess(null); onClose(); onViewOrders(); }} className="flex-1 py-[13px] px-4 rounded-[14px] text-sm font-extrabold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>View orders</button>}
+            <button onClick={() => { setBulkSuccess(null); onClose(); }} className="flex-1 py-[13px] px-4 rounded-[14px] text-sm font-bold border border-solid cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: "transparent", borderColor: bulkChrome.hair, color: bulkChrome.text }}>{tr("Place another")}</button>
+            {onViewOrders && <button onClick={() => { setBulkSuccess(null); onClose(); onViewOrders(); }} className="flex-1 py-[13px] px-4 rounded-[14px] text-sm font-extrabold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>{tr("View orders")}</button>}
           </div>
         </div>
       )}
@@ -1741,7 +1750,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
             <div className="font-semibold mb-0.5">{bulkError.type === "balance" ? "Insufficient balance" : "Connection error"}</div>
             <div className="text-[11px] font-normal" style={{ color: t.textMuted }}>{bulkError.type === "balance" ? `You need ${money(bulkError.needed || 0)} more to place these orders.` : bulkError.message}</div>
             {bulkError.type === "balance" && onTopUp && (
-              <button onClick={() => { setBulkError(null); onClose(); onTopUp(); }} className="mt-2 py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fbbf24" : "#d97706", border: `1px solid ${dark ? "rgba(251,191,36,.28)" : "rgba(217,119,6,.2)"}` }}>Top up wallet</button>
+              <button onClick={() => { setBulkError(null); onClose(); onTopUp(); }} className="mt-2 py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fbbf24" : "#d97706", border: `1px solid ${dark ? "rgba(251,191,36,.28)" : "rgba(217,119,6,.2)"}` }}>{tr("Top up wallet")}</button>
             )}
           </InlineAlert>
         </div>
@@ -1751,7 +1760,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
       {!bulkSuccess && (
       <div ref={rowsScrollRef} className="overflow-y-auto flex-1 min-h-0 py-4 px-[18px] max-md:py-3 max-md:px-3.5 flex flex-col gap-3">
         {rows.length === 0 && (
-          <div className="py-10 text-center text-xs" style={{ color: t.textMuted }}>Cart is empty. Tap any tier chip to add an order.</div>
+          <div className="py-10 text-center text-xs" style={{ color: t.textMuted }}>{tr("Cart is empty. Tap any tier chip to add an order.")}</div>
         )}
         {rows.map((row, idx) => {
           const dup = isDuplicate(rows, idx);
@@ -1794,9 +1803,9 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               <div className="flex gap-2 items-center mb-2.5">
                 <div className="flex rounded-lg overflow-hidden flex-1 min-w-0" style={{ border: `1px solid ${badLink ? (dark ? "#fca5a5" : "#dc2626") : emptyLink ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)")}`, background: emptyLink ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)") : (dark ? "#0f1322" : "#fff") }}>
                   <span className="inline-flex items-center px-2.5 text-[11px] font-semibold shrink-0 select-none" style={{ borderRight: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.textMuted }}>https://</span>
-                  <input aria-label="Link" disabled={loading} placeholder={getLinkPlaceholder(row.platform, row.name)} value={row.link} onChange={e => updateRow(idx, { link: e.target.value.replace(/^https?:\/\//i, "") })} className="flex-1 py-2 px-2.5 text-[11px] outline-none min-w-0 font-[JetBrains_Mono,monospace] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
+                  <input aria-label={tr("Link")} disabled={loading} placeholder={getLinkPlaceholder(row.platform, row.name)} value={row.link} onChange={e => updateRow(idx, { link: e.target.value.replace(/^https?:\/\//i, "") })} className="flex-1 py-2 px-2.5 text-[11px] outline-none min-w-0 font-[JetBrains_Mono,monospace] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
                 </div>
-                <input aria-label="Quantity" disabled={loading} type="number" min={1} step="1" value={row.qty} onChange={e => { const v = Math.min(row.max, Math.floor(Number(e.target.value)) || 0); updateRow(idx, { qty: v }); }} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="w-[76px] py-2 px-2.5 rounded-lg border border-solid text-[11px] font-medium text-right outline-none shrink-0 font-[JetBrains_Mono,monospace] disabled:opacity-50" style={{ background: dark ? "#0f1322" : "#fff", borderColor: qtyBad ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: t.text }} />
+                <input aria-label={tr("Quantity")} disabled={loading} type="number" min={1} step="1" value={row.qty} onChange={e => { const v = Math.min(row.max, Math.floor(Number(e.target.value)) || 0); updateRow(idx, { qty: v }); }} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="w-[76px] py-2 px-2.5 rounded-lg border border-solid text-[11px] font-medium text-right outline-none shrink-0 font-[JetBrains_Mono,monospace] disabled:opacity-50" style={{ background: dark ? "#0f1322" : "#fff", borderColor: qtyBad ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: t.text }} />
               </div>
 
               {/* Presets + price */}
@@ -1826,13 +1835,13 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                         <span><b>{commentCount}</b> {row.needsPoll ? "answer" : row.needsMentions ? "username" : "comment"}{commentCount !== 1 ? "s" : ""}</span>
                         <span className="text-[11px] underline ml-1" style={{ color: t.textMuted }}>edit</span>
                       </button>
-                      <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>
+                      <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>{tr("We'll cycle through them to fill your order")}</div>
                     </>
                   ) : row.commentsOpen ? (
                     <div className="rounded-lg border border-solid p-2.5" style={{ background: dark ? "#0f1322" : "#fff", borderColor: t.accent }}>
                       <div className="flex justify-between items-center mb-1.5">
                         <span className="text-[11px] font-medium" style={{ color: t.text }}>{row.needsPoll ? "Poll answer (number)" : row.needsMentions ? "Usernames — one per line" : "Seed comments — one per line"}</span>
-                        <button onClick={() => updateRow(idx, { commentsOpen: false })} className="bg-transparent border-none text-[11px] cursor-pointer py-0.5 px-1.5 rounded font-[inherit] hover:bg-[rgba(0,0,0,.08)] transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted }}>Done</button>
+                        <button onClick={() => updateRow(idx, { commentsOpen: false })} className="bg-transparent border-none text-[11px] cursor-pointer py-0.5 px-1.5 rounded font-[inherit] hover:bg-[rgba(0,0,0,.08)] transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted }}>{tr("Done")}</button>
                       </div>
                       <textarea placeholder={row.needsPoll ? "1" : row.needsMentions ? "username1\nusername2\nusername3" : "Fire post\nLove this\nLegendary..."} value={row.comments} onChange={e => updateRow(idx, { comments: e.target.value })} rows={4} className="w-full min-h-[90px] rounded-md border border-solid py-2 px-2.5 text-[11px] font-[JetBrains_Mono,monospace] outline-none resize-y" style={{ background: dark ? "rgba(255,255,255,.09)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.text }} />
                       <div className="flex justify-between items-center mt-2 text-[11px] flex-wrap gap-2" style={{ color: t.textMuted }}>
@@ -1843,7 +1852,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                   ) : (
                     <>
                       <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)", borderColor: t.accent, color: t.accent }}>+ Add {row.needsPoll ? "poll answer" : row.needsMentions ? "usernames" : "comments"}</button>
-                      {!row.needsPoll && <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>We'll cycle through them to fill your order</div>}
+                      {!row.needsPoll && <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>{tr("We'll cycle through them to fill your order")}</div>}
                     </>
                   )}
                 </div>
@@ -1877,17 +1886,18 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
 /* ═══ SERVICES RIGHT SIDEBAR              ═══ */
 /* ═══════════════════════════════════════════ */
 export function ServicesSidebar() {
+  const tr = useT();
   return (
     <div className="rr">
-      <RailSec>Before you order</RailSec>
+      <RailSec>{tr("Before you order")}</RailSec>
       <RailCard>
-        <RailStep n="1" title="Profile set to public" sub="No refunds for private profiles" />
-        <RailStep n="2" title="Start small" sub="Test a Budget tier first" />
-        <RailStep n="🇳🇬" title="Flag means Nigerian audience" sub="Real local engagement for Naija accounts" />
+        <RailStep n="1" title={tr("Profile set to public")} sub={tr("No refunds for private profiles")} />
+        <RailStep n="2" title={tr("Start small")} sub={tr("Test a Budget tier first")} />
+        <RailStep n="🇳🇬" title={tr("Flag means Nigerian audience")} sub={tr("Real local engagement for Naija accounts")} />
       </RailCard>
-      <RailSec>Bulk</RailSec>
-      <RailNote>Up to 50 orders in one checkout. Anything that fails is retried, then refunded.</RailNote>
-      <RailLink onClick={() => window.dispatchEvent(new CustomEvent("nitro-order-tour"))}>Need a walkthrough?</RailLink>
+      <RailSec>{tr("Bulk")}</RailSec>
+      <RailNote>{tr("Up to 50 orders in one checkout. Anything that fails is retried, then refunded.")}</RailNote>
+      <RailLink onClick={() => window.dispatchEvent(new CustomEvent("nitro-order-tour"))}>{tr("Need a walkthrough?")}</RailLink>
     </div>
   );
 }
