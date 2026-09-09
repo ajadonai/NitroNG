@@ -121,12 +121,13 @@ const TIER_STACK = {
 };
 
 function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, waNumber, userEmail, orderMode, cartCounts }) {
+  const tr = useT();
   const money = useMoney();
   const promoOff = activePromotion?.active ? activePromotion.discountPercent / 100 : 0;
   const bulk = orderMode === "bulk";
   return (
     <div className="mt-3" data-tour="no-tier-select">
-      <div className="text-[10.5px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: "#8a8580" }}>{bulk ? "Tier · tap to add" : "Tier"}</div>
+      <div className="text-[10.5px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: "#8a8580" }}>{bulk ? tr("Tier · tap to add") : tr("Tier")}</div>
       <div className="grid grid-cols-3 gap-1.5 md:gap-2">
         {svc.tiers.map(tier => {
           const s = TS[tier.tier];
@@ -333,7 +334,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
             )}
             <button onClick={e => { e.stopPropagation(); setExplOpen(!explOpen); }} aria-expanded={explOpen} aria-label={tr("What do the tiers mean?")} className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold rounded-full py-[3px] px-[9px] border border-solid cursor-pointer font-[inherit] transition-all duration-150 hover:-translate-y-px" style={{ color: dark ? "#8a8580" : "#757170", background: dark ? "rgba(255,255,255,.06)" : "#fff", borderColor: t.cardBorder }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              {explOpen ? "Close" : "Which tier?"}
+              {explOpen ? tr("Close") : tr("Which tier?")}
             </button>
           </div>
           {explOpen && <TierExplainer dark={dark} t={t} selTier={selTier} narrow={narrow} tiers={svc.tiers} onPick={handlePickTier} />}
@@ -861,7 +862,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
       const walletCharge = (data.order?.charge || 0) - (data.order?.pointsRedeemed || 0);
       setOrderSuccess({ ...data.order, queued: data.queued, discordSetup: needsDiscordGate, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: cleanLink(`https://${link.trim()}`), balanceAfter: walletCharge > 0 && user?.balance != null ? Math.max(0, user.balance - walletCharge) : (user?.balance ?? null) });
-      if (typeof window.fbq === "function") fbq("track", "Purchase", { value: data.order?.charge || 0, currency: "NGN", content_name: selSvc?.name || "Order", content_category: platform || "unknown" }, { eventID: data.eventId });
+      if (typeof window.fbq === "function") fbq("track", "Purchase", { value: data.order?.charge || 0, currency: "NGN", content_name: selSvc?.name || tr("Order"), content_category: platform || "unknown" }, { eventID: data.eventId });
       if (typeof window.gtag === "function") gtag("event", "conversion", { send_to: "AW-18121451903/9P3HCL_TlaMcEP_S_cBD", transaction_id: data.order?.id || "" });
       setLink("");
       setRedeemPoints(false);
@@ -1172,7 +1173,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 <div className="rcp-hd">
                   <span className="rcp-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
                   <div className="rcp-ht">
-                    <b>{orderSuccess.queued ? "Order queued" : "Order placed"}</b>
+                    <b>{orderSuccess.queued ? tr("Order queued") : tr("Order placed")}</b>
                     <button type="button" className="rcp-id m" onClick={() => { copyText(String(orderSuccess.id)); toast.success("Order number copied"); }} aria-label={tr("Copy order number")}>
                       {orderSuccess.id}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     </button>
@@ -1190,8 +1191,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                   <div className="rcp-f"><span>{tr("Quantity")}</span><b className="m">{(orderSuccess.quantity || 0).toLocaleString()}</b></div>
                   <div className="rcp-f"><span>{tr("Charged")}</span><b className="m rcp-money">{money(orderSuccess.charge || 0)}</b></div>
                   {orderSuccess.balanceAfter != null && <div className="rcp-f"><span>{tr("Balance after")}</span><b className="m">{money(orderSuccess.balanceAfter, { round: "down" })}</b></div>}
-                  <div className="rcp-f"><span>{tr("Delivery")}</span><b>{orderSuccess.queued ? "Starts when your active order completes" : formatDeliverySpeed(orderSuccess.speed)}</b></div>
-                  {orderSuccess.tier && <div className="rcp-f"><span>{tr("Refill")}</span><b className={orderSuccess.tier === "Budget" ? "rcp-mut" : ""}>{orderSuccess.tier === "Budget" ? "Not on Budget" : orderSuccess.tier === "Standard" ? "Free for 30 days" : "Free for life"}</b></div>}
+                  <div className="rcp-f"><span>{tr("Delivery")}</span><b>{orderSuccess.queued ? tr("Starts when your active order completes") : formatDeliverySpeed(orderSuccess.speed)}</b></div>
+                  {orderSuccess.tier && <div className="rcp-f"><span>{tr("Refill")}</span><b className={orderSuccess.tier === "Budget" ? "rcp-mut" : ""}>{orderSuccess.tier === "Budget" ? tr("Not on Budget") : orderSuccess.tier === "Standard" ? tr("Free for 30 days") : tr("Free for life")}</b></div>}
                   {orderSuccess.pointsRedeemed > 0 && <div className="rcp-f"><span>{tr("Points used")}</span><b className="m" style={{ color: dark ? "#fbbf24" : "#92400e" }}>{money(orderSuccess.pointsRedeemed, { round: "down" })}</b></div>}
                 </div>
                 {/* Promo carousel: one slide at a time, every slide the same height */}
@@ -1343,7 +1344,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
               <div className="flex gap-2">
                 <button type="button" onClick={() => setTrafficGate(null)} className="flex-1 py-3 rounded-xl border border-solid text-sm font-semibold cursor-pointer" style={{ background: "transparent", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.15)", color: t.textMuted }}>{tr("Back")}</button>
                 <button type="button" disabled={!trafficTicked || orderLoading} onClick={() => { const d = trafficGate.dripDays; setTrafficGate(null); submitOrder(d); }} className="flex-[1.6] py-3 rounded-xl border-none text-sm font-bold cursor-pointer disabled:cursor-not-allowed transition-opacity" style={{ background: t.accent, color: "#fff", opacity: trafficTicked ? 1 : .4 }}>
-                  {orderLoading ? "Placing…" : "Place order"}
+                  {orderLoading ? tr("Placing…") : tr("Place order")}
                 </button>
               </div>
             </div>
@@ -1393,7 +1394,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
               <div className="flex gap-2">
                 <button type="button" onClick={() => setDiscordGate(null)} className="flex-1 py-3 rounded-xl border border-solid text-sm font-semibold cursor-pointer" style={{ background: "transparent", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.15)", color: t.textMuted }}>{tr("Back")}</button>
                 <button type="button" disabled={!discordTicked || orderLoading} onClick={() => { const d = discordGate.dripDays; setDiscordGate(null); submitOrder(d); }} className="flex-[1.6] py-3 rounded-xl border-none text-sm font-bold cursor-pointer disabled:cursor-not-allowed transition-opacity" style={{ background: t.accent, color: "#fff", opacity: discordTicked ? 1 : .4 }}>
-                  {orderLoading ? "Placing…" : "Place order"}
+                  {orderLoading ? tr("Placing…") : tr("Place order")}
                 </button>
               </div>
             </div>
@@ -1459,7 +1460,7 @@ function MobileGuide({ dark, t }) {
           <div className="text-xs" style={{ color: t.textMuted }}>
             <div className="mb-[3px]">• <Emph>{tr("Set profile to *public* before ordering — no refunds for private profiles")}</Emph></div>
             <div className="mb-[3px]">• <Emph>{tr("*Start small* — test Budget first")}</Emph></div>
-            <div>• Not sure which tier? Tap the <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"-1px"}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> {tr("for a quick breakdown")}</div>
+            <div>{tr("• Not sure which tier? Tap the")} <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"-1px"}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> {tr("for a quick breakdown")}</div>
           </div>
 
           <div style={{ height: 1, background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)" }} />
@@ -1530,7 +1531,7 @@ const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, b
         <div className="relative w-[42px] h-[42px] max-md:w-[40px] max-md:h-[40px] rounded-full flex items-center justify-center shrink-0" style={{ background: t.accent, color: "#fff" }}><CartIcon />{!empty && <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10.5px] font-bold flex items-center justify-center" style={{ background: dark ? "#f4f1ed" : "#1c1b19", color: dark ? "#0b0e1a" : "#fff", border: `2px solid ${dark ? "#1a1329" : "#fff"}` }}>{rows.length}</span>}</div>
         <div className="flex flex-col gap-px">
           <span className="text-[13px] font-semibold leading-tight" style={{ color: empty ? t.textMuted : t.text }}>{empty ? "Your cart" : `${rows.length} ${rows.length === 1 ? "order" : "orders"}`}</span>
-          <span className="text-[11px] leading-tight" style={{ color: t.textMuted }}>{empty ? "Tap a tier to add an order" : "in cart"}</span>
+          <span className="text-[11px] leading-tight" style={{ color: t.textMuted }}>{empty ? tr("Tap a tier to add an order") : tr("in cart")}</span>
         </div>
       </div>
 
@@ -1726,7 +1727,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                   </div>
                   <span className="flex items-center gap-1.5 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full" style={{ background: isProcessing ? (dark ? "#6ee7b7" : "#059669") : (dark ? "#fbbf24" : "#d97706") }} />
-                    <span className="text-[11px] font-semibold" style={{ color: bulkChrome.muted }}>{isProcessing ? "Processing" : "Pending"}</span>
+                    <span className="text-[11px] font-semibold" style={{ color: bulkChrome.muted }}>{isProcessing ? tr("Processing") : tr("Pending")}</span>
                   </span>
                 </div>
               );
@@ -1761,7 +1762,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
       {!bulkSuccess && bulkError && (
         <div className="mx-[18px] max-md:mx-3.5 mt-3">
           <InlineAlert type={bulkError.type === "balance" ? "warning" : "error"} dark={dark} onDismiss={() => setBulkError(null)}>
-            <div className="font-semibold mb-0.5">{bulkError.type === "balance" ? "Insufficient balance" : "Connection error"}</div>
+            <div className="font-semibold mb-0.5">{bulkError.type === "balance" ? tr("Insufficient balance") : tr("Connection error")}</div>
             <div className="text-[11px] font-normal" style={{ color: t.textMuted }}>{bulkError.type === "balance" ? `You need ${money(bulkError.needed || 0)} more to place these orders.` : bulkError.message}</div>
             {bulkError.type === "balance" && onTopUp && (
               <button onClick={() => { setBulkError(null); onClose(); onTopUp(); }} className="mt-2 py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(217,119,6,.08)", color: dark ? "#fbbf24" : "#d97706", border: `1px solid ${dark ? "rgba(251,191,36,.28)" : "rgba(217,119,6,.2)"}` }}>{tr("Top up wallet")}</button>
@@ -1833,11 +1834,11 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               </div>
 
               {/* Warnings */}
-              {dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>● Duplicate — remove one or change the tier</div>}
-              {emptyLink && !dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: t.accent }}>○ Paste a link for this row</div>}
-              {badLink && !dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>● Enter a valid URL or @username</div>}
+              {dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{tr("● Duplicate — remove one or change the tier")}</div>}
+              {emptyLink && !dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: t.accent }}>{tr("○ Paste a link for this row")}</div>}
+              {badLink && !dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{tr("● Enter a valid URL or @username")}</div>}
               {qtyBad && !dup && <div className="text-[11px] mt-1.5" style={{ color: t.accent }}>{row.qty < row.min ? `Min ${row.min.toLocaleString()} for this service` : `Max ${row.max.toLocaleString()} for this service`}</div>}
-              {needsCommentsWarning && !dup && <div className="text-[11px] mt-1.5" style={{ color: t.accent }}>○ {row.needsPoll ? "Select a poll answer" : row.needsMentions ? "Enter usernames" : "This service needs at least one comment"}</div>}
+              {needsCommentsWarning && !dup && <div className="text-[11px] mt-1.5" style={{ color: t.accent }}>○ {row.needsPoll ? tr("Select a poll answer") : row.needsMentions ? tr("Enter usernames") : tr("This service needs at least one comment")}</div>}
 
               {/* Comment/mention/poll section */}
               {(row.needsComments || row.needsMentions || row.needsPoll) && (
@@ -1854,18 +1855,18 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                   ) : row.commentsOpen ? (
                     <div className="rounded-lg border border-solid p-2.5" style={{ background: dark ? "#0f1322" : "#fff", borderColor: t.accent }}>
                       <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-[11px] font-medium" style={{ color: t.text }}>{row.needsPoll ? "Poll answer (number)" : row.needsMentions ? "Usernames — one per line" : "Seed comments — one per line"}</span>
+                        <span className="text-[11px] font-medium" style={{ color: t.text }}>{row.needsPoll ? tr("Poll answer (number)") : row.needsMentions ? tr("Usernames — one per line") : tr("Seed comments — one per line")}</span>
                         <button onClick={() => updateRow(idx, { commentsOpen: false })} className="bg-transparent border-none text-[11px] cursor-pointer py-0.5 px-1.5 rounded font-[inherit] hover:bg-[rgba(0,0,0,.08)] transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted }}>{tr("Done")}</button>
                       </div>
                       <textarea placeholder={row.needsPoll ? "1" : row.needsMentions ? "username1\nusername2\nusername3" : "Fire post\nLove this\nLegendary..."} value={row.comments} onChange={e => updateRow(idx, { comments: e.target.value })} rows={4} className="w-full min-h-[90px] rounded-md border border-solid py-2 px-2.5 text-[11px] font-[JetBrains_Mono,monospace] outline-none resize-y" style={{ background: dark ? "rgba(255,255,255,.09)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.text }} />
                       <div className="flex justify-between items-center mt-2 text-[11px] flex-wrap gap-2" style={{ color: t.textMuted }}>
                         <div className="flex items-center gap-1"><strong style={{ color: t.accent }}>{commentCount}</strong> {row.needsPoll ? "answer" : `seed ${row.needsMentions ? "username" : "comment"}${commentCount !== 1 ? "s" : ""}`}{row.needsPoll ? "" : ` · will cycle to fill ${row.qty.toLocaleString()}`}</div>
-                        {row.qty > 100 && <button onClick={() => { setUploadIdx(idx); fileInputRef.current?.click(); }} className="inline-flex items-center gap-1 py-1 px-2.5 rounded-md border border-solid text-[11px] font-medium cursor-pointer bg-transparent font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}>↑ Upload .txt</button>}
+                        {row.qty > 100 && <button onClick={() => { setUploadIdx(idx); fileInputRef.current?.click(); }} className="inline-flex items-center gap-1 py-1 px-2.5 rounded-md border border-solid text-[11px] font-medium cursor-pointer bg-transparent font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}>{tr("↑ Upload .txt")}</button>}
                       </div>
                     </div>
                   ) : (
                     <>
-                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)", borderColor: t.accent, color: t.accent }}>+ Add {row.needsPoll ? "poll answer" : row.needsMentions ? "usernames" : "comments"}</button>
+                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)", borderColor: t.accent, color: t.accent }}>+ Add {row.needsPoll ? tr("poll answer") : row.needsMentions ? "usernames" : "comments"}</button>
                       {!row.needsPoll && <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>{tr("We'll cycle through them to fill your order")}</div>}
                     </>
                   )}

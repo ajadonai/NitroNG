@@ -244,7 +244,7 @@ function WaitlistPage({ feature, dark, t }) {
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={tr("Enter your email")} className="w-full py-2.5 px-3 rounded-[10px] text-sm font-[inherit] outline-none box-border text-t-text" style={{ background: dark ? "rgba(255,255,255,.09)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}` }} />
             </div>
             <button type="submit" disabled={submitting || !email.trim()} className="w-full py-2.5 rounded-[10px] text-sm font-semibold border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px bg-accent text-white" style={{ opacity: submitting || !email.trim() ? 0.5 : 1 }}>
-              {submitting ? "Joining…" : "Join the waitlist"}
+              {submitting ? tr("Joining…") : tr("Join the waitlist")}
             </button>
           </form>
         )}
@@ -701,7 +701,7 @@ function DashboardInner({ initialData }) {
         };
       }),
       ...txs.filter(tx => tx.type === "deposit" && tx.status === "Completed" && tx.date && new Date(tx.date) >= cutoff).map(tx => ({
-        id: `dep-${tx.id || tx.reference}`, type: "deposit", title: "Funds added",
+        id: `dep-${tx.id || tx.reference}`, type: "deposit", title: tr("Funds added"),
         desc: `${money(tx.amount, { round: "down" })} added via ${tx.method || "Flutterwave"}`,
         time: tx.date ? fD(tx.date) : "", ts: new Date(tx.date),
         color: dark_ ? "#6ee7b7" : "#059669",
@@ -716,7 +716,7 @@ function DashboardInner({ initialData }) {
       })),
       ...unreadTickets.map(tk => ({
         id: `tkt-${tk.id}`, type: "ticket",
-        title: "New message from support",
+        title: tr("New message from support"),
         desc: tk.subject || "You have an unread support message",
         time: tk.updated ? fD(tk.updated) : "", ts: new Date(tk.updated),
         color: dark_ ? "#a5b4fc" : "#4f46e5",
@@ -1328,7 +1328,7 @@ function DashboardInner({ initialData }) {
                 <div className="dash-av-head" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
                   <Avatar size={34} ring />
                   <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-semibold truncate text-t-text">{user?.name || "Your account"}</div>
+                    <div className="text-[13px] font-semibold truncate text-t-text">{user?.name || tr("Your account")}</div>
                     <div className="text-[11px] truncate text-t-text-muted">{user?.email || ""}</div>
                   </div>
                   <button role="menuitem" onClick={() => { setAvOpen(false); setActive("settings"); }} className="dash-av-gear" aria-label={tr("Settings")} style={{ color: t.textMuted }}>{I.settings}</button>
@@ -1425,7 +1425,7 @@ function DashboardInner({ initialData }) {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Welcome back, {firstName}</div>
-                <div className="text-sm text-t-text-muted">{orderSummary.total === 0 ? "Place your first order in under a minute." : "Here's your dashboard at a glance."}</div>
+                <div className="text-sm text-t-text-muted">{orderSummary.total === 0 ? tr("Place your first order in under a minute.") : tr("Here's your dashboard at a glance.")}</div>
               </div>
               <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">{tr("Balance")}</div>
@@ -1506,7 +1506,7 @@ function DashboardInner({ initialData }) {
             <div className="flex-1 min-w-0">
               {/* The real lifetime count — "Two" only when it is actually two. */}
               <div className="text-sm font-bold leading-snug text-t-text">{momentCompleted === 2 ? tr("Two") : Number(momentCompleted || 0).toLocaleString()} {tr("orders delivered.")}<br/>{tr("You&rsquo;re a regular now.")}</div>
-              <div className="text-xs leading-[1.5] mt-1 text-t-text-muted">{isIos ? "Keep Nitro one tap away for tracking the next one." : "Put Nitro on your home screen and track the next one in one tap. No app store, no download size."}</div>
+              <div className="text-xs leading-[1.5] mt-1 text-t-text-muted">{isIos ? tr("Keep Nitro one tap away for tracking the next one.") : tr("Put Nitro on your home screen and track the next one in one tap. No app store, no download size.")}</div>
             </div>
             <button type="button" aria-label={tr("Dismiss")} onClick={closeInstallMoment} className="shrink-0 w-[26px] h-[26px] rounded-lg flex items-center justify-center border-none cursor-pointer text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -1528,7 +1528,7 @@ function DashboardInner({ initialData }) {
           <div className="flex items-center gap-2.5 p-3 rounded-2xl" style={{ background: dark ? "linear-gradient(135deg,#1d1a2a,#1a1626)" : "linear-gradient(135deg,#faf3f4,#f4ebe6)", border: `1px solid ${dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.18)"}` }}>
             <Avatar size={40} ring />
             <div className="min-w-0 flex-1">
-              <div className="text-[13.5px] font-bold truncate text-t-text">{user?.name || "Your account"}</div>
+              <div className="text-[13.5px] font-bold truncate text-t-text">{user?.name || tr("Your account")}</div>
               <div className="text-[11px] truncate text-t-text-muted">{user?.email || ""}</div>
             </div>
             <div className="text-right shrink-0">
@@ -1727,7 +1727,7 @@ function DashboardInner({ initialData }) {
                 color: validatePhone(phonePromptCc, phonePromptVal).ok ? "#fff" : t.textMuted,
                 opacity: phonePromptSaving ? 0.7 : 1,
               }}
-            >{phonePromptSaving ? "Saving…" : "Save"}</button>
+            >{phonePromptSaving ? tr("Saving…") : tr("Save")}</button>
             </>}
           </div>
         </div>
@@ -1769,7 +1769,7 @@ function DashboardInner({ initialData }) {
                 color: tosChecked ? "#fff" : t.textMuted,
                 opacity: tosAccepting ? 0.7 : 1,
               }}
-            >{tosAccepting ? "Accepting…" : "Accept & Continue"}</button>
+            >{tosAccepting ? tr("Accepting…") : tr("Accept & Continue")}</button>
           </div>
         </div>
       )}

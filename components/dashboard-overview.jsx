@@ -272,7 +272,7 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setAct
   const avgQty = orderSummary?.averageQuantity || 0;
   const memberDate = user?.createdAt ? new Date(user.createdAt).toLocaleDateString(dateLocale(lang), { month: "short", year: "numeric" }) : "—";
   const wkOrders = orderSummary?.thisWeek || 0;
-  const pctOf = (o) => { const qty = o.quantity || 0; if (!qty) return 0; const delivered = o.status === "Completed" ? qty : o.remains != null ? Math.max(0, qty - Math.max(0, o.remains)) : 0; return Math.min(100, Math.round(delivered / qty * 100)); };
+  const pctOf = (o) => { const qty = o.quantity || 0; if (!qty) return 0; const delivered = o.status === tr("Completed") ? qty : o.remains != null ? Math.max(0, qty - Math.max(0, o.remains)) : 0; return Math.min(100, Math.round(delivered / qty * 100)); };
   return (
     <div className="rr">
       <RailSec>{tr("Your stats")}</RailSec>
