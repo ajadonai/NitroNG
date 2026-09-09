@@ -200,7 +200,7 @@ export default function TasksPage({ dark, t }) {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: sumOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}><path d="m6 9 6 6 6-6"/></svg>
           </button>
           {sumOpen && (
-            <div className="absolute right-0 top-11 z-20 w-[240px] rounded-2xl px-3.5 py-1" style={{ background: dark ? '#1a1329' : '#fff', border: `1px solid ${border}`, boxShadow: '0 18px 44px rgba(0,0,0,.18)' }}>
+            <div style={{ insetInlineEnd: 0 }} className="absolute top-11 z-20 w-[240px] rounded-2xl px-3.5 py-1" style={{ background: dark ? '#1a1329' : '#fff', border: `1px solid ${border}`, boxShadow: '0 18px 44px rgba(0,0,0,.18)' }}>
               {[['Earned', fmtNaira(stats.earned || 0), green], ['In review', String(stats.pending || 0), dark ? '#a5b4fc' : '#4f46e5'], ['Open tasks', String(openCount), t.text], ['Credit expires', `${stats.expiryDays || 30} days`, t.text]].map(([label, val, color], i) => (
                 <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-soft" style={{ borderTop: i > 0 ? `1px solid ${border}` : 'none' }}><span>{label}</span><b className="m text-[15px] font-semibold" style={{ color }}>{val}</b></div>
               ))}
@@ -237,7 +237,7 @@ export default function TasksPage({ dark, t }) {
               {/* Invisible backdrop: a tap outside closes the menu without also
                   activating whatever sits underneath. */}
               <span className="fixed inset-0 z-40" onClick={() => setFilterOpen(false)} />
-              <div className="absolute right-0 top-[calc(100%+6px)] z-50 rounded-[10px] overflow-hidden min-w-[150px] py-1" style={{ background: dark ? '#1a1d2e' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.14)'}`, boxShadow: '0 8px 32px rgba(0,0,0,.18)' }}>
+              <div style={{ insetInlineEnd: 0 }} className="absolute top-[calc(100%+6px)] z-50 rounded-[10px] overflow-hidden min-w-[150px] py-1" style={{ background: dark ? '#1a1d2e' : '#fff', border: `1px solid ${dark ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.14)'}`, boxShadow: '0 8px 32px rgba(0,0,0,.18)' }}>
               {FILTERS.map(f => (
                 <button key={f.key} onClick={() => { setFilter(f.key); setFilterOpen(false); }} className="block w-full text-left py-[7px] px-3 text-[13px] bg-transparent border-none cursor-pointer font-[inherit] whitespace-nowrap" style={{ color: f.key === filter ? accent : t.text, fontWeight: f.key === filter ? 600 : 400 }}>{tr(f.label)}</button>
               ))}
