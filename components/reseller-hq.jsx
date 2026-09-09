@@ -13,7 +13,7 @@ import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { useToast } from './toast';
 import { copyText } from '@/lib/clipboard';
-import { useMoney } from "./locale";
+import { useMoney, useT } from "./locale";
 
 const FALLBACK_WA = '2347071656156';
 const WA_ICON = <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.3 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.76-.72 2-1.42.25-.7.25-1.3.18-1.42-.08-.13-.28-.2-.58-.35zM12.05 21.8h-.01a9.87 9.87 0 01-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.85 9.85 0 01-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88a9.83 9.83 0 016.99 2.9 9.82 9.82 0 012.9 7c0 5.45-4.45 9.87-9.9 9.87z"/></svg>;
@@ -96,6 +96,7 @@ const Steps = ({ items }) => <div className="rhq-steps">{items.map(([t, b], i) =
 const Faq = ({ items }) => <div className="rhq-faq">{items.map(([q, a]) => <details key={q} className="rhq-faq-item"><summary className="rhq-faq-btn">{q}<span className="rhq-faq-chev">{I(P.arrow, 12)}</span></summary><div className="rhq-faq-ans">{a}</div></details>)}</div>;
 
 function Catalogues({ full, waLink }) {
+  const tr = useT();
   const Cat = ({ icon, tone, title, badge, tag, desc, stats }) => (
     <div className="rhq-cat">
       <div className="rhq-cat-head"><span className={`rhq-cat-ico ${tone}`}>{I(icon, 13)}</span><span><h3 className="rhq-cat-title">{title}{badge && <span className="rhq-badge-sm">{badge}</span>}</h3><div className="rhq-cat-tag">{tag}</div></span></div>
@@ -105,8 +106,8 @@ function Catalogues({ full, waLink }) {
   );
   return (
     <div className="rhq-grid2">
-      <Cat icon={P.layers} tone="" title="Nitro Curated" badge={full ? null : 'DEFAULT'} tag="The catalogue we stake our name on" desc="Hand-picked, stress-tested services in Budget, Standard and Premium tiers. Refill-backed where it counts. Order from New Order or the API." stats={[['Services', '227'], ['Refill', 'Guaranteed'], ['Order via', 'Site + API']]} />
-      <Cat icon={P.globe} tone="blue" title="Full Catalogue" badge={full ? 'ON' : null} tag="Everything our providers can reach" desc={full ? 'Thousands of services across every platform, at wholesale, each on its own refill and cancel terms. API only. On your account now.' : 'Thousands of services across every platform, at wholesale, each on its own refill and cancel terms. API only. On request: message support and we switch you.'} stats={[['Services', '9,400+'], ['Refill', 'Per service'], ['Order via', 'API']]} />
+      <Cat icon={P.layers} tone="" title={tr("Nitro Curated")} badge={full ? null : 'DEFAULT'} tag="The catalogue we stake our name on" desc={tr("Hand-picked, stress-tested services in Budget, Standard and Premium tiers. Refill-backed where it counts. Order from New Order or the API.")} stats={[['Services', '227'], ['Refill', 'Guaranteed'], ['Order via', 'Site + API']]} />
+      <Cat icon={P.globe} tone="blue" title={tr("Full Catalogue")} badge={full ? 'ON' : null} tag="Everything our providers can reach" desc={full ? tr("Thousands of services across every platform, at wholesale, each on its own refill and cancel terms. API only. On your account now.") : tr("Thousands of services across every platform, at wholesale, each on its own refill and cancel terms. API only. On request: message support and we switch you.")} stats={[['Services', '9,400+'], ['Refill', 'Per service'], ['Order via', 'API']]} />
     </div>
   );
 }
@@ -125,6 +126,7 @@ export default function ResellerHQView() {
 }
 
 function ProspectInner() {
+  const tr = useT();
   const { dark, t } = useTheme();
   const [waNum, setWaNum] = useState(FALLBACK_WA);
   useEffect(() => {
@@ -134,7 +136,7 @@ function ProspectInner() {
     }).catch(() => {});
   }, []);
   const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(WA_TEXT)}`;
-  const Wa = () => <a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-p wa">{WA_ICON}Message us on WhatsApp</a>;
+  const Wa = () => <a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-p wa">{WA_ICON}{tr("Message us on WhatsApp")}</a>;
   return (
     <>
       <SharedStyles />
@@ -142,22 +144,22 @@ function ProspectInner() {
       <div className="min-h-dvh flex flex-col" style={{ background: t.bg, color: t.text }}>
         <SharedNav />
         <main className="flex-1 w-full max-w-[960px] mx-auto px-4 sm:px-6 pb-16">
-          <div className="rhq-hero"><div className="rhq-glow" /><span className="rhq-pill">Reseller HQ</span><h1 className="rhq-h1">Build your business on Nitro</h1><p className="rhq-lead">Every account gets an <b>API key</b> and the same catalogue at retail, today. Message us on WhatsApp and we switch your account to <b>wholesale</b>.</p><div className="rhq-checks"><span>{I(P.chk, 12, 2.5)}Wholesale on the whole catalogue</span><span>{I(P.chk, 12, 2.5)}A key for every account, in Settings</span><span>{I(P.chk, 12, 2.5)}Everything settles in naira</span></div><Wa /></div>
-          <SecHead label="What you get" sub="The same shop, lower prices" />
+          <div className="rhq-hero"><div className="rhq-glow" /><span className="rhq-pill">{tr("Reseller HQ")}</span><h1 className="rhq-h1">{tr("Build your business on Nitro")}</h1><p className="rhq-lead">{tr("Every account gets an")} <b>{tr("API key")}</b> {tr("and the same catalogue at retail, today. Message us on WhatsApp and we switch your account to")} <b>wholesale</b>.</p><div className="rhq-checks"><span>{I(P.chk, 12, 2.5)}{tr("Wholesale on the whole catalogue")}</span><span>{I(P.chk, 12, 2.5)}{tr("A key for every account, in Settings")}</span><span>{I(P.chk, 12, 2.5)}{tr("Everything settles in naira")}</span></div><Wa /></div>
+          <SecHead label={tr("What you get")} sub={tr("The same shop, lower prices")} />
           <div className="rhq-feats">
-            <Feat icon={P.naira} tone="accent" title="Naira in, naira out" body="Opay, PalmPay, Kuda or bank transfer. No dollar cards, no FX to watch." />
-            <Feat icon={P.layers} tone="accent" title="A catalogue built for choosing" body="Quality grades, refill terms and speed on every row before you order." />
-            <Feat icon={P.bolt} title="Full speed, always" body="API orders never enter the gradual delivery queue. They hit providers at natural speed." />
-            <Feat icon={P.chart} title="Reseller rates" body="Below retail on every order, and a personal rate on top once your volume is consistent." />
-            <Feat icon={P.refund} title="Auto refunds" body="Anything we can't deliver refunds to your wallet automatically. Never out of pocket." />
-            <Feat icon={P.clock} title="Live tracking" body="Start count, remains and status on every order, pollable so your panel can show it." />
+            <Feat icon={P.naira} tone="accent" title={tr("Naira in, naira out")} body={tr("Opay, PalmPay, Kuda or bank transfer. No dollar cards, no FX to watch.")} />
+            <Feat icon={P.layers} tone="accent" title={tr("A catalogue built for choosing")} body={tr("Quality grades, refill terms and speed on every row before you order.")} />
+            <Feat icon={P.bolt} title={tr("Full speed, always")} body={tr("API orders never enter the gradual delivery queue. They hit providers at natural speed.")} />
+            <Feat icon={P.chart} title={tr("Reseller rates")} body={tr("Below retail on every order, and a personal rate on top once your volume is consistent.")} />
+            <Feat icon={P.refund} title={tr("Auto refunds")} body={tr("Anything we can't deliver refunds to your wallet automatically. Never out of pocket.")} />
+            <Feat icon={P.clock} title={tr("Live tracking")} body={tr("Start count, remains and status on every order, pollable so your panel can show it.")} />
           </div>
-          <SecHead label="Catalogues" sub="Curated by default, full on request" />
+          <SecHead label={tr("Catalogues")} sub={tr("Curated by default, full on request")} />
           <Catalogues full={false} waLink={waLink} />
-          <SecHead label="How to join" sub="Three steps, no forms" />
+          <SecHead label={tr("How to join")} sub={tr("Three steps, no forms")} />
           <Steps items={[['Grab your key in Settings', 'Every verified account has one. Point your panel at nitro.ng/api/v2 and order the curated list at the price you already see.'], ['Message us for wholesale', 'Tell us about your business: your panel, your clients, or the volume you push. We switch your account, and the same key starts returning lower rates.'], ['Order like you always did', 'Same order page, same wallet, same history. Only the price changes.']]} />
-          <div className="rhq-honest"><span className="rhq-sec-label">The honest bit</span><p>Reseller pricing replaces retail perks: loyalty discounts, promo codes and Nitro Points do not stack on top. Wholesale is the deal. Full-catalogue services carry the provider's own terms, shown on every row.</p></div>
-          <div className="rhq-closer"><div><h3>Start where you are.</h3><p>Your key is already in Settings. Wholesale is one message away.</p></div><Wa /></div>
+          <div className="rhq-honest"><span className="rhq-sec-label">{tr("The honest bit")}</span><p>{tr("Reseller pricing replaces retail perks: loyalty discounts, promo codes and Nitro Points do not stack on top. Wholesale is the deal. Full-catalogue services carry the provider's own terms, shown on every row.")}</p></div>
+          <div className="rhq-closer"><div><h3>{tr("Start where you are.")}</h3><p>{tr("Your key is already in Settings. Wholesale is one message away.")}</p></div><Wa /></div>
         </main>
         <SharedFooter />
       </div>
@@ -167,6 +169,7 @@ function ProspectInner() {
 
 /* ── Member: the dashboard tab ── */
 export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
+  const tr = useT();
   const money = useMoney();
   const toast = useToast();
   const [key, setKey] = useState(null);
@@ -204,57 +207,58 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
   return (
     <div>
       <Styles dark={dark} t={t} />
-      <div className="rhq-phead"><div><span className="rhq-pill">Reseller HQ</span><h1 className="rhq-h1" style={{ fontSize: 22, margin: '8px 0 2px' }}>{wholesale ? 'Wholesale is on.' : 'Your API is ready.'}</h1><p>{wholesale ? 'Everything you need, in one place.' : 'Retail prices today. Wholesale is one message away.'}</p></div><span className="rhq-badge-sm big">{wholesale ? (full ? 'FULL CATALOGUE' : 'WHOLESALE') : 'RETAIL'}</span></div>
+      <div className="rhq-phead"><div><span className="rhq-pill">{tr("Reseller HQ")}</span><h1 className="rhq-h1" style={{ fontSize: 22, margin: '8px 0 2px' }}>{wholesale ? tr("Wholesale is on.") : tr("Your API is ready.")}</h1><p>{wholesale ? tr("Everything you need, in one place.") : tr("Retail prices today. Wholesale is one message away.")}</p></div><span className="rhq-badge-sm big">{wholesale ? (full ? tr("FULL CATALOGUE") : 'WHOLESALE') : 'RETAIL'}</span></div>
       {wholesale && stats && (
         <div className="rhq-stats">
-          <div className="rhq-stt"><b>{stats.orders.toLocaleString()}</b><span>Orders · {stats.windowDays} days</span><i>{stats.apiOrders.toLocaleString()} through the API</i></div>
-          <div className="rhq-stt"><b>{money(stats.spend)}</b><span>Spend</span><i>last {stats.windowDays} days</i></div>
-          <div className="rhq-stt"><b className="ok">{money(stats.saved, { round: "down" })}</b><span>Saved vs retail</span><i>your rate: −{stats.discount}%</i></div>
-          <div className="rhq-stt"><b>{money(stats.balance, { round: "down" })}</b><span>Wallet</span><i>tops up like any account</i></div>
+          <div className="rhq-stt"><b>{stats.orders.toLocaleString()}</b><span>{tr("Orders ·")} {stats.windowDays} days</span><i>{stats.apiOrders.toLocaleString()} {tr("through the API")}</i></div>
+          <div className="rhq-stt"><b>{money(stats.spend)}</b><span>{tr("Spend")}</span><i>last {stats.windowDays} days</i></div>
+          <div className="rhq-stt"><b className="ok">{money(stats.saved, { round: "down" })}</b><span>{tr("Saved vs retail")}</span><i>{tr("your rate: −")}{stats.discount}%</i></div>
+          <div className="rhq-stt"><b>{money(stats.balance, { round: "down" })}</b><span>{tr("Wallet")}</span><i>{tr("tops up like any account")}</i></div>
         </div>
       )}
       <div className="rhq-keystrip">
-        <span className="rhq-kicon">{I(P.key, 14)}</span><span className="rhq-klabel">API key</span>
+        <span className="rhq-kicon">{I(P.key, 14)}</span><span className="rhq-klabel">{tr("API key")}</span>
         <code className="m">{key ? (shown ? key : masked) : <Bone dark={dark} w={220} h={12} style={{ display: "inline-block", verticalAlign: "middle", maxWidth: "100%" }} />}</code>
         <span className="rhq-kb">
-          <button type="button" className="rhq-btn-g" onClick={() => setShown(v => !v)} disabled={!key}>{I(P.eye, 12)} {shown ? 'Hide' : 'Show'}</button>
-          <button type="button" className="rhq-btn-g" onClick={copyKey} disabled={!key}>{I(P.copy, 12)} Copy</button>
-          <button type="button" className="rhq-btn-g" onClick={rotate} disabled={!key || rotating}>{I(P.rot, 12)} {rotating ? 'Rotating…' : 'Rotate'}</button>
+          <button type="button" className="rhq-btn-g" onClick={() => setShown(v => !v)} disabled={!key}>{I(P.eye, 12)} {shown ? tr("Hide") : tr("Show")}</button>
+          <button type="button" className="rhq-btn-g" onClick={copyKey} disabled={!key}>{I(P.copy, 12)} {tr("Copy")}</button>
+          <button type="button" className="rhq-btn-g" onClick={rotate} disabled={!key || rotating}>{I(P.rot, 12)} {rotating ? tr("Rotating…") : tr("Rotate")}</button>
         </span>
       </div>
-      <div className="rhq-kmeta"><span>Base URL <b className="m">https://nitro.ng/api/v2</b></span><span>60 requests a minute</span><span>Rotating stops the old key at once</span></div>
+      <div className="rhq-kmeta"><span>{tr("Base URL")} <b className="m">https://nitro.ng/api/v2</b></span><span>{tr("60 requests a minute")}</span><span>{tr("Rotating stops the old key at once")}</span></div>
       {!wholesale && <>
-        <SecHead label="Wholesale" sub="By approval, one message" />
-        <div className="rhq-feat"><span className="rhq-feat-ico accent">{I(P.chart, 15)}</span><span><h4>Lower rates on the same key</h4><p>Tell us about your business on WhatsApp. Once we switch your account, every services call returns wholesale and every add is charged at it. Nothing to re-map.</p></span></div>
-        <div className="rhq-acts"><a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-p wa">{WA_ICON}Message us for wholesale</a></div>
+        <SecHead label={tr("Wholesale")} sub={tr("By approval, one message")} />
+        <div className="rhq-feat"><span className="rhq-feat-ico accent">{I(P.chart, 15)}</span><span><h4>{tr("Lower rates on the same key")}</h4><p>{tr("Tell us about your business on WhatsApp. Once we switch your account, every services call returns wholesale and every add is charged at it. Nothing to re-map.")}</p></span></div>
+        <div className="rhq-acts"><a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-p wa">{WA_ICON}{tr("Message us for wholesale")}</a></div>
       </>}
-      <SecHead label="Quick start" sub="Three calls and you are selling" />
+      <SecHead label={tr("Quick start")} sub={tr("Three calls and you are selling")} />
       <Steps items={[['Add Nitro as a provider', 'Set the API URL to nitro.ng/api/v2 in your panel and paste your key.'], ['Pull the services', 'Your panel calls services and gets your catalogue, your prices, our IDs.'], ['Place an order', 'add with a service ID, link and quantity. Track it with status.']]} />
-      <div className="rhq-acts"><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="rhq-btn-p blue">{I(P.book, 13)} Read the docs</a><button type="button" className="rhq-btn-g" onClick={() => onNavigate?.('catalogue')}>Browse the catalogue</button></div>
-      <SecHead label="Your catalogue" sub={full ? 'Curated and the full list' : wholesale ? 'Curated today, full on request' : 'Curated, at retail'} />
+      <div className="rhq-acts"><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="rhq-btn-p blue">{I(P.book, 13)} {tr("Read the docs")}</a><button type="button" className="rhq-btn-g" onClick={() => onNavigate?.('catalogue')}>{tr("Browse the catalogue")}</button></div>
+      <SecHead label={tr("Your catalogue")} sub={full ? tr("Curated and the full list") : wholesale ? tr("Curated today, full on request") : tr("Curated, at retail")} />
       <Catalogues full={full} waLink={waLink} />
-      {wholesale && !full && <div className="rhq-acts"><a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-g" style={{ color: dark ? '#4ade80' : '#16a34a' }}>{WA_ICON} Ask for the full list</a></div>}
+      {wholesale && !full && <div className="rhq-acts"><a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-g" style={{ color: dark ? '#4ade80' : '#16a34a' }}>{WA_ICON} {tr("Ask for the full list")}</a></div>}
       {rates.length > 0 && <>
-        <SecHead label="Your rates today" sub="Per 1,000 · retail struck through" />
+        <SecHead label={tr("Your rates today")} sub={tr("Per 1,000 · retail struck through")} />
         <div className="rhq-rates">{rates.map(([name, retail, price]) => <div key={name} className="rhq-rate"><span>{name}</span><b><s>{money(Number(retail))}</s>{money(Number(price))}</b></div>)}</div>
       </>}
-      <SecHead label="Questions" sub="The ones that matter" />
+      <SecHead label={tr("Questions")} sub={tr("The ones that matter")} />
       <Faq items={FAQ} />
-      <div className="rhq-closer"><div><h3>{wholesale ? "Key's live. Go sell." : "Key's live. Go build."}</h3><p>Docs cover all six actions with copy-paste examples.</p></div><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="rhq-btn-p white">Read the docs</a></div>
+      <div className="rhq-closer"><div><h3>{wholesale ? tr("Key's live. Go sell.") : tr("Key's live. Go build.")}</h3><p>{tr("Docs cover all six actions with copy-paste examples.")}</p></div><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="rhq-btn-p white">{tr("Read the docs")}</a></div>
     </div>
   );
 }
 
 export function ResellerHQSidebar({ onNavigate }) {
+  const tr = useT();
   const facts = [['Base URL', 'https://nitro.ng/api/v2'], ['Actions', 'services · add · status · refill · balance · cancel'], ['Your key', 'At the top of this page, and in Settings'], ['Prices', 'Retail for every account, wholesale by approval']];
   return (
     <div className="rr">
-      <RailSec>The API</RailSec>
+      <RailSec>{tr("The API")}</RailSec>
       <RailCard>
         {facts.map(([k, v]) => <RailRow key={k} title={v} sub={k} />)}
       </RailCard>
-      <RailLink href="/resellers/docs">Read the docs</RailLink>
-      <RailLink onClick={() => onNavigate?.('catalogue')}>Open the catalogue</RailLink>
+      <RailLink href="/resellers/docs">{tr("Read the docs")}</RailLink>
+      <RailLink onClick={() => onNavigate?.('catalogue')}>{tr("Open the catalogue")}</RailLink>
     </div>
   );
 }
