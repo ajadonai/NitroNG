@@ -544,7 +544,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           </div>
           <div>
             <div className="text-[13px] font-semibold text-accent">{tr("Welcome bonus")}</div>
-            <div className="text-[13px] mt-0.5 text-t-text-soft leading-[1.45]">Your first deposit earns up to {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free. The more you add, the bigger the bonus.")}</div>
+            <div className="text-[13px] mt-0.5 text-t-text-soft leading-[1.45]">{tr("Your first deposit earns up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free. The more you add, the bigger the bonus.")}</div>
           </div>
         </div>
       )}
@@ -579,7 +579,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       {/* The charge is naira whatever the box says, so the naira is never
           hidden — it is the figure the bank statement will show. */}
       {fxReady && numAmount > 0 && (
-        <div className="text-[11px] -mt-2 mb-3 text-t-text-muted">You will be charged {fN(numAmount)}</div>
+        <div className="text-[11px] -mt-2 mb-3 text-t-text-muted">{tr("You will be charged")} {money(numAmount)}</div>
       )}
       {!welcomeEligible && (
         <div className="grid grid-cols-3 gap-2 max-md:gap-1.5 mb-3">
@@ -613,8 +613,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             </div>
             <span className="text-[13px] font-medium text-t-text-soft">
               {cur > 0
-                ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add {money(diff)} more</button> {tr("and get")} <strong className="text-accent">{money(nt.bonus, { round: "down" })} free</strong> instead of {money(cur, { round: "down" })}.</>
-                : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>Add {money(diff)} more</button> {tr("to unlock your")} <strong className="text-accent">{money(nt.bonus, { round: "down" })} {tr("welcome bonus")}</strong>.</>
+                ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>{tr("Add")} {money(diff)} more</button> {tr("and get")} <strong className="text-accent">{money(nt.bonus, { round: "down" })} free</strong> {tr("instead of")} {money(cur, { round: "down" })}.</>
+                : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>{tr("Add")} {money(diff)} more</button> {tr("to unlock your")} <strong className="text-accent">{money(nt.bonus, { round: "down" })} {tr("welcome bonus")}</strong>.</>
               }
             </span>
           </div>
@@ -629,7 +629,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(110,231,183,.12)' : 'rgba(5,150,105,.08)' }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={okColor} strokeWidth="2.5" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
               </div>
-              <span className="text-[13px] font-semibold" style={{ color: okColor }}>This deposit unlocks your {prize} {tr("top-up bonus")}</span>
+              <span className="text-[13px] font-semibold" style={{ color: okColor }}>{tr("This deposit unlocks your")} {prize} {tr("top-up bonus")}</span>
             </div>
           );
         }
@@ -769,14 +769,14 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       <div className="rounded-[14px] p-4 mb-2" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
         <div className="text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted">{tr("Balance")}</div>
         <div className="m text-[30px] desktop:text-[34px] font-bold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.01em" }}>{fHeld(balance)}</div>
-        {lastFunded && <div className="text-[11px] mt-1.5 text-t-text-muted">Last funded {fD(lastFunded.date, true)}</div>}
+        {lastFunded && <div className="text-[11px] mt-1.5 text-t-text-muted">{tr("Last funded")} {fD(lastFunded.date, true)}</div>}
         <div className="px-0">
             {user?.bonusCredit?.amount > 0 && (() => {
               const daysLeft = Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000));
               return (
                 <div className="flex items-center gap-1.5 mt-2 py-2 px-2.5 rounded-lg text-[11px]" style={{ background: dark ? "rgba(240,171,252,.06)" : "rgba(168,85,247,.04)", border: `1px solid ${dark ? "rgba(240,171,252,.14)" : "rgba(168,85,247,.1)"}`, color: dark ? "#f0abfc" : "#a855f7" }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>
-                  <span>{fHeld(user.bonusCredit.amount / 100)} bonus credit — expires in {daysLeft}d</span>
+                  <span>{fHeld(user.bonusCredit.amount / 100)} {tr("bonus credit — expires in")} {daysLeft}d</span>
                 </div>
               );
             })()}
@@ -858,7 +858,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           {(() => { const wb = welcomeEligible && valid ? bonusForNaira(numAmount) : 0; const extra = (discount > 0 ? discount / 100 : 0) + wb; return (
             <div className="rounded-[14px] px-3.5 mt-3" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
               {[
-                ["Deposit", <b key="d" className="m text-[13px] font-semibold text-t-text">{valid ? money(numAmount) : money(0)}</b>],
+                [tr("Deposit"), <b key="d" className="m text-[13px] font-semibold text-t-text">{valid ? money(numAmount) : money(0)}</b>],
                 [tr("Fee"), <b key="f" className="text-[13px] font-semibold text-t-text">{tr("Free")}</b>],
                 couponApplied && discount > 0 ? [tr("Coupon bonus"), <b key="c" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(discount / 100, { round: "down" })}</b>] : null,
                 wb > 0 ? [tr("Welcome bonus"), <b key="w" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(wb, { round: "down" })}</b>] : null,
@@ -872,7 +872,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             </div>
           ); })()}
           <div className="mt-3">
-            <PayButton onClick={handlePay} disabled={!valid || loading} loading={loading} text={loading ? "Processing..." : valid ? `Pay ${fN(numAmount)}` : "Enter an amount"} />
+            <PayButton onClick={handlePay} disabled={!valid || loading} loading={loading} text={loading ? tr("Processing...") : valid ? `${tr("Pay")} ${money(numAmount)}` : tr("Enter an amount")} />
           </div>
           <div className="text-center text-[11.5px] mt-2 text-t-text-muted">{tr("Payments are 100% secure. Your balance updates the moment it clears.")}</div>
         </div>
@@ -899,7 +899,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   <div className="mb-3 flex justify-center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fcd34d" : "#d97706"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
                   <div className="text-lg font-semibold mb-1.5 text-t-text">{cryptoPresentation.title}</div>
                   <div className="text-sm leading-normal text-t-text-muted">{cryptoPresentation.message}</div>
-                  {cryptoResult?.reference && <div className="m text-[11px] mt-3 break-all text-t-text-muted">Reference: {cryptoResult.reference}</div>}
+                  {cryptoResult?.reference && <div className="m text-[11px] mt-3 break-all text-t-text-muted">{tr("Reference:")} {cryptoResult.reference}</div>}
                 </div>
                 <button onClick={() => { stopCryptoPolling(); setCryptoModal(null); onRefresh?.(); }} className="w-full py-3 rounded-[10px] bg-transparent text-[15px] font-medium cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text font-[inherit]" style={{ border: `1px solid ${t.cardBorder}` }}>{tr("Close")}</button>
               </>
@@ -920,7 +920,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 <div className="p-3.5 rounded-[10px] mb-3 text-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.04)", border: `1px solid ${t.cardBorder}` }}>
                   <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1 text-t-text-muted">{tr("Amount to send")}</div>
                   <div className="m text-[28px] font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{cryptoModal.payAmount} USDT</div>
-                  <div className="text-xs mt-0.5 text-t-text-muted">≈ ${cryptoModal.amountUsd} USD · {fN(cryptoModal.amountNgn)}{Number(cryptoModal.amountUsd) > 0 && <> · ₦{Math.round(Number(cryptoModal.amountNgn) / Number(cryptoModal.amountUsd)).toLocaleString()} per $1</>}</div>
+                  <div className="text-xs mt-0.5 text-t-text-muted">≈ ${cryptoModal.amountUsd} {tr("USD ·")} {fN(cryptoModal.amountNgn)}{Number(cryptoModal.amountUsd) > 0 && <> · ₦{Math.round(Number(cryptoModal.amountNgn) / Number(cryptoModal.amountUsd)).toLocaleString()} per $1</>}</div>
                   {/* The one sentence in the product that shows both currencies:
                       said here, before the money moves, so nobody meets the rate after. */}
                   <div className="text-[11px] mt-2 text-t-text-muted">{tr("Your wallet is credited in naira at this rate.")}</div>
@@ -964,7 +964,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <div className="h-1.5" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }} />
             <div className="p-5">
               <div className="text-base font-semibold mb-1 text-t-text">{tr("Confirm Payment")}</div>
-              <div className="text-[13px] mb-4 text-t-text-muted">{tr("You're confirming a deposit of")} <span className="font-semibold text-t-text">{fN(confirmModal.amount)}</span></div>
+              <div className="text-[13px] mb-4 text-t-text-muted">{tr("You're confirming a deposit of")} <span className="font-semibold text-t-text">{money(confirmModal.amount)}</span></div>
               <label className="text-[11px] font-medium mb-1.5 block text-t-text-muted">{tr("Account name you sent from")}</label>
               <input value={senderName} onChange={e => setSenderName(e.target.value)} placeholder="e.g. John Doe" autoFocus className="w-full py-2.5 px-3 rounded-lg text-sm outline-none text-t-text font-[inherit]" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }} />
               <button onClick={async () => {
@@ -1099,7 +1099,7 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
               <div className="w-8 h-8 desktop:w-9 desktop:h-9 rounded-[10px] flex items-center justify-center text-base font-semibold shrink-0" style={{ background: dark ? `${rowColor}15` : `${rowColor}10`, color: rowColor }}>{txIcon(tx.type)}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm desktop:text-[15px] font-medium overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{txLabel(tx.type)}</span>
+                  <span className="text-sm desktop:text-[15px] font-medium overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{tr(txLabel(tx.type))}</span>
                   {statusMeta && <span className="text-[11px] font-semibold py-px px-1.5 rounded" style={{ background: statusMeta.bg, color: statusMeta.color }}>{statusMeta.label}</span>}
                   {tx.orderStatus && !["Completed", "Cancelled"].includes(tx.orderStatus) && <span className="text-[11px] font-semibold py-px px-1.5 rounded" style={{ background: tx.orderStatus === tr("Processing") ? (dark ? "rgba(165,180,252,.12)" : "rgba(99,102,241,.08)") : (dark ? "rgba(252,211,77,.12)" : "rgba(217,119,6,.08)"), color: tx.orderStatus === tr("Processing") ? (dark ? "#a5b4fc" : "#6366f1") : (dark ? "#fcd34d" : "#d97706") }}>{tx.orderStatus}</span>}
                 </div>

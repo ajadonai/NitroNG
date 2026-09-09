@@ -1024,7 +1024,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       {orderMode === "bulk" && (
         <div className="flex items-center gap-2 mb-3 px-0.5 text-[12px]" style={{ color: t.textMuted }}>
           <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: t.accent }} />
-          <span className="font-semibold" style={{ color: t.text }}>{tr("Bulk mode")}</span><span className="opacity-50">·</span>tap a tier to add it to your cart
+          <span className="font-semibold" style={{ color: t.text }}>{tr("Bulk mode")}</span><span className="opacity-50">·</span>{tr("tap a tier to add it to your cart")}
         </div>
       )}
 
@@ -1866,7 +1866,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                     </div>
                   ) : (
                     <>
-                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)", borderColor: t.accent, color: t.accent }}>+ Add {row.needsPoll ? tr("poll answer") : row.needsMentions ? "usernames" : "comments"}</button>
+                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)", borderColor: t.accent, color: t.accent }}>{tr("+ Add")} {row.needsPoll ? tr("poll answer") : row.needsMentions ? "usernames" : "comments"}</button>
                       {!row.needsPoll && <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>{tr("We'll cycle through them to fill your order")}</div>}
                     </>
                   )}
@@ -1882,7 +1882,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
       {!bulkSuccess && rows.length > 0 && (
         <div className="py-2.5 px-[18px] max-md:px-3.5 border-t border-solid shrink-0 flex items-center gap-3" style={{ borderColor: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)" }}>
           <div className="flex flex-col min-w-0 flex-1 leading-tight">
-            <span className="text-[10.5px] uppercase tracking-[1px] font-semibold" style={{ color: t.textMuted }}>Total · {rows.length} order{rows.length !== 1 ? "s" : ""}</span>
+            <span className="text-[10.5px] uppercase tracking-[1px] font-semibold" style={{ color: t.textMuted }}>{tr("Total ·")} {rows.length} order{rows.length !== 1 ? "s" : ""}</span>
             <span className="text-[18px] font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{money(total)}</span>
             {discount > 0 && <span className="text-[10.5px]" style={{ color: dark ? "#b4db7a" : "#27500A" }}>Nitro Status discount ({loyaltyDiscount}%) · −{money(discount, { round: "down" })}</span>}
           </div>

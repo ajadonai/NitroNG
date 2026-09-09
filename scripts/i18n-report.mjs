@@ -16,7 +16,10 @@ import path from 'node:path';
 import { LOCALE_CODES, SOURCE_LOCALE, coverage, orphans } from '../lib/i18n.js';
 
 const ROOT = process.cwd();
-const SEARCH = ['components', 'app'];
+// lib too: msg() marks module-scope copy, and lib/welcome-bonus.js carries the
+// deposit-card tags. Leaving lib out is how msg('Best value') sat untranslated
+// while the report showed 100%.
+const SEARCH = ['components', 'app', 'lib'];
 
 // tr("…") and tr('…'), single-line, no interpolation — the only shape the
 // the codebase is allowed to use. Template literals are deliberately not

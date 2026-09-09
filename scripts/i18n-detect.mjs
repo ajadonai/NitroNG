@@ -92,6 +92,10 @@ export const NOT_PROSE = [
   // A CSS duration, so a transition or animation shorthand is not offered for
   // translation: "transform .15s", "progress-pulse 2.8s ease-in-out infinite".
   /(^|\s)[\d.]+m?s(\s|$)/,
+  // A CSS at-rule inside a <style> block: '@keyframes skeletonShimmer' was
+  // wrapped, which would have put the animation name through a translator and
+  // silently broken the animation that referenced it.
+  /^@[a-z-]+\s/i,
   // A font stack: "'JetBrains Mono', monospace".
   /\b(monospace|sans-serif|ui-monospace|system-ui|cursive)\b/,
   // SVG and CSS keyword values that are not words on a page.
@@ -268,11 +272,51 @@ export function scan(raw) {
     // 2. inline text nodes  >Some words<  — and the same thing after a JSX
     //    expression, }Some words<, which is how "Support on WhatsApp" sat in
     //    plain sight next to an icon through three passes of the wrapper.
-    next = next.replace(/([>}])([^<>{}\n]+)</g, (m, open, text) => {
+    next = next.replace(/(?<![=!])([>}])([^<>{}\n]+)</g, (m, open, text) => {
       const t = text.trim();
       if (!isProse(t) || !record(t, i)) return m;
       const [lead] = text.match(/^\s*/); const [tail] = text.match(/\s*$/);
       return `${open}${lead}{tr(${JSON.stringify(t)})}${tail}<`;
+    });
+
+    // 2b. text that runs INTO an expression rather than out of one:
+    //     >Your first deposit earns up to {money(…)}
+    //
+    //     The mirror of the `}Text<` shape, and it hid the same way. Shape 2
+    //     needs a `<` to close on, so a sentence ending at a `{` was invisible:
+    //     the funds page rendered "Your first deposit earns up to ₦1,500
+    //     offerts. Plus vous ajoutez…" — English, then French, in one line,
+    //     because only the half after the amount had ever been seen.
+    next = next.replace(/(?<![=!])([>}])([^<>{}\n]+)\{/g, (m, open, text) => {
+      const t = text.trim();
+      // Everything between one attribute's `}` and the next attribute's `{` is
+      // an attribute name, and it always ends in `=`: `value={x} onChange={y}`
+      // offered " onChange=" for translation. Parens mean it is an expression,
+      // not a sentence — "catch (err)" and "= topup.next.min)" both arrived
+      // that way.
+      if (/=$/.test(t) || /[()]/.test(t)) return m;
+      if (!isProse(t) || !record(t, i)) return m;
+      const [lead] = text.match(/^\s*/); const [tail] = text.match(/\s*$/);
+      return `${open}${lead}{tr(${JSON.stringify(t)})}${tail}{`;
+    });
+
+    // 2c. text that opens on a tag and runs to the end of the line, with the
+    //     markup continuing below:
+    //
+    //       <b>{pct}%</b> of what you spend comes back as points
+    //       </div>
+    //
+    //     Shape 1 wants the sentence alone on its own line and shape 2 wants a
+    //     `<` to close on. This has neither, so the rewards page said
+    //     "0.5% of what you spend comes back as points" in English under a
+    //     French heading. The next line must open markup, which is what keeps
+    //     ordinary wrapped JavaScript out.
+    next = next.replace(/(?<![=!])([>}])([^<>{}\n=]+)$/, (m, open, text) => {
+      const t = text.trim();
+      if (/[()]/.test(t) || !/^[<{]/.test(nextNonBlank(i))) return m;
+      if (!isProse(t) || !record(t, i)) return m;
+      const [lead] = text.match(/^\s*/);
+      return `${open}${lead}{tr(${JSON.stringify(t)})}`;
     });
 
     // 3. a fragment holding a trailing space:  >Some words{' '}
