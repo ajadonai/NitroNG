@@ -89,12 +89,18 @@ export const NOT_PROSE = [
   /^[A-Z_]+$/,                          // CONSTANTS
   /[{}<>$`]/,                           // embedded code
   /^rgba?\(|^linear-gradient|^\d+px|^var\(/,
+  // A CSS duration, so a transition or animation shorthand is not offered for
+  // translation: "transform .15s", "progress-pulse 2.8s ease-in-out infinite".
+  /(^|\s)[\d.]+m?s(\s|$)/,
   /^[\w.-]+@|^[\w-]+\.(com|ng|io|js|json)$/,
   /^(true|false|null|undefined|none|auto|flex|grid|button|submit|text|email|password|tel|number)$/i,
   /\b(?:className|onClick|style|aria-|data-)\b/,
   // Comparison operators read as tags: `a > b && c < d` looks exactly like
   // `>text<` to a regex, and the first run duly offered to translate it.
-  /&&|\|\||=>|\?\?|\w\(|\breturn\b|\bconst\b|\bawait\b/,
+  // `===` and a ternary opening an array are both code that reads as a text
+  // node once a nearby `<svg …>` supplies the `>`: the funds page offered
+  // `: g.id === "crypto" ?` and `0 ? ["Coupon bonus",` for translation.
+  /&&|\|\||=>|\?\?|===|!==|\?\s*\[|\w\(|\breturn\b|\bconst\b|\bawait\b/,
   // A person's name with an initial: "Blessing I.", "Tunde M." — testimonial
   // bylines, which stay as the person wrote them.
   /^[A-Z][a-z]+ [A-Z]\.$/,
@@ -182,7 +188,11 @@ const PROSE_ATTR = new RegExp(`\\b(${PROSE_NAMES})=${QUOTED}`, "g");
 
 /** tr() is a hook, so a string outside a component cannot simply be wrapped —
  *  it has to be moved inside one first. Those are reported, never rewritten. */
-const COMPONENT_START = /^(?:export\s+)?(?:default\s+)?function\s+[A-Za-z]\w*|^(?:export\s+)?const\s+[A-Z]\w*\s*=\s*(?:\(|function|forwardRef|memo)/;
+// Capital initial, both forms. React names components that way, and the rule
+// earns its keep: `function txStatusMeta(tx, dk)` is a plain helper called from
+// a render, and the older `[A-Za-z]` here let the wrapper put tr() inside it —
+// where tr is not a parameter, not in scope, and a ReferenceError on first use.
+const COMPONENT_START = /^(?:export\s+)?(?:default\s+)?function\s+[A-Z]\w*|^(?:export\s+)?const\s+[A-Z]\w*\s*=\s*(?:\(|function|forwardRef|memo)/;
 
 function componentMask(lines) {
   const mask = new Array(lines.length).fill(false);
@@ -267,6 +277,31 @@ export function scan(raw) {
       const t = dq ?? sq;
       if (!isProse(t) || !record(t, i)) return m;
       return `${attr}={tr(${JSON.stringify(t)})}`;
+    });
+
+    // 5b. a quoted string in a ternary the page renders:
+    //     {extra > 0 ? "You get" : "Total"}
+    //
+    //     This file's header claimed for weeks that it handled this shape. It
+    //     never did — no rule implemented it — and "You get" sat in English on
+    //     the wallet summary the whole time. Documentation is not a feature.
+    //
+    //     Only expression containers preceded by neither `=` nor `$`. The `=`
+    //     keeps className={a ? "flex gap-2" : "hidden"} and style={{…}} out,
+    //     because a wrapped CSS class is a broken layout sent to a translator.
+    //     The `$` keeps `${x ? "right-0 text-right" : ""}` out — four Tailwind
+    //     strings came through from className template literals before that
+    //     half of the guard existed. An existing tr("…") is matched first and
+    //     passed through, so a half-wrapped ternary cannot become tr(tr("…")).
+    next = next.replace(/(^|[^=$])(\{[^{}]*\?[^{}]*\})/g, (m, pre, expr) => {
+      const done = expr.replace(
+        /tr\(\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*\)|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'/g,
+        (q, dq, sq) => {
+          const t = dq ?? sq;
+          if (t === undefined || !isProse(t) || !record(t, i)) return q;
+          return `tr(${JSON.stringify(t)})`;
+        });
+      return pre + done;
     });
 
     // 5. a quoted value on a prose-ish key — the shape that hid the three

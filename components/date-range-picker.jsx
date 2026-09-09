@@ -1,32 +1,34 @@
 'use client';
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useT, useLocale } from "./locale";
+import { msg } from "../lib/i18n";
+import { monthNames, weekdayNames } from "../lib/format";
 
-const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
 function sameDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
 function inRange(d, start, end) { if (!start || !end) return false; const t = d.getTime(); return t >= start.getTime() && t <= end.getTime(); }
 
-function formatRange(start, end, presetLabel) {
-  if (presetLabel) return presetLabel;
-  if (!start && !end) return "All time";
-  const fmt = (d) => `${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
+function formatRange(start, end, months, tr) {
+  if (!start && !end) return tr("All time");
+  const fmt = (d) => `${months[d.getMonth()]} ${d.getDate()}`;
   if (start && end && sameDay(start, end)) return fmt(start);
   if (start && end) return `${fmt(start)} – ${fmt(end)}`;
-  if (start) return `From ${fmt(start)}`;
-  return `To ${fmt(end)}`;
+  if (start) return `${tr("From")} ${fmt(start)}`;
+  return `${tr("To")} ${fmt(end)}`;
 }
 
 const DEFAULT_PRESETS = [
-  { label: "All time", value: null },
-  { label: "Today", value: () => { const d = startOfDay(new Date()); return { start: d, end: d }; } },
-  { label: "7 days", value: () => { const e = startOfDay(new Date()), s = new Date(e); s.setDate(s.getDate() - 6); return { start: s, end: e }; } },
-  { label: "This month", value: () => { const now = new Date(); return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: startOfDay(now) }; } },
-  { label: "30 days", value: () => { const e = startOfDay(new Date()), s = new Date(e); s.setDate(s.getDate() - 29); return { start: s, end: e }; } },
+  { label: msg("All time"), value: null },
+  { label: msg("Today"), value: () => { const d = startOfDay(new Date()); return { start: d, end: d }; } },
+  { label: msg("7 days"), value: () => { const e = startOfDay(new Date()), s = new Date(e); s.setDate(s.getDate() - 6); return { start: s, end: e }; } },
+  { label: msg("This month"), value: () => { const now = new Date(); return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: startOfDay(now) }; } },
+  { label: msg("30 days"), value: () => { const e = startOfDay(new Date()), s = new Date(e); s.setDate(s.getDate() - 29); return { start: s, end: e }; } },
 ];
 
 function MiniCalendar({ month, year, start, end, hovered, onSelect, onHover, dark, t }) {
+  const { lang } = useLocale();
+  const days = weekdayNames(lang, "narrow");
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const today = startOfDay(new Date());
@@ -44,8 +46,8 @@ function MiniCalendar({ month, year, start, end, hovered, onSelect, onHover, dar
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 0, marginBottom: 4 }}>
-        {DAYS.map(d => (
-          <div key={d} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: t.textMuted, padding: "2px 0" }}>{d}</div>
+        {days.map((d, di) => (
+          <div key={di} style={{ textAlign: "center", fontSize: 11, fontWeight: 600, color: t.textMuted, padding: "2px 0" }}>{d}</div>
         ))}
       </div>
       {rows.map((row, ri) => (
@@ -109,6 +111,8 @@ function MiniCalendar({ month, year, start, end, hovered, onSelect, onHover, dar
 }
 
 export function DateRangePicker({ dark, t, value, onChange, presets, defaultPreset }) {
+  const tr = useT();
+  const { lang } = useLocale();
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
@@ -202,7 +206,7 @@ export function DateRangePicker({ dark, t, value, onChange, presets, defaultPres
     setHovered(null);
   };
 
-  const displayText = presetLabel || formatRange(value?.start, value?.end);
+  const displayText = presetLabel ? tr(presetLabel) : formatRange(value?.start, value?.end, monthNames(lang, "short"), tr);
 
   const hasRange = !!(value?.start || value?.end);
   const btnStyle = {
@@ -296,7 +300,7 @@ export function DateRangePicker({ dark, t, value, onChange, presets, defaultPres
                   onMouseEnter={e => { if (!active) e.currentTarget.style.background = dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)"; }}
                   onMouseLeave={e => { if (!active) e.currentTarget.style.background = active ? (dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)") : (isMobile ? (dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)") : "transparent"); }}
                 >
-                  {p.label}
+                  {tr(p.label)}
                 </button>
               );
             })}
@@ -308,7 +312,7 @@ export function DateRangePicker({ dark, t, value, onChange, presets, defaultPres
               <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: 6, color: t.textSoft, fontSize: 15 }} onMouseEnter={e => e.currentTarget.style.background = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.05)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
               </button>
-              <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{MONTHS[viewMonth]} {viewYear}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{monthNames(lang)[viewMonth]} {viewYear}</span>
               <button onClick={nextMonth} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px 6px", borderRadius: 6, color: t.textSoft, fontSize: 15 }} onMouseEnter={e => e.currentTarget.style.background = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.05)"} onMouseLeave={e => e.currentTarget.style.background = "none"}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 6 15 12 9 18" /></svg>
               </button>
@@ -316,7 +320,7 @@ export function DateRangePicker({ dark, t, value, onChange, presets, defaultPres
 
             {picking && (
               <div style={{ fontSize: 11, color: t.accent, marginBottom: 6, fontWeight: 500 }}>
-                Select end date
+                {tr("Select end date")}
               </div>
             )}
 
@@ -339,6 +343,7 @@ export function DateRangePicker({ dark, t, value, onChange, presets, defaultPres
 }
 
 export function FilterDropdown({ dark, t, value, onChange, options, icon, alert, searchable }) {
+  const tr = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const ref = useRef(null);
@@ -413,13 +418,13 @@ export function FilterDropdown({ dark, t, value, onChange, options, icon, alert,
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Type to filter..."
+              placeholder={tr("Type to filter...")}
               autoFocus
               onClick={(e) => e.stopPropagation()}
               style={{ width: "100%", padding: "8px 12px", fontSize: 13, outline: "none", border: "none", borderBottom: `1px solid ${dropdownBorder}`, background: dropdownBg, color: dark ? "rgba(255,255,255,.85)" : "rgba(0,0,0,.8)", fontFamily: "inherit", position: "sticky", top: 0 }}
             />
           )}
-          {shown.length === 0 && <div style={{ padding: "10px 12px", fontSize: 11, color: dark ? "rgba(255,255,255,.45)" : "rgba(0,0,0,.4)", textAlign: "center" }}>No match</div>}
+          {shown.length === 0 && <div style={{ padding: "10px 12px", fontSize: 11, color: dark ? "rgba(255,255,255,.45)" : "rgba(0,0,0,.4)", textAlign: "center" }}>{tr("No match")}</div>}
           {shown.map((o) => {
             const active = o.value === value;
             return (
