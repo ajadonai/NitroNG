@@ -92,6 +92,8 @@ export const NOT_PROSE = [
   // A CSS duration, so a transition or animation shorthand is not offered for
   // translation: "transform .15s", "progress-pulse 2.8s ease-in-out infinite".
   /(^|\s)[\d.]+m?s(\s|$)/,
+  // A font stack: "'JetBrains Mono', monospace".
+  /\b(monospace|sans-serif|ui-monospace|system-ui|cursive)\b/,
   /^[\w.-]+@|^[\w-]+\.(com|ng|io|js|json)$/,
   /^(true|false|null|undefined|none|auto|flex|grid|button|submit|text|email|password|tel|number)$/i,
   /\b(?:className|onClick|style|aria-|data-)\b/,
