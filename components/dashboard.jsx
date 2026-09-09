@@ -292,7 +292,7 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
   };
 
   return (
-    <div className="absolute top-[calc(100%+8px)] right-0 w-80 max-md:w-[280px] max-md:-right-2 rounded-[14px] backdrop-blur-[20px] z-50 overflow-hidden" style={{
+    <div style={{ insetInlineEnd: 0 }} className="absolute top-[calc(100%+8px)] w-80 max-md:w-[280px] rounded-[14px] backdrop-blur-[20px] z-50 overflow-hidden" style={{
       background: dark ? "rgba(13,16,32,.98)" : "rgba(255,255,255,.98)",
       borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder,
       boxShadow: dark ? "0 12px 40px rgba(0,0,0,.5)" : "0 12px 40px rgba(0,0,0,.12)",
