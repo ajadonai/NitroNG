@@ -98,6 +98,9 @@ export const NOT_PROSE = [
   /^@[a-z-]+\s/i,
   // A font stack: "'JetBrains Mono', monospace".
   /\b(monospace|sans-serif|ui-monospace|system-ui|cursive)\b/,
+  // A CSS selector inside a <style> block: ".rcp-ck svg", ".rcp-f:first-child",
+  // ".tx-col.is-off:hover". Nothing a customer reads starts with a dot.
+  /^\./,
   // SVG and CSS keyword values that are not words on a page.
   /^(currentColor|round|butt|square|miter|bevel|evenodd|nonzero|inherit|initial|unset)$/,
   // A tracking identifier: the Google Ads conversion label
