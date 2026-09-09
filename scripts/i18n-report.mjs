@@ -21,7 +21,7 @@ const SEARCH = ['components', 'app'];
 // tr("…") and tr('…'), single-line, no interpolation — the only shape the
 // the codebase is allowed to use. Template literals are deliberately not
 // matched: a sentence with a value inside it is split at the call site instead.
-const CALL = /\btr\(\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\s*\)/g;
+const CALL = /\b(?:tr|msg)\(\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\s*\)/g;
 
 function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

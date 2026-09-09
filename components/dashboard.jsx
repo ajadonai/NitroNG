@@ -1362,10 +1362,10 @@ function DashboardInner({ initialData }) {
                 const browse = isReseller ? { id: "catalogue", label: tr("Catalogue") } : { id: "resellers", label: tr("Resellers"), href: "/resellers" };
                 const hq = { id: "lab", label: isReseller ? tr("Reseller HQ") : tr("API access") };
                 const sections = [
-                  ["Order", [byId.overview, byId.services, byId.orders]],
-                  ["Money", [byId["add-funds"], byId.rewards, byId.tasks]],
-                  ["Browse", [browse, hq, byId.guide]],
-                  ["Help", [byId.support]],
+                  [tr("Orders"), [byId.overview, byId.services, byId.orders]],
+                  [tr("Money"), [byId["add-funds"], byId.rewards, byId.tasks]],
+                  [tr("Browse"), [browse, hq, byId.guide]],
+                  [tr("Help"), [byId.support]],
                 ];
                 return sections.flatMap(([section, items]) => items.filter(Boolean).map((item, j) => ({ ...item, section, first: j === 0 })));
               })().map((item, i) => {

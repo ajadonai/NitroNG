@@ -185,7 +185,13 @@ function componentMask(lines) {
     if (started) {
       depth += (l.match(/\{/g) || []).length - (l.match(/\}/g) || []).length;
       mask[i] = true;
-      if (depth <= 0 && /^\}/.test(l)) started = false;
+      // A body ends when its braces balance — not when a line happens to start
+      // with `}`. That older test never fired for a single-line arrow component
+      // (`const IS = (d) => <svg …/>;` opens no block at all), so the mask
+      // stayed "inside IS" for the rest of the file and the module-scope
+      // constant two lines below it — PLATFORM_GROUPS — was wrapped in tr().
+      // tr() is a hook; that is a crash on import, not a translation bug.
+      if (depth <= 0) started = false;
     }
   });
   return mask;
