@@ -809,7 +809,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: sumOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }}><path d="m6 9 6 6 6-6"/></svg>
             </button>
             {sumOpen && (
-              <div id="orders-summary" className="absolute right-0 top-11 z-20 w-[250px] rounded-2xl px-3.5 py-1" style={{ background: dark ? "#1a1329" : "#fff", border: `1px solid ${t.cardBorder}`, boxShadow: "0 18px 44px rgba(0,0,0,.18)" }}>
+              <div id="orders-summary" style={{ insetInlineEnd: 0 }} className="absolute top-11 z-20 w-[250px] rounded-2xl px-3.5 py-1" style={{ background: dark ? "#1a1329" : "#fff", border: `1px solid ${t.cardBorder}`, boxShadow: "0 18px 44px rgba(0,0,0,.18)" }}>
                 <SummaryRows orderSummary={orderSummary} dark={dark} t={t} />
               </div>
             )}
