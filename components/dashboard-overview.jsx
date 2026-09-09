@@ -51,7 +51,7 @@ function BatchRowMini({ item, first, dark, t, onClick }) {
   return (
     <div role="button" tabIndex={0} onClick={onClick} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }} className="flex items-center gap-3 py-3 px-3.5 cursor-pointer" style={{ borderTop: first ? "none" : `1px solid ${t.cardBorder}` }}>
       <div className="shrink-0 flex items-center justify-center rounded-xl text-accent" style={{ width: 40, height: 40, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
-      <div className="min-w-0 flex-1"><div className="text-[13.5px] font-semibold text-t-text">{tr("Bulk order")}</div><div className="text-[11px] text-t-text-muted">{item.orders.length} orders · {item.created ? fD(item.created, true) : ""}</div></div>
+      <div className="min-w-0 flex-1"><div className="text-[13.5px] font-semibold text-t-text">{tr("Bulk order")}</div><div className="text-[11px] text-t-text-muted">{item.orders.length} {tr("orders ·")} {item.created ? fD(item.created, true) : ""}</div></div>
     </div>
   );
 }

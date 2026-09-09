@@ -103,7 +103,7 @@ function sourceStrings() {
       }
     }
   };
-  for (const d of ["components", "app"]) if (fs.existsSync(d)) walk(d);
+  for (const d of ["components", "app", "lib"]) if (fs.existsSync(d)) walk(d);
   return [...out];
 }
 

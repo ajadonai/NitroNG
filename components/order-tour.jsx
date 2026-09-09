@@ -1,5 +1,5 @@
 'use client';
-import { useMoney } from "./locale";
+import { useMoney, useT } from "./locale";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { BONUS_PRESETS } from "../lib/welcome-bonus";
@@ -33,6 +33,7 @@ function waitForEl(selector, cb, onTimeout, maxWait = 3000) {
 }
 
 export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, setQty, user, onTopUp }) {
+  const tr = useT();
   const money = useMoney();
   const eligible = user?.welcomeBonusEligible;
   const saved = (() => {
@@ -278,17 +279,17 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
           <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4" style={{ background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.07)", color: accent }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
           </div>
-          <div className="text-lg font-bold mb-1" style={{ color: text }}>Ready to place an order?</div>
-          <div className="text-[13px] leading-[1.6] mb-3" style={{ color: sub }}>Quick walkthrough — takes about 15 seconds.</div>
+          <div className="text-lg font-bold mb-1" style={{ color: text }}>{tr("Ready to place an order?")}</div>
+          <div className="text-[13px] leading-[1.6] mb-3" style={{ color: sub }}>{tr("Quick walkthrough — takes about 15 seconds.")}</div>
           {eligible && (
             <div className="flex items-center gap-2 rounded-lg py-2 px-3 mb-3" style={{ background: greenBg, border: `1px solid ${greenBorder}` }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
-              <span className="text-[11px] font-semibold" style={{ color: green }}>Up to {money(MAX_BONUS_NAIRA, { round: "down" })} free on your first deposit</span>
+              <span className="text-[11px] font-semibold" style={{ color: green }}>{tr("Up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free on your first deposit")}</span>
             </div>
           )}
           <div className="flex flex-col gap-2.5">
-            <button onClick={startTour} className="py-3 px-0 rounded-xl text-sm font-semibold border-none cursor-pointer font-[inherit] w-full transition-all duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.35)]" style={{ background: accent, color: "#fff" }}>Show me how</button>
-            <button onClick={finish} className="py-2.5 px-0 rounded-xl text-[13px] font-medium bg-transparent cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ color: skipC, border: "none" }}>I already know</button>
+            <button onClick={startTour} className="py-3 px-0 rounded-xl text-sm font-semibold border-none cursor-pointer font-[inherit] w-full transition-all duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.35)]" style={{ background: accent, color: "#fff" }}>{tr("Show me how")}</button>
+            <button onClick={finish} className="py-2.5 px-0 rounded-xl text-[13px] font-medium bg-transparent cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ color: skipC, border: "none" }}>{tr("I already know")}</button>
           </div>
         </div>
       )}
@@ -305,7 +306,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
           <div className="flex items-center gap-2.5 mb-3">
             <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.07)", color: accent }}>{STEPS[step].icon}</div>
             <div className="flex-1">
-              <div className="text-[11px] font-bold tracking-[1.5px] uppercase" style={{ color: accent }}>Step {step + 1} of {STEPS.length}</div>
+              <div className="text-[11px] font-bold tracking-[1.5px] uppercase" style={{ color: accent }}>{tr("Step")} {step + 1} of {STEPS.length}</div>
             </div>
           </div>
           <div className="text-[15px] font-bold mb-1" style={{ color: text }}>{STEPS[step].title}</div>
@@ -322,9 +323,9 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
               ))}
             </div>
             <div className="flex items-center gap-3">
-              <button onClick={finish} className="bg-transparent border-none text-[11px] font-medium cursor-pointer font-[inherit] p-0 transition-all duration-200 hover:opacity-70" style={{ color: skipC }}>Skip</button>
+              <button onClick={finish} className="bg-transparent border-none text-[11px] font-medium cursor-pointer font-[inherit] p-0 transition-all duration-200 hover:opacity-70" style={{ color: skipC }}>{tr("Skip")}</button>
               <button onClick={next} className="py-2 px-5 rounded-[10px] text-xs font-semibold border-none cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(196,125,142,.3)]" style={{ background: accent, color: "#fff" }}>
-                {step === STEPS.length - 1 && !eligible ? "Got it!" : "Next"}
+                {step === STEPS.length - 1 && !eligible ? tr("Got it!") : tr("Next")}
               </button>
             </div>
           </div>
@@ -342,8 +343,8 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
           <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4" style={{ background: greenBg, color: green }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
           </div>
-          <div className="text-lg font-bold mb-1" style={{ color: text }}>Add funds to begin</div>
-          <div className="text-[13px] leading-[1.6] mb-4" style={{ color: sub }}>Top up to place your order — your first deposit gets free credit to spend. The more you add, the bigger the bonus.</div>
+          <div className="text-lg font-bold mb-1" style={{ color: text }}>{tr("Add funds to begin")}</div>
+          <div className="text-[13px] leading-[1.6] mb-4" style={{ color: sub }}>{tr("Top up to place your order — your first deposit gets free credit to spend. The more you add, the bigger the bonus.")}</div>
 
           <div className="flex gap-2 justify-center mb-5">
             {BONUS_PRESETS.map((p, i) => (
@@ -358,8 +359,8 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
           </div>
 
           <div className="flex flex-col gap-2.5">
-            <button onClick={() => { finish(); onTopUp?.(); }} className="py-3 px-0 rounded-xl text-sm font-semibold border-none cursor-pointer font-[inherit] w-full transition-all duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(5,150,105,.3)]" style={{ background: dark ? "#059669" : "#059669", color: "#fff" }}>Add funds →</button>
-            <button onClick={finish} className="py-2.5 px-0 rounded-xl text-[13px] font-medium bg-transparent cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ color: skipC, border: "none" }}>Maybe later</button>
+            <button onClick={() => { finish(); onTopUp?.(); }} className="py-3 px-0 rounded-xl text-sm font-semibold border-none cursor-pointer font-[inherit] w-full transition-all duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(5,150,105,.3)]" style={{ background: dark ? "#059669" : "#059669", color: "#fff" }}>{tr("Add funds →")}</button>
+            <button onClick={finish} className="py-2.5 px-0 rounded-xl text-[13px] font-medium bg-transparent cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ color: skipC, border: "none" }}>{tr("Maybe later")}</button>
           </div>
         </div>
       )}

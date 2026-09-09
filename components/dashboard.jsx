@@ -335,7 +335,7 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
         )}
       </div>
       {/* Footer */}
-      {hasMore && <div className="py-2 px-3.5 text-center text-xs text-t-text-muted" style={{ borderTop: `1px solid ${t.cardBorder}` }}>Showing latest 10 of {filtered.length}</div>}
+      {hasMore && <div className="py-2 px-3.5 text-center text-xs text-t-text-muted" style={{ borderTop: `1px solid ${t.cardBorder}` }}>{tr("Showing latest 10 of")} {filtered.length}</div>}
     </div>
   );
 }
@@ -1421,19 +1421,19 @@ function DashboardInner({ initialData }) {
             <div className="mb-3 rounded-xl px-4 py-2.5 flex items-center gap-2.5" style={{ background: activePromotion.bannerColor ? `${activePromotion.bannerColor}22` : (dark ? 'rgba(16,185,129,.12)' : 'rgba(16,185,129,.08)'), border: `1px solid ${activePromotion.bannerColor || '#10b981'}44` }}>
               <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: activePromotion.bannerColor || '#10b981' }} />
               <span className="text-sm font-medium flex-1 text-t-text">{activePromotion.bannerCopy}</span>
-              <span className="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 m text-center" style={{ background: activePromotion.bannerColor || '#10b981', color: '#fff' }}>{activePromotion.discountPercent}% OFF{activePromotion.maxDiscountPerOrder ? <><br /><span className="font-medium opacity-90" style={{ fontSize: 11 }}>up to ₦{(activePromotion.maxDiscountPerOrder / 100).toLocaleString()}</span></> : ''}</span>
+              <span className="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 m text-center" style={{ background: activePromotion.bannerColor || '#10b981', color: '#fff' }}>{activePromotion.discountPercent}{tr("% OFF")}{activePromotion.maxDiscountPerOrder ? <><br /><span className="font-medium opacity-90" style={{ fontSize: 11 }}>{tr("up to")} {money(activePromotion.maxDiscountPerOrder / 100)}</span></> : ''}</span>
             </div>
           )}
           {active !== "overview" && !isServices && !isOrders && !isReferrals && !isSettings && !isSupport && !isAddFunds && !isGuide && !isLeaderboard && !isAudit && !isCleanup && !isEarn && !isLab && !isTasks && !isRewards && active !== "catalogue" && <div className="pb-6 max-md:pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">Welcome back, {firstName}</div>
+                <div className="text-xl max-md:text-lg font-semibold mb-0.5 text-t-text">{tr("Welcome back,")} {firstName}</div>
                 <div className="text-sm text-t-text-muted">{orderSummary.total === 0 ? tr("Place your first order in under a minute.") : tr("Here's your dashboard at a glance.")}</div>
               </div>
               <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">{tr("Balance")}</div>
                 <div className="m text-lg max-md:text-base font-semibold text-t-green">{money(user?.balance || 0, { round: "down" })}</div>
-                {user?.bonusCredit && <div className="text-[11px] mt-0.5 text-accent">{money(user.bonusCredit.amount / 100, { round: "down" })} bonus — expires in {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}
+                {user?.bonusCredit && <div className="text-[11px] mt-0.5 text-accent">{money(user.bonusCredit.amount / 100, { round: "down" })} {tr("bonus — expires in")} {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}
               </div>
             </div>
             <div className="page-divider bg-t-card-border" />
@@ -1518,7 +1518,7 @@ function DashboardInner({ initialData }) {
           {iosSteps
             ? <div className="mt-3 py-2.5 px-3 rounded-xl text-xs leading-[1.7] text-t-text" style={{ background: dark ? "rgba(201,127,146,.13)" : "rgba(201,127,146,.08)" }}>{tr("Tap")} <b>{tr("Share")}</b> <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c47d8e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline", verticalAlign: "-2px" }}><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> {tr("below, then")} <b>{tr("Add to Home Screen")}</b>.</div>
             : <button type="button" onClick={momentInstall} className="w-full flex items-center justify-center gap-2 mt-3 py-3 rounded-xl text-[13.5px] font-extrabold border-none cursor-pointer text-white" style={{ background: "linear-gradient(135deg,#c97f92,#9b5266)", boxShadow: "0 6px 18px rgba(196,125,142,.35)" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Add to Home Screen
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>{tr("Add to Home Screen")}
               </button>}
         </div>
       </>}

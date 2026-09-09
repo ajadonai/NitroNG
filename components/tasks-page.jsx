@@ -317,7 +317,7 @@ function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSub
 
       {expanded && (
         <div className="px-3.5 pb-4" style={{ background: dark ? 'rgba(196,125,142,.06)' : 'rgba(196,125,142,.04)', borderTop: `1px solid ${border}` }}>
-          {isDone && <div className="pt-3 text-[12.5px] leading-[1.5]" style={{ color: green }}>You earned {fmtNaira(task.reward, money)} {tr("credit from this task. It is in your wallet, spend-only, valid for 30 days.")}</div>}
+          {isDone && <div className="pt-3 text-[12.5px] leading-[1.5]" style={{ color: green }}>{tr("You earned")} {fmtNaira(task.reward, money)} {tr("credit from this task. It is in your wallet, spend-only, valid for 30 days.")}</div>}
           {isPending && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-soft">{tr("We are checking your proof. The credit lands as soon as it clears.")}</div>}
           {isExhausted && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-muted">{tr("The reward pool for this month is full. Check back next month.")}</div>}
           {isDepositorsOnly && <div className="pt-3 text-[12.5px] leading-[1.5] text-t-text-muted">{tr("This one is for customers who have funded their wallet. Add funds and it opens up.")}</div>}
