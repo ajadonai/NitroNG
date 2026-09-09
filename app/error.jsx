@@ -1,6 +1,7 @@
 'use client';
 
 import * as Sentry from '@sentry/nextjs';
+import { useT } from "@/components/locale";
 import { useEffect, useState } from 'react';
 
 /**
@@ -15,6 +16,7 @@ import { useEffect, useState } from 'react';
  * the apology it replaces.
  */
 export default function Error({ error, reset }) {
+  const tr = useT();
   const [ref, setRef] = useState('');
 
   useEffect(() => {
@@ -42,15 +44,15 @@ export default function Error({ error, reset }) {
         </span>
 
         <h1 className="text-[27px] font-bold leading-tight -tracking-[.02em] mb-2.5">
-          This one is <em className="not-italic" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: 'italic', fontWeight: 600, color: '#e8a0b2' }}>on us.</em>
+          This one is <em className="not-italic" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontStyle: 'italic', fontWeight: 600, color: '#e8a0b2' }}>{tr("on us.")}</em>
         </h1>
         <p className="text-sm leading-[1.65] mb-3" style={{ color: 'rgba(246,236,238,.62)' }}>
-          Something broke on our side, not yours. Nothing you did caused it and nothing has been charged twice.
+          {tr("Something broke on our side, not yours. Nothing you did caused it and nothing has been charged twice.")}
         </p>
 
         <span className="inline-flex items-center gap-2 mb-6 py-2 px-3.5 rounded-full text-[12.5px] font-semibold" style={{ background: 'rgba(75,226,132,.09)', border: '1px solid rgba(75,226,132,.24)', color: '#4be284' }}>
           <i className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: '#4be284' }} />
-          Your wallet and your orders are untouched
+          {tr("Your wallet and your orders are untouched")}
         </span>
 
         <div className="flex gap-2.5 flex-wrap justify-center w-full">
@@ -59,14 +61,14 @@ export default function Error({ error, reset }) {
             className="text-sm font-bold py-[11px] px-[22px] rounded-full border-none cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px"
             style={{ background: '#fff', color: '#1c1b19', boxShadow: '0 4px 14px rgba(0,0,0,.28), inset 0 0 0 1.5px rgba(255,255,255,.9), 0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(0,0,0,.2)' }}
           >
-            Try again
+            {tr("Try again")}
           </button>
           <button
             onClick={() => { window.location.href = '/'; }}
             className="text-sm font-bold py-[11px] px-[22px] rounded-full border-none cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px"
             style={{ background: 'rgba(255,255,255,.13)', color: '#f6ecee', boxShadow: `0 4px 12px rgba(0,0,0,.2), ${ring}` }}
           >
-            Go home
+            {tr("Go home")}
           </button>
         </div>
 

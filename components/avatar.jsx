@@ -1,5 +1,6 @@
 'use client';
 import { useState } from "react";
+import { useT } from "./locale";
 
 /**
  * `ring` is opt-in rather than always on: in the nav the avatar sits inside
@@ -9,6 +10,7 @@ import { useState } from "react";
  * the `.dark` cascade picks the right hairline without a prop to keep in sync.
  */
 export function Avatar({ src, size = 32, rounded = "full", ring = false, dark, t }) {
+  const tr = useT();
   const [imgError, setImgError] = useState(false);
   const iconSize = Math.round(size * 0.55);
   const borderRadius = rounded === "full" ? "50%" : typeof rounded === "number" ? rounded : rounded;
@@ -28,7 +30,7 @@ export function Avatar({ src, size = 32, rounded = "full", ring = false, dark, t
       {src && !imgError ? (
         <img
           src={src}
-          alt="User avatar"
+          alt={tr("User avatar")}
           onError={() => setImgError(true)}
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
         />

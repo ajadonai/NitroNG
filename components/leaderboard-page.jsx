@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from "react";
+import { useT } from "./locale";
 import { RailSec, RailCard, RailRow, RailLink } from "./rail";
 
 const TABS = [
@@ -37,6 +38,7 @@ function getVal(entry, tab) {
 }
 
 function PodiumCard({ entry, rank, dark, tab }) {
+  const tr = useT();
   const p = POD[rank];
   const val = getVal(entry, tab);
   const isFirst = rank === 1;
@@ -55,7 +57,7 @@ function PodiumCard({ entry, rank, dark, tab }) {
         ...(entry.isYou ? { border: "2px solid #c47d8e" } : {}),
       }}><UserIcon size={isFirst ? 20 : 16} /></div>
       <div className="font-semibold mb-0.5 max-md:text-[11px] max-md:whitespace-nowrap max-md:overflow-hidden max-md:text-ellipsis" style={{ fontSize: isFirst ? 15 : 13 }}>
-        {entry.name}{entry.isYou ? " (You)" : ""}
+        {entry.name}{entry.isYou ? tr(" (You)") : ""}
       </div>
       {entry.badge && <div className="flex items-center justify-center gap-1 mb-1"><ShieldBadge color={entry.badgeColor || "#6B7280"} size={14} tier={entry.badge} /><span className="text-[11px]" style={{ color: entry.badgeColor || (dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.4)") }}>{entry.badge}</span></div>}
       <div className="font-bold max-md:text-xs max-md:whitespace-nowrap" style={{ color: dark ? p.valDk : p.valLt, fontSize: isFirst ? 16 : 14 }}>{val}</div>
@@ -64,13 +66,14 @@ function PodiumCard({ entry, rank, dark, tab }) {
 }
 
 function ListRow({ entry, dark, t, tab, isLast }) {
+  const tr = useT();
   const val = getVal(entry, tab);
   return (
     <div className="flex items-center gap-3 max-md:gap-2.5 py-3 px-4 max-md:py-2.5 max-md:px-3 transition-colors duration-150" style={{ borderBottom: isLast ? "none" : `1px solid ${t.cardBorder}`, background: entry.isYou ? (dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.06)") : "transparent" }}>
       <div className="w-7 text-center text-sm max-md:text-[13px] font-bold shrink-0 text-t-text-muted">{entry.rank}</div>
       <div className="w-[34px] h-[34px] max-md:w-[30px] max-md:h-[30px] rounded-full flex items-center justify-center font-semibold text-[13px] max-md:text-[11px] shrink-0" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.45)" }}><UserIcon size={14} /></div>
       <div className="flex-1 min-w-0">
-        <div className="text-sm max-md:text-[13px] font-medium text-t-text">{entry.name}{entry.isYou ? " (You)" : ""}</div>
+        <div className="text-sm max-md:text-[13px] font-medium text-t-text">{entry.name}{entry.isYou ? tr(" (You)") : ""}</div>
         {entry.badge && <div className="flex items-center gap-1 mt-0.5"><ShieldBadge color={entry.badgeColor || "#6B7280"} size={12} tier={entry.badge} /><span className="text-[11px] text-t-text-muted">{entry.badge}</span></div>}
       </div>
       <div className="ml-auto text-right">
@@ -81,6 +84,7 @@ function ListRow({ entry, dark, t, tab, isLast }) {
 }
 
 export default function LeaderboardPage({ dark, t }) {
+  const tr = useT();
   const [tab, setTab] = useState("spenders");
   const [period, setPeriod] = useState("month");
   const [data, setData] = useState(null);
@@ -122,8 +126,8 @@ export default function LeaderboardPage({ dark, t }) {
             <path d="M8 21V12H2v9h6z"/><path d="M22 21V8h-6v13h6z"/><path d="M15 21V4H9v17h6z"/>
           </svg>
           <div>
-            <div className="text-[22px] max-md:text-lg font-semibold mb-0.5 text-t-text">Leaderboard</div>
-            <div className="text-[15px] max-md:text-[13px] text-t-text-muted">Top Nitro users · {periodLabel}</div>
+            <div className="text-[22px] max-md:text-lg font-semibold mb-0.5 text-t-text">{tr("Leaderboard")}</div>
+            <div className="text-[15px] max-md:text-[13px] text-t-text-muted">{tr("Top Nitro users ·")} {periodLabel}</div>
           </div>
         </div>
         <div className="page-divider bg-t-card-border" />
@@ -147,8 +151,8 @@ export default function LeaderboardPage({ dark, t }) {
         ))}
         <div className="flex-1" />
         <select value={period} onChange={e => setPeriod(e.target.value)} style={ddStyle}>
-          <option value="month">This Month</option>
-          <option value="all">All Time</option>
+          <option value="month">{tr("This Month")}</option>
+          <option value="all">{tr("All Time")}</option>
         </select>
       </div>
 
@@ -189,7 +193,7 @@ export default function LeaderboardPage({ dark, t }) {
           <div className="lb-you-desktop rounded-xl py-3.5 px-5 max-md:py-3 max-md:px-3.5 flex items-center gap-4 mb-5 border" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderColor: dark ? "rgba(196,125,142,.22)" : "rgba(196,125,142,.16)" }}>
             <div className="text-[28px] max-md:text-xl font-bold" style={{ color: dark ? "#c47d8e" : "#a3586b" }}>#{yourRank}</div>
             <div className="flex-1">
-              <div className="text-sm font-semibold flex items-center gap-1.5 text-t-text">Your Rank {yourBadge && <><ShieldBadge color={yourBadge.color} size={14} tier={yourBadge.name} /><span style={{ color: yourBadge.color }}>{yourBadge.name}</span></>}</div>
+              <div className="text-sm font-semibold flex items-center gap-1.5 text-t-text">{tr("Your Rank")} {yourBadge && <><ShieldBadge color={yourBadge.color} size={14} tier={yourBadge.name} /><span style={{ color: yourBadge.color }}>{yourBadge.name}</span></>}</div>
               <div className="text-xs text-t-text-muted">
                 {tab === "spenders" && `${list.find(e => e.isYou)?.orders || 0} orders`}
                 {tab === "referrers" && `${list.find(e => e.isYou)?.referrals || 0} referrals`}
@@ -219,8 +223,8 @@ export default function LeaderboardPage({ dark, t }) {
             <div className="flex items-center py-2 px-4 max-md:px-3 text-[11px] font-semibold uppercase tracking-[1px]" style={{ color: dark ? "rgba(196,125,142,.7)" : "rgba(163,88,107,.5)", background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.04)" }}>
               <span className="w-7 text-center shrink-0">#</span>
               <span className="w-[34px] max-md:w-[30px] shrink-0" />
-              <span className="flex-1">User</span>
-              <span className="ml-auto">{tab === "referrers" ? "Refs" : "Orders"}</span>
+              <span className="flex-1">{tr("User")}</span>
+              <span className="ml-auto">{tab === "referrers" ? tr("Refs") : tr("Orders")}</span>
             </div>
             {rest.map((entry, i) => (
               <ListRow key={i} entry={entry} dark={dark} t={t} tab={tab} isLast={i === rest.length - 1} />
@@ -243,6 +247,7 @@ export default function LeaderboardPage({ dark, t }) {
 
 /* ═══ COMPACT CARD for dashboard home / right sidebar ═══ */
 export function LeaderboardCard({ onViewAll }) {
+  const tr = useT();
   const [data, setData] = useState(null);
   useEffect(() => {
     fetch("/api/leaderboard?period=month").then(r => r.json()).then(d => setData(d)).catch(() => {});
@@ -252,11 +257,11 @@ export function LeaderboardCard({ onViewAll }) {
   const month = new Date().toLocaleDateString("en-GB", { month: "long" });
   return (
     <div className="rr">
-      <RailSec>Top spenders · {month}</RailSec>
+      <RailSec>{tr("Top spenders ·")} {month}</RailSec>
       <RailCard>
         {top.map((entry, i) => <RailRow key={i} tile={`#${i + 1}`} round={i === 0} title={`${entry.name}${entry.isYou ? " (you)" : ""}`} right={`${entry.orders} order${entry.orders !== 1 ? "s" : ""}`} />)}
       </RailCard>
-      {onViewAll && <RailLink onClick={onViewAll}>View the full leaderboard</RailLink>}
+      {onViewAll && <RailLink onClick={onViewAll}>{tr("View the full leaderboard")}</RailLink>}
     </div>
   );
 }

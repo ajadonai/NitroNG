@@ -1,5 +1,6 @@
 'use client';
 import { useEffect } from 'react';
+import { useT } from "./locale";
 import { ThemeProvider, useTheme } from './shared-nav';
 import { trackViewContent } from './capi-tracker';
 import { AskCard, PinkButton, naira, perUnit, eyebrowStyle, cardStyle } from './platform-card';
@@ -42,6 +43,7 @@ function TierCards({ tiers }) {
 }
 
 function ServiceTypeInner({ platform, platformSlug, typeLabel, services = [], introHtml, copy = {} }) {
+  const tr = useT();
   const { dark, t } = useTheme();
   const eyebrow = eyebrowStyle(t);
   const label = typeLabel.toLowerCase();
@@ -63,21 +65,21 @@ function ServiceTypeInner({ platform, platformSlug, typeLabel, services = [], in
 
   const hasFaq = copy.faq?.length > 0;
   const toc = [
-    { id: 'which-tier', label: 'Which tier' },
-    { id: 'how-to-buy', label: 'How to buy' },
-    hasFaq && { id: 'questions', label: 'Questions' },
+    { id: 'which-tier', label: tr("Which tier") },
+    { id: 'how-to-buy', label: tr("How to buy") },
+    hasFaq && { id: 'questions', label: tr("Questions") },
   ].filter(Boolean);
 
   const related = [
     { href: `/services/${platformSlug}`, label: `All ${platform} services`, note: platform },
-    { href: '/pricing', label: 'Full pricing across all platforms' },
-    { href: '/quality', label: 'How Nitro keeps drop rates low' },
-    { href: '/reviews', label: 'What using Nitro is actually like' },
+    { href: '/pricing', label: tr("Full pricing across all platforms") },
+    { href: '/quality', label: tr("How Nitro keeps drop rates low") },
+    { href: '/reviews', label: tr("What using Nitro is actually like") },
   ];
 
   return (
     <PageShell>
-      <Crumbs items={[{ label: 'Services', href: '/services' }, { label: platform, href: `/services/${platformSlug}` }, { label: typeLabel }]} />
+      <Crumbs items={[{ label: tr("Services"), href: '/services' }, { label: platform, href: `/services/${platformSlug}` }, { label: typeLabel }]} />
 
       <header className="flex flex-col gap-2.5">
         <span style={eyebrow}>{platform} {label}</span>
@@ -96,7 +98,7 @@ function ServiceTypeInner({ platform, platformSlug, typeLabel, services = [], in
             ))}
           </div>
           <div className="mt-2.5">
-            <PinkButton href="/signup" full>Buy {platform} {label}</PinkButton>
+            <PinkButton href="/signup" full>{tr("Buy")} {platform} {label}</PinkButton>
           </div>
         </div>
       )}
@@ -104,7 +106,7 @@ function ServiceTypeInner({ platform, platformSlug, typeLabel, services = [], in
       <div className="grid grid-cols-[220px_1fr] gap-9 items-start max-md:grid-cols-1 max-md:gap-[18px]">
         <Contents items={toc} />
         <article className="flex flex-col gap-[22px] max-w-[66ch] min-w-0">
-          <Section id="which-tier" title="Which tier should you pick">
+          <Section id="which-tier" title={tr("Which tier should you pick")}>
             {introHtml ? (
               <div
                 className="blog-article-body text-[15.5px] leading-[1.7]"
@@ -114,15 +116,15 @@ function ServiceTypeInner({ platform, platformSlug, typeLabel, services = [], in
               />
             ) : (
               <p className="m-0 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>
-                If you are testing us, Budget. If this is an account you care about, Standard: 30 days is long enough for most drops to happen and be replaced. Premium is for accounts where the number is the product.
+                {tr("If you are testing us, Budget. If this is an account you care about, Standard: 30 days is long enough for most drops to happen and be replaced. Premium is for accounts where the number is the product.")}
               </p>
             )}
           </Section>
-          <Section id="how-to-buy" title="How to buy">
+          <Section id="how-to-buy" title={tr("How to buy")}>
             <Steps items={steps} />
           </Section>
           {hasFaq && (
-            <Section id="questions" title="Frequently asked questions">
+            <Section id="questions" title={tr("Frequently asked questions")}>
               <Accordion items={copy.faq} />
             </Section>
           )}
@@ -131,7 +133,7 @@ function ServiceTypeInner({ platform, platformSlug, typeLabel, services = [], in
 
       <RelatedTiles items={related} />
 
-      <AskCard title="Want us to place it?" body="Send the link on WhatsApp and we will order it for you." />
+      <AskCard title={tr("Want us to place it?")} body={tr("Send the link on WhatsApp and we will order it for you.")} />
     </PageShell>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useT } from "./locale";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter } from './shared-nav';
 import { readTime } from '@/lib/markdown';
@@ -15,6 +16,7 @@ export default function HelpArticle({ post, related }) {
 }
 
 function HelpArticleInner({ post, related }) {
+  const tr = useT();
   const sent = useRef(false);
   useEffect(() => {
     if (sent.current || !post.slug) return;
@@ -66,7 +68,7 @@ function HelpArticleInner({ post, related }) {
 
   const hay = ` ${post.title} ${post.excerpt || ''} `.toLowerCase();
   const platform = (PLATFORMS.find(([k]) => hay.includes(k)) || [])[1];
-  const ctaHtml = `<aside class="hg-cta"><span class="hg-ctat"><b>${platform ? `Growing on ${platform}?` : 'Growing an audience?'}</b><i>Followers, likes and views from ₦100, sent gradually. We never ask for a password.</i></span><a class="hg-ctab" href="/signup">Start with a free account</a></aside>`;
+  const ctaHtml = `<aside class="hg-cta"><span class="hg-ctat"><b>${platform ? `Growing on ${platform}?` : 'Growing an audience?'}</b><i>${tr("Followers, likes and views from ₦100, sent gradually. We never ask for a password.")}</i></span><a class="hg-ctab" href="/signup">${tr("Start with a free account")}</a></aside>`;
   const parts = (post.content || '').split(/(?=<h2[\s>])/i);
   const body = parts.length > 2 ? [parts[0], parts[1], ctaHtml, ...parts.slice(2)].join('') : post.content;
 
@@ -83,13 +85,13 @@ function HelpArticleInner({ post, related }) {
 
       <div className="hg-wrap flex-1">
         <div className="hg-crumb">
-          <a href="/help">Help centre</a>
+          <a href="/help">{tr("Help centre")}</a>
           <i aria-hidden="true"><span className="dir-flip">›</span></i>
           <span>{topic}</span>
         </div>
 
         <div className="hg-hero">
-          <span className="hg-eye">{topic} · {rt} min read</span>
+          <span className="hg-eye">{topic} · {rt} {tr("min read")}</span>
           <h1 className="hg-h1">{post.title}</h1>
           {post.excerpt && <p className="hg-lede">{post.excerpt}</p>}
         </div>
@@ -97,8 +99,8 @@ function HelpArticleInner({ post, related }) {
         <div className="hg-cols">
           {toc.length >= 2 ? (
             <>
-              <aside className="hg-toc"><span className="hg-eye">In this guide</span>{toc.map(h => <a key={h.id} href={'#' + h.id} onClick={e => jump(e, h.id)} className={active === h.id ? 'on' : ''}>{h.text}</a>)}</aside>
-              <details className="hg-tocph"><summary>In this guide · {toc.length} {toc.length === 1 ? 'section' : 'sections'}</summary>{toc.map(h => <a key={h.id} href={'#' + h.id} onClick={e => jump(e, h.id)}>{h.text}</a>)}</details>
+              <aside className="hg-toc"><span className="hg-eye">{tr("In this guide")}</span>{toc.map(h => <a key={h.id} href={'#' + h.id} onClick={e => jump(e, h.id)} className={active === h.id ? 'on' : ''}>{h.text}</a>)}</aside>
+              <details className="hg-tocph"><summary>{tr("In this guide ·")} {toc.length} {toc.length === 1 ? 'section' : 'sections'}</summary>{toc.map(h => <a key={h.id} href={'#' + h.id} onClick={e => jump(e, h.id)}>{h.text}</a>)}</details>
             </>
           ) : <span className="hg-toc" />}
           <article className="hg-body">
@@ -108,7 +110,7 @@ function HelpArticleInner({ post, related }) {
 
         {related?.length > 0 && (
           <div className="hg-rel">
-            <span className="hg-eye">Next</span>
+            <span className="hg-eye">{tr("Next")}</span>
             <div className="hg-relg">
               {related.slice(0, 3).map(r => (
                 <a key={r.slug} href={`/help/${r.slug}`} className="hg-relc">
@@ -121,8 +123,8 @@ function HelpArticleInner({ post, related }) {
         )}
 
         <div className="hg-ask">
-          <span className="hg-askt"><b>Did this answer it?</b><i>If not, WhatsApp us and we will walk you through it.</i></span>
-          <a href={waLink} target="_blank" rel="noopener noreferrer" className="hg-askb">WhatsApp us</a>
+          <span className="hg-askt"><b>{tr("Did this answer it?")}</b><i>{tr("If not, WhatsApp us and we will walk you through it.")}</i></span>
+          <a href={waLink} target="_blank" rel="noopener noreferrer" className="hg-askb">{tr("WhatsApp us")}</a>
         </div>
       </div>
       <SharedFooter />

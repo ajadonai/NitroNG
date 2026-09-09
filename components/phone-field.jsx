@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useId, useRef, useState } from 'react';
+import { useT } from "./locale";
 import { createPortal } from 'react-dom';
 import { COUNTRIES, DEFAULT_COUNTRY, getCountry } from '../lib/phone-countries';
 
@@ -33,6 +34,7 @@ export function PhoneField({
   compact = false,
   autoFocus = false,
 }) {
+  const tr = useT();
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState(null);
   const trigRef = useRef(null);
@@ -121,7 +123,7 @@ export function PhoneField({
         <>
           <button
             type="button"
-            aria-label="Close country list"
+            aria-label={tr("Close country list")}
             onClick={() => setOpen(false)}
             style={{
               position: 'fixed', inset: 0, zIndex: 10000, border: 'none', cursor: 'default',
@@ -131,7 +133,7 @@ export function PhoneField({
           <div
             id={listId}
             role="listbox"
-            aria-label="Country"
+            aria-label={tr("Country")}
             style={anchor.mobile
               ? { position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 10001, padding: '9px 9px calc(14px + env(safe-area-inset-bottom))', borderRadius: '19px 19px 0 0', background: surface, border: `1px solid ${t.inputBorder}`, boxShadow: '0 -18px 44px rgba(0,0,0,.26)' }
               : { position: 'fixed', ...anchor, zIndex: 10001, width: 236, padding: 6, borderRadius: 13, background: surface, border: `1px solid ${t.inputBorder}`, boxShadow: '0 18px 44px rgba(0,0,0,.24)' }}

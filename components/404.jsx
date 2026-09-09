@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from "react";
+import { useT } from "./locale";
 import { usePathname } from "next/navigation";
 import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
 import { copyText } from '@/lib/clipboard';
@@ -22,6 +23,7 @@ function lev(a, b) {
 }
 
 function NotFoundInner() {
+  const tr = useT();
   const { dark, toggleTheme, loaded } = useTheme();
   const pathname = usePathname() || "/";
   const [replay, setReplay] = useState(0);
@@ -124,17 +126,17 @@ function NotFoundInner() {
             <span className="nf-four" style={{ color: text }}>4</span>
           </div>
 
-          <h1 className="nf-h1 nf-rise" style={{ color: text, animationDelay: ".2s" }}>This page doesn&#39;t exist.</h1>
+          <h1 className="nf-h1 nf-rise" style={{ color: text, animationDelay: ".2s" }}>{tr("This page doesn’t exist.")}</h1>
 
           <p className="nf-rise text-[13px] leading-[1.7] mx-auto mt-2.5" style={{ color: soft, maxWidth: 420, animationDelay: ".28s" }}>
-            The link may be broken, or the page may have moved. Your account, orders and wallet are exactly where you left them.
+            {tr("The link may be broken, or the page may have moved. Your account, orders and wallet are exactly where you left them.")}
           </p>
 
           <div className="nf-rise" style={{ animationDelay: ".36s" }}>
             <div className="inline-flex items-center gap-2 mt-[18px] rounded-full py-[7px] px-[14px] max-w-full" style={{ background: card, border: `1px solid ${hair}` }}>
               <span className="shrink-0 font-extrabold text-[11px]" style={{ color: accent }}>&#10005;</span>
               <span className="text-[11px] overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: soft, fontFamily: "'JetBrains Mono',monospace" }}>nitro.ng{pathname}</span>
-              <button onClick={copyLink} aria-label="Copy link" className="shrink-0 flex transition-colors duration-150" style={{ color: copied ? green : muted }}>
+              <button onClick={copyLink} aria-label={tr("Copy link")} className="shrink-0 flex transition-colors duration-150" style={{ color: copied ? green : muted }}>
                 {copied
                   ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>}
@@ -151,36 +153,36 @@ function NotFoundInner() {
           )}
 
           <div className="nf-ctas nf-rise" style={{ animationDelay: ".52s" }}>
-            <a href="/dashboard" className="inline-flex items-center gap-2 text-[13px] font-extrabold py-3 px-[22px] rounded-full no-underline text-white transition-transform duration-150 hover:-translate-y-px" style={{ background: "linear-gradient(135deg,#c97f92,#9b5266)", boxShadow: dark ? "0 5px 16px rgba(0,0,0,.4), inset 0 0 0 1.5px rgba(255,255,255,.4), 0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(232,180,196,.28)" : "0 5px 16px rgba(139,74,94,.3), inset 0 0 0 1.5px rgba(255,255,255,.45), 0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(139,74,94,.24)" }}>Back to dashboard</a>
-            <a href="/" className="inline-flex items-center gap-2 text-[13px] font-bold py-[11px] px-[18px] rounded-full no-underline transition-transform duration-150 hover:-translate-y-px" style={{ color: soft, background: card, border: `1px solid ${border}` }}>Go home</a>
+            <a href="/dashboard" className="inline-flex items-center gap-2 text-[13px] font-extrabold py-3 px-[22px] rounded-full no-underline text-white transition-transform duration-150 hover:-translate-y-px" style={{ background: "linear-gradient(135deg,#c97f92,#9b5266)", boxShadow: dark ? "0 5px 16px rgba(0,0,0,.4), inset 0 0 0 1.5px rgba(255,255,255,.4), 0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(232,180,196,.28)" : "0 5px 16px rgba(139,74,94,.3), inset 0 0 0 1.5px rgba(255,255,255,.45), 0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(139,74,94,.24)" }}>{tr("Back to dashboard")}</a>
+            <a href="/" className="inline-flex items-center gap-2 text-[13px] font-bold py-[11px] px-[18px] rounded-full no-underline transition-transform duration-150 hover:-translate-y-px" style={{ color: soft, background: card, border: `1px solid ${border}` }}>{tr("Go home")}</a>
           </div>
 
           <div className="nf-rise flex gap-[18px] justify-center mt-[22px] text-[11px] flex-wrap" style={{ animationDelay: ".6s" }}>
             <a href="/services" className="inline-flex items-center gap-1.5 font-semibold no-underline" style={{ color: muted }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-              Services
+              {tr("Services")}
             </a>
             <a href="/pricing" className="inline-flex items-center gap-1.5 font-semibold no-underline" style={{ color: muted }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-              Pricing
+              {tr("Pricing")}
             </a>
             <a href="https://wa.me/2347071656156?text=Hi%20Nitro%2C%20I%20need%20help" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-semibold no-underline" style={{ color: dark ? "#25d366" : "#1e9e50" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              Chat support
+              {tr("Chat support")}
             </a>
           </div>
 
           <div className="nf-rise flex items-center justify-center gap-[7px] mt-8 text-[11px]" style={{ color: muted, animationDelay: ".7s" }}>
             <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: green, boxShadow: `0 0 0 3px ${greenSoft}` }} />
-            All systems normal. Nothing else is affected.
+            {tr("All systems normal. Nothing else is affected.")}
           </div>
         </div>
       </div>
 
       {/* Footer */}
       <footer className="py-3.5 px-6 flex justify-between items-center shrink-0 relative z-10" style={{ borderTop: `0.5px solid ${border}` }}>
-        <span className="text-xs" style={{ color: muted }}>&copy; {new Date().getFullYear() > 2026 ? `2026–${new Date().getFullYear()}` : "2026"} Nitro</span>
-        <div className="flex gap-3.5"><a href="/terms" className="text-xs no-underline" style={{ color: muted }}>Terms</a><a href="/privacy" className="text-xs no-underline" style={{ color: muted }}>Privacy</a></div>
+        <span className="text-xs" style={{ color: muted }}>© {new Date().getFullYear() > 2026 ? `2026–${new Date().getFullYear()}` : "2026"} Nitro</span>
+        <div className="flex gap-3.5"><a href="/terms" className="text-xs no-underline" style={{ color: muted }}>{tr("Terms")}</a><a href="/privacy" className="text-xs no-underline" style={{ color: muted }}>{tr("Privacy")}</a></div>
       </footer>
     </div>
   );

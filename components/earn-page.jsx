@@ -1,5 +1,6 @@
 'use client';
 import { useMoney } from "./locale";
+import { useT } from "./locale";
 import { useState, useEffect, useCallback } from 'react';
 import Game2048 from './game-2048';
 
@@ -11,6 +12,7 @@ const TABS = [
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 export default function EarnPage({ dark, t }) {
+  const tr = useT();
   const money = useMoney();
   const [tab, setTab] = useState('game');
   const [lb, setLb] = useState(null);
@@ -82,10 +84,10 @@ export default function EarnPage({ dark, t }) {
               </div>
               <div className="flex-1">
                 <div className="text-[13px] font-bold" style={{ color: t.text }}>Monthly Prize Pool</div>
-                <div className="text-[11px] font-medium" style={{ color: t.textMuted }}>{monthLabel || 'This month'} — Top 5 win cash</div>
+                <div className="text-[11px] font-medium" style={{ color: t.textMuted }}>{monthLabel || 'This month'} {tr("— Top 5 win cash")}</div>
               </div>
               <div className="text-right">
-                <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: t.accent }}>Total</div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: t.accent }}>{tr("Total")}</div>
                 <div className="text-lg font-bold" style={{ color: t.accent }}>{money(10500)}</div>
               </div>
             </div>
@@ -118,7 +120,7 @@ export default function EarnPage({ dark, t }) {
             <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)'}` }}>
               <div className="flex items-center gap-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>
-                <span className="text-[13px] font-bold" style={{ color: t.text }}>Leaderboard</span>
+                <span className="text-[13px] font-bold" style={{ color: t.text }}>{tr("Leaderboard")}</span>
               </div>
               {lb?.userRank && (
                 <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg" style={{ background: `linear-gradient(135deg, ${dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.1)'}, ${dark ? 'rgba(107,58,74,.2)' : 'rgba(163,88,107,.08)'})`, color: t.accent, border: `1px solid ${dark ? 'rgba(196,125,142,.25)' : 'rgba(196,125,142,.12)'}` }}>
@@ -150,7 +152,7 @@ export default function EarnPage({ dark, t }) {
                             }}
                           >
                             <span className="text-[11px] font-bold truncate max-w-[90%]" style={{ color: entry.isYou ? t.accent : t.text }}>
-                              {entry.isYou ? 'You' : entry.name.split(' ')[0]}
+                              {entry.isYou ? tr("You") : entry.name.split(' ')[0]}
                             </span>
                             <span className="text-[11px] font-bold mt-0.5 tabular-nums" style={{ color: t.textMuted }}>{entry.score.toLocaleString()}</span>
                           </div>
@@ -176,7 +178,7 @@ export default function EarnPage({ dark, t }) {
                         <div className="flex items-center gap-2.5">
                           <span className="text-[11px] font-bold w-5 text-center" style={{ color: t.textMuted }}>{entry.rank}</span>
                           <span className="text-[13px] font-medium" style={{ color: entry.isYou ? t.accent : t.text }}>
-                            {entry.isYou ? 'You' : entry.name}
+                            {entry.isYou ? tr("You") : entry.name}
                           </span>
                         </div>
                         <span className="text-[11px] font-bold tabular-nums" style={{ color: t.text }}>{entry.score.toLocaleString()}</span>
@@ -190,8 +192,8 @@ export default function EarnPage({ dark, t }) {
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ background: gradBg, border: `1px solid ${gradBorder}` }}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>
                 </div>
-                <div className="text-sm font-bold" style={{ color: t.text }}>No scores yet</div>
-                <div className="text-xs mt-1" style={{ color: t.textMuted }}>Play a game to claim the #1 spot!</div>
+                <div className="text-sm font-bold" style={{ color: t.text }}>{tr("No scores yet")}</div>
+                <div className="text-xs mt-1" style={{ color: t.textMuted }}>{tr("Play a game to claim the #1 spot!")}</div>
               </div>
             )}
           </div>
@@ -201,7 +203,7 @@ export default function EarnPage({ dark, t }) {
             <div className="rounded-2xl overflow-hidden" style={{ background: dark ? 'rgba(255,255,255,.04)' : '#fff', border: `0.5px solid ${t.cardBorder}` }}>
               <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)'}` }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <span className="text-[13px] font-bold" style={{ color: t.text }}>Hall of Fame</span>
+                <span className="text-[13px] font-bold" style={{ color: t.text }}>{tr("Hall of Fame")}</span>
               </div>
               <div className="px-3 py-2">
                 {lb.pastWinners.filter(w => w.rank === 1).map((w, i) => (
@@ -234,7 +236,7 @@ export default function EarnPage({ dark, t }) {
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${t.accent}, ${dark ? '#6b3a4a' : '#8b5e6b'})` }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                   </div>
-                  <div className="text-[13px] font-bold" style={{ color: t.text }}>Watch Videos</div>
+                  <div className="text-[13px] font-bold" style={{ color: t.text }}>{tr("Watch Videos")}</div>
                 </div>
                 <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)', color: t.textMuted }}>
                   {videoStatus.watchedToday}/{videoStatus.dailyCap} today
@@ -246,11 +248,11 @@ export default function EarnPage({ dark, t }) {
               </p>
               {videoStatus.remaining > 0 ? (
                 <button className="shimmer-btn w-full py-3 rounded-xl text-sm font-semibold border-none cursor-pointer" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5e6b)`, color: '#fff', boxShadow: '0 4px 16px rgba(196,125,142,.3)' }}>
-                  Watch Video <span className="dir-flip">→</span> Earn {money((videoStatus.rewardPerWatch || 1500) / 100, { round: "down" })}
+                  Watch Video <span className="dir-flip">→</span> {tr("Earn")} {money((videoStatus.rewardPerWatch || 1500) / 100, { round: "down" })}
                 </button>
               ) : (
                 <div className="py-4 text-center text-[13px]" style={{ color: t.textMuted }}>
-                  Daily limit reached. Come back tomorrow!
+                  {tr("Daily limit reached. Come back tomorrow!")}
                 </div>
               )}
             </div>
@@ -263,12 +265,12 @@ export default function EarnPage({ dark, t }) {
               <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: `linear-gradient(135deg, ${t.accent}, ${dark ? '#6b3a4a' : '#8b5e6b'})`, boxShadow: '0 8px 24px rgba(196,125,142,.25)' }}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               </div>
-              <div className="text-base font-bold mb-1" style={{ color: t.text }}>Watch & Earn</div>
+              <div className="text-base font-bold mb-1" style={{ color: t.text }}>{tr("Watch & Earn")}</div>
               <div className="text-xs text-center max-w-[260px] leading-relaxed" style={{ color: t.textMuted }}>
-                Video rewards launching soon. Watch short ads and earn wallet credit — we split the revenue 50/50 with you.
+                {tr("Video rewards launching soon. Watch short ads and earn wallet credit — we split the revenue 50/50 with you.")}
               </div>
               <div className="mt-4 px-3 py-1.5 rounded-lg text-[11px] font-semibold" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.08)', color: t.accent, border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.12)'}` }}>
-                Coming Soon
+                {tr("Coming Soon")}
               </div>
             </div>
           )}

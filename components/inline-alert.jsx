@@ -1,3 +1,5 @@
+import { useT } from "./locale";
+
 const TYPES = {
   success: {
     bgD: "rgba(110,231,183,.1)", bgL: "rgba(5,150,105,.06)",
@@ -26,6 +28,7 @@ const TYPES = {
 };
 
 export default function InlineAlert({ type = "error", dark, children, onDismiss, className = "" }) {
+  const tr = useT();
   const t = TYPES[type] || TYPES.error;
   const col = dark ? t.colD : t.colL;
   return (
@@ -47,7 +50,7 @@ export default function InlineAlert({ type = "error", dark, children, onDismiss,
         {children}
       </div>
       {onDismiss && (
-        <button type="button" aria-label="Dismiss message" onClick={onDismiss} className="bg-transparent border-none cursor-pointer p-1 shrink-0 opacity-50 hover:opacity-80" style={{ color: dark ? "#8a8580" : "#757170" }}>
+        <button type="button" aria-label={tr("Dismiss message")} onClick={onDismiss} className="bg-transparent border-none cursor-pointer p-1 shrink-0 opacity-50 hover:opacity-80" style={{ color: dark ? "#8a8580" : "#757170" }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       )}

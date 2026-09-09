@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { useT } from "./locale";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 
@@ -42,6 +43,7 @@ export default function HelpListing({ articles }) {
 }
 
 function HelpListingInner({ articles }) {
+  const tr = useT();
   const { t } = useTheme();
   const [query, setQuery] = useState('');
   const [topic, setTopic] = useState('All');
@@ -71,8 +73,8 @@ function HelpListingInner({ articles }) {
       <main className="flex-1 w-full max-w-[920px] mx-auto px-7 pt-11 pb-14 max-md:px-4 max-md:pt-7 max-md:pb-10 flex flex-col gap-[26px] max-md:gap-5">
 
         <header className="flex flex-col gap-2.5">
-          <span style={eyebrow}>Help centre</span>
-          <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>How Nitro works</h1>
+          <span style={eyebrow}>{tr("Help centre")}</span>
+          <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>{tr("How Nitro works")}</h1>
           <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>{lede}</p>
         </header>
 
@@ -83,14 +85,14 @@ function HelpListingInner({ articles }) {
               type="search"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Search the guides"
-              aria-label="Search the guides"
+              placeholder={tr("Search the guides")}
+              aria-label={tr("Search the guides")}
               className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm"
               style={{ color: t.text }}
             />
           </label>
           {topics.length > 1 && (
-            <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Topics">
+            <div className="flex flex-wrap gap-1.5" role="tablist" aria-label={tr("Topics")}>
               {['All', ...topics].map(name => {
                 const on = topic === name;
                 return (
@@ -110,7 +112,7 @@ function HelpListingInner({ articles }) {
         </div>
 
         {groups.length === 0 && (
-          <p className="m-0 text-sm" style={{ color: t.muted }}>Nothing matches that. Try another word, or ask us on WhatsApp below.</p>
+          <p className="m-0 text-sm" style={{ color: t.muted }}>{tr("Nothing matches that. Try another word, or ask us on WhatsApp below.")}</p>
         )}
 
         {groups.map(([name, items]) => (
@@ -137,10 +139,10 @@ function HelpListingInner({ articles }) {
 
         <div className="flex items-center gap-3 rounded-[14px] px-[18px] py-4 max-md:flex-col max-md:items-stretch" style={card}>
           <span className="flex flex-col gap-0.5">
-            <b className="text-[15px]" style={{ color: t.text }}>Cannot find it?</b>
-            <span className="text-[13px]" style={{ color: t.soft }}>WhatsApp us — we are there all day and we answer in minutes.</span>
+            <b className="text-[15px]" style={{ color: t.text }}>{tr("Cannot find it?")}</b>
+            <span className="text-[13px]" style={{ color: t.soft }}>{tr("WhatsApp us — we are there all day and we answer in minutes.")}</span>
           </span>
-          <a href={waLink} target="_blank" rel="noopener noreferrer" className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>WhatsApp us</a>
+          <a href={waLink} target="_blank" rel="noopener noreferrer" className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>{tr("WhatsApp us")}</a>
         </div>
 
       </main>

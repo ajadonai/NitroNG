@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { useT } from "./locale";
 import { RailSec, RailCard, RailFact, RailStep } from "./rail";
 import { fN, fHeld, fD } from "../lib/format";
 import { useMoney } from "./locale";
@@ -41,6 +42,7 @@ const fK = (kobo, money) => money(kobo / 100, { round: "down" });
 /* ═══ REFERRALS PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
 export default function ReferralsPage({ user, dark, t }) {
+  const tr = useT();
   const money = useMoney();
   const [copied, setCopied] = useState(null);
   const [page, setPage] = useState(1);
@@ -79,8 +81,8 @@ export default function ReferralsPage({ user, dark, t }) {
     <>
       {/* Header */}
       <div className="pb-2 desktop:pb-3.5">
-        <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">Referrals</div>
-        <div className="text-sm desktop:text-[15px] text-t-text-muted">Earn rewards by inviting friends to Nitro</div>
+        <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">{tr("Referrals")}</div>
+        <div className="text-sm desktop:text-[15px] text-t-text-muted">{tr("Earn rewards by inviting friends to Nitro")}</div>
         <div className="page-divider bg-t-card-border" />
       </div>
 
@@ -89,8 +91,8 @@ export default function ReferralsPage({ user, dark, t }) {
         <div className="py-3 px-4 rounded-xl mb-4 flex items-center gap-2.5" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)", border: `1px solid ${dark ? "rgba(196,125,142,.19)" : "rgba(196,125,142,.14)"}` }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6"/><path d="M2 8h20v4H2z"/><path d="M12 20V8"/></svg>
           <div>
-            <div className="text-sm font-medium text-t-text">Your referral bonus is waiting</div>
-            <div className="text-[13px] mt-0.5 text-t-text-muted">Deposit {money(user.refMinDeposit)} or more to unlock your {fK(ref.invitee)} welcome bonus</div>
+            <div className="text-sm font-medium text-t-text">{tr("Your referral bonus is waiting")}</div>
+            <div className="text-[13px] mt-0.5 text-t-text-muted">{tr("Deposit")} {money(user.refMinDeposit)} {tr("or more to unlock your")} {fK(ref.invitee)} {tr("welcome bonus")}</div>
           </div>
         </div>
       )}
@@ -101,7 +103,7 @@ export default function ReferralsPage({ user, dark, t }) {
         <div className="flex items-center gap-2">
           <div className="m flex-1 py-2 px-3 rounded-lg border text-sm overflow-hidden text-ellipsis whitespace-nowrap text-t-text-soft" style={{ background: dark ? "#160f22" : "#fff", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.19)" }}>{refLink}</div>
           <button onClick={() => copyText(refLink, "link")} className="py-2 px-3 desktop:px-3.5 dash-btn-primary text-[13px] desktop:text-sm font-semibold cursor-pointer whitespace-nowrap shrink-0 border-none text-white transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }}>
-            {copied === "link" ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> Copied</> : "Copy Link"}
+            {copied === "link" ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> {tr("Copied")}</> : "Copy Link"}
           </button>
         </div>
       </div>
@@ -138,7 +140,7 @@ export default function ReferralsPage({ user, dark, t }) {
       {/* Referral list */}
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
         <div className="py-3 px-[13px] desktop:px-[18px]" style={{ background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-          <div className="text-sm font-semibold tracking-[0.3px] uppercase text-t-text-muted">Your referrals</div>
+          <div className="text-sm font-semibold tracking-[0.3px] uppercase text-t-text-muted">{tr("Your referrals")}</div>
         </div>
         {paged.length > 0 ? paged.map((r, i) => (
           <div key={r.id || i} className="flex items-center gap-2.5 desktop:gap-3.5 py-3 px-[13px] desktop:py-3.5 desktop:px-4" style={{ borderBottom: i < paged.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
@@ -167,8 +169,8 @@ export default function ReferralsPage({ user, dark, t }) {
               <path d="M24 36c-8 0-14 4-14 10v2h28v-2c0-6-6-10-14-10z" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
               <path d="M26 16l6-4 6 4" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <div className="text-base font-semibold mb-1 text-t-text-soft">No referrals yet</div>
-            <div className="text-[15px] leading-normal text-t-text-muted">Invite friends and you both earn when they deposit</div>
+            <div className="text-base font-semibold mb-1 text-t-text-soft">{tr("No referrals yet")}</div>
+            <div className="text-[15px] leading-normal text-t-text-muted">{tr("Invite friends and you both earn when they deposit")}</div>
           </div>
         )}
       </div>
@@ -209,19 +211,20 @@ export default function ReferralsPage({ user, dark, t }) {
  * carries the same facts. v2.4.48's rail rework deleted this definition but
  * left the usage above, so the page crashed on render. */
 function RewardBreakdown({ rs, t }) {
+  const tr = useT();
   return (
     <div className="p-3.5 rounded-[10px] mt-2 bg-t-card-bg" style={{ border: `1px solid ${t.cardBorder}` }}>
       <div className="flex justify-between py-2" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-        <span className="text-sm text-t-text-muted">You earn</span>
+        <span className="text-sm text-t-text-muted">{tr("You earn")}</span>
         <span className="text-sm font-semibold text-accent">{fK(rs.referrer)}</span>
       </div>
       <div className="flex justify-between py-2" style={{ borderBottom: rs.minDeposit > 0 ? `1px solid ${t.cardBorder}` : "none" }}>
-        <span className="text-sm text-t-text-muted">They earn</span>
+        <span className="text-sm text-t-text-muted">{tr("They earn")}</span>
         <span className="text-sm font-semibold text-t-green">{fK(rs.invitee)}</span>
       </div>
       {rs.minDeposit > 0 && (
         <div className="flex justify-between py-2">
-          <span className="text-sm text-t-text-muted">Min. deposit to activate</span>
+          <span className="text-sm text-t-text-muted">{tr("Min. deposit to activate")}</span>
           <span className="text-sm font-semibold text-t-text">{fK(rs.minDeposit)}</span>
         </div>
       )}
@@ -233,6 +236,7 @@ function RewardBreakdown({ rs, t }) {
 /* ═══ REFERRALS RIGHT SIDEBAR             ═══ */
 /* ═══════════════════════════════════════════ */
 export function ReferralsSidebar({ user, dark, t }) {
+  const tr = useT();
   const money = useMoney();
   const ref = useRefSettings();
   const referrals = user?.referralList || [];
@@ -241,23 +245,23 @@ export function ReferralsSidebar({ user, dark, t }) {
   const totalRefs = user?.refs || referrals.length;
   return (
     <div className="rr">
-      <RailSec>How it works</RailSec>
+      <RailSec>{tr("How it works")}</RailSec>
       <RailCard>
-        <RailStep n="1" title="Share your link" sub="Send it to friends" />
-        <RailStep n="2" title="They deposit" sub={ref.minDeposit > 0 ? `${fK(ref.minDeposit)} or more` : "Their first deposit"} />
-        <RailStep n="3" title="You both earn" sub={`You get ${fK(ref.referrer)}, they get ${fK(ref.invitee)}`} />
+        <RailStep n="1" title={tr("Share your link")} sub={tr("Send it to friends")} />
+        <RailStep n="2" title={tr("They deposit")} sub={ref.minDeposit > 0 ? `${fK(ref.minDeposit)} or more` : "Their first deposit"} />
+        <RailStep n="3" title={tr("You both earn")} sub={`You get ${fK(ref.referrer)}, they get ${fK(ref.invitee)}`} />
       </RailCard>
-      <RailSec>Rewards</RailSec>
+      <RailSec>{tr("Rewards")}</RailSec>
       <RailCard>
-        <RailFact label="You get" value={fK(ref.referrer)} color={t.accent} />
-        <RailFact label="They get" value={fK(ref.invitee)} color={dark ? "#6ee7b7" : "#059669"} />
-        {ref.minDeposit > 0 && <RailFact label="Minimum deposit" value={fK(ref.minDeposit)} />}
+        <RailFact label={tr("You get")} value={fK(ref.referrer)} color={t.accent} />
+        <RailFact label={tr("They get")} value={fK(ref.invitee)} color={dark ? "#6ee7b7" : "#059669"} />
+        {ref.minDeposit > 0 && <RailFact label={tr("Minimum deposit")} value={fK(ref.minDeposit)} />}
       </RailCard>
-      <RailSec>Your performance</RailSec>
+      <RailSec>{tr("Your performance")}</RailSec>
       <RailCard>
-        <RailFact label="Referrals" value={String(totalRefs)} />
-        <RailFact label="Total earned" value={money(totalEarnings, { round: "down" })} color={t.accent} />
-        <RailFact label="Sign-up rate" value={totalRefs > 0 ? `${Math.round(activeRefs / totalRefs * 100)}%` : "0%"} />
+        <RailFact label={tr("Referrals")} value={String(totalRefs)} />
+        <RailFact label={tr("Total earned")} value={money(totalEarnings, { round: "down" })} color={t.accent} />
+        <RailFact label={tr("Sign-up rate")} value={totalRefs > 0 ? `${Math.round(activeRefs / totalRefs * 100)}%` : "0%"} />
       </RailCard>
     </div>
   );

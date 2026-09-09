@@ -90,12 +90,12 @@ function ElevatedShell({ elevated, dark, mode, children }) {
       <div className="max-md:hidden relative overflow-hidden text-white flex flex-col p-[30px] pb-[26px]" style={{ background: 'linear-gradient(160deg,#c47d8e 0%,#a3586b 55%,#7a3d52 100%)' }}>
         <div className="absolute rounded-full pointer-events-none" style={{ width: 260, height: 260, right: -90, top: -80, background: 'rgba(255,220,200,.35)', filter: 'blur(70px)' }}/>
         <span className="nitro-mark self-start h-7 px-3 inline-flex items-center relative" style={{ background: 'rgba(255,255,255,.16)' }}><NitroWordmark height={12} color="#fff" /></span>
-        <h3 className="serif italic font-medium text-[34px] leading-[1.1] mt-auto mb-3 relative">{mode === 'login' ? tr("Welcome back. Let's run it up.") : mode === 'signup' ? tr("Your first push is on us.") : 'No stress. Let\'s get you back in.'}</h3>
+        <h3 className="serif italic font-medium text-[34px] leading-[1.1] mt-auto mb-3 relative">{mode === 'login' ? tr("Welcome back. Let's run it up.") : mode === 'signup' ? tr("Your first push is on us.") : tr("No stress. Let's get you back in.")}</h3>
         <p className="text-[13px] leading-[1.6] relative" style={{ opacity: .86 }}>{mode === 'login' ? tr("Your wallet, your orders and your tiers are exactly where you left them.") : mode === 'signup' ? tr("Tested services, naira prices, delivery in minutes. Account in 30 seconds.") : tr("Tell us the email on the account and we will send a reset link.")}</p>
         <ul className="list-none p-0 m-0 mt-[18px] flex flex-col gap-[9px] relative">
           {[currency === 'NGN' ? tr("Naira pricing, no FX markup") : tr("Prices shown in your currency"), tr("Starts in under 60 seconds"), tr("Real humans on WhatsApp")].map(x => <li key={x} className="flex gap-[9px] text-[13px] items-center"><i className="not-italic w-5 h-5 rounded-full inline-flex items-center justify-center shrink-0 text-[11px]" style={{ background: 'rgba(255,255,255,.18)' }}>✓</i>{x}</li>)}
         </ul>
-        {mode === 'signup' && <div className="mt-5 py-3 px-3.5 rounded-[14px] text-[12.5px] leading-[1.45] relative" style={{ background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.26)' }}><b className="block text-[13.5px]">🎁 Up to {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free promo credit")}</b>{tr("on your first deposit, straight into your wallet.")}</div>}
+        {mode === 'signup' && <div className="mt-5 py-3 px-3.5 rounded-[14px] text-[12.5px] leading-[1.45] relative" style={{ background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.26)' }}><b className="block text-[13.5px]">{tr("🎁 Up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free promo credit")}</b>{tr("on your first deposit, straight into your wallet.")}</div>}
         <div className="flex items-center gap-2.5 mt-[18px] text-xs relative" style={{ opacity: .9 }}>
           <div className="flex">{[['TM','#e0a458'],['AO','#6ee7b7'],['EN','#a5b4fc'],['BI','#f472b6']].map(([a, c], i) => <i key={a} className="not-italic w-[22px] h-[22px] rounded-full text-[8px] font-extrabold flex items-center justify-center" style={{ background: c, border: '2px solid rgba(255,255,255,.9)', marginLeft: i ? -7 : 0 }}>{a}</i>)}</div>
           <span>{creatorCount ? `${creatorCount}+ ` : ""}{tr("creators already here")}</span>
@@ -1056,7 +1056,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                   className="text-xs"
                   style={{ color: dark ? '#fca5a5' : '#dc2626' }}
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Passwords don&apos;t match
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> {tr("Passwords don’t match")}
                 </div>
               ) : null}
             </div>
@@ -1151,7 +1151,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               className="w-full py-1.5 rounded-[10px] bg-transparent text-sm font-medium"
               style={{ color: t.textSoft }}
             >
-              ← Back to Step 1
+              {tr("← Back to Step 1")}
             </button>
 
             {/* Step dots */}

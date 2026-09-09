@@ -87,7 +87,7 @@ export function CurrencySwitcher() {
   const meta = CURRENCIES[currency];
 
   return (
-    <Picker label="Currency" open={open} setOpen={(v) => { if (v) ensureRates?.(); setOpen(v); }}
+    <Picker label={tr("Currency")} open={open} setOpen={(v) => { if (v) ensureRates?.(); setOpen(v); }}
       trigger={<>
         <span className={`loc-sym${currency === "KES" ? " wide" : ""}`} aria-hidden="true">{meta.symbol}</span>
         <span className="loc-cd">{currency}</span>
@@ -142,7 +142,7 @@ export function LanguageSwitcher() {
   const current = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
 
   return (
-    <Picker label="Language" open={open} setOpen={setOpen}
+    <Picker label={tr("Language")} open={open} setOpen={setOpen}
       trigger={<>
         {GLOBE}
         <span className="loc-cd">{current.code.toUpperCase().slice(0, 2)}</span>

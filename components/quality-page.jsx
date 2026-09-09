@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useT } from "./locale";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 
@@ -37,6 +38,7 @@ const TIERS = [
 ];
 
 function QualityInner({ serviceCount, platformCount }) {
+  const tr = useT();
   const { t } = useTheme();
 
   const faq = [
@@ -81,14 +83,14 @@ function QualityInner({ serviceCount, platformCount }) {
       <div className="flex-1 w-full max-w-[920px] mx-auto px-7 pt-11 pb-14 max-md:px-4 max-md:pt-7 max-md:pb-10 flex flex-col gap-[26px] max-md:gap-5">
 
         <header className="flex flex-col gap-2.5">
-          <span style={eyebrow}>Service quality</span>
-          <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>Every service, tested before you see it</h1>
-          <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>Drop rates are the thing nobody wants to talk about. Here is what we do about them, and what we cannot promise.</p>
+          <span style={eyebrow}>{tr("Service quality")}</span>
+          <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>{tr("Every service, tested before you see it")}</h1>
+          <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>{tr("Drop rates are the thing nobody wants to talk about. Here is what we do about them, and what we cannot promise.")}</p>
         </header>
 
         <div className="grid grid-cols-[220px_1fr] gap-9 items-start max-md:grid-cols-1 max-md:gap-[18px]">
           <aside className="sticky top-5 flex flex-col gap-0.5 max-md:hidden">
-            <span style={{ ...eyebrow, marginBottom: 8 }}>On this page</span>
+            <span style={{ ...eyebrow, marginBottom: 8 }}>{tr("On this page")}</span>
             {SECTIONS.map(([id, short]) => {
               const on = id === active;
               return (
@@ -97,7 +99,7 @@ function QualityInner({ serviceCount, platformCount }) {
             })}
           </aside>
           <details className="md:hidden rounded-xl px-3.5 py-2.5 text-[13px]" style={card}>
-            <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>On this page · {SECTIONS.length} sections</summary>
+            <summary className="font-semibold cursor-pointer" style={{ color: t.text }}>{tr("On this page ·")} {SECTIONS.length} sections</summary>
             {SECTIONS.map(([id, short]) => (
               <a key={id} href={`#${id}`} className="block py-1.5 no-underline" style={{ color: t.muted, borderTop: `1px solid ${t.cardBorder}` }}>{short}</a>
             ))}
@@ -145,10 +147,10 @@ function QualityInner({ serviceCount, platformCount }) {
 
         <div className="flex items-center gap-3 rounded-[14px] px-[18px] py-4 max-md:flex-col max-md:items-stretch" style={card}>
           <span className="flex flex-col gap-0.5">
-            <b className="text-[15px]" style={{ color: t.text }}>Seeing drops on an order?</b>
-            <span className="text-[13px]" style={{ color: t.soft }}>Send the order ID on WhatsApp and we will look at it.</span>
+            <b className="text-[15px]" style={{ color: t.text }}>{tr("Seeing drops on an order?")}</b>
+            <span className="text-[13px]" style={{ color: t.soft }}>{tr("Send the order ID on WhatsApp and we will look at it.")}</span>
           </span>
-          <a href={waLink || '/contact'} target={waLink ? '_blank' : undefined} rel={waLink ? 'noopener noreferrer' : undefined} className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>WhatsApp us</a>
+          <a href={waLink || '/contact'} target={waLink ? '_blank' : undefined} rel={waLink ? 'noopener noreferrer' : undefined} className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>{tr("WhatsApp us")}</a>
         </div>
       </div>
       <SharedFooter />

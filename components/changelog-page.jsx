@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { useT } from "./locale";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 
@@ -15,6 +16,7 @@ const monthOf = d => { const x = new Date(d); return `${MONTHS[x.getUTCMonth()]}
 const dayOf = d => { const x = new Date(d); return `${x.getUTCDate()} ${MONTHS[x.getUTCMonth()].slice(0, 3)}`; };
 
 function ChangelogInner({ entries }) {
+  const tr = useT();
   const { dark, t } = useTheme();
   const [kind, setKind] = useState('all');
 
@@ -62,8 +64,8 @@ function ChangelogInner({ entries }) {
       <div className="flex-1 w-full max-w-[920px] mx-auto px-7 pt-11 pb-14 max-md:px-4 max-md:pt-7 max-md:pb-10 flex flex-col gap-[26px] max-md:gap-5">
 
         <header className="flex flex-col gap-2.5">
-          <span style={eyebrow}>What&apos;s new</span>
-          <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>What changed on Nitro</h1>
+          <span style={eyebrow}>{tr("What’s new")}</span>
+          <h1 className="serif m-0 text-[clamp(34px,4.6vw,52px)] font-semibold leading-[1.08] tracking-[-0.01em]" style={{ color: t.text, textWrap: 'balance' }}>{tr("What changed on Nitro")}</h1>
           <p className="m-0 text-[18px] leading-[1.55] max-w-[62ch]" style={{ color: t.soft }}>
             Everything we ship that you would notice, newest first.{oldest ? ` ${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} since ${monthOf(oldest.date)}.` : ''}
           </p>
@@ -82,7 +84,7 @@ function ChangelogInner({ entries }) {
         </div>
 
         {groups.length === 0 && (
-          <p className="m-0 text-[14.5px]" style={{ color: t.muted }}>Nothing to show here yet.</p>
+          <p className="m-0 text-[14.5px]" style={{ color: t.muted }}>{tr("Nothing to show here yet.")}</p>
         )}
 
         {groups.map(group => (
@@ -108,10 +110,10 @@ function ChangelogInner({ entries }) {
 
         <div className="flex items-center gap-3 rounded-[14px] px-[18px] py-4 max-md:flex-col max-md:items-stretch" style={card}>
           <span className="flex flex-col gap-0.5">
-            <b className="text-[15px]" style={{ color: t.text }}>Want something we have not built?</b>
-            <span className="text-[13px]" style={{ color: t.soft }}>Tell us on WhatsApp. Half of this list started as a message.</span>
+            <b className="text-[15px]" style={{ color: t.text }}>{tr("Want something we have not built?")}</b>
+            <span className="text-[13px]" style={{ color: t.soft }}>{tr("Tell us on WhatsApp. Half of this list started as a message.")}</span>
           </span>
-          <a href={waLink || '/contact'} target={waLink ? '_blank' : undefined} rel={waLink ? 'noopener noreferrer' : undefined} className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>WhatsApp us</a>
+          <a href={waLink || '/contact'} target={waLink ? '_blank' : undefined} rel={waLink ? 'noopener noreferrer' : undefined} className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>{tr("WhatsApp us")}</a>
         </div>
       </div>
       <SharedFooter />

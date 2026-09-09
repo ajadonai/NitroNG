@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, createContext, useContext, useCallback, useId, useRef } from "react";
+import { useT } from "./locale";
 import { ModalBtn } from "./ui-primitives";
 
 const ConfirmContext = createContext(null);
@@ -62,6 +63,7 @@ export function restoreDialogTrigger(trigger) {
 }
 
 export function ConfirmProvider({ children, dark }) {
+  const tr = useT();
   const [dialog, setDialog] = useState(null);
   const [input, setInput] = useState("");
   const dialogRef = useRef(null);
@@ -170,7 +172,7 @@ export function ConfirmProvider({ children, dark }) {
                 )}
               </span>
               <h2 id={titleId} className="text-[15px] font-bold leading-tight flex-1 min-w-0 mt-1.5 mb-0" style={{ color: dark ? "#f2efe9" : "#1c1b19" }}>{dialog.title}</h2>
-              <button type="button" onClick={handleCancel} aria-label="Close" className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 cursor-pointer" style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}`, color: dark ? "#8b90a0" : "#757170" }}>
+              <button type="button" onClick={handleCancel} aria-label={tr("Close")} className="w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 cursor-pointer" style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}`, color: dark ? "#8b90a0" : "#757170" }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
               </button>
             </div>
@@ -184,7 +186,7 @@ export function ConfirmProvider({ children, dark }) {
             {dialog.requireType && (
               <div className="px-4 pt-3">
                 <label htmlFor={confirmationInputId} className="block text-[12.5px] mb-1.5" style={{ color: dark ? "#8b90a0" : "#757170" }}>
-                  Type <span className="font-bold" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{dialog.requireType}</span> to confirm
+                  Type <span className="font-bold" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{dialog.requireType}</span> {tr("to confirm")}
                 </label>
                 <input
                   id={confirmationInputId}
@@ -204,7 +206,7 @@ export function ConfirmProvider({ children, dark }) {
 
             {/* Actions — Cancel is the safe way out; it is never painted red. */}
             <div className="flex flex-col-reverse md:flex-row gap-2 md:justify-end p-4">
-              <ModalBtn ref={cancelButtonRef} kind="quiet" dark={dark} onClick={handleCancel}>Cancel</ModalBtn>
+              <ModalBtn ref={cancelButtonRef} kind="quiet" dark={dark} onClick={handleCancel}>{tr("Cancel")}</ModalBtn>
               <ModalBtn
                 kind={dialog.danger ? "danger" : "primary"}
                 dark={dark}
