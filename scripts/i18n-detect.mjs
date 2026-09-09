@@ -136,7 +136,14 @@ export function isProse(s) {
   const t = s.trim();
   if (t.length < 2 || t.length > 400) return false;
   if (!/[A-Za-z]{2}/.test(t)) return false;
-  if (!/[A-Za-z]/.test(t[0]) && !/^[₦$£€\d]/.test(t)) return false;
+  // Look past anything decorative at the front. "🇳🇬 Nigerian Services" and
+  // "— Look for the flag! Local engagement for Naija creators." both sat
+  // untranslated on the mobile order guide because the first character was not
+  // a letter, so neither ever reached this test as prose. A flag, a bullet or a
+  // dash in front of a sentence does not stop it being a sentence.
+  const head = t.replace(/^[^\p{L}\p{N}₦$£€]+/u, "");
+  if (!head) return false;
+  if (!/[A-Za-z]/.test(head[0]) && !/^[₦$£€\d]/.test(head)) return false;
   if (NOT_PROSE.some((re) => re.test(t))) return false;
   if (DELIBERATELY_ENGLISH.has(t)) return false;
   // Tailwind-ish soup: many tokens, none of them words with spaces between them
