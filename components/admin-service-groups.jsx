@@ -65,14 +65,25 @@ export default function AdminServiceGroupsPage({ dark, t }) {
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
+  // The alert lives at the top of a long page while the buttons that trigger it
+  // are far down the group list, so an error could be set and never seen —
+  // which is exactly how "delete tier does nothing" looked from the outside.
+  const alertRef = useRef(null);
+  const fail = (msg) => {
+    setError(msg);
+    requestAnimationFrame(() => alertRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  };
+
+  // Returns the status and body, not just a boolean: a 409 from delete-tier
+  // carries the one thing the operator needs, which is what is blocking it.
   const act = async (body) => {
     setBusy(true);
     try {
       const res = await fetch("/api/admin/service-groups", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Action failed"); setBusy(false); return false; }
-      await load(); setBusy(false); return true;
-    } catch { setError("Request failed"); setBusy(false); return false; }
+      if (!res.ok) { fail(data.error || "Action failed"); setBusy(false); return { ok: false, status: res.status, data }; }
+      await load(); setBusy(false); return { ok: true, status: res.status, data };
+    } catch { fail("Request failed"); setBusy(false); return { ok: false, status: 0, data: {} }; }
   };
 
   const usdRate = Number(markupSettings.markup_usd_rate || DEFAULT_USD_RATE || 1600);
@@ -111,21 +122,21 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   const startEdit = (ti) => { setEdit({ [ti.id]: { price: String(Math.round(Number(ti.sellPer1k) / 100)), pinned: !!ti.pricePinned, customComments: !!ti.customComments, trafficTargeting: !!ti.trafficTargeting } }); setPanel({ [ti.id]: "edit" }); };
   const saveEdit = async (ti) => {
     const e = edit[ti.id]; if (!e) return;
-    const ok = await act({ action: "update-tier", tierIdToUpdate: ti.id, sellPer1k: Math.round(Number(e.price) * 100), pricePinned: e.pinned, customComments: e.customComments, trafficTargeting: e.trafficTargeting });
+    const { ok } = await act({ action: "update-tier", tierIdToUpdate: ti.id, sellPer1k: Math.round(Number(e.price) * 100), pricePinned: e.pinned, customComments: e.customComments, trafficTargeting: e.trafficTargeting });
     if (ok) setPanel({});
   };
   const swapTo = async (ti, svc) => {
-    const ok = await act({ action: "update-tier", tierIdToUpdate: ti.id, serviceId: svc.id });
+    const { ok } = await act({ action: "update-tier", tierIdToUpdate: ti.id, serviceId: svc.id });
     if (ok) { setPanel({}); setSvcQ(""); }
   };
   const addTier = async (g) => {
     if (!addForm.serviceId) { setError("Pick a service first"); return; }
-    const ok = await act({ action: "add-tier", groupId: g.id, serviceId: addForm.serviceId, tier: addForm.tier, sellPer1k: addForm.price ? Math.round(Number(addForm.price) * 100) : 0 });
+    const { ok } = await act({ action: "add-tier", groupId: g.id, serviceId: addForm.serviceId, tier: addForm.tier, sellPer1k: addForm.price ? Math.round(Number(addForm.price) * 100) : 0 });
     if (ok) { setAddFor(null); setAddForm({ tier: "Standard", serviceId: "", price: "" }); setSvcQ(""); }
   };
   const createGroup = async () => {
     if (!newG.name || !newG.platform) { setError("Name and platform required"); return; }
-    const ok = await act({ action: "create-group", ...newG });
+    const { ok } = await act({ action: "create-group", ...newG });
     if (ok) { setShowNew(false); setNewG({ name: "", platform: "", type: "followers", nigerian: false }); }
   };
 
@@ -188,7 +199,23 @@ export default function AdminServiceGroupsPage({ dark, t }) {
             {(g.type || "").toLowerCase().includes("comment") && <label className="mb-chk"><input type="checkbox" checked={e.customComments} onChange={ev => setEdit({ [ti.id]: { ...e, customComments: ev.target.checked } })} /> Custom comments</label>}
             {(g.type || "").toLowerCase().includes("traffic") && <label className="mb-chk"><input type="checkbox" checked={e.trafficTargeting} onChange={ev => setEdit({ [ti.id]: { ...e, trafficTargeting: ev.target.checked } })} /> Traffic targeting</label>}
             <span className="mb-spacer" />
-            <button type="button" className="mb-b sm danger" onClick={async () => { if (await confirm({ title: "Delete tier", message: `Delete the ${ti.tier} tier from "${g.name}"?`, confirmLabel: "Delete", danger: true })) { const ok = await act({ action: "delete-tier", tierIdToDelete: ti.id }); if (ok) setPanel({}); } }}>Delete tier</button>
+            <button type="button" className="mb-b sm danger" onClick={async () => { if (await confirm({ title: "Delete tier", message: `Delete the ${ti.tier} tier from "${g.name}"?`, confirmLabel: "Delete", danger: true })) {
+                  let r = await act({ action: "delete-tier", tierIdToDelete: ti.id });
+                  // 385 of 393 tiers are pointed at by a live reseller service
+                  // id, so this is the normal path rather than the exception.
+                  // Retiring keeps the id answering "discontinued" forever
+                  // instead of dangling, which is why it is offered and not
+                  // done automatically.
+                  if (!r.ok && r.status === 409) {
+                    const go = await confirm({
+                      title: "Retire the reseller id too?",
+                      message: `${r.data?.error || "A reseller service id points at this tier."}\n\nRetiring keeps the id alive and answering "discontinued" for anyone who has it hardcoded. It cannot be undone.`,
+                      confirmLabel: "Retire and delete", danger: true,
+                    });
+                    if (go) r = await act({ action: "delete-tier", tierIdToDelete: ti.id, retireMapping: true });
+                  }
+                  if (r.ok) { setError(""); setPanel({}); }
+                } }}>Delete tier</button>
             <button type="button" className="mb-b sm" onClick={() => setPanel({})}>Cancel</button>
             <button type="button" className="mb-pri sm" disabled={busy} onClick={() => saveEdit(ti)}>Save</button>
           </div>
@@ -256,7 +283,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
       </div>
       <div className="mb" style={vars}>
         <style>{CSS}</style>
-        {error && <InlineAlert type="error" message={error} onClose={() => setError("")} dark={dark} />}
+        <div ref={alertRef}>{error && <InlineAlert type="error" message={error} onClose={() => setError("")} dark={dark} />}</div>
         {showNew && (
           <div className="mb-card mb-new">
             <div className="mb-fld"><label>Group name</label><input className="mb-in" value={newG.name} onChange={e => setNewG(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Instagram Followers" /></div>
