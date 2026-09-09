@@ -107,8 +107,6 @@ const ReferralsPage = dynamic(() => import("./referrals-page").then(m => m.defau
 const ReferralsSidebar = dynamic(() => import("./referrals-page").then(m => m.ReferralsSidebar), { ssr: false });
 const SettingsPage = dynamic(() => import("./settings-page").then(m => m.default), { ssr: false });
 const SettingsSidebar = dynamic(() => import("./settings-page").then(m => m.SettingsSidebar), { ssr: false });
-const SupportPage = dynamic(() => import("./support-page").then(m => m.default), { ssr: false });
-const SupportSidebar = dynamic(() => import("./support-page").then(m => m.SupportSidebar), { ssr: false });
 const AddFundsPage = dynamic(() => import("./addfunds-page").then(m => m.default), { ssr: false });
 const AddFundsSidebar = dynamic(() => import("./addfunds-page").then(m => m.AddFundsSidebar), { ssr: false });
 const GuidePage = dynamic(() => import("./guide-page").then(m => m.default), { ssr: false });
@@ -1240,7 +1238,11 @@ function DashboardInner({ initialData }) {
         return <SettingsPage user={userWithRewardsStatus} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} />;
       case "support":
         if (socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setActive("overview"); return null; }
-        return <SupportPage dark={dark} t={t} />;
+        // Support is WhatsApp, full stop. If the number is not configured we
+        // show the guide — never the ticket page. Tickets are a read-only view
+        // of old data kept for history, and rendering it here presented a
+        // channel nobody is watching as a way to reach us.
+        return <GuidePage dark={dark} t={t} />;
       case "add-funds":
         return <AddFundsPage user={user} txs={enrichedTxs} transactionsTotal={transactionsTotal} walletSummary={walletSummary} dark={dark} t={t} paymentStatus={paymentStatus} setPaymentStatus={setPaymentStatus} gatewayReturnReference={gatewayReturnReference} onPlaceOrder={() => setActive("services")} onRefresh={refreshDashboard} />;
       case "guide":
@@ -1476,7 +1478,7 @@ function DashboardInner({ initialData }) {
           ) : isSettings ? (
             <SettingsSidebar user={user} dark={dark} t={t} />
           ) : isSupport ? (
-            <SupportSidebar dark={dark} t={t} tickets={[]} socialLinks={socialLinks} />
+            <GuideSidebar dark={dark} t={t} />
           ) : isAddFunds ? (
             <AddFundsSidebar user={user} txs={enrichedTxs} dark={dark} t={t} />
           ) : isGuide ? (
