@@ -4,6 +4,8 @@ import { SkelList } from "./skeleton";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
+import { getCountry, splitE164, COUNTRIES } from "../lib/phone-countries";
+import { copyText } from "../lib/clipboard";
 import { FilterDropdown } from "./date-range-picker";
 import { AccountTag } from "./account-tag";
 
@@ -112,6 +114,27 @@ const MoreIcon = () => (
 const ExportIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 );
+
+/* Drawer identity-row icons. Stroke style matches the rest of the sprite. */
+const MailIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+);
+const PhoneIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+);
+const GlobeIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+);
+const CopyIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+);
+/* Transaction kind marks: deposit, order, refund, bonus. */
+const TX_KIND_ICON = {
+  dep: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg>,
+  ord: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>,
+  ref: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 103-6.7L3 8"/><path d="M3 3v5h5"/></svg>,
+  bon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="4"/><path d="M12 8v13M5 12v9h14v-9"/><path d="M12 8H7.5a2.5 2.5 0 010-5C11 3 12 8 12 8zM12 8h4.5a2.5 2.5 0 000-5C13 3 12 8 12 8z"/></svg>,
+};
 
 /* ── Main component ───────────────────────────────── */
 
@@ -398,7 +421,15 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   };
 
   const startEditing = () => {
-    setEditForm({ name: displayName(drawerUser) || '', email: displayEmail(drawerUser) || '', phone: drawerUser.phone || '' });
+    const parts = splitE164(drawerUser.phone);
+    setEditForm({
+      name: displayName(drawerUser) || '',
+      email: displayEmail(drawerUser) || '',
+      // The server validates phone as a local number against the country and
+      // stores the pair back as E.164 — so the form edits the local half.
+      country: drawerUser.country || parts.country || 'NG',
+      phone: parts.local || '',
+    });
     setEditing(true);
   };
 
@@ -406,7 +437,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
     if (!drawerUser) return;
     setActionLoading(true);
     try {
-      const res = await fetch('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'edit', userId: drawerUser.internalId || drawerUser.id, name: editForm.name, email: editForm.email, phone: editForm.phone }) });
+      const res = await fetch('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'edit', userId: drawerUser.internalId || drawerUser.id, name: editForm.name, email: editForm.email, phone: editForm.phone, country: editForm.country }) });
       const data = await res.json();
       if (data.error) { toast.error('Error', data.error); return; }
       toast.success('Updated', data.message);
@@ -528,11 +559,12 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   /* ── Render ───────────────────────────────────── */
 
   const vars = {
-    "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
+    "--card": dark ? "#171126" : "#fffdfb", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
     "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--acbg": dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)", "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)",
-    "--ok": dark ? "#6ee7b7" : "#0a7d54", "--okbg": dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828",
-    "--bg": dark ? "#0b0e1a" : "#e8e2d9", "--bluetxt": "#60a5fa",
+    "--ok": dark ? "#6ee7b7" : "#086e4f", "--okbg": dark ? "rgba(110,231,183,.12)" : "rgba(8,110,79,.08)", "--warn": dark ? "#fcd34d" : "#935004", "--bad": dark ? "#fca5a5" : "#bc2121",
+    "--bg": dark ? "#0c0814" : "#efe8e0", "--bluetxt": "#60a5fa",
+    "--acink": dark ? "#e3a4b5" : "#83535f",
   };
   const dotCls = (status) => status === 'Active' ? 'ok' : status === 'Suspended' ? 'bad' : status === 'PendingDeletion' ? 'warn' : 'dim';
   const joinedShort = (iso) => {
@@ -543,6 +575,22 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
     return d.getFullYear() === now.getFullYear() ? s : `${s} ${String(d.getFullYear()).slice(2)}`;
   };
   const txText = (tx) => cleanNote(tx.note) || tx.reference || txLabel(tx.type);
+  const tenure = (iso) => {
+    const m = Math.floor((Date.now() - new Date(iso).getTime()) / 2629800000);
+    if (m < 1) return 'this month';
+    if (m < 12) return `${m} month${m === 1 ? '' : 's'} ago`;
+    const y = Math.floor(m / 12);
+    return `${y} year${y === 1 ? '' : 's'} ago`;
+  };
+  // Which of the four marks a row wears. Falls back on the money direction.
+  const txKind = (tx) => {
+    const ty = tx.type || '';
+    if (ty.includes('deposit') || ty === 'admin_credit') return 'dep';
+    if (ty.includes('refund')) return 'ref';
+    if (ty === 'admin_gift' || ty.includes('bonus')) return 'bon';
+    if (ty === 'order' || ty === 'admin_debit') return 'ord';
+    return txSign(tx) === '-' ? 'ord' : 'dep';
+  };
   const sortArrow = (key) => sort.key === key ? (sort.dir === 'asc' ? ' ↑' : ' ↓') : '';
   const openWa = (u) => { const link = waLink(u); if (link) window.open(link, '_blank'); else toast.info('No WhatsApp', `${displayName(u)} hasn't added a phone number`); };
   const [txAll, setTxAll] = useState(false);
@@ -574,7 +622,6 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
         <span className="us-av lg">{initials(displayName(drawerUser))}</span>
         <span className="us-dn">
           <b>{displayName(drawerUser)}</b>
-          <i>{displayEmail(drawerUser)}{drawerUser.phone ? ` · ${drawerUser.phone}` : ''}</i>
         </span>
         <span className="us-st"><i className={`us-dot ${dotCls(drawerUser.status)}`} />{sd.label}</span>
         <button type="button" className="us-ib" onClick={closeDrawer} aria-label="Close">✕</button>
@@ -584,9 +631,19 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
         <section className="us-dsec">
           <header><h4>Edit account</h4></header>
           <div className="us-edit">
-            {[['name', 'Name'], ['email', 'Email'], ['phone', 'Phone']].map(([key, label]) => (
+            {[['name', 'Name'], ['email', 'Email']].map(([key, label]) => (
               <label key={key} className="us-fld"><span>{label}</span><input type={key === 'email' ? 'email' : 'text'} value={editForm[key]} onChange={e => setEditForm(f => ({ ...f, [key]: e.target.value }))} className="us-in" /></label>
             ))}
+            <div className="us-2col">
+              <label className="us-fld"><span>Country</span>
+                <select className="us-in" value={editForm.country} onChange={e => setEditForm(f => ({ ...f, country: e.target.value }))}>
+                  {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.name}</option>)}
+                </select>
+              </label>
+              <label className="us-fld"><span>Phone · +{getCountry(editForm.country)?.dial || '234'}</span>
+                <input type="text" inputMode="numeric" placeholder={getCountry(editForm.country)?.example || ''} value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '') }))} className="us-in m" />
+              </label>
+            </div>
             <div className="us-row">
               <button type="button" className="us-pri" disabled={actionLoading} onClick={saveEdit}>{actionLoading ? 'Saving...' : 'Save changes'}</button>
               <button type="button" className="us-b" onClick={() => setEditing(false)}>Cancel</button>
@@ -595,18 +652,44 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
         </section>
       ) : (
         <>
+          <div className="us-idr">
+            <div className="us-ir">
+              <span className="us-iri"><MailIcon /></span>
+              <span className="us-irb">
+                <span className="us-irk">Email</span>
+                <span className="us-irv">{displayEmail(drawerUser) || '—'}{drawerUser.verified && <i className="us-vf">✓ Verified</i>}</span>
+              </span>
+              {displayEmail(drawerUser) && <button type="button" className="us-icb" aria-label="Copy email" onClick={() => { copyText(displayEmail(drawerUser)); toast.success('Copied', displayEmail(drawerUser)); }}><CopyIcon /></button>}
+            </div>
+            <div className="us-ir">
+              <span className="us-iri"><PhoneIcon /></span>
+              <span className="us-irb">
+                <span className="us-irk">Phone</span>
+                <span className="us-irv m">{drawerUser.phone || '—'}</span>
+              </span>
+              {drawerUser.phone && <>
+                <button type="button" className="us-icb" aria-label="Copy phone" onClick={() => { copyText(drawerUser.phone); toast.success('Copied', drawerUser.phone); }}><CopyIcon /></button>
+                <button type="button" className="us-icb wa" aria-label="WhatsApp" onClick={() => openWa(drawerUser)}><WAIcon /></button>
+              </>}
+            </div>
+            <div className="us-ir">
+              <span className="us-iri"><GlobeIcon /></span>
+              <span className="us-irb">
+                <span className="us-irk">Country</span>
+                <span className="us-irv">{(() => { const c = getCountry(drawerUser.country); return c ? `${c.flag} ${c.name}` : '—'; })()}</span>
+              </span>
+            </div>
+          </div>
           <div className="us-facts">
             <div className="us-f"><span>Balance</span><b className={"m" + ((drawerUser.balance || 0) > 0 ? " good" : "")}>{fN(drawerUser.balance || 0)}</b></div>
             <div className="us-f"><span>Orders</span><b className="m">{drawerUser.orders || 0}</b></div>
             <div className="us-f"><span>Spent, 90 days</span><b className="m">{fN(drawerUser.spend90 || 0)}</b></div>
-            <div className="us-f"><span>Joined</span><b>{drawerUser.joined ? fD(drawerUser.joined, true) : '—'}</b></div>
-            <div className="us-f"><span>Ref code</span><b className="m">{drawerUser.refCode || '—'}</b></div>
+            <div className="us-f us-fwide"><span>Joined</span><b>{drawerUser.joined ? fD(drawerUser.joined, true) : '—'}{drawerUser.joined && <small className="us-ago"> · {tenure(drawerUser.joined)}</small>}</b></div>
             <div className="us-f"><span>Nitro status</span><b>{rewardsLoading ? '…' : rewards ? <><span className="us-tier">{rewards.status.name}</span> · {(rewards.points.balance || 0).toLocaleString()} pts</> : '—'}</b></div>
           </div>
 
           <div className="us-acts">
             {!isMutationLocked(drawerUser) && <button type="button" className="us-pri" onClick={() => setDrawerCreditOpen(!drawerCreditOpen)}>Credit wallet</button>}
-            {!isMutationLocked(drawerUser) && <button type="button" className="us-b" onClick={() => openWa(drawerUser)}><WAIcon /> WhatsApp</button>}
             {canEdit && !isMutationLocked(drawerUser) && <button type="button" className="us-b" onClick={startEditing}>Edit</button>}
             {(drawerUser.canReinstate || ['Active', 'Suspended'].includes(drawerUser.status)) && (
               <button type="button" className={"us-b" + (drawerUser.status === 'Active' ? " danger" : "")} disabled={actionLoading} onClick={() => handleStatusAction(drawerUser)}>
@@ -667,8 +750,11 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
             <div className="us-txs">
               {txShown.map(tx => (
                 <div key={tx.id} className="us-tr">
-                  <span className="us-td">{joinedShort(tx.createdAt)}</span>
-                  <span className="us-tn" title={txText(tx)}>{txText(tx)}</span>
+                  <span className={`us-txk ${txKind(tx)}`}>{TX_KIND_ICON[txKind(tx)]}</span>
+                  <span className="us-txb">
+                    <span className="us-tn" title={txText(tx)}>{txText(tx)}{tx.status !== 'Completed' && <i className="us-pend">{tx.status}</i>}</span>
+                    <span className="us-txd">{joinedShort(tx.createdAt)}</span>
+                  </span>
                   <b className={"m " + (tx.status !== 'Completed' ? 'dim' : txSign(tx) === '+' ? 'in' : 'out')}>{txSign(tx) === '-' ? '−' : txSign(tx)}{fN(Math.abs(tx.amount) / 100)}</b>
                 </div>
               ))}
@@ -877,7 +963,7 @@ const US_CSS = `
 .us-f{display:flex;flex-direction:column;gap:2px;padding:9px 12px;border-top:1px solid var(--rail);border-left:1px solid var(--rail);min-width:0}
 .us-f:nth-child(-n+2){border-top:0}.us-f:nth-child(odd){border-left:0}
 .us-f span{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
-.us-f b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.us-f b.good{color:var(--ok)}.us-tier{color:var(--bluetxt);font-weight:800}
+.us-f b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.us-f b.good{color:var(--ok)}.us-tier{color:var(--acink);font-weight:800}
 .us-acts{display:flex;gap:6px;flex-wrap:wrap}.us-acts .us-pri{flex:1;text-align:center}
 .us-dsec{border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .us-dsec>header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--soft)}
@@ -890,9 +976,25 @@ const US_CSS = `
 .us-in{width:100%;height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:inherit;font-size:13px;color:var(--ink);outline:none;min-width:0}.us-in:focus{border-color:var(--acln)}
 .us-edit{display:flex;flex-direction:column;gap:10px;padding:12px}
 .us-fld{display:flex;flex-direction:column;gap:5px}.us-fld span{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
+.us-idr{border:1px solid var(--line);border-radius:12px;padding:2px 12px}
+.us-ir{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--rail)}.us-ir:first-child{border-top:0}
+.us-iri{width:28px;height:28px;border-radius:8px;background:var(--acbg);color:var(--acink);display:grid;place-items:center;flex-shrink:0}
+.us-irb{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.us-irk{font-size:9.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
+.us-irv{font-size:13px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.us-vf{display:inline-block;font-style:normal;font-size:9.5px;font-weight:700;color:var(--ok);background:var(--okbg);border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+.us-icb{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:none;color:var(--mut);cursor:pointer;display:grid;place-items:center;flex-shrink:0}.us-icb:hover{color:var(--ink)}.us-icb.wa{color:var(--ok)}
+.us-2col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.us-fwide{grid-column:1 / -1}.us-ago{font-size:11px;color:var(--mut);font-weight:500}
+.us-txk{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;flex-shrink:0}
+.us-txk.dep{background:var(--okbg);color:var(--ok)}.us-txk.ord{background:var(--acbg);color:var(--acink)}
+.us-txk.ref{background:rgba(96,165,250,.12);color:var(--bluetxt)}.us-txk.bon{background:rgba(224,164,88,.14);color:var(--warn)}
+.us-txb{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.us-txd{font-size:10.5px;color:var(--dim)}
+.us-pend{display:inline-block;font-style:normal;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--warn);background:rgba(224,164,88,.14);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px}
 .us-txs{display:flex;flex-direction:column}
 .us-tr{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--rail);font-size:12.5px}.us-tr:first-child{border-top:0}
-.us-td{color:var(--dim);width:46px;flex-shrink:0;font-size:11.5px}.us-tn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mut)}
+.us-tn{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);font-weight:600}
 .us-tr b{font-weight:600;flex-shrink:0}.us-tr b.in{color:var(--ok)}.us-tr b.out{color:var(--ink)}.us-tr b.dim{color:var(--dim)}
 .us-txpg{justify-content:space-between}
 .us-menu{position:fixed;z-index:1000;width:170px;padding:6px 0;border-radius:12px;background:var(--card);border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.18)}
