@@ -154,6 +154,9 @@ export async function GET(req) {
         firstName: u.firstName,
         lastName: u.lastName,
         phone: sensitive ? u.phone : maskPhone(u.phone),
+        // Selected since v2.4.105 and dropped right here ever since — the
+        // drawer could never show what the API threw away.
+        country: u.country,
         email: sensitive ? u.email : maskEmail(u.email),
         balance: u.balance / 100,
         verified: u.emailVerified,
