@@ -217,7 +217,7 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
                 <div><span style={{ color: t.textMuted }}>ID </span><span className="font-medium" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.textSoft }}>{selected.id}</span></div>
                 <div><span style={{ color: t.textMuted }}>Status </span><span className="font-semibold" style={{ color: statusClr(selected.status, dark) }}>{selected.status}</span></div>
                 {selected.claimedBy && <div><span style={{ color: t.textMuted }}>Claimed </span><span className="font-medium" style={{ color: isMine ? t.accent : (dark ? "#fcd34d" : "#d97706") }}>{selected.claimedBy}</span></div>}
-                {selected.orderId && <div><span style={{ color: t.textMuted }}>Order </span><span className="font-medium" style={{ color: t.accentInk }}>{selected.orderId}</span></div>}
+                {selected.orderId && <div><span style={{ color: t.textMuted }}>Order </span><span className="font-medium" style={{ color: t.accent }}>{selected.orderId}</span></div>}
                 <div><span style={{ color: t.textMuted }}>Created </span><span style={{ color: t.textSoft }}>{selected.created ? fD(selected.created) : "—"}</span></div>
               </div>
               {selected.activity?.length > 0 && (
@@ -279,7 +279,7 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
                   {dateEl}
                   <div className="flex flex-col items-end max-w-[78%] self-end">
                     <div className="py-2.5 px-3.5 rounded-[14px]" style={{ borderBottomRightRadius: 4, background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.06)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.14)"}` }}>
-                      {showName && r.name && <div className="text-[10px] font-semibold mb-1" style={{ color: t.accentInk }}>{r.name}</div>}
+                      {showName && r.name && <div className="text-[10px] font-semibold mb-1" style={{ color: t.accent }}>{r.name}</div>}
                       <div className="text-sm leading-[1.55] whitespace-pre-wrap" style={{ color: t.text }}>{r.msg}</div>
                     </div>
                     {showTime && <div className="text-[11px] mt-[3px] px-1.5" style={{ color: t.textMuted }}>{r.time ? fD(r.time) : ""}</div>}
@@ -320,7 +320,7 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
           ) : (
             <div className="py-3.5 px-[18px] text-center text-[13px] shrink-0 flex justify-center gap-3" style={{ borderTop: `1px solid ${t.cardBorder}`, color: t.textMuted, background: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>
               <span>Ticket resolved</span>
-              <button onClick={async () => { if (sendingRef.current) return; sendingRef.current = true; try { await fetch("/api/admin/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reopen", ticketId: selected.id }) }); refreshTickets(); } finally { sendingRef.current = false; } }} className="bg-transparent border-none text-[13px] cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ color: t.accentInk }}>Reopen</button>
+              <button onClick={async () => { if (sendingRef.current) return; sendingRef.current = true; try { await fetch("/api/admin/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "reopen", ticketId: selected.id }) }); refreshTickets(); } finally { sendingRef.current = false; } }} className="bg-transparent border-none text-[13px] cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ color: t.accent }}>Reopen</button>
               <button onClick={async () => { if (sendingRef.current) return; sendingRef.current = true; try { await fetch("/api/admin/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "archive", ticketId: selected.id }) }); refreshTickets(); setSelected(null); } finally { sendingRef.current = false; } }} className="bg-transparent border-none text-[13px] cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted }}>Archive</button>
             </div>
           )}
@@ -377,7 +377,7 @@ export default function AdminTicketsPage({ dark, t, adminName }) {
             <div className="mb-3 rounded-xl overflow-hidden" style={{ border: `1px solid ${t.cardBorder}` }}>
               <div className="text-[10px] font-semibold uppercase tracking-[1px] py-2 px-3" style={{ color: t.textMuted, background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)" }}>Related order</div>
               <div className="px-3 py-2.5">
-                <div className="text-xs font-medium" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.accentInk }}>{selected.orderId}</div>
+                <div className="text-xs font-medium" style={{ fontFamily: "'JetBrains Mono',monospace", color: t.accent }}>{selected.orderId}</div>
               </div>
             </div>
           )}
