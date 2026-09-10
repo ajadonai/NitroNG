@@ -671,20 +671,27 @@ function AdminDashboardInner({ initialData }) {
     }
   };
 
+  // The same palette the customer side reads from globals.css, restated as
+  // hexes because six admin call sites alpha-suffix these values (`${t.blue}22`),
+  // which a var() cannot survive. If globals.css moves, move this with it.
+  // Every text value clears 4.5:1 on the canvas it sits on — light mode used
+  // to fail on muted, green, red, amber, and the accent-as-text.
   const t = useMemo(() => ({
-    bg: dark ? "#080b14" : "#f4f1ed",
-    sidebarBg: dark ? "#120c1e" : "#eceae5",
-    sidebarBorder: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)",
-    cardBg: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.8)",
-    cardBorder: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)",
-    text: dark ? "#f5f3f0" : "#1a1917",
-    textSoft: dark ? "#a09b95" : "#555250",
-    textMuted: dark ? "#8a8580" : "#757170",
+    bg: dark ? "#0c0814" : "#efe8e0",
+    sidebarBg: dark ? "#120c1e" : "#f0e9e2",
+    sidebarBorder: dark ? "rgba(232,180,196,.18)" : "rgba(139,74,94,.16)",
+    cardBg: dark ? "#171126" : "#fffdfb",
+    cardBorder: dark ? "rgba(232,180,196,.15)" : "rgba(139,74,94,.13)",
+    text: dark ? "#f6f1ee" : "#201b19",
+    textSoft: dark ? "#b3ada6" : "#555250",
+    textMuted: dark ? "#9d968f" : "#665f5c",
     accent: "#c47d8e",
+    // The accent when it has to be READ — the fill pink is 2.5:1 on cream.
+    accentInk: dark ? "#e3a4b5" : "#83535f",
     navActive: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)",
-    green: dark ? "#6ee7b7" : "#059669",
-    red: dark ? "#fca5a5" : "#dc2626",
-    amber: dark ? "#e0a458" : "#d97706",
+    green: dark ? "#6ee7b7" : "#086e4f",
+    red: dark ? "#fca5a5" : "#bc2121",
+    amber: dark ? "#fcd34d" : "#935004",
     blue: dark ? "#a5b4fc" : "#4f46e5",
   }), [dark]);
 

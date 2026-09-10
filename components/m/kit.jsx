@@ -3,6 +3,7 @@
 // stylesheet the shell prints, and the primitives (facts row, card, rows, chips,
 // buttons, modal) the six pages are built from.
 import { useEffect } from "react";
+import { docDateLocale } from "../../lib/format";
 import { useT } from "../locale";
 
 // ── CSS variables ──
@@ -41,12 +42,12 @@ export function ago(iso) {
 
 export function dateOf(iso) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return new Date(iso).toLocaleDateString(docDateLocale(), { day: "numeric", month: "short" });
 }
 
 export function longDate(iso) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString(docDateLocale(), { day: "numeric", month: "short", year: "numeric" });
 }
 
 // ── facts row ──

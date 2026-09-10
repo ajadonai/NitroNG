@@ -80,7 +80,7 @@ const Chevron = () => (
 
 function CellLink({ t, onClick, children }) {
   return (
-    <button onClick={onClick} className="inline-flex items-center gap-1 text-[11px] font-semibold bg-transparent border-none cursor-pointer p-0 font-[inherit] hover:underline" style={{ color: t.accent }}>
+    <button onClick={onClick} className="inline-flex items-center gap-1 text-[11px] font-semibold bg-transparent border-none cursor-pointer p-0 font-[inherit] hover:underline" style={{ color: "var(--t-accent-ink)" }}>
       {children}<Chevron />
     </button>
   );
@@ -400,7 +400,7 @@ function ModalShell({ open, onClose, dark, t, title, children }) {
 function SeeAllLink({ t, onClick }) {
   const tr = useT();
   return (
-    <button onClick={onClick} className="block w-full bg-transparent border-none cursor-pointer font-[inherit] text-[12.5px] font-semibold text-center pt-4 hover:underline" style={{ color: t.accent }}>
+    <button onClick={onClick} className="block w-full bg-transparent border-none cursor-pointer font-[inherit] text-[12.5px] font-semibold text-center pt-4 hover:underline" style={{ color: "var(--t-accent-ink)" }}>
       {tr("See everything in Rewards ›")}
     </button>
   );

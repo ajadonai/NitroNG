@@ -164,8 +164,8 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
           <div className="text-xl font-bold tabular-nums" style={{ color: t.text }}>{score.toLocaleString()}</div>
         </div>
         <div className="flex-1 py-2 px-3 rounded-xl" style={{ background: dark ? 'rgba(196,125,142,.08)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.18)' : 'rgba(196,125,142,.1)'}` }}>
-          <div className="text-[9px] font-bold uppercase tracking-widest" style={{ color: t.accent }}>{tr("Best")}</div>
-          <div className="text-xl font-bold tabular-nums" style={{ color: t.accent }}>{bestScore.toLocaleString()}</div>
+          <div className="text-[9px] font-bold uppercase tracking-widest" style={{ color: "var(--t-accent-ink)" }}>{tr("Best")}</div>
+          <div className="text-xl font-bold tabular-nums" style={{ color: "var(--t-accent-ink)" }}>{bestScore.toLocaleString()}</div>
         </div>
         <div className="flex flex-col gap-1.5 justify-center">
           <button onClick={() => setShowHelp(true)} className="w-8 h-8 rounded-lg flex items-center justify-center border-none cursor-pointer" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.03)', border: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)'}`, color: t.textMuted }} title={tr("How to play")}>
@@ -234,7 +234,7 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
           {/* Start screen */}
           {!board && !loading && (
             <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center" style={{ background: dark ? 'rgba(0,0,0,.6)' : 'rgba(255,255,255,.6)' }}>
-              <div className="text-4xl font-bold mb-1" style={{ color: t.accent, textShadow: '0 2px 12px rgba(196,125,142,.3)' }}>2048</div>
+              <div className="text-4xl font-bold mb-1" style={{ color: "var(--t-accent-ink)", textShadow: '0 2px 12px rgba(196,125,142,.3)' }}>2048</div>
               <div className="text-xs mb-4" style={{ color: t.textMuted }}>{tr("Merge tiles. Climb the leaderboard.")}</div>
               <button onClick={startNewGame} className="shimmer-btn px-7 py-3 rounded-xl text-sm font-semibold border-none cursor-pointer" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5e6b)`, color: '#fff', boxShadow: '0 4px 16px rgba(196,125,142,.3)' }}>
                 {tr("Start Game")}
@@ -281,13 +281,13 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
                 ['Reach 2048 to win. Score = total merges.', '🏆'],
               ].map(([text, icon], i) => (
                 <div key={i} className="flex gap-3 items-center py-2 px-3 rounded-xl" style={{ background: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.02)' }}>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm" style={{ background: dark ? 'rgba(196,125,142,.12)' : 'rgba(196,125,142,.08)', color: t.accent }}>{icon}</div>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm" style={{ background: dark ? 'rgba(196,125,142,.12)' : 'rgba(196,125,142,.08)', color: "var(--t-accent-ink)" }}>{icon}</div>
                   <p className="text-[13px] leading-[1.45]" style={{ color: dark ? 'rgba(255,255,255,.7)' : 'rgba(0,0,0,.6)' }}>{text}</p>
                 </div>
               ))}
             </div>
             <div className="relative mt-4 p-3 rounded-xl" style={{ background: dark ? 'rgba(196,125,142,.08)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.08)'}` }}>
-              <div className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: t.accent }}>Win Real Money</div>
+              <div className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: "var(--t-accent-ink)" }}>Win Real Money</div>
               <p className="text-[12px] leading-[1.55]" style={{ color: t.textMuted }}>
                 {tr("Your best score each month enters the leaderboard. Top 5 players win wallet credit. Play unlimited times — only your highest counts.")}
               </p>

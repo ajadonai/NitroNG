@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
+import { msg } from "../lib/i18n";
 import { useT } from "./locale";
 
 // Nine times out of ten this is an operational notice, so it is drawn as a
@@ -8,10 +9,10 @@ import { useT } from "./locale";
 // the text. Several notices can be live at once; the newest shows first and
 // dismissing one reveals the next.
 const TYPES = {
-  info:    { label: "Notice",   c: ["#8b5e6b", "#e0a0b0"], bg: ["rgba(196,125,142,.08)", "rgba(196,125,142,.14)"] },
-  warning: { label: "Heads up", c: ["#b45309", "#fcd34d"], bg: ["rgba(217,119,6,.08)",   "rgba(251,191,36,.12)"] },
-  success: { label: "Fixed",    c: ["#0a7d54", "#6ee7b7"], bg: ["rgba(5,150,105,.08)",   "rgba(110,231,183,.12)"] },
-  urgent:  { label: "Urgent",   c: ["#c62828", "#fca5a5"], bg: ["rgba(220,38,38,.08)",   "rgba(252,165,165,.12)"] },
+  info:    { label: msg("Notice"),   c: ["#8b5e6b", "#e0a0b0"], bg: ["rgba(196,125,142,.08)", "rgba(196,125,142,.14)"] },
+  warning: { label: msg("Heads up"), c: ["#b45309", "#fcd34d"], bg: ["rgba(217,119,6,.08)",   "rgba(251,191,36,.12)"] },
+  success: { label: msg("Fixed"),    c: ["#0a7d54", "#6ee7b7"], bg: ["rgba(5,150,105,.08)",   "rgba(110,231,183,.12)"] },
+  urgent:  { label: msg("Urgent"),   c: ["#c62828", "#fca5a5"], bg: ["rgba(220,38,38,.08)",   "rgba(252,165,165,.12)"] },
 };
 
 const CSS = `
@@ -93,7 +94,7 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
     >
       <style>{CSS}</style>
       <span className="an-dot" />
-      <span className="an-lbl">{T.label}</span>
+      <span className="an-lbl">{tr(T.label)}</span>
       <span className="an-msg">
         {alert.message.split(/(\*[^*]+\*)/).map((part, k) =>
           part.startsWith('*') && part.endsWith('*') ? <strong key={k}>{part.slice(1, -1)}</strong> : part

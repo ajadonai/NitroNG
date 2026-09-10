@@ -7,6 +7,16 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 ## Open
 
+- **Dead cross-sell and tier-compare data inside new-order.jsx, found 10 Sep
+  2026 by the blind-spot sweep.** `crossSells`/`getCrossSell` (four upsell
+  cards: "Complete the look", "Pair it with Likes"…) and `TIER_COMPARE` (the
+  Accounts/Refill/Starts/Best-for table) are defined at module scope and
+  rendered nowhere — nothing in the repo references either. Fifteen of the
+  eighteen module-scope strings the i18n baseline charges to new-order.jsx are
+  these. Not deleted: Trip's call, and the upsell cards read like a feature
+  that was meant to ship rather than one that was removed. Delete or build —
+  either way the baseline drops.
+
 - **Two dead landing files, found 9 Sep 2026 by the translation guard.**
   `components/landing-page.jsx` (2,000+ lines) and
   `components/landing-below-fold.jsx` are not reachable from any route:

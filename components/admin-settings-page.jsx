@@ -178,7 +178,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
             <div className="nitro-ringed w-[52px] h-[52px] flex items-center justify-center text-white text-[17px] font-bold shrink-0" style={{ background: "linear-gradient(135deg, #c47d8e, #8b5e6b)" }}>{initials}</div>
             <div className="flex flex-col gap-[3px] min-w-0">
               <div className="text-[16px] font-semibold truncate" style={{ color: t.text }}>{admin?.name || "Admin"}</div>
-              <div className="text-[11.5px] font-semibold uppercase tracking-[.6px]" style={{ color: t.accent }}>{admin?.role || "admin"}</div>
+              <div className="text-[11.5px] font-semibold uppercase tracking-[.6px]" style={{ color: t.accentInk }}>{admin?.role || "admin"}</div>
             </div>
           </div>
           <div className="rounded-[14px] px-3.5 mb-[18px]" style={card}>
@@ -188,7 +188,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
                 <b className="text-[13px] font-semibold truncate" style={{ color: t.text }}>{val}</b>
               </div>
             ))}
-            <button type="button" onClick={() => { setProfileMsg(null); setProfileModalOpen(true); }} className="w-full text-left py-2 text-[12.5px] font-semibold bg-transparent border-none cursor-pointer font-[inherit]" style={{ color: t.accent, borderTop: `1px solid ${t.cardBorder}` }}>Edit name or email</button>
+            <button type="button" onClick={() => { setProfileMsg(null); setProfileModalOpen(true); }} className="w-full text-left py-2 text-[12.5px] font-semibold bg-transparent border-none cursor-pointer font-[inherit]" style={{ color: t.accentInk, borderTop: `1px solid ${t.cardBorder}` }}>Edit name or email</button>
           </div>
         </div>
 

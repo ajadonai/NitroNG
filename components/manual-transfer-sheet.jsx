@@ -24,7 +24,7 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
               </div>
               <div className="text-[19px] max-[380px]:text-[17px] font-bold mt-3 text-t-text">{tr("We’re checking for it")}</div>
-              <div className="text-[13px] leading-relaxed mt-1.5 mx-auto max-w-[34ch] text-t-text-muted">{fN(manualModal.amount)}{manualRef.trim() ? <> from <b className="font-semibold text-t-text">{manualRef.trim()}</b></> : null}. Your wallet is credited as soon as we see it land.</div>
+              <div className="text-[13px] leading-relaxed mt-1.5 mx-auto max-w-[34ch] text-t-text-muted">{fN(manualModal.amount)}{manualRef.trim() ? <> {tr("from")} <b className="font-semibold text-t-text">{manualRef.trim()}</b></> : null}. {tr("Your wallet is credited as soon as we see it land.")}</div>
             </div>
             <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${t.cardBorder}` }}>
               {[
@@ -35,8 +35,8 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
                 <div key={title} className="flex items-center gap-2.5 py-2.5 px-3.5" style={{ borderTop: i ? `1px solid ${t.cardBorder}` : "none" }}>
                   <span className="w-2.5 h-2.5 rounded-full shrink-0" style={state === "on" ? { background: dark ? "#6ee7b7" : "#059669" } : state === "now" ? { background: dark ? "#fcd34d" : "#b45309", boxShadow: `0 0 0 3px ${dark ? "rgba(251,191,36,.14)" : "rgba(217,119,6,.1)"}` } : { background: t.cardBorder }} />
                   <span className="min-w-0 flex-1">
-                    <b className={`block text-[12.5px] font-bold ${state === "off" ? "text-t-text-muted" : "text-t-text"}`}>{title}</b>
-                    <i className="block not-italic text-[11px] text-t-text-muted">{sub}</i>
+                    <b className={`block text-[12.5px] font-bold ${state === "off" ? "text-t-text-muted" : "text-t-text"}`}>{tr(title)}</b>
+                    <i className="block not-italic text-[11px] text-t-text-muted">{tr(sub)}</i>
                   </span>
                 </div>
               ))}
@@ -67,7 +67,7 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
                 <div className="text-[10px] font-extrabold uppercase tracking-[.9px] text-t-text-muted">{tr("Send exactly")}</div>
                 <div className="m text-2xl max-[380px]:text-xl font-extrabold leading-tight mt-0.5" style={{ color: dark ? "#6ee7b7" : "#059669", letterSpacing: "-.02em" }}>{fN(manualModal.amount)}</div>
               </div>
-              <button onClick={() => { copyText(String(manualModal.amount)); toast.success("Amount copied"); }} className="h-8 px-3 rounded-[9px] text-xs font-bold cursor-pointer shrink-0 inline-flex items-center gap-1.5 text-t-text" style={{ background: dark ? "rgba(255,255,255,.06)" : "#fff", border: `1px solid ${t.cardBorder}` }}>
+              <button onClick={() => { copyText(String(manualModal.amount)); toast.success(tr("Amount copied")); }} className="h-8 px-3 rounded-[9px] text-xs font-bold cursor-pointer shrink-0 inline-flex items-center gap-1.5 text-t-text" style={{ background: dark ? "rgba(255,255,255,.06)" : "#fff", border: `1px solid ${t.cardBorder}` }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 012-2h10" /></svg>{tr("Copy")}
               </button>
             </div>
@@ -82,7 +82,7 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
                   <div className="text-[10px] font-extrabold uppercase tracking-[.9px] text-t-text-muted">{tr("Account number")}</div>
                   <div className="m text-[19px] max-[380px]:text-[17px] font-bold tracking-[.06em] mt-0.5 text-t-text">{manualModal.accountNumber}</div>
                 </div>
-                <button onClick={() => { copyText(manualModal.accountNumber); toast.success("Account number copied"); }} className="h-8 px-3 rounded-[9px] text-xs font-bold cursor-pointer shrink-0 inline-flex items-center gap-1.5 text-t-text" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${t.cardBorder}` }}>
+                <button onClick={() => { copyText(manualModal.accountNumber); toast.success(tr("Account number copied")); }} className="h-8 px-3 rounded-[9px] text-xs font-bold cursor-pointer shrink-0 inline-flex items-center gap-1.5 text-t-text" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)", border: `1px solid ${t.cardBorder}` }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 012-2h10" /></svg>{tr("Copy")}
                 </button>
               </div>
@@ -99,7 +99,7 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
                 [<>{tr("We credit your wallet, usually within an hour.")}</>, "3"],
               ].map(([body, n]) => (
                 <div key={n} className="flex items-start gap-2.5 text-[12.5px] leading-snug text-t-text-muted">
-                  <span className="w-[18px] h-[18px] rounded-md inline-flex items-center justify-center text-[10px] font-extrabold shrink-0 mt-px" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: t.accent }}>{n}</span>
+                  <span className="w-[18px] h-[18px] rounded-md inline-flex items-center justify-center text-[10px] font-extrabold shrink-0 mt-px" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: "var(--t-accent-ink)" }}>{n}</span>
                   <span>{body}</span>
                 </div>
               ))}
@@ -150,13 +150,13 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
             <div className="flex max-[380px]:flex-col gap-2">
               <button onClick={() => setManualStep("details")} className="flex-1 max-[380px]:flex-none h-11 rounded-xl bg-transparent text-sm font-semibold cursor-pointer text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{tr("Back")}</button>
               <button onClick={async () => {
-                if (manualRef.trim().length < 3) { toast.warning("Name required", "Enter the name on the account you sent from"); return; }
+                if (manualRef.trim().length < 3) { toast.warning(tr("Name required"), tr("Enter the name on the account you sent from")); return; }
                 setManualSubmitting(true);
                 try {
                   const res = await fetch("/api/payments/manual", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: manualModal.reference, senderRef: manualRef.trim() }) });
                   if (res.ok) { setManualDone(true); onRefresh?.(); }
-                  else { const d = await res.json(); toast.error("Failed", d.error || "Something went wrong"); }
-                } catch { toast.error("Network error", "Check your connection"); }
+                  else { const d = await res.json(); toast.error(tr("Failed"), d.error ? tr(d.error) : tr("Something went wrong")); }
+                } catch { toast.error(tr("Network error"), tr("Check your connection")); }
                 setManualSubmitting(false);
               }} disabled={manualSubmitting || manualRef.trim().length < 3} className="flex-[1.6] max-[380px]:flex-none h-11 rounded-xl border-none text-white text-sm font-bold cursor-pointer disabled:cursor-not-allowed" style={{ background: manualRef.trim().length >= 3 ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"), color: manualRef.trim().length >= 3 ? "#fff" : t.textMuted, opacity: manualSubmitting ? .6 : 1 }}>
                 {manualSubmitting ? tr("Confirming…") : tr("Confirm")}

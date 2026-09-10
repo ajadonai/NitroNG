@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, createContext, useContext, useCallback } from "react";
+import { msg } from "../../lib/i18n";
 import { useT } from "../locale";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeProvider, useTheme } from "../shared-nav";
@@ -25,12 +26,12 @@ const LOGOUT_ICON = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 
 // One row per place you can go. Links and Team are the chief's only.
 const NAV = [
-  { key: "dashboard", label: "Home", dock: "Home", href: "/pit/dashboard", icon: ICONS.dashboard },
-  { key: "links", label: "Tracking links", dock: "Links", href: "/pit/links", icon: ICONS.links, chiefOnly: true },
-  { key: "team", label: "Team", dock: "Team", href: "/pit/team", icon: ICONS.team, chiefOnly: true },
-  { key: "commissions", label: "Commissions", dock: "Commissions", href: "/pit/commissions", icon: ICONS.commissions },
-  { key: "payouts", label: "Payouts", dock: "Payouts", href: "/pit/payouts", icon: ICONS.payouts },
-  { key: "settings", label: "Settings", dock: "Settings", href: "/pit/settings", icon: ICONS.settings },
+  { key: "dashboard", label: msg("Home"), dock: msg("Home"), href: "/pit/dashboard", icon: ICONS.dashboard },
+  { key: "links", label: msg("Tracking links"), dock: msg("Links"), href: "/pit/links", icon: ICONS.links, chiefOnly: true },
+  { key: "team", label: msg("Team"), dock: msg("Team"), href: "/pit/team", icon: ICONS.team, chiefOnly: true },
+  { key: "commissions", label: msg("Commissions"), dock: msg("Commissions"), href: "/pit/commissions", icon: ICONS.commissions },
+  { key: "payouts", label: msg("Payouts"), dock: msg("Payouts"), href: "/pit/payouts", icon: ICONS.payouts },
+  { key: "settings", label: msg("Settings"), dock: msg("Settings"), href: "/pit/settings", icon: ICONS.settings },
 ];
 
 const TITLES = {
@@ -113,7 +114,7 @@ function ShellInner({ children, member }) {
                 onClick={(e) => { e.preventDefault(); nav(item.href); }}
                 className={"pt-it" + (isActive(item.href) ? " on" : "")}
               >
-                <i>{item.icon}</i>{item.label}
+                <i>{item.icon}</i>{tr(item.label)}
               </a>
             ))}
             <span className="pt-foot">
@@ -139,7 +140,7 @@ function ShellInner({ children, member }) {
         <nav className="pt-dock">
           {dock.map(tab => (
             <button key={tab.key} type="button" className={"pt-dk" + (isActive(tab.href) ? " on" : "")} onClick={() => nav(tab.href)}>
-              <i>{tab.icon}</i>{tab.dock}
+              <i>{tab.icon}</i>{tr(tab.dock)}
             </button>
           ))}
         </nav>

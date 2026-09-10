@@ -710,7 +710,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 type="button"
                 onClick={() => setMode('forgot')}
                 className="bg-transparent text-[13px] font-medium"
-                style={{ color: t.accent }}
+                style={{ color: "var(--t-accent-ink)" }}
               >
                 {tr("Forgot password?")}
               </button>
@@ -742,7 +742,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 type="button"
                 onClick={() => setMode('signup')}
                 className="bg-transparent font-semibold text-sm"
-                style={{ color: t.accent }}
+                style={{ color: "var(--t-accent-ink)" }}
               >
                 {tr("Sign Up Free")}
               </button>
@@ -958,7 +958,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 type="button"
                 onClick={() => setMode('login')}
                 className="bg-transparent font-semibold text-sm"
-                style={{ color: t.accent }}
+                style={{ color: "var(--t-accent-ink)" }}
               >
                 {tr("Log In")}
               </button>
@@ -1113,7 +1113,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 <a
                   href="/terms"
                   className="no-underline"
-                  style={{ color: t.accent }}
+                  style={{ color: "var(--t-accent-ink)" }}
                 >
                   {tr("Terms")}
                 </a>{' '}
@@ -1121,7 +1121,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 <a
                   href="/privacy"
                   className="no-underline"
-                  style={{ color: t.accent }}
+                  style={{ color: "var(--t-accent-ink)" }}
                 >
                   {tr("Privacy Policy")}
                 </a>
@@ -1249,7 +1249,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 type="button"
                 onClick={() => setMode('login')}
                 className="bg-transparent font-semibold text-sm"
-                style={{ color: t.accent }}
+                style={{ color: "var(--t-accent-ink)" }}
               >
                 {tr("Log In")}
               </button>

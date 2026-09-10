@@ -220,13 +220,13 @@ export default function LinksPage({ initialData }) {
 
   const toggleEnabled = async (id, enabled) => {
     await fetch("/api/pit/links", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, enabled: !enabled }) });
-    toast.success(enabled ? "Link paused" : "Link activated");
+    toast.success(enabled ? tr("Link paused") : tr("Link activated"));
     reload();
   };
 
   const archive = async (id) => {
     await fetch("/api/pit/links", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
-    toast.success("Link archived");
+    toast.success(tr("Link archived"));
     reload();
   };
 
@@ -238,7 +238,7 @@ export default function LinksPage({ initialData }) {
     await fetch("/api/pit/links", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     setReassignLink(null);
     setReassignTo("");
-    toast.success("Link reassigned");
+    toast.success(tr("Link reassigned"));
     reload();
   };
 
@@ -310,7 +310,7 @@ export default function LinksPage({ initialData }) {
         </div>
       )}
 
-      <CreateModal open={showCreate} onClose={() => setShowCreate(false)} onCreated={() => { reload(); toast.success("Link created"); }} team={team} leadSplit={leadSplit} />
+      <CreateModal open={showCreate} onClose={() => setShowCreate(false)} onCreated={() => { reload(); toast.success(tr("Link created")); }} team={team} leadSplit={leadSplit} />
 
       <Modal
         open={!!reassignLink}

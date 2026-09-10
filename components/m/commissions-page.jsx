@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback } from "react";
+import { msg } from "../../lib/i18n";
 import { useT } from "../locale";
 import { Card, Chip, Empty, Fact, Facts, dateOf, initialsOf, pitVars } from "./kit";
 import { SkelBar, SkelFacts, SkelList } from "../skeleton";
@@ -8,17 +9,17 @@ import { fN } from "@/lib/format";
 
 // The four states a commission can be in, in the words the crew uses.
 const STATUS = {
-  approved: { label: "Cleared", kind: "ok" },
-  held: { label: "Holding", kind: "warn" },
-  voided: { label: "Reversed", kind: "bad" },
-  pending: { label: "Pending", kind: "dim" },
+  approved: { label: msg("Cleared"), kind: "ok" },
+  held: { label: msg("Holding"), kind: "warn" },
+  voided: { label: msg("Reversed"), kind: "bad" },
+  pending: { label: msg("Pending"), kind: "dim" },
 };
 
 const FILTERS = [
-  { key: "all", label: "All" },
-  { key: "held", label: "Holding" },
-  { key: "approved", label: "Cleared" },
-  { key: "voided", label: "Reversed" },
+  { key: "all", label: msg("All") },
+  { key: "held", label: msg("Holding") },
+  { key: "approved", label: msg("Cleared") },
+  { key: "voided", label: msg("Reversed") },
 ];
 
 // How many days are left on a held commission before it clears.
@@ -68,7 +69,7 @@ export default function CommissionsPage({ member, initialData }) {
         <div className="pt-bar">
           {FILTERS.map((f) => (
             <button key={f.key} type="button" className={"pt-tg" + (filter === f.key ? " on" : "")} onClick={() => changeFilter(f.key)}>
-              {f.label}{filter === f.key && data ? <span className="m">{data.total}</span> : null}
+              {tr(f.label)}{filter === f.key && data ? <span className="m">{data.total}</span> : null}
             </button>
           ))}
           <span className="pt-cnt">{(data?.total || 0).toLocaleString()} {data?.total === 1 ? "commission" : "commissions"}</span>
@@ -98,7 +99,7 @@ export default function CommissionsPage({ member, initialData }) {
                         <b>{who}</b>
                         <i>{c.slug} {tr("· order")} {fN(c.orderCharge)} · {c.rate}%{isChief && c.type === "team" ? tr(" · crew") : ""}</i>
                       </span>
-                      <Chip kind={s.kind}>{left != null ? `Holding, ${left} ${left === 1 ? "day" : "days"} left` : s.label}</Chip>
+                      <Chip kind={s.kind}>{left != null ? (left === 1 ? tr("Holding, 1 day left") : `${tr("Holding,")} ${left} ${tr("days left")}`) : tr(s.label)}</Chip>
                       <span className={"pt-num m" + (c.status === "voided" ? " bad" : "")}>{c.status === "voided" ? `−${fN(c.amount)}` : fN(c.amount)}</span>
                       <span className="pt-c">{dateOf(c.createdAt)}</span>
                     </div>

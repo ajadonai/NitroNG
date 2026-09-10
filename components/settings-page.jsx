@@ -6,7 +6,7 @@ import { Modal } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { useT } from "./locale";
-import { fN } from "../lib/format";
+import { fN, docDateLocale } from "../lib/format";
 import { SITE } from "../lib/site";
 import { Avatar } from "./avatar";
 import { copyText } from '@/lib/clipboard';
@@ -151,7 +151,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
     if (diff < 60000) return "Now";
     if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)} hrs ago`;
-    return new Date(d).toLocaleDateString("en-NG", { month: "short", day: "numeric" });
+    return new Date(d).toLocaleDateString(docDateLocale(), { month: "short", day: "numeric" });
   };
 
   const applyTheme = (mode) => {
@@ -163,14 +163,14 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
   };
 
   const changePassword = async () => {
-    if (!curPw || !newPw || !confirmPw) { toast.error("Missing fields", "All fields required"); return; }
-    if (newPw !== confirmPw) { toast.error("Mismatch", "New passwords don't match"); return; }
-    if (newPw.length < 6) { toast.error("Too short", "Minimum 6 characters"); return; }
+    if (!curPw || !newPw || !confirmPw) { toast.error(tr("Missing fields"), tr("All fields required")); return; }
+    if (newPw !== confirmPw) { toast.error(tr("Mismatch"), tr("New passwords don't match")); return; }
+    if (newPw.length < 6) { toast.error(tr("Too short"), tr("Minimum 6 characters")); return; }
     setPwLoading(true);
     try {
       const res = await fetch("/api/auth/change-password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ currentPassword: curPw, newPassword: newPw }), signal: AbortSignal.timeout(15000) });
       const data = await res.json();
-      if (!res.ok) { toast.error("Failed", data.error || "Password change failed"); } else { toast.success("Password updated", "Your password has been changed"); setCurPw(""); setNewPw(""); setConfirmPw(""); }
+      if (!res.ok) { toast.error(tr("Failed"), data.error ? tr(data.error) : tr("Password change failed")); } else { toast.success(tr("Password updated"), tr("Your password has been changed")); setCurPw(""); setNewPw(""); setConfirmPw(""); }
     } catch (err) { toast.error(err?.name === "TimeoutError" ? tr("Timed out") : tr("Network error"), tr("Check your connection")); }
     setPwLoading(false);
   };
@@ -178,7 +178,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
   const initials = user ? ((user.firstName?.[0] || "") + (user.lastName?.[0] || "")).toUpperCase() || user.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
 
   const card = { background: t.cardBg, border: `1px solid ${t.cardBorder}` };
-  const copyCode = () => { if (!user?.refCode) return; try { copyText(user.refCode); toast.success("Copied", user.refCode); } catch {} };
+  const copyCode = () => { if (!user?.refCode) return; try { copyText(user.refCode); toast.success(tr("Copied"), user.refCode); } catch {} };
   return (
     <>
       <div className="pb-3.5 max-md:pb-2">
@@ -244,8 +244,8 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <SectionHead>{tr("More")}</SectionHead>
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
           {apiKey
-            ? <Row id="set-api" first icon={I_KEY} title={tr("API access")} sub={<span className="flex flex-col gap-[3px]"><span className="flex items-center gap-2 flex-wrap"><span className="m" style={{ color: t.text }}>{`${apiKey.slice(0, 9)}••••${apiKey.slice(-4)}`}</span><span className="text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-[6px] rounded-md" style={apiWholesale ? { color: dark ? "#4ade80" : "#15803d", background: dark ? "rgba(74,222,128,.14)" : "rgba(22,163,74,.1)" } : { color: t.textMuted, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)" }}>{apiWholesale ? tr("Wholesale") : tr("Retail")}</span></span><span>POST nitro.ng/api/v2</span></span>} onClick={() => { try { copyText(apiKey); toast.success("API key copied"); } catch {} }} right={<span className="flex items-center gap-2"><span className="w-6 h-6 rounded-[7px] flex items-center justify-center text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</span><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[12px] font-semibold no-underline text-accent">{tr("Docs")}</a></span>} dark={dark} t={t} />
-            : <Row id="set-api" first icon={I_KEY} title={tr("API access")} sub={tr("Use Nitro from your own platform")} right={<span className="text-[10.5px] font-bold uppercase tracking-[.5px] py-[2px] px-2 rounded-md text-accent" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)" }}>{tr("Soon")}</span>} dark={dark} t={t} />}
+            ? <Row id="set-api" first icon={I_KEY} title={tr("API access")} sub={<span className="flex flex-col gap-[3px]"><span className="flex items-center gap-2 flex-wrap"><span className="m" style={{ color: t.text }}>{`${apiKey.slice(0, 9)}••••${apiKey.slice(-4)}`}</span><span className="text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-[6px] rounded-md" style={apiWholesale ? { color: dark ? "#4ade80" : "#15803d", background: dark ? "rgba(74,222,128,.14)" : "rgba(22,163,74,.1)" } : { color: t.textMuted, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)" }}>{apiWholesale ? tr("Wholesale") : tr("Retail")}</span></span><span>POST nitro.ng/api/v2</span></span>} onClick={() => { try { copyText(apiKey); toast.success(tr("API key copied")); } catch {} }} right={<span className="flex items-center gap-2"><span className="w-6 h-6 rounded-[7px] flex items-center justify-center text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</span><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[12px] font-semibold no-underline text-accent-ink">{tr("Docs")}</a></span>} dark={dark} t={t} />
+            : <Row id="set-api" first icon={I_KEY} title={tr("API access")} sub={tr("Use Nitro from your own platform")} right={<span className="text-[10.5px] font-bold uppercase tracking-[.5px] py-[2px] px-2 rounded-md text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)" }}>{tr("Soon")}</span>} dark={dark} t={t} />}
           <Row id="set-status" icon={I_PULSE} title={tr("System status")} sub={tr("Check that every Nitro service is running")} href={SITE.status} right={<span className="w-[9px] h-[9px] rounded-full" style={{ background: "#059669", boxShadow: "0 0 0 3px rgba(5,150,105,.15)" }} />} dark={dark} t={t} />
         </div>
 
@@ -260,12 +260,12 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
               try {
                 res = await fetch("/api/auth/logout", { method: "POST" });
               } catch {
-                toast.error("Unable to log out", "Check your connection and try again.");
+                toast.error(tr("Unable to log out"), tr("Check your connection and try again."));
                 return;
               }
               if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                toast.error("Unable to log out", data.error || "Please try again.");
+                toast.error(tr("Unable to log out"), data.error ? tr(data.error) : tr("Please try again."));
                 return;
               }
               window.location.replace("/");

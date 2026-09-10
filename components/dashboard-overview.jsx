@@ -39,7 +39,7 @@ function OrderRow({ o, first, dark, t, onClick }) {
       <div className="shrink-0 flex items-center justify-center rounded-xl" style={{ width: 40, height: 40, background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}><PlatformIcon platform={o.platform} dark={dark} size={22} /></div>
       <div className="min-w-0 flex-1">
         <div className="text-[13.5px] font-semibold truncate text-t-text">{o.service}</div>
-        {o.tier && <div className="text-[11.5px] font-medium text-accent">{o.tier}</div>}
+        {o.tier && <div className="text-[11.5px] font-medium text-accent-ink">{o.tier}</div>}
         <div className="text-[11px] text-t-text-muted">{o.created ? fD(o.created, true) : ""}</div>
         {active && qty > 0 && <div className="h-[3px] rounded-sm mt-1.5 overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}><div className="h-full rounded-sm" style={{ width: `${pct}%`, background: o.status === "Partial" ? "#f97316" : "#4f46e5" }} /></div>}
       </div>
@@ -50,7 +50,7 @@ function BatchRowMini({ item, first, dark, t, onClick }) {
   const tr = useT();
   return (
     <div role="button" tabIndex={0} onClick={onClick} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }} className="flex items-center gap-3 py-3 px-3.5 cursor-pointer" style={{ borderTop: first ? "none" : `1px solid ${t.cardBorder}` }}>
-      <div className="shrink-0 flex items-center justify-center rounded-xl text-accent" style={{ width: 40, height: 40, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+      <div className="shrink-0 flex items-center justify-center rounded-xl text-accent-ink" style={{ width: 40, height: 40, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
       <div className="min-w-0 flex-1"><div className="text-[13.5px] font-semibold text-t-text">{tr("Bulk order")}</div><div className="text-[11px] text-t-text-muted">{item.orders.length} {tr("orders ·")} {item.created ? fD(item.created, true) : ""}</div></div>
     </div>
   );
@@ -161,7 +161,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       {/* ── Delivering now: phone and tablet; the sidebar has it on desktop ── */}
       {activeOrders.length > 0 && (
         <div className="desktop:hidden">
-          <SectionHead action={<button onClick={() => setActive("orders")} className="text-[12px] font-semibold bg-transparent border-none cursor-pointer font-[inherit] text-accent">{tr("View all")}</button>}>{tr("Delivering now")}</SectionHead>
+          <SectionHead action={<button onClick={() => setActive("orders")} className="text-[12px] font-semibold bg-transparent border-none cursor-pointer font-[inherit] text-accent-ink">{tr("View all")}</button>}>{tr("Delivering now")}</SectionHead>
           <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
             {activeOrders.slice(0, 3).map((o, i) => <OrderRow key={o.id} o={o} first={i === 0} dark={dark} t={t} onClick={() => setActive("orders")} />)}
           </div>
@@ -169,7 +169,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       )}
 
       {/* ── Recent orders ── */}
-      <SectionHead action={orders.length > 0 ? <button onClick={() => setActive("orders")} className="text-[12px] font-semibold bg-transparent border-none cursor-pointer font-[inherit] text-accent">{tr("View all")}</button> : null}>{tr("Recent orders")}</SectionHead>
+      <SectionHead action={orders.length > 0 ? <button onClick={() => setActive("orders")} className="text-[12px] font-semibold bg-transparent border-none cursor-pointer font-[inherit] text-accent-ink">{tr("View all")}</button> : null}>{tr("Recent orders")}</SectionHead>
       <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
         {recent.length > 0 ? recent.map((item, i) => item.type === "batch"
           ? <BatchRowMini key={item.batchId} item={item} first={i === 0} dark={dark} t={t} onClick={() => setActive("orders")} />
@@ -214,7 +214,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
                 { step: "7", title: tr("Track delivery"), desc: tr("Watch your order progress in real time from your dashboard.") },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold text-accent" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>{item.step}</div>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>{item.step}</div>
                   <div className="pt-0.5">
                     <div className="text-[13px] font-semibold mb-0.5 text-t-text">{item.title}</div>
                     <div className="text-[11px] leading-[1.55] text-t-text-muted">{item.desc}</div>
@@ -254,10 +254,10 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       {/* ── Referral — phone and tablet; the sidebar has it on desktop ── */}
       <div className="hidden max-desktop:block mb-4 rounded-[14px] px-3.5" style={card}>
         <div className="text-[10.5px] font-semibold uppercase tracking-[1px] pt-2.5 pb-0.5 text-t-text-muted">{tr("Referral")}</div>
-        {[[tr("Your code"), <span key="c" className="inline-flex items-center gap-1.5"><b className="m text-[14px] font-semibold tracking-[1.5px] text-accent">{user?.refCode || "—"}</b></span>],[tr("Referrals"), <b key="r" className="m text-[14px] font-semibold text-t-text">{user?.refs || 0}</b>],[tr("Earned"), <b key="e" className="m text-[14px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{money(user?.earnings || 0)}</b>]].map(([label, val], i) => (
+        {[[tr("Your code"), <span key="c" className="inline-flex items-center gap-1.5"><b className="m text-[14px] font-semibold tracking-[1.5px] text-accent-ink">{user?.refCode || "—"}</b></span>],[tr("Referrals"), <b key="r" className="m text-[14px] font-semibold text-t-text">{user?.refs || 0}</b>],[tr("Earned"), <b key="e" className="m text-[14px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{money(user?.earnings || 0)}</b>]].map(([label, val], i) => (
           <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-soft" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}><span>{label}</span>{val}</div>
         ))}
-        <button onClick={() => setActive("referrals")} className="w-full my-2.5 py-2 rounded-lg text-[13px] font-semibold border-none cursor-pointer text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>{tr("Invite friends")}</button>
+        <button onClick={() => setActive("referrals")} className="w-full my-2.5 py-2 rounded-lg text-[13px] font-semibold border-none cursor-pointer text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>{tr("Invite friends")}</button>
       </div>
     </>
   );

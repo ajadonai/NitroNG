@@ -7,7 +7,7 @@ import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
 import { useMoney, useT } from "./locale";
 import { msg } from "../lib/i18n";
-import { fN, fD, fT } from "../lib/format";
+import { fN, fD, fT, docDateLocale } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { NotSureHelp } from "./new-order";
 import NitroLoader from "./nitro-loader";
@@ -140,7 +140,7 @@ function dayKey(iso) {
   if (same(d, now)) return "Today";
   const y = new Date(now); y.setDate(now.getDate() - 1);
   if (same(d, y)) return "Yesterday";
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return d.toLocaleDateString(docDateLocale(), { day: "numeric", month: "short" });
 }
 function DayLabel({ label, dark }) {
   return <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-3.5 pt-3 pb-1 text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)" }}>{label}</div>;
@@ -478,7 +478,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
           </>
         )}
         {(o.status === "Completed" || o.status === "Cancelled") && !o.offerDisabled && (
-          <button onClick={async () => { const ok = await confirm({ title: tr("Reorder"), message: `Reorder ${o.service}? ${money(o.charge || 0)} will be charged from your wallet.`, confirmLabel: tr("Place Reorder") }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)" }}>{actionLoading === o.id ? <Spinner size={14} color={t.accent} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}{tr("Reorder")}</button>
+          <button onClick={async () => { const ok = await confirm({ title: tr("Reorder"), message: `${tr("Reorder")} ${o.service}? ${money(o.charge || 0)} ${tr("will be charged from your wallet.")}`, confirmLabel: tr("Place Reorder") }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)" }}>{actionLoading === o.id ? <Spinner size={14} color={t.accent} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}{tr("Reorder")}</button>
         )}
         {o.refillRequestedAt && refillEligible(o) && (
           <span className="m flex items-center gap-1.5 text-[11px] font-semibold rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.06)", color: dark ? "#fcd34d" : "#d97706" }}>
@@ -526,7 +526,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{batch.batchId}</div>
-          <div className="text-[11px] desktop:text-xs font-medium mt-0.5 text-accent">{batch.orders.length} order{batch.orders.length !== 1 ? "s" : ""}</div>
+          <div className="text-[11px] desktop:text-xs font-medium mt-0.5 text-accent-ink">{batch.orders.length} order{batch.orders.length !== 1 ? "s" : ""}</div>
           {batch.created && <div className="text-[11px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fT(batch.created)}</div>}
         </div>
         <div className="text-right shrink-0 flex items-center gap-1.5">
@@ -548,10 +548,10 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
               </button>
             )}
             {hasCancellable && (
-              <button onClick={async () => { const ok = await confirm({ title: "Cancel Bulk Order", message: `Cancel all pending orders in ${batch.batchId} that haven't been sent to providers yet? Your wallet will be refunded.`, confirmLabel: tr("Cancel All"), danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>{tr("Cancel all")}</button>
+              <button onClick={async () => { const ok = await confirm({ title: tr("Cancel Bulk Order"), message: `${tr("Cancel all pending orders in")} ${batch.batchId} ${tr("that haven't been sent to providers yet? Your wallet will be refunded.")}`, confirmLabel: tr("Cancel All"), danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5" style={{ background: dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.06)", color: dark ? "#fca5a5" : "#dc2626", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>{tr("Cancel all")}</button>
             )}
             {hasReorderable && (
-              <button onClick={async () => { const ok = await confirm({ title: tr("Reorder Bulk"), message: `Reorder all completed/cancelled orders from ${batch.batchId}?`, confirmLabel: tr("Reorder All") }); if (ok) doBatchAction(batch.batchId, "reorder_completed"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>{tr("Reorder all")}</button>
+              <button onClick={async () => { const ok = await confirm({ title: tr("Reorder Bulk"), message: `${tr("Reorder all completed/cancelled orders from")} ${batch.batchId}?`, confirmLabel: tr("Reorder All") }); if (ok) doBatchAction(batch.batchId, "reorder_completed"); }} disabled={isLoading} className="m flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1.5 px-2.5 text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>{tr("Reorder all")}</button>
             )}
           </div>
 
@@ -564,7 +564,7 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical] text-t-text">{o.service}</div>
-                  {o.tier && <div className="text-[11px] desktop:text-[11px] font-medium mt-0.5 text-accent">{o.tier}</div>}
+                  {o.tier && <div className="text-[11px] desktop:text-[11px] font-medium mt-0.5 text-accent-ink">{o.tier}</div>}
                   {o.created && <div className="text-[11px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fT(o.created)}</div>}
                   {expandedOrder !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
@@ -697,7 +697,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
     try {
       const res = await fetch("/api/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, orderId }) });
       const data = await res.json();
-      if (!res.ok) { toast.error("Action failed", data.error || "Something went wrong"); setActionLoading(null); return; }
+      if (!res.ok) { toast.error(tr("Action failed"), data.error ? tr(data.error) : tr("Something went wrong")); setActionLoading(null); return; }
       if (action === "check") {
         setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, ...(data.status && { status: data.status }), ...(data.remains != null && { remains: data.remains }), ...(data.startCount != null && { startCount: data.startCount }) } : o)));
         const order = orders.find(o => o.id === orderId);
@@ -711,17 +711,17 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
         } else if (data.startCount != null) {
           detail = "Order started";
         }
-        toast.info(data.status, detail || (order?.queuedBehind ? "Queued" : "Waiting to start"));
+        toast.info(data.status, detail || (order?.queuedBehind ? tr("Queued") : tr("Waiting to start")));
         await fetchOrders();
         onRefresh?.();
       } else if (action === "cancel") {
-        toast.success("Order cancelled", data.refunded ? `${money(data.refunded, { round: "down" })} refunded to wallet` : "Cancelled successfully");
+        toast.success(tr("Order cancelled"), data.refunded ? `${money(data.refunded, { round: "down" })} ${tr("refunded to wallet")}` : tr("Cancelled successfully"));
         await fetchOrders();
         onRefresh?.();
       } else if (action === "reorder") {
-        toast.success(data.queued ? "Reorder queued" : "Reorder placed", data.queued ? "Will start when your current order for this link completes." : (data.order?.id || ""));
+        toast.success(data.queued ? tr("Reorder queued") : tr("Reorder placed"), data.queued ? tr("Will start when your current order for this link completes.") : (data.order?.id || ""));
       }
-    } catch { toast.error("Request failed", "Check your connection and try again"); }
+    } catch { toast.error(tr("Request failed"), tr("Check your connection and try again")); }
     setActionLoading(null);
   };
 
@@ -730,10 +730,10 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
     try {
       const res = await fetch("/api/orders/refill", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId }) });
       const data = await res.json();
-      if (!res.ok) { toast.error("Refill failed", data.error || "Something went wrong"); setRefillLoading(null); return; }
+      if (!res.ok) { toast.error(tr("Refill failed"), data.error ? tr(data.error) : tr("Something went wrong")); setRefillLoading(null); return; }
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, refillRequestedAt: new Date().toISOString() } : o));
-      toast.success("Refill requested", "Delivery will begin shortly");
-    } catch { toast.error("Request failed", "Check your connection and try again"); }
+      toast.success(tr("Refill requested"), tr("Delivery will begin shortly"));
+    } catch { toast.error(tr("Request failed"), tr("Check your connection and try again")); }
     setRefillLoading(null);
   };
 
@@ -742,14 +742,14 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
     try {
       const res = await fetch("/api/orders/bulk", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, batchId }) });
       const data = await res.json();
-      if (!res.ok) { toast.error("Action failed", data.error || "Something went wrong"); setBatchActionLoading(null); return; }
+      if (!res.ok) { toast.error(tr("Action failed"), data.error ? tr(data.error) : tr("Something went wrong")); setBatchActionLoading(null); return; }
       await fetchOrders();
       onRefresh?.();
-      if (action === "check") toast.info("Bulk checked", `Checked ${data.checked || 0} orders · ${data.updated || 0} updated`);
-      else if (action === "cancel") toast.success("Bulk cancelled", `${data.cancelled || 0} cancelled${data.refunded ? ` · ${money(data.refunded)} refunded` : ""}`);
-      else if (action === "reorder") toast.success("Bulk retry", `Placed ${data.placed || 0} of ${data.retried || 0}`);
-      else if (action === "reorder_completed") toast.success("Reorder placed", `${data.placed || 0} orders · ${data.newBatchId || ""} · ${money(data.totalCharge || 0)} charged`);
-    } catch { toast.error("Request failed", "Check your connection and try again"); }
+      if (action === "check") toast.info(tr("Bulk checked"), `${tr("Checked")} ${data.checked || 0} ${tr("orders")} · ${data.updated || 0} ${tr("updated")}`);
+      else if (action === "cancel") toast.success(tr("Bulk cancelled"), `${data.cancelled || 0} ${tr("cancelled")}${data.refunded ? ` · ${money(data.refunded)} ${tr("refunded")}` : ""}`);
+      else if (action === "reorder") toast.success(tr("Bulk retry"), `${tr("Placed")} ${data.placed || 0} ${tr("of")} ${data.retried || 0}`);
+      else if (action === "reorder_completed") toast.success(tr("Reorder placed"), `${data.placed || 0} ${tr("orders")} · ${data.newBatchId || ""} · ${money(data.totalCharge || 0)} ${tr("charged")}`);
+    } catch { toast.error(tr("Request failed"), tr("Check your connection and try again")); }
     setBatchActionLoading(null);
   };
 
@@ -839,7 +839,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       {hasFilters && (
         <div className="text-[11px] desktop:text-[13px] mb-2 text-t-text-muted">
           Showing {pagedGroups.length} of {total} {tr("matching result")}{total === 1 ? "" : "s"} ({matchingOrdersTotal} order{matchingOrdersTotal === 1 ? "" : "s"})
-          {hasFilters && <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="ml-2 underline cursor-pointer bg-transparent border-none font-[inherit] text-[11px] desktop:text-[13px] text-accent">{tr("Clear filters")}</button>}
+          {hasFilters && <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="ml-2 underline cursor-pointer bg-transparent border-none font-[inherit] text-[11px] desktop:text-[13px] text-accent-ink">{tr("Clear filters")}</button>}
         </div>
       )}
 
@@ -871,7 +871,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap desktop:whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical] text-t-text">{o.service}</div>
-                  {o.tier && <div className="text-[11px] desktop:text-xs font-medium mt-0.5 text-accent">{o.tier}</div>}
+                  {o.tier && <div className="text-[11px] desktop:text-xs font-medium mt-0.5 text-accent-ink">{o.tier}</div>}
                   {o.created && <div className="text-[11px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fT(o.created)}</div>}
                   {expanded !== o.id && <ProgressBar order={o} dark={dark} />}
                 </div>
@@ -893,7 +893,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
               <>
                 <div className="text-base font-semibold mb-1 text-t-text-soft">{tr("No orders match your filters")}</div>
                 <div className="text-[13px] text-t-text-muted">{tr("Try adjusting your search or filters")}</div>
-                <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="mt-3 py-1.5 px-4 rounded-lg text-[13px] font-semibold cursor-pointer border bg-transparent border-t-card-border text-accent">{tr("Clear all filters")}</button>
+                <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="mt-3 py-1.5 px-4 rounded-lg text-[13px] font-semibold cursor-pointer border bg-transparent border-t-card-border text-accent-ink">{tr("Clear all filters")}</button>
               </>
             ) : (
               <>
@@ -939,7 +939,7 @@ export function OrdersSidebar({ orders, orderSummary, dark }) {
       <RailSec>{tr("Recent")}</RailSec>
       <RailCard>
         {orders.length === 0 ? <RailEmpty>{tr("No orders yet.")}</RailEmpty> : orders.slice(0, 5).map(o => (
-          <RailRow key={o.id} tile={<PlatformIcon platform={o.platform} dark={dark} size={16} />} title={o.service} sub={`${o.created ? fD(o.created, true) : ""}${o.tier ? ` · ${o.tier}` : ""}${o.status ? ` · ${o.status}` : ""}`} right={o.charge != null ? money(o.charge) : null} />
+          <RailRow key={o.id} tile={<PlatformIcon platform={o.platform} dark={dark} size={16} />} title={o.service} sub={`${o.created ? fD(o.created, true) : ""}${o.tier ? ` · ${o.tier}` : ""}${o.status ? ` · ${tr(o.status)}` : ""}`} right={o.charge != null ? money(o.charge) : null} />
         ))}
       </RailCard>
     </div>
