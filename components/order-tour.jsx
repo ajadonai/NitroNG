@@ -1,16 +1,23 @@
 'use client';
 import { useMoney, useT } from "./locale";
+import { msg } from "../lib/i18n";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { BONUS_PRESETS } from "../lib/welcome-bonus";
 
+// title and desc are English KEYS, not finished copy. They sit at module scope,
+// where tr() — a hook — cannot legally be called, so msg() marks them for the
+// scanner and the component translates them at render. Before this the tour was
+// the one customer-facing surface the wrapper could never reach: 1,856 strings
+// were translated around it while it went on greeting every French, Swahili and
+// Arabic user in English.
 const STEPS = [
-  { target: "no-platform-tabs", findFirst: ".no-plat-icon-on, .no-mob-plat-on, .no-plat-icon-btn:first-child, .no-mob-plat-btn:first-child", noScroll: true, title: "Pick a platform", desc: "Choose which platform you want to grow. Instagram, TikTok, YouTube — we support 28.", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> },
-  { target: "no-service-list", findFirst: ".no-svc-card", title: "Choose a service", desc: "Browse available services — followers, likes, views, comments, and more. Tap one to select it.", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg> },
-  { target: "no-tier-select", title: "Select your tier", desc: "Budget has no refill, Standard includes 30-day refill, Premium has lifetime refill. Pick what fits your needs.", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>, before: "selectService" },
-  { target: "no-link-input", title: "Enter your link & quantity", desc: "Paste your profile or post URL and set how many you want. Minimum varies by service.", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>, before: "selectTier" },
-  { target: "no-order-bar", title: "Place your order", desc: "Review your selection, tap Order, enter your link and you're done. We start processing immediately.", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
-  { target: "no-mode-toggle", title: "Bulk ordering", desc: "Need multiple orders at once? Switch to Bulk mode — add services to a cart and place them all in one go.", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7v10M12 7v10M16 7v10"/></svg>, before: "clearOrder" },
+  { target: "no-platform-tabs", findFirst: ".no-plat-icon-on, .no-mob-plat-on, .no-plat-icon-btn:first-child, .no-mob-plat-btn:first-child", noScroll: true, title: msg("Pick a platform"), desc: msg("Choose which platform you want to grow. Instagram, TikTok, YouTube — we support 28."), icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> },
+  { target: "no-service-list", findFirst: ".no-svc-card", title: msg("Choose a service"), desc: msg("Browse available services — followers, likes, views, comments, and more. Tap one to select it."), icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg> },
+  { target: "no-tier-select", title: msg("Select your tier"), desc: msg("Budget has no refill, Standard includes 30-day refill, Premium has lifetime refill. Pick what fits your needs."), icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>, before: "selectService" },
+  { target: "no-link-input", title: msg("Enter your link & quantity"), desc: msg("Paste your profile or post URL and set how many you want. Minimum varies by service."), icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>, before: "selectTier" },
+  { target: "no-order-bar", title: msg("Place your order"), desc: msg("Review your selection, tap Order, enter your link and you're done. We start processing immediately."), icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
+  { target: "no-mode-toggle", title: msg("Bulk ordering"), desc: msg("Need multiple orders at once? Switch to Bulk mode — add services to a cart and place them all in one go."), icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7v10M12 7v10M16 7v10"/></svg>, before: "clearOrder" },
 ];
 
 function findTarget(s) {
@@ -41,9 +48,12 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
   })();
   const [phase, setPhase] = useState(saved?.phase || "welcome");
   const [step, setStep] = useState(saved?.step || 0);
+  // Progress has always been restored from localStorage in silence, so someone
+  // who left mid-tour came back to step four with no idea why they had skipped
+  // the first three. Say it once, and offer the restart that implies.
+  const [resumed, setResumed] = useState(saved?.phase === "touring" && saved.step > 0);
   const [visible, setVisible] = useState(false);
   const [spotRect, setSpotRect] = useState(null);
-  const [skipMsg, setSkipMsg] = useState(null);
   const [animKey, setAnimKey] = useState(0);
   const rafRef = useRef(null);
 
@@ -73,22 +83,14 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
     setTimeout(() => onComplete?.(), 300);
   }, [onComplete, setSelSvc, setSelTier]);
 
-  const showSkip = (msg) => {
-    setSkipMsg(msg);
-    setTimeout(() => setSkipMsg(null), 2000);
-  };
-
+  // A target that never appeared is our problem, not the customer's. This used
+  // to flash "Skipping step…", "Almost done…" or "Finishing tour…" — internal
+  // states named in developer language to someone who cannot tell what was
+  // skipped or why. Recovery is silent now: the tour simply moves on.
   const skipToNext = (fromIdx) => {
-    if (fromIdx < STEPS.length - 1) {
-      showSkip("Skipping step...");
-      setTimeout(() => setStep(fromIdx + 1), 500);
-    } else if (eligible) {
-      showSkip("Almost done...");
-      setTimeout(() => setPhase("deposit"), 500);
-    } else {
-      showSkip("Finishing tour...");
-      setTimeout(() => finish(), 500);
-    }
+    if (fromIdx < STEPS.length - 1) setStep(fromIdx + 1);
+    else if (eligible) setPhase("deposit");
+    else finish();
   };
 
   const startTour = () => {
@@ -130,22 +132,72 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
     goToStep(nextIdx);
   };
 
-  // Track target element position
+  // Going back never re-runs a `before` action: those select a service or tier
+  // to set the screen up for the step ahead, and replaying them on the way back
+  // would fight whatever the customer has since chosen. The earlier screens are
+  // all still valid with a selection in place.
+  const back = () => { if (step > 0) { setStep(step - 1); setAnimKey(k => k + 1); } };
+
+  // Track the target's position.
+  //
+  // This used to end `update` with an unconditional requestAnimationFrame(update),
+  // so it recomputed a rect and set state on every frame for the entire tour
+  // whether anything had moved or not — a permanent 60fps loop on a phone, for a
+  // box that only moves when the step changes or the page scrolls. It now
+  // measures on those events, and only follows frame-by-frame while a smooth
+  // scroll is actually settling.
   useEffect(() => {
-    if (phase !== "touring" || !visible) { setSpotRect(null); return; }
-    const update = () => {
+    if (phase !== "touring" || !visible) { setSpotRect(null); return undefined; }
+
+    const measure = () => {
       const el = findTarget(STEPS[step]);
-      if (el) {
-        const r = el.getBoundingClientRect();
-        setSpotRect({ x: r.left, y: r.top, w: r.width, h: r.height });
-      } else {
-        setSpotRect(null);
-      }
-      rafRef.current = requestAnimationFrame(update);
+      if (!el) { setSpotRect(null); return; }
+      const r = el.getBoundingClientRect();
+      setSpotRect(prev => (prev && prev.x === r.left && prev.y === r.top && prev.w === r.width && prev.h === r.height)
+        ? prev
+        : { x: r.left, y: r.top, w: r.width, h: r.height });
     };
-    const timer = setTimeout(update, 300);
-    return () => { clearTimeout(timer); if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+
+    // While the step's scrollIntoView animates, follow it; then stop.
+    let settleUntil = Date.now() + 900;
+    const follow = () => {
+      measure();
+      rafRef.current = Date.now() < settleUntil ? requestAnimationFrame(follow) : null;
+    };
+    const timer = setTimeout(follow, 300);
+
+    const onMove = () => {
+      settleUntil = Date.now() + 250;
+      if (!rafRef.current) rafRef.current = requestAnimationFrame(follow);
+    };
+    window.addEventListener("scroll", onMove, true);
+    window.addEventListener("resize", onMove);
+    return () => {
+      clearTimeout(timer);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      window.removeEventListener("scroll", onMove, true);
+      window.removeEventListener("resize", onMove);
+    };
   }, [step, phase, visible]);
+
+  // Escape leaves, and the arrows walk the steps, the way they do in every other
+  // overlay in the app.
+  //
+  // Deliberately NO body scroll lock here, which is the one house rule this
+  // component gets to break: the tour's whole job is to scroll the page behind
+  // it to bring each target into view, so `overflow: hidden` on the body would
+  // stop scrollIntoView dead and strand every step below the fold.
+  useEffect(() => {
+    if (!visible) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape") finish();
+      else if (phase === "touring" && e.key === "ArrowRight") next();
+      else if (phase === "touring" && e.key === "ArrowLeft") back();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [visible, phase, step, finish]);
 
   // Scroll target into view
   useEffect(() => {
@@ -183,12 +235,9 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
     };
   }, [step, phase, visible]);
 
-  const [, setResize] = useState(0);
-  useEffect(() => {
-    const handler = () => setResize(n => n + 1);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, []);
+  // A resize re-render used to be forced from here. The spotlight tracker now
+  // listens for resize itself and remeasures, so this second listener would only
+  // re-render the same numbers a second time.
 
   if (!visible) return null;
 
@@ -202,7 +251,8 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
   const sub = dark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.5)";
   const skipC = dark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.3)";
   const dotOff = dark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
-  const totalDots = STEPS.length + (eligible ? 1 : 0);
+  // The deposit card is a separate phase, not a seventh step: it is never
+  // numbered, so it does not belong in the count the rail and the label share.
   const pad = 10;
   const sr = spotRect;
 
@@ -249,8 +299,11 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
         @keyframes otOverlayIn { from { opacity: 0; } to { opacity: 1; } }
       `}</style>
 
-      {/* Overlay with spotlight cutout */}
-      <svg onClick={finish} className="fixed inset-0 w-full h-full z-[100]" style={{ animation: "otOverlayIn .3s ease" }}>
+      {/* Overlay with spotlight cutout.
+          No onClick={finish} on this any more. A full-screen dim that ends
+          onboarding on any stray tap gave the customer no undo and no warning —
+          leaving is Skip or Escape, both of which say so. */}
+      <svg aria-hidden="true" className="fixed inset-0 w-full h-full z-[100]" style={{ animation: "otOverlayIn .3s ease" }}>
         <defs>
           <mask id="orderTourMask">
             <rect width="100%" height="100%" fill="white" />
@@ -294,6 +347,16 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
         </div>
       )}
 
+      {/* Resume notice — only on the step the tour was restored onto. */}
+      {phase === "touring" && resumed && (
+        <div className="fixed z-[102] top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 py-1.5 ps-3 pe-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
+          style={{ background: bg, border: `1px solid ${border}`, color: sub, boxShadow: "0 8px 22px rgba(0,0,0,.2)" }}>
+          {tr("Picked up where you stopped")}
+          <button onClick={() => { setResumed(false); setStep(0); setAnimKey(k => k + 1); }}
+            className="border-none rounded-full text-[10px] font-bold cursor-pointer font-[inherit] py-1 px-2.5" style={{ background: accent, color: "#fff" }}>{tr("Restart")}</button>
+        </div>
+      )}
+
       {/* TOUR STEP CARD */}
       {phase === "touring" && (
         <div key={animKey} data-tour-tooltip className="fixed z-[101] rounded-2xl py-5 px-5 max-w-[320px] w-[calc(100%-32px)]" style={{
@@ -302,32 +365,33 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
           background: bg, border: `1px solid ${border}`,
           boxShadow: dark ? "0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(196,125,142,.08)" : "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,.04)",
         }}>
-          {/* Step indicator + icon */}
+          {/* Step indicator + icon. The counter counts the steps you actually
+              walk. It used to read "of STEPS.length" (six) beside a row of dots
+              built from totalDots (seven for a bonus-eligible user), so the two
+              halves of the same progress display disagreed on screen. */}
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.07)", color: accent }}>{STEPS[step].icon}</div>
-            <div className="flex-1">
-              <div className="text-[11px] font-bold tracking-[1.5px] uppercase" style={{ color: accent }}>{tr("Step")} {step + 1} of {STEPS.length}</div>
-            </div>
+            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.07)", color: accent }}>{STEPS[step].icon}</div>
+            <div className="text-[11px] font-bold tracking-[1.5px] uppercase" style={{ color: accent }}>{tr("Step")} {step + 1} {tr("of")} {STEPS.length}</div>
+            <span className="ms-auto text-[10px] font-medium px-1.5 py-0.5 rounded-md max-md:hidden" style={{ color: skipC, border: `1px solid ${border}` }}>{tr("Esc to exit")}</span>
           </div>
-          <div className="text-[15px] font-bold mb-1" style={{ color: text }}>{STEPS[step].title}</div>
-          <div className="text-[11px] leading-[1.6] mb-5" style={{ color: sub }}>{STEPS[step].desc}</div>
+          {/* tr() at render — STEPS holds msg()-marked English keys, because a
+              hook cannot be called at module scope where the array is defined. */}
+          <div className="text-[15px] font-bold mb-1" style={{ color: text }}>{tr(STEPS[step].title)}</div>
+          <div className="text-[12.5px] leading-[1.55] mb-4" style={{ color: sub }}>{tr(STEPS[step].desc)}</div>
 
-          {/* Progress dots + actions */}
-          <div className="flex items-center justify-between">
-            <div className="flex gap-[5px]">
-              {Array.from({ length: totalDots }, (_, i) => (
-                <div key={i} className="h-[5px] rounded-full transition-all duration-300" style={{
-                  width: i === step ? 18 : 5,
-                  background: i === step ? accent : i < step ? (dark ? "rgba(196,125,142,0.35)" : "rgba(196,125,142,0.25)") : dotOff,
-                }} />
-              ))}
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={finish} className="bg-transparent border-none text-[11px] font-medium cursor-pointer font-[inherit] p-0 transition-all duration-200 hover:opacity-70" style={{ color: skipC }}>{tr("Skip")}</button>
-              <button onClick={next} className="py-2 px-5 rounded-[10px] text-xs font-semibold border-none cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(196,125,142,.3)]" style={{ background: accent, color: "#fff" }}>
-                {step === STEPS.length - 1 && !eligible ? tr("Got it!") : tr("Next")}
-              </button>
-            </div>
+          {/* One progress rail rather than two counters that can disagree. */}
+          <div className="h-[3px] rounded-full overflow-hidden mb-3.5" style={{ background: dotOff }}>
+            <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${((step + 1) / STEPS.length) * 100}%`, background: accent }} />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button onClick={back} disabled={step === 0} aria-label={tr("Back")}
+              className="py-2 px-3 rounded-[10px] text-[11.5px] font-semibold cursor-pointer font-[inherit] transition-all duration-200 disabled:opacity-35 disabled:cursor-default enabled:hover:-translate-y-px"
+              style={{ background: "transparent", border: `1px solid ${border}`, color: sub }}>{tr("Back")}</button>
+            <button onClick={finish} className="bg-transparent border-none text-[11.5px] font-medium cursor-pointer font-[inherit] px-1 transition-all duration-200 hover:opacity-70" style={{ color: skipC }}>{tr("Skip tour")}</button>
+            <button onClick={next} className="ms-auto py-2 px-5 rounded-[10px] text-xs font-semibold border-none cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(196,125,142,.3)]" style={{ background: accent, color: "#fff" }}>
+              {step === STEPS.length - 1 && !eligible ? tr("Got it!") : tr("Next")}
+            </button>
           </div>
         </div>
       )}
@@ -365,10 +429,6 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, set
         </div>
       )}
 
-      {/* Skip message */}
-      {skipMsg && (
-        <div className="fixed z-[102] top-5 left-1/2 -translate-x-1/2 py-2 px-[18px] rounded-[10px] text-[13px] font-medium backdrop-blur-[8px]" style={{ background: dark ? "rgba(17,22,40,.95)" : "rgba(255,255,255,.95)", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"}`, color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.5)" }}>{skipMsg}</div>
-      )}
     </>
   );
 }

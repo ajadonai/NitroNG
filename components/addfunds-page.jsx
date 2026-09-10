@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback, Fragment } from "react";
 import { RailSec, RailCard, RailRow, RailStep, RailEmpty } from "./rail";
 import { useBodyScrollLock } from "./ui-primitives";
 import { useToast } from "./toast";
-import { fN, fHeld, fD } from "../lib/format";
+import { fN, fHeld, fD, docDateLocale } from "../lib/format";
 import { useMoney, useT, useLocale } from "./locale";
 import { msg } from "../lib/i18n";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
@@ -184,12 +184,12 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     if (isCreditedPaymentResult(paymentStatus) && !toastShown.current) {
       toastShown.current = true;
       const amt = paymentStatus.amount ? `${money(Number(paymentStatus.amount), { round: "down" })} credited` : "Your wallet has been credited";
-      toast.success("Payment successful!", amt);
+      toast.success(tr("Payment successful!"), amt);
       if (paymentStatus.welcomeBonus > 0) {
-        setTimeout(() => toast.success("🎁 Welcome bonus!", `${money(Number(paymentStatus.welcomeBonus), { round: "down" })} bonus added to your wallet`), 1500);
+        setTimeout(() => toast.success(tr("🎁 Welcome bonus!"), `${money(Number(paymentStatus.welcomeBonus), { round: "down" })} ${tr("bonus added to your wallet")}`), 1500);
       }
       if (paymentStatus.topupBonus > 0) {
-        setTimeout(() => toast.success("🎉 Top-up bonus unlocked!", `${money(Number(paymentStatus.topupBonus), { round: "down" })} added to your wallet`), 1500);
+        setTimeout(() => toast.success(tr("🎉 Top-up bonus unlocked!"), `${money(Number(paymentStatus.topupBonus), { round: "down" })} ${tr("added to your wallet")}`), 1500);
       }
       // A completed credit only needs to survive long enough to show once.
       // Consuming it prevents success from replaying when this page remounts.
@@ -273,7 +273,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           });
           const data = await res.json();
           if (isCreditedPaymentResult(data)) {
-            toast.success("Payment recovered!", `${money(Number(data.amount), { round: "down" })} has been credited to your wallet`);
+            toast.success(tr("Payment recovered!"), `${money(Number(data.amount), { round: "down" })} ${tr("has been credited to your wallet")}`);
             onRefresh?.();
             return;
           }
@@ -419,12 +419,12 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           if (isDefinitiveCryptoCreationRejection(res.status)) {
             releaseCryptoPaymentAttempt(cryptoAttemptCache.current, attempt.fingerprint);
           }
-          toast.error("Payment failed", data.error || data.message || "Failed to create crypto payment");
+          toast.error(tr("Payment failed"), data.error || data.message ? tr(data.message) : tr("Failed to create crypto payment"));
         }
       } catch (err) {
         toast.error(
-          err?.name === "TimeoutError" ? "Timed out" : "Network error",
-          "Try again — we’ll safely reuse this payment attempt.",
+          err?.name === "TimeoutError" ? tr("Timed out") : tr("Network error"),
+          tr("Try again — we’ll safely reuse this payment attempt."),
         );
       }
       setLoading(false); payingRef.current = false;
@@ -450,10 +450,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             setManualStep("details");
           }
         } else {
-          if (res.status === 400) toast.warning("Pending transfer", data.error);
-          else toast.error("Transfer failed", data.error || "Failed to create request");
+          if (res.status === 400) toast.warning(tr("Pending transfer"), data.error);
+          else toast.error(tr("Transfer failed"), data.error ? tr(data.error) : tr("Failed to create request"));
         }
-      } catch { toast.error("Network error", "Check your connection"); }
+      } catch { toast.error(tr("Network error"), tr("Check your connection")); }
       setLoading(false); payingRef.current = false;
       return;
     }
@@ -470,11 +470,11 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       if (data.authorization_url) {
         window.location.href = data.authorization_url;
       } else {
-        toast.error("Payment failed", data.error || "Initialization failed");
+        toast.error(tr("Payment failed"), data.error ? tr(data.error) : tr("Initialization failed"));
         setLoading(false); payingRef.current = false;
       }
     } catch (err) {
-      toast.error(err?.name === "TimeoutError" ? "Timed out" : "Network error", "Check your connection");
+      toast.error(err?.name === "TimeoutError" ? tr("Timed out") : tr("Network error"), tr("Check your connection"));
       setLoading(false); payingRef.current = false;
     }
   };
@@ -505,7 +505,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? 'rgba(196,125,142,.18)' : 'rgba(196,125,142,.12)' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
               </div>
-              <div className="text-[13px] font-semibold text-accent">{tr("Top-up bonus")}</div>
+              <div className="text-[13px] font-semibold text-accent-ink">{tr("Top-up bonus")}</div>
               <span className="ml-auto text-[10px] font-bold uppercase tracking-[.06em] py-[3px] px-2 rounded-full text-t-text-muted" style={{ background: dark ? 'rgba(255,255,255,.06)' : '#fff', border: `1px solid ${t.cardBorder}` }}>{topup.month}</span>
             </div>
             <div className="flex items-baseline gap-2 mt-3 flex-wrap">
@@ -532,7 +532,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <div className="text-[13px] leading-[1.5] text-t-text-soft">
               {allDone
                 ? <>{tr("All unlocked this month —")} <b style={{ color: okColor }}>{fN2(topup.unlockedAmount)}</b> {tr("earned. Fresh ladder on the 1st.")}</>
-                : <>{topup.unlockedAmount > 0 && <><b style={{ color: okColor }}>{fN2(topup.unlockedAmount)} unlocked</b> · </>}<b className="m text-t-text">{fN2(topup.next.toGo)}</b> {tr("more unlocks")} <b className="text-accent">{fN2(topup.next.prize)}</b>.</>}
+                : <>{topup.unlockedAmount > 0 && <><b style={{ color: okColor }}>{fN2(topup.unlockedAmount)} unlocked</b> · </>}<b className="m text-t-text">{fN2(topup.next.toGo)}</b> {tr("more unlocks")} <b className="text-accent-ink">{fN2(topup.next.prize)}</b>.</>}
             </div>
           </div>
         );
@@ -543,7 +543,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
           </div>
           <div>
-            <div className="text-[13px] font-semibold text-accent">{tr("Welcome bonus")}</div>
+            <div className="text-[13px] font-semibold text-accent-ink">{tr("Welcome bonus")}</div>
             <div className="text-[13px] mt-0.5 text-t-text-soft leading-[1.45]">{tr("Your first deposit earns up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free. The more you add, the bigger the bonus.")}</div>
           </div>
         </div>
@@ -613,8 +613,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             </div>
             <span className="text-[13px] font-medium text-t-text-soft">
               {cur > 0
-                ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>{tr("Add")} {money(diff)} more</button> {tr("and get")} <strong className="text-accent">{money(nt.bonus, { round: "down" })} free</strong> {tr("instead of")} {money(cur, { round: "down" })}.</>
-                : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>{tr("Add")} {money(diff)} more</button> {tr("to unlock your")} <strong className="text-accent">{money(nt.bonus, { round: "down" })} {tr("welcome bonus")}</strong>.</>
+                ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent-ink font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>{tr("Add")} {money(diff)} more</button> {tr("and get")} <strong className="text-accent-ink">{money(nt.bonus, { round: "down" })} free</strong> {tr("instead of")} {money(cur, { round: "down" })}.</>
+                : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent-ink font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>{tr("Add")} {money(diff)} more</button> {tr("to unlock your")} <strong className="text-accent-ink">{money(nt.bonus, { round: "down" })} {tr("welcome bonus")}</strong>.</>
               }
             </span>
           </div>
@@ -640,7 +640,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             </div>
             <span className="text-[13px] font-medium text-t-text-soft">
-              This takes you to <strong className="m">{money(projected / 100)}</strong> of {money(topup.next.min / 100)} — <button onClick={() => setAmount(String(fullAdd))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>deposit {money(fullAdd)}</button> {tr("to unlock")} <strong className="text-accent">₦{prize}</strong>.
+              This takes you to <strong className="m">{money(projected / 100)}</strong> of {money(topup.next.min / 100)} — <button onClick={() => setAmount(String(fullAdd))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent-ink font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>deposit {money(fullAdd)}</button> {tr("to unlock")} <strong className="text-accent-ink">₦{prize}</strong>.
             </span>
           </div>
         );
@@ -660,7 +660,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     !couponApplied ? (
       <div className="mt-2">
         {!showCoupon ? (
-          <button onClick={() => setShowCoupon(true)} className="py-2 px-3 rounded-lg border-none text-[13px] font-semibold cursor-pointer flex items-center gap-2 transition-all duration-200 hover:-translate-y-px text-accent" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.07)" }}>
+          <button onClick={() => setShowCoupon(true)} className="py-2 px-3 rounded-lg border-none text-[13px] font-semibold cursor-pointer flex items-center gap-2 transition-all duration-200 hover:-translate-y-px text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.07)" }}>
             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.14)" }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
             </div>
@@ -668,7 +668,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           </button>
         ) : (
           <div className="py-2.5 px-3 rounded-lg" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}` }}>
-            <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-[1px] text-accent">
+            <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-[1px] text-accent-ink">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
               {tr("Coupon Code")}
             </div>
@@ -818,7 +818,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         </div>
 
         <div className={mobileStep === 1 ? "max-desktop:hidden" : ""}>
-          <button onClick={() => setMobileStep(1)} className="desktop:hidden inline-flex items-center gap-1.5 bg-transparent border-none text-[12.5px] font-semibold cursor-pointer p-0 mb-2.5 text-accent font-[inherit]">{tr("← Change amount")}</button>
+          <button onClick={() => setMobileStep(1)} className="desktop:hidden inline-flex items-center gap-1.5 bg-transparent border-none text-[12.5px] font-semibold cursor-pointer p-0 mb-2.5 text-accent-ink font-[inherit]">{tr("← Change amount")}</button>
           <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-0.5 pb-1.5 text-t-text-muted">{tr("Pay with")}</div>
           <div className="rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
             {gatewaysLoading ? (
@@ -851,7 +851,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
                 <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2 text-t-text-muted">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  <span className="text-[11px] leading-snug">{tr("If our bank isn't on your app, try")} <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold text-accent bg-transparent border-none p-0 font-[inherit] text-[inherit]">{tr("Manual Transfer")}</button> {tr("as a backup.")}</span>
+                  <span className="text-[11px] leading-snug">{tr("If our bank isn't on your app, try")} <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold text-accent-ink bg-transparent border-none p-0 font-[inherit] text-[inherit]">{tr("Manual Transfer")}</button> {tr("as a backup.")}</span>
                 </div>
               )}
 
@@ -931,7 +931,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   <div className="py-2.5 px-3 rounded-lg text-xs leading-normal break-all text-t-text font-[JetBrains_Mono,monospace]" style={{ background: dark ? "#160f22" : "#f8f8f8", border: `1px solid ${t.cardBorder}` }}>
                     {cryptoModal.payAddress}
                   </div>
-                  <button onClick={() => { copyText(cryptoModal.payAddress); }} className="mt-1.5 py-1.5 px-3.5 rounded-md bg-transparent text-xs font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent font-[inherit]" style={{ border: `1px solid ${t.accent}` }}>{tr("Copy address")}</button>
+                  <button onClick={() => { copyText(cryptoModal.payAddress); }} className="mt-1.5 py-1.5 px-3.5 rounded-md bg-transparent text-xs font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent-ink font-[inherit]" style={{ border: `1px solid ${t.accent}` }}>{tr("Copy address")}</button>
                 </div>
 
                 <div className="py-2.5 px-3.5 rounded-lg mb-3.5" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.06)", border: `1px solid ${dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.14)"}` }}>
@@ -973,8 +973,8 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 try {
                   const r = await fetch("/api/payments/manual", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: confirmModal.reference, senderRef: senderName.trim() }) });
                   if (r.ok) { toast.success(tr("Payment confirmed"), tr("Your deposit is now awaiting admin verification.")); setConfirmModal(null); onRefresh?.(); }
-                  else { const d = await r.json().catch(() => ({})); toast.error("Failed", d.error || "Something went wrong"); }
-                } catch { toast.error("Network error", "Check your connection"); }
+                  else { const d = await r.json().catch(() => ({})); toast.error(tr("Failed"), d.error ? tr(d.error) : tr("Something went wrong")); }
+                } catch { toast.error(tr("Network error"), tr("Check your connection")); }
                 setConfirmLoading(false);
               }} disabled={confirmLoading || senderName.trim().length < 2} className="w-full py-2.5 mt-3 rounded-lg border-none text-white text-sm font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ fontFamily: "inherit", opacity: confirmLoading || senderName.trim().length < 2 ? .5 : 1, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>{confirmLoading ? tr("Confirming...") : tr("Confirm Payment")}</button>
               <button onClick={async () => {
@@ -1002,7 +1002,7 @@ function dayKeyWallet(iso) {
   if (same(d, now)) return "Today";
   const y = new Date(now); y.setDate(now.getDate() - 1);
   if (same(d, y)) return "Yesterday";
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return d.toLocaleDateString(docDateLocale(), { day: "numeric", month: "short" });
 }
 
 function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, dark, t, onRefresh, setConfirmModal, setSenderName }) {

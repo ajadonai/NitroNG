@@ -66,7 +66,7 @@ export function priceRange(min, max, fmt) {
 }
 export function fromPrice(min, fmt) { return perUnit(min) ? `from ${naira(min, true, fmt)}/unit` : `from ${naira(min, false, fmt)}/1K`; }
 
-export const eyebrowStyle = (t) => ({ fontSize: 10.5, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: t.accent, display: 'block' });
+export const eyebrowStyle = (t) => ({ fontSize: 10.5, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: "var(--t-accent-ink)", display: 'block' });
 export const cardStyle = (t) => ({ background: t.cardBg, border: `1px solid ${t.cardBorder}` });
 
 // The one pink button. `full` stretches it across its container.
@@ -141,7 +141,7 @@ export function TierCards() {
     <div className="grid grid-cols-3 gap-3 max-md:grid-cols-1">
       {TIERS.map(([name, head, body]) => (
         <div key={name} className="flex flex-col gap-[3px] rounded-xl px-4 py-3.5" style={{ ...cardStyle(t), ...(name === 'Standard' ? { borderColor: t.accent } : {}) }}>
-          <em className="not-italic text-[10.5px] font-bold uppercase tracking-[1.2px]" style={{ color: t.accent }}>{name}</em>
+          <em className="not-italic text-[10.5px] font-bold uppercase tracking-[1.2px]" style={{ color: "var(--t-accent-ink)" }}>{name}</em>
           <b className="text-[15px] font-semibold" style={{ color: t.text }}>{head}</b>
           <span className="text-[12.5px]" style={{ color: t.muted }}>{body}</span>
         </div>

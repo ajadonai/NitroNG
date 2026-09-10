@@ -429,6 +429,29 @@ export function scan(raw) {
       return `${key}: tr(${JSON.stringify(t)})`;
     });
 
+    // 6. toast and alert arguments: toast.error("Order failed", d.error || "Try
+    //    again"), window.alert("Unable to log out…"). Positional strings, so no
+    //    prose-named key ever carries them — 108 toast strings sat invisible in
+    //    five customer files until Sept 2026 while the report said 100%, and
+    //    four logout alerts hid the same way. The rewrite only touches strings,
+    //    so data arguments (order ids, server error text, money()) pass through.
+    const CALL_ARG = /\btoast(?:Ref\.current\??)?\.(?:success|error|warning|info)\(|\bwindow\.alert\(/;
+    if (CALL_ARG.test(next)) {
+      next = next.replace(/(^|[(,?:]|\|\|)(\s*)"((?:[^"\\]|\\.)+)"/g, (m, pre, sp, body, off) => {
+        // Only rewrite past the call itself, so an unrelated string earlier on
+        // the line (a fetch header, a property) is never caught.
+        if (off < next.search(CALL_ARG)) return m;
+        // A `:` reached here is either a ternary's else-branch or a property
+        // key (`{ round: "down" }`). The char before the colon cannot tell
+        // them apart — a quoted then-branch and a quoted key both end in `"` —
+        // but a ternary always has a ` ? ` earlier on the line and an options
+        // object never does. Properties are options, not prose.
+        if (pre === ':' && !/ \? /.test(next.slice(0, off))) return m;
+        if (!isProse(body) || !record(body, i)) return m;
+        return `${pre}${sp}tr(${JSON.stringify(body)})`;
+      });
+    }
+
     return next;
   });
 

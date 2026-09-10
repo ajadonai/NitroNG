@@ -126,20 +126,20 @@ export default function AdminBlogPage({ dark, t }) {
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-[13px] font-semibold" style={{ color: t.textMuted }}>Content <span className="font-normal">(Markdown)</span></label>
                     <details className="relative">
-                      <summary className="text-[12px] cursor-pointer font-medium list-none flex items-center gap-1" style={{ color: t.accent }}>
+                      <summary className="text-[12px] cursor-pointer font-medium list-none flex items-center gap-1" style={{ color: t.accentInk }}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                         Markdown guide
                       </summary>
                       <div className="absolute right-0 top-full mt-1 z-10 w-[280px] p-3.5 rounded-[10px] text-[12px] leading-[1.8] shadow-lg" style={{ background: dark ? "#141828" : "#fff", border: `1px solid ${t.cardBorder}`, color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>
                         <div className="font-semibold mb-1.5" style={{ color: t.text }}>Formatting:</div>
-                        <div><span style={{ color: t.accent }}>## </span>Heading</div>
-                        <div><span style={{ color: t.accent }}>### </span>Subheading</div>
-                        <div><span style={{ color: t.accent }}>**</span>bold<span style={{ color: t.accent }}>**</span></div>
-                        <div><span style={{ color: t.accent }}>*</span>italic<span style={{ color: t.accent }}>*</span></div>
-                        <div><span style={{ color: t.accent }}>[</span>text<span style={{ color: t.accent }}>](</span>url<span style={{ color: t.accent }}>)</span></div>
-                        <div><span style={{ color: t.accent }}>- </span>bullet list</div>
-                        <div><span style={{ color: t.accent }}>1. </span>numbered list</div>
-                        <div><span style={{ color: t.accent }}>---</span> divider</div>
+                        <div><span style={{ color: t.accentInk }}>## </span>Heading</div>
+                        <div><span style={{ color: t.accentInk }}>### </span>Subheading</div>
+                        <div><span style={{ color: t.accentInk }}>**</span>bold<span style={{ color: t.accentInk }}>**</span></div>
+                        <div><span style={{ color: t.accentInk }}>*</span>italic<span style={{ color: t.accentInk }}>*</span></div>
+                        <div><span style={{ color: t.accentInk }}>[</span>text<span style={{ color: t.accentInk }}>](</span>url<span style={{ color: t.accentInk }}>)</span></div>
+                        <div><span style={{ color: t.accentInk }}>- </span>bullet list</div>
+                        <div><span style={{ color: t.accentInk }}>1. </span>numbered list</div>
+                        <div><span style={{ color: t.accentInk }}>---</span> divider</div>
                       </div>
                     </details>
                   </div>

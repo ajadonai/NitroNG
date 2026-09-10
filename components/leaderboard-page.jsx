@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from "react";
+import { docDateLocale } from "../lib/format";
 import { useT } from "./locale";
 import { RailSec, RailCard, RailRow, RailLink } from "./rail";
 
@@ -110,7 +111,7 @@ export default function LeaderboardPage({ dark, t }) {
   const yourRank = data?.yourRank?.[tab];
   const yourBadge = data?.yourBadge;
 
-  const periodLabel = period === "month" ? new Date().toLocaleDateString("en-US", { month: "long" }) : "All time";
+  const periodLabel = period === "month" ? new Date().toLocaleDateString(docDateLocale(), { month: "long" }) : tr("All time");
   const rewardAnnouncement = data?.rewardAnnouncement;
 
   const pillCls = "py-[6px] px-4 max-md:px-3 rounded-[20px] text-[13px] max-md:text-[11px] font-medium cursor-pointer border font-[inherit] transition-all duration-200";
@@ -254,7 +255,7 @@ export function LeaderboardCard({ onViewAll }) {
   }, []);
   const top = data?.spenders?.slice(0, 5) || [];
   if (top.length === 0) return null;
-  const month = new Date().toLocaleDateString("en-GB", { month: "long" });
+  const month = new Date().toLocaleDateString(docDateLocale(), { month: "long" });
   return (
     <div className="rr">
       <RailSec>{tr("Top spenders ·")} {month}</RailSec>

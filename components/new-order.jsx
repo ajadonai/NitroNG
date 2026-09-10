@@ -31,7 +31,7 @@ const PROMO_SLIDES = ['wa', 'ig', ...(TASKS_ENABLED ? ['tasks'] : []), ...(RESEL
 /* ═══ Grouped: Social (21) Music (9) Utility (5) */
 /* ═══════════════════════════════════════════ */
 
-const refillLabel = (tier) => tier === "Budget" ? "No refill" : tier === "Standard" ? "30-day refill" : "Lifetime refill";
+const refillLabel = (tier) => tier === "Budget" ? msg("No refill") : tier === "Standard" ? msg("30-day refill") : msg("Lifetime refill");
 const tierClr = { Budget: { text: "#e0a458", bg: "rgba(224,164,88,.1)" }, Standard: { text: "#60a5fa", bg: "rgba(96,165,250,.1)" }, Premium: { text: "#a78bfa", bg: "rgba(167,139,250,.1)" } };
 const crossSells = {
   follower: { title: "Complete the look", body: "New followers check your posts first. Add likes so your content matches your profile.", cta: "Add Likes", color: "#f43f5e", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="#f43f5e" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> },
@@ -91,7 +91,7 @@ export const PLATFORM_GROUPS = [
   { label: "SEO & Reviews", tab: msg("SEO & Reviews"), platforms: [
     { id: "google", label: "Google", icon: I(<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>) },
     { id: "trustpilot", label: "Trustpilot", icon: I(<path d="M12 0l3.09 8.26L22 9.27l-5.5 4.87L18.18 22 12 17.77 5.82 22 7 14.14 1.5 9.27l6.91-1.01L12 0z"/>) },
-    { id: "webtraffic", label: "Web Traffic", icon: IS(<><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></>) },
+    { id: "webtraffic", label: msg("Web Traffic"), icon: IS(<><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></>) },
     { id: "appstore", label: "App Store", icon: I(<path d="M8.809 14.92l6.11-11.037c.084-.153.076-.33-.012-.468a.384.384 0 00-.398-.182c-.168.027-.31.152-.377.31l-2.5 4.528H5.132L9.694 0h2.073l-3.72 6.72h3.862l-4.172 8.2h1.072zm6.145-1.928l-5.476 9.888c-.084.153-.076.33.012.468a.385.385 0 00.398.182c.168-.027.31-.152.377-.31l2.5-4.527h6.5L14.7 24h-2.072l3.72-6.72h-3.862l4.172-8.2h-1.072l-.632 1.012zM3.491 18.2l.766-1.384h3.235l-.766 1.384H3.491zm16.253-12.4l-.766 1.384h-3.235l.766-1.384h3.235z"/>) },
     { id: "playstore", label: "Play Store", icon: I(<path d="M3.609.093A1.016 1.016 0 002.5.87v22.26c0 .437.277.823.684.968l10.972-12.052L3.609.093zm1.345-.79l11.253 11.253 3.23-3.553L5.627-.39a.942.942 0 00-.673.093v-.4zm0 23.394a.998.998 0 00.673.093l12.81-5.693-3.23-3.553L4.954 22.697zm16.282-8.327l-3.835-2.13-3.482 3.827 3.482 3.827 3.835-2.13c.695-.386 1.095-1.063 1.095-1.697s-.4-1.311-1.095-1.697z"/>) },
   ]},
@@ -314,7 +314,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
           <div className="text-right shrink-0">
             <div className="text-[11px] desktop:text-[11px] mb-0.5" style={{ color: t.textMuted }}>from</div>
             {activePromotion?.active && <div className="m text-[11px] font-normal line-through" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>{money(lowestPrice)}</div>}
-            <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{money(lowestPrice * (1 - (activePromotion?.active ? activePromotion.discountPercent / 100 : 0)))}</div>
+            <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: "var(--t-accent-ink)", fontFamily: "'JetBrains Mono', monospace" }}>{money(lowestPrice * (1 - (activePromotion?.active ? activePromotion.discountPercent / 100 : 0)))}</div>
           </div>
         )}
       </div>
@@ -324,7 +324,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
           <div className="mt-2.5 flex items-center gap-2 rounded-[9px] py-[7px] px-2.5 border border-solid transition-all duration-200" style={{ borderColor: s ? `${s.text}4d` : t.cardBorder, background: s ? (dark ? `${s.text}0f` : `${s.text}0a`) : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") }}>
             {activeTier ? (
               <div className="flex-1 text-[11px]" style={{ color: dark ? "#8a8580" : "#757170" }}>
-                <strong style={{ color: dark ? "#c9c5c0" : "#4a4744" }}>{refillLabel(activeTier.tier)}</strong>
+                <strong style={{ color: dark ? "#c9c5c0" : "#4a4744" }}>{tr(refillLabel(activeTier.tier))}</strong>
               </div>
             ) : (
               <div className="flex-1 flex items-center gap-1.5 text-[11px]" style={{ color: dark ? "#8a8580" : "#757170" }}>
@@ -616,7 +616,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       sessionStorage.removeItem("nitro_bulk_pending_key");
     }
     setBulkLoading(true);
-    toast.info("Resuming", "Checking your pending bulk order...");
+    toast.info(tr("Resuming"), tr("Checking your pending bulk order..."));
     poll().finally(() => { if (!cancelled) setBulkLoading(false); });
     return () => { cancelled = true; };
   }, []);
@@ -760,7 +760,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   };
 
   const addToCart = useCallback((tier) => {
-    if (cartRows.length >= 50) { toast.info("Cart full", "50-row limit reached"); return; }
+    if (cartRows.length >= 50) { toast.info(tr("Cart full"), tr("50-row limit reached")); return; }
     const svc = services.find(s => s.tiers.some(t2 => t2.id === tier.id));
     const svcName = svc?.name || "Service";
     const at = (tier.apiType || "").toLowerCase();
@@ -791,8 +791,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     c.count++;
     clearTimeout(c.timer);
     c.timer = setTimeout(() => {
-      if (c.count === 1) toast.success("Added to cart", `${svcName} (${tier.tier})`);
-      else toast.success("Added to cart", `${c.count} orders added`);
+      if (c.count === 1) toast.success(tr("Added to cart"), `${svcName} (${tier.tier})`);
+      else toast.success(tr("Added to cart"), `${c.count} ${tr("orders added")}`);
       c.count = 0;
     }, 800);
   }, [cartRows.length, services, platform, toast]);
@@ -859,7 +859,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         setDuplicateConfirm({ message: data.message, dripDays: dripDaysArg });
         return;
       }
-      if (!res.ok) { toast.error("Order failed", data.error || "Something went wrong"); setOrderLoading(false); return; }
+      if (!res.ok) { toast.error(tr("Order failed"), data.error ? tr(data.error) : tr("Something went wrong")); setOrderLoading(false); return; }
       const walletCharge = (data.order?.charge || 0) - (data.order?.pointsRedeemed || 0);
       setOrderSuccess({ ...data.order, queued: data.queued, discordSetup: needsDiscordGate, platform: platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : "Service", speed: selTier?.speed || null, tier: selTier?.tier || null, link: cleanLink(`https://${link.trim()}`), balanceAfter: walletCharge > 0 && user?.balance != null ? Math.max(0, user.balance - walletCharge) : (user?.balance ?? null) });
       if (typeof window.fbq === "function") fbq("track", "Purchase", { value: data.order?.charge || 0, currency: "NGN", content_name: selSvc?.name || tr("Order"), content_category: platform || "unknown" }, { eventID: data.eventId });
@@ -870,7 +870,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       if (refreshRewards) refreshRewards();
     } catch (err) {
       const msg = err?.name === "TimeoutError" ? "Request timed out" : "Network error";
-      toast.error(msg, "Check your connection and try again.");
+      toast.error(msg, tr("Check your connection and try again."));
     }
     setOrderLoading(false);
   };
@@ -889,33 +889,33 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     const emptyIdx = cartRows.findIndex(r => !r.link.trim());
     if (emptyIdx >= 0) {
       const count = cartRows.filter(r => !r.link.trim()).length;
-      toast.error("Missing links", `${count} row${count > 1 ? "s" : ""} need links`);
+      toast.error(tr("Missing links"), `${count} ${count > 1 ? tr("rows need links") : tr("row needs a link")}`);
       scrollToRow(emptyIdx);
       return;
     }
     const badLink = cartRows.findIndex(r => !isValidLink(r.link));
     if (badLink >= 0) {
-      toast.error("Invalid link", `Row ${badLink + 1}: enter a valid URL or @username`);
+      toast.error(tr("Invalid link"), `${tr("Row")} ${badLink + 1}: ${tr("enter a valid URL or @username")}`);
       scrollToRow(badLink);
       return;
     }
     const qtyBad = cartRows.findIndex(r => r.qty < r.min || r.qty > r.max);
     if (qtyBad >= 0) {
-      toast.error("Invalid quantity", `Row ${qtyBad + 1}: must be ${cartRows[qtyBad].min.toLocaleString()}–${cartRows[qtyBad].max.toLocaleString()}`);
+      toast.error(tr("Invalid quantity"), `${tr("Row")} ${qtyBad + 1}: ${tr("must be")} ${cartRows[qtyBad].min.toLocaleString()}–${cartRows[qtyBad].max.toLocaleString()}`);
       scrollToRow(qtyBad);
       return;
     }
     const dupIdx = cartRows.findIndex((r, i) => isDuplicate(cartRows, i));
     if (dupIdx >= 0) {
-      toast.error("Duplicate order", "Remove duplicate rows before placing");
+      toast.error(tr("Duplicate order"), tr("Remove duplicate rows before placing"));
       scrollToRow(dupIdx);
       return;
     }
     const needsComments = cartRows.findIndex(r => (r.needsComments || r.needsMentions || r.needsPoll || r.needsKeywords) && !(r.needsComments ? /[\p{L}\p{N}]/u.test(r.comments) : r.comments.trim()));
     if (needsComments >= 0) {
       const r = cartRows[needsComments];
-      const label = r.needsKeywords ? "keywords" : r.needsPoll ? "a poll answer" : r.needsMentions ? "usernames" : "comments";
-      toast.error(`Missing ${label}`, `Row ${needsComments + 1} needs ${label}`);
+      const label = r.needsKeywords ? tr("keywords") : r.needsPoll ? tr("a poll answer") : r.needsMentions ? tr("usernames") : tr("comments");
+      toast.error(`${tr("Missing")} ${label}`, `${tr("Row")} ${needsComments + 1} ${tr("needs")} ${label}`);
       scrollToRow(needsComments);
       return;
     }
@@ -931,7 +931,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         }
       }
       if (drifted.length > 0) {
-        toast.error("Prices changed", "Review updated prices before placing");
+        toast.error(tr("Prices changed"), tr("Review updated prices before placing"));
         setCartRows(prev => applyPriceUpdatesToCartRows(prev, [], menuData));
         return;
       }
@@ -962,15 +962,15 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           setMenuData(prev => applyPriceUpdatesToMenu(prev, priceRows));
           setCartRows(prev => applyPriceUpdatesToCartRows(prev, priceRows, menuData));
           const count = priceRows.length;
-          toast.error("Prices updated", count > 0 ? `${count} row${count !== 1 ? "s" : ""} updated with current prices. Review your cart and try again.` : "Some prices changed since you added them. Review your cart and try again.");
+          toast.error(tr("Prices updated"), count > 0 ? `${count} ${count !== 1 ? tr("rows updated with current prices.") : tr("row updated with current prices.")} ${tr("Review your cart and try again.")}` : tr("Some prices changed since you added them. Review your cart and try again."));
         } else if (data.error === "Insufficient balance") {
           sessionStorage.removeItem("nitro_bulk_pending_key");
           setBulkError({ type: "balance", needed: data.needed || 0 });
         } else if (data.error === "still_processing") {
-          toast.info("Already processing", "Your order is being placed — please wait.");
+          toast.info(tr("Already processing"), tr("Your order is being placed — please wait."));
         } else {
           sessionStorage.removeItem("nitro_bulk_pending_key");
-          toast.error("Bulk order failed", data.error || "Something went wrong");
+          toast.error(tr("Bulk order failed"), data.error ? tr(data.error) : tr("Something went wrong"));
         }
         setBulkLoading(false);
         return;
@@ -1076,7 +1076,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         {visiblePlatforms.map(p => {
           const isActive = platform === p.id;
           return (
-            <button key={p.id} onClick={() => setPlatform(p.id)} className={`no-plat-tile rounded-[11px] border border-solid flex flex-col items-center justify-center cursor-pointer font-[inherit] w-full px-1 min-w-0 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(0,0,0,.07)]`} style={{ height: 58, gap: 6, borderColor: isActive ? (dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)") : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)") : (dark ? "#111634" : "#faf9f7"), color: isActive ? t.accent : t.text }} title={p.label}>
+            <button key={p.id} onClick={() => setPlatform(p.id)} className={`no-plat-tile rounded-[11px] border border-solid flex flex-col items-center justify-center cursor-pointer font-[inherit] w-full px-1 min-w-0 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(0,0,0,.07)]`} style={{ height: 58, gap: 6, borderColor: isActive ? (dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)") : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)") : (dark ? "#111634" : "#faf9f7"), color: isActive ? t.accent : t.text }} title={tr(p.label)}>
               <span className="flex items-center justify-center [&_svg]:w-[16px] [&_svg]:h-[16px]" style={{ width: 16, height: 16, opacity: isActive ? 1 : .72 }}>{p.icon}</span>
               <span className="font-medium leading-none w-full text-center overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 10, color: isActive ? t.accent : t.textMuted, fontWeight: isActive ? 600 : 500 }}>{p.label.replace(" / X", "/X")}</span>
             </button>
@@ -1090,7 +1090,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           {visiblePlatforms.slice(platWindowStart, platWindowStart + 5).map(p => {
             const isActive = platform === p.id;
             return (
-              <button key={p.id} onClick={() => setPlatform(p.id)} className={`no-plat-tile rounded-[10px] border border-solid flex flex-col items-center justify-center cursor-pointer font-[inherit] w-full px-1 min-w-0 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(0,0,0,.07)]`} style={{ height: 54, gap: 6, borderColor: isActive ? (dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)") : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)") : (dark ? "#111634" : "#faf9f7"), color: isActive ? t.accent : t.text }} title={p.label}>
+              <button key={p.id} onClick={() => setPlatform(p.id)} className={`no-plat-tile rounded-[10px] border border-solid flex flex-col items-center justify-center cursor-pointer font-[inherit] w-full px-1 min-w-0 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(0,0,0,.07)]`} style={{ height: 54, gap: 6, borderColor: isActive ? (dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)") : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)") : (dark ? "#111634" : "#faf9f7"), color: isActive ? t.accent : t.text }} title={tr(p.label)}>
               <span className="flex items-center justify-center [&_svg]:w-[15px] [&_svg]:h-[15px]" style={{ width: 15, height: 15, opacity: isActive ? 1 : .72 }}>{p.icon}</span>
               <span className="font-medium leading-none w-full text-center overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 9.5, color: isActive ? t.accent : t.textMuted, fontWeight: isActive ? 600 : 500 }}>{p.label.replace(" / X", "/X")}</span>
               </button>
@@ -1109,7 +1109,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
               {visiblePlatforms.map((p, i) => {
                 const isActive = platform === p.id;
                 return (
-                  <button key={p.id} onClick={() => { setPlatform(p.id); const rowStart = Math.floor(i / 5) * 5; setPlatWindowStart(Math.min(rowStart, Math.max(0, visiblePlatforms.length - 5))); setPlatExpanded(false); }} className={`no-plat-tile rounded-[10px] border border-solid flex flex-col items-center justify-center cursor-pointer font-[inherit] w-full px-1 min-w-0 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(0,0,0,.07)]`} style={{ height: 54, gap: 6, borderColor: isActive ? (dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)") : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)") : (dark ? "#171126" : "#ffffff"), color: isActive ? t.accent : t.text }} title={p.label}>
+                  <button key={p.id} onClick={() => { setPlatform(p.id); const rowStart = Math.floor(i / 5) * 5; setPlatWindowStart(Math.min(rowStart, Math.max(0, visiblePlatforms.length - 5))); setPlatExpanded(false); }} className={`no-plat-tile rounded-[10px] border border-solid flex flex-col items-center justify-center cursor-pointer font-[inherit] w-full px-1 min-w-0 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(0,0,0,.07)]`} style={{ height: 54, gap: 6, borderColor: isActive ? (dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)") : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)") : (dark ? "#171126" : "#ffffff"), color: isActive ? t.accent : t.text }} title={tr(p.label)}>
               <span className="flex items-center justify-center [&_svg]:w-[15px] [&_svg]:h-[15px]" style={{ width: 15, height: 15, opacity: isActive ? 1 : .72 }}>{p.icon}</span>
               <span className="font-medium leading-none w-full text-center overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 9.5, color: isActive ? t.accent : t.textMuted, fontWeight: isActive ? 600 : 500 }}>{p.label.replace(" / X", "/X")}</span>
                   </button>
@@ -1123,7 +1123,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       {/* ═══ SECTION HEADER ═══ */}
       <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-solid" style={{ borderBottomColor: t.cardBorder }}>
         <div className="flex items-center justify-center" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.55)" }}>{activePlat?.icon}</div>
-        <span className="text-[18px] font-semibold" style={{ color: t.text }}>{activePlat?.label}</span>
+        <span className="text-[18px] font-semibold" style={{ color: t.text }}>{tr(activePlat?.label || "")}</span>
         <span className="text-[13px] ml-auto" style={{ color: t.textMuted }}>{filtered.length} service{filtered.length !== 1 ? "s" : ""}</span>
       </div>
 
@@ -1157,7 +1157,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
             </div>
           </div>
           <div className="flex items-center gap-2.5 shrink-0">
-            <span className="m text-lg max-md:text-base font-semibold whitespace-nowrap" style={{ color: t.accent }}>{money(price)}</span>
+            <span className="m text-lg max-md:text-base font-semibold whitespace-nowrap" style={{ color: "var(--t-accent-ink)" }}>{money(price)}</span>
             <button onClick={() => setOrderModal(true)} className="py-2.5 px-[22px] max-md:px-[18px] dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">{tr("Order")}</button>
           </div>
         </div>
@@ -1174,7 +1174,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                   <span className="rcp-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
                   <div className="rcp-ht">
                     <b>{orderSuccess.queued ? tr("Order queued") : tr("Order placed")}</b>
-                    <button type="button" className="rcp-id m" onClick={() => { copyText(String(orderSuccess.id)); toast.success("Order number copied"); }} aria-label={tr("Copy order number")}>
+                    <button type="button" className="rcp-id m" onClick={() => { copyText(String(orderSuccess.id)); toast.success(tr("Order number copied")); }} aria-label={tr("Copy order number")}>
                       {orderSuccess.id}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     </button>
                   </div>
@@ -1295,7 +1295,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 {tr("YouTube watches for sudden jumps, so they are added a little at a time. That way the channel keeps them.")}
               </div>
               <div className="rounded-[14px] px-3.5 py-3 mb-3" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)" }}>
-                <div className="text-[24px] font-extrabold leading-none -tracking-[.5px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>50 – 500</div>
+                <div className="text-[24px] font-extrabold leading-none -tracking-[.5px]" style={{ color: "var(--t-accent-ink)", fontFamily: "'JetBrains Mono', monospace" }}>50 – 500</div>
                 <div className="text-[13px] leading-[1.4] mt-1.5" style={{ color: t.textMuted }}>{tr("subscribers a day, until your order is done")}</div>
               </div>
               <div className="text-[12.5px] leading-[1.6] mb-4" style={{ color: t.textSoft }}>
@@ -1313,7 +1313,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           <div role="dialog" aria-modal="true" aria-label={tr("Before this traffic order goes out")} className="w-full max-w-[400px] rounded-[20px] border border-solid overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" onClick={e => e.stopPropagation()} style={{ background: dark ? "#140d1e" : "#fff", borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)", boxShadow: dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)" }}>
             <div className="p-[18px] flex flex-col gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: t.accent }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: "var(--t-accent-ink)" }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
                 </div>
                 <div className="min-w-0">
@@ -1561,7 +1561,7 @@ const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, b
         {!empty && (
           <div className="flex flex-col items-end gap-px">
             <span className="text-[11px] uppercase tracking-[1.5px] font-medium hidden desktop:block" style={{ color: t.textMuted }}>{tr("Total")}</span>
-            <span className="text-[18px] max-md:text-[15px] font-semibold whitespace-nowrap" style={{ color: t.accent }}>{bp === "sm" ? compactPrice(total, money, currency) : money(total)}</span>
+            <span className="text-[18px] max-md:text-[15px] font-semibold whitespace-nowrap" style={{ color: "var(--t-accent-ink)" }}>{bp === "sm" ? compactPrice(total, money, currency) : money(total)}</span>
           </div>
         )}
         <div className="w-[34px] h-[34px] max-md:w-[30px] max-md:h-[30px] rounded-[10px] flex items-center justify-center shrink-0" style={{ background: t.accent }}>
@@ -1660,7 +1660,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
         </div>
         <button onClick={onClear} disabled={loading} className="py-1 px-2.5 rounded-md border border-solid text-[11px] font-medium cursor-pointer bg-transparent font-[inherit] hover:opacity-80 transition-opacity shrink-0 disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderColor: dark ? "rgba(255,255,255,.19)" : "rgba(0,0,0,.18)", color: t.textMuted }}>{tr("Clear cart")}</button>
         <div className="flex items-center gap-3.5 shrink-0">
-          <span className="text-[18px] font-medium" style={{ color: t.accent }}>{money(total)}</span>
+          <span className="text-[18px] font-medium" style={{ color: "var(--t-accent-ink)" }}>{money(total)}</span>
           <button onClick={onClose} disabled={loading} className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center cursor-pointer border-none p-0 disabled:opacity-40 disabled:cursor-not-allowed transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent }}>
             <span className="w-2 h-2 border-r-2 border-t-2 border-solid rotate-[135deg]" style={{ borderColor: "#fff" }} />
           </button>
@@ -1835,10 +1835,10 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
 
               {/* Warnings */}
               {dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{tr("● Duplicate — remove one or change the tier")}</div>}
-              {emptyLink && !dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: t.accent }}>{tr("○ Paste a link for this row")}</div>}
+              {emptyLink && !dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: "var(--t-accent-ink)" }}>{tr("○ Paste a link for this row")}</div>}
               {badLink && !dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{tr("● Enter a valid URL or @username")}</div>}
-              {qtyBad && !dup && <div className="text-[11px] mt-1.5" style={{ color: t.accent }}>{row.qty < row.min ? `Min ${row.min.toLocaleString()} for this service` : `Max ${row.max.toLocaleString()} for this service`}</div>}
-              {needsCommentsWarning && !dup && <div className="text-[11px] mt-1.5" style={{ color: t.accent }}>○ {row.needsPoll ? tr("Select a poll answer") : row.needsMentions ? tr("Enter usernames") : tr("This service needs at least one comment")}</div>}
+              {qtyBad && !dup && <div className="text-[11px] mt-1.5" style={{ color: "var(--t-accent-ink)" }}>{row.qty < row.min ? `Min ${row.min.toLocaleString()} for this service` : `Max ${row.max.toLocaleString()} for this service`}</div>}
+              {needsCommentsWarning && !dup && <div className="text-[11px] mt-1.5" style={{ color: "var(--t-accent-ink)" }}>○ {row.needsPoll ? tr("Select a poll answer") : row.needsMentions ? tr("Enter usernames") : tr("This service needs at least one comment")}</div>}
 
               {/* Comment/mention/poll section */}
               {(row.needsComments || row.needsMentions || row.needsPoll) && (
@@ -1860,13 +1860,13 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                       </div>
                       <textarea placeholder={row.needsPoll ? "1" : row.needsMentions ? "username1\nusername2\nusername3" : "Fire post\nLove this\nLegendary..."} value={row.comments} onChange={e => updateRow(idx, { comments: e.target.value })} rows={4} className="w-full min-h-[90px] rounded-md border border-solid py-2 px-2.5 text-[11px] font-[JetBrains_Mono,monospace] outline-none resize-y" style={{ background: dark ? "rgba(255,255,255,.09)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.text }} />
                       <div className="flex justify-between items-center mt-2 text-[11px] flex-wrap gap-2" style={{ color: t.textMuted }}>
-                        <div className="flex items-center gap-1"><strong style={{ color: t.accent }}>{commentCount}</strong> {row.needsPoll ? "answer" : `seed ${row.needsMentions ? "username" : "comment"}${commentCount !== 1 ? "s" : ""}`}{row.needsPoll ? "" : ` · will cycle to fill ${row.qty.toLocaleString()}`}</div>
+                        <div className="flex items-center gap-1"><strong style={{ color: "var(--t-accent-ink)" }}>{commentCount}</strong> {row.needsPoll ? "answer" : `seed ${row.needsMentions ? "username" : "comment"}${commentCount !== 1 ? "s" : ""}`}{row.needsPoll ? "" : ` · will cycle to fill ${row.qty.toLocaleString()}`}</div>
                         {row.qty > 100 && <button onClick={() => { setUploadIdx(idx); fileInputRef.current?.click(); }} className="inline-flex items-center gap-1 py-1 px-2.5 rounded-md border border-solid text-[11px] font-medium cursor-pointer bg-transparent font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}>{tr("↑ Upload .txt")}</button>}
                       </div>
                     </div>
                   ) : (
                     <>
-                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)", borderColor: t.accent, color: t.accent }}>{tr("+ Add")} {row.needsPoll ? tr("poll answer") : row.needsMentions ? "usernames" : "comments"}</button>
+                      <button onClick={() => updateRow(idx, { commentsOpen: true })} className="inline-flex items-center gap-2 py-[7px] px-3 rounded-lg border border-solid text-[11px] font-medium cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)", borderColor: t.accent, color: "var(--t-accent-ink)" }}>{tr("+ Add")} {row.needsPoll ? tr("poll answer") : row.needsMentions ? "usernames" : "comments"}</button>
                       {!row.needsPoll && <div className="text-[11px] mt-1.5" style={{ color: t.textMuted }}>{tr("We'll cycle through them to fill your order")}</div>}
                     </>
                   )}
@@ -1883,7 +1883,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
         <div className="py-2.5 px-[18px] max-md:px-3.5 border-t border-solid shrink-0 flex items-center gap-3" style={{ borderColor: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)" }}>
           <div className="flex flex-col min-w-0 flex-1 leading-tight">
             <span className="text-[10.5px] uppercase tracking-[1px] font-semibold" style={{ color: t.textMuted }}>{tr("Total ·")} {rows.length} order{rows.length !== 1 ? "s" : ""}</span>
-            <span className="text-[18px] font-bold" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{money(total)}</span>
+            <span className="text-[18px] font-bold" style={{ color: "var(--t-accent-ink)", fontFamily: "'JetBrains Mono', monospace" }}>{money(total)}</span>
             {discount > 0 && <span className="text-[10.5px]" style={{ color: dark ? "#b4db7a" : "#27500A" }}>Nitro Status discount ({loyaltyDiscount}%) · −{money(discount, { round: "down" })}</span>}
           </div>
           <button onClick={onPlace} disabled={loading} className="shrink-0 h-[42px] px-4 dash-btn-primary border-none text-[14px] font-semibold cursor-pointer font-[inherit] bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">

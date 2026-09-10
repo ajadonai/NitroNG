@@ -272,7 +272,7 @@ export default function ResellerCataloguePage({ dark, t }) {
         <div className="page-divider" style={{ background: t.cardBorder }} />
         <div className="flex items-center gap-2.5 mt-3 py-2 px-3 rounded-xl text-[12px]" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", border: "1px solid rgba(196,125,142,.3)", color: t.textSoft }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c47d8e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true"><path d="m21 2-2 2m-7.6 7.6a5.5 5.5 0 11-7.8 7.8 5.5 5.5 0 017.8-7.8zm0 0L19 3l2 2-3 3"/></svg>
-          <span>{tr("Ordering by API? Your key is in")} <b style={{ color: t.text }}>{tr("Settings")}</b>, the base URL is <b className="m" style={{ color: t.text }}>nitro.ng/api/v2</b>, and the <a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="font-semibold text-accent">docs</a> {tr("cover all six actions.")}</span>
+          <span>{tr("Ordering by API? Your key is in")} <b style={{ color: t.text }}>{tr("Settings")}</b>, the base URL is <b className="m" style={{ color: t.text }}>nitro.ng/api/v2</b>, and the <a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="font-semibold text-accent-ink">docs</a> {tr("cover all six actions.")}</span>
         </div>
       </div>
 
@@ -348,7 +348,7 @@ export default function ResellerCataloguePage({ dark, t }) {
                 <div key={tier.apiId || i} className="flex items-center gap-3 py-3 px-4"
                   style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"}` }}>
                   <span className="py-0.5 px-2 rounded-full text-[11px] font-bold flex-shrink-0"
-                    style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: t.accent }}>{tier.tier}</span>
+                    style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: "var(--t-accent-ink)" }}>{tier.tier}</span>
                   <span className="flex-1 min-w-0">
                     <span className="flex items-center gap-2 text-[11px]" style={{ color: t.textMuted }}>
                       {idChip(tier.apiId ?? "—")}
@@ -404,7 +404,7 @@ export default function ResellerCataloguePage({ dark, t }) {
                       {catRows[c.name].hasMore && (
                         <button onClick={() => loadMore(c.name)} disabled={catRows[c.name].loadingMore}
                           className="w-full py-3 text-[13px] font-semibold cursor-pointer border-none"
-                          style={{ background: dark ? "rgba(196,125,142,.07)" : "rgba(196,125,142,.05)", color: t.accent, borderTop: `1px solid ${dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"}` }}>
+                          style={{ background: dark ? "rgba(196,125,142,.07)" : "rgba(196,125,142,.05)", color: "var(--t-accent-ink)", borderTop: `1px solid ${dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.04)"}` }}>
                           {catRows[c.name].loadingMore ? "Loading more…" : `Show more (${catRows[c.name].rows.length.toLocaleString()} of ${c.count.toLocaleString()})`}
                         </button>
                       )}

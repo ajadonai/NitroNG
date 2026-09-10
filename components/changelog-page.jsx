@@ -47,12 +47,12 @@ function ChangelogInner({ entries }) {
   }, []);
 
   const KIND_STYLE = {
-    new: { color: t.accent, borderColor: 'rgba(196,125,142,.5)' },
+    new: { color: "var(--t-accent-ink)", borderColor: 'rgba(196,125,142,.5)' },
     improved: { color: dark ? '#93c5fd' : '#2563eb', borderColor: dark ? 'rgba(147,197,253,.45)' : 'rgba(37,99,235,.4)' },
     fixed: { color: dark ? '#6ee7b7' : '#059669', borderColor: dark ? 'rgba(110,231,183,.45)' : 'rgba(5,150,105,.4)' },
   };
 
-  const eyebrow = { fontSize: 10.5, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: t.accent, display: 'block' };
+  const eyebrow = { fontSize: 10.5, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: "var(--t-accent-ink)", display: 'block' };
   const card = { background: t.cardBg, border: `1px solid ${t.cardBorder}` };
   const oldest = entries[entries.length - 1];
 

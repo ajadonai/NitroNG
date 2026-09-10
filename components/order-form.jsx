@@ -1,5 +1,6 @@
 'use client';
 import { TRAFFIC_COUNTRIES, TRAFFIC_CONTINENTS } from '@/lib/traffic-targets';
+import { docDateLocale } from "../lib/format";
 import { useEffect, useState } from "react";
 import { BONUS_PRESETS, MAX_BONUS_NAIRA, bonusForNaira } from "../lib/welcome-bonus";
 import { calculateOrderPrice, formatOrderQuantity, getDripSchedule, getLinkPlaceholder, LINK_EXAMPLES, LINK_HINTS, MULTIDAY_THRESHOLD, validateOrderLink } from "../lib/order-form-core";
@@ -433,7 +434,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             </div>
             <div className="rounded-xl py-2.5 px-2 text-center" style={{ background: dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)", border: `1px solid ${dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.12)"}` }}>
               <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>{tr("Completes by")}</div>
-              <div className="text-[13px] font-semibold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{new Date(Date.now() + clampedDays * 86400000).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</div>
+              <div className="text-[13px] font-semibold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{new Date(Date.now() + clampedDays * 86400000).toLocaleDateString(docDateLocale(), { day: "numeric", month: "short" })}</div>
             </div>
           </div>
           {daysMin < daysMax ? (<>
@@ -458,7 +459,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           <div className="rounded-[10px] p-2.5 mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", borderColor: t.cardBorder }}>
             <div className="flex justify-between items-baseline">
               <span className="text-[13px] font-semibold" style={{ color: t.textMuted }}>{tr("Total")}</span>
-              <span className="font-bold text-[18px]" style={{ color: t.accent, fontFamily: "'JetBrains Mono', monospace" }}>{money(price)}</span>
+              <span className="font-bold text-[18px]" style={{ color: "var(--t-accent-ink)", fontFamily: "'JetBrains Mono', monospace" }}>{money(price)}</span>
             </div>
           </div>
           <button onClick={() => onSubmit(clampedDays)} data-tour="no-submit-btn" disabled={orderLoading} className="w-full py-2.5 dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />{tr("Placing...")}</span> : "Place Order"}</button>

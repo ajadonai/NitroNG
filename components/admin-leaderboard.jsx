@@ -151,7 +151,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
         ].map((s, i) => (
           <div key={i} className="rounded-xl py-3 px-4 border" style={{ borderColor: t.cardBorder, ...cardBg }}>
             <div className="flex items-center gap-2 mb-1">
-              {s.icon && <span style={{ color: t.accent, opacity: .7 }}>{s.icon}</span>}
+              {s.icon && <span style={{ color: t.accentInk, opacity: .7 }}>{s.icon}</span>}
               <span className="text-[11px] font-semibold uppercase tracking-[1px]" style={{ color: t.textMuted }}>{s.label}</span>
             </div>
             <div className="text-lg font-bold" style={{ color: s.accent ? (dark ? "#6ee7b7" : "#059669") : t.text }}>{s.value}</div>
@@ -165,7 +165,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
         <div className="rounded-xl overflow-hidden border mb-4" style={{ borderColor: t.cardBorder }}>
           <div className="py-2.5 px-4 flex items-center gap-2" style={accentHdr}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-            <span className="text-xs font-semibold uppercase tracking-[1.2px]" style={{ color: t.accent }}>Reward Announcement</span>
+            <span className="text-xs font-semibold uppercase tracking-[1.2px]" style={{ color: t.accentInk }}>Reward Announcement</span>
             <div className="flex-1" />
             {annoEnabled && <span className="text-[10px] font-bold uppercase tracking-wider py-0.5 px-2 rounded-full" style={{ background: dark ? "rgba(110,231,183,.14)" : "rgba(16,185,129,.1)", color: dark ? "#6ee7b7" : "#059669" }}>Live</span>}
           </div>
@@ -183,7 +183,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
         <div className="rounded-xl overflow-hidden border mb-4" style={{ borderColor: t.cardBorder }}>
           <div className="py-2.5 px-4 flex items-center gap-2" style={accentHdr}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span className="text-xs font-semibold uppercase tracking-[1.2px]" style={{ color: t.accent }}>Auto-Reward (Monthly)</span>
+            <span className="text-xs font-semibold uppercase tracking-[1.2px]" style={{ color: t.accentInk }}>Auto-Reward (Monthly)</span>
             <div className="flex-1" />
             <button onClick={() => { if (!autoConfig) setAutoConfig({ enabled: false, category: "spenders", slots: [{ rank: 1, amount: 5000 }, { rank: 2, amount: 3000 }, { rank: 3, amount: 1000 }] }); setAutoModal(!autoModal); }} className={smBtnCls} style={smBtn}>{autoModal ? "Close" : "Configure"}</button>
           </div>
@@ -208,7 +208,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
                     <button onClick={() => setAutoConfig({ ...autoConfig, slots: autoConfig.slots.filter((_, j) => j !== i) })} className="bg-transparent border-none text-sm cursor-pointer transition-all duration-200 hover:-translate-y-px" style={{ color: t.red }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                   </div>
                 ))}
-                <button onClick={() => setAutoConfig({ ...autoConfig, slots: [...(autoConfig.slots || []), { rank: (autoConfig.slots?.length || 0) + 1, amount: 1000 }] })} className="text-xs bg-transparent border-none cursor-pointer font-[inherit] py-1 transition-all duration-200 hover:-translate-y-px" style={{ color: t.accent }}>+ Add slot</button>
+                <button onClick={() => setAutoConfig({ ...autoConfig, slots: [...(autoConfig.slots || []), { rank: (autoConfig.slots?.length || 0) + 1, amount: 1000 }] })} className="text-xs bg-transparent border-none cursor-pointer font-[inherit] py-1 transition-all duration-200 hover:-translate-y-px" style={{ color: t.accentInk }}>+ Add slot</button>
                 <div className="flex gap-2 mt-3 pt-3" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
                   <button onClick={saveAuto} disabled={autoSaving} className={gradBtnCls} style={gradBtn}>{autoSaving ? "Saving..." : "Save Config"}</button>
                   {autoMsg && <span className="text-xs self-center" style={{ color: autoMsg.type === "success" ? t.green : t.red }}>{autoMsg.text}</span>}
@@ -230,7 +230,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
           ]} />
           <div className="flex-1" />
           {list.length > 0 && <>
-            {[3,5,10].map(n => <button key={n} onClick={() => selectTop(n)} className={smBtnCls} style={{ ...smBtn, ...(selected.size === n && list.length >= n ? { borderColor: t.accent, color: t.accent } : {}) }}>Top {n}</button>)}
+            {[3,5,10].map(n => <button key={n} onClick={() => selectTop(n)} className={smBtnCls} style={{ ...smBtn, ...(selected.size === n && list.length >= n ? { borderColor: t.accent, color: t.accentInk } : {}) }}>Top {n}</button>)}
             {selected.size > 0 && <>
               <button onClick={clearSel} className={smBtnCls} style={smBtn}>Clear</button>
               <button onClick={() => { setMassModal(true); setMassMsg(null); }} className={gradBtnCls} style={gradBtn}>Reward {selected.size}</button>
@@ -251,7 +251,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
           </div>
         ) : (
           <div className="rounded-xl overflow-hidden border" style={{ borderColor: t.cardBorder }}>
-            <div className="flex py-2.5 px-4 max-md:px-2.5 text-[11px] font-semibold uppercase tracking-[1px] gap-3 max-md:gap-2 items-center" style={{ color: t.accent, ...accentHdr }}>
+            <div className="flex py-2.5 px-4 max-md:px-2.5 text-[11px] font-semibold uppercase tracking-[1px] gap-3 max-md:gap-2 items-center" style={{ color: t.accentInk, ...accentHdr }}>
               <span className="w-6 max-md:w-4"></span><span className="w-[30px] max-md:w-5">#</span><span className="flex-1">User</span>
               {tab === "spenders" && <><span className="w-[90px] max-md:w-[70px] text-right">Spend</span><span className="w-[70px] text-right max-md:hidden">Profit</span><span className="w-[50px] max-md:w-[36px] text-right">Orders</span></>}
               {tab === "referrers" && <span className="w-[70px] max-md:w-[50px] text-right">Refs</span>}
@@ -272,7 +272,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
                   {tab === "referrers" && <span className="w-[70px] max-md:w-[50px] text-right text-sm max-md:text-xs font-semibold shrink-0" style={{ color: dark ? "#e0a458" : "#d97706" }}>{e.referrals}</span>}
                   {tab === "active" && <><span className="w-[60px] max-md:w-[44px] text-right text-sm max-md:text-xs font-semibold shrink-0" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>{e.orders}</span><span className="w-[90px] max-md:w-[70px] text-right text-xs shrink-0" style={{ color: t.textMuted }}>{fN(e.spend)}</span></>}
                   <div className="w-[70px] max-md:w-[54px] text-right shrink-0">
-                    <button onClick={() => { setRewardModal({ userId: e.userId, name: e.name || `${e.firstName} ${e.lastName}`, email: e.email }); setRewardMsg(null); }} className="py-1.5 px-3 max-md:py-1 max-md:px-2 rounded-lg text-[11px] max-md:text-[10px] font-semibold cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.accent}`, color: t.accent }}>Reward</button>
+                    <button onClick={() => { setRewardModal({ userId: e.userId, name: e.name || `${e.firstName} ${e.lastName}`, email: e.email }); setRewardMsg(null); }} className="py-1.5 px-3 max-md:py-1 max-md:px-2 rounded-lg text-[11px] max-md:text-[10px] font-semibold cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px" style={{ border: `1px solid ${t.accent}`, color: t.accentInk }}>Reward</button>
                   </div>
                 </div>
               );
@@ -324,7 +324,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
               <label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Amount per user (₦)</label>
               <input type="number" value={massAmount} onChange={e => setMassAmount(e.target.value)} placeholder="5000" className={inpCls} style={{ ...inp, fontSize: 15 }} />
               <div className="flex gap-1 mt-1.5">{[1000,2000,3000,5000,10000].map(q => <button key={q} onClick={() => setMassAmount(String(q))} className={presetBtnCls} style={presetBtn(massAmount === String(q))}>{fN(q)}</button>)}</div>
-              {massAmount && <div className="text-xs mt-1.5 font-semibold" style={{ color: t.accent }}>Total: {fN(Number(massAmount) * selected.size)} (₦{Number(massAmount).toLocaleString()} × {selected.size})</div>}
+              {massAmount && <div className="text-xs mt-1.5 font-semibold" style={{ color: t.accentInk }}>Total: {fN(Number(massAmount) * selected.size)} (₦{Number(massAmount).toLocaleString()} × {selected.size})</div>}
             </div>
             <div className="mb-4">
               <label className="text-[13px] block mb-1" style={{ color: t.textMuted }}>Note (optional)</label>
@@ -332,7 +332,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
             </div>
             {massProgress && (
               <div className="mb-3">
-                <div className="flex justify-between text-[11px] mb-1" style={{ color: t.accent }}><span>Processing...</span><span>{massProgress.done}/{massProgress.total}</span></div>
+                <div className="flex justify-between text-[11px] mb-1" style={{ color: t.accentInk }}><span>Processing...</span><span>{massProgress.done}/{massProgress.total}</span></div>
                 <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)" }}>
                   <div className="h-full rounded-full transition-all duration-300" style={{ width: `${(massProgress.done / massProgress.total) * 100}%`, background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }} />
                 </div>

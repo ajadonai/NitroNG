@@ -225,7 +225,7 @@ function WaitlistPage({ feature, dark, t }) {
   return (
     <div className="rounded-[14px] max-md:rounded-xl overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
       <div className="py-10 px-6 max-md:py-8 max-md:px-4 flex flex-col items-center text-center">
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 text-accent" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}>
           <span className="scale-[1.8]">{meta.icon}</span>
         </div>
         <div className="text-xl max-md:text-lg font-semibold mb-2 text-t-text">{meta.title}</div>
@@ -299,10 +299,10 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
       <div className="flex justify-between items-center py-3.5 px-4">
         <div className="flex items-center gap-2">
           <span className="text-base font-semibold text-t-text">{tr("Notifications")}</span>
-          {unreadCount > 0 && <span className="text-xs py-0.5 px-1.5 rounded-[5px] font-semibold text-accent" style={{ background: dark ? "#1c1015" : "#fdf2f4" }}>{unreadCount}</span>}
+          {unreadCount > 0 && <span className="text-xs py-0.5 px-1.5 rounded-[5px] font-semibold text-accent-ink" style={{ background: dark ? "#1c1015" : "#fdf2f4" }}>{unreadCount}</span>}
         </div>
         <div className="flex gap-2.5">
-          {unreadCount > 0 && <button onClick={markAllRead} className="text-[13px] font-semibold bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent">{tr("Mark all read")}</button>}
+          {unreadCount > 0 && <button onClick={markAllRead} className="text-[13px] font-semibold bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent-ink">{tr("Mark all read")}</button>}
           {items.length > 0 && <button onClick={clearAll} className="text-[13px] font-semibold bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text-muted">{tr("Clear all")}</button>}
         </div>
       </div>
@@ -1142,12 +1142,12 @@ function DashboardInner({ initialData }) {
     try {
       res = await fetch("/api/auth/logout", { method: "POST" });
     } catch {
-      window.alert("Unable to log out. Check your connection and try again.");
+      window.alert(tr("Unable to log out. Check your connection and try again."));
       return;
     }
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      window.alert(data.error || "Unable to log out. Please try again.");
+      window.alert(data.error ? tr(data.error) : tr("Unable to log out. Please try again."));
       return;
     }
     try { sessionStorage.removeItem(PAYMENT_STATUS_STORAGE_KEY); } catch {}
@@ -1385,7 +1385,7 @@ function DashboardInner({ initialData }) {
                     <button data-nav={item.id} onClick={() => { if (item.soon) return; if (item.href) { window.location.href = item.href; return; } if (isSupportItem) { setLeftOpen(false); setChatOpen(true); return; } setActive(item.id); setLeftOpen(false); }} className={"rail-it" + (isActive ? " on" : "") + (specialClr && !isActive ? " tint" : "") + (item.soon ? " soon" : "")} style={specialClr ? { "--ic": specialClr } : undefined}>
                       <span className="rail-ii">{I[item.id]}</span>
                       <span className="rail-il">{tr(item.label)}</span>
-                      {item.soon && <span className="text-[11px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>{tr("Soon")}</span>}
+                      {item.soon && <span className="text-[11px] font-bold uppercase tracking-[0.5px] py-[1px] px-1.5 rounded-[4px] ml-auto text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)" }}>{tr("Soon")}</span>}
                       {processingCount > 0 && <span className="m rail-bd">{processingCount > 99 ? "99+" : processingCount}</span>}
                     </button>
                   </Fragment>
@@ -1397,7 +1397,7 @@ function DashboardInner({ initialData }) {
           <div className="dash-sidebar-divider bg-t-sidebar-border" />
           <div className="dash-sidebar-social">
             <div className="dash-social-btns">
-              <a href={`https://instagram.com/${(socialLinks.social_instagram || "Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn text-accent" title="Instagram">
+              <a href={`https://instagram.com/${(socialLinks.social_instagram || "Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn text-accent-ink" title="Instagram">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
               </a>
               <a href={`https://x.com/${(socialLinks.social_twitter || "TheNitroNG").replace(/^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn" title="X (Twitter)" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.5)" }}>
@@ -1435,7 +1435,7 @@ function DashboardInner({ initialData }) {
               <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">{tr("Balance")}</div>
                 <div className="m text-lg max-md:text-base font-semibold text-t-green">{money(user?.balance || 0, { round: "down" })}</div>
-                {user?.bonusCredit && <div className="text-[11px] mt-0.5 text-accent">{money(user.bonusCredit.amount / 100, { round: "down" })} {tr("bonus — expires in")} {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}
+                {user?.bonusCredit && <div className="text-[11px] mt-0.5 text-accent-ink">{money(user.bonusCredit.amount / 100, { round: "down" })} {tr("bonus — expires in")} {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}
               </div>
             </div>
             <div className="page-divider bg-t-card-border" />
@@ -1592,7 +1592,7 @@ function DashboardInner({ initialData }) {
                 <button key={item.id} type="button" onClick={go} className="flex items-center gap-[11px] w-full py-2.5 px-1 rounded-xl cursor-pointer bg-transparent border-none text-left font-[inherit]">
                   <span className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: chipBg, color: chipIc }}>{I[item.id]}</span>
                   <span className="text-[13.5px] font-semibold flex-1" style={item.out ? { color: dark ? "#fca5a5" : "#dc2626" } : undefined}>{!item.out ? <span className="text-t-text">{tr(item.label)}</span> : tr(item.label)}</span>
-                  {item.badge > 0 && <span className="text-[9.5px] font-extrabold uppercase tracking-[.5px] py-[2.5px] px-[7px] rounded-full text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.14)" }}>{item.badge > 9 ? "9+" : item.badge} new</span>}
+                  {item.badge > 0 && <span className="text-[9.5px] font-extrabold uppercase tracking-[.5px] py-[2.5px] px-[7px] rounded-full text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.14)" }}>{item.badge > 9 ? "9+" : item.badge} new</span>}
                   {!item.out && chev}
                 </button>
               );
@@ -1750,8 +1750,8 @@ function DashboardInner({ initialData }) {
               {tr("Our Terms of Service and Privacy Policy have been updated. Please review and accept to continue using Nitro.")}
             </p>
             <div className="flex gap-3 justify-center mb-5">
-              <a href="/terms" target="_blank" rel="noopener" className="text-[13px] text-accent no-underline font-medium">{tr("Terms of Service ↗")}</a>
-              <a href="/privacy" target="_blank" rel="noopener" className="text-[13px] text-accent no-underline font-medium">{tr("Privacy Policy ↗")}</a>
+              <a href="/terms" target="_blank" rel="noopener" className="text-[13px] text-accent-ink no-underline font-medium">{tr("Terms of Service ↗")}</a>
+              <a href="/privacy" target="_blank" rel="noopener" className="text-[13px] text-accent-ink no-underline font-medium">{tr("Privacy Policy ↗")}</a>
             </div>
             <label className="flex items-start gap-2.5 cursor-pointer mb-5 py-3 px-3.5 rounded-[10px]" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.03)" }}>
               <input type="checkbox" checked={tosChecked} onChange={e => setTosChecked(e.target.checked)} aria-label={tr("Agree to updated terms")} className="mt-0.5" style={{ accentColor: t.accent }} />
