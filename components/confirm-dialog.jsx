@@ -79,7 +79,7 @@ export function ConfirmProvider({ children, dark }) {
     return new Promise((resolve) => {
       triggerRef.current = globalThis.document?.activeElement || null;
       setInput("");
-      setDialog({ title, message, body, confirmLabel: confirmLabel || confirmText || "Confirm", confirmColor, danger, requireType, compact, resolve });
+      setDialog({ title, message, body, confirmLabel: confirmLabel || confirmText || null, confirmColor, danger, requireType, compact, resolve });
     });
   }, []);
 
@@ -213,7 +213,7 @@ export function ConfirmProvider({ children, dark }) {
                 onClick={handleConfirm}
                 disabled={!canConfirm}
                 style={dialog.confirmColor ? { background: dialog.confirmColor, border: "none", color: "#fff" } : undefined}
-              >{dialog.confirmLabel}</ModalBtn>
+              >{dialog.confirmLabel || tr("Confirm")}</ModalBtn>
             </div>
           </div>
         </div>

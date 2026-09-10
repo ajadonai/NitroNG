@@ -87,8 +87,8 @@ export default function EarnPage({ dark, t }) {
                 <div className="text-[11px] font-medium" style={{ color: t.textMuted }}>{monthLabel || 'This month'} {tr("— Top 5 win cash")}</div>
               </div>
               <div className="text-right">
-                <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: t.accent }}>{tr("Total")}</div>
-                <div className="text-lg font-bold" style={{ color: t.accent }}>{money(10500)}</div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--t-accent-ink)" }}>{tr("Total")}</div>
+                <div className="text-lg font-bold" style={{ color: "var(--t-accent-ink)" }}>{money(10500)}</div>
               </div>
             </div>
 
@@ -123,7 +123,7 @@ export default function EarnPage({ dark, t }) {
                 <span className="text-[13px] font-bold" style={{ color: t.text }}>{tr("Leaderboard")}</span>
               </div>
               {lb?.userRank && (
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg" style={{ background: `linear-gradient(135deg, ${dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.1)'}, ${dark ? 'rgba(107,58,74,.2)' : 'rgba(163,88,107,.08)'})`, color: t.accent, border: `1px solid ${dark ? 'rgba(196,125,142,.25)' : 'rgba(196,125,142,.12)'}` }}>
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg" style={{ background: `linear-gradient(135deg, ${dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.1)'}, ${dark ? 'rgba(107,58,74,.2)' : 'rgba(163,88,107,.08)'})`, color: "var(--t-accent-ink)", border: `1px solid ${dark ? 'rgba(196,125,142,.25)' : 'rgba(196,125,142,.12)'}` }}>
                   Your rank: #{lb.userRank}
                 </span>
               )}
@@ -217,7 +217,7 @@ export default function EarnPage({ dark, t }) {
                         </div>
                       </div>
                     </div>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: dark ? 'rgba(196,125,142,.12)' : 'rgba(196,125,142,.08)', color: t.accent }}>{money(w.amount / 100, { round: "down" })}</span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: dark ? 'rgba(196,125,142,.12)' : 'rgba(196,125,142,.08)', color: "var(--t-accent-ink)" }}>{money(w.amount / 100, { round: "down" })}</span>
                   </div>
                 ))}
               </div>
@@ -269,7 +269,7 @@ export default function EarnPage({ dark, t }) {
               <div className="text-xs text-center max-w-[260px] leading-relaxed" style={{ color: t.textMuted }}>
                 {tr("Video rewards launching soon. Watch short ads and earn wallet credit — we split the revenue 50/50 with you.")}
               </div>
-              <div className="mt-4 px-3 py-1.5 rounded-lg text-[11px] font-semibold" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.08)', color: t.accent, border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.12)'}` }}>
+              <div className="mt-4 px-3 py-1.5 rounded-lg text-[11px] font-semibold" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.08)', color: "var(--t-accent-ink)", border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.12)'}` }}>
                 {tr("Coming Soon")}
               </div>
             </div>

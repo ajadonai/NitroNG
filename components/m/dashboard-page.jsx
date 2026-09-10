@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { msg } from "../../lib/i18n";
 import { useT } from "../locale";
 import { useRouter } from "next/navigation";
 import { Card, Chip, Empty, Fact, Facts, TierProgress, ago, initialsOf, pitVars } from "./kit";
@@ -9,10 +10,10 @@ import { copyText } from "@/lib/clipboard";
 
 // held → still in the seven-day window, approved → cleared, voided → reversed.
 const STATUS = {
-  approved: { label: "Cleared", kind: "ok" },
-  held: { label: "Holding", kind: "warn" },
-  voided: { label: "Reversed", kind: "bad" },
-  pending: { label: "Pending", kind: "dim" },
+  approved: { label: msg("Cleared"), kind: "ok" },
+  held: { label: msg("Holding"), kind: "warn" },
+  voided: { label: msg("Reversed"), kind: "bad" },
+  pending: { label: msg("Pending"), kind: "dim" },
 };
 
 export default function DashboardPage({ initialData }) {
@@ -57,7 +58,7 @@ export default function DashboardPage({ initialData }) {
                 <div key={c.id} className="pt-r cm">
                   <span className="pt-av sm">{c.type === "team" && c.memberName ? initialsOf(c.memberName) : c.slug.slice(0, 2).toUpperCase()}</span>
                   <span className="pt-tt"><b>{who}</b><i>{c.slug} {tr("· order")} {fN(c.orderCharge)}</i></span>
-                  <Chip kind={s.kind}>{s.label}</Chip>
+                  <Chip kind={s.kind}>{tr(s.label)}</Chip>
                   <span className={"pt-num m" + (c.status === "voided" ? " bad" : "")}>{fN(c.amount)}</span>
                   <span className="pt-c">{ago(c.createdAt)}</span>
                 </div>

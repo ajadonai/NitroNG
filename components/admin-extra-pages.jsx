@@ -1376,7 +1376,7 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[13px]">{countryFlag(c.code)}</span>
                     <span className="text-[12px] flex-1" style={{ color: t.text }}>{countryName(c.code)}</span>
-                    <span className="text-[12px] font-semibold tabular-nums" style={{ color: t.accent }}>{c.clicks.toLocaleString()}</span>
+                    <span className="text-[12px] font-semibold tabular-nums" style={{ color: t.accentInk }}>{c.clicks.toLocaleString()}</span>
                   </div>
                   <MiniBar pct={(c.clicks / analytics.totalClicks) * 100} color={i === 0 ? t.accent : `${t.accent}66`} dark={dark} />
                 </div>
@@ -1456,7 +1456,7 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
                   <div key={c.name}>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[12px] flex-1" style={{ color: t.text }}>{c.name}</span>
-                      <span className="text-[12px] font-semibold tabular-nums" style={{ color: t.accent }}>{c.clicks.toLocaleString()}</span>
+                      <span className="text-[12px] font-semibold tabular-nums" style={{ color: t.accentInk }}>{c.clicks.toLocaleString()}</span>
                     </div>
                     <MiniBar pct={(c.clicks / analytics.totalClicks) * 100} color={i === 0 ? t.accent : `${t.accent}66`} dark={dark} />
                   </div>
@@ -1472,7 +1472,7 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
         <div className="text-sm font-semibold mb-3" style={{ color: t.text }}>Conversion Funnel</div>
         <div className="flex items-center gap-2">
           {[
-            { label: "Clicks", val: analytics.totalClicks, color: t.accent },
+            { label: "Clicks", val: analytics.totalClicks, color: t.accentInk },
             { label: "Unique", val: analytics.uniqueClicks, color: dark ? "#f59e0b" : "#d97706" },
             { label: "Signups", val: link.signups || 0, color: dark ? "#a5b4fc" : "#6366f1" },
             { label: "Orders", val: link.orders || 0, color: dark ? "#6ee7b7" : "#059669" },
@@ -1554,7 +1554,7 @@ function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, ha
             ))}
           </div>
 
-          <button onClick={(e) => { e.stopPropagation(); onViewAnalytics(link); }} className="w-full py-2.5 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-all duration-200 hover:-translate-y-px flex items-center justify-center gap-1.5" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accent }}>
+          <button onClick={(e) => { e.stopPropagation(); onViewAnalytics(link); }} className="w-full py-2.5 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-all duration-200 hover:-translate-y-px flex items-center justify-center gap-1.5" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accentInk }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             View Analytics
           </button>

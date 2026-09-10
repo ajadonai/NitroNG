@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { msg } from "../../lib/i18n";
 import { useT } from "../locale";
 import { Card, Chip, Empty, Fact, Facts, Field, Modal, dateOf, pitVars } from "./kit";
 import { useTheme } from "../shared-nav";
@@ -7,11 +8,11 @@ import { useToast } from "../toast";
 import { fN, fHeld } from "@/lib/format";
 
 const STATUS = {
-  paid: { label: "Paid", kind: "ok" },
-  completed: { label: "Paid", kind: "ok" },
-  processing: { label: "On its way", kind: "warn" },
-  pending: { label: "Requested", kind: "warn" },
-  rejected: { label: "Turned down", kind: "bad" },
+  paid: { label: msg("Paid"), kind: "ok" },
+  completed: { label: msg("Paid"), kind: "ok" },
+  processing: { label: msg("On its way"), kind: "warn" },
+  pending: { label: msg("Requested"), kind: "warn" },
+  rejected: { label: msg("Turned down"), kind: "bad" },
 };
 
 const SENT = ["paid", "completed"];
@@ -183,7 +184,7 @@ export default function PayoutsPage({ initialData }) {
                 <div key={p.id} className="pt-r py">
                   <span className="pt-c m">{dateOf(p.createdAt)}</span>
                   <span className="pt-num m">{fN(p.amount)}</span>
-                  <Chip kind={s.kind}>{s.label}</Chip>
+                  <Chip kind={s.kind}>{tr(s.label)}</Chip>
                   <span className="pt-tt"><i>{p.reference ? `ref ${p.reference}` : "no reference yet"}</i></span>
                 </div>
               );

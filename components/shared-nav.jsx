@@ -42,7 +42,7 @@ export function ThemePill({ mode = "auto", onMode, className = "" }) {
     <div role="group" aria-label={tr("Theme")} className={`theme-pill ${className}`} data-m={mode}>
       <span className="tp-hl" aria-hidden="true" />
       {[["auto", "Auto"], ["day", "Light"], ["night", "Dark"]].map(([id, label]) => (
-        <button key={id} type="button" onClick={() => onMode?.(id)} aria-pressed={mode === id} aria-label={label} title={label}
+        <button key={id} type="button" onClick={() => onMode?.(id)} aria-pressed={mode === id} aria-label={tr(label)} title={tr(label)}
           className={`tp-seg tp-${id}`}>{TP_ICONS[id]}</button>
       ))}
     </div>
@@ -114,6 +114,10 @@ export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
     soft: "var(--t-soft)",
     muted: "var(--t-muted)",
     accent: "var(--t-accent)",
+    // The accent when it has to be READ — prices, links, counters. The fill
+    // pink sits at 2.5:1 on cream, below the 4.5 floor for text; this is the
+    // rose-700 that clears it. In dark mode the two coincide.
+    accentInk: "var(--t-accent-ink)",
     grad: "var(--t-grad)",
     green: "var(--t-green)",
     red: "var(--t-red)",
@@ -166,12 +170,12 @@ export default function SharedNav({ action = "back" }) {
     try {
       res = await fetch("/api/auth/logout", { method: "POST" });
     } catch {
-      window.alert("Unable to log out. Check your connection and try again.");
+      window.alert(tr("Unable to log out. Check your connection and try again."));
       return;
     }
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      window.alert(data.error || "Unable to log out. Please try again.");
+      window.alert(data.error ? tr(data.error) : tr("Unable to log out. Please try again."));
       return;
     }
     window.location.href = "/";

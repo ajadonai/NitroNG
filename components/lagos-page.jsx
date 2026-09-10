@@ -95,7 +95,7 @@ function LagosInner() {
     [stats.uniquePlatforms || '—', 'Platforms', stats.services ? `${stats.services} services` : '—'],
   ] : [];
 
-  const eyebrow = { fontSize: 10.5, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: t.accent, display: 'block' };
+  const eyebrow = { fontSize: 10.5, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: "var(--t-accent-ink)", display: 'block' };
   const card = { background: t.cardBg, border: `1px solid ${t.cardBorder}` };
   const h2 = { color: t.text };
 
@@ -182,7 +182,7 @@ function LagosInner() {
             </section>
 
             <div>
-              <span className="block text-[10.5px] font-bold tracking-[1.6px] uppercase mb-2.5" style={{ color: t.accent }}>{tr("Read next")}</span>
+              <span className="block text-[10.5px] font-bold tracking-[1.6px] uppercase mb-2.5" style={{ color: "var(--t-accent-ink)" }}>{tr("Read next")}</span>
               <div className="grid grid-cols-3 max-md:grid-cols-1 gap-3">
                 {READ_MORE.map(([href, title, desc]) => (
                   <a key={href} href={href} className="flex flex-col gap-1 px-4 py-3.5 rounded-xl no-underline" style={card}>

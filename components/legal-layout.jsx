@@ -49,7 +49,7 @@ export function LegalLayout({ label, title, date, summary = [], sections = [], r
     }).catch(() => {});
   }, []);
 
-  const eyebrow = { fontSize: 10.5, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: t.accent, display: 'block' };
+  const eyebrow = { fontSize: 10.5, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: "var(--t-accent-ink)", display: 'block' };
   const card = { background: t.cardBg, border: `1px solid ${t.cardBorder}` };
 
   return (

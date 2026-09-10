@@ -32,7 +32,7 @@ function TierCards({ tiers }) {
           className="flex-1 basis-0 min-w-0 flex flex-col gap-[3px] rounded-xl px-4 py-3.5"
           style={{ ...cardStyle(t), ...(tier.tier === 'Standard' ? { borderColor: t.accent } : {}) }}
         >
-          <em className="not-italic text-[10.5px] font-bold uppercase tracking-[1.2px]" style={{ color: t.accent }}>{tier.tier}</em>
+          <em className="not-italic text-[10.5px] font-bold uppercase tracking-[1.2px]" style={{ color: "var(--t-accent-ink)" }}>{tier.tier}</em>
           <b className="m text-[20px] font-extrabold" style={{ color: t.text, fontVariantNumeric: 'tabular-nums' }}>{naira(tier.price, perUnit(tier.price), money)}</b>
           <i className="not-italic text-[12.5px]" style={{ color: t.muted }}>{tierLine(tier)}</i>
           {tier.speed && <i className="not-italic text-[12.5px]" style={{ color: t.muted }}>{tier.speed}</i>}

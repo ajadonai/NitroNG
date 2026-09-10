@@ -6,23 +6,36 @@
   input, select, textarea { font-size: 16px !important; }
 }
 
-/* ── Auto-switching theme tokens ── */
+/* ── Auto-switching theme tokens ──
+ *
+ * Two rules hold this palette together:
+ *
+ * 1. Anything used as TEXT clears 4.5:1 on the canvas it sits on (the WCAG AA
+ *    floor for body copy), with headroom — we aim ≥5:1. Light mode failed this
+ *    everywhere but --t-text/--t-soft before Sept 2026; dark mode always passed.
+ * 2. One pink. The accent is #c47d8e (per CLAUDE.md, and what components
+ *    hardcode 166×) — the token used to say #c97f92 and the dark gradient
+ *    #d08fa0, three pinks answering to one name. #c47d8e reads at 2.5:1 on
+ *    cream, so it is a FILL (buttons, badges, with white on top), never ink:
+ *    accent-coloured text takes --t-accent-ink instead.
+ */
 :root {
   --t-bg: #efe8e0;
   --t-text: #201b19;
   --t-soft: #555250;
-  --t-muted: #7a726e;
-  --t-accent: #c97f92;
-  --t-grad: linear-gradient(135deg, #c97f92, #9b5266);
-  --t-green: #0a8f66;
-  --t-red: #dc2626;
+  --t-muted: #665f5c;
+  --t-accent: #c47d8e;
+  --t-accent-ink: #83535f; /* rose 700 — the accent when it has to be read, 5.1:1 on cream */
+  --t-grad: linear-gradient(135deg, #c47d8e, #8b5e6b);
+  --t-green: #086e4f;
+  --t-red: #bc2121;
   --t-surface: rgba(255,255,255,.6);
   --t-surface-brd: rgba(0,0,0,.1);
   --t-surface-border: rgba(0,0,0,.18);
   --t-sidebar-bg: rgba(239,232,224,.95);
   --t-input-bg: #fff;
   --t-input-border: rgba(0,0,0,.18);
-  --t-btn-primary: linear-gradient(135deg, #c97f92, #9b5266);
+  --t-btn-primary: linear-gradient(135deg, #c47d8e, #8b5e6b);
   --t-overlay: rgba(0,0,0,.3);
   --t-hero-bg: linear-gradient(135deg, #c47d8e 0%, #a3586b 50%, #8b4a5e 100%);
   --t-hero-text: #fff;
@@ -31,29 +44,34 @@
   --t-hero-glass: rgba(255,255,255,.16);
   --t-hero-glass-brd: rgba(255,255,255,.2);
   --t-hero-accent-badge: rgba(255,255,255,.15);
+  /* Same value as --t-soft / --t-muted on purpose: two names had drifted to
+   * four greys, so which token a component reached for decided how grey its
+   * text came out. Values are unified; retiring the duplicate names is the
+   * component-by-component migration. */
   --t-text-soft: #555250;
-  --t-text-muted: #757170;
+  --t-text-muted: #665f5c;
   --t-accent-light: rgba(196,125,142,.08);
   --t-card-bg: #fffdfb;
   --t-card-border: rgba(139,74,94,.13);
-  --t-nav-active: rgba(201,127,146,.08);
+  --t-nav-active: rgba(196,125,142,.08);
   --t-sidebar-border: rgba(139,74,94,.16);
 }
 .dark {
   --t-bg: #0c0814;
   --t-text: #f6f1ee;
-  --t-soft: #a49da4;
-  --t-muted: #948d99;
+  --t-soft: #b3ada6;
+  --t-muted: #9d968f;
   --t-accent: #e3a4b5;
-  --t-grad: linear-gradient(135deg, #d08fa0, #9b5266);
-  --t-green: #4be284;
+  --t-accent-ink: #e3a4b5; /* already 9.7:1 on the dark canvas — fill and ink coincide */
+  --t-grad: linear-gradient(135deg, #c47d8e, #8b5e6b);
+  --t-green: #6ee7b7; /* the green components already hardcode 130× — the token said #4be284, a third green */
   --t-red: #fca5a5;
   --t-surface: rgba(255,255,255,.07);
   --t-surface-brd: rgba(232,180,196,.12);
   --t-surface-border: rgba(232,180,196,.18);
   --t-sidebar-bg: rgba(18,12,30,.95);
   --t-input-bg: #160f22;
-  --t-btn-primary: linear-gradient(135deg, #d08fa0, #9b5266);
+  --t-btn-primary: linear-gradient(135deg, #c47d8e, #8b5e6b);
   --t-input-border: rgba(255,255,255,.18);
   --t-overlay: rgba(0,0,0,.6);
   --t-hero-bg: #0d0916;
@@ -63,12 +81,12 @@
   --t-hero-glass: rgba(255,255,255,.07);
   --t-hero-glass-brd: rgba(255,255,255,.09);
   --t-hero-accent-badge: rgba(196,125,142,.12);
-  --t-text-soft: #a09b95;
-  --t-text-muted: #8a8580;
+  --t-text-soft: #b3ada6;
+  --t-text-muted: #9d968f;
   --t-accent-light: rgba(196,125,142,.12);
   --t-card-bg: #171126;
   --t-card-border: rgba(232,180,196,.15);
-  --t-nav-active: rgba(211,143,160,.12);
+  --t-nav-active: rgba(227,164,181,.12);
   --t-sidebar-border: rgba(232,180,196,.18);
 }
 /* Dashboard-specific overrides */
@@ -77,7 +95,8 @@
 
 @theme {
   --color-accent: var(--t-accent);
-  --color-accent-dark: #9b5266;
+  --color-accent-ink: var(--t-accent-ink);
+  --color-accent-dark: #8b5e6b;
   --color-t-bg: var(--t-bg);
   --color-t-text: var(--t-text);
   --color-t-soft: var(--t-soft);

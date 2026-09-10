@@ -21,7 +21,7 @@ export function Crumbs({ items }) {
         <span key={label} className="flex items-center gap-1.5">
           {i > 0 && <i className="not-italic opacity-50" aria-hidden="true"><span className="dir-flip">›</span></i>}
           {href
-            ? <a href={href} className="font-semibold no-underline" style={{ color: t.accent }}>{label}</a>
+            ? <a href={href} className="font-semibold no-underline" style={{ color: "var(--t-accent-ink)" }}>{label}</a>
             : <span aria-current="page">{label}</span>}
         </span>
       ))}
@@ -159,7 +159,7 @@ export function Steps({ items }) {
       {items.map(([num, title, desc], i) => (
         <div key={num} className="flex flex-col gap-0.5 px-[18px] py-3.5" style={{ borderTop: i === 0 ? 'none' : `1px solid ${t.cardBorder}` }}>
           <b className="flex items-center text-[14.5px] font-semibold" style={{ color: t.text }}>
-            <span className="inline-flex w-[22px] h-[22px] mr-2 rounded-full items-center justify-center text-[11px] font-extrabold shrink-0" style={{ background: 'rgba(196,125,142,.14)', color: t.accent }}>{num}</span>
+            <span className="inline-flex w-[22px] h-[22px] mr-2 rounded-full items-center justify-center text-[11px] font-extrabold shrink-0" style={{ background: 'rgba(196,125,142,.14)', color: "var(--t-accent-ink)" }}>{num}</span>
             {title}
           </b>
           <i className="not-italic text-[12.5px] leading-[1.45]" style={{ color: t.muted }}>{desc}</i>
@@ -185,7 +185,7 @@ export function RelatedTiles({ items }) {
       <div className="grid grid-cols-3 gap-3 max-md:grid-cols-1">
         {items.map(({ href, label, note }) => (
           <a key={href} href={href} className="flex flex-col gap-1 rounded-xl px-4 py-3.5 no-underline transition-transform duration-200 hover:-translate-y-px" style={cardStyle(t)}>
-            <em className="not-italic text-[10.5px] font-bold uppercase tracking-[1.2px]" style={{ color: t.accent }}>{note || sectionOf(href)}</em>
+            <em className="not-italic text-[10.5px] font-bold uppercase tracking-[1.2px]" style={{ color: "var(--t-accent-ink)" }}>{note || sectionOf(href)}</em>
             <b className="text-[14px] leading-[1.35] font-semibold" style={{ color: t.text }}>{label}</b>
           </a>
         ))}

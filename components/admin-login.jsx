@@ -55,13 +55,13 @@ export default function AdminLogin(){
     heroBg:dark?"linear-gradient(145deg,#120c1e 0%,#0a0f1e 40%,#0d0a18 100%)":"linear-gradient(135deg,#c47d8e 0%,#a3586b 40%,#8b4a5e 100%)",
     panelBg:dark?"linear-gradient(160deg,#0a0816 0%,#12091e 50%,#0d0618 100%)":"linear-gradient(160deg,#b36b7d 0%,#9b5068 50%,#7d3e52 100%)",
     text:dark?"#eae7e2":"#1c1b19",textSoft:dark?"#8a8680":"#888580",textMuted:dark?"#555250":"#b0ada8",
-    accent:"#c47d8e",
+    accent:"#c47d8e",accentInk:dark?"#e3a4b5":"#83535f",
     cardBg:dark?"rgba(17,22,40,0.95)":"rgba(255,255,255,0.95)",
     cardBorder:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.12)",
     inputBg:dark?"#160f22":"#fff",inputBorder:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.18)",
     accentLight:dark?"rgba(196,125,142,.12)":"rgba(196,125,142,.08)",
-    btnPrimary:"linear-gradient(135deg,#c47d8e,#a3586b)",
-    red:dark?"#fca5a5":"#dc2626",
+    btnPrimary:"linear-gradient(135deg,#c47d8e,#8b5e6b)",
+    red:dark?"#fca5a5":"#bc2121",
   };
 
   const q=QUOTES[quoteIdx];
@@ -144,7 +144,7 @@ export default function AdminLogin(){
             <div className="flex justify-center mb-5">
               <div className="inline-flex items-center gap-1.5 py-1 px-3.5 rounded-[20px]" style={{background:t.accentLight,border:`1px solid ${dark?"rgba(196,125,142,.24)":"rgba(196,125,142,.18)"}`}}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <span className="text-[11px] font-semibold tracking-[1px]" style={{color:t.accent}}>ADMIN</span>
+                <span className="text-[11px] font-semibold tracking-[1px]" style={{color: t.accentInk}}>ADMIN</span>
               </div>
             </div>
 
