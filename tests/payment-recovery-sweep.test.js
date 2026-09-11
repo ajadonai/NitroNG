@@ -113,6 +113,20 @@ describe('24-hour sweep', () => {
 });
 
 describe('Expired bucket coverage', () => {
+  it('stops re-polling abandoned rows after 30 days, but only abandoned ones', async () => {
+    // Abandonment (Flutterwave 404) lands as Expired now instead of Failed.
+    // Those rows are deterministically dead, so they leave the poll pool at
+    // 30 days — while everything else keeps the original unbounded promise
+    // (the test below). A late webhook can still resurrect either kind.
+    const now = new Date();
+    await recoverStalePendingPayments({ now });
+    const call = [...mocks.transactionCount.mock.calls, ...mocks.transactionFindMany.mock.calls]
+      .find(([{ where }]) => where?.status === 'Expired' && where?.NOT);
+    expect(call).toBeDefined();
+    expect(call[0].where.NOT.note).toEqual({ contains: 'flutterwave_verification:abandoned' });
+    expect(call[0].where.NOT.createdAt).toHaveProperty('lt');
+  });
+
   it('recovery bucket has no lower age bound for Expired deposits', async () => {
     const now = new Date();
     await recoverStalePendingPayments({ now });
