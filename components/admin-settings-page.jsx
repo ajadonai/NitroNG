@@ -1,12 +1,13 @@
 'use client';
 import { useEffect, useState } from "react";
+import { ThemePill } from "./shared-nav";
 import { Bone } from "./skeleton";
 import { useConfirm } from "./confirm-dialog";
 import { Modal } from "./ui-primitives";
 import InlineAlert from "./inline-alert";
 import { useToast } from "./toast";
 import { SITE } from "../lib/site";
-import { SettingsRow as Row, SettingsSectionHead as SectionHead, I_LOCK, I_BELL, I_PULSE, I_OUT, I_CHEV, I_SUN, I_MOON, I_AUTO } from "./settings-page";
+import { SettingsRow as Row, SettingsSectionHead as SectionHead, I_LOCK, I_BELL, I_PULSE, I_OUT, I_CHEV, I_SUN, I_MOON } from "./settings-page";
 
 // The shared Modal primitive carries the reference anatomy now — this wrapper
 // only keeps the page's historical call signature.
@@ -159,9 +160,6 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
   const card = { background: cardBg, border: `1px solid ${t.cardBorder}` };
   const initials = (admin?.name || "A").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
   const notifOn = notifPrefs ? Object.values(notifPrefs).filter(Boolean).length : null;
-  const themeBtn = (id, label, icon) => (
-    <button key={id} onClick={() => applyTheme(id)} aria-pressed={themeMode === id} className="inline-flex items-center gap-1 h-[26px] px-2.5 rounded-full border-none font-[inherit] text-[11.5px] font-semibold cursor-pointer" style={themeMode === id ? { background: dark ? "#1a1329" : "#fff", color: t.text, boxShadow: "0 1px 3px rgba(0,0,0,.12)" } : { background: "transparent", color: t.textMuted }}>{icon}{label}</button>
-  );
 
   return (
     <>
@@ -213,7 +211,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
           <SectionHead>Appearance</SectionHead>
           <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
             <Row id="set-theme" first icon={dark ? I_MOON : I_SUN} title="Theme" sub={themeMode === "auto" ? "Auto: light 6:30am to 6:30pm, dark otherwise" : "Choose how the admin looks"} dark={dark} t={t}
-              right={<span className="inline-flex p-[3px] rounded-full" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", border: `1px solid ${t.cardBorder}` }}>{themeBtn("auto", "Auto", I_AUTO)}{themeBtn("day", "Light", I_SUN)}{themeBtn("night", "Dark", I_MOON)}</span>} />
+              right={<ThemePill mode={themeMode} onMode={applyTheme} />} />
           </div>
           <SectionHead>System</SectionHead>
           <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
