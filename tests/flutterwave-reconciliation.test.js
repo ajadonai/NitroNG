@@ -420,6 +420,45 @@ describe('reconcileFlutterwaveDeposit', () => {
     expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
   });
 
+  it('marks a checkout Flutterwave never saw as Expired/abandoned, never Failed', async () => {
+    // verify_by_reference answers 404 when no transaction with this tx_ref
+    // exists — the customer never finished checkout. For a month this was
+    // written as Failed and the dashboard read a 40% failure rate that was
+    // really 0.9%. Abandonment is not a failure.
+    useStoredTransaction(transaction({ status: 'Pending' }));
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+
+    const result = await reconcileFlutterwaveDeposit({
+      transaction: { ...storedTransaction },
+      secretKey: 'FLWSECK_TEST',
+      fetchImpl,
+      timeoutMs: 25,
+    });
+
+    expect(result.reason).toBe('abandoned');
+    expect(result.transactionStatus).toBe('Expired');
+    expect(statusWrites()).toContain('Expired');
+    expect(statusWrites()).not.toContain('Failed');
+    expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
+    // The provider verdict is stamped so creation→verdict gap is measurable —
+    // the diagnosis that found this had no timestamp to work with.
+    const writes = [...mocks.transactionUpdate.mock.calls, ...mocks.transactionUpdateMany.mock.calls];
+    expect(writes.some(([q]) => q?.data?.providerLastVerifiedAt instanceof Date)).toBe(true);
+    expect(writes.some(([q]) => String(q?.data?.note || '').includes('flutterwave_verification:abandoned'))).toBe(true);
+  });
+
+  it('still writes Failed for a decline the provider actually issued', async () => {
+    useStoredTransaction(transaction({ status: 'Pending' }));
+    const result = await reconcileFlutterwaveDeposit({
+      transaction: { ...storedTransaction },
+      secretKey: 'FLWSECK_TEST',
+      fetchImpl: flutterwaveResponse('failed'),
+      timeoutMs: 25,
+    });
+    expect(result.transactionStatus).toBe('Failed');
+    expect(statusWrites()).toContain('Failed');
+  });
+
   it('credits a deposit that was expired-as-abandoned but later completed at Flutterwave', async () => {
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
     const completed = transaction({ status: 'Completed' });
