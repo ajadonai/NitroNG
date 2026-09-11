@@ -264,6 +264,48 @@ describe('create-order pricing', () => {
 });
 
 describe('resolved offer input rules', () => {
+  it('accepts a channel link for Twitch live viewers — the channel IS the stream', () => {
+    // "Twitch Live Viewers" is type views, but Twitch live happens at
+    // twitch.tv/username. The validator used to demand a /videos/ link and
+    // rejected every correct order. Same shape holds for Kick.
+    const twitchLive = validateCreateOrderOfferInput({
+      tier: tier('views', { group: { name: 'Twitch Live Viewers (120 minutes)', type: 'views' } }),
+      service: service({ category: 'Twitch' }),
+      link: 'https://twitch.tv/nitrostreamer',
+      isUrl: true,
+    });
+    expect(twitchLive.ok).toBe(true);
+
+    const kickLive = validateCreateOrderOfferInput({
+      tier: tier('views', { group: { name: 'Kick Live Viewers (1hr)', type: 'views' } }),
+      service: service({ category: 'Kick' }),
+      link: 'https://kick.com/nitrostreamer',
+      isUrl: true,
+    });
+    expect(kickLive.ok).toBe(true);
+
+    // And a VOD link is now the wrong link for a live service.
+    const vod = validateCreateOrderOfferInput({
+      tier: tier('views', { group: { name: 'Twitch Live Viewers (120 minutes)', type: 'views' } }),
+      service: service({ category: 'Twitch' }),
+      link: 'https://twitch.tv/videos/123456789',
+      isUrl: true,
+    });
+    expect(vod.ok).toBe(false);
+    expect(vod.error).toContain('profile link');
+    expect(vod.error).toContain('twitch.tv/yourchannel');
+  });
+
+  it('still demands a post link for non-live view services', () => {
+    const r = validateCreateOrderOfferInput({
+      tier: tier('views', { group: { name: 'Twitch Video Views', type: 'views' } }),
+      service: service({ category: 'Twitch' }),
+      link: 'https://twitch.tv/nitrostreamer',
+      isUrl: true,
+    });
+    expect(r.ok).toBe(false);
+  });
+
   it('rejects a post URL for a profile offer', () => {
     const result = validateCreateOrderOfferInput({
       tier: tier('followers'),

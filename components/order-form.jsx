@@ -131,7 +131,10 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const isMultiPostSvc = /last\s+\d+\s*(tweet|post|video|reel|photo)/i.test(svcName);
   const isChannelSvc = /(channel|group)\s*(member|join|subscriber)/i.test(svcName);
   const isAutoSvc = /\bauto\b/i.test(svcName);
-  const isProfileSvc = (/follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc || isAutoSvc) && !isChannelSvc;
+  // Twitch/Kick live viewers watch the CHANNEL page — the profile link is the
+  // right link, matching the server rule in order-create-input.server.js.
+  const isLiveChannelSvc = /\blive\b/i.test(svcName) && (platform === "twitch" || platform === "kick");
+  const isProfileSvc = (/follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc || isAutoSvc || isLiveChannelSvc) && !isChannelSvc;
   const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays|watch.?time/i.test(svcName) && !isProfileSvc && !isChannelSvc;
 
   const isCommentLikeSvc = svcName.includes("comment like") || svcName.includes("likes (comments)");
