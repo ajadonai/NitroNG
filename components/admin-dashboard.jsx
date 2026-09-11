@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { RailSec, RailCard, RailRow, RailLink, RailEmpty, RailLegend } from "./rail";
 import dynamic from "next/dynamic";
-import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
+import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
 import { NitroWordmark } from "./nitro-logo";
 import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
@@ -333,7 +333,7 @@ function AdminDashboardInner({ initialData }) {
   }, [avOpen]);
   const applyThemeMode = (mode) => {
     setThemeMode(mode);
-    try { localStorage.setItem("nitro-theme", mode); } catch {}
+    try { localStorage.setItem("nitro-admin-theme", mode); } catch {}
     if (mode === "day") setDark(false);
     else if (mode === "night") setDark(true);
     else { const h = new Date().getHours(), m = new Date().getMinutes(); setDark(h >= 19 || h < 6 || (h === 6 && m < 30) || (h === 18 && m >= 30)); }
@@ -838,11 +838,7 @@ function AdminDashboardInner({ initialData }) {
                 <button role="menuitem" onClick={() => { setAvOpen(false); setActive("activity"); }} className="dash-av-item" style={{ color: t.textSoft }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Logs</button>
                 <button role="menuitem" onClick={() => { setAvOpen(false); window.open("/changelog", "_blank", "noopener"); }} className="dash-av-item" style={{ color: t.textSoft }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.4 5.2L20 8l-4 3.9.9 5.6L12 14.8 7.1 17.5 8 11.9 4 8l5.6-.8z"/></svg>What&rsquo;s New</button>
                 <div className="dash-av-foot" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
-                  <div role="group" aria-label="Theme" className="inline-flex items-center gap-0.5 p-[3px] rounded-full" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
-                    {[["day", "Light", <svg key="d" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>], ["night", "Dark", <svg key="n" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>], ["auto", "Auto", <svg key="a" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18z" fill="currentColor" stroke="none"/></svg>]].map(([id, label, icon]) => (
-                      <button key={id} onClick={() => applyThemeMode(id)} aria-pressed={themeMode === id} aria-label={label} title={label} className="w-8 h-7 rounded-full border-none flex items-center justify-center cursor-pointer" style={{ background: themeMode === id ? (dark ? "rgba(255,255,255,.14)" : "#fff") : "transparent", color: themeMode === id ? t.text : t.textMuted, boxShadow: themeMode === id ? "0 1px 3px rgba(0,0,0,.15)" : "none" }}>{icon}</button>
-                    ))}
-                  </div>
+                  <ThemePill mode={themeMode} onMode={applyThemeMode} />
                   <button role="menuitem" onClick={handleLogout} className="dash-av-logout" style={{ color: t.textMuted }}>Log out</button>
                 </div>
               </div>
