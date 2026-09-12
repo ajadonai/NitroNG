@@ -56,7 +56,7 @@ export default function CookieSettingsSheet({ open, onClose, onSave, dark, initi
   const btn = 'h-[38px] px-4 rounded-[9px] text-[13px] font-semibold cursor-pointer transition-transform duration-150 hover:-translate-y-px max-sm:w-full';
 
   return (
-    <div onClick={onClose} className="fixed inset-0 z-[10000] flex items-center justify-center max-sm:items-end" style={{ background: 'rgba(0,0,0,.45)' }}>
+    <div onClick={onClose} className="fixed inset-0 z-[10000] flex items-center justify-center max-sm:items-end backdrop-blur-[6px]" style={{ background: 'rgba(0,0,0,.45)' }}>
       <div
         role="dialog"
         aria-modal="true"
