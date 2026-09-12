@@ -23,6 +23,11 @@ export async function GET(req) {
     where: {
       userId: session.id,
       deletedAt: null,
+      // Completed only. A Partial or a stuck Processing order is often a link
+      // that was wrong in some way the provider only half-tolerated, and a
+      // Cancelled one is refunded, withdrawn or rejected upstream — none of
+      // them is a link worth offering again. Only a delivered order proves it.
+      status: 'Completed',
       link: { not: '' },
       platformAtPurchase: { contains: platform, mode: 'insensitive' },
     },

@@ -1599,6 +1599,31 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
     : { card: "#ffffff", hair: "#eee7de", text: "#2a2723", muted: "#98918a", money: "#0a7d54", waTint: "#eaf7ef", wa: "#1faa59", soft: "#faf7f3" };
 
   const updateRow = (idx, patch) => setRows(prev => prev.map((r, i) => i === idx ? { ...r, ...patch } : r));
+  // Saved handles for bulk rows: the same recent-links route as the single
+  // form, fetched once per platform in the cart. Chips show only while a
+  // row's link is empty, and never auto-fill in bulk — a cart often spans
+  // several accounts, and a pin that filled every new row would be wrong for
+  // exactly those carts. The pinned handle still comes first, starred.
+  const [recentByPlat, setRecentByPlat] = useState({});
+  const cartPlatforms = [...new Set(rows.map(r => r.platform).filter(p => p && p !== "webtraffic"))].join(",");
+  useEffect(() => {
+    if (!cartPlatforms) return undefined;
+    let dead = false;
+    cartPlatforms.split(",").forEach(p => {
+      fetch(`/api/orders/recent-links?platform=${encodeURIComponent(p)}`)
+        .then(r => (r.ok ? r.json() : { links: [] }))
+        .then(d => { if (!dead) setRecentByPlat(m => (m[p] ? m : { ...m, [p]: Array.isArray(d.links) ? d.links : [] })); })
+        .catch(() => {});
+    });
+    return () => { dead = true; };
+  }, [cartPlatforms]);
+  const pinnedFor = (p) => { try { return localStorage.getItem(`nitro-pin:${p}`); } catch { return null; } };
+  const shortLink = (url) => { const x = String(url).replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""); return x.length > 34 ? x.slice(0, 33) + "…" : x; };
+  const chipsFor = (p) => {
+    const list = recentByPlat[p] || [];
+    const pin = pinnedFor(p);
+    return pin ? [...list.filter(r => r.link === pin), ...list.filter(r => r.link !== pin)] : list;
+  };
   const removeRow = (idx) => setRows(prev => prev.filter((_, i) => i !== idx));
 
   const fileInputRef = useRef(null);
@@ -1827,6 +1852,16 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                 <input aria-label={tr("Quantity")} disabled={loading} type="number" min={1} step="1" value={row.qty} onChange={e => { const v = Math.min(row.max, Math.floor(Number(e.target.value)) || 0); updateRow(idx, { qty: v }); }} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="w-[76px] py-2 px-2.5 rounded-lg border border-solid text-[11px] font-medium text-right outline-none shrink-0 font-[JetBrains_Mono,monospace] disabled:opacity-50" style={{ background: dark ? "#0f1322" : "#fff", borderColor: qtyBad ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: t.text }} />
               </div>
 
+              {!row.link && chipsFor(row.platform).length > 0 && (
+                <div className="flex flex-wrap gap-1.5 -mt-1 mb-2.5" role="group" aria-label={tr("Recent links")}>
+                  {chipsFor(row.platform).map(r => {
+                    const isPin = pinnedFor(row.platform) === r.link;
+                    return (
+                      <button key={r.link} type="button" disabled={loading} onClick={() => updateRow(idx, { link: r.link.replace(/^https?:\/\//i, "") })} title={r.link} className="m py-[3px] px-2.5 rounded-full border border-solid cursor-pointer font-[inherit] text-[11px] disabled:opacity-50" style={{ borderColor: isPin ? t.accent : t.cardBorder, background: isPin ? t.accentLight : "transparent", color: isPin ? t.accentInk : t.text }}>{isPin ? "★ " : ""}{shortLink(r.link)}</button>
+                    );
+                  })}
+                </div>
+              )}
               {/* Presets + price */}
               <div className="flex justify-between items-center gap-3">
                 <div className="flex gap-1 flex-wrap">
