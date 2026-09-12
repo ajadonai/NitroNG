@@ -3,6 +3,7 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { tgFxUpdate, tgFlush } from '@/lib/telegram';
+import { reportOperationalFailure } from '@/lib/monitoring';
 import { getApplicationUrl } from '@/lib/env';
 
 const API_URL = 'https://open.er-api.com/v6/latest/USD';
@@ -98,6 +99,10 @@ export async function GET(req) {
     return Response.json({ success: true, previous: currentRate, rate: newRate, market: Math.round(marketRate), buffer, repriceResult });
   } catch (err) {
     log.error('FX', err.message);
+    // A silent failure here is a slow leak: the market rate freezes while the
+    // naira moves, and every foreign deposit is priced off a stale number
+    // until someone notices. Runs every six hours, so one alert per failure.
+    reportOperationalFailure('fx_refresh_failed', { error: err, level: 'error', throttleMs: 5 * 60 * 60 * 1000 });
     await tgFlush();
     return Response.json({ error: err.message }, { status: 500 });
   }

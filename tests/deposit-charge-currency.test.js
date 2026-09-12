@@ -39,6 +39,17 @@ describe('foreign charge amount', () => {
     expect(foreignChargeAmount(500_000, 'USD', FX)).toBe(3.28);
   });
 
+  it('quotes Kenya in whole shillings — what M-Pesa moves and what KSh prints', () => {
+    // ₦5,000 at 1529/129 = ₦11.853 per shilling → 421.8… → 422, never 421.83
+    expect(foreignChargeAmount(500_000, 'KES', FX)).toBe(422);
+    expect(Number.isInteger(foreignChargeAmount(8_927_700, 'KES', FX))).toBe(true);
+  });
+
+  it('never ceils one unit too high on binary noise', () => {
+    // 100 × 12.5 = 1250 cedis exactly; (1250 × 100) can land at 125000.00000000001
+    expect(foreignChargeAmount(1250 * 122.32 * 100, 'GHS', FX)).toBe(1250);
+  });
+
   it('is null for naira, for a missing rate, and for a nonsense amount — never zero', () => {
     expect(foreignChargeAmount(500_000, 'NGN', FX)).toBeNull();
     expect(foreignChargeAmount(500_000, 'GHS', { depositRate: 1529, usdRates: {} })).toBeNull();

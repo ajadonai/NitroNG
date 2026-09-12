@@ -126,6 +126,18 @@ as the work. (Formerly docs/BACKLOG.md.)
   **Do not** build per-country wallets or a second price list — both ruled out
   in the International Nitro entry, and the premium lives in the deposit rate.
 
+- **Flutterwave Review rows have no admin surface yet** (12 Sep leak audit).
+  A successful payment whose figures are not the ones quoted — a bank
+  transfer that arrived short, a cedi/shilling figure the rail rounded, a
+  currency we did not ask for — now parks as `Review` (with
+  `paymentReviewReason`) and raises `deposit_paid_mismatch` in Sentry carrying
+  both amounts, instead of a silent `Failed` that re-verified to the same
+  verdict every sweep while the money sat uncredited. Resolution today: credit
+  what arrived from the users drawer, reason = the reference. Admin → Payments
+  lists only manual and crypto deposits, so these rows surface through the
+  alert alone; give them a row and an "approve as ₦X" action when the first
+  one lands.
+
 - **Auto data-saver — parked design, agreed 6 Sep 2026** (the improved version
   of the audit's "Data-Saver toggle"): no manual toggle — animations cost CPU,
   not data, and a switch nobody finds helps nobody. Instead the app reads the
@@ -344,10 +356,13 @@ as the work. (Formerly docs/BACKLOG.md.)
   as before. **The premium is the same admin flip as USDT, and in production
   it is ON** (`fx_premium_live=1`, 15%, checked 12 Sep): ₦5,000 costs a
   Ghanaian GH₵49.39 against GH₵42.94 at market — +15.0% — and the same +15%
-  in KES, USD and GBP. Turning the flag off would put every foreign charge
-  at the legacy cushioned rate, ~13% *below* market, the subsidy described
-  below. Either way it is one switch in Admin, never a side effect of a
-  deploy. The add-funds box speaks
+  in KES, USD and GBP. Turning the flag off used to put every foreign charge
+  at the legacy cushioned rate, ~13% *above* market — the subsidy described
+  below — so the off position of a premium switch was a giveaway; since the
+  12 Sep leak audit, **off means market: no premium, no subsidy**
+  (`lib/fx-deposit.js`, `source: 'market'`), and legacy is only the fallback
+  when no market rate exists. Either way it is one switch in Admin, never a
+  side effect of a deploy. The add-funds box speaks
   the picker's currency now that the switcher is live (12 Sep); Flutterwave's
   own page shows the cedi figure.
 
@@ -409,6 +424,7 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-12 | Leak audit of the currency/deposit path: short bank transfers refused (charged_amount read), paid-but-mismatched deposits parked in Review with an alert instead of a silent Failed, Kenya quoted in whole shillings, quote stored as quoted, FX refresh failure alerts, and the premium switch's off position made neutral (market, not the legacy cushion) | `79fd6efb` v2.4.145 |
 | 2026-09-12 | Closed a premium waiver in the currency picker: an uncollectible pick fell straight to naira, so a Ghanaian reading dollar prices was charged naira at market instead of cedis at the padded rate. Falls back to the account's country first now | `4bf09158` v2.4.140 |
 | 2026-09-12 | USD/GBP made display-only after a live test returned Flutterwave's "No Payment method available" — dollar collection is an approval we do not have, so those readers are charged naira and their card converts it back; US and GB accounts were hitting the same dead end | `a3cb5aed` v2.4.140 |
 | 2026-09-12 | stuck_payments paged on normal operation: it raised on any retryable read, and Rejected/Completed rows were not treated as closed. Now it waits for a row with a prior attempt that is still unsettled 30 minutes on, and owes nothing on a closed row | `da10665f` v2.4.143 |
