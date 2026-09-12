@@ -58,7 +58,7 @@ export async function POST(req) {
     if (!userId) return Response.json({ error: 'User is required' }, { status: 400 });
     if (!['single', 'bulk', 'drip'].includes(mode)) return Response.json({ error: 'Invalid mode' }, { status: 400 });
 
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true, email: true, phone: true, balance: true } });
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true, email: true, phone: true, country: true, balance: true } });
     if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
 
     const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
@@ -181,6 +181,7 @@ export async function POST(req) {
             eventTime: firstCreatedAt,
             email: user.email,
             phone: user.phone,
+            country: user.country,
             externalId: user.id,
             sourceUrl: req.headers.get('referer') || req.url,
             customData: { value: totalCharge / 100, currency: 'NGN' },
@@ -362,6 +363,7 @@ export async function POST(req) {
           eventTime: created.createdAt,
           email: user.email,
           phone: user.phone,
+          country: user.country,
           externalId: user.id,
           sourceUrl: req.headers.get('referer') || req.url,
           customData: { value: chargeKobo / 100, currency: 'NGN' },

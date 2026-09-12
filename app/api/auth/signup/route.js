@@ -176,6 +176,7 @@ export async function POST(req) {
       await enqueueMetaEvent(prisma, 'CompleteRegistration', {
         eventId,
         email,
+        country,
         externalId: user.id,
         clientIp: ip,
         userAgent: ua,
