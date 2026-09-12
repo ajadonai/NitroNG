@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   transaction: vi.fn(),
   queryRawUnsafe: vi.fn(),
   idempotencyDeleteMany: vi.fn(),
-  tgRefund: vi.fn(),
   tgRefundAlert: vi.fn(),
   voidCommissions: vi.fn(),
   refundEmail: vi.fn(),
@@ -45,8 +44,6 @@ vi.mock('@/lib/bulk-dispatch', () => ({ placeWithProvider: (...args) => mocks.pl
 vi.mock('@/lib/telegram', () => ({
   tgFlush: vi.fn(() => Promise.resolve([])),
  
-  tgRefund: (...args) => mocks.tgRefund(...args),
-  tgOrderCancelled: vi.fn(),
   tgRefundAlert: (...args) => mocks.tgRefundAlert(...args),
 }));
 vi.mock('@/lib/commissions', () => ({
@@ -237,8 +234,11 @@ describe('orders cron — queued and drip safety', () => {
         reference: 'REF-NTR-SUSPENDED',
       }),
     });
-    expect(mocks.tgRefund).toHaveBeenCalledWith('NTR-SUSPENDED', 100_000, 'dispatch_failed');
+    // One refund, one message: this path used to post a bare refund line to
+    // the revenue topic and then the alert to refunds, so every auto-refund
+    // arrived twice.
     expect(mocks.tgRefundAlert).toHaveBeenCalledTimes(1);
+    expect(mocks.tgRefundAlert).toHaveBeenCalledWith(expect.objectContaining({ orderId: 'NTR-SUSPENDED', amount: 100_000, reason: 'dispatch_failed' }));
   });
 
   it('does not refund or notify when an admin retry changes the stale-order snapshot', async () => {
@@ -290,7 +290,6 @@ describe('orders cron — queued and drip safety', () => {
       },
       data: { status: 'Cancelled', lastError: 'dispatch_failed', refundedAt: expect.any(Date) },
     });
-    expect(mocks.tgRefund).not.toHaveBeenCalled();
     expect(mocks.tgRefundAlert).not.toHaveBeenCalled();
     expect(mocks.voidCommissions).not.toHaveBeenCalled();
     expect(mocks.refundEmail).not.toHaveBeenCalled();
@@ -339,7 +338,6 @@ describe('orders cron — queued and drip safety', () => {
     expect(deletionUnsafeWrites).toHaveLength(0);
     expect(mocks.executeRaw).not.toHaveBeenCalled();
     expect(mocks.transactionCreate).not.toHaveBeenCalled();
-    expect(mocks.tgRefund).not.toHaveBeenCalled();
     expect(mocks.tgRefundAlert).not.toHaveBeenCalled();
   });
 
