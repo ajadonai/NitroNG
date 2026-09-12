@@ -319,8 +319,25 @@ as the work. (Formerly docs/BACKLOG.md.)
   is ~36% more dollars per naira for USDT payers, mostly in Nigeria, so it is a
   deliberate act in Admin, announced first — not a side effect of shipping.
 
-  **Still open:** step 1 (phone gate — foreigners still cannot sign up);
-  step 3 (Flutterwave USD, the rail the premium was always meant for); the
+  **Addendum, 12 Sep 2026 — step 3 built (v2.4.140), country-driven.** The
+  Flutterwave charge currency follows the signup country (GH → GHS, KE → KES,
+  GB → GBP, US → USD, else NGN), because mobile money — how Ghana and Kenya
+  pay — only appears on a charge in its own currency. The naira credit is
+  fixed at initialise from `resolveDepositRate()`, the foreign figure is
+  ceiled to the cent and stored on the row (`providerPriceAmount/Currency`),
+  verification checks that quote and that currency, and the wallet is credited
+  the stored naira, never the foreign minor units. Missing rate → naira charge,
+  as before. **The premium is the same admin flip as USDT, and in production
+  it is ON** (`fx_premium_live=1`, 15%, checked 12 Sep): ₦5,000 costs a
+  Ghanaian GH₵49.39 against GH₵42.94 at market — +15.0% — and the same +15%
+  in KES, USD and GBP. Turning the flag off would put every foreign charge
+  at the legacy cushioned rate, ~13% *below* market, the subsidy described
+  below. Either way it is one switch in Admin, never a side effect of a
+  deploy. The add-funds box still
+  speaks naira until the currency switcher goes live; Flutterwave's own page
+  shows the cedi figure.
+
+  **Still open:** step 1 (phone gate — foreigners still cannot sign up); the
   "Soon" tags on Pidgin/Yoruba/Hausa/Igbo/Kiswahili/Français are a public promise Trip has
   not yet confirmed; language is a shell (English only, no i18n); and Trip
   wants "refund to your bank" removed from the refund policy — its own commit

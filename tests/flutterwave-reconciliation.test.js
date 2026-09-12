@@ -459,6 +459,40 @@ describe('reconcileFlutterwaveDeposit', () => {
     expect(statusWrites()).toContain('Failed');
   });
 
+  it('credits the stored naira for a cedi charge, verified against the cedi quote', async () => {
+    // International Nitro step 3: the row carries the foreign quote; the
+    // provider is checked against it; the wallet gets the naira on the row.
+    const completed = transaction({ status: 'Completed' });
+    mocks.finalizeDeposit.mockResolvedValue({ finalized: true, reason: 'completed', transaction: completed, depositAmount: completed.amount });
+    useStoredTransaction(transaction({ status: 'Pending', providerPriceAmount: 40.88, providerPriceCurrency: 'GHS' }));
+    const fetchImpl = flutterwaveResponse('successful', { currency: 'GHS', amount: 40.88 });
+
+    const result = await reconcileFlutterwaveDeposit({
+      transaction: { ...storedTransaction },
+      secretKey: 'FLWSECK_TEST',
+      fetchImpl,
+      timeoutMs: 25,
+    });
+
+    expect(result.newlyFinalized).toBe(true);
+    expect(mocks.finalizeDeposit).toHaveBeenCalledWith(expect.objectContaining({ paidAmountKobo: 500_000 }));
+  });
+
+  it('refuses a cedi charge the provider reports in naira', async () => {
+    useStoredTransaction(transaction({ status: 'Pending', providerPriceAmount: 40.88, providerPriceCurrency: 'GHS' }));
+    const fetchImpl = flutterwaveResponse('successful', { currency: 'NGN', amount: 5000 });
+
+    const result = await reconcileFlutterwaveDeposit({
+      transaction: { ...storedTransaction },
+      secretKey: 'FLWSECK_TEST',
+      fetchImpl,
+      timeoutMs: 25,
+    });
+
+    expect(result.reason).toBe('currency_mismatch');
+    expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
+  });
+
   it('credits a deposit that was expired-as-abandoned but later completed at Flutterwave', async () => {
     const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
     const completed = transaction({ status: 'Completed' });

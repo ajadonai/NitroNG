@@ -1,4 +1,6 @@
 import { fetchWithRetry } from '@/lib/fetch';
+import { chargeCurrencyForCountry, foreignChargeAmount, formatMoney } from '@/lib/currency';
+import { resolveDepositRate } from '@/lib/fx-deposit';
 import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
@@ -65,6 +67,21 @@ export async function POST(req) {
     }
 
     const amountKobo = Math.round(amountNum * 100);
+
+    // Charge in the customer's own currency when their country has one, so
+    // mobile money (the way Ghana and Kenya pay) appears at the gateway. The
+    // naira credit is amountKobo regardless; the foreign figure is derived
+    // here, once, at the padded deposit rate, and stored on the row so
+    // verification checks exactly what was quoted. No rate → naira as before.
+    const country = user.country ?? (await prisma.user.findUnique({ where: { id: user.id }, select: { country: true } }))?.country;
+    const chargeCode = chargeCurrencyForCountry(country);
+    let chargeCurrency = 'NGN';
+    let chargeAmount = amountNum;
+    if (chargeCode !== 'NGN') {
+      const fx = await resolveDepositRate().catch(() => null);
+      const foreign = fx ? foreignChargeAmount(amountKobo, chargeCode, fx) : null;
+      if (foreign) { chargeCurrency = chargeCode; chargeAmount = foreign; }
+    }
     const reference = `NTR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const origin = getApplicationUrl();
 
@@ -78,7 +95,8 @@ export async function POST(req) {
         status: 'Pending',
         reference,
         idempotencyKey,
-        note: `${gateway} deposit ₦${amountNum.toLocaleString()}${couponId ? ` [coupon:${couponId}]` : ''}`,
+        ...(chargeCurrency !== 'NGN' ? { providerPriceAmount: chargeAmount, providerPriceCurrency: chargeCurrency } : {}),
+        note: `${gateway} deposit ₦${amountNum.toLocaleString()}${chargeCurrency !== 'NGN' ? ` · charged ${formatMoney(chargeAmount, chargeCurrency)}` : ''}${couponId ? ` [coupon:${couponId}]` : ''}`,
       },
     });
 
@@ -96,16 +114,16 @@ export async function POST(req) {
         headers: { 'Authorization': `Bearer ${keys.secretKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tx_ref: reference,
-          amount: amountNum,
-          currency: 'NGN',
+          amount: chargeAmount,
+          currency: chargeCurrency,
           // Which methods the hosted checkout shows. This was hardcoded to
           // 'banktransfer' — so cards enabled on the Flutterwave dashboard
           // never appeared, and the dashboard toggles had no say at all. Left
           // unset, Flutterwave shows every method enabled on the dashboard for
           // an NGN charge; the admin gateway field narrows it (e.g.
-          // "card,banktransfer,opay"). Mobile money for GH/KE/UG/RW/ZM/franco
-          // needs the charge in that currency — that is the International
-          // Nitro step 3 on the shelf, not a toggle.
+          // "card,banktransfer,opay"). Mobile money only shows on a charge in
+          // its own currency, which is why chargeCurrency above follows the
+          // customer's country.
           ...(keys.paymentOptions?.trim() ? { payment_options: keys.paymentOptions.trim() } : {}),
           redirect_url: `${origin}/dashboard?verify=${reference}`,
           customer: { email: user.email, name: user.name },
