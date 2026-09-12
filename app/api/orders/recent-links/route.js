@@ -23,10 +23,11 @@ export async function GET(req) {
     where: {
       userId: session.id,
       deletedAt: null,
-      // Orders that went through. Cancelled is the one terminal state a link
-      // can leave with (refunded, withdrawn, rejected upstream), and a link
-      // from one of those is the last thing to suggest again.
-      status: { not: 'Cancelled' },
+      // Completed only. A Partial or a stuck Processing order is often a link
+      // that was wrong in some way the provider only half-tolerated, and a
+      // Cancelled one is refunded, withdrawn or rejected upstream — none of
+      // them is a link worth offering again. Only a delivered order proves it.
+      status: 'Completed',
       link: { not: '' },
       platformAtPurchase: { contains: platform, mode: 'insensitive' },
     },
