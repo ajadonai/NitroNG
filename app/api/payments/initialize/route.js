@@ -9,6 +9,18 @@ import { parseFbCookies } from '@/lib/meta-capi';
 import { isReservedDepositEffectKey } from '@/lib/deposit-finalization';
 import { getApplicationUrl } from '@/lib/env';
 
+// Methods to request from the hosted checkout, by charge currency. Names are
+// Flutterwave's own option keys; a method that is not enabled on the dashboard
+// is simply not shown, so this lists what we want, not what is guaranteed.
+const PAYMENT_OPTIONS = Object.freeze({
+  NGN: 'card,banktransfer,ussd,opay',
+  GHS: 'card,mobilemoneyghana',
+  KES: 'card,mpesa',
+  USD: 'card',
+  GBP: 'card',
+});
+const paymentOptionsFor = (currency) => PAYMENT_OPTIONS[currency] || 'card';
+
 async function getGatewayKeys(gatewayId) {
   // Try Settings DB first
   const setting = await prisma.setting.findUnique({ where: { key: `gateway_${gatewayId}` } });
@@ -118,13 +130,13 @@ export async function POST(req) {
           currency: chargeCurrency,
           // Which methods the hosted checkout shows. This was hardcoded to
           // 'banktransfer' — so cards enabled on the Flutterwave dashboard
-          // never appeared, and the dashboard toggles had no say at all. Left
-          // unset, Flutterwave shows every method enabled on the dashboard for
-          // an NGN charge; the admin gateway field narrows it (e.g.
-          // "card,banktransfer,opay"). Mobile money only shows on a charge in
-          // its own currency, which is why chargeCurrency above follows the
-          // customer's country.
-          ...(keys.paymentOptions?.trim() ? { payment_options: keys.paymentOptions.trim() } : {}),
+          // never appeared. Omitting the field does NOT make Flutterwave show
+          // the dashboard set (Trip still saw four options), so it is sent
+          // explicitly, per charge currency, and each mobile-money method only
+          // exists on a charge in its own currency — which is why
+          // chargeCurrency above follows the customer's country. The admin
+          // gateway field overrides the whole list when set.
+          payment_options: keys.paymentOptions?.trim() || paymentOptionsFor(chargeCurrency),
           redirect_url: `${origin}/dashboard?verify=${reference}`,
           customer: { email: user.email, name: user.name },
           customizations: { title: 'Nitro Deposit', logo: `${origin}/icon-192.png` },

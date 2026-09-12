@@ -95,10 +95,13 @@ as the work. (Formerly docs/BACKLOG.md.)
      deposit rate like everything else; the wallet stays naira. When a rail
      goes live, flip its `nigeriaOnly` in the gateways route — that is the
      whole change on the payments side.
-  4. The currency picker is hidden in production behind `SWITCHER_LIVE`
-     (dev-only, `components/locale.jsx`) until Trip is satisfied. All five
-     currencies are `active` in `lib/currency.js`; activation gates only the
-     unit prices are read in, never what anyone pays.
+  4. **Done 12 Sep.** `SWITCHER_LIVE` is on in production and all five
+     currencies are `active` in `lib/currency.js` (the four foreign ones lost
+     their Soon tag). The picker changes what prices are read in, never what
+     anyone pays: the currency Flutterwave charges in follows the account's
+     country (`COUNTRY_CURRENCY`), so a Nigerian viewing in cedis is still
+     charged naira. Whether the picker should instead decide the charge
+     currency is Trip's call, not yet made.
 
   **Do not** build per-country wallets or a second price list — both ruled out
   in the International Nitro entry, and the premium lives in the deposit rate.
@@ -333,9 +336,9 @@ as the work. (Formerly docs/BACKLOG.md.)
   in KES, USD and GBP. Turning the flag off would put every foreign charge
   at the legacy cushioned rate, ~13% *below* market, the subsidy described
   below. Either way it is one switch in Admin, never a side effect of a
-  deploy. The add-funds box still
-  speaks naira until the currency switcher goes live; Flutterwave's own page
-  shows the cedi figure.
+  deploy. The add-funds box speaks
+  the picker's currency now that the switcher is live (12 Sep); Flutterwave's
+  own page shows the cedi figure.
 
   **Still open:** step 1 (phone gate — foreigners still cannot sign up); the
   "Soon" tags on Pidgin/Yoruba/Hausa/Igbo/Kiswahili/Français are a public promise Trip has
@@ -391,10 +394,11 @@ as the work. (Formerly docs/BACKLOG.md.)
   dashboard crashes shipped from the same mechanical edit (a `money()` call in
   a component without the hook, then one above its declaration); the guardrail
   in `tests/money-hook-scope.test.js` now checks presence and order. The picker
-  itself is hidden in production behind `SWITCHER_LIVE` until Trip is happy.
+  went live in production on 12 Sep (`SWITCHER_LIVE`).
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-12 | Currency picker live in production with all five currencies selectable; Flutterwave checkout asks for mobile money in Ghana/Kenya and cards everywhere by sending payment_options per charge currency | `d233127f` v2.4.140 |
 | 2026-09-07 | Offline screen: the installed app no longer shows the browser's error page when signal drops. A real service worker precaches one self-contained page and serves it on a failed navigation; it never caches an API response, so no balance is ever shown from cache. Agreed scope: dashboard only, no figures on screen | `e4ed4f0f` v2.4.103 |
 | 2026-08-31 | Admin table headers align with their rows (fixed actions column) and dense tables scroll rather than clip | `f21c93e4` v2.4.59 |
 | 2026-08-31 | Pulse shows the day's margin as profit on cost beside the profit figure | `7e927581` v2.4.60 |

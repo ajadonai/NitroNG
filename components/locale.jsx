@@ -51,7 +51,11 @@ export const LANGUAGES = LOCALE_CODES.map((code) => ({
  * reading dollars with no way back. So the saved choice is ignored while the
  * controls are hidden. Ignored, not deleted — it returns when they do.
  */
-export const SWITCHER_LIVE = process.env.NODE_ENV === "development";
+// Live since 12 Sep 2026: GHS and KES are real charge currencies (International
+// Nitro step 3) and the four dictionaries sit at 100%. Set back to
+// `process.env.NODE_ENV === "development"` to hide both pickers again — the
+// provider also stops honouring saved preferences while this is false.
+export const SWITCHER_LIVE = true;
 
 const CURRENCY_KEY = "nitro-currency";
 const LANG_KEY = "nitro-lang";
