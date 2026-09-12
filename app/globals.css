@@ -422,7 +422,7 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .dash-social-btn:active { transform: translateY(0) scale(.97); }
 
 /* Overlay */
-.dash-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,.3); z-index: 10; }
+.dash-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,.3); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); z-index: 10; }
 
 /* Main content */
 .dash-main { flex: 1; overflow: auto; padding: 28px; display: flex; flex-direction: column; min-height: 0; }
@@ -1130,7 +1130,7 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   .user-dash .dash-menu-btn > svg { display: none !important; }
   .dash-more-overlay {
     display: block; position: fixed; inset: 0; z-index: 88;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   }
   .dash-more-sheet {
     display: flex; flex-direction: column; gap: 2px;
@@ -1488,7 +1488,7 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .dark .loc-menu { background: #171126; border-color: rgba(232,180,196,.14); }
 .loc-grab { display: none; }
 @media (max-width: 1023px) {
-  .loc-backdrop { background: rgba(0,0,0,.42); }
+  .loc-backdrop { background: rgba(0,0,0,.42); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
   .loc-menu {
     top: auto !important; left: 0; right: 0 !important; bottom: 0; width: auto;
     border-radius: 19px 19px 0 0; padding: 9px 9px calc(14px + env(safe-area-inset-bottom));

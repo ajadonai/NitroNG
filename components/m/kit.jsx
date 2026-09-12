@@ -284,7 +284,7 @@ export const PIT_CSS = `
 .pt-hint.ok{color:var(--ok)}
 .pt-hint.bad{color:var(--bad)}
 
-.pt-bd{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.pt-bd{position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}
 .pt-md{width:440px;max-width:100%;max-height:92vh;overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px 18px;box-shadow:0 20px 50px rgba(0,0,0,.25);color:var(--ink)}
 .pt-md.wide{width:520px}
 .pt-mdh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px}

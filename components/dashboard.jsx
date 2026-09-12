@@ -1505,7 +1505,7 @@ function DashboardInner({ initialData }) {
       {/* ═══ MOBILE BOTTOM NAV ═══ */}
       {/* The install moment: over the dock, once ever, on a live second completion */}
       {installMoment && <>
-        <div className="fixed inset-0 z-[92] desktop:hidden" style={{ background: "rgba(0,0,0,.28)" }} onClick={closeInstallMoment} />
+        <div className="fixed inset-0 z-[92] desktop:hidden backdrop-blur-[6px]" style={{ background: "rgba(0,0,0,.28)" }} onClick={closeInstallMoment} />
         <div role="dialog" aria-modal="true" aria-label={tr("Add Nitro to your home screen")} className="dash-install-moment fixed left-3 right-3 z-[93] rounded-[18px] p-3.5 desktop:hidden" style={{ bottom: "calc(88px + env(safe-area-inset-bottom))", background: dark ? "#1d1430" : "#fff", border: `1px solid ${dark ? "rgba(232,180,196,.16)" : "rgba(139,74,94,.14)"}`, boxShadow: dark ? "0 18px 50px rgba(0,0,0,.5)" : "0 18px 50px rgba(0,0,0,.24)" }}>
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
@@ -1677,7 +1677,7 @@ function DashboardInner({ initialData }) {
 
       {/* Phone number prompt for existing users */}
       {(phonePromptDone || shouldShowPhonePrompt({ phoneKnown, phone: phoneForPrompt, user, currentTosVersion })) && (
-        <div className="fixed inset-0 z-[99998] bg-black/60 flex items-center justify-center p-5">
+        <div className="fixed inset-0 z-[99998] bg-black/60 backdrop-blur-[6px] flex items-center justify-center p-5">
           <div className="rounded-2xl py-8 px-7 max-w-[420px] w-full shadow-[0_20px_60px_rgba(0,0,0,.3)]" style={{ background: dark ? "#1a1a1a" : "#fff" }}>
             <div className="text-center mb-5">
               <div className="w-12 h-12 rounded-[14px] bg-[rgba(37,211,102,.15)] inline-flex items-center justify-center relative">
@@ -1740,7 +1740,7 @@ function DashboardInner({ initialData }) {
 
       {/* ToS re-acceptance modal */}
       {currentTosVersion && user && user.tosVersion !== currentTosVersion && (
-        <div className="fixed inset-0 z-[99999] bg-black/60 flex items-center justify-center p-5">
+        <div className="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-[6px] flex items-center justify-center p-5">
           <div className="rounded-2xl py-8 px-7 max-w-[420px] w-full shadow-[0_20px_60px_rgba(0,0,0,.3)] bg-t-card-bg">
             <div className="text-center mb-5">
               <div className="nitro-mark w-12 h-12 inline-flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${t.accent}, ${dark ? "#6b3a4a" : "#8b5e6b"})` }}><svg width="22" height="24" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></div>

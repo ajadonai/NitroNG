@@ -233,7 +233,7 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
 
           {/* Start screen */}
           {!board && !loading && (
-            <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center" style={{ background: dark ? 'rgba(0,0,0,.6)' : 'rgba(255,255,255,.6)' }}>
+            <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center backdrop-blur-sm" style={{ background: dark ? 'rgba(0,0,0,.6)' : 'rgba(255,255,255,.6)' }}>
               <div className="text-4xl font-bold mb-1" style={{ color: "var(--t-accent-ink)", textShadow: '0 2px 12px rgba(196,125,142,.3)' }}>2048</div>
               <div className="text-xs mb-4" style={{ color: t.textMuted }}>{tr("Merge tiles. Climb the leaderboard.")}</div>
               <button onClick={startNewGame} className="shimmer-btn px-7 py-3 rounded-xl text-sm font-semibold border-none cursor-pointer" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5e6b)`, color: '#fff', boxShadow: '0 4px 16px rgba(196,125,142,.3)' }}>
@@ -243,7 +243,7 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
           )}
 
           {loading && (
-            <div className="absolute inset-0 rounded-2xl flex items-center justify-center" style={{ background: dark ? 'rgba(0,0,0,.5)' : 'rgba(255,255,255,.5)' }}>
+            <div className="absolute inset-0 rounded-2xl flex items-center justify-center backdrop-blur-sm" style={{ background: dark ? 'rgba(0,0,0,.5)' : 'rgba(255,255,255,.5)' }}>
               <div className="text-sm font-medium" style={{ color: t.textMuted }}>{tr("Starting...")}</div>
             </div>
           )}
@@ -257,7 +257,7 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
 
       {/* How to play modal */}
       {showHelp && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={(e) => { if (e.target === e.currentTarget) setShowHelp(false); }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,.6)', WebkitBackdropFilter: 'blur(6px)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={(e) => { if (e.target === e.currentTarget) setShowHelp(false); }}>
           <div className="relative overflow-hidden" style={{ background: dark ? '#171126' : '#fff', borderRadius: 20, padding: '28px 24px', maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,.35)' }}>
             {/* Decorative accent glow */}
             <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full opacity-15 blur-2xl" style={{ background: t.accent }} />
