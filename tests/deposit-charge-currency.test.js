@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chargeCurrencyForCountry, foreignChargeAmount } from '@/lib/currency';
+import { canChargeIn, chargeCurrencyForCountry, foreignChargeAmount } from '@/lib/currency';
 
 // International Nitro step 3: the charge currency follows the signup country,
 // the naira credit never changes, and the foreign figure is derived once at the
@@ -15,6 +15,19 @@ describe('charge currency by country', () => {
     expect(chargeCurrencyForCountry('NG')).toBe('NGN');
     expect(chargeCurrencyForCountry(undefined)).toBe('NGN');
     expect(chargeCurrencyForCountry('ZZ')).toBe('NGN');
+  });
+
+  // Naming a country's currency is not the same as being able to take money in
+  // it. Flutterwave collects cedis and shillings; dollars and pounds resolve to
+  // no payment method at all, so they stay display-only.
+  it('separates the currency a country uses from the ones Flutterwave collects', () => {
+    expect(canChargeIn('NGN')).toBe(true);
+    expect(canChargeIn('GHS')).toBe(true);
+    expect(canChargeIn('KES')).toBe(true);
+    expect(canChargeIn('USD')).toBe(false);
+    expect(canChargeIn('GBP')).toBe(false);
+    expect(canChargeIn('EUR')).toBe(false);
+    expect(canChargeIn(undefined)).toBe(false);
   });
 });
 
