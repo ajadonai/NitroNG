@@ -97,11 +97,12 @@ as the work. (Formerly docs/BACKLOG.md.)
      whole change on the payments side.
   4. **Done 12 Sep.** `SWITCHER_LIVE` is on in production and all five
      currencies are `active` in `lib/currency.js` (the four foreign ones lost
-     their Soon tag). The picker changes what prices are read in, never what
-     anyone pays: the currency Flutterwave charges in follows the account's
-     country (`COUNTRY_CURRENCY`), so a Nigerian viewing in cedis is still
-     charged naira. Whether the picker should instead decide the charge
-     currency is Trip's call, not yet made.
+     their Soon tag). The picker also decides what Flutterwave charges in
+     when it is set to a foreign currency — a Nigerian reading prices in
+     dollars pays dollars, by card, at the padded rate (Trip's call, 12 Sep).
+     In naira it falls back to the account's country (`COUNTRY_CURRENCY`), so
+     a Ghanaian who never touched it still gets cedis and mobile money. The
+     wallet stays naira either way.
 
   **Do not** build per-country wallets or a second price list — both ruled out
   in the International Nitro entry, and the premium lives in the deposit rate.
