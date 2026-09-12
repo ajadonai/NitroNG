@@ -141,6 +141,31 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const linkPlaceholder = getLinkPlaceholder(platform, svcName);
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 
+  // Saved handles. The chips are the customer's last five distinct links on
+  // this platform, read from their own order history — nothing new is
+  // collected. The pin is a per-device preference for now (localStorage); a
+  // synced preference means a column on User and is the follow-up.
+  const [recentLinks, setRecentLinks] = useState([]);
+  const [pinned, setPinned] = useState(null);
+  useEffect(() => {
+    if (!platform || platform === "webtraffic") { setRecentLinks([]); setPinned(null); return undefined; }
+    let dead = false;
+    fetch(`/api/orders/recent-links?platform=${encodeURIComponent(platform)}`)
+      .then(r => (r.ok ? r.json() : { links: [] }))
+      .then(d => { if (!dead) setRecentLinks(Array.isArray(d.links) ? d.links : []); })
+      .catch(() => {});
+    try { setPinned(localStorage.getItem(`nitro-pin:${platform}`) || null); } catch { setPinned(null); }
+    return () => { dead = true; };
+  }, [platform]);
+  // A pinned handle fills an EMPTY box and never overwrites what was typed.
+  useEffect(() => { if (pinned && !link) validateLink(pinned); }, [pinned]);
+  const togglePin = (url) => {
+    const next = pinned === url ? null : url;
+    setPinned(next);
+    try { if (next) localStorage.setItem(`nitro-pin:${platform}`, next); else localStorage.removeItem(`nitro-pin:${platform}`); } catch {}
+  };
+  const shortLink = (url) => { const s = String(url).replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""); return s.length > 34 ? s.slice(0, 33) + "…" : s; };
+
   return (
     <div className="relative">
       {!inline && (
@@ -227,6 +252,19 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <input type="url" inputMode="url" aria-label={linkLabel} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
           </div>
           {linkError && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>}
+          {recentLinks.length > 0 && !orderLoading && (
+            <div className="flex flex-wrap gap-1.5 mt-2" role="group" aria-label={tr("Recent links")}>
+              {recentLinks.map(r => {
+                const isPin = pinned === r.link;
+                return (
+                  <span key={r.link} className="inline-flex items-center rounded-full border border-solid overflow-hidden text-[12px]" style={{ borderColor: isPin ? t.accent : t.cardBorder, background: isPin ? t.accentLight : "transparent" }}>
+                    <button type="button" onClick={() => validateLink(r.link)} className="m py-1 pl-2.5 pr-1.5 bg-transparent border-none cursor-pointer font-[inherit] text-[12px]" style={{ color: isPin ? t.accentInk : t.text }} title={r.link}>{shortLink(r.link)}</button>
+                    <button type="button" onClick={() => togglePin(r.link)} aria-pressed={isPin} aria-label={isPin ? tr("Unpin") : tr("Pin as default")} title={isPin ? tr("Unpin") : tr("Pin as default")} className="py-1 pr-2.5 pl-1 bg-transparent border-none cursor-pointer text-[12px]" style={{ color: isPin ? t.accent : t.textMuted }}>{isPin ? "★" : "☆"}</button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
           {!linkError && LINK_EXAMPLES[platform] && (isProfileSvc || isPostSvc || isChannelSvc) && (() => {
               const isCommentLike = svcName.includes("comment like") || svcName.includes("likes (comments)");
               const type = isCommentLike ? "commentLike" : isChannelSvc ? "channel" : isProfileSvc ? "profile" : "post";
