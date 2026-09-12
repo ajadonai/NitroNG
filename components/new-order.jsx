@@ -1098,8 +1098,12 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           })}
         </div>
         {visiblePlatforms.length > 5 && (
-          <button onClick={() => setPlatExpanded(!platExpanded)} className="w-full h-[30px] rounded-[9px] border border-solid bg-transparent text-[12px] font-medium cursor-pointer font-[inherit] mb-2 flex items-center justify-center gap-1.5 transition-transform duration-150 hover:-translate-y-px" style={{ color: t.textMuted, borderColor: t.cardBorder }}>
-            {platExpanded ? "Show less" : `All ${visiblePlatforms.length} platforms`}
+          /* The door to two-thirds of the catalogue used to be a thin grey
+             outline, quieter than everything around it — it read as a
+             footnote. Accent pill, and the prize stated as a number. */
+          <button onClick={() => setPlatExpanded(!platExpanded)} className="w-full h-[38px] rounded-[11px] border-[1.5px] border-solid text-[13px] font-bold cursor-pointer font-[inherit] mb-2 flex items-center justify-center gap-2 transition-transform duration-150 hover:-translate-y-px" style={{ color: t.accentInk, borderColor: t.accent, background: t.accentLight }}>
+            {platExpanded ? tr("Show less") : tr("See all platforms")}
+            {!platExpanded && <span className="m text-[11px] font-bold rounded-full px-[7px] py-[2px] text-white" style={{ background: t.accent }}>{visiblePlatforms.length}</span>}
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ transform: platExpanded ? "rotate(180deg)" : "none", transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         )}
