@@ -7,7 +7,7 @@ import { fN, fHeld, fD, docDateLocale } from "../lib/format";
 import { useMoney, useT, useLocale } from "./locale";
 import { msg } from "../lib/i18n";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
-import { depositPresets } from "../lib/currency";
+import { depositPresets, foreignChargeAmount } from "../lib/currency";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { PointsModal } from "./rewards";
@@ -287,12 +287,16 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   const numAmount = Number(amount) || 0;
 
   // The box speaks whatever currency the site is set to, but `amount` under it
-  // is always naira: the bonus tiers, the minimum and the charge itself are
-  // naira, and Flutterwave is hardcoded to NGN. So only the box and its presets
-  // are translated, and the naira that will actually leave the account is
-  // printed underneath. Needs a live rate — without one it stays naira rather
-  // than offering a box that cannot convert what is typed into it.
+  // is always naira: the bonus tiers, the minimum and the wallet credit are
+  // naira. Flutterwave then charges in the currency on screen (the server
+  // sends the naira and the currency; the foreign figure is its to derive),
+  // so what is printed underneath is what the checkout asks for. Needs a live
+  // rate — without one it stays naira rather than offering a box that cannot
+  // convert what is typed into it.
   const fxReady = currency !== "NGN" && loc?.toNaira?.(1) !== null && loc?.toNaira?.(1) !== undefined;
+  // The same helper the server quotes with, to the cent, so the page and the
+  // checkout never disagree by a rounding step.
+  const quoted = fxReady && numAmount > 0 ? foreignChargeAmount(Math.round(numAmount * 100), currency, loc.fx) : null;
   const [typed, setTyped] = useState("");
   const boxSymbol = fxReady ? (loc?.meta?.symbol ?? "₦") : "₦";
   const boxValue = fxReady ? typed : amount;
@@ -463,7 +467,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       const res = await fetch("/api/payments/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: numAmount, method, couponId: couponApplied?.couponId || undefined, idempotencyKey: crypto.randomUUID() }),
+        body: JSON.stringify({ amount: numAmount, currency, method, couponId: couponApplied?.couponId || undefined, idempotencyKey: crypto.randomUUID() }),
         signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
@@ -576,10 +580,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         <span className="m text-[28px] max-desktop:text-[22px] max-md:text-xl font-semibold" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.4)" }}>{boxSymbol}</span>
         <input type="number" value={boxValue} onChange={e => setBox(e.target.value)} placeholder="0" className="m border-none text-[28px] max-desktop:text-[28px] max-md:text-2xl font-semibold w-full outline-none bg-transparent placeholder:opacity-[.12] text-t-text" />
       </div>
-      {/* The charge is naira whatever the box says, so the naira is never
-          hidden — it is the figure the bank statement will show. */}
+      {/* Exactly what Flutterwave will ask for, in the currency on screen —
+          the figure the bank statement will show. */}
       {fxReady && numAmount > 0 && (
-        <div className="text-[11px] -mt-2 mb-3 text-t-text-muted">{tr("You will be charged")} {money(numAmount)}</div>
+        <div className="text-[11px] -mt-2 mb-3 text-t-text-muted">{tr("You will be charged")} {quoted ? loc.fmtNative(quoted) : money(numAmount)}</div>
       )}
       {!welcomeEligible && (
         <div className="grid grid-cols-3 gap-2 max-md:gap-1.5 mb-3">

@@ -1,5 +1,5 @@
 import { fetchWithRetry } from '@/lib/fetch';
-import { chargeCurrencyForCountry, foreignChargeAmount, formatMoney } from '@/lib/currency';
+import { chargeCurrencyForCountry, foreignChargeAmount, formatMoney, isActive } from '@/lib/currency';
 import { resolveDepositRate } from '@/lib/fx-deposit';
 import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
@@ -47,7 +47,7 @@ export async function POST(req) {
     const user = await prisma.user.findUnique({ where: { id: session.id } });
     if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
 
-    const { amount, method, couponId, idempotencyKey } = await req.json();
+    const { amount, method, couponId, idempotencyKey, currency: viewing } = await req.json();
     const amountNum = Number(amount);
     const gateway = method || 'flutterwave';
 
@@ -80,13 +80,16 @@ export async function POST(req) {
 
     const amountKobo = Math.round(amountNum * 100);
 
-    // Charge in the customer's own currency when their country has one, so
-    // mobile money (the way Ghana and Kenya pay) appears at the gateway. The
-    // naira credit is amountKobo regardless; the foreign figure is derived
-    // here, once, at the padded deposit rate, and stored on the row so
-    // verification checks exactly what was quoted. No rate → naira as before.
+    // Charge in the customer's own currency: the one the site is set to when
+    // that is a foreign one we can charge in (a Nigerian reading prices in
+    // dollars pays dollars, by card), otherwise the one their country pays in
+    // (a Ghanaian who never touched the picker still gets cedis, and with them
+    // mobile money). The naira credit is amountKobo regardless; the foreign
+    // figure is derived here, once, at the padded deposit rate, and stored on
+    // the row so verification checks exactly what was quoted. No rate → naira
+    // as before.
     const country = user.country ?? (await prisma.user.findUnique({ where: { id: user.id }, select: { country: true } }))?.country;
-    const chargeCode = chargeCurrencyForCountry(country);
+    const chargeCode = isActive(viewing) && viewing !== 'NGN' ? viewing : chargeCurrencyForCountry(country);
     let chargeCurrency = 'NGN';
     let chargeAmount = amountNum;
     if (chargeCode !== 'NGN') {
