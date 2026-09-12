@@ -6,7 +6,7 @@ import { log } from '@/lib/logger';
 import { checkOrder } from '@/lib/smm';
 import { sendEmail, walletCreditEmail, batchCompletionEmail } from '@/lib/email';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
-import { tgRefund, tgOrderCancelled, tgRefundAlert, tgFlush } from '@/lib/telegram';
+import { tgRefundAlert, tgFlush } from '@/lib/telegram';
 import { createCommission, voidCommissions } from '@/lib/commissions';
 import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo, awardPointsOnCompletion } from '@/lib/nitro-rewards';
 import {
@@ -233,7 +233,8 @@ export async function GET(req) {
             voidCommissions(order.id, 'order_cancelled').catch(() => {});
             if (cancelledRefund > 0) {
               stats.refunded++;
-              tgOrderCancelled(order.orderId, cancelledRefund, providerError || 'provider_cancelled');
+              // One refund, one message. This used to post a "cancelled"
+              // line and then the refund alert, both into the refunds topic.
               tgRefundAlert({ orderId: order.orderId, amount: cancelledRefund, charge: order.charge, qty: order.quantity, remains: order.remains, status: 'Cancelled', reason: providerError || 'provider_cancelled', service: order.service?.category, source: 'auto' });
               refundOrder(order, cancelledRefund, true, 'Order cancelled').catch(() => {});
             }
@@ -597,7 +598,6 @@ export async function GET(req) {
           });
           if (!claimed) continue;
           stats.autoRefunded++;
-          tgRefund(order.orderId, order.charge, 'dispatch_failed');
           tgRefundAlert({ orderId: order.orderId, amount: order.charge, charge: order.charge, qty: order.quantity, status: 'Cancelled', reason: 'dispatch_failed', source: 'auto' });
           voidCommissions(order.id, 'dispatch_failed').catch(() => {});
           if (order.charge >= 5000) await refundOrder(order, order.charge, true, 'Order cancelled');
