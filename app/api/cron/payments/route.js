@@ -66,6 +66,7 @@ export async function GET(req) {
       pending: stats.pending,
       verifying: stats.verifying,
       retryable: stats.retryable,
+      retryableStuck: stats.retryableStuck,
       failed: stats.failed,
       review: stats.review,
       refunded: stats.refunded,

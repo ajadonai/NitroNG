@@ -175,6 +175,114 @@ describe('Expired bucket coverage', () => {
   });
 });
 
+describe('stuck signal threshold', () => {
+  // Feed the sweep whatever rows the bucket it is asking for would hold.
+  function feed(deposits) {
+    const pick = (where) => {
+      const status = where?.status;
+      let rows = [];
+      if (typeof status === 'string') rows = deposits.filter(d => d.status === status);
+      // The crypto audit bucket asks for Review and Rejected together.
+      else if (Array.isArray(status?.in)) rows = deposits.filter(d => status.in.includes(d.status));
+      // A bucket that names its rail only holds that rail's rows.
+      if (typeof where?.method === 'string') rows = rows.filter(d => d.method === where.method);
+      return rows;
+    };
+    mocks.transactionCount.mockImplementation(async ({ where } = {}) => pick(where).length);
+    mocks.transactionFindMany.mockImplementation(async ({ where } = {}) => pick(where));
+  }
+  const retryableRead = { paymentState: 'retryable', newlyFinalized: false, finalization: null };
+  const raisedStuck = () => mocks.reportOperationalFailure.mock.calls.some(([signal]) => signal === 'stuck_payments');
+
+  it('does not raise on the first retryable read of an open row — that is the cron working', async () => {
+    const now = new Date('2026-07-20T12:00:00.000Z');
+    feed([deposit({
+      id: 'tx-first-try',
+      status: 'Pending',
+      createdAt: new Date(now.getTime() - 60 * 60 * 1000),
+      paymentReconciliationAttemptAt: null,
+    })]);
+    mocks.reconcileFlutterwaveDeposit.mockResolvedValue(retryableRead);
+
+    const stats = await recoverStalePendingPayments({ now });
+
+    expect(stats.retryable).toBe(1);
+    expect(stats.retryableStuck).toBe(0);
+    expect(raisedStuck()).toBe(false);
+  });
+
+  it('raises once a row we have already asked about is still retryable half an hour on', async () => {
+    const now = new Date('2026-07-20T12:00:00.000Z');
+    feed([deposit({
+      id: 'tx-wedged',
+      status: 'Pending',
+      createdAt: new Date(now.getTime() - 60 * 60 * 1000),
+      paymentReconciliationAttemptAt: new Date(now.getTime() - 10 * 60 * 1000),
+    })]);
+    mocks.reconcileFlutterwaveDeposit.mockResolvedValue(retryableRead);
+
+    const stats = await recoverStalePendingPayments({ now });
+
+    expect(stats.retryableStuck).toBe(1);
+    expect(mocks.reportOperationalFailure).toHaveBeenCalledWith(
+      'stuck_payments',
+      expect.objectContaining({ data: expect.objectContaining({ retryableStuck: 1, retryable: 1 }) }),
+    );
+  });
+
+  it('a fresh row is not stuck however many times it has been asked about', async () => {
+    const now = new Date('2026-07-20T12:00:00.000Z');
+    feed([deposit({
+      id: 'tx-young',
+      status: 'Pending',
+      createdAt: new Date(now.getTime() - 20 * 60 * 1000),
+      paymentReconciliationAttemptAt: new Date(now.getTime() - 5 * 60 * 1000),
+    })]);
+    mocks.reconcileFlutterwaveDeposit.mockResolvedValue(retryableRead);
+
+    const stats = await recoverStalePendingPayments({ now });
+
+    expect(stats.retryableStuck).toBe(0);
+    expect(raisedStuck()).toBe(false);
+  });
+
+  it('owes nothing on a Rejected row, so an audit read that fails never raises', async () => {
+    const now = new Date('2026-07-20T12:00:00.000Z');
+    feed([deposit({
+      id: 'tx-rejected',
+      method: 'crypto',
+      status: 'Rejected',
+      createdAt: new Date(now.getTime() - 48 * 60 * 60 * 1000),
+      paymentReconciliationAttemptAt: new Date(now.getTime() - 60 * 60 * 1000),
+    })]);
+    mocks.reconcileNowPaymentsDeposit.mockResolvedValue(retryableRead);
+
+    const stats = await recoverStalePendingPayments({ now });
+
+    expect(stats.retryable).toBe(0);
+    expect(stats.retryableTerminal).toBe(1);
+    expect(raisedStuck()).toBe(false);
+  });
+
+  it('owes nothing on a Completed row either — the money is already in the wallet', async () => {
+    const now = new Date('2026-07-20T12:00:00.000Z');
+    feed([deposit({
+      id: 'tx-completed',
+      method: 'crypto',
+      status: 'Completed',
+      createdAt: new Date(now.getTime() - 48 * 60 * 60 * 1000),
+      paymentReconciliationAttemptAt: new Date(now.getTime() - 60 * 60 * 1000),
+    })]);
+    mocks.reconcileNowPaymentsDeposit.mockResolvedValue(retryableRead);
+
+    const stats = await recoverStalePendingPayments({ now });
+
+    expect(stats.retryable).toBe(0);
+    expect(stats.retryableTerminal).toBe(1);
+    expect(raisedStuck()).toBe(false);
+  });
+});
+
 describe('pending-then-success recovery', () => {
   it('credits a deposit that Flutterwave confirms as successful on a later reconciliation', async () => {
     const now = new Date();
