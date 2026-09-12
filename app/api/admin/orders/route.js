@@ -1077,7 +1077,7 @@ export async function POST(req) {
       const { link: newLink } = body;
       const fullOrder = await prisma.order.findFirst({
         where: { OR: [{ orderId }, { id: orderId }], deletedAt: null },
-        include: { service: true, tier: { include: { service: true, group: true } }, user: { select: { id: true, email: true, phone: true, balance: true } }, dripDispatches: true },
+        include: { service: true, tier: { include: { service: true, group: true } }, user: { select: { id: true, email: true, phone: true, country: true, balance: true } }, dripDispatches: true },
       });
       if (!fullOrder) return Response.json({ error: 'Order not found' }, { status: 404 });
       if (fullOrder.status !== 'Cancelled') return Response.json({ error: 'Only cancelled orders can be re-dispatched' }, { status: 400 });
@@ -1240,6 +1240,7 @@ export async function POST(req) {
               eventTime: child.createdAt,
               email: fullOrder.user.email,
               phone: fullOrder.user.phone,
+              country: fullOrder.user.country,
               externalId: fullOrder.userId,
               sourceUrl: req.headers.get('referer') || req.url,
               customData: { value: newCharge / 100, currency: 'NGN' },

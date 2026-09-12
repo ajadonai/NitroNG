@@ -106,15 +106,6 @@ as the work. (Formerly docs/BACKLOG.md.)
   **Do not** build per-country wallets or a second price list — both ruled out
   in the International Nitro entry, and the premium lives in the deposit rate.
 
-- **Meta CAPI should send the country** (noted 7 Sep 2026, not urgent). We now
-  store `User.country`, and Meta's Conversions API accepts a hashed country in
-  `user_data` — it improves match quality, which matters because the CAPI fix
-  from 4 Sep is what the scale-ladder gate is measured against. One field in
-  `lib/meta-capi.js` beside the existing `ph`/`em` hashing. Note the phone
-  normaliser there passes non-NG numbers through as typed, so a foreign number
-  entered in local format still hashes in the wrong shape — the signup picker
-  now prevents that at the source, but old rows predate it.
-
 - **Auto data-saver — parked design, agreed 6 Sep 2026** (the improved version
   of the audit's "Data-Saver toggle"): no manual toggle — animations cost CPU,
   not data, and a switch nobody finds helps nobody. Instead the app reads the
@@ -398,6 +389,7 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-12 | Meta CAPI sends the hashed account country on every Purchase and CompleteRegistration (match quality for the scale-ladder measurement) | `70fe9a2b` v2.4.141 |
 | 2026-09-12 | Currency picker live in production with all five currencies selectable; Flutterwave checkout asks for mobile money in Ghana/Kenya and cards everywhere by sending payment_options per charge currency | `d233127f` v2.4.140 |
 | 2026-09-07 | Offline screen: the installed app no longer shows the browser's error page when signal drops. A real service worker precaches one self-contained page and serves it on a failed navigation; it never caches an API response, so no balance is ever shown from cache. Agreed scope: dashboard only, no figures on screen | `e4ed4f0f` v2.4.103 |
 | 2026-08-31 | Admin table headers align with their rows (fixed actions column) and dense tables scroll rather than clip | `f21c93e4` v2.4.59 |
