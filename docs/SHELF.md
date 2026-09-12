@@ -90,19 +90,38 @@ as the work. (Formerly docs/BACKLOG.md.)
   ladders built that morning came out again the same afternoon (`bc3b40ec`).
 
   **Remaining:**
-  3. **Flutterwave USD (and GHS/KES) collection** — the real unlock, and the
-     thing Trip has already asked Flutterwave to enable. Credits naira at the
-     deposit rate like everything else; the wallet stays naira. When a rail
-     goes live, flip its `nigeriaOnly` in the gateways route — that is the
-     whole change on the payments side.
+  3. **Flutterwave USD collection — still the real unlock, and now measured.**
+     Tested live on 12 Sep: GHS collects (mobile money shows) and KES is built
+     the same way, but a USD charge returns **"Oops! No Payment method
+     available. Please engage merchant for support."** — Flutterwave resolves
+     no method for it. "Pay with international card", which the dashboard has
+     switched on, means a card issued abroad may pay one of OUR charges; it is
+     not permission to denominate the charge in dollars. That needs USD
+     collection, a separate approval. Until Trip has it, USD and GBP are
+     display-only (`canChargeIn()` in `lib/currency.js`) and a dollar reader is
+     charged the naira their figure converts to, which their card converts back
+     at the network rate. **When Flutterwave enables it: add the code to
+     `COLLECTIBLE` and nothing else moves** — the quote, the stored
+     `providerPriceCurrency`, the verification and the per-currency
+     `payment_options` are all already written for it.
   4. **Done 12 Sep.** `SWITCHER_LIVE` is on in production and all five
      currencies are `active` in `lib/currency.js` (the four foreign ones lost
-     their Soon tag). The picker also decides what Flutterwave charges in
-     when it is set to a foreign currency — a Nigerian reading prices in
-     dollars pays dollars, by card, at the padded rate (Trip's call, 12 Sep).
-     In naira it falls back to the account's country (`COUNTRY_CURRENCY`), so
-     a Ghanaian who never touched it still gets cedis and mobile money. The
-     wallet stays naira either way.
+     their Soon tag). The picker also decides what Flutterwave charges in,
+     where Flutterwave can collect in it: cedis and shillings, not dollars or
+     pounds (see 3). In naira it falls back to the account's country
+     (`COUNTRY_CURRENCY`), so a Ghanaian who never touched it still gets cedis
+     and mobile money. The wallet stays naira either way.
+
+     **Where the 15% premium is actually collected** (measured 12 Sep, and the
+     reason the fallback order matters): only on a charge *we* denominate —
+     GHS and KES card/mobile-money, and USDT, where we do the conversion. Every
+     naira charge paid by a foreign card converts at the card network's rate,
+     not ours, so it collects **0%** whatever currency the page is read in;
+     that is structural, not a gap in the code, and USD collection (3) is the
+     only thing that closes it. It does mean an uncollectible pick must fall
+     back to the **country**, never straight to naira — otherwise the picker is
+     a premium waiver: a Ghanaian selecting dollars would be charged naira and
+     pay market. Pinned by "a Ghanaian cannot pick their way out of cedis".
 
   **Do not** build per-country wallets or a second price list — both ruled out
   in the International Nitro entry, and the premium lives in the deposit rate.
@@ -390,6 +409,8 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-12 | Closed a premium waiver in the currency picker: an uncollectible pick fell straight to naira, so a Ghanaian reading dollar prices was charged naira at market instead of cedis at the padded rate. Falls back to the account's country first now | `4bf09158` v2.4.140 |
+| 2026-09-12 | USD/GBP made display-only after a live test returned Flutterwave's "No Payment method available" — dollar collection is an approval we do not have, so those readers are charged naira and their card converts it back; US and GB accounts were hitting the same dead end | `a3cb5aed` v2.4.140 |
 | 2026-09-12 | stuck_payments paged on normal operation: it raised on any retryable read, and Rejected/Completed rows were not treated as closed. Now it waits for a row with a prior attempt that is still unsettled 30 minutes on, and owes nothing on a closed row | `da10665f` v2.4.143 |
 | 2026-09-12 | Meta CAPI sends the hashed account country on every Purchase and CompleteRegistration (match quality for the scale-ladder measurement) | `70fe9a2b` v2.4.141 |
 | 2026-09-12 | Currency picker live in production with all five currencies selectable; Flutterwave checkout asks for mobile money in Ghana/Kenya and cards everywhere by sending payment_options per charge currency | `d233127f` v2.4.140 |

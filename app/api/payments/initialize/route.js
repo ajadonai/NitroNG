@@ -1,5 +1,5 @@
 import { fetchWithRetry } from '@/lib/fetch';
-import { chargeCurrencyForCountry, foreignChargeAmount, formatMoney, isActive } from '@/lib/currency';
+import { canChargeIn, chargeCurrencyForCountry, foreignChargeAmount, formatMoney, isActive } from '@/lib/currency';
 import { resolveDepositRate } from '@/lib/fx-deposit';
 import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
@@ -12,6 +12,8 @@ import { getApplicationUrl } from '@/lib/env';
 // Methods to request from the hosted checkout, by charge currency. Names are
 // Flutterwave's own option keys; a method that is not enabled on the dashboard
 // is simply not shown, so this lists what we want, not what is guaranteed.
+// USD and GBP are listed for the day Flutterwave enables collecting in them;
+// until then canChargeIn() never lets a charge reach those rows.
 const PAYMENT_OPTIONS = Object.freeze({
   NGN: 'card,banktransfer,ussd,opay',
   GHS: 'card,mobilemoneyghana',
@@ -89,7 +91,18 @@ export async function POST(req) {
     // the row so verification checks exactly what was quoted. No rate → naira
     // as before.
     const country = user.country ?? (await prisma.user.findUnique({ where: { id: user.id }, select: { country: true } }))?.country;
-    const chargeCode = isActive(viewing) && viewing !== 'NGN' ? viewing : chargeCurrencyForCountry(country);
+    const byCountry = chargeCurrencyForCountry(country);
+    const picked = isActive(viewing) && viewing !== 'NGN' ? viewing : byCountry;
+    // Only a currency Flutterwave collects in — dollars and pounds are display
+    // units, and asking for one leaves the checkout with no method to offer.
+    // An uncollectible pick falls back to the COUNTRY, never straight to naira:
+    // the padded rate is only charged on a currency we denominate ourselves, so
+    // dropping a Ghanaian who picks dollars into a naira charge would have let
+    // the picker waive the deposit premium — their card would then convert at
+    // the network's rate, not ours. Cedis stay cedis whatever the page reads in.
+    const chargeCode = canChargeIn(picked) ? picked
+      : canChargeIn(byCountry) ? byCountry
+        : 'NGN';
     let chargeCurrency = 'NGN';
     let chargeAmount = amountNum;
     if (chargeCode !== 'NGN') {

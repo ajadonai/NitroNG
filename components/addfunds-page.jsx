@@ -7,7 +7,7 @@ import { fN, fHeld, fD, docDateLocale } from "../lib/format";
 import { useMoney, useT, useLocale } from "./locale";
 import { msg } from "../lib/i18n";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
-import { depositPresets, foreignChargeAmount } from "../lib/currency";
+import { canChargeIn, depositPresets, foreignChargeAmount, formatMoney } from "../lib/currency";
 import { BONUS_PRESETS, bonusForNaira, nextBonusTier } from "../lib/welcome-bonus";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { PointsModal } from "./rewards";
@@ -294,9 +294,15 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
   // rate — without one it stays naira rather than offering a box that cannot
   // convert what is typed into it.
   const fxReady = currency !== "NGN" && loc?.toNaira?.(1) !== null && loc?.toNaira?.(1) !== undefined;
-  // The same helper the server quotes with, to the cent, so the page and the
-  // checkout never disagree by a rounding step.
-  const quoted = fxReady && numAmount > 0 ? foreignChargeAmount(Math.round(numAmount * 100), currency, loc.fx) : null;
+  // What Flutterwave will actually ask for. It collects in cedis and shillings,
+  // so those are quoted in the currency on screen with the same helper the
+  // server uses — to the cent, so the page and the checkout cannot disagree by
+  // a rounding step. It does not collect in dollars or pounds: those readers
+  // are charged the naira, and their card converts it back.
+  const chargeCode = canChargeIn(currency) ? currency : "NGN";
+  const quoted = fxReady && numAmount > 0 && chargeCode !== "NGN"
+    ? foreignChargeAmount(Math.round(numAmount * 100), chargeCode, loc.fx)
+    : null;
   const [typed, setTyped] = useState("");
   const boxSymbol = fxReady ? (loc?.meta?.symbol ?? "₦") : "₦";
   const boxValue = fxReady ? typed : amount;
@@ -580,10 +586,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         <span className="m text-[28px] max-desktop:text-[22px] max-md:text-xl font-semibold" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.4)" }}>{boxSymbol}</span>
         <input type="number" value={boxValue} onChange={e => setBox(e.target.value)} placeholder="0" className="m border-none text-[28px] max-desktop:text-[28px] max-md:text-2xl font-semibold w-full outline-none bg-transparent placeholder:opacity-[.12] text-t-text" />
       </div>
-      {/* Exactly what Flutterwave will ask for, in the currency on screen —
-          the figure the bank statement will show. */}
+      {/* Exactly what Flutterwave will ask for — the figure the bank statement
+          will show, in the currency it will show it in. */}
       {fxReady && numAmount > 0 && (
-        <div className="text-[11px] -mt-2 mb-3 text-t-text-muted">{tr("You will be charged")} {quoted ? loc.fmtNative(quoted) : money(numAmount)}</div>
+        <div className="text-[11px] -mt-2 mb-3 text-t-text-muted">{tr("You will be charged")} {quoted ? loc.fmtNative(quoted) : formatMoney(numAmount, "NGN")}</div>
       )}
       {!welcomeEligible && (
         <div className="grid grid-cols-3 gap-2 max-md:gap-1.5 mb-3">

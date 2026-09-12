@@ -99,18 +99,45 @@ describe('charge currency follows the customer country', () => {
     expect(body.amount).toBe(5_000);
   });
 
-  it('charges a Nigerian reading prices in dollars in dollars, by card, at the padded rate', async () => {
-    const { body, row } = await initialise({ country: 'NG' }, { currency: 'USD' });
-    expect(body.currency).toBe('USD');
-    expect(body.amount).toBe(3.28);              // ₦5,000 / 1529, ceilinged to the cent
-    expect(body.payment_options).toBe('card');
-    expect(row.providerPriceCurrency).toBe('USD');
-    expect(row.providerPriceAmount).toBe(3.28);
+  it('charges a reader of cedi prices in cedis, and stores that quote', async () => {
+    const { body, row } = await initialise({ country: 'NG' }, { currency: 'GHS' });
+    expect(body.currency).toBe('GHS');
+    expect(body.payment_options).toBe('card,mobilemoneyghana');
+    expect(row.providerPriceCurrency).toBe('GHS');
     expect(row.amount).toBe(500_000);            // the credit stays ₦5,000
+  });
+
+  // Flutterwave does not collect in dollars or pounds on this account: asking
+  // for one leaves the checkout with no method to offer ("Oops! No Payment
+  // method available"). They are display units; the charge is naira and the
+  // customer's own card converts it back.
+  it('charges naira for a currency Flutterwave cannot collect in, however the account reads prices', async () => {
+    for (const currency of ['USD', 'GBP']) {
+      const { body, row } = await initialise({ country: 'NG' }, { currency });
+      expect(body.currency).toBe('NGN');
+      expect(body.amount).toBe(5_000);
+      expect(row.providerPriceCurrency).toBeUndefined();
+    }
+  });
+
+  it('does not charge a US or UK account in its own currency either — same reason', async () => {
+    expect((await initialise({ country: 'US' })).body.currency).toBe('NGN');
+    expect((await initialise({ country: 'GB' })).body.currency).toBe('NGN');
   });
 
   it('the picker overrides only with a foreign currency it can charge in — naira or nonsense falls back to the country', async () => {
     expect((await initialise({ country: 'GH' }, { currency: 'NGN' })).body.currency).toBe('GHS');
     expect((await initialise({ country: 'NG' }, { currency: 'EUR' })).body.currency).toBe('NGN');
+  });
+
+  // The padded deposit rate is only charged on a currency we denominate
+  // ourselves. Letting an uncollectible pick fall straight to naira would have
+  // made the picker a premium waiver: a Ghanaian selecting dollars would be
+  // charged naira and their card would convert at the network's rate, not ours.
+  it('a Ghanaian cannot pick their way out of cedis, whichever currency they read in', async () => {
+    for (const currency of ['NGN', 'USD', 'GBP', 'EUR', undefined]) {
+      expect((await initialise({ country: 'GH' }, { currency })).body.currency).toBe('GHS');
+    }
+    expect((await initialise({ country: 'KE' }, { currency: 'USD' })).body.currency).toBe('NGN'); // no KES rate in the mock
   });
 });
