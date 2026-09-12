@@ -45,6 +45,11 @@ describe('Purchase user_data completeness', () => {
     expect(ph('+1 415 555 2671')).toBe(hex('14155552671'));
   });
 
+  it('sends the account country as the hashed lowercase ISO-2 code, and nothing when unknown', () => {
+    expect(buildMetaEvent('Purchase', { eventId: 'e', country: 'GH' }).user_data.country).toEqual([hex('gh')]);
+    expect(buildMetaEvent('Purchase', { eventId: 'e', country: null }).user_data.country).toBeUndefined();
+  });
+
   it('builds _fbc from a landing fbclid in Meta format', () => {
     expect(buildFbcValue('IwAR2xyz', 1725000000000)).toBe('fb.1.1725000000000.IwAR2xyz');
   });
