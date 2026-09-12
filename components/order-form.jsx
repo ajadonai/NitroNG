@@ -173,7 +173,25 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
         <div className="md:hidden absolute left-1/2 -translate-x-1/2 top-2 w-[38px] h-1 rounded-sm" style={{ background: "rgba(127,127,127,.35)" }} />
         <div className="flex flex-col gap-1.5 min-w-0 flex-1">
           <div className="text-[15px] font-semibold truncate" style={{ color: t.text }}>{selSvc?.name}</div>
-          {s && <span className="inline-flex items-center gap-1.5 self-start rounded-full py-[3px] pl-1.5 pr-2.5 text-[11px] font-semibold border border-solid" style={{ background: dark ? s.bgD : s.bg, borderColor: dark ? s.borderD : s.border, color: s.text }}><span className="w-[14px] h-[14px] rounded-full flex items-center justify-center text-white" style={{ background: s.grad }}>{s.label}</span>{selTier.tier}</span>}
+          {s && (() => {
+            // Refill follows the tier model — Budget none, Standard 30 days,
+            // Premium for life — the same promise the tier explainer makes.
+            const refill = selTier.tier === "Budget" ? null : selTier.tier === "Standard" ? tr("30-day refill") : tr("Lifetime refill");
+            const life = selTier.tier === "Premium";
+            return (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 rounded-full py-[3px] pl-1.5 pr-2.5 text-[11px] font-semibold border border-solid" style={{ background: dark ? s.bgD : s.bg, borderColor: dark ? s.borderD : s.border, color: s.text }}><span className="w-[14px] h-[14px] rounded-full flex items-center justify-center text-white" style={{ background: s.grad }}>{s.label}</span>{selTier.tier}</span>
+                {refill ? (
+                  <span className="inline-flex items-center gap-1 rounded-full py-[3px] px-2.5 text-[11px] font-semibold" style={life ? { background: t.accentLight, color: t.accentInk } : { background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", color: dark ? "#6ee7b7" : "#059669" }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                    {refill}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full py-[3px] px-2.5 text-[11px] font-semibold border border-solid" style={{ borderColor: t.cardBorder, color: t.textMuted }}>{tr("No refill")}</span>
+                )}
+              </div>
+            );
+          })()}
         </div>
         {onClose && <button onClick={onClose} aria-label={tr("Close")} className="bg-transparent border border-solid rounded-[10px] w-8 h-8 flex items-center justify-center cursor-pointer shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textSoft }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
       </div>
