@@ -83,7 +83,7 @@ describe('charge currency follows the customer country', () => {
     expect(body.amount).toBe(40.88); // ₦5,000 at 1529/12.5 per cedi, ceiled to the cent
     expect(row.amount).toBe(500_000); // the naira credit is untouched
     expect(row.providerPriceCurrency).toBe('GHS');
-    expect(row.providerPriceAmount).toBe(40.88);
+    expect(row.providerPriceAmount).toBe('40.88');   // a string, so the Decimal column holds the quote and not its binary expansion
   });
 
   it('charges a Nigerian in naira exactly as before, with no quote stored', async () => {

@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   error: vi.fn(),
 }));
 
+vi.mock('@/lib/monitoring', () => ({ reportOperationalFailure: vi.fn() }));
 vi.mock('@/lib/prisma', () => ({
   default: {
     transaction: {
@@ -491,6 +492,46 @@ describe('reconcileFlutterwaveDeposit', () => {
 
     expect(result.reason).toBe('currency_mismatch');
     expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
+    // Money moved, so this is a human's call, not a Failed row nobody sees.
+    expect(result.transactionStatus).toBe('Review');
+    expect(statusWrites()).toContain('Review');
+    expect(statusWrites()).not.toContain('Failed');
+  });
+
+  it('parks a payment that arrived short in Review and alerts with both figures — never Failed, never credited', async () => {
+    const { reportOperationalFailure } = await import('@/lib/monitoring');
+    useStoredTransaction(transaction({ status: 'Pending' }));           // ₦5,000 quoted
+    const result = await reconcileFlutterwaveDeposit({
+      transaction: { ...storedTransaction },
+      secretKey: 'FLWSECK_TEST',
+      fetchImpl: flutterwaveResponse('successful', { amount: 4000 }),   // ₦4,000 arrived
+      timeoutMs: 25,
+    });
+
+    expect(result.reason).toBe('amount_mismatch');
+    expect(result.transactionStatus).toBe('Review');
+    expect(result.retryable).toBe(false);
+    expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
+    expect(statusWrites()).not.toContain('Failed');
+    expect(storedTransaction.paymentReviewReason).toBe('amount_mismatch');
+    expect(storedTransaction.note).toContain('[flutterwave_verification:amount_mismatch]');
+    expect(reportOperationalFailure).toHaveBeenCalledWith('deposit_paid_mismatch', expect.objectContaining({
+      level: 'error',
+      data: expect.objectContaining({ reason: 'amount_mismatch', expectedAmountKobo: 500_000, paidAmountKobo: 400_000 }),
+    }));
+  });
+
+  it('still writes Failed, not Review, for a decline — no money moved', async () => {
+    const { reportOperationalFailure } = await import('@/lib/monitoring');
+    useStoredTransaction(transaction({ status: 'Pending' }));
+    await reconcileFlutterwaveDeposit({
+      transaction: { ...storedTransaction },
+      secretKey: 'FLWSECK_TEST',
+      fetchImpl: flutterwaveResponse('failed'),
+      timeoutMs: 25,
+    });
+    expect(statusWrites()).toContain('Failed');
+    expect(reportOperationalFailure).not.toHaveBeenCalledWith('deposit_paid_mismatch', expect.anything());
   });
 
   it('credits a deposit that was expired-as-abandoned but later completed at Flutterwave', async () => {

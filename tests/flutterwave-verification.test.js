@@ -142,6 +142,20 @@ describe('classifyFlutterwaveResponse', () => {
     }
   });
 
+  it('refuses a payment that arrived short even when `amount` still reads as quoted', () => {
+    const base = { status: 'success', data: { tx_ref: 'NTR-SHORT', amount: 5000, currency: EXPECTED_CURRENCY, status: 'successful' } };
+    const opts = { reference: 'NTR-SHORT', expectedAmountKobo: 500_000, expectedCurrency: EXPECTED_CURRENCY };
+
+    // A bank transfer for ₦4,000 against a ₦5,000 quote must not credit ₦5,000.
+    const short = classifyFlutterwaveResponse({ ...base, data: { ...base.data, charged_amount: 4000 } }, opts);
+    expect(short).toMatchObject({ state: 'failed', reason: 'amount_mismatch', paidAmountKobo: 400_000, underpaid: true });
+
+    // Fees passed to the customer make charged_amount larger — still ours to credit in full.
+    expect(classifyFlutterwaveResponse({ ...base, data: { ...base.data, charged_amount: 5070 } }, opts).state).toBe('verified');
+    // And a payload without the field verifies on `amount` alone, as before.
+    expect(classifyFlutterwaveResponse(base, opts).state).toBe('verified');
+  });
+
   it('classifies provider pending and processing statuses as provider-pending', () => {
     for (const providerStatus of ['pending', 'processing']) {
       expect(classify(successfulPayload({ status: providerStatus })), providerStatus).toMatchObject({

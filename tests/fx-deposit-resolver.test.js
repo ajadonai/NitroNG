@@ -7,16 +7,30 @@ import { FALLBACK_DEPOSIT_RATE } from "../lib/currency.js";
 const LIVE = { markup_usd_market: "1329", markup_usd_rate: "1529" };
 
 describe("deposit rate resolver", () => {
-  describe("switch off — the legacy rate, byte-identical to before", () => {
-    it("uses markup_usd_rate when fx_premium_live is absent", () => {
+  describe("switch off — market, no premium and no subsidy", () => {
+    // Off used to mean the legacy crypto rate, market + ₦200: every foreign
+    // deposit credited ~13% above market. The off position of a premium
+    // switch must be neutral, or flipping it is a giveaway.
+    it("uses the market rate when fx_premium_live is absent", () => {
       const r = resolveFromSettings(LIVE);
-      expect(r.depositRate).toBe(1529);
-      expect(r.source).toBe("legacy");
+      expect(r.depositRate).toBe(1329);
+      expect(r.source).toBe("market");
       expect(r.live).toBe(false);
     });
 
-    it("uses markup_usd_rate when fx_premium_live is '0'", () => {
+    it("uses the market rate when fx_premium_live is '0'", () => {
       const r = resolveFromSettings({ ...LIVE, fx_premium_live: "0", fx_premium_percent: "15" });
+      expect(r.depositRate).toBe(1329);
+      expect(r.source).toBe("market");
+    });
+
+    it("never credits above market: off is not the legacy cushion any more", () => {
+      const r = resolveFromSettings({ ...LIVE, fx_premium_live: "0" });
+      expect(r.depositRate).toBeLessThanOrEqual(Number(LIVE.markup_usd_market));
+    });
+
+    it("falls back to legacy only when there is no market rate at all", () => {
+      const r = resolveFromSettings({ markup_usd_rate: "1529" });
       expect(r.depositRate).toBe(1529);
       expect(r.source).toBe("legacy");
     });
@@ -78,7 +92,7 @@ describe("deposit rate resolver", () => {
     it("survives malformed JSON with an empty map, never a throw", () => {
       const r = resolveFromSettings({ ...LIVE, fx_usd_rates: "{not json" });
       expect(r.usdRates).toEqual({});
-      expect(r.depositRate).toBe(1529);
+      expect(r.depositRate).toBe(1329);   // switch off → market, and the bad JSON does not disturb it
     });
   });
 });

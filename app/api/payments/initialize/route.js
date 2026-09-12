@@ -123,7 +123,10 @@ export async function POST(req) {
         status: 'Pending',
         reference,
         idempotencyKey,
-        ...(chargeCurrency !== 'NGN' ? { providerPriceAmount: chargeAmount, providerPriceCurrency: chargeCurrency } : {}),
+        // As a string: Prisma turns a JS number into a Decimal from its exact
+        // binary value, so 560.06 was stored as 560.059999999999945430. The
+        // shortest repr is the figure we quoted.
+        ...(chargeCurrency !== 'NGN' ? { providerPriceAmount: String(chargeAmount), providerPriceCurrency: chargeCurrency } : {}),
         note: `${gateway} deposit ₦${amountNum.toLocaleString()}${chargeCurrency !== 'NGN' ? ` · charged ${formatMoney(chargeAmount, chargeCurrency)}` : ''}${couponId ? ` [coupon:${couponId}]` : ''}`,
       },
     });
