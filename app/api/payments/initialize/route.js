@@ -98,7 +98,15 @@ export async function POST(req) {
           tx_ref: reference,
           amount: amountNum,
           currency: 'NGN',
-          payment_options: 'banktransfer',
+          // Which methods the hosted checkout shows. This was hardcoded to
+          // 'banktransfer' — so cards enabled on the Flutterwave dashboard
+          // never appeared, and the dashboard toggles had no say at all. Left
+          // unset, Flutterwave shows every method enabled on the dashboard for
+          // an NGN charge; the admin gateway field narrows it (e.g.
+          // "card,banktransfer,opay"). Mobile money for GH/KE/UG/RW/ZM/franco
+          // needs the charge in that currency — that is the International
+          // Nitro step 3 on the shelf, not a toggle.
+          ...(keys.paymentOptions?.trim() ? { payment_options: keys.paymentOptions.trim() } : {}),
           redirect_url: `${origin}/dashboard?verify=${reference}`,
           customer: { email: user.email, name: user.name },
           customizations: { title: 'Nitro Deposit', logo: `${origin}/icon-192.png` },

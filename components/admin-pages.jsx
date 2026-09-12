@@ -83,7 +83,7 @@ export function AdminPaymentsPage({ dark, t }) {
 
   const openConfig = (g) => {
     const fields = {};
-    const defaultFields = { flutterwave: ["secretKey", "publicKey"], alatpay: ["secretKey", "publicKey"], monnify: ["apiKey", "secretKey", "contractCode"], korapay: ["secretKey", "publicKey"], crypto: ["apiKey"], manual: ["bankName", "accountNumber", "accountName"] };
+    const defaultFields = { flutterwave: ["secretKey", "publicKey", "paymentOptions"], alatpay: ["secretKey", "publicKey"], monnify: ["apiKey", "secretKey", "contractCode"], korapay: ["secretKey", "publicKey"], crypto: ["apiKey"], manual: ["bankName", "accountNumber", "accountName"] };
     (defaultFields[g.id] || ["secretKey", "publicKey"]).forEach(k => { fields[k] = ""; });
     setConfigFields(fields);
     setConfiguring(g);
@@ -142,7 +142,7 @@ export function AdminPaymentsPage({ dark, t }) {
     else { const d = await res.json(); toast.error("Failed", d.error || "Failed"); }
   };
 
-  const FIELD_LABELS = { secretKey: "Secret Key", publicKey: "Public Key", apiKey: "API Key", contractCode: "Contract Code", bankName: "Bank Name", accountNumber: "Account Number", accountName: "Account Name" };
+  const FIELD_LABELS = { secretKey: "Secret Key", publicKey: "Public Key", apiKey: "API Key", contractCode: "Contract Code", bankName: "Bank Name", accountNumber: "Account Number", accountName: "Account Name", paymentOptions: "Payment options — leave empty to show everything enabled on the Flutterwave dashboard, or narrow it: card,banktransfer,opay" };
   const statusColors = { Pending: { bg: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.04)", color: dark ? "#fbbf24" : "#d97706" }, Processing: { bg: dark ? "rgba(165,180,252,.08)" : "rgba(79,70,229,.04)", color: dark ? "#a5b4fc" : "#4f46e5" }, Completed: { bg: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.04)", color: dark ? "#6ee7b7" : "#059669" }, Failed: { bg: dark ? "rgba(220,38,38,.08)" : "rgba(220,38,38,.04)", color: dark ? "#fca5a5" : "#dc2626" }, Rejected: { bg: dark ? "rgba(220,38,38,.08)" : "rgba(220,38,38,.04)", color: dark ? "#fca5a5" : "#dc2626" }, Cancelled: { bg: dark ? "rgba(220,38,38,.08)" : "rgba(220,38,38,.04)", color: dark ? "#fca5a5" : "#dc2626" } };
 
   const STATUS_WORD = { Completed: ["Cleared", "ok"], Pending: ["Waiting", "warn"], Failed: ["Failed", "bad"], Rejected: ["Rejected", "bad"], Expired: ["Expired", "dim"], Processing: ["Processing", "dim"], Review: ["In review", "warn"], Refunded: ["Refunded", "dim"] };
