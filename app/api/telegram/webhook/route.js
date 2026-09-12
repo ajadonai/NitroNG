@@ -5,6 +5,7 @@ import { notifyDepositFinalized } from '@/lib/deposit-notifications';
 import { tgAnswerCallback, tgEditMessage, tgDeleteMessage } from '@/lib/telegram';
 import { approveSubmission, rejectSubmission } from '@/lib/task-review';
 import { watBounds } from '@/lib/format';
+import { getRevenue } from '@/lib/revenue';
 import { getBalance, PROVIDER_IDS, getProviderName, isProviderConfigured } from '@/lib/smm';
 
 export const maxDuration = 60;
@@ -46,11 +47,11 @@ async function handleStats(chatId, threadId) {
   const [
     totalUsers, todayUsers, monthUsers,
     todayOrderCount, monthOrderCount,
-    todayRevAgg, monthRevAgg,
-    todayCostAgg, monthCostAgg,
+    todayRevAgg,
+    todayCostAgg,
     todayDepositsAgg, monthDepositsAgg,
     processing,
-    partialTodayOrders, partialMonthOrders,
+    partialTodayOrders,
   ] = await Promise.all([
     prisma.user.count({ where: { emailVerified: true } }),
     prisma.user.count({ where: { createdAt: { gte: todayStart }, emailVerified: true } }),
@@ -58,22 +59,20 @@ async function handleStats(chatId, threadId) {
     prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
     prisma.order.count({ where: { createdAt: { gte: monthStart }, deletedAt: null } }),
     prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
-    prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
     prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
-    prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
     prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true }, _count: true }),
     prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),
     prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
     prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
-    prisma.order.findMany({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
   ]);
 
   const adjT = partialAdj(partialTodayOrders);
-  const adjM = partialAdj(partialMonthOrders);
   const todayRev = ((todayRevAgg._sum.charge || 0) - adjT.charge) / 100;
   const todayCost = ((todayCostAgg._sum.cost || 0) - adjT.cost) / 100;
-  const monthRev = ((monthRevAgg._sum.charge || 0) - adjM.charge) / 100;
-  const monthCost = ((monthCostAgg._sum.cost || 0) - adjM.cost) / 100;
+  // The month is net, from the one revenue definition the Pulse page and the
+  // digest already use, so the three can never disagree. Today stays gross on
+  // all three: a refund lands in the day it is issued, not the day it is read.
+  const revNet = await getRevenue({ from: monthStart });
   const todayDep = (todayDepositsAgg._sum.amount || 0) / 100;
   const monthDep = (monthDepositsAgg._sum.amount || 0) / 100;
 
@@ -87,9 +86,9 @@ async function handleStats(chatId, threadId) {
     `  Orders: <b>${todayOrderCount}</b>  ·  New users: <b>${todayUsers}</b>`,
     '',
     '<b>This month</b>',
-    `  Revenue: <b>${naira(Math.round(monthRev) * 100)}</b>`,
-    `  Cost: <b>${naira(Math.round(monthCost) * 100)}</b>`,
-    `  Profit: <b>${naira(Math.round(monthRev - monthCost) * 100)}</b> (${margin(monthRev, monthCost)} markup)`,
+    `  Revenue: <b>${naira(Math.round(revNet.net) * 100)}</b> net · ${naira(Math.round(revNet.gross) * 100)} gross less ${naira(Math.round(revNet.refunds) * 100)} refunded`,
+    `  Cost: <b>${naira(Math.round(revNet.cost + revNet.costWasted) * 100)}</b>`,
+    `  Profit: <b>${naira(Math.round(revNet.net - revNet.cost - revNet.costWasted) * 100)}</b> (${Math.round(revNet.netMargin)}% margin)`,
     `  Money in: <b>${naira(Math.round(monthDep) * 100)}</b> (${monthDepositsAgg._count} deposits)`,
     `  Orders: <b>${monthOrderCount.toLocaleString()}</b>  ·  New users: <b>${monthUsers}</b>`,
     '',
@@ -102,15 +101,13 @@ async function handleRevenue(chatId, threadId) {
   const { todayStart, yesterdayStart, monthStart } = watBounds();
 
   const [
-    todayRevAgg, yesterdayRevAgg, monthRevAgg, allTimeRevAgg,
+    todayRevAgg, yesterdayRevAgg,
     todayCostAgg, monthCostAgg,
     todayDepAgg, yesterdayDepAgg, monthDepAgg, allTimeDepAgg,
-    partialTodayO, partialYesterdayO, partialMonthO, partialAllO,
+    partialTodayO, partialYesterdayO,
   ] = await Promise.all([
     prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
     prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
-    prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true, cost: true } }),
-    prisma.order.aggregate({ where: { deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true, cost: true } }),
     prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
     prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
     prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true }, _count: true }),
@@ -119,19 +116,15 @@ async function handleRevenue(chatId, threadId) {
     prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed' }, _sum: { amount: true } }),
     prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
     prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
-    prisma.order.findMany({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
-    prisma.order.findMany({ where: { deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
   ]);
 
   const adjT = partialAdj(partialTodayO);
   const adjY = partialAdj(partialYesterdayO);
-  const adjM = partialAdj(partialMonthO);
-  const adjA = partialAdj(partialAllO);
 
   const todayRev = ((todayRevAgg._sum.charge || 0) - adjT.charge) / 100;
   const yesterdayRev = ((yesterdayRevAgg._sum.charge || 0) - adjY.charge) / 100;
-  const monthRev = ((monthRevAgg._sum.charge || 0) - adjM.charge) / 100;
-  const allTimeRev = ((allTimeRevAgg._sum.charge || 0) - adjA.charge) / 100;
+  // Net, as the Pulse page and the digest report it.
+  const [revMonth, revAll] = await Promise.all([getRevenue({ from: monthStart }), getRevenue()]);
   const todayDep = (todayDepAgg._sum.amount || 0) / 100;
   const yesterdayDep = (yesterdayDepAgg._sum.amount || 0) / 100;
   const monthDep = (monthDepAgg._sum.amount || 0) / 100;
@@ -140,8 +133,8 @@ async function handleRevenue(chatId, threadId) {
   await reply(chatId, threadId, [
     '💰 <b>Revenue</b> (what users paid for orders)',
     `  Today: <b>${naira(Math.round(todayRev) * 100)}</b>  ${pct(todayRev, yesterdayRev)} vs yesterday`,
-    `  This month: <b>${naira(Math.round(monthRev) * 100)}</b>`,
-    `  All time: <b>${naira(Math.round(allTimeRev) * 100)}</b>`,
+    `  This month: <b>${naira(Math.round(revMonth.net) * 100)}</b> net · ${naira(Math.round(revMonth.gross) * 100)} gross less ${naira(Math.round(revMonth.refunds) * 100)} refunded`,
+    `  All time: <b>${naira(Math.round(revAll.net) * 100)}</b> net · ${naira(Math.round(revAll.refunds) * 100)} refunded`,
     '',
     '🏦 <b>Money In</b> (deposits + admin credits)',
     `  Today: <b>${naira(Math.round(todayDep) * 100)}</b> (${todayDepAgg._count} txns)  ${pct(todayDep, yesterdayDep)} vs yesterday`,
