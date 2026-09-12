@@ -98,7 +98,7 @@ export function Modal({ open, onClose, title, subtitle, icon, intent = "accent",
   const mut = dark ? "#8b90a0" : "#757170";
   const line = dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)";
   return (
-    <div className={sheet ? "fixed inset-0 z-[300]" : "fixed inset-0 z-[300] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-[6px]"}>
+    <div className={sheet ? "fixed inset-0 z-[300] backdrop-blur-[6px]" : "fixed inset-0 z-[300] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-[6px]"}>
       <button type="button" aria-label={tr("Close dialog")} onClick={onClose}
         className="absolute inset-0 border-none cursor-default" style={{ background: "rgba(0,0,0,.55)" }} />
       <div

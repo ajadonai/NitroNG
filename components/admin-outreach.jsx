@@ -293,7 +293,7 @@ const OU_CSS = `
 .ou-mid{font-size:12px;color:var(--mut);white-space:nowrap}.ou-acts{display:flex;gap:6px;justify-content:flex-end}
 .ou-pg{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}.ou-pgn{display:inline-flex;align-items:center;gap:6px}
 .ou-ib{font:inherit;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);display:inline-flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer}.ou-ib:disabled{opacity:.4;cursor:default}
-.ou-bd{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.4)}
+.ou-bd{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.4)-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
 .ou-dw{position:absolute;top:0;right:0;bottom:0;width:420px;max-width:100%;background:var(--card);border-left:1px solid var(--line);display:flex;flex-direction:column;box-shadow:-12px 0 30px rgba(0,0,0,.2);color:var(--ink)}
 .ou-dh{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}.ou-dht{flex:1;display:flex;flex-direction:column;min-width:0}.ou-dht b{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ou-dht i{font-style:normal;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ou-body{flex:1;overflow:auto;padding:16px 18px}

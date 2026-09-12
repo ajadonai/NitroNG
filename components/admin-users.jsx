@@ -1000,7 +1000,7 @@ const US_CSS = `
 .us-menu{position:fixed;z-index:1000;width:170px;padding:6px 0;border-radius:12px;background:var(--card);border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.18)}
 .us-mi{display:block;width:100%;text-align:left;padding:8px 12px;font:inherit;font-size:13px;font-weight:500;color:var(--ink);background:none;border:0;cursor:pointer}.us-mi:hover{background:var(--soft)}.us-mi.danger{color:var(--bad)}
 .us-msep{height:1px;background:var(--line);margin:6px 12px}
-.us-back{position:fixed;inset:0;z-index:998;background:rgba(0,0,0,.45)}
+.us-back{position:fixed;inset:0;z-index:998;background:rgba(0,0,0,.45)-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
 .us-dr.sheet{left:0;right:0;bottom:0;top:auto;width:auto;border-left:0;border-top:1px solid var(--line);border-radius:20px 20px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.25);max-height:92vh}
 .us-dr.sheet .us-grab{display:block;width:36px;height:4px;border-radius:2px;background:var(--line);margin:-4px auto 2px}
 @media (max-width:900px){

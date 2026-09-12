@@ -628,7 +628,7 @@ const TK_CSS = `
 .tk-pg{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}.tk-pgn{display:inline-flex;align-items:center;gap:6px}
 .tk-ib{font:inherit;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);display:inline-flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer}.tk-ib:disabled{opacity:.4;cursor:default}
 .tk-per{font:inherit;font-size:11.5px;height:28px;padding:0 8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);margin-left:6px;outline:none}
-.tk-bd{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.4);display:flex;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto}
+.tk-bd{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.4);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto}
 .tk-md{width:560px;max-width:100%;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px 18px;box-shadow:0 20px 50px rgba(0,0,0,.25);color:var(--ink)}.tk-md.sm{width:440px}
 .tk-mdh{display:flex;justify-content:space-between;align-items:center}.tk-mdh b{font-size:16px;font-weight:700}.tk-mds{margin:4px 0 0;font-size:12.5px;color:var(--mut);line-height:1.5}.tk-mdf{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}.tk-left{margin-right:auto}
 .tk-lbl{display:block;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin:14px 0 6px}
