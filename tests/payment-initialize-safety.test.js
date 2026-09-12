@@ -13,12 +13,14 @@ vi.mock('@/lib/logger', () => ({
 }));
 vi.mock('@/lib/prisma', () => ({
   default: {
-    user: { findUnique: mocks.userFindUnique },
+    user: { findUnique: mocks.userFindUnique, update: vi.fn() },
     setting: { findUnique: mocks.settingFindUnique },
     transaction: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
   },
 }));
 vi.mock('@/lib/auth', () => ({ getCurrentUser: mocks.getCurrentUser }));
+vi.mock('@/lib/fx-deposit', () => ({ resolveDepositRate: vi.fn(async () => ({ depositRate: 1529, usdRates: { GHS: 12.5 }, source: 'test' })) }));
+vi.mock('@/lib/env', () => ({ getApplicationUrl: () => 'https://nitro.test' }));
 vi.mock('@/lib/rate-limit', () => ({
   rateLimit: mocks.rateLimit,
   rateLimitUnavailable: vi.fn(() => Response.json({ error: 'unavailable' }, { status: 503 })),
@@ -58,5 +60,42 @@ describe('payment initialization idempotency namespace', () => {
 
     expect(response.status).toBe(400);
     expect(mocks.settingFindUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe('charge currency follows the customer country', () => {
+  async function initialise(user) {
+    const { fetchWithRetry } = await import('@/lib/fetch');
+    const prisma = (await import('@/lib/prisma')).default;
+    mocks.userFindUnique.mockResolvedValue({ id: 'user-1', email: 'user@example.test', name: 'User', ...user });
+    mocks.settingFindUnique.mockResolvedValue({ value: JSON.stringify({ fields: { secretKey: 'FLWSECK_TEST' } }) });
+    fetchWithRetry.mockResolvedValue({ json: async () => ({ status: 'success', data: { link: 'https://checkout.test' } }) });
+    const response = await POST(request('key-' + Math.random()));
+    expect(response.status).toBe(200);
+    const body = JSON.parse(fetchWithRetry.mock.calls.at(-1)[1].body);
+    const row = prisma.transaction.create.mock.calls.at(-1)[0].data;
+    return { body, row };
+  }
+
+  it('charges a Ghanaian in cedis at the padded rate and stores the quote, crediting naira', async () => {
+    const { body, row } = await initialise({ country: 'GH' });
+    expect(body.currency).toBe('GHS');
+    expect(body.amount).toBe(40.88); // ₦5,000 at 1529/12.5 per cedi, ceiled to the cent
+    expect(row.amount).toBe(500_000); // the naira credit is untouched
+    expect(row.providerPriceCurrency).toBe('GHS');
+    expect(row.providerPriceAmount).toBe(40.88);
+  });
+
+  it('charges a Nigerian in naira exactly as before, with no quote stored', async () => {
+    const { body, row } = await initialise({ country: 'NG' });
+    expect(body.currency).toBe('NGN');
+    expect(body.amount).toBe(5_000);
+    expect(row.providerPriceCurrency).toBeUndefined();
+  });
+
+  it('falls back to naira when the rate for the country is missing', async () => {
+    const { body } = await initialise({ country: 'KE' }); // no KES cross-rate in the mock
+    expect(body.currency).toBe('NGN');
+    expect(body.amount).toBe(5_000);
   });
 });
