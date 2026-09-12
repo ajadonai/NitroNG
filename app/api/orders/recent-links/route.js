@@ -23,6 +23,10 @@ export async function GET(req) {
     where: {
       userId: session.id,
       deletedAt: null,
+      // Orders that went through. Cancelled is the one terminal state a link
+      // can leave with (refunded, withdrawn, rejected upstream), and a link
+      // from one of those is the last thing to suggest again.
+      status: { not: 'Cancelled' },
       link: { not: '' },
       platformAtPurchase: { contains: platform, mode: 'insensitive' },
     },
