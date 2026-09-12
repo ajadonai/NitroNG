@@ -7,6 +7,40 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 ## Open
 
+- **Reseller tier ladder — parked 12 Sep 2026, scope complete.** Five tiers
+  (Starter 10% → Wholesale 30%) on rolling 30-day retail-equivalent spend,
+  automatic promotion on the daily cron, month-end demotion after a grace
+  month, one Auto / pinned / custom dropdown in the admin Resellers drawer.
+  Settled during scoping: flat % off retail with a margin floor (the thinnest
+  band is 1.35× markup, so any flat discount ≥ 26% sells below cost and
+  `tests/markup-reseller.test.js` refuses it); thresholds must count
+  retail-equivalent, because orders store the discounted charge and a promoted
+  reseller would slow its own measurement; `discountPct` becomes an explicit
+  override, not the rate; and the floor clamp is worth shipping on its own —
+  the rate box accepts 40% today. Every charge path already funnels through
+  `getResellerTerms()` → `wholesaleOf()`, so the hook is one function. The API
+  docs already promise this ladder and name a "Scale" tier that exists nowhere;
+  T4 takes the name. Trip's call on whether the reseller pricing page mirrors
+  the retail pricing page layout.
+
+- **Subscription — parked 12 Sep 2026, shape undecided.** The recommendation on
+  record: sell scheduling ("Nitro Auto": a service and a weekly amount that
+  runs itself), not a discount — a discount subscription answers the same
+  question as the reseller ladder and answers it worse. First version charges
+  the wallet per run and pauses when it runs dry, sidestepping card
+  tokenisation and dunning entirely; card billing only if Auto proves demand.
+
+- **Outreach live feed — waiting on one decision.** A Telegram ping when
+  someone a staff member contacted goes on to deposit (name, amount, agent,
+  method, touch), plus a daily per-agent roll-up. `OutreachContact` already
+  holds who/how/when. Blocked only on the attribution window: 14 days and
+  most-recent-touch-wins is the proposal.
+
+- **Saved handles — the pin is per-device.** Shipped as localStorage in
+  order-form.jsx; a synced default needs a `pinnedLinks` column on User and a
+  migration. Do it when the first person asks why their pin didn't follow them
+  to another phone.
+
 - **Dead cross-sell and tier-compare data inside new-order.jsx, found 10 Sep
   2026 by the blind-spot sweep.** `crossSells`/`getCrossSell` (four upsell
   cards: "Complete the look", "Pair it with Likes"…) and `TIER_COMPARE` (the
