@@ -54,6 +54,7 @@ export function AdminCreateOrderPage({ dark, t }) {
   // Website-traffic targeting, mirroring the user order form field-for-field.
   const [traffic, setTraffic] = useState({ country: "", device: "all", trafficType: "keyword", keyword: "", referrer: "" });
   const [charge, setCharge] = useState(true);
+  const [freeReason, setFreeReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [batchItems, setBatchItems] = useState([]);
   const [topUpOpen, setTopUpOpen] = useState(false);
@@ -168,13 +169,21 @@ export function AdminCreateOrderPage({ dark, t }) {
   const batchTotalCost = batchItems.reduce((s, it) => s + it.costNgn * it.quantity / 1000, 0);
   const batchTotalOrders = batchItems.length;
   const activeCharge = mode === "bulk" ? batchTotalCharge : totalCharge;
+  // What the order is worth even when it is not being charged, so a free order
+  // can say what it gives away instead of showing a bare ₦0.
+  const activeValue = mode === "bulk" ? batchTotalCharge : perOrder * nLinks;
+  // No tier chosen yet, so the ₦0 on screen is "nothing priced", not "free".
+  const quotePending = mode !== "bulk" && !selectedTier;
+  // A free order needs a reason before it can be created — the server refuses
+  // without one, and this keeps the button honest about it.
+  const freeReasonOk = charge || freeReason.trim().length >= 3;
   const insufficientBal = charge && user && activeCharge > 0 && activeCharge > user.balance;
 
   const hasDripSchedule = mode !== "bulk" && effectiveDripDays >= 2;
   const scheduledDateMissing = hasDripSchedule && dripStart === "scheduled" && !dripStartDate;
   const scheduledDatePast = hasDripSchedule && dripStart === "scheduled" && dripStartDate &&
     new Date(`${dripStartDate}T${dripStartTime || "09:00"}`) < new Date();
-  const ready = user && !submitting && !scheduledDateMissing && !scheduledDatePast && (
+  const ready = user && !submitting && freeReasonOk && !scheduledDateMissing && !scheduledDatePast && (
     mode === "single" ? (selectedTier && validQty && !!link && trafficValid) :
     batchItems.length > 0
   );
@@ -202,10 +211,11 @@ export function AdminCreateOrderPage({ dark, t }) {
     setSubmitting(true);
     try {
       const body = mode === "bulk" ? {
-        mode, userId: user.id, charge,
+        mode, userId: user.id, charge, ...(charge ? {} : { freeReason: freeReason.trim() }),
         items: batchItems.map(it => ({ tierId: it.tierId, quantity: it.quantity, links: [it.link] })),
       } : {
         mode: effectiveDripDays >= 2 ? "drip" : "single", userId: user.id, tierId: selectedTier.id, quantity: qtyNum, charge, link: fullLink(link),
+        ...(charge ? {} : { freeReason: freeReason.trim() }),
         ...(comments.trim() ? { comments: comments.trim() } : {}),
         ...(showTraffic ? { trafficConfig: {
           country: traffic.country.trim().toUpperCase(), device: traffic.device, trafficType: traffic.trafficType,
@@ -422,8 +432,10 @@ export function AdminCreateOrderPage({ dark, t }) {
       {hasSummary && (
         <div className="co-stot">
           <span>{charge ? "Total charge" : "Service value"}</span>
-          <b className="m">{fN(activeCharge)}</b>
-          {!charge ? <i>Free order, nothing is deducted</i>
+          {/* Labelled "Service value" when free, so it must show the value —
+              it was showing the ₦0 charge under that label. */}
+          <b className="m">{fN(charge ? activeCharge : activeValue)}</b>
+          {!charge ? <i>Free order · gives away {fN(activeValue)} of service, costs us {fN(activeCost)}</i>
             : !user ? <i>Pick a customer</i>
             : insufficientBal ? <i className="low">Short by {fN(shortfall)}</i>
             : <i>Balance after {fN(user.balance - activeCharge)}</i>}
@@ -555,10 +567,20 @@ export function AdminCreateOrderPage({ dark, t }) {
                   {tog(charge, () => { setCharge(!charge); resetTopUp(); })}
                   <span>
                     <b>{charge ? "Charge the customer" : "Free order"}</b>
-                    <i>{charge ? (activeCharge > 0 ? `${fN(activeCharge)} comes off their balance` : "Comes off their balance") : "Nothing is deducted"}</i>
+                    {/* A free order still spends provider money. Say both figures
+                        rather than "nothing is deducted", which reads as costless. */}
+                    <i>{charge
+                      ? (activeCharge > 0 ? `${fN(activeCharge)} comes off their balance` : "Comes off their balance")
+                      : (activeValue > 0 ? `Gives away ${fN(activeValue)} of service · costs us ${fN(activeCost)}` : "Nothing is deducted from them")}</i>
                   </span>
                 </div>
               </div>
+              {!charge && (
+                <div className="co-fld">
+                  <label>Why free? <em>goes to the activity log and the Telegram alert</em></label>
+                  <input value={freeReason} onChange={e => setFreeReason(e.target.value.slice(0, 200))} placeholder="Replacement for NTR-1234 / goodwill after a late delivery / testing a new service" className="co-in" />
+                </div>
+              )}
             </div>
             {typedLabel && (
               <div className="co-fld">
@@ -658,7 +680,10 @@ export function AdminCreateOrderPage({ dark, t }) {
             {!canDrip ? (
               <div className="co-hint">
                 {mode === "bulk" ? "Batch orders go out in one go."
-                  : !selectedTier ? "Pick a service first."
+                  // A tier is a separate choice from the service, and saying
+                  // "service" here sent someone hunting for a bug in the
+                  // charge toggle when the tier was simply never tapped.
+                  : !selectedTier ? (selectedGroup ? "Pick a tier first." : "Pick a service first.")
                   : !isDripEligible ? "This service is delivered in one go."
                   : qtyNum > 0 ? `Drip starts at ${dripThreshold.toLocaleString()}; this order goes out in one go.` : "Enter a quantity."}
               </div>
@@ -740,7 +765,14 @@ export function AdminCreateOrderPage({ dark, t }) {
       )}
       {!mobileReview && (
         <div className="co-sbar">
-          <span><i>{charge ? "Total charge" : "Service value"}</i><b className="m">{fN(activeCharge)}</b></span>
+          {/* Until a tier is picked there is no price to total, and printing
+              ₦0 there reads as a computed answer — it looked like the charge
+              toggle had failed. Say what is actually missing instead. */}
+          <span><i>{charge ? "Total charge" : "Service value"}</i>
+            {quotePending
+              ? <b className="co-sbar-hint">{selectedGroup ? "Pick a tier" : "Pick a service"}</b>
+              : <b className="m">{fN(charge ? activeCharge : activeValue)}</b>}
+          </span>
           <button type="button" className="co-b" onClick={() => setMobileReview(true)}>Review</button>
           {insufficientBal
             ? <button type="button" className="co-pri" onClick={openTopUp}>Top up</button>
@@ -861,6 +893,8 @@ const CO_CSS = `
   .co-sbar>span{display:flex;flex-direction:column;flex:1;min-width:0}
   .co-sbar>span i{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
   .co-sbar>span b{font-size:20px;font-weight:800;color:var(--ac);letter-spacing:-.02em}
+  /* The "pick a tier" stand-in: same slot, but plainly a prompt rather than a figure. */
+  .co-sbar>span b.co-sbar-hint{font-size:15px;font-weight:700;color:var(--mut);letter-spacing:0}
 }
 @media (max-width:640px){
   .co-row2{grid-template-columns:1fr}.co-modes{width:100%}
