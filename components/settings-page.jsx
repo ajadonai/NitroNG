@@ -109,8 +109,11 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
   const [apiKey, setApiKey] = useState(null);
   const [apiWholesale, setApiWholesale] = useState(false);
   useEffect(() => { fetch("/api/reseller/key").then(r => r.ok ? r.json() : null).then(d => { if (d?.apiKey) { setApiKey(d.apiKey); setApiWholesale(!!d.wholesale); } }).catch(() => {}); }, []);
-  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteProof, setDeleteProof] = useState("");
   const [deleteError, setDeleteError] = useState("");
+  // A Google sign-up has no password to re-enter; it confirms deletion by
+  // typing its email instead. Missing flag (older payload) keeps the password box.
+  const hasPassword = user?.hasPassword !== false;
 
   // Change password state
   const [curPw, setCurPw] = useState("");
@@ -276,22 +279,22 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
             <div className="px-3.5 pb-4" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
             {showDelete ? (
               <div className="mt-3">
-                <label htmlFor="delete-account-password" className="block text-[13px] mb-1.5 text-t-text-muted">{tr("Enter your password to confirm")}</label>
+                <label htmlFor="delete-account-password" className="block text-[13px] mb-1.5 text-t-text-muted">{hasPassword ? tr("Enter your password to confirm") : tr("Type your email address to confirm")}</label>
                 <div className="flex gap-2 flex-wrap max-md:flex-wrap">
-                  <input type="password" id="delete-account-password" autoComplete="current-password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder={tr("Your password")} className="flex-1 min-w-40 py-2.5 px-3.5 rounded-lg text-sm outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)"}` }} />
+                  <input type={hasPassword ? "password" : "email"} id="delete-account-password" autoComplete={hasPassword ? "current-password" : "off"} value={deleteProof} onChange={e => setDeleteProof(e.target.value)} placeholder={hasPassword ? tr("Your password") : (user?.email || "")} className="flex-1 min-w-40 py-2.5 px-3.5 rounded-lg text-sm outline-none text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)"}` }} />
                   <button onClick={async () => {
-                    if (!deletePassword) return;
+                    if (!deleteProof) return;
                     const ok = await confirm({ title: "Delete Your Account", message: tr("Your account will be scheduled for deletion in 30 days. During this period you cannot log in or sign up with this email. Contact support@nitro.ng before the deadline to cancel. After 30 days, your personal details will be permanently removed and the account cannot be restored. Financial records required for legal and accounting purposes are retained without your contact details."), confirmLabel: tr("Delete Account"), danger: true, requireType: "DELETE" });
                     if (ok) {
                       try {
-                        const res = await fetch("/api/auth/delete-account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: deletePassword }) });
+                        const res = await fetch("/api/auth/delete-account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(hasPassword ? { password: deleteProof } : { confirmEmail: deleteProof }) });
                         const data = await res.json();
                         if (res.ok) { window.location.replace("/?deleted=1"); }
                         else { setDeleteError(data.error || "Failed to delete account"); }
                       } catch { setDeleteError("Request failed"); }
                     }
-                  }} className="py-[9px] px-5 rounded-lg border-[0.5px] text-[13px] font-semibold cursor-pointer bg-transparent whitespace-nowrap" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.25)", color: dark ? "#fca5a5" : "#dc2626", opacity: deletePassword ? 1 : .4 }}>{tr("Delete my account")}</button>
-                  <button onClick={() => { setShowDelete(false); setDeletePassword(""); setDeleteError(""); }} className="py-2.5 px-3.5 rounded-lg bg-transparent text-sm cursor-pointer text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{tr("Cancel")}</button>
+                  }} className="py-[9px] px-5 rounded-lg border-[0.5px] text-[13px] font-semibold cursor-pointer bg-transparent whitespace-nowrap" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.25)", color: dark ? "#fca5a5" : "#dc2626", opacity: deleteProof ? 1 : .4 }}>{tr("Delete my account")}</button>
+                  <button onClick={() => { setShowDelete(false); setDeleteProof(""); setDeleteError(""); }} className="py-2.5 px-3.5 rounded-lg bg-transparent text-sm cursor-pointer text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{tr("Cancel")}</button>
                 </div>
                 {deleteError && <div className="text-[13px] mt-2" style={{ color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline align-middle"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {deleteError}</div>}
               </div>
