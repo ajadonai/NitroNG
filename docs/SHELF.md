@@ -138,6 +138,22 @@ as the work. (Formerly docs/BACKLOG.md.)
   alert alone; give them a row and an "approve as ₦X" action when the first
   one lands.
 
+- **Checkout abandonment — a project, sized 13 Sep 2026, not started.** 60.0%
+  of deposit initiations end in a funded wallet; after netting the 58% who
+  complete within 7 days, true leakage is about 16.6% — roughly ₦20k/day of
+  deposits and ₦13k/day of gross profit, on the order of ₦130k/month if worked.
+  Unremarkable for a Nigerian payment flow: a UX opportunity, not an emergency.
+  The ₦3.25M of "failed attempts" quoted on 11 Sep was never real — real
+  payment failure is 0.9%; the rest was abandonment. Instrument before
+  redesigning. Today the rows say *initiated* (Pending written) and *finished*
+  (Completed), and Flutterwave's `provider_not_found` says the customer never
+  submitted the form — but nothing records whether they reached Flutterwave's
+  page at all. One `navigator.sendBeacon` from the add-funds page immediately
+  before the redirect (reference + stage) splits "closed before the gateway
+  loaded" from "saw the gateway and left", and the page's own steps (amount →
+  method → pay) can ride the existing telemetry route. Read a fortnight of that
+  before changing the flow.
+
 - **Auto data-saver — parked design, agreed 6 Sep 2026** (the improved version
   of the audit's "Data-Saver toggle"): no manual toggle — animations cost CPU,
   not data, and a switch nobody finds helps nobody. Instead the app reads the
@@ -424,6 +440,8 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-13 | Acquisition endpoint: first-ever orders and signups per Lagos day plus signup→buyer by week, behind the cohort reader's tokens, under the robots-allowed prefix — retires the hand-derived cost-per-customer factor | `91c83fc9` v2.4.154 |
+| 2026-09-13 | Abandoned Flutterwave checkouts read "Not completed" in the wallet and "not completed, nothing charged" on return — not Expired/Retrying, not "could not be reached" | `84b512b3` v2.4.132 |
 | 2026-09-13 | The tidy: 184 unused names across 69 files brought to zero outside parked/frozen files — dead imports, props, helpers, components, colour tables, two ignored rate-limit knobs and an ignored tgOutreach param; i18n record followed down | `7bc31d4c` v2.4.152 |
 | 2026-09-13 | partialAdjustment shared from lib/ledger.js (was four copies); email.js on the logger; sentry-filters.js wired into the client init; digest's dead month aggregates gone | `7c486734` v2.4.153 |
 | 2026-09-13 | One definition read everywhere: lib/ledger.js (dead order states, wallet funding) replaces 62 status literals and 21 money-in literals; 25 legacy ledger rows normalised | `d51a27a3` v2.4.148 |
