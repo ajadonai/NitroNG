@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { voidCommissions } from '@/lib/commissions';
 import { reportOperationalFailure } from '@/lib/monitoring';
+import { DEAD_ORDER_STATES } from '@/lib/ledger';
 
 export const maxDuration = 60;
 
@@ -10,7 +11,6 @@ export const maxDuration = 60;
 // commission stays live on a sale that never happened and nothing comes back
 // for it. This does: once a night, any commission still held or approved on a
 // Cancelled, Failed or Rejected order is voided. Normally it finds nothing.
-const DEAD = ['Cancelled', 'Failed', 'Rejected'];
 
 export async function GET(req) {
   const token = req.nextUrl.searchParams.get('token');
@@ -21,7 +21,7 @@ export async function GET(req) {
   }
   try {
     const stuck = await prisma.affiliateCommission.findMany({
-      where: { status: { in: ['held', 'approved'] }, order: { status: { in: DEAD } } },
+      where: { status: { in: ['held', 'approved'] }, order: { status: { in: DEAD_ORDER_STATES } } },
       select: { orderId: true, marketerAmount: true, leadAmount: true, order: { select: { orderId: true, status: true } } },
       take: 200,
     });

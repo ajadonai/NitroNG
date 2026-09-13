@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { requireAdmin, canPerformAction, logActivity } from '@/lib/admin';
 import { randomBytes } from 'crypto';
+import { DEAD_ORDER_STATES } from '@/lib/ledger';
 
 // How far back the activity figures on each reseller look. Only ever computed
 // for people who already have a profile, so it stays a handful of rows.
@@ -17,13 +18,13 @@ async function activityFor(userIds) {
   const since = new Date(Date.now() - WINDOW_DAYS * 86400000);
   const rows = await prisma.order.groupBy({
     by: ['userId'],
-    where: { userId: { in: userIds }, createdAt: { gte: since }, deletedAt: null, status: { not: 'Cancelled' } },
+    where: { userId: { in: userIds }, createdAt: { gte: since }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } },
     _count: true,
     _sum: { charge: true },
   });
   const api = await prisma.order.groupBy({
     by: ['userId'],
-    where: { userId: { in: userIds }, createdAt: { gte: since }, deletedAt: null, status: { not: 'Cancelled' }, source: 'api' },
+    where: { userId: { in: userIds }, createdAt: { gte: since }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES }, source: 'api' },
     _count: true,
   }).catch(() => []);
   const apiBy = Object.fromEntries(api.map(r => [r.userId, r._count]));
@@ -77,12 +78,12 @@ export async function GET(req) {
     const activeIds = profiles.filter(p => p.enabled).map(p => p.userId);
     const [everyone, resellerSide] = await Promise.all([
       prisma.order.aggregate({
-        where: { createdAt: { gte: since }, deletedAt: null, status: { not: 'Cancelled' } },
+        where: { createdAt: { gte: since }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } },
         _count: true, _sum: { charge: true },
       }),
       activeIds.length
         ? prisma.order.aggregate({
-          where: { userId: { in: activeIds }, createdAt: { gte: since }, deletedAt: null, status: { not: 'Cancelled' } },
+          where: { userId: { in: activeIds }, createdAt: { gte: since }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } },
           _count: true, _sum: { charge: true },
         })
         : { _count: 0, _sum: { charge: 0 } },

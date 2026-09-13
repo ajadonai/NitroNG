@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getMemberEarnings, getMemberHeld } from '@/lib/commissions';
 import { sendDM, replyInGroup, crewWelcome, crewDmChiefNewLink, kickFromGroup } from '@/lib/crew-bot';
+import { DEAD_ORDER_STATES } from '@/lib/ledger';
 
 export const maxDuration = 60;
 
@@ -62,8 +63,8 @@ async function handleMyStats(member) {
   const [totalSignups, weekSignups, totalOrders, weekOrders] = await Promise.all([
     prisma.user.count({ where: { signupSource: { in: slugs } } }),
     prisma.user.count({ where: { signupSource: { in: slugs }, createdAt: { gte: week } } }),
-    prisma.order.count({ where: { user: { signupSource: { in: slugs } }, deletedAt: null, status: { not: 'Cancelled' } } }),
-    prisma.order.count({ where: { user: { signupSource: { in: slugs } }, deletedAt: null, status: { not: 'Cancelled' }, createdAt: { gte: week } } }),
+    prisma.order.count({ where: { user: { signupSource: { in: slugs } }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } } }),
+    prisma.order.count({ where: { user: { signupSource: { in: slugs } }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES }, createdAt: { gte: week } } }),
   ]);
 
   return [
@@ -119,7 +120,7 @@ async function handleTeam(member) {
   const week = getWeekStartUTC();
   const [weekSignups, weekOrders] = await Promise.all([
     prisma.user.count({ where: { signupSource: { in: slugs }, createdAt: { gte: week } } }),
-    prisma.order.count({ where: { user: { signupSource: { in: slugs } }, deletedAt: null, status: { not: 'Cancelled' }, createdAt: { gte: week } } }),
+    prisma.order.count({ where: { user: { signupSource: { in: slugs } }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES }, createdAt: { gte: week } } }),
   ]);
 
   const members = await prisma.crewMember.findMany({
@@ -160,7 +161,7 @@ async function handleTop() {
     if (!slugs.length) { teams.push({ name: chief.name, orders: 0, signups: 0 }); continue; }
 
     const [orders, signups] = await Promise.all([
-      prisma.order.count({ where: { user: { signupSource: { in: slugs } }, deletedAt: null, status: { not: 'Cancelled' }, createdAt: { gte: week } } }),
+      prisma.order.count({ where: { user: { signupSource: { in: slugs } }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES }, createdAt: { gte: week } } }),
       prisma.user.count({ where: { signupSource: { in: slugs }, createdAt: { gte: week } } }),
     ]);
     teams.push({ name: chief.name, orders, signups });

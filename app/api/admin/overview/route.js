@@ -4,6 +4,7 @@ import { requireAdmin, getAdminPages, canSeeSensitive, maskEmail } from '@/lib/a
 import { watBounds } from '@/lib/format';
 import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { getRevenue } from '@/lib/revenue';
+import { DEAD_ORDER_STATES, WALLET_FUNDING } from '@/lib/ledger';
 
 function humanize(raw) {
   let m;
@@ -101,7 +102,7 @@ export async function GET() {
     // Phase 1: aggregates and counts (no relation sub-queries)
     const [
       userCount, orderCount, processingCount,
-      revenueAgg, costAgg, depositsAgg,
+      depositsAgg,
       todayOrders, todayRevenueAgg, todayUsers, todayDepositsAgg,
       yesterdayRevenueAgg, yesterdayDepositsAgg,
       partials,
@@ -112,15 +113,13 @@ export async function GET() {
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.order.count({ where: { deletedAt: null } }),
       prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
-      prisma.order.aggregate({ where: { deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
-      prisma.order.aggregate({ where: { deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
-      prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed' }, _sum: { amount: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed' }, _sum: { amount: true } }),
       prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
-      prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
       prisma.user.count({ where: { createdAt: { gte: todayStart }, emailVerified: true } }),
-      prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
-      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
-      prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
       prisma.order.findMany({ where: { deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true, createdAt: true } }),
       prisma.ticket.count({ where: { unreadByAdmin: true, status: { in: ['Open', 'In Progress'] } } }).catch(() => 0),
       prisma.transaction.count({ where: { type: 'deposit', method: 'manual', status: 'Pending', NOT: { note: { contains: '[awaiting_confirmation]' } } } }).catch(() => 0),
@@ -137,7 +136,6 @@ export async function GET() {
     ]);
     const ordersByHour = Array.from({ length: 24 }, (_, h) => { const r = hourRows.find(x => Number(x.h) === h); return { h, n: r ? Number(r.n) : 0, revenue: r ? Number(r.c) / 100 : 0 }; });
 
-    const partialAll = partials;
     const partialToday = partials.filter(p => p.createdAt >= todayStart);
     const partialYesterday = partials.filter(p => p.createdAt >= yesterdayStart && p.createdAt < todayStart);
 
@@ -163,7 +161,7 @@ export async function GET() {
       prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
         take: 5,
-        select: { id: true, name: true, email: true, createdAt: true, balance: true, _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } } },
+        select: { id: true, name: true, email: true, createdAt: true, balance: true, _count: { select: { orders: { where: { status: { notIn: DEAD_ORDER_STATES }, deletedAt: null } } } } },
       }),
       prisma.ticket.findMany({
         where: { status: 'Open' },
@@ -177,7 +175,6 @@ export async function GET() {
       }),
     ]);
 
-    const adjAll = partialAdj(partialAll);
     const adjToday = partialAdj(partialToday);
     const adjYesterday = partialAdj(partialYesterday);
     const todayRevenue = ((todayRevenueAgg._sum.charge || 0) - adjToday.charge) / 100;

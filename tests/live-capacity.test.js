@@ -131,7 +131,7 @@ describe('Live capacity and aggregate reads', () => {
       by: ['userId'],
       where: {
         userId: { in: ['user-1'] },
-        type: { in: ['deposit', 'admin_credit'] },
+        type: { in: ['deposit', 'admin_credit', 'admin_gift'] },
         status: 'Completed',
       },
       _sum: { amount: true },

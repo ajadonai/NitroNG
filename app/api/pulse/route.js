@@ -14,6 +14,7 @@ import {
   tooManyRequests,
 } from '@/lib/rate-limit';
 import { getRevenue } from '@/lib/revenue';
+import { DEAD_ORDER_STATES, WALLET_FUNDING } from '@/lib/ledger';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,23 +75,23 @@ export async function GET(req) {
     ] = await Promise.all([
       prisma.user.count({ where: { status: { not: 'Deleted' } } }),
       prisma.user.count({ where: { createdAt: { gte: todayStart }, status: { not: 'Deleted' } } }),
-      prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
       prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
-      prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
-      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
-      prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
       prisma.order.count({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null } }),
       prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
-      prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { charge: true } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
       prisma.order.count({ where: { createdAt: { gte: monthStart }, deletedAt: null } }),
-      prisma.transaction.aggregate({ where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
       prisma.user.count({ where: { createdAt: { gte: monthStart }, emailVerified: true } }),
-      prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
-      prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
-      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: ['Cancelled'] } }, _sum: { cost: true } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
       prisma.order.groupBy({ by: ['status'], where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null }, _count: true }),
       prisma.order.findMany({
-        where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null, status: { notIn: ['Cancelled'] } },
+        where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } },
         select: { charge: true, status: true, quantity: true, remains: true, platformAtPurchase: true, service: { select: { category: true } } },
       }),
       prisma.order.findMany({
@@ -99,7 +100,7 @@ export async function GET(req) {
         orderBy: { createdAt: 'asc' },
       }),
       prisma.transaction.findMany({
-        where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: { gte: thirtyDaysAgo } },
+        where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: thirtyDaysAgo } },
         select: { createdAt: true, amount: true },
         orderBy: { createdAt: 'asc' },
       }),
@@ -126,7 +127,7 @@ export async function GET(req) {
         },
       }),
       prisma.transaction.findMany({
-        where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed' },
+        where: { type: { in: WALLET_FUNDING }, status: 'Completed' },
         orderBy: { createdAt: 'desc' },
         take: 15,
         include: { user: { select: { name: true, email: true } } },
@@ -203,7 +204,7 @@ export async function GET(req) {
       prisma.$queryRaw`
         SELECT COUNT(DISTINCT "userId")::int AS count
         FROM transactions
-        WHERE type IN ('deposit', 'admin_credit') AND status = 'Completed' AND "createdAt" >= ${monthStart}
+        WHERE type IN ('deposit', 'admin_credit', 'admin_gift') AND status = 'Completed' AND "createdAt" >= ${monthStart}
       `,
     ]);
 
@@ -264,7 +265,7 @@ export async function GET(req) {
       const day = toDay(o.createdAt);
       if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, profit: 0, depositsKobo: 0, newUsers: 0 };
       dayMap[day].orders++;
-      if (o.status !== 'Cancelled') {
+      if (!DEAD_ORDER_STATES.includes(o.status)) {
         dayMap[day].revenue += effCharge(o) / 100;
         dayMap[day].profit += (effCharge(o) - effCost(o)) / 100;
       }
@@ -289,7 +290,7 @@ export async function GET(req) {
       if (!inToday(o.createdAt)) return;
       const h = todayHours[Math.min(toHour(o.createdAt), nowHour)];
       h.orders++;
-      if (o.status !== 'Cancelled') { h.revenue += effCharge(o) / 100; h.profit += (effCharge(o) - effCost(o)) / 100; }
+      if (!DEAD_ORDER_STATES.includes(o.status)) { h.revenue += effCharge(o) / 100; h.profit += (effCharge(o) - effCost(o)) / 100; }
     });
     chartDeposits.forEach(tx => { if (inToday(tx.createdAt)) todayHours[Math.min(toHour(tx.createdAt), nowHour)].deposits += (tx.amount || 0) / 100; });
     chartUsers.forEach(u => { if (inToday(u.createdAt)) todayHours[Math.min(toHour(u.createdAt), nowHour)].newUsers++; });

@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { watBounds } from '@/lib/format';
 import { getEligibleSpendKoboBatch, getNitroStatus, STATUS_TIERS } from '@/lib/nitro-rewards';
+import { DEAD_ORDER_STATES } from '@/lib/ledger';
 
 export async function GET(req) {
   try {
@@ -58,7 +59,7 @@ export async function GET(req) {
     // Most active — by order count
     const active = await prisma.order.groupBy({
       by: ['userId'],
-      where: { ...dateFilter, deletedAt: null, status: { not: 'Cancelled' } },
+      where: { ...dateFilter, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
       take: 10,
@@ -78,7 +79,7 @@ export async function GET(req) {
     const [eligibleSpendByUser, yourTotalOrders] = await Promise.all([
       getEligibleSpendKoboBatch(badgeUserIds),
       prisma.order.count({
-        where: { userId: session.id, deletedAt: null, status: { not: 'Cancelled' } },
+        where: { userId: session.id, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } },
       }),
     ]);
 

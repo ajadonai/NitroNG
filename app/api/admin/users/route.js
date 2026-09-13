@@ -10,6 +10,7 @@ import { reinstatePendingAccountDeletion } from '@/lib/account-deletion';
 import { fetchWithRetry } from '@/lib/fetch';
 import { getApplicationUrl } from '@/lib/env';
 import { tgManualPending, tgAdminCredit } from '@/lib/telegram';
+import { DEAD_ORDER_STATES } from '@/lib/ledger';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('users');
@@ -46,7 +47,7 @@ export async function GET(req) {
       : {};
 
     const quickWhere = quick === 'funded' ? { balance: { gt: 0 } }
-      : quick === 'buyers' ? { orders: { some: { status: { not: 'Cancelled' }, deletedAt: null } } }
+      : quick === 'buyers' ? { orders: { some: { status: { notIn: DEAD_ORDER_STATES }, deletedAt: null } } }
       : {};
 
     // baseWhere = search + quick (used for tab counts)
@@ -72,7 +73,7 @@ export async function GET(req) {
       emailVerified: true, referralCode: true, createdAt: true,
       deletedAt: true, deletedName: true, deletedEmail: true,
       resellerProfile: { select: { enabled: true } },
-      _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } } } },
+      _count: { select: { orders: { where: { status: { notIn: DEAD_ORDER_STATES }, deletedAt: null } } } },
     };
 
     // Search/list requests stay lean. Global stats are loaded only when requested.
@@ -104,7 +105,7 @@ export async function GET(req) {
       const since = new Date(now.getTime() - 90 * 86400000);
       const rows = await prisma.order.groupBy({
         by: ['userId'],
-        where: { userId: { in: users.map(x => x.id) }, createdAt: { gte: since }, status: { not: 'Cancelled' }, deletedAt: null },
+        where: { userId: { in: users.map(x => x.id) }, createdAt: { gte: since }, status: { notIn: DEAD_ORDER_STATES }, deletedAt: null },
         _sum: { charge: true },
       }).catch(() => []);
       rows.forEach(r => spend90.set(r.userId, (r._sum.charge || 0) / 100));
@@ -116,9 +117,9 @@ export async function GET(req) {
         prisma.user.count({ where: { status: { not: 'Deleted' } } }),
         prisma.user.count({ where: { status: 'Active' } }),
         prisma.user.aggregate({ _sum: { balance: true } }),
-        prisma.order.count({ where: { status: { not: 'Cancelled' }, deletedAt: null } }),
+        prisma.order.count({ where: { status: { notIn: DEAD_ORDER_STATES }, deletedAt: null } }),
         prisma.user.count({ where: { createdAt: { gte: startOfWeek }, status: { not: 'Deleted' } } }),
-        prisma.order.count({ where: { createdAt: { gte: startOfMonth }, status: { not: 'Cancelled' }, deletedAt: null } }),
+        prisma.order.count({ where: { createdAt: { gte: startOfMonth }, status: { notIn: DEAD_ORDER_STATES }, deletedAt: null } }),
         prisma.user.count({ where: { balance: { gt: 0 }, status: { not: 'Deleted' } } }),
       ]);
       stats = {

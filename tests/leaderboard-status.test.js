@@ -80,7 +80,7 @@ describe('GET /api/leaderboard — canonical Nitro Status', () => {
     expect(prisma.$queryRaw.mock.calls[0][1]).toEqual(['you', 'spender', 'active']);
     expect(prisma.order.groupBy).toHaveBeenCalledTimes(2);
     expect(prisma.order.count).toHaveBeenCalledWith({
-      where: { userId: 'you', deletedAt: null, status: { not: 'Cancelled' } },
+      where: { userId: 'you', deletedAt: null, status: { notIn: ['Cancelled', 'Failed', 'Rejected'] } },
     });
   });
 

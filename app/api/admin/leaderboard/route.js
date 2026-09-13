@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { sendEmail, leaderboardRewardEmail } from '@/lib/email';
 import { watBounds } from '@/lib/format';
+import { DEAD_ORDER_STATES } from '@/lib/ledger';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('leaderboard');
@@ -42,7 +43,7 @@ export async function GET(req) {
     // Most active
     const active = await prisma.order.groupBy({
       by: ['userId'],
-      where: { ...dateFilter, deletedAt: null, status: { not: 'Cancelled' } },
+      where: { ...dateFilter, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } },
       _count: { id: true },
       _sum: { charge: true, cost: true },
       orderBy: { _count: { id: 'desc' } },

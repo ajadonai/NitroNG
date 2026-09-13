@@ -5,6 +5,7 @@ import {
   message, block, row, outcomeRows, touchRows, staffRows, naira,
 } from '@/lib/outreach-format';
 import { isOutreachPaused } from '@/lib/outreach-pause';
+import { DEAD_ORDER_STATES } from '@/lib/ledger';
 
 export const maxDuration = 60;
 
@@ -82,7 +83,7 @@ export async function GET(req) {
     where: {
       userId: { in: userIds },
       createdAt: { gte: since },
-      status: { not: 'Cancelled' },
+      status: { notIn: DEAD_ORDER_STATES },
     },
     select: { userId: true, charge: true, createdAt: true },
   });

@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import { requireAdmin } from '@/lib/admin';
 import { watBounds } from '@/lib/format';
 import { getRevenue } from '@/lib/revenue';
+import { DEAD_ORDER_STATES, WALLET_FUNDING } from '@/lib/ledger';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('finance');
@@ -29,7 +30,7 @@ export async function GET(req) {
 
     const [ordersAgg, userCount, depositAgg, adminCreditAgg, adminGiftAgg, couponBonusAgg, referralBonusAgg, refundAgg, ordersByStatus, topServices, allOrders, chartOrders, chartDeposits, partialOrders, providerTopupAgg] = await Promise.all([
       prisma.order.aggregate({
-        where: { createdAt: dateFilter, deletedAt: null, status: { notIn: ['Cancelled'] } },
+        where: { createdAt: dateFilter, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } },
         _sum: { charge: true, cost: true, campaignDiscount: true, loyaltyDiscount: true },
         _count: true,
       }),
@@ -68,7 +69,7 @@ export async function GET(req) {
       }),
       prisma.order.groupBy({
         by: ['serviceId'],
-        where: { createdAt: dateFilter, deletedAt: null, status: { notIn: ['Cancelled'] } },
+        where: { createdAt: dateFilter, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } },
         _count: true,
         _sum: { charge: true },
         orderBy: { _sum: { charge: 'desc' } },
@@ -76,7 +77,7 @@ export async function GET(req) {
       }),
       // For platform aggregation — get orders with service category
       prisma.order.findMany({
-        where: { createdAt: dateFilter, deletedAt: null, status: { notIn: ['Cancelled'] } },
+        where: { createdAt: dateFilter, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } },
         select: { charge: true, cost: true, status: true, quantity: true, remains: true, service: { select: { category: true } } },
       }),
       // Chart: daily order counts + revenue
@@ -87,7 +88,7 @@ export async function GET(req) {
       }),
       // Chart: daily deposits
       prisma.transaction.findMany({
-        where: { type: { in: ['deposit', 'admin_credit'] }, status: 'Completed', createdAt: dateFilter },
+        where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: dateFilter },
         select: { createdAt: true, amount: true },
         orderBy: { createdAt: 'asc' },
       }),
@@ -146,7 +147,7 @@ export async function GET(req) {
       if (!platformMap[name]) platformMap[name] = { name, orders: 0, revenue: 0, cost: 0 };
       platformMap[name].orders++;
       platformMap[name].revenue += effCharge(o) / 100;
-      if (o.status !== 'Cancelled') platformMap[name].cost += (o.cost || 0) / 100;
+      if (!DEAD_ORDER_STATES.includes(o.status)) platformMap[name].cost += (o.cost || 0) / 100;
     });
     const topPlatforms = Object.values(platformMap)
       .sort((a, b) => b.revenue - a.revenue)
@@ -168,7 +169,7 @@ export async function GET(req) {
       const pFilter = { gte: pFrom, lt: pTo };
       const [pRev, pOrders, pDeposits] = await Promise.all([
         getRevenue({ from: pFrom, to: pTo }),
-        prisma.order.count({ where: { createdAt: pFilter, deletedAt: null, status: { notIn: ['Cancelled'] } } }),
+        prisma.order.count({ where: { createdAt: pFilter, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } } }),
         prisma.transaction.aggregate({ where: { type: 'deposit', status: 'Completed', createdAt: pFilter }, _sum: { amount: true } }),
       ]);
       prev = { netRevenue: pRev.net, profit: pRev.net - pRev.cost, orders: pOrders, deposits: (pDeposits._sum.amount || 0) / 100 };
@@ -211,7 +212,7 @@ export async function GET(req) {
       const day = toDay(o.createdAt);
       if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, cost: 0, deposits: 0 };
       dayMap[day].orders++;
-      if (o.status !== 'Cancelled') { dayMap[day].revenue += effCharge(o) / 100; dayMap[day].cost += (o.cost || 0) / 100; }
+      if (!DEAD_ORDER_STATES.includes(o.status)) { dayMap[day].revenue += effCharge(o) / 100; dayMap[day].cost += (o.cost || 0) / 100; }
     });
     chartDeposits.forEach(tx => {
       const day = toDay(tx.createdAt);

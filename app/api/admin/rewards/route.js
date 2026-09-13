@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { requireAdmin, logActivity } from '@/lib/admin';
 import { getPointsBalanceKoboTx, pointsFromKoboExact } from '@/lib/nitro-rewards';
 import { STATUS_TIERS } from '@/lib/nitro-rewards-core';
+import { DEAD_ORDER_STATES } from '@/lib/ledger';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('rewards');
@@ -25,7 +26,7 @@ export async function GET(req) {
 
     const orderWhere = {
       deletedAt: null,
-      status: { notIn: ['Cancelled'] },
+      status: { notIn: DEAD_ORDER_STATES },
       ...(dateWhere.createdAt ? { createdAt: dateWhere.createdAt } : {}),
     };
 

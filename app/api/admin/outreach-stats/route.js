@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { STAFF_NAMES } from '@/lib/telegram';
 import { requireAdmin } from '@/lib/admin';
+import { DEAD_ORDER_STATES } from '@/lib/ledger';
 
 function staffName(tgId) { return STAFF_NAMES[String(tgId)] || `Staff ${String(tgId).slice(-4)}`; }
 
@@ -70,7 +71,7 @@ export async function GET(req) {
   const [recentOrders, recentDeposits] = recentUserIds.length ? await Promise.all([
     prisma.order.groupBy({
       by: ['userId'],
-      where: { userId: { in: recentUserIds }, createdAt: { gte: since }, status: { not: 'Cancelled' } },
+      where: { userId: { in: recentUserIds }, createdAt: { gte: since }, status: { notIn: DEAD_ORDER_STATES } },
       _sum: { charge: true },
       _count: true,
     }),
@@ -170,7 +171,7 @@ async function buildStats(contacts, since) {
 
   const [orders, deposits] = await Promise.all([
     prisma.order.findMany({
-      where: { userId: { in: userIds }, createdAt: { gte: since }, status: { not: 'Cancelled' } },
+      where: { userId: { in: userIds }, createdAt: { gte: since }, status: { notIn: DEAD_ORDER_STATES } },
       select: { userId: true, charge: true, createdAt: true },
     }),
     prisma.transaction.findMany({
