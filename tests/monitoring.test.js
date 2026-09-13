@@ -10,6 +10,7 @@ import {
   createOperationalReporter,
   forwardServerRequestError,
   isExpectedRequestControlFlow,
+  isMalformedClientRequest,
 } from '@/lib/monitoring';
 
 function sentryScope() {
@@ -152,6 +153,23 @@ describe('server request error forwarding', () => {
       expect(forwardServerRequestError(error, {}, {}, { sentry })).toBe(false);
       expect(sentry.captureRequestError).not.toHaveBeenCalled();
     }
+  });
+
+  it('drops a router-state header the client sent malformed — a crawler, not a fault of ours', () => {
+    const parse = Object.assign(new Error('The router state header was sent but could not be parsed.'), { __NEXT_ERROR_CODE: 'E10' });
+    const tooLarge = Object.assign(new Error('The router state header was too large.'), { __NEXT_ERROR_CODE: 'E142' });
+    const renumbered = new Error('The router state header was sent but could not be parsed.');   // same fault, no code
+    for (const error of [parse, tooLarge, renumbered]) {
+      expect(isMalformedClientRequest(error)).toBe(true);
+      const sentry = { captureRequestError: vi.fn() };
+      expect(forwardServerRequestError(error, { url: '/' }, { routePath: '/page' }, { sentry })).toBe(false);
+      expect(sentry.captureRequestError).not.toHaveBeenCalled();
+    }
+    // Anything else still reaches Sentry.
+    const real = new Error('Cannot read properties of undefined');
+    expect(isMalformedClientRequest(real)).toBe(false);
+    const sentry = { captureRequestError: vi.fn() };
+    expect(forwardServerRequestError(real, { url: '/' }, {}, { sentry })).toBe(true);
   });
 
   it('keeps the Next instrumentation hook wired to the forwarding helper', () => {

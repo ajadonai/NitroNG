@@ -424,6 +424,8 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-13 | Google sign-ups could never delete their account (stored with password '', the route demanded a password match); they now confirm by typing their email, password accounts unchanged | `ac57758c` v2.4.146 |
+| 2026-09-13 | Sentry noise: a crawler's malformed Next-Router-State-Tree header on GET / was reported as a server error; filtered on Next's error codes, everything else still forwards | `2c4d4bf7` v2.4.147 |
 | 2026-09-12 | Leak audit of the currency/deposit path: short bank transfers refused (charged_amount read), paid-but-mismatched deposits parked in Review with an alert instead of a silent Failed, Kenya quoted in whole shillings, quote stored as quoted, FX refresh failure alerts, and the premium switch's off position made neutral (market, not the legacy cushion) | `79fd6efb` v2.4.145 |
 | 2026-09-12 | Closed a premium waiver in the currency picker: an uncollectible pick fell straight to naira, so a Ghanaian reading dollar prices was charged naira at market instead of cedis at the padded rate. Falls back to the account's country first now | `4bf09158` v2.4.140 |
 | 2026-09-12 | USD/GBP made display-only after a live test returned Flutterwave's "No Payment method available" — dollar collection is an approval we do not have, so those readers are charged naira and their card converts it back; US and GB accounts were hitting the same dead end | `a3cb5aed` v2.4.140 |
