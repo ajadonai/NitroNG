@@ -722,7 +722,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                       {checkable.length > 0 && <button onClick={() => doBatchAction(batch.batchId, "check")} disabled={isBatchLoading} className="adm-btn-sm text-[11px] flex items-center justify-center gap-1.5 min-w-[70px]" style={{ borderColor: dark ? "rgba(96,165,250,.25)" : "rgba(37,99,235,.2)", color: dark ? "#60a5fa" : "#2563eb", background: dark ? "rgba(96,165,250,.08)" : "rgba(37,99,235,.04)" }}>{isBatchLoading ? <Spinner size={11} color={dark ? "#60a5fa" : "#2563eb"} /> : "Check all"}</button>}
                       {activeOrders.length > 0 && <button onClick={async () => { const ok = await confirm({ title: "Cancel Bulk Order", message: `Cancel all active orders in ${batch.batchId}? This may issue refunds.`, confirmLabel: "Cancel All", danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isBatchLoading} className="adm-btn-sm text-[11px]" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.24)", color: dark ? "#fca5a5" : "#dc2626", opacity: isBatchLoading ? .5 : 1 }}>Cancel all</button>}
                     </div>
-                    {batch.orders.map((o, i) => (
+                    {batch.orders.map((o) => (
                       <div key={o.id}>
                         <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => setExpandedBatchOrder(expandedBatchOrder === o.id ? null : o.id)} className="flex items-center py-2.5 px-3 desktop:py-3 desktop:px-4 pl-4 desktop:pl-5 cursor-pointer gap-2.5 desktop:gap-3 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
                           <div className="shrink-0 flex items-center justify-center rounded-lg" style={{ width: 36, height: 36, background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.10)" : "rgba(0,0,0,.05)"}` }}>
@@ -1038,7 +1038,6 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
         const amberBg = dark ? "rgba(251,191,36,.10)" : "rgba(217,119,6,.08)";
         const amberBrd = dark ? "rgba(251,191,36,.32)" : "rgba(217,119,6,.30)";
         const optBrd = dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.10)";
-        const confirmGreen = dark ? "#10b981" : "#059669";
         return (
         <Modal open onClose={() => setRefundPrompt(null)} dark={dark} maxWidth={400} intent="warn"
           title={`Refund order ${refundPrompt.id}`} subtitle={`${refundPrompt.user} · charged ${fN(refundPrompt.charge)}`}

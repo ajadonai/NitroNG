@@ -11,7 +11,7 @@ import { SettingsRow as Row, SettingsSectionHead as SectionHead, I_LOCK, I_BELL,
 
 // The shared Modal primitive carries the reference anatomy now — this wrapper
 // only keeps the page's historical call signature.
-function SettingsModal({ open, onClose, title, subtitle, icon, dark, t, children }) {
+function SettingsModal({ open, onClose, title, subtitle, icon, dark, children }) {
   return (
     <Modal open={open} onClose={onClose} dark={dark} maxWidth={480} title={title} subtitle={subtitle} icon={icon}>
       {children}

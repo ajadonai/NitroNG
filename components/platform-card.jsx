@@ -66,7 +66,7 @@ export function priceRange(min, max, fmt) {
 }
 export function fromPrice(min, fmt) { return perUnit(min) ? `from ${naira(min, true, fmt)}/unit` : `from ${naira(min, false, fmt)}/1K`; }
 
-export const eyebrowStyle = (t) => ({ fontSize: 10.5, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: "var(--t-accent-ink)", display: 'block' });
+export const eyebrowStyle = () => ({ fontSize: 10.5, fontWeight: 700, letterSpacing: '1.6px', textTransform: 'uppercase', color: "var(--t-accent-ink)", display: 'block' });
 export const cardStyle = (t) => ({ background: t.cardBg, border: `1px solid ${t.cardBorder}` });
 
 // The one pink button. `full` stretches it across its container.

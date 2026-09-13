@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { createNoise2D } from 'simplex-noise';
 
 export default function Waves({ dark, strokeColor, className = '' }) {

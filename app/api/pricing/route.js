@@ -80,7 +80,7 @@ export async function GET() {
     } catch {}
 
     return Response.json({ platforms, heroTiers });
-  } catch (err) {
+  } catch {
     return Response.json({ platforms: [] });
   }
 }

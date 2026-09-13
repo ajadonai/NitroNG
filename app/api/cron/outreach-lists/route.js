@@ -141,7 +141,8 @@ export async function GET(req) {
         await Promise.allSettled(batch.map(u =>
           prisma.user.update({ where: { id: u.id }, data: { [config.field]: stampDate } })
         ));
-        await tgOutreach(batch, 'winback', { label: config.label, creditMap });
+        // The card never showed the credit; the WhatsApp template below does.
+        await tgOutreach(batch, 'winback', { label: config.label });
         for (const u of batch) {
           const creditNaira = creditMap.get(u.id) || 0;
           ifySendOutreach({ user: u, trigger: 'winback', extra: { creditNaira } }).catch(() => {});

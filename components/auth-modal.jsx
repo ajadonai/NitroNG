@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import NitroLoader from './nitro-loader';
 import { useT } from './locale';
 import { NitroWordmark } from './nitro-logo';
-import { DEFAULT_COUNTRY, getCountry, validatePhone } from '../lib/phone-countries';
+import { DEFAULT_COUNTRY, validatePhone } from '../lib/phone-countries';
 import { PhoneField } from './phone-field';
 import { useMoney, useLocale } from './locale';
 import { MAX_BONUS_NAIRA } from '../lib/welcome-bonus';
@@ -109,7 +109,7 @@ function ElevatedShell({ elevated, dark, mode, children }) {
 function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode, resetToken: resetTokenProp, elevated = false }) {
   const tr = useT();
   const money = useMoney();
-  const [method, setMethod] = useState('email');
+  const [method] = useState('email');
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
   const [step, setStep] = useState(1);
@@ -133,7 +133,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
   const [phoneChecking, setPhoneChecking] = useState(false);
   const phoneCheckTimer = useRef(null);
   const [forgotSent, setForgotSent] = useState(false);
-  const [resetToken, setResetToken] = useState(resetTokenProp || '');
+  const [resetToken] = useState(resetTokenProp || '');
   const [resetDone, setResetDone] = useState(false);
 
   useEffect(() => {
@@ -355,9 +355,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
 
   const validEmail =
     email && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
-  const cc = getCountry(country) || getCountry(DEFAULT_COUNTRY);
   const phoneCheck = validatePhone(country, phone);
-  const cleanPhone = phoneCheck.local;
   const validPhone = phoneCheck.ok;
   const pwMatch = pw2.length > 0 && pw === pw2;
   const pwMismatch = pw2.length > 0 && pw !== pw2;
@@ -434,38 +432,6 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
     </button>
   );
 
-  const MethodToggle = () => (
-    <div
-      className="flex mb-5 rounded-[10px] p-[3px]"
-      style={{
-        background: dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
-        border: `1px solid ${t.surfaceBorder}`,
-      }}
-    >
-      <button
-        type="button"
-        onClick={() => setMethod('email')}
-        className="flex-1 py-[9px] rounded-lg text-sm font-medium"
-        style={{
-          background: method === 'email' ? t.accentLight : 'transparent',
-          color: method === 'email' ? t.accent : t.textMuted,
-        }}
-      >
-        {tr("Email")}
-      </button>
-      <button
-        type="button"
-        onClick={() => setMethod('phone')}
-        className="flex-1 py-[9px] rounded-lg text-sm font-medium"
-        style={{
-          background: method === 'phone' ? t.accentLight : 'transparent',
-          color: method === 'phone' ? t.accent : t.textMuted,
-        }}
-      >
-        {tr("Phone")}
-      </button>
-    </div>
-  );
 
   return (
     <div

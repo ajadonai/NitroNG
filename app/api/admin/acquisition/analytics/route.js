@@ -3,7 +3,7 @@ import { log } from '@/lib/logger';
 import { requireAdmin } from '@/lib/admin';
 
 export async function GET(req) {
-  const { admin, error } = await requireAdmin('acquisition');
+  const { error } = await requireAdmin('acquisition');
   if (error) return error;
 
   try {

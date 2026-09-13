@@ -20,7 +20,7 @@ async function saveHistory(history) {
 }
 
 export async function GET() {
-  const { admin, error } = await requireAdmin('notifications');
+  const { error } = await requireAdmin('notifications');
   if (error) return error;
 
   try {

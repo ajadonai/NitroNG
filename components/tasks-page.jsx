@@ -280,7 +280,7 @@ export default function TasksPage({ dark, t }) {
   );
 }
 
-function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSubmit, submitting, dark, t, accent, border, innerBg, amber, green, red }) {
+function TaskCard({ task, first, expanded, onToggle, proof, onProofChange, onSubmit, submitting, dark, t, accent, border, innerBg, green }) {
   const tr = useT();
   const money = useMoney();
   const icon = PLATFORM_ICONS[task.platform] || { bg: 'rgba(196,125,142,.12)', lbg: 'rgba(196,125,142,.08)', svg: null };

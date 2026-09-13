@@ -25,7 +25,6 @@ export async function GET(req) {
       take: 20,
     });
 
-    const allUserIds = [...new Set(spenders.map(s => s.userId))];
 
     // Top referrers
     const allUsers = await prisma.user.findMany({

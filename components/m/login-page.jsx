@@ -121,7 +121,6 @@ export function PitEye({ shown, onToggle }) {
 }
 
 export function PitButton({ loading, children, className = "", style, ...rest }) {
-  const tr = useT();
   const { t } = useTheme();
   return (
     <button

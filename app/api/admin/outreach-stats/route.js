@@ -6,7 +6,7 @@ import { DEAD_ORDER_STATES } from '@/lib/ledger';
 function staffName(tgId) { return STAFF_NAMES[String(tgId)] || `Staff ${String(tgId).slice(-4)}`; }
 
 export async function GET(req) {
-  const { admin, error } = await requireAdmin('outreach');
+  const { error } = await requireAdmin('outreach');
   if (error) return error;
 
   const from = req.nextUrl.searchParams.get('from');
@@ -134,7 +134,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  const { admin, error } = await requireAdmin('outreach');
+  const { error } = await requireAdmin('outreach');
   if (error) return error;
 
   const body = await req.json();

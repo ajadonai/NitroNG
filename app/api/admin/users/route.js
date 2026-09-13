@@ -194,7 +194,7 @@ export async function POST(req) {
 
     // Rewards is read-only
     if (action === 'rewards') {
-      const { admin, error } = await requireAdmin('users');
+      const { error } = await requireAdmin('users');
       if (error) return error;
       const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
       if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
@@ -208,7 +208,7 @@ export async function POST(req) {
 
     // Transactions is read-only — doesn't need write permission
     if (action === 'transactions') {
-      const { admin, error } = await requireAdmin('users');
+      const { error } = await requireAdmin('users');
       if (error) return error;
       const transactions = await prisma.transaction.findMany({
         where: { userId },

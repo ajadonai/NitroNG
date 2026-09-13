@@ -19,7 +19,7 @@ export async function recordLastSync(providerId, summary) {
 }
 
 export async function GET() {
-  const { admin, error } = await requireAdmin('services');
+  const { error } = await requireAdmin('services');
   if (error) return error;
 
   const ids = ['mtp', 'jap', 'dao'];
@@ -86,7 +86,7 @@ export async function POST(req) {
       const existingMap = {};
       existing.forEach(s => { existingMap[s.apiId] = s; });
 
-      let updated = 0, unchanged = 0, skipped = 0;
+      let updated = 0, skipped = 0;
       const toUpdate = [];
 
       for (const svc of providerServices) {
@@ -107,7 +107,6 @@ export async function POST(req) {
         const avgTime = svc.average_time || '0-2 hrs';
 
         if (ex.name === svc.name && ex.category === category && Number(ex.costPer1k) === costPer1k && ex.min === min && ex.max === max && ex.refill === refill && ex.dripfeed === dripfeed && ex.avgTime === avgTime) {
-          unchanged++;
           continue;
         }
         toUpdate.push(prisma.service.update({ where: { id: ex.id }, data: { name: svc.name, category, costPer1k, min, max, refill, dripfeed, avgTime } }));

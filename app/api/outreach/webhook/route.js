@@ -18,7 +18,6 @@ const HUMAN_WORK = { method: { not: 'expired' } };
 
 const TOKEN = process.env.OUTREACH_BOT_TOKEN;
 const SECRET = process.env.CRON_SECRET;
-const SITE = 'https://nitro.ng';
 
 // Eshiema handed over to Ify on 22 Aug; her ID stays in STAFF_NAMES so past
 // contacts still read as hers, but it no longer grants access.

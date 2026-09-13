@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
-export async function GET(req) {
+export async function GET() {
   const session = await getCurrentUser();
   if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 

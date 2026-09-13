@@ -7,12 +7,10 @@ import { NitroWordmark } from "./nitro-logo";
 import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
 import AnnouncementBanner from "./announcement-banner";
-import { fN, fD } from "../lib/format";
+import { fN } from "../lib/format";
 import { SITE } from "../lib/site";
-import { PlatformIcon } from "./platform-icon";
 import { Avatar } from "./avatar";
 import { useToast } from "./toast";
-import NitroLoader from "./nitro-loader";
 import { useSessionHeartbeat } from "../lib/use-session-heartbeat";
 
 const AdminOrdersPage = dynamic(() => import("./admin-orders"), { ssr: false });
@@ -236,28 +234,10 @@ const OV_CSS = `
 }
 `;
 
-function PlaceholderPage({ title, subtitle, dark, t }) {
-  return (
-    <>
-      <div className="adm-header">
-        <div className="adm-title text-t-text">{title}</div>
-        <div className="adm-subtitle text-t-text-muted">{subtitle}</div>
-        <div className="page-divider bg-t-card-border" />
-      </div>
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-base font-medium text-t-text-muted">Building {title}...</div>
-          <div className="text-sm mt-1 text-t-text-muted">This page will be built next</div>
-        </div>
-      </div>
-    </>
-  );
-}
-
 /* ═══════════════════════════════════════════ */
 /* ═══ RIGHT SIDEBAR                       ═══ */
 /* ═══════════════════════════════════════════ */
-function AdminRightSidebar({ data, dark, t, active, admin, setActive }) {
+function AdminRightSidebar({ data, active, admin, setActive }) {
   const isSensitive = admin?.role === 'owner' || admin?.role === 'superadmin';
   const showProviderColors = isSensitive && ["orders", "services", "menu-builder", "pricing", "finance", "payments"].includes(active);
   const showActivity = !["leaderboard"].includes(active);
@@ -306,7 +286,7 @@ export default function AdminDashboard({ initialData }) {
 
 function AdminDashboardInner({ initialData }) {
   useSessionHeartbeat('admin');
-  const { dark, setDark, toggleTheme, t: baseT, themeMode, setThemeMode } = useTheme();
+  const { dark, setDark, toggleTheme, themeMode, setThemeMode } = useTheme();
   const [active, setActiveRaw] = useState("overview");
   const setActive = (page) => { setActiveRaw(page); try { localStorage.setItem("nitro-admin-page", page); } catch {} };
   useEffect(() => { try { const saved = localStorage.getItem("nitro-admin-page"); if (saved) setActiveRaw(saved); } catch {} }, []);
@@ -695,7 +675,6 @@ function AdminDashboardInner({ initialData }) {
     blue: dark ? "#a5b4fc" : "#4f46e5",
   }), [dark]);
 
-  const initials = admin ? admin.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
 
   /* Loading skeleton */
   if (redirecting) return null;

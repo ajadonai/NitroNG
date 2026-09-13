@@ -16,7 +16,7 @@ import { ConfirmProvider } from "./confirm-dialog";
 import AnnouncementBanner from "./announcement-banner";
 import { OverviewPage, RightSidebar } from "./dashboard-overview";
 import { SegPill } from "./seg-pill";
-import { fN, fD } from "../lib/format";
+import { fD } from "../lib/format";
 import { Avatar } from "./avatar";
 import OrderTour from "./order-tour";
 import { PAYMENT_STATES, isCreditedPaymentResult } from "../lib/payment-state";
@@ -263,7 +263,7 @@ const NOTIF_ICONS = {
   chat: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
 };
 
-function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, setClearedAt, readAllAt, setReadAllAt, onNavigate, socialLinks = {} }) {
+function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, setClearedAt, readAllAt, setReadAllAt, socialLinks = {} }) {
   const tr = useT();
   const [filter, setFilter] = useState("all");
 
@@ -761,7 +761,6 @@ function DashboardInner({ initialData }) {
   const isLab = active === "lab";
   const isTasks = active === "tasks";
   const isRewards = active === "rewards";
-  const noHasOrder = noSelSvc && noSelTier;
 
   // Trigger order tour on first visit to services page
   useEffect(() => {
@@ -900,7 +899,6 @@ function DashboardInner({ initialData }) {
     }
     load().then(() => {
       // Check tour state from DB (via user data) + localStorage as fallback
-      const u = document.querySelector("[data-user-tour]");
       // We'll check after user state is set
     });
   }, []);
@@ -1159,7 +1157,6 @@ function DashboardInner({ initialData }) {
 
   const t = baseT;
 
-  const initials = user ? ((user.firstName?.[0] || '') + (user.lastName?.[0] || '')).toUpperCase() || user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
   const firstName = user ? (user.firstName || user.name.split(" ")[0]) : "";
 
   /* Loading — skeleton */
@@ -1373,7 +1370,7 @@ function DashboardInner({ initialData }) {
                   [tr("Help"), [byId.support]],
                 ];
                 return sections.flatMap(([section, items]) => items.filter(Boolean).map((item, j) => ({ ...item, section, first: j === 0 })));
-              })().map((item, i) => {
+              })().map((item) => {
                 const processingCount = item.id === "orders" ? orderSummary.active : 0;
                 const isSupportItem = item.id === "support";
                 const isTasksItem = item.id === "tasks";

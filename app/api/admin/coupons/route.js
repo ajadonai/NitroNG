@@ -21,7 +21,7 @@ async function saveCoupons(coupons) {
 }
 
 export async function GET() {
-  const { admin, error } = await requireAdmin('coupons');
+  const { error } = await requireAdmin('coupons');
   if (error) return error;
 
   try {

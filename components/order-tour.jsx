@@ -39,7 +39,7 @@ function waitForEl(selector, cb, onTimeout, maxWait = 3000) {
   check();
 }
 
-export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, setQty, user, onTopUp }) {
+export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, user, onTopUp }) {
   const tr = useT();
   const money = useMoney();
   const eligible = user?.welcomeBonusEligible;

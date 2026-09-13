@@ -9,7 +9,7 @@ import { useT } from "./locale";
  * profile page, list rows — pass it. The ring comes from `.nitro-ringed` so
  * the `.dark` cascade picks the right hairline without a prop to keep in sync.
  */
-export function Avatar({ src, size = 32, rounded = "full", ring = false, dark, t }) {
+export function Avatar({ src, size = 32, rounded = "full", ring = false }) {
   const tr = useT();
   const [imgError, setImgError] = useState(false);
   const iconSize = Math.round(size * 0.55);

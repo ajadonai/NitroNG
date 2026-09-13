@@ -14,7 +14,7 @@ export function ResellerApiDocsDashboard({ dark, t, onNavigate }) {
   return <ApiDocsInner dark={dark} t={t} embedded onNavigate={onNavigate} />;
 }
 
-export function ResellerApiDocsSidebar({ dark, t }) {
+export function ResellerApiDocsSidebar({ dark }) {
   const tr = useT();
   return (
     <div className="flex flex-col gap-0">

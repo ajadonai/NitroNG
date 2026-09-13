@@ -16,7 +16,7 @@ export default function AdminRefillsPage({ dark, t }) {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const load = () => fetch("/api/admin/refills").then(r => r.json()).then(d => { setRefills(d.refills || []); setHandled(d.handled || []); setFacts(d.facts || null); setLoading(false); }).catch(() => { toast.error("Could not load refills"); setLoading(false); });
-  useEffect(() => { load(); }, []); // eslint-disable-line
+  useEffect(() => { load(); }, []);
   const doAction = async (r, action) => {
     if (actionLoading) return;
     if (action === "reset_refill") { const ok = await confirm({ title: "Reset this request?", message: `${r.userName} will be able to ask for a refill on ${r.orderId} again. Nothing is sent to the provider.`, confirmText: "Reset", danger: false }); if (!ok) return; }
@@ -43,7 +43,6 @@ export default function AdminRefillsPage({ dark, t }) {
     "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--blue": dark ? "#a5b4fc" : "#4c62c4",
   };
-  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   return (
     <div className="rf" style={vars}>
       <style>{RF_CSS}</style>

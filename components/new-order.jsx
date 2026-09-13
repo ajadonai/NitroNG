@@ -3,7 +3,6 @@ import { useState, useEffect, useRef, useMemo, useCallback, forwardRef } from "r
 import { RailSec, RailCard, RailStep, RailNote, RailLink } from "./rail";
 import { useBodyScrollLock, Emph } from "./ui-primitives";
 import { trackViewContent } from "./capi-tracker";
-import { fN } from "../lib/format";
 import { formatOrderQuantity as fQty, isValidLink, getLinkPlaceholder } from "../lib/order-form-core";
 import { useToast } from "./toast";
 import { SegPill } from "./seg-pill";
@@ -105,20 +104,13 @@ const TS = {
   Premium: { bg: "#f5eef5", border: "#d4b8d4", text: "#534AB7", textD: "#c4b5fd", bgD: "#221535", borderD: "#3d2060", grad: "linear-gradient(135deg,#a78bfa,#7c3aed)", label: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg> },
 };
 
-const PROV_COLORS = { mtp: "#ef4444", jap: "#3b82f6", dao: "#22c55e" };
 
-const TIER_NAMES = ["Budget", "Standard", "Premium"];
 const TIER_COMPARE = [
   { label: "Accounts", Budget: "Basic", Standard: "Better", Premium: "Best quality" },
   { label: "Refill", Budget: "None", Standard: "30 days, free", Premium: "Lifetime, free" },
   { label: "Starts", Budget: "Slower", Standard: "Fast", Premium: "Priority" },
   { label: "Best for", Budget: "Quick tests", Standard: "Most people", Premium: "Your main page" },
 ];
-const TIER_STACK = {
-  Budget: { bestFor: "quick tests", detail: "Basic accounts · no refill · slower start" },
-  Standard: { bestFor: "most people", detail: "Better accounts · free 30-day refill · fast start" },
-  Premium: { bestFor: "your main page", detail: "Best accounts · free lifetime refill · priority start" },
-};
 
 function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, waNumber, userEmail, orderMode, cartCounts }) {
   const tr = useT();
@@ -298,7 +290,6 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
   }, []);
   useEffect(() => { if (!isSel) setExplOpen(false); }, [isSel]);
   const lowestPrice = Math.min(...svc.tiers.map(ti => ti.price));
-  const lowestPer = svc.tiers.find(ti => ti.price === lowestPrice)?.per || "1K";
   const activeTier = isSel && selTier ? selTier : null;
   const accent = svc.isPackage ? { light: "#1d4ed8", dark: "#60a5fa", bgL: "#eff6ff", bgD: "rgba(59,130,246,.12)", selBgL: "#dbeafe", selBgD: "#111d3a", shadow: "59,130,246" } : svc.ng ? { light: "#16a34a", dark: "#4ade80", bgL: "#e8f5ee", bgD: "rgba(30,80,60,.24)", selBgL: "#d0f0db", selBgD: "#122a1c", shadow: "22,163,74" } : svc.us ? { light: "#dc2626", dark: "#f87171", bgL: "#fdeeee", bgD: "rgba(80,30,32,.24)", selBgL: "#fadada", selBgD: "#2a1216", shadow: "220,38,38" } : null;
   const handlePickTier = (tier, e) => { setExplOpen(false); onPickTier(tier, e); };
@@ -464,7 +455,7 @@ const openInPlaceOnPhone = e => {
   }
 };
 
-export function NotSureHelp({ waNumber, dark, t, context, email }) {
+export function NotSureHelp({ waNumber, dark, context, email }) {
   const tr = useT();
   if (!waNumber) return null;
   return (
@@ -507,7 +498,7 @@ export function OrderForMeCard({ waNumber, dark, context, email }) {
   );
 }
 
-export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onNavigate, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, catModal, setCatModal, tourActive, activePromotion, rewards, socialLinks, refreshRewards }) {
+export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onNavigate, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, tourActive, activePromotion, rewards, socialLinks, refreshRewards }) {
   const tr = useT();
   const money = useMoney();
   const toast = useToast();
@@ -690,7 +681,6 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       });
   })();
 
-  const types = [...new Set(services.map(s => s.type))];
   const filtered = filterType === "all" ? services : services.filter(s => s.type === filterType);
   const hasOrder = selSvc && selTier;
   // Mirrors the single-order endpoint's charge exactly, operation for operation
@@ -1443,7 +1433,6 @@ function MobileGuide({ dark, t }) {
   const tr = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const TS_MINI = { Budget: { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, color: "#e0a458" }, Standard: { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>, color: "#60a5fa" }, Premium: { icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg>, color: "#a78bfa" } };
 
   useEffect(() => {
     if (!open) return;
@@ -1590,7 +1579,6 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
   const tr = useT();
   const money = useMoney();
   const loyaltyDiscount = menuData?.loyaltyDiscount || 0;
-  const loyaltyTier = menuData?.loyaltyTier || null;
   const subtotal = rows.reduce((s, r) => s + getRowPrice(r, menuData), 0);
   const discount = loyaltyDiscount > 0 ? Math.round(subtotal * (loyaltyDiscount / 100)) : 0;
   const total = subtotal - discount;

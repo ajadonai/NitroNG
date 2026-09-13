@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { RailSec, RailCard, RailRow, RailEmpty } from "./rail";
 import { useBodyScrollLock } from "./ui-primitives";
 import { SkelList } from "./skeleton";
-import { fN, fD } from "../lib/format";
+import { fN } from "../lib/format";
 import { SegPill } from "./seg-pill";
 import { FilterDropdown } from "./date-range-picker";
 import InlineAlert from "./inline-alert";

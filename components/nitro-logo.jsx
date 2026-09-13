@@ -1,5 +1,5 @@
 'use client';
-import React, { useId } from "react";
+import { useId } from "react";
 
 export function NitroWordmark({ height = 18, color = "currentColor", style = {} }) {
   const w = Math.round(height * (1817 / 558));
