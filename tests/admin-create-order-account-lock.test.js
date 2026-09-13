@@ -77,6 +77,7 @@ vi.mock('@/lib/telegram', () => ({
   tgFlush: vi.fn(() => Promise.resolve([])),
  
   tgNewOrder: (...args) => mocks.tgNewOrder(...args),
+  tgFreeOrder: vi.fn(),
 }));
 vi.mock('@/lib/nitro-rewards', () => ({
   getNitroStatus: vi.fn(() => null),
@@ -207,7 +208,7 @@ describe('admin order creation account lifecycle guard', () => {
     const response = await POST(request({
       mode: 'single',
       userId: user.id,
-      charge: false,
+      charge: false, freeReason: 'test fixture',
       tierId: tier.id,
       quantity: 1_000,
       link: 'https://instagram.com/p/single-free',
@@ -291,7 +292,7 @@ describe('admin order creation success responses', () => {
     const response = await POST(request({
       mode: 'single',
       userId: user.id,
-      charge: false,
+      charge: false, freeReason: 'test fixture',
       tierId: tier.id,
       quantity: 1_000,
       link: 'https://instagram.com/p/single-free-success',
@@ -306,7 +307,7 @@ describe('admin order creation success responses', () => {
     const response = await POST(request({
       mode: 'bulk',
       userId: user.id,
-      charge: false,
+      charge: false, freeReason: 'test fixture',
       items: [{
         tierId: tier.id,
         quantity: 1_000,
