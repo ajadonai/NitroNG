@@ -6,7 +6,7 @@ import { watBounds } from '@/lib/format';
 import { tgDigest, tgFlush } from '@/lib/telegram';
 import { getBearerToken } from '@/lib/bearer-token';
 import { getRevenue } from '@/lib/revenue';
-import { DEAD_ORDER_STATES, WALLET_FUNDING } from '@/lib/ledger';
+import { DEAD_ORDER_STATES, WALLET_FUNDING, partialAdjustment as partialAdj } from '@/lib/ledger';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -19,15 +19,6 @@ export async function GET(req) {
     const watTime = now.toLocaleString('en-NG', { timeZone: 'Africa/Lagos', hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase();
     const watDate = now.toLocaleDateString('en-NG', { timeZone: 'Africa/Lagos', day: 'numeric', month: 'short', year: 'numeric' });
 
-    const partialAdj = (orders) => {
-      let charge = 0, cost = 0;
-      for (const p of orders) {
-        const ratio = p.remains / p.quantity;
-        charge += Math.round(p.charge * ratio);
-        cost += Math.round((p.cost || 0) * ratio);
-      }
-      return { charge, cost };
-    };
 
 
     const [
@@ -38,8 +29,7 @@ export async function GET(req) {
       todayOrderCount, yesterdayOrderCount,
       processingCount,
       partialToday, partialYesterday,
-      monthRevAgg, monthCostAgg, monthDepAgg, monthOrderCount,
-      partialMonthOrders,
+      monthDepAgg, monthOrderCount,
     ] = await Promise.all([
       prisma.user.count({ where: { createdAt: { gte: todayStart }, emailVerified: true } }),
       prisma.user.count({ where: { emailVerified: true } }),
@@ -53,16 +43,12 @@ export async function GET(req) {
       prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
       prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
       prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
-      prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
-      prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
       prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
       prisma.order.count({ where: { createdAt: { gte: monthStart }, deletedAt: null } }),
-      prisma.order.findMany({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
     ]);
 
     const adjT = partialAdj(partialToday);
     const adjY = partialAdj(partialYesterday);
-    const adjM = partialAdj(partialMonthOrders);
     const todayRevenue = ((todayRevenueAgg._sum.charge || 0) - adjT.charge) / 100;
     const todayCost = ((todayCostAgg._sum.cost || 0) - adjT.cost) / 100;
     const todayProfit = todayRevenue - todayCost;
@@ -70,8 +56,6 @@ export async function GET(req) {
     const todayDeposits = (todayDepositsAgg._sum.amount || 0) / 100;
     const yesterdayDeposits = (yesterdayDepositsAgg._sum.amount || 0) / 100;
     const revNet = await getRevenue({ from: monthStart });
-    const mRev = ((monthRevAgg._sum.charge || 0) - adjM.charge) / 100;
-    const mCost = ((monthCostAgg._sum.cost || 0) - adjM.cost) / 100;
     const mDep = (monthDepAgg._sum.amount || 0) / 100;
     const marginPct = (rev, cost) => cost > 0 ? `${Math.round(((rev - cost) / cost) * 100)}%` : '—';
 

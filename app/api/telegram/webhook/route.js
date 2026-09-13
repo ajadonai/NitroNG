@@ -7,7 +7,7 @@ import { approveSubmission, rejectSubmission } from '@/lib/task-review';
 import { watBounds } from '@/lib/format';
 import { getRevenue } from '@/lib/revenue';
 import { getBalance, PROVIDER_IDS, getProviderName, isProviderConfigured } from '@/lib/smm';
-import { DEAD_ORDER_STATES, WALLET_FUNDING } from '@/lib/ledger';
+import { DEAD_ORDER_STATES, WALLET_FUNDING, partialAdjustment as partialAdj } from '@/lib/ledger';
 
 export const maxDuration = 60;
 
@@ -28,22 +28,12 @@ function reply(chatId, threadId, text) {
 }
 
 // ── Shared helpers ──────────────────────────────────────
-const partialAdj = (orders) => {
-  let charge = 0, cost = 0;
-  for (const p of orders) {
-    const ratio = p.remains / p.quantity;
-    charge += Math.round(p.charge * ratio);
-    cost += Math.round((p.cost || 0) * ratio);
-  }
-  return { charge, cost };
-};
 const pct = (a, b) => b === 0 ? (a > 0 ? '🆕' : '—') : `${a >= b ? '+' : ''}${Math.round(((a - b) / b) * 100)}%`;
 const margin = (rev, cost) => cost > 0 ? `${Math.round(((rev - cost) / cost) * 100)}%` : '—';
-const k = (v) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1_000 ? `${(v / 1_000).toFixed(1)}K` : v.toLocaleString();
 
 // ── /stats — full snapshot ──────────────────────────────
 async function handleStats(chatId, threadId) {
-  const { todayStart, yesterdayStart, monthStart } = watBounds();
+  const { todayStart, monthStart } = watBounds();
 
   const [
     totalUsers, todayUsers, monthUsers,
@@ -103,14 +93,11 @@ async function handleRevenue(chatId, threadId) {
 
   const [
     todayRevAgg, yesterdayRevAgg,
-    todayCostAgg, monthCostAgg,
     todayDepAgg, yesterdayDepAgg, monthDepAgg, allTimeDepAgg,
     partialTodayO, partialYesterdayO,
   ] = await Promise.all([
     prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
     prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
-    prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
-    prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
     prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true }, _count: true }),
     prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true }, _count: true }),
     prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),

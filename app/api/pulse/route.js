@@ -14,14 +14,14 @@ import {
   tooManyRequests,
 } from '@/lib/rate-limit';
 import { getRevenue } from '@/lib/revenue';
-import { DEAD_ORDER_STATES, WALLET_FUNDING } from '@/lib/ledger';
+import { DEAD_ORDER_STATES, WALLET_FUNDING, partialAdjustment as partialAdj } from '@/lib/ledger';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
   let limit;
   try {
-    limit = await rateLimit(req, { maxAttempts: 8, windowMs: 60_000, distributed: false });
+    limit = await rateLimit(req, { maxAttempts: 8, windowMs: 60_000 });
   } catch {
     return withInternalDashboardNoStore(rateLimitUnavailable());
   }
@@ -214,15 +214,6 @@ export async function GET(req) {
     };
 
     // Partial adjustment helper
-    const partialAdj = (orders) => {
-      let charge = 0, cost = 0;
-      for (const p of orders) {
-        const ratio = p.remains / p.quantity;
-        charge += Math.round(p.charge * ratio);
-        cost += Math.round((p.cost || 0) * ratio);
-      }
-      return { charge, cost };
-    };
     const effCharge = (o) => {
       if (o.status === 'Partial' && o.remains > 0 && o.quantity > 0)
         return Math.round(o.charge * (o.quantity - o.remains) / o.quantity);

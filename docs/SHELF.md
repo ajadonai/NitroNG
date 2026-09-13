@@ -67,9 +67,9 @@ as the work. (Formerly docs/BACKLOG.md.)
   keeping into `landing-v3.jsx`, and the baseline drops by 87 for free.
 
 - **Foreign payment methods — steps 1 and 2 shipped 8 Sep 2026, steps 3 and 4
-  remain.** Signup accepts NG/US/GB/GH/KE (`4776d901`). Flutterwave is
-  hardcoded to `currency: 'NGN'` (`app/api/payments/initialize/route.js:100`)
-  and the only non-naira rail is dollar-denominated USDT.
+  remain.** Signup accepts NG/US/GB/GH/KE (`4776d901`). Flutterwave charges
+  in the customer's currency where it can collect in it (GHS, KES — step 3
+  below); the other non-naira rail is dollar-denominated USDT.
 
   **Done:** the gateway list is cut by the country on the account —
   `app/api/payments/gateways/route.js` marks every rail `nigeriaOnly` except
@@ -406,7 +406,7 @@ as the work. (Formerly docs/BACKLOG.md.)
 ## Closed
 
 - **Currency switch — every money figure in the user dashboard follows the
-  picker** (7–8 Sep 2026, `3a83005b` → `bc3b40ec`, all under `v2.4.104`).
+  picker** (7–8 Sep 2026, ending `bc3b40ec` — the range start was squashed away, all under `v2.4.104`).
   Landing, overview, new order, order form, wallet (deposit box, native
   quick-picks, bonus cards, summary, coupons, ledger), rewards, tasks, earn,
   orders, referrals, reseller HQ and catalogue. The rule that settled every
@@ -424,27 +424,29 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-13 | The tidy: 184 unused names across 69 files brought to zero outside parked/frozen files — dead imports, props, helpers, components, colour tables, two ignored rate-limit knobs and an ignored tgOutreach param; i18n record followed down | `7bc31d4c` v2.4.152 |
+| 2026-09-13 | partialAdjustment shared from lib/ledger.js (was four copies); email.js on the logger; sentry-filters.js wired into the client init; digest's dead month aggregates gone | `7c486734` v2.4.153 |
 | 2026-09-13 | One definition read everywhere: lib/ledger.js (dead order states, wallet funding) replaces 62 status literals and 21 money-in literals; 25 legacy ledger rows normalised | `d51a27a3` v2.4.148 |
 | 2026-09-13 | Activity is any live order, not Completed only — win-back no longer credits a customer whose last order ended Partial; ad activation and the outreach pool count admin credits as funded | `12d3ee4a` v2.4.149 |
 | 2026-09-13 | Admin-placed orders carry source 'admin', send no Meta Purchase (nor do re-dispatches), and fire the shared first-order hook, which now also recognises a first purchase that was a cart | `e8d7461a` v2.4.150 |
-| 2026-09-13 | One Lagos-day helper: watBounds gains last/next month and year starts; digest, Financials and top-up bonus stop hand-rolling UTC+1 | `facd8775` v2.4.151 |
+| 2026-09-13 | One Lagos-day helper: watBounds gains last/next month and year starts; digest, Financials and top-up bonus stop hand-rolling UTC+1 | `e395d281` v2.4.151 |
 | 2026-09-13 | Google sign-ups could never delete their account (stored with password '', the route demanded a password match); they now confirm by typing their email, password accounts unchanged | `ac57758c` v2.4.146 |
-| 2026-09-13 | Sentry noise: a crawler's malformed Next-Router-State-Tree header on GET / was reported as a server error; filtered on Next's error codes, everything else still forwards | `2c4d4bf7` v2.4.147 |
-| 2026-09-12 | Leak audit of the currency/deposit path: short bank transfers refused (charged_amount read), paid-but-mismatched deposits parked in Review with an alert instead of a silent Failed, Kenya quoted in whole shillings, quote stored as quoted, FX refresh failure alerts, and the premium switch's off position made neutral (market, not the legacy cushion) | `79fd6efb` v2.4.145 |
-| 2026-09-12 | Closed a premium waiver in the currency picker: an uncollectible pick fell straight to naira, so a Ghanaian reading dollar prices was charged naira at market instead of cedis at the padded rate. Falls back to the account's country first now | `4bf09158` v2.4.140 |
-| 2026-09-12 | USD/GBP made display-only after a live test returned Flutterwave's "No Payment method available" — dollar collection is an approval we do not have, so those readers are charged naira and their card converts it back; US and GB accounts were hitting the same dead end | `a3cb5aed` v2.4.140 |
-| 2026-09-12 | stuck_payments paged on normal operation: it raised on any retryable read, and Rejected/Completed rows were not treated as closed. Now it waits for a row with a prior attempt that is still unsettled 30 minutes on, and owes nothing on a closed row | `da10665f` v2.4.143 |
-| 2026-09-12 | Meta CAPI sends the hashed account country on every Purchase and CompleteRegistration (match quality for the scale-ladder measurement) | `70fe9a2b` v2.4.141 |
-| 2026-09-12 | Currency picker live in production with all five currencies selectable; Flutterwave checkout asks for mobile money in Ghana/Kenya and cards everywhere by sending payment_options per charge currency | `d233127f` v2.4.140 |
-| 2026-09-07 | Offline screen: the installed app no longer shows the browser's error page when signal drops. A real service worker precaches one self-contained page and serves it on a failed navigation; it never caches an API response, so no balance is ever shown from cache. Agreed scope: dashboard only, no figures on screen | `e4ed4f0f` v2.4.103 |
-| 2026-08-31 | Admin table headers align with their rows (fixed actions column) and dense tables scroll rather than clip | `f21c93e4` v2.4.59 |
-| 2026-08-31 | Pulse shows the day's margin as profit on cost beside the profit figure | `7e927581` v2.4.60 |
+| 2026-09-13 | Sentry noise: a crawler's malformed Next-Router-State-Tree header on GET / was reported as a server error; filtered on Next's error codes, everything else still forwards | `429ec82a` v2.4.147 |
+| 2026-09-12 | Leak audit of the currency/deposit path: short bank transfers refused (charged_amount read), paid-but-mismatched deposits parked in Review with an alert instead of a silent Failed, Kenya quoted in whole shillings, quote stored as quoted, FX refresh failure alerts, and the premium switch's off position made neutral (market, not the legacy cushion) | `7f132381` v2.4.145 |
+| 2026-09-12 | Closed a premium waiver in the currency picker: an uncollectible pick fell straight to naira, so a Ghanaian reading dollar prices was charged naira at market instead of cedis at the padded rate. Falls back to the account's country first now | `f6361f03` v2.4.140 |
+| 2026-09-12 | USD/GBP made display-only after a live test returned Flutterwave's "No Payment method available" — dollar collection is an approval we do not have, so those readers are charged naira and their card converts it back; US and GB accounts were hitting the same dead end | `7f36c9f6` v2.4.140 |
+| 2026-09-12 | stuck_payments paged on normal operation: it raised on any retryable read, and Rejected/Completed rows were not treated as closed. Now it waits for a row with a prior attempt that is still unsettled 30 minutes on, and owes nothing on a closed row | `68d21e16` v2.4.143 |
+| 2026-09-12 | Meta CAPI sends the hashed account country on every Purchase and CompleteRegistration (match quality for the scale-ladder measurement) | `75862696` v2.4.141 |
+| 2026-09-12 | Currency picker live in production with all five currencies selectable; Flutterwave checkout asks for mobile money in Ghana/Kenya and cards everywhere by sending payment_options per charge currency | `5bd129cd` v2.4.140 |
+| 2026-09-07 | Offline screen: the installed app no longer shows the browser's error page when signal drops. A real service worker precaches one self-contained page and serves it on a failed navigation; it never caches an API response, so no balance is ever shown from cache. Agreed scope: dashboard only, no figures on screen | `cc5adbb6` v2.4.103 |
+| 2026-08-31 | Admin table headers align with their rows (fixed actions column) and dense tables scroll rather than clip | `22bd31d2` v2.4.59 |
+| 2026-08-31 | Pulse shows the day's margin as profit on cost beside the profit figure | `b65eeecb` v2.4.60 |
 | 2026-08-31 | Rewards gets its own page with the tier colours, gold points and the ladder; the two pop-ups stay and link to it; Guide is a searchable reading list; the task editor is two columns with a live preview and folded limits; row actions can no longer be pushed off a card | `20520632` v2.4.59 |
-| 2026-08-30 | Changelog (collapsible composer, proper editor height) and Tasks (submissions first, proof on the row, reject reason) rebuilt with page-shaped skeletons; Announcements composer taller | `ca4494b4` v2.4.53 |
-| 2026-08-30 | Single-day orders no longer refused above ~2,600 followers: the intraday scheduler is capped to a day and sends larger batches (customer, bulk, reorder, admin paths) | `c3ab862a` v2.4.52 |
-| 2026-08-30 | Crew rebuilt on the shared frame with a drawer, facts and page-shaped skeletons | `e2a55dd4` v2.4.51 |
+| 2026-08-30 | Changelog (collapsible composer, proper editor height) and Tasks (submissions first, proof on the row, reject reason) rebuilt with page-shaped skeletons; Announcements composer taller | `55a878ea` v2.4.53 |
+| 2026-08-30 | Single-day orders no longer refused above ~2,600 followers: the intraday scheduler is capped to a day and sends larger batches (customer, bulk, reorder, admin paths) | `2e92e323` v2.4.52 |
+| 2026-08-30 | Crew rebuilt on the shared frame with a drawer, facts and page-shaped skeletons | `08fdb9aa` v2.4.51 |
 | 2026-08-30 | Rewards, Blog, Email blasts, Promotions, Tracking links and Outreach rebuilt to their mocks with page-shaped skeletons | `2632662d` v2.4.50 |
-| 2026-08-30 | Terms and Refund Policy dated 29 August: unused wallet funds refundable on request (bank or wallet); order refunds stay in the wallet | `c8cbb659` v2.4.49 |
+| 2026-08-30 | Terms and Refund Policy dated 29 August: unused wallet funds refundable on request (bank or wallet); order refunds stay in the wallet | `8517a5e1` v2.4.49 |
 | 2026-08-30 | Right rail rebuilt as one system on both sides (eyebrow + card, three row kinds), every page rail rewritten to it | `c1fb6302` v2.4.48 |
 | 2026-08-30 | Today starts at Lagos midnight on the server everywhere (Payments facts, Users week/month, outreach day windows) | `fb57fa20` v2.4.47 |
 | 2026-08-30 | Solid surfaces in both themes on the rebuilt admin pages: selected chips readable in dark mode, drawers and menus opaque | `997388b1` v2.4.46 |

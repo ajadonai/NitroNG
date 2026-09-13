@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { scrubSentryBreadcrumb, scrubSentryEvent } from './lib/monitoring-redaction.js';
+import { sentryIgnoreErrors, isIgnoredBrowserNoise } from './lib/sentry-filters.js';
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -15,6 +16,9 @@ Sentry.init({
   debug: false,
   sendDefaultPii: false,
   ignoreErrors: [
+    // The Snapchat in-app browser's bridge, written in lib/sentry-filters.js
+    // and, until 13 Sep 2026, wired to nothing.
+    ...sentryIgnoreErrors,
     /Java object is gone/,
     /Object Not Found Matching Id/,
     /Can't find variable: FileReader/,
@@ -23,7 +27,8 @@ Sentry.init({
   denyUrls: [
     /^app:\/\//,
   ],
-  beforeSend(event) {
+  beforeSend(event, hint) {
+    if (isIgnoredBrowserNoise(event, hint)) return null;
     const frames = event.exception?.values?.[0]?.stacktrace?.frames;
     if (frames?.some(f => /^app:\/\//.test(f.filename) && !/^\/?_next\//.test(f.filename))) return null;
     const msg = event.exception?.values?.map(v => v.value).join(" ") || "";
