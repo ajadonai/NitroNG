@@ -7,8 +7,8 @@ import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-lim
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility, validateIntradayDuration } from '@/lib/drip-feed';
 import { cancelQueuedMetaEvent, enqueueMetaEvent, loadStoredCapiIdentity, parseFbCookies, persistFbTouch, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
-import { tgNewOrder, tgOutreachAlert, tgRefundAlert } from '@/lib/telegram';
-import { sendOutreach as ifySendOutreach } from '@/lib/ify/outreach';
+import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
+import { checkFirstOrder } from '@/lib/first-order';
 import { voidCommissions } from '@/lib/commissions';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 import { buildOrderDisplayGroups } from '@/lib/order-history';
@@ -97,20 +97,6 @@ async function refundRejectedCreatedOrder({
     await reverseOrderPoints(tx, { orderDbId, refundAmountKobo: charge });
     return true;
   });
-}
-
-async function checkFirstOrder(userId, serviceName) {
-  if (new Date() < new Date('2026-08-01T00:00:00Z')) return;
-  try {
-    const count = await prisma.order.count({ where: { userId, deletedAt: null } });
-    if (count === 1) {
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true, phone: true, createdAt: true } });
-      if (user) {
-        tgOutreachAlert(user, 'firstOrder', { serviceName }).catch(() => {});
-        ifySendOutreach({ user: { id: userId, ...user }, trigger: 'firstOrder', extra: { serviceName } }).catch(() => {});
-      }
-    }
-  } catch {}
 }
 
 async function nextOrderId(tx) {

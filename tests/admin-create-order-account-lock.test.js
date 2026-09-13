@@ -252,12 +252,10 @@ describe('admin order creation success responses', () => {
     });
     expect(mocks.txOrderCreate).toHaveBeenCalledTimes(1);
     expect(mocks.tgNewOrder).toHaveBeenCalledTimes(1);
-    expect(mocks.enqueueMetaEvent).toHaveBeenCalledWith(
-      tx,
-      'Purchase',
-      expect.objectContaining({ eventId: 'purchase_NTR-1' }),
-    );
-    expect(mocks.scheduleQueuedMetaEventDelivery).toHaveBeenCalledWith('purchase_NTR-1');
+    // An order staff keyed in is not a web conversion: no Meta Purchase, and
+    // the row says where it came from.
+    expect(mocks.enqueueMetaEvent).not.toHaveBeenCalled();
+    expect(mocks.txOrderCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ source: 'admin' }) }));
     expect(prisma.$transaction.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.tgNewOrder.mock.invocationCallOrder[0],
     );
@@ -282,12 +280,8 @@ describe('admin order creation success responses', () => {
     });
     expect(mocks.txOrderCreate).toHaveBeenCalledTimes(1);
     expect(mocks.tgNewOrder).toHaveBeenCalledTimes(1);
-    expect(mocks.enqueueMetaEvent).toHaveBeenCalledWith(
-      tx,
-      'Purchase',
-      expect.objectContaining({ eventId: 'purchase_BULK-1' }),
-    );
-    expect(mocks.scheduleQueuedMetaEventDelivery).toHaveBeenCalledWith('purchase_BULK-1');
+    expect(mocks.enqueueMetaEvent).not.toHaveBeenCalled();
+    expect(mocks.txOrderCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ source: 'admin' }) }));
     expect(prisma.$transaction.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.tgNewOrder.mock.invocationCallOrder[0],
     );

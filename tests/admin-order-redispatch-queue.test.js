@@ -421,12 +421,9 @@ describe('admin redispatch — same-link queue safety', () => {
     expect(mocks.dripCreateMany).toHaveBeenCalled();
     expect(mocks.placeOrder).not.toHaveBeenCalled();
     expect(mocks.dripUpdate).not.toHaveBeenCalled();
-    expect(mocks.enqueueMetaEvent).toHaveBeenCalledWith(
-      tx,
-      'Purchase',
-      expect.objectContaining({ eventId: 'purchase_NTR-3080' }),
-    );
-    expect(mocks.scheduleQueuedMetaEventDelivery).toHaveBeenCalledWith('purchase_NTR-3080');
+    // A re-dispatch is the parent sale cut again; the parent already sent its
+    // Purchase, and a second one double-counted the conversion.
+    expect(mocks.enqueueMetaEvent).not.toHaveBeenCalled();
     expect(mocks.logActivity).toHaveBeenCalledWith(
       'Soludo',
       expect.stringContaining('queued behind NTR-2890'),

@@ -11,27 +11,14 @@ import { getWhatsAppChannelUrl } from '@/lib/settings';
 import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, getDripConfig, validateIntradayDuration } from '@/lib/drip-feed';
 import { enqueueMetaEvent, loadStoredCapiIdentity, parseFbCookies, persistFbTouch, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
-import { tgNewOrder, tgOutreachAlert, tgRefundAlert } from '@/lib/telegram';
-import { sendOutreach as ifySendOutreach } from '@/lib/ify/outreach';
+import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
+import { checkFirstOrder } from '@/lib/first-order';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
 import { isReservedProviderQueryLeaseKey } from '@/lib/provider-query-lease';
 import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 import { lockOrderSettlementAccount } from '@/lib/account-deletion';
-
-async function checkFirstOrder(userId, serviceName) {
-  try {
-    const count = await prisma.order.count({ where: { userId, deletedAt: null } });
-    if (count === 1) {
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true, phone: true, createdAt: true } });
-      if (user) {
-        tgOutreachAlert(user, 'firstOrder', { serviceName }).catch(() => {});
-        ifySendOutreach({ user: { id: userId, ...user }, trigger: 'firstOrder', extra: { serviceName } }).catch(() => {});
-      }
-    }
-  } catch {}
-}
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -759,7 +746,7 @@ export async function PATCH(req) {
         tgNewOrder(o.orderId, tierName, o.qty, o.charge || 0, session.email, o.link, o.offerSnapshot?.platformAtPurchase || '');
       }
       const svcNames = [...new Set(result.createdOrders.map(o => o.offerSnapshot.serviceNameAtPurchase).filter(Boolean))];
-      checkFirstOrder(session.id, svcNames.join(', ') || 'Bulk order');
+      checkFirstOrder(session.id, svcNames.join(', ') || 'Bulk order', result.createdOrders.length);
 
       dispatchBatch(result.createdOrders, session.id, newBatchId, result.totalCharge).catch(e => log.error('Reorder dispatch', e.message));
 
@@ -1128,7 +1115,7 @@ export async function POST(req) {
       tgNewOrder(o.orderId, o.tierName, o.qty, o.finalCharge || o.charge, session.email, o.link, o.offerSnapshot?.platformAtPurchase || '');
     }
     const svcNames = [...new Set(result.createdOrders.map(o => o.offerSnapshot?.serviceNameAtPurchase || o.tierName).filter(Boolean))];
-    checkFirstOrder(session.id, svcNames.join(', ') || 'Bulk order');
+    checkFirstOrder(session.id, svcNames.join(', ') || 'Bulk order', result.createdOrders.length);
 
     const responseBody = {
       success: true,
