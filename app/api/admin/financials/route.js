@@ -4,6 +4,7 @@ import { requireAdmin, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { watBounds } from '@/lib/format';
 import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { getRevenue } from '@/lib/revenue';
+import { DEAD_ORDER_STATES } from '@/lib/ledger';
 
 const ALL_SECTIONS = ['wallet', 'orders', 'points', 'provider', 'affiliate', 'liabilities'];
 
@@ -270,7 +271,7 @@ export async function GET(req) {
     const provider = url.searchParams.get('provider') || 'all';
 
     const now = new Date();
-    const { monthStart } = watBounds();
+    const { monthStart, lastMonthStart, yearStart } = watBounds();
     let since, rangeEnd = null;
     if (fromParam) {
       since = new Date(fromParam);
@@ -280,15 +281,15 @@ export async function GET(req) {
     else if (range === '7d') since = new Date(now - 7 * 24 * 60 * 60 * 1000);
     else if (range === '90d') since = new Date(now - 90 * 24 * 60 * 60 * 1000);
     else if (range === 'month') { since = monthStart; }
-    else if (range === 'lastmonth') { const watNow = new Date(now.getTime() + 60 * 60 * 1000); since = new Date(Date.UTC(watNow.getUTCFullYear(), watNow.getUTCMonth() - 1, 1) - 60 * 60 * 1000); rangeEnd = monthStart; }
-    else if (range === 'year') { const watNow = new Date(now.getTime() + 60 * 60 * 1000); since = new Date(Date.UTC(watNow.getUTCFullYear(), 0, 1) - 60 * 60 * 1000); }
+    else if (range === 'lastmonth') { since = lastMonthStart; rangeEnd = monthStart; }
+    else if (range === 'year') { since = yearStart; }
     else since = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
     // Build order filters
     const rangeEndOp = fromParam ? 'lte' : 'lt';
     const dateCond = since ? { gte: since, ...(rangeEnd ? { [rangeEndOp]: rangeEnd } : {}) } : undefined;
     const orderWhere = applyOrderFilters(
-      { deletedAt: null, status: { notIn: ['Cancelled'] }, ...(dateCond && { createdAt: dateCond }) },
+      { deletedAt: null, status: { notIn: DEAD_ORDER_STATES }, ...(dateCond && { createdAt: dateCond }) },
       { platform, tier, provider },
     );
 
