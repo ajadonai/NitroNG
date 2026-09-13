@@ -6,7 +6,7 @@ import { Modal } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { useT } from "./locale";
-import { fN, docDateLocale } from "../lib/format";
+import { docDateLocale } from "../lib/format";
 import { SITE } from "../lib/site";
 import { Avatar } from "./avatar";
 import { copyText } from '@/lib/clipboard';
@@ -15,7 +15,7 @@ import { CurrencyOptions, LanguageOptions } from "./locale-switcher";
 import { SWITCHER_LIVE, useLocale, LANGUAGES } from "./locale";
 import { CURRENCIES } from "../lib/currency";
 
-function SettingsModal({ open, onClose, title, subtitle, icon, dark, t, children }) {
+function SettingsModal({ open, onClose, title, subtitle, icon, dark, children }) {
   return (
     <Modal open={open} onClose={onClose} dark={dark} maxWidth={480} title={title} subtitle={subtitle} icon={icon}>
       {children}
@@ -178,7 +178,6 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
     setPwLoading(false);
   };
 
-  const initials = user ? ((user.firstName?.[0] || "") + (user.lastName?.[0] || "")).toUpperCase() || user.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "";
 
   const card = { background: t.cardBg, border: `1px solid ${t.cardBorder}` };
   const copyCode = () => { if (!user?.refCode) return; try { copyText(user.refCode); toast.success(tr("Copied"), user.refCode); } catch {} };

@@ -7,7 +7,7 @@ import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
 import { useMoney, useT } from "./locale";
 import { msg } from "../lib/i18n";
-import { fN, fD, fT, docDateLocale } from "../lib/format";
+import { fD, fT, docDateLocale } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { NotSureHelp } from "./new-order";
 import NitroLoader from "./nitro-loader";
@@ -68,26 +68,6 @@ function estimateDelivery(serviceType, quantity, remains, dripEndAt) {
   return `~${rounded} ${rounded === 1 ? 'hour' : 'hours'}`;
 }
 
-const LINK_EXAMPLES = {
-  instagram: { profile: "instagram.com/username", post: "instagram.com/p/ABC123 or /reel/ABC123" },
-  tiktok: { profile: "tiktok.com/@username", post: "tiktok.com/@username/video/123..." },
-  twitter: { profile: "x.com/username", post: "x.com/username/status/123..." },
-  youtube: { profile: "youtube.com/@channel", post: "youtube.com/watch?v=ABC123" },
-  facebook: { profile: "facebook.com/pagename", post: "facebook.com/username/posts/123..." },
-  threads: { profile: "threads.net/@username", post: "threads.net/@username/post/ABC123" },
-  telegram: { profile: "t.me/channelname", post: "t.me/channelname/123" },
-};
-
-function linkHint(platform, serviceName) {
-  const ex = LINK_EXAMPLES[platform?.toLowerCase()];
-  if (!ex) return "";
-  const svc = (serviceName || "").toLowerCase();
-  const isProfile = /follow|subscri/i.test(svc);
-  const isPost = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|plays/i.test(svc) && !isProfile;
-  if (isProfile) return " Make sure you used a profile link, e.g. " + ex.profile;
-  if (isPost) return " Make sure you used a post link, e.g. " + ex.post;
-  return "";
-}
 
 function Spinner({ size = 14, color = "currentColor" }) {
   return <span style={{ color, display: "inline-flex" }}><NitroLoader size={size} mono ariaHidden /></span>;
@@ -103,32 +83,6 @@ function isAttention(o) {
   return o.status === "Partial" || (o.lastError && o.status === "Pending" && !o.apiOrderId);
 }
 
-const TX_META = {
-  deposit:      { label: msg("Deposit"),       icon: "↓", clr: dk => dk ? "#6ee7b7" : "#059669" },
-  order:        { label: msg("Order"),         icon: "↑", clr: dk => dk ? "#fca5a5" : "#dc2626" },
-  referral:     { label: msg("Referral bonus"),icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>, clr: () => "#c47d8e" },
-  refund:       { label: msg("Refund"),        icon: "↩", clr: dk => dk ? "#fcd34d" : "#d97706" },
-  admin_credit: { label: msg("Admin credit"),  icon: "＋", clr: dk => dk ? "#a5b4fc" : "#4f46e5" },
-  admin_gift:   { label: msg("Gift"),          icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>, clr: dk => dk ? "#f0abfc" : "#a855f7" },
-  bonus:        { label: msg("Task reward"),   icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>, clr: dk => dk ? "#f0abfc" : "#a855f7" },
-  bonus_expired:{ label: msg("Credit expired"),icon: "↑", clr: dk => dk ? "#a1a1aa" : "#71717a" },
-};
-function txClr(type, dk) { return (TX_META[type] || TX_META.order).clr(dk); }
-function txIcon(type) { return (TX_META[type] || TX_META.order).icon; }
-function txLabel(type) { return (TX_META[type] || { label: type }).label; }
-function txDesc(tx, tr) {
-  if (tx.description && tx.description !== tx.reference) return tx.description.replace(/\s*\[[^\]]+\]\s*$/, "");
-  if (tx.type === "order" && tx.reference) {
-    const ref = tx.reference;
-    if (ref.startsWith("BULK-")) return `${tr("Bulk order")} ${ref}`;
-    return `${tr("Order")} ${ref}`;
-  }
-  if (tx.type === "refund") return tx.reference ? `${tr("Refund for")} ${tx.reference.replace(/^(ADM-)?REF-/, "")}` : tr("Order refund");
-  if (tx.type === "deposit") return tx.reference || tr("Wallet top-up");
-  if (tx.type === "referral") return tr("Referral commission");
-  if (tx.type === "admin_credit" || tx.type === "admin_gift") return (tx.description || tr("Credited by Nitro Team")).replace(/\s*\[[^\]]+\]\s*/g, " ").trim();
-  return tx.reference || "";
-}
 
 
 /** Today / Yesterday / "6 Aug" — the label a row sits under in the list. */
@@ -202,50 +156,6 @@ function ProgressBar({ order, dark, detailed }) {
 }
 
 
-function DotMenu({ items, dark, t, loading }) {
-  const tr = useT();
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  const btnRef = useRef(null);
-  const posRef = useRef({ top: 0, right: 0 });
-  const filtered = items.filter(Boolean);
-
-  useEffect(() => {
-    if (!open) return;
-    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    const esc = (e) => { if (e.key === "Escape") setOpen(false); };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", esc);
-    return () => { document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", esc); };
-  }, [open]);
-
-  if (filtered.length === 0) return null;
-
-  const handleOpen = (e) => {
-    e.stopPropagation();
-    if (loading) return;
-    if (!open && btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect();
-      posRef.current = { top: r.bottom + 4, right: window.innerWidth - r.right };
-    }
-    setOpen(v => !v);
-  };
-
-  return (
-    <div ref={ref} className="dot-menu-root">
-      <button ref={btnRef} onPointerDown={handleOpen} className="w-9 h-9 max-md:w-10 max-md:h-10 flex items-center justify-center rounded-md border-none cursor-pointer bg-transparent text-t-text-muted" style={{ opacity: loading ? .5 : 1, touchAction: "none" }} aria-label={tr("Actions")}>
-        {loading ? <NitroLoader size={14} mono ariaHidden /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>}
-      </button>
-      {open && (
-        <div className="fixed min-w-[160px] rounded-lg overflow-hidden shadow-lg" style={{ top: posRef.current.top, right: posRef.current.right, zIndex: 60, background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"}` }}>
-          {filtered.map((item, i) => (
-            <button key={i} onPointerDown={(e) => { e.stopPropagation(); setOpen(false); item.action(); }} className="w-full text-left py-2.5 px-3.5 text-[13px] font-medium border-none cursor-pointer bg-transparent block" style={{ color: item.danger ? (dark ? "#fca5a5" : "#dc2626") : t.textSoft, borderBottom: i < filtered.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.1)"}` : "none", touchAction: "none" }}>{item.label}</button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 
 function groupOrders(orders) {
@@ -274,7 +184,7 @@ function refillEligible(o) {
   return Date.now() < new Date(o.completedAt).getTime() + (o.refillDays || 30) * 86400000;
 }
 
-function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, toast, onNavigate, waNum, onViewComments, doRefill, refillLoading }) {
+function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, waNum, onViewComments, doRefill, refillLoading }) {
   const tr = useT();
   const money = useMoney();
   const qty = o.quantity || 0;
@@ -503,7 +413,6 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
 function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast, onNavigate, waNum, onViewComments, doRefill, refillLoading }) {
   const tr = useT();
   const hasAttentionOrders = batch.orders.some(isAttention);
-  const totalCharge = batch.orders.reduce((s, o) => s + (o.charge || 0), 0);
   const isLoading = batchActionLoading === batch.batchId;
   const accentColor = hasAttentionOrders ? (dark ? "#fcd34d" : "#d97706") : t.accent;
 
@@ -622,7 +531,7 @@ function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDERS PAGE                         ═══ */
 /* ═══════════════════════════════════════════ */
-export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, orderSummary, txs, dark, t, onNavigate, onRefresh, waNum, email }) {
+export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, orderSummary, dark, t, onNavigate, onRefresh, waNum, email }) {
   const tr = useT();
   const money = useMoney();
   const [sumOpen, setSumOpen] = useState(false);

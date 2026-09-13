@@ -78,7 +78,7 @@ const Chevron = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M9 6l6 6-6 6"/></svg>
 );
 
-function CellLink({ t, onClick, children }) {
+function CellLink({ onClick, children }) {
   return (
     <button onClick={onClick} className="inline-flex items-center gap-1 text-[11px] font-semibold bg-transparent border-none cursor-pointer p-0 font-[inherit] hover:underline" style={{ color: "var(--t-accent-ink)" }}>
       {children}<Chevron />
@@ -325,7 +325,7 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
 
 /* ── HOME: channel lane ── */
 
-export function ChannelLane({ dark, t, socialLinks }) {
+export function ChannelLane({ socialLinks }) {
   const tr = useT();
   const telegram = socialLinks?.social_telegram_support;
   const waChannel = socialLinks?.social_whatsapp_channel || WHATSAPP_CHANNEL_URL;
@@ -397,7 +397,7 @@ function ModalShell({ open, onClose, dark, t, title, children }) {
 
 /* ── the link both pop-ups end with ── */
 
-function SeeAllLink({ t, onClick }) {
+function SeeAllLink({ onClick }) {
   const tr = useT();
   return (
     <button onClick={onClick} className="block w-full bg-transparent border-none cursor-pointer font-[inherit] text-[12.5px] font-semibold text-center pt-4 hover:underline" style={{ color: "var(--t-accent-ink)" }}>
@@ -474,7 +474,6 @@ export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
 export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive }) {
   const tr = useT();
   const money = useMoney();
-  const currency = useLocale()?.currency ?? "NGN";
   if (!open || !rewards) return null;
   const { points, history, status } = rewards;
   const gold = dark ? '#fbbf24' : '#d97706';
@@ -557,7 +556,6 @@ export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive 
 export function WalletPointsCard({ rewards, dark, t, onView }) {
   const tr = useT();
   const money = useMoney();
-  const currency = useLocale()?.currency ?? "NGN";
   if (!rewards) return null;
   const { points } = rewards;
   return (

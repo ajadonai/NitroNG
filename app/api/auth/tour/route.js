@@ -14,7 +14,7 @@ export async function POST(req) {
     }
 
     return Response.json({ error: 'Invalid tour type' }, { status: 400 });
-  } catch (err) {
+  } catch {
     return Response.json({ error: 'Server error' }, { status: 500 });
   }
 }

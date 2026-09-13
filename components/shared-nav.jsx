@@ -230,7 +230,7 @@ export default function SharedNav({ action = "back" }) {
 // ── Shared Footer ──
 export function SharedFooter() {
   const tr = useT();
-  const { t, dark } = useTheme();
+  const { dark } = useTheme();
   const [sl, setSl] = useState({});
   const [platformCount, setPlatformCount] = useState(0);
   useEffect(() => {

@@ -95,7 +95,7 @@ const Feat = ({ icon, title, body, tone }) => <div className="rhq-feat"><span cl
 const Steps = ({ items }) => <div className="rhq-steps">{items.map(([t, b], i) => <div key={t} className="rhq-step"><span className="rhq-step-n">{String(i + 1).padStart(2, '0')}</span><h4>{t}</h4><p>{b}</p></div>)}</div>;
 const Faq = ({ items }) => <div className="rhq-faq">{items.map(([q, a]) => <details key={q} className="rhq-faq-item"><summary className="rhq-faq-btn">{q}<span className="rhq-faq-chev">{I(P.arrow, 12)}</span></summary><div className="rhq-faq-ans">{a}</div></details>)}</div>;
 
-function Catalogues({ full, waLink }) {
+function Catalogues({ full }) {
   const tr = useT();
   const Cat = ({ icon, tone, title, badge, tag, desc, stats }) => (
     <div className="rhq-cat">

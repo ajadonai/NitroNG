@@ -8,7 +8,7 @@ export default function BlogCategoryView({ slug, label, h1, intro, posts, otherC
   return <ThemeProvider><BlogCategoryInner slug={slug} label={label} h1={h1} intro={intro} posts={posts} otherCategories={otherCategories} /></ThemeProvider>;
 }
 
-function BlogCategoryInner({ slug, label, h1, intro, posts, otherCategories }) {
+function BlogCategoryInner({ label, h1, intro, posts, otherCategories }) {
   const tr = useT();
   const { dark, t } = useTheme();
   const accent = '#c47d8e';

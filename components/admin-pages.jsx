@@ -4,7 +4,7 @@ import { SkelFacts, SkelList } from "./skeleton";
 import { useBodyScrollLock } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
-import { fN, fD } from "../lib/format";
+import { fN } from "../lib/format";
 import { SegPill } from "./seg-pill";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { copyText } from '@/lib/clipboard';
@@ -143,7 +143,6 @@ export function AdminPaymentsPage({ dark, t }) {
   };
 
   const FIELD_LABELS = { secretKey: "Secret Key", publicKey: "Public Key", apiKey: "API Key", contractCode: "Contract Code", bankName: "Bank Name", accountNumber: "Account Number", accountName: "Account Name", paymentOptions: "Payment options — leave empty to show everything enabled on the Flutterwave dashboard, or narrow it: card,banktransfer,opay" };
-  const statusColors = { Pending: { bg: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.04)", color: dark ? "#fbbf24" : "#d97706" }, Processing: { bg: dark ? "rgba(165,180,252,.08)" : "rgba(79,70,229,.04)", color: dark ? "#a5b4fc" : "#4f46e5" }, Completed: { bg: dark ? "rgba(110,231,183,.08)" : "rgba(5,150,105,.04)", color: dark ? "#6ee7b7" : "#059669" }, Failed: { bg: dark ? "rgba(220,38,38,.08)" : "rgba(220,38,38,.04)", color: dark ? "#fca5a5" : "#dc2626" }, Rejected: { bg: dark ? "rgba(220,38,38,.08)" : "rgba(220,38,38,.04)", color: dark ? "#fca5a5" : "#dc2626" }, Cancelled: { bg: dark ? "rgba(220,38,38,.08)" : "rgba(220,38,38,.04)", color: dark ? "#fca5a5" : "#dc2626" } };
 
   const STATUS_WORD = { Completed: ["Cleared", "ok"], Pending: ["Waiting", "warn"], Failed: ["Failed", "bad"], Rejected: ["Rejected", "bad"], Expired: ["Expired", "dim"], Processing: ["Processing", "dim"], Review: ["In review", "warn"], Refunded: ["Refunded", "dim"] };
   const METHOD_WORD = { manual: "Bank transfer", crypto: "Crypto", flutterwave: "Flutterwave", monnify: "Monnify", korapay: "KoraPay", alatpay: "ALATPay", paystack: "Paystack" };
@@ -423,7 +422,6 @@ function FinanceOverviewTab({ dark, t }) {
     "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--bad": dark ? "#fca5a5" : "#c62828", "--cost": dark ? "#5c6170" : "#a19b93", "--in": dark ? "#a5b4fc" : "#4c62c4",
   };
-  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   return (
     <div className="fo" style={vars}>
       <style>{FO_CSS}</style>
@@ -682,7 +680,6 @@ function FinanceBreakdownTab({ dark, t, admin }) {
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--bad": dark ? "#fca5a5" : "#c62828", "--cost": dark ? "#5c6170" : "#a19b93", "--in": dark ? "#a5b4fc" : "#4c62c4",
     "--bud": dark ? "#e0a458" : "#854F0B", "--std": dark ? "#7aa2f7" : "#185FA5", "--prm": dark ? "#a78bfa" : "#534AB7", "--soft": dark ? "#111634" : "#faf9f7",
   };
-  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   return (
     <div className="fo fb" style={vars}>
       <style>{FO_CSS}{FB_CSS}</style>
@@ -824,7 +821,6 @@ function FinanceRewardsTab({ dark, t }) {
     "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--bad": dark ? "#fca5a5" : "#c62828", "--soft": dark ? "#111634" : "#faf9f7",
   };
-  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   const Ledger = ({ title, cnt, rows, total }) => (
     <section className="fo-card">
       <header><h3>{title}</h3>{cnt && <span className="fo-cnt">{cnt}</span>}</header>

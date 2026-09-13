@@ -3,7 +3,7 @@ import { TRAFFIC_COUNTRIES, TRAFFIC_CONTINENTS } from '@/lib/traffic-targets';
 import { docDateLocale } from "../lib/format";
 import { useEffect, useState } from "react";
 import { BONUS_PRESETS, MAX_BONUS_NAIRA, bonusForNaira } from "../lib/welcome-bonus";
-import { calculateOrderPrice, formatOrderQuantity, getDripSchedule, getLinkPlaceholder, LINK_EXAMPLES, LINK_HINTS, MULTIDAY_THRESHOLD, validateOrderLink } from "../lib/order-form-core";
+import { calculateOrderPrice, formatOrderQuantity, getDripSchedule, getLinkPlaceholder, LINK_EXAMPLES, MULTIDAY_THRESHOLD, validateOrderLink } from "../lib/order-form-core";
 import NitroLoader from "./nitro-loader";
 import { useMoney, useT } from "./locale";
 import { Emph } from "./ui-primitives";
@@ -33,7 +33,7 @@ function presetsFor(min, max) {
   return [0, 1, 2, 3, 4].map(i => pool[Math.round(i * step)]);
 }
 
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, compact, inline, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, loyaltyTier = null, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints, trafficConfig, setTrafficConfig, tierStyles = {}, socialLinks = {} }) {
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, inline, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints, trafficConfig, setTrafficConfig, tierStyles = {}, socialLinks = {} }) {
   const tr = useT();
   const money = useMoney();
   const minQty = selTier?.min || 100;
@@ -45,7 +45,6 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const {
     basePrice,
     discountAmount,
-    promoDiscountAmount: promoDiscountAmt,
     cappedPromoDiscount,
     priceBeforePoints,
     pointsDiscount,
@@ -93,7 +92,6 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   /* Detect service type from provider apiType (reliable) with name fallback */
   const svcName = (selSvc?.name || "").toLowerCase();
   const apiType = (selTier?.apiType || "").toLowerCase();
-  const isComment = apiType.includes("comment") || ((svcName.includes("comment")) && !svcName.includes("comment like") || svcName.includes("likes (comments)") && !svcName.includes("likes (comments)"));
   const isCustomComment = selTier?.customComments || apiType.includes("custom comment") || apiType.includes("comment replies");
   const isMention = apiType.includes("mention");
   const isPoll = apiType === "poll";
@@ -137,7 +135,6 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const isProfileSvc = (/follow|subscri|member|profile visit/i.test(svcName) || isMultiPostSvc || isAutoSvc || isLiveChannelSvc) && !isChannelSvc;
   const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays|watch.?time/i.test(svcName) && !isProfileSvc && !isChannelSvc;
 
-  const isCommentLikeSvc = svcName.includes("comment like") || svcName.includes("likes (comments)");
   const linkPlaceholder = getLinkPlaceholder(platform, svcName);
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 

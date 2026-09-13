@@ -18,7 +18,7 @@ export async function GET(req, { params }) {
       ...(record.batchId ? { batchId: record.batchId } : {}),
       ...(record.status === 'completed' && record.response ? { response: record.response } : {}),
     });
-  } catch (err) {
+  } catch {
     return Response.json({ error: 'Failed to check status' }, { status: 500 });
   }
 }

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useT } from "./locale";
 import { RailSec, RailCard, RailFact, RailStep } from "./rail";
-import { fN, fHeld, fD } from "../lib/format";
+import { fD } from "../lib/format";
 import { useMoney } from "./locale";
 import { Avatar } from "./avatar";
 import { copyText as copyToClipboard } from '@/lib/clipboard';

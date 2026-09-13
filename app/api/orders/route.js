@@ -12,7 +12,7 @@ import { checkFirstOrder } from '@/lib/first-order';
 import { voidCommissions } from '@/lib/commissions';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 import { buildOrderDisplayGroups } from '@/lib/order-history';
-import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints, getPointsBalanceKoboTx, computeRefundSplit, MIN_REDEEM_POINTS } from '@/lib/nitro-rewards';
+import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, reverseOrderPoints, getPointsBalanceKoboTx, computeRefundSplit, MIN_REDEEM_POINTS } from '@/lib/nitro-rewards';
 import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 import { calculateCreateOrderPricing, parseCreateOrderInput, validateCreateOrderOfferInput } from '@/lib/order-create-input.server';

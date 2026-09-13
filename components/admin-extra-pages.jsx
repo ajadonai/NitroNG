@@ -6,12 +6,9 @@ import { useToast } from "./toast";
 import { fN, fD } from "../lib/format";
 import { SegPill } from "./seg-pill";
 import { FilterDropdown } from "./date-range-picker";
-import { Avatar } from "./avatar";
-import InlineAlert from "./inline-alert";
 import { copyText } from '@/lib/clipboard';
 
 
-const ROLE_COLORS = { superadmin: "#c47d8e", admin: "#a5b4fc", support: "#6ee7b7", finance: "#fcd34d" };
 const fPts = (points) => (Number(points) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 /* ═══════════════════════════════════════════ */
@@ -340,7 +337,6 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
     "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828", "--in": dark ? "#160f22" : "#fff",
   };
-  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   const pagesShown = open ? (localPages !== null ? localPages : (open.customPages || DEFAULT_PAGES[open.role] || [])) : [];
   const actionsShown = open ? (localActions !== null ? localActions : parseActions(open.customActions)) : [];
   const togglePage = (id) => setLocalPages(prev => { const cur = prev !== null ? prev : (open.customPages || DEFAULT_PAGES[open.role] || []); return cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id]; });
@@ -945,7 +941,7 @@ export function AdminMaintenancePage({ dark, t }) {
   const PRESETS = [{ label: "30 min", m: 30 }, { label: "1 hour", m: 60 }, { label: "2 hours", m: 120 }, { label: "6 hours", m: 360 }, { label: "12 hours", m: 720 }, { label: "24 hours", m: 1440 }];
   const formatDuration = (mins) => { if (mins < 60) return `~${mins} minutes`; const h = Math.floor(mins / 60); const m = mins % 60; return m ? `~${h}h ${m}m` : `~${h} hour${h > 1 ? "s" : ""}`; };
   const load = () => fetch("/api/admin/maintenance").then(r => r.json()).then(d => { setEnabled(d.enabled || false); if (d.message) setMsg(d.message); if (d.durationMinutes) { setDuration(d.durationMinutes); if (!PRESETS.some(p => p.m === d.durationMinutes)) { setUseCustom(true); setCustomH(String(Math.floor(d.durationMinutes / 60))); setCustomM(String(d.durationMinutes % 60)); } } setSince(d.since || null); setHistory(d.history || []); setLoading(false); }).catch(() => setLoading(false));
-  useEffect(() => { load(); }, []); // eslint-disable-line
+  useEffect(() => { load(); }, []);
   useEffect(() => { if (!enabled) return; const id = setInterval(() => setTick(x => x + 1), 30000); return () => clearInterval(id); }, [enabled]);
   const mins = useCustom ? ((Number(customH) || 0) * 60 + (Number(customM) || 0)) : duration;
   const save = async (newEnabled) => {
@@ -971,7 +967,6 @@ export function AdminMaintenancePage({ dark, t }) {
     "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7", "--bg": t.bg || (dark ? "#0b0e1a" : "#e8e2d9"),
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--warnbg": dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)",
   };
-  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   return (
     <div className="mt" style={vars}>
       <style>{MT_CSS}</style>
@@ -1109,7 +1104,6 @@ export function AdminAPIPage({ dark, t }) {
     "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--bad": dark ? "#fca5a5" : "#c62828",
   };
-  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   const balCls = (b) => b == null ? "" : b < LOW_BALANCE_USD ? "bad" : b < 20 ? "warn" : "ok";
   return (
     <div className="pv" style={vars}>
@@ -1217,7 +1211,7 @@ function SparkChart({ data, color, height = 64 }) {
   );
 }
 
-function DeviceRing({ devices, dark, t }) {
+function DeviceRing({ devices, t }) {
   const total = (devices.mobile || 0) + (devices.desktop || 0) + (devices.tablet || 0);
   if (!total) return null;
   const r = 44, c = 2 * Math.PI * r;
@@ -1492,77 +1486,6 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
   );
 }
 
-function LinkAccordion({ link, dark, t, baseUrl, copied, copyLink, canManage, handleDelete, handleArchive, onViewAnalytics, last, rowBorder }) {
-  const [open, setOpen] = useState(false);
-  const hasActivity = (link.clicks || 0) + (link.signups || 0) > 0;
-  const statusColor = link.archivedAt ? (dark ? "#fcd34d" : "#d97706") : t.accent;
-  return (
-    <div style={!last ? rowBorder : {}}>
-      <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(v => !v); } }} onClick={() => setOpen(v => !v)} className="flex items-center gap-3 py-3.5 px-1 cursor-pointer transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.04)]" style={{ userSelect: "none" }}>
-        <div className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg" style={{ background: `${statusColor}15` }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={statusColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-[15px] font-semibold" style={{ color: t.text }}>{link.name}</span>
-            {link.archivedAt && <span className="text-[10px] py-0.5 px-1.5 rounded-full font-semibold" style={{ background: dark ? "rgba(217,119,6,.1)" : "rgba(217,119,6,.05)", color: dark ? "#fcd34d" : "#d97706" }}>Archived</span>}
-          </div>
-          <div className="flex items-center gap-2 text-[11px] flex-wrap" style={{ color: t.textMuted }}>
-            {hasActivity ? <><span>{(link.clicks || 0).toLocaleString()} clicks</span><span className="opacity-30">·</span><span>{link.signups || 0} signups</span><span className="opacity-30">·</span><span>{link.orders || 0} orders</span><span className="opacity-30">·</span><span>{fN((link.revenue || 0) / 100)} rev</span></> : <span>No activity yet</span>}
-            <span className="opacity-30">·</span>
-            <span>{new Date(link.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-          </div>
-        </div>
-        {canManage && (
-          <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
-            <button onClick={() => handleArchive(link)} className="bg-transparent border-none cursor-pointer p-1 transition-opacity hover:opacity-70" style={{ color: dark ? "#fcd34d" : "#d97706" }} title={link.archivedAt ? "Restore" : "Archive"}>
-              {link.archivedAt
-                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>}
-            </button>
-            {!link.archivedAt && (
-              <button onClick={() => handleDelete(link)} className="bg-transparent border-none cursor-pointer p-1 transition-opacity hover:opacity-70" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-              </button>
-            )}
-          </div>
-        )}
-        <svg className="shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-
-      {open && (
-        <div className="pb-3.5 px-1" style={{ animation: "fadeIn .15s ease" }}>
-          <div className="flex items-center gap-2 mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)"}` }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-            <span className="text-[12px] font-mono truncate flex-1" style={{ color: t.textSoft }}>{baseUrl}/go/{link.slug}</span>
-            <button onClick={(e) => { e.stopPropagation(); copyLink(link.slug); }} className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: copied === link.slug ? (dark ? "#6ee7b7" : "#059669") : t.textMuted }}>
-              {copied === link.slug ? "Copied!" : "Copy"}
-            </button>
-          </div>
-
-          <div className="grid grid-cols-4 gap-2 mb-3">
-            {[
-              ["Clicks", (link.clicks || 0).toLocaleString(), t.accent],
-              ["Signups", (link.signups || 0).toLocaleString(), dark ? "#a5b4fc" : "#6366f1"],
-              ["Orders", (link.orders || 0).toLocaleString(), dark ? "#6ee7b7" : "#059669"],
-              ["Revenue", fN((link.revenue || 0) / 100), dark ? "#fcd34d" : "#d97706"],
-            ].map(([label, val, color]) => (
-              <div key={label} className="py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"}` }}>
-                <div className="text-[14px] font-bold" style={{ color }}>{val}</div>
-                <div className="text-[10px] font-semibold uppercase tracking-[1px] mt-0.5" style={{ color: t.textMuted }}>{label}</div>
-              </div>
-            ))}
-          </div>
-
-          <button onClick={(e) => { e.stopPropagation(); onViewAnalytics(link); }} className="w-full py-2.5 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-all duration-200 hover:-translate-y-px flex items-center justify-center gap-1.5" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)", color: t.accentInk }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            View Analytics
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function AdminAcquisitionPage({ dark, t }) {
   const toast = useToast();
@@ -1856,7 +1779,6 @@ export function AdminIssuesPage({ dark, t }) {
     "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--warnbg": dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)", "--bad": dark ? "#fca5a5" : "#c62828", "--badbg": dark ? "rgba(252,165,165,.1)" : "rgba(220,38,38,.07)",
   };
-  const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   return (
     <div className="is" style={vars}>
       <style>{IS_CSS}</style>
@@ -1987,8 +1909,6 @@ const IS_CSS = `
 }
 `;
 
-const TIER_COLORS = { starter: "#6B7280", growth: "#3B82F6", pro: "#c47d8e" };
-const STATUS_COLORS_CREW = { pending: "#F59E0B", approved: "#059669", suspended: "#EF4444", rejected: "#6B7280" };
 
 export function AdminChangelogPage({ dark, t }) {
   const confirm = useConfirm();

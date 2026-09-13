@@ -26,7 +26,7 @@ export async function POST() {
 }
 
 export async function GET() {
-  const { admin, error } = await requireAdmin('settings');
+  const { error } = await requireAdmin('settings');
   if (error) return error;
 
   try {

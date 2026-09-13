@@ -83,7 +83,7 @@ export function CurrencySwitcher() {
   const tr = useT();
   const [open, setOpen] = useState(false);
   if (!loc) return null;
-  const { currency, setCurrency, fx, fxPending, ensureRates } = loc;
+  const { currency, ensureRates } = loc;
   const meta = CURRENCIES[currency];
 
   return (
@@ -138,7 +138,7 @@ export function LanguageSwitcher() {
   const tr = useT();
   const [open, setOpen] = useState(false);
   if (!loc) return null;
-  const { lang, setLang } = loc;
+  const { lang } = loc;
   const current = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
 
   return (

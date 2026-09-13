@@ -7,17 +7,9 @@ import { PlatformIcon } from "./platform-icon";
 import { useMoney, useT, useLocale } from "./locale";
 import { dateLocale } from "../lib/format";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
-import { fN, fD } from "../lib/format";
+import { fD } from "../lib/format";
 import { RewardsStrip, ChannelLane, StatusModal, PointsModal } from "./rewards";
 
-const ReferralIcon = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M23 21v-2a4 4 0 00-3-3.87" />
-    <path d="M16 3.13a4 4 0 010 7.75" />
-  </svg>
-);
 
 /* Dashboard home content and its desktop right rail live together so the shell
  * only owns navigation, data refresh, and cross-page state. */
@@ -263,7 +255,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
   );
 }
 
-export function RightSidebar({ activeOrders, orderSummary, user, dark, t, setActive }) {
+export function RightSidebar({ activeOrders, orderSummary, user, dark, setActive }) {
   const tr = useT();
   const lang = useLocale()?.lang ?? "en";
   const money = useMoney();

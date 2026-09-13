@@ -1,4 +1,3 @@
-import prisma from '@/lib/prisma';
 import FAQ from '@/components/faq';
 import { FAQ_GROUPS } from '@/lib/faq-data';
 
@@ -11,15 +10,6 @@ export const metadata = {
 };
 
 export default async function FAQPage() {
-  let serviceCount = 0, platformCount = 0;
-  try {
-    const [groups, platforms] = await Promise.all([
-      prisma.serviceGroup.count({ where: { enabled: true, tiers: { some: { enabled: true } } } }),
-      prisma.serviceGroup.findMany({ where: { enabled: true, tiers: { some: { enabled: true } } }, select: { platform: true }, distinct: ['platform'] }),
-    ]);
-    serviceCount = groups;
-    platformCount = platforms.length;
-  } catch {}
 
   const faqSchema = {
     "@context": "https://schema.org",

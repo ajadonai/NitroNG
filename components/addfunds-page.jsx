@@ -1015,7 +1015,7 @@ function dayKeyWallet(iso) {
   return d.toLocaleDateString(docDateLocale(), { day: "numeric", month: "short" });
 }
 
-function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, dark, t, onRefresh, setConfirmModal, setSenderName }) {
+function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, dark, t }) {
   const tr = useT();
   const money = useMoney();
   const [filter, setFilter] = useState("all");
@@ -1150,7 +1150,7 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
 /* ═══════════════════════════════════════════ */
 /* ═══ ADD FUNDS RIGHT SIDEBAR             ═══ */
 /* ═══════════════════════════════════════════ */
-export function AddFundsSidebar({ txs, dark }) {
+export function AddFundsSidebar({ txs }) {
   const tr = useT();
   const money = useMoney();
   const METHOD = { manual: ["BT", "Bank transfer"], crypto: ["CR", "Crypto"], flutterwave: ["CD", "Card"], paystack: ["CD", "Card"], monnify: ["BT", "Bank transfer"], korapay: ["CD", "Card"], alatpay: ["BT", "Bank transfer"] };

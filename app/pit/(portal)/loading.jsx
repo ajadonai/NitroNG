@@ -7,7 +7,7 @@ function Bar({ w, h = 12, dark }) {
   return <div className="rounded-md" style={{ width: w, height: h, background: `linear-gradient(90deg,${a} 25%,${b} 37%,${a} 63%)`, backgroundSize: "400% 100%", animation: "skel-shimmer 1.8s ease infinite" }} />;
 }
 
-function Card({ h = 100, dark, t }) {
+function Card({ h = 100, t }) {
   return <div className="rounded-[14px]" style={{ height: h, background: t.surface, border: `1px solid ${t.surfaceBrd}` }} />;
 }
 

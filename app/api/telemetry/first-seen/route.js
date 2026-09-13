@@ -14,7 +14,7 @@ export async function POST(req) {
     if (!field) return error('Unknown surface', 400);
     await prisma.user.updateMany({ where: { id: session.id, [field]: null }, data: { [field]: new Date() } });
     return ok({});
-  } catch (e) {
+  } catch {
     return error('Request failed', 500);
   }
 }

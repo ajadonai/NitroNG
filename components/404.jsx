@@ -55,7 +55,7 @@ function NotFoundInner() {
   if (!loaded) return <div style={{ minHeight: "100dvh", background: bg }} />;
 
   const copyLink = () => {
-    try { copyText("https://nitro.ng" + pathname); } catch (e) {}
+    try { copyText("https://nitro.ng" + pathname); } catch {}
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   };

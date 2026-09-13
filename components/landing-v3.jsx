@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
 import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
@@ -10,7 +10,6 @@ import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { DEFAULT_COUNTRY, validatePhone } from "../lib/phone-countries";
 import { NitroWordmark } from "./nitro-logo";
 import NitroLoader from "./nitro-loader";
-import { SITE } from "../lib/site";
 import AnnouncementBanner from "./announcement-banner";
 import { trackViewContent } from "./capi-tracker";
 import InlineAlert from "./inline-alert";
@@ -139,8 +138,7 @@ function LandingInner({ initialAuthQuery }){
   const [navOpen,setNavOpen]=useState(false);
   const resetToken=initialAuthQuery?.resetToken||null;
   const [heroAuth,setHeroAuth]=useState(initialAuthQuery?.initialHeroAuth||"login");
-  const [heroMethod,setHeroMethod]=useState("email");
-  const [heroName,setHeroName]=useState("");
+  const [heroMethod] = useState("email");
   const [heroFirstName,setHeroFirstName]=useState("");
   const [heroLastName,setHeroLastName]=useState("");
   const [heroEmail,setHeroEmail]=useState("");
@@ -149,7 +147,7 @@ function LandingInner({ initialAuthQuery }){
   const [heroLoading,setHeroLoading]=useState(false);
   const [heroError,setHeroError]=useState("");
   const [heroSuccess,setHeroSuccess]=useState("");
-  const [heroSignupData,setHeroSignupData]=useState(null);
+  const [heroSignupData] = useState(null);
   const [heroSignupStep,setHeroSignupStep]=useState(1);
   const [heroPw2,setHeroPw2]=useState("");
   const [heroPhone,setHeroPhone]=useState("");
@@ -489,7 +487,6 @@ function LandingInner({ initialAuthQuery }){
   );
 }
 
-const Lbl=({t,children})=><label className="text-xs font-semibold block mb-[5px] uppercase tracking-[1.5px] text-t-text-soft">{children}</label>;
 
 export default function LandingV3({ initialAuthQuery }) {
   return <ThemeProvider><LandingInner initialAuthQuery={initialAuthQuery} /></ThemeProvider>;

@@ -5,7 +5,7 @@ import { STATUS_TIERS } from '@/lib/nitro-rewards-core';
 import { DEAD_ORDER_STATES } from '@/lib/ledger';
 
 export async function GET(req) {
-  const { admin, error } = await requireAdmin('rewards');
+  const { error } = await requireAdmin('rewards');
   if (error) return error;
 
   const url = new URL(req.url);

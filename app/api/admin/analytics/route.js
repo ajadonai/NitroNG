@@ -6,7 +6,7 @@ import { getRevenue } from '@/lib/revenue';
 import { DEAD_ORDER_STATES, WALLET_FUNDING } from '@/lib/ledger';
 
 export async function GET(req) {
-  const { admin, error } = await requireAdmin('finance');
+  const { error } = await requireAdmin('finance');
   if (error) return error;
 
   try {
@@ -15,7 +15,7 @@ export async function GET(req) {
     const fromParam = url.searchParams.get('from');
     const toParam = url.searchParams.get('to');
 
-    const { now, todayStart } = watBounds();
+    const { now } = watBounds();
     let since, until;
     if (fromParam) {
       since = new Date(new Date(fromParam).getTime() - 60 * 60 * 1000);
@@ -28,7 +28,7 @@ export async function GET(req) {
 
     const dateFilter = since ? { gte: since, ...(until && { lte: until }) } : {};
 
-    const [ordersAgg, userCount, depositAgg, adminCreditAgg, adminGiftAgg, couponBonusAgg, referralBonusAgg, refundAgg, ordersByStatus, topServices, allOrders, chartOrders, chartDeposits, partialOrders, providerTopupAgg] = await Promise.all([
+    const [ordersAgg, userCount, depositAgg, adminCreditAgg, adminGiftAgg, couponBonusAgg, referralBonusAgg, refundAgg, ordersByStatus, topServices, allOrders, chartOrders, chartDeposits, providerTopupAgg] = await Promise.all([
       prisma.order.aggregate({
         where: { createdAt: dateFilter, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } },
         _sum: { charge: true, cost: true, campaignDiscount: true, loyaltyDiscount: true },
@@ -92,25 +92,12 @@ export async function GET(req) {
         select: { createdAt: true, amount: true },
         orderBy: { createdAt: 'asc' },
       }),
-      // Partial order adjustments
-      prisma.order.findMany({
-        where: { createdAt: dateFilter, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } },
-        select: { charge: true, cost: true, quantity: true, remains: true },
-      }),
       // Provider top-ups (actual cash out)
       prisma.providerTopup.aggregate({
         where: { createdAt: dateFilter },
         _sum: { amount: true },
       }),
     ]);
-
-    // Compute partial adjustment
-    let partialChargeAdj = 0, partialCostAdj = 0;
-    for (const p of partialOrders) {
-      const ratio = p.remains / p.quantity;
-      partialChargeAdj += Math.round(p.charge * ratio);
-      partialCostAdj += Math.round((p.cost || 0) * ratio);
-    }
 
     // Resolve service → group names via tiers, fall back to service name
     const serviceIds = topServices.map(s => s.serviceId);
@@ -190,7 +177,6 @@ export async function GET(req) {
     const orderCount = ordersAgg._count || 0;
     const avgOrderValue = orderCount > 0 ? totalRevenue / orderCount : 0;
     const completedCount = ordersByStatus.find(s => s.status === 'Completed')?._count || 0;
-    const cancelledCount = ordersByStatus.find(s => s.status === 'Cancelled')?._count || 0;
     const conversionRate = orderCount > 0 ? Math.round((completedCount / orderCount) * 100) : 0;
 
     const totalRefunds = (refundAgg._sum.amount || 0) / 100;

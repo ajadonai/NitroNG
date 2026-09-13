@@ -9,14 +9,6 @@ async function getCoupons() {
   } catch { return []; }
 }
 
-async function saveCoupons(coupons) {
-  await prisma.setting.upsert({
-    where: { key: 'coupons' },
-    update: { value: JSON.stringify(coupons) },
-    create: { key: 'coupons', value: JSON.stringify(coupons) },
-  });
-}
-
 // POST: validate a coupon code
 export async function POST(req) {
   try {
@@ -86,7 +78,7 @@ export async function POST(req) {
       discount,
       couponId: coupon.id,
     });
-  } catch (err) {
+  } catch {
     return Response.json({ error: 'Validation failed' }, { status: 500 });
   }
 }
