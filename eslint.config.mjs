@@ -34,6 +34,12 @@ export default [
       // Core ESLint does not treat a JSX tag as a variable use on its own.
       // Without this marker, every imported or local component is false noise.
       "react/jsx-uses-vars": "error",
+      // A repeated prop is silently the last one written, so the earlier one is
+      // dropped at compile time with nothing said. That is how four dropdowns
+      // lost their `insetInlineEnd` anchor on 9 Sep 2026 — added as a second
+      // `style` attribute beside an existing one — and ran off the edge of the
+      // screen for four days.
+      "react/jsx-no-duplicate-props": "error",
       "no-unused-vars": ["warn", {
         argsIgnorePattern: "^_",
         caughtErrorsIgnorePattern: "^_",

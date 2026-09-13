@@ -290,7 +290,13 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
   };
 
   return (
-    <div style={{ insetInlineEnd: 0 }} className="absolute top-[calc(100%+8px)] w-80 max-md:w-[280px] rounded-[14px] backdrop-blur-[20px] z-50 overflow-hidden" style={{
+    <div className="absolute top-[calc(100%+8px)] w-80 max-md:w-[280px] rounded-[14px] backdrop-blur-[20px] z-50 overflow-hidden" style={{
+      // Anchored to the trigger's trailing edge, which is the right in English
+      // and the left in Arabic. This lived in a second `style` attribute from
+      // 9 Sep to 13 Sep 2026, and JSX keeps only the last of a repeated prop —
+      // so it was dropped at compile time, `right-0` had gone from the class
+      // list in the same edit, and the panel ran off the side of the screen.
+      insetInlineEnd: 0,
       background: dark ? "rgba(13,16,32,.98)" : "rgba(255,255,255,.98)",
       borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder,
       boxShadow: dark ? "0 12px 40px rgba(0,0,0,.5)" : "0 12px 40px rgba(0,0,0,.12)",
