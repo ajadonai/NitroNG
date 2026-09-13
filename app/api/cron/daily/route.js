@@ -11,6 +11,7 @@ import { expireBonusCredits, grantWinbackCredit } from '@/lib/bonus-credit';
 import { getTierConfig } from '@/lib/affiliate-settings';
 import { cleanupStaleSignups } from '@/lib/stale-signup-cleanup';
 import { finalizeDueAccountDeletions } from '@/lib/account-deletion';
+import { DEAD_ORDER_STATES, WALLET_FUNDING } from '@/lib/ledger';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -125,7 +126,9 @@ export async function GET(req) {
           notifPromo: true,
           [touch.field]: null,
           createdAt: { gte: windowStart, lte: windowEnd },
-          transactions: { none: { type: 'deposit', status: 'Completed' } },
+          // Not yet funded, by any route: a customer an admin has credited or
+          // gifted is not waiting to be activated. This read deposits alone.
+          transactions: { none: { type: { in: WALLET_FUNDING }, status: 'Completed' } },
         },
         select: { id: true, name: true, email: true },
         orderBy: { createdAt: 'asc' },
@@ -163,7 +166,13 @@ export async function GET(req) {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
   const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000);
 
-  // Reset winback flags when user completed a new order since last touch
+  // Reset winback flags when the user placed a new order since the last touch.
+  // "Placed" is any order that is not dead (lib/ledger.js) — Partial and
+  // Processing included. It used to mean Completed only, so a customer whose
+  // last order ended Partial, or was still delivering, read as inactive and
+  // was handed a win-back credit; one went out five days after a Partial
+  // order an admin had keyed in for them. Spend (below) stays Completed-only:
+  // that is money kept in full, and a Partial charge is part-refunded.
   try {
     const resetCount = await prisma.$executeRaw`
       UPDATE users SET "winback30SentAt" = NULL, "winback60SentAt" = NULL
@@ -171,7 +180,7 @@ export async function GET(req) {
       AND EXISTS (
         SELECT 1 FROM orders
         WHERE orders."userId" = users.id
-        AND orders.status = 'Completed'
+        AND orders.status NOT IN ('Cancelled', 'Failed', 'Rejected')
         AND orders."deletedAt" IS NULL
         AND orders."createdAt" > users."winback30SentAt"
       )`;
@@ -242,8 +251,8 @@ export async function GET(req) {
         OR: [{ winback30SentAt: null }, { winback30SentAt: { in: RETRY_ELIGIBLE } }],
         ...spacingGuard,
         orders: {
-          some: { status: 'Completed', deletedAt: null },
-          none: { status: 'Completed', deletedAt: null, createdAt: { gt: thirtyDaysAgo } },
+          some: { status: { notIn: DEAD_ORDER_STATES }, deletedAt: null },
+          none: { status: { notIn: DEAD_ORDER_STATES }, deletedAt: null, createdAt: { gt: thirtyDaysAgo } },
         },
       },
       select: { id: true, name: true, email: true, winback30SentAt: true, winbackSpendFloor: true },
@@ -322,8 +331,8 @@ export async function GET(req) {
         OR: [{ winback60SentAt: null }, { winback60SentAt: { in: RETRY_ELIGIBLE } }],
         ...spacingGuard,
         orders: {
-          some: { status: 'Completed', deletedAt: null },
-          none: { status: 'Completed', deletedAt: null, createdAt: { gt: sixtyDaysAgo } },
+          some: { status: { notIn: DEAD_ORDER_STATES }, deletedAt: null },
+          none: { status: { notIn: DEAD_ORDER_STATES }, deletedAt: null, createdAt: { gt: sixtyDaysAgo } },
         },
       },
       select: { id: true, name: true, email: true, winback60SentAt: true, winbackSpendFloor: true },
@@ -400,7 +409,7 @@ export async function GET(req) {
         balance: { gt: 0 },
         createdAt: { lte: sevenDaysAgo },
         orders: { none: {} },
-        transactions: { some: { type: { in: ['deposit', 'admin_credit', 'admin_gift'] } } },
+        transactions: { some: { type: { in: WALLET_FUNDING } } },
       },
       select: { id: true, name: true, email: true, balance: true },
       take: 50,
@@ -490,7 +499,7 @@ export async function GET(req) {
         where: {
           signupSource: { in: slugs },
           deletedAt: null,
-          orders: { some: { createdAt: { gte: thirtyDaysAgo }, status: { not: 'Cancelled' }, deletedAt: null } },
+          orders: { some: { createdAt: { gte: thirtyDaysAgo }, status: { notIn: DEAD_ORDER_STATES }, deletedAt: null } },
         },
       });
       let newTier = 'starter';
