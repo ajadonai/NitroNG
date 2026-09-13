@@ -424,6 +424,10 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-13 | One definition read everywhere: lib/ledger.js (dead order states, wallet funding) replaces 62 status literals and 21 money-in literals; 25 legacy ledger rows normalised | `d51a27a3` v2.4.148 |
+| 2026-09-13 | Activity is any live order, not Completed only — win-back no longer credits a customer whose last order ended Partial; ad activation and the outreach pool count admin credits as funded | `12d3ee4a` v2.4.149 |
+| 2026-09-13 | Admin-placed orders carry source 'admin', send no Meta Purchase (nor do re-dispatches), and fire the shared first-order hook, which now also recognises a first purchase that was a cart | `e8d7461a` v2.4.150 |
+| 2026-09-13 | One Lagos-day helper: watBounds gains last/next month and year starts; digest, Financials and top-up bonus stop hand-rolling UTC+1 | `facd8775` v2.4.151 |
 | 2026-09-13 | Google sign-ups could never delete their account (stored with password '', the route demanded a password match); they now confirm by typing their email, password accounts unchanged | `ac57758c` v2.4.146 |
 | 2026-09-13 | Sentry noise: a crawler's malformed Next-Router-State-Tree header on GET / was reported as a server error; filtered on Next's error codes, everything else still forwards | `2c4d4bf7` v2.4.147 |
 | 2026-09-12 | Leak audit of the currency/deposit path: short bank transfers refused (charged_amount read), paid-but-mismatched deposits parked in Review with an alert instead of a silent Failed, Kenya quoted in whole shillings, quote stored as quoted, FX refresh failure alerts, and the premium switch's off position made neutral (market, not the legacy cushion) | `79fd6efb` v2.4.145 |
