@@ -20,17 +20,12 @@ describe('Meta Purchase order entrypoints', () => {
   it('preserves browser-facing event IDs and adds deterministic server-only IDs', () => {
     const customer = read('app/api/orders/route.js');
     const bulk = read('app/api/orders/bulk/route.js');
-    const adminCreate = read('app/api/admin/orders/create/route.js');
-    const adminOrders = read('app/api/admin/orders/route.js');
 
     expect(customer).toMatch(/const eventId = `purchase_\$\{orderId\}`/);
     expect(customer).toMatch(/const reorderEventId = `purchase_\$\{newOrderId\}`/);
     expect(bulk).toMatch(/eventId: `purchase_\$\{newBatchId\}`/);
     expect(bulk).toMatch(/\? `purchase_\$\{batchId\}`/);
     expect(bulk).toMatch(/: `purchase_\$\{createdOrders\[0\]\.orderId\}`/);
-    expect(adminCreate).toMatch(/eventId: `purchase_\$\{batchId\}`/);
-    expect(adminCreate).toMatch(/eventId: `purchase_\$\{id\}`/);
-    expect(adminOrders).toMatch(/eventId: `purchase_\$\{newId\}`/);
   });
 
   it('cancels a deferred Purchase in the same permanent-rejection refund transaction', () => {
@@ -42,12 +37,16 @@ describe('Meta Purchase order entrypoints', () => {
     expect(customer).toContain('notBefore: new Date(Date.now() + 5 * 60 * 1000)');
   });
 
-  it('keeps explicitly free admin orders out of Purchase reporting', () => {
-    const adminCreate = read('app/api/admin/orders/create/route.js');
-    const adminOrders = read('app/api/admin/orders/route.js');
+  it('sends no Purchase at all from the admin paths', () => {
+    // An order staff keyed in for a customer is not a web conversion — reporting
+    // it as one taught the optimiser that a WhatsApp sale came from whatever ad
+    // the customer last clicked — and a re-dispatch is the parent sale cut again,
+    // whose Purchase already went. Both used to send; since 13 Sep 2026 neither does.
+    const create = read('app/api/admin/orders/create/route.js');
+    const orders = read('app/api/admin/orders/route.js');
 
-    expect(adminCreate).toContain('if (totalCharge > 0) {\n          await enqueueMetaEvent');
-    expect(adminCreate).toContain('if (chargeKobo > 0) {');
-    expect(adminOrders).toContain('if (newCharge > 0) {');
+    expect(create).not.toContain('enqueueMetaEvent');
+    expect(orders).not.toContain('enqueueMetaEvent');
+    expect(create).toContain("source: 'admin'");
   });
 });

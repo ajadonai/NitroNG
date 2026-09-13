@@ -11,11 +11,7 @@ import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/
 import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 import { lockOrderSettlementAccount, ORDER_SETTLEMENT_ACCOUNT_STATUSES } from '@/lib/account-deletion';
-import { enqueueMetaEvent, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
 
-function triggerPurchaseDelivery(eventId) {
-  scheduleQueuedMetaEventDelivery(eventId);
-}
 
 async function renewAdminCancellationLease(orderId, userId) {
   return prisma.$transaction(async (tx) => {
@@ -1077,7 +1073,7 @@ export async function POST(req) {
       const { link: newLink } = body;
       const fullOrder = await prisma.order.findFirst({
         where: { OR: [{ orderId }, { id: orderId }], deletedAt: null },
-        include: { service: true, tier: { include: { service: true, group: true } }, user: { select: { id: true, email: true, phone: true, country: true, balance: true } }, dripDispatches: true },
+        include: { service: true, tier: { include: { service: true, group: true } }, user: { select: { id: true, email: true, phone: true, balance: true } }, dripDispatches: true },
       });
       if (!fullOrder) return Response.json({ error: 'Order not found' }, { status: 404 });
       if (fullOrder.status !== 'Cancelled') return Response.json({ error: 'Only cancelled orders can be re-dispatched' }, { status: 400 });
@@ -1235,16 +1231,9 @@ export async function POST(req) {
                 note: `Re-dispatch ${fullOrder.orderId} → ${newId} (${remainingQty} qty)`,
               },
             });
-            await enqueueMetaEvent(tx, 'Purchase', {
-              eventId: `purchase_${newId}`,
-              eventTime: child.createdAt,
-              email: fullOrder.user.email,
-              phone: fullOrder.user.phone,
-              country: fullOrder.user.country,
-              externalId: fullOrder.userId,
-              sourceUrl: req.headers.get('referer') || req.url,
-              customData: { value: newCharge / 100, currency: 'NGN' },
-            });
+            // No Meta Purchase for a re-dispatch: the parent order already
+            // sent one, and this child is the same sale cut again, so a
+            // second event double-counted the conversion.
           }
           if (dripSchedule) {
             await tx.dripDispatch.createMany({
@@ -1268,7 +1257,6 @@ export async function POST(req) {
         throw err;
       }
 
-      if (newCharge > 0) triggerPurchaseDelivery(`purchase_${newId}`);
 
       const { placeOrder } = await import('@/lib/smm');
       const prov = service.provider || 'mtp';

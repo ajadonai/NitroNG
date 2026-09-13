@@ -9,7 +9,7 @@ import { findOpenSameLinkOrder } from '@/lib/order-queue';
 import { tgNewOrder } from '@/lib/telegram';
 import { getNitroStatus, getEligibleSpendKoboTx } from '@/lib/nitro-rewards';
 import { lockOrderSettlementAccount } from '@/lib/account-deletion';
-import { enqueueMetaEvent, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
+import { checkFirstOrder } from '@/lib/first-order';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -43,9 +43,6 @@ async function nextBatchId() {
 
 export const maxDuration = 60;
 
-function triggerPurchaseDelivery(eventId) {
-  scheduleQueuedMetaEventDelivery(eventId);
-}
 
 export async function POST(req) {
   const { admin, error } = await requireAdmin('orders', true);
@@ -58,7 +55,7 @@ export async function POST(req) {
     if (!userId) return Response.json({ error: 'User is required' }, { status: 400 });
     if (!['single', 'bulk', 'drip'].includes(mode)) return Response.json({ error: 'Invalid mode' }, { status: 400 });
 
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true, email: true, phone: true, country: true, balance: true } });
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true, email: true, phone: true, balance: true } });
     if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
 
     const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
@@ -144,23 +141,22 @@ export async function POST(req) {
 
         const ids = await nextOrderIds(tx, orders.length);
         const orderIds = [];
-        let firstCreatedAt = null;
 
         for (let i = 0; i < orders.length; i++) {
           const o = orders[i];
           const blocker = await findOpenSameLinkOrder(tx, { serviceId: o.tier.serviceId, link: o.link });
 
-          const created = await tx.order.create({
+          await tx.order.create({
             data: {
               orderId: ids[i], userId: user.id, serviceId: o.tier.serviceId, tierId: o.tier.id,
               link: o.link, quantity: o.quantity, charge: o.charge, cost: o.cost,
               batchId, status: 'Pending',
+              source: 'admin',
               ...o.snapshot,
               ...(nitroTierKey ? { nitroStatusAtPurchase: nitroTierKey } : {}),
               ...(blocker ? { queuedBehind: blocker.orderId } : {}),
             },
           });
-          if (!firstCreatedAt) firstCreatedAt = created.createdAt;
 
           if (o.charge > 0) {
             await tx.transaction.create({
@@ -175,26 +171,17 @@ export async function POST(req) {
           orderIds.push(ids[i]);
         }
 
-        if (totalCharge > 0) {
-          await enqueueMetaEvent(tx, 'Purchase', {
-            eventId: `purchase_${batchId}`,
-            eventTime: firstCreatedAt,
-            email: user.email,
-            phone: user.phone,
-            country: user.country,
-            externalId: user.id,
-            sourceUrl: req.headers.get('referer') || req.url,
-            customData: { value: totalCharge / 100, currency: 'NGN' },
-          });
-        }
-
+        // No Meta Purchase from here: an order staff keyed in for a customer
+        // is not a web conversion, and reporting it as one taught the
+        // optimiser that a WhatsApp sale came from whatever ad the customer
+        // last clicked. The order itself carries source 'admin'.
         return orderIds;
       });
       if (!createdIds) {
         return Response.json({ error: 'This account is pending deletion and cannot receive new orders' }, { status: 409 });
       }
 
-      if (totalCharge > 0) triggerPurchaseDelivery(`purchase_${batchId}`);
+      checkFirstOrder(user.id, [...new Set(orders.map(o => o.snapshot.serviceNameAtPurchase).filter(Boolean))].join(', ') || 'Bulk order', createdIds.length);
 
       for (let i = 0; i < orders.length; i++) {
         const o = orders[i];
@@ -333,6 +320,7 @@ export async function POST(req) {
           orderId: id, userId: user.id, serviceId: tier.serviceId, tierId: tier.id,
           link, quantity: qty, charge: chargeKobo, cost: costKobo,
           status: 'Pending',
+          source: 'admin',
           ...snapshot,
           ...(nitroTierKey ? { nitroStatusAtPurchase: nitroTierKey } : {}),
           ...(blocker ? { queuedBehind: blocker.orderId } : {}),
@@ -358,25 +346,16 @@ export async function POST(req) {
             note: `Admin order ${id} — ${snapshot.serviceNameAtPurchase || 'Service'}${snapshot.tierNameAtPurchase ? ` (${snapshot.tierNameAtPurchase})` : ''} x${qty.toLocaleString()}${dripNum ? ` (${dripNum}-day drip)` : ''}`,
           },
         });
-        await enqueueMetaEvent(tx, 'Purchase', {
-          eventId: `purchase_${id}`,
-          eventTime: created.createdAt,
-          email: user.email,
-          phone: user.phone,
-          country: user.country,
-          externalId: user.id,
-          sourceUrl: req.headers.get('referer') || req.url,
-          customData: { value: chargeKobo / 100, currency: 'NGN' },
-        });
       }
 
+      // No Meta Purchase — see the bulk path above.
       return id;
     });
     if (!orderId) {
       return Response.json({ error: 'This account is pending deletion and cannot receive new orders' }, { status: 409 });
     }
 
-    if (chargeKobo > 0) triggerPurchaseDelivery(`purchase_${orderId}`);
+    checkFirstOrder(user.id, snapshot.serviceNameAtPurchase || 'Service');
 
     tgNewOrder(orderId, `${snapshot.serviceNameAtPurchase || 'Service'} (${snapshot.tierNameAtPurchase || ''}) by ${admin.name}`, qty, chargeKobo, user.name, link, snapshot.platformAtPurchase).catch(() => {});
     logActivity(admin.name, `Created order ${orderId} (${snapshot.serviceNameAtPurchase} ${snapshot.tierNameAtPurchase}, ${qty.toLocaleString()} qty${dripNum ? `, ${dripNum}-day drip` : ''}, ${shouldCharge ? `₦${(chargeKobo / 100).toLocaleString()}` : 'free'}) for ${user.name}`, 'order').catch(e => log.error('Admin Create Order logActivity', e.message));
