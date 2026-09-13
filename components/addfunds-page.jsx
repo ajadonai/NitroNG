@@ -69,8 +69,11 @@ function txStatusMeta(tx, dk, tr) {
   const paymentState = txPaymentState(tx);
   const status = paymentState || tx.status;
   // A Flutterwave checkout the user closed before paying never becomes a
-  // transaction on their side. That is not a failure, and red is the wrong colour for it.
-  if (status === "Failed" && /provider_not_found/.test(tx.note || "")) {
+  // transaction on their side. That is not a failure, and red is the wrong
+  // colour for it — nor is "Retrying" or "Expired": nothing is owed and nothing
+  // is coming. Rows written before 11 Sep 2026 carry provider_not_found and
+  // read Failed; since then they carry abandoned and read Expired.
+  if (/flutterwave_verification:(provider_not_found|abandoned)/.test(tx.note || "")) {
     return { label: tr("Not completed"), color: dk ? "#a1a1aa" : "#71717a", bg: dk ? "rgba(161,161,170,.12)" : "rgba(113,113,122,.08)" };
   }
   const styles = {
