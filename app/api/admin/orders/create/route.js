@@ -6,7 +6,7 @@ import { validateTrafficConfig, countCommentLines } from '@/lib/order-create-inp
 import { validateDripConfig, calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility, validateIntradayDuration } from '@/lib/drip-feed';
 import { buildOrderOfferSnapshot } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder } from '@/lib/order-queue';
-import { tgNewOrder } from '@/lib/telegram';
+import { tgFreeOrder, tgNewOrder } from '@/lib/telegram';
 import { getNitroStatus, getEligibleSpendKoboTx } from '@/lib/nitro-rewards';
 import { lockOrderSettlementAccount } from '@/lib/account-deletion';
 import { checkFirstOrder } from '@/lib/first-order';
@@ -54,6 +54,16 @@ export async function POST(req) {
 
     if (!userId) return Response.json({ error: 'User is required' }, { status: 400 });
     if (!['single', 'bulk', 'drip'].includes(mode)) return Response.json({ error: 'Invalid mode' }, { status: 400 });
+
+    // A free order spends real provider money and writes no ledger row, so the
+    // only record it can leave is this reason — in the activity log and in the
+    // Telegram alert below. Neither existed for the first one, which is how it
+    // sat unnoticed. An order row has no free-text field of its own, so those
+    // two are the audit trail.
+    const freeReason = typeof body.freeReason === 'string' ? body.freeReason.trim().slice(0, 200) : '';
+    if (!shouldCharge && freeReason.length < 3) {
+      return Response.json({ error: 'A free order needs a reason — say why it is not being charged' }, { status: 400 });
+    }
 
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true, email: true, phone: true, balance: true } });
     if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
@@ -109,12 +119,15 @@ export async function POST(req) {
           if (!link) return Response.json({ error: `Invalid link: ${rawLink}` }, { status: 400 });
 
           const sellPer1k = Number(tier.sellPer1k);
-          const chargeKobo = shouldCharge ? Math.ceil(sellPer1k * qty / 1000 / 100) * 100 : 0;
+          // What the order is worth, whether or not it is being charged — a
+          // free order still gives this much away, and the alert says so.
+          const valueKobo = Math.ceil(sellPer1k * qty / 1000 / 100) * 100;
+          const chargeKobo = shouldCharge ? valueKobo : 0;
           const costKobo = Math.ceil((Number(tier.service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
 
           const snapshot = buildOrderOfferSnapshot({ tier, service: tier.service });
 
-          orders.push({ tier, link, quantity: qty, charge: chargeKobo, cost: costKobo, snapshot });
+          orders.push({ tier, link, quantity: qty, charge: chargeKobo, cost: costKobo, value: valueKobo, snapshot });
           totalCharge += chargeKobo;
         }
       }
@@ -183,12 +196,22 @@ export async function POST(req) {
 
       checkFirstOrder(user.id, [...new Set(orders.map(o => o.snapshot.serviceNameAtPurchase).filter(Boolean))].join(', ') || 'Bulk order', createdIds.length);
 
+      if (!shouldCharge) {
+        tgFreeOrder({
+          orderRef: batchId, adminName: admin.name, userName: user.name,
+          valueKobo: orders.reduce((s, o) => s + o.value, 0),
+          costKobo: orders.reduce((s, o) => s + o.cost, 0),
+          service: [...new Set(orders.map(o => o.snapshot.serviceNameAtPurchase).filter(Boolean))].join(', ') || 'Bulk order',
+          count: createdIds.length, reason: freeReason,
+        });
+      }
+
       for (let i = 0; i < orders.length; i++) {
         const o = orders[i];
         const svcLabel = `${o.snapshot.serviceNameAtPurchase || 'Service'}${o.snapshot.tierNameAtPurchase ? ` (${o.snapshot.tierNameAtPurchase})` : ''} by ${admin.name}`;
         tgNewOrder(createdIds[i], svcLabel, o.quantity, o.charge, user.name, o.link, o.snapshot.platformAtPurchase).catch(() => {});
       }
-      logActivity(admin.name, `Created bulk order ${batchId} (${createdIds.length} orders, ${shouldCharge ? `₦${(totalCharge / 100).toLocaleString()} charged` : 'free'}) for ${user.name}`, 'order').catch(e => log.error('Admin Create Order logActivity', e.message));
+      logActivity(admin.name, `Created bulk order ${batchId} (${createdIds.length} orders, ${shouldCharge ? `₦${(totalCharge / 100).toLocaleString()} charged` : `free — ${freeReason}`}) for ${user.name}`, 'order').catch(e => log.error('Admin Create Order logActivity', e.message));
 
       return Response.json({ success: true, batchId, count: createdIds.length, orderIds: createdIds });
     }
@@ -243,7 +266,9 @@ export async function POST(req) {
     if (qty < min || qty > max) return Response.json({ error: `Quantity ${qty} out of range (${min}–${max})` }, { status: 400 });
 
     const sellPer1k = Number(tier.sellPer1k);
-    const chargeKobo = shouldCharge ? Math.ceil(sellPer1k * qty / 1000 / 100) * 100 : 0;
+    // See the bulk path: the value stands whether or not it is charged.
+    const valueKobo = Math.ceil(sellPer1k * qty / 1000 / 100) * 100;
+    const chargeKobo = shouldCharge ? valueKobo : 0;
     const costKobo = Math.ceil((Number(tier.service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
 
     if (shouldCharge && chargeKobo > 0 && user.balance < chargeKobo) {
@@ -356,6 +381,14 @@ export async function POST(req) {
     }
 
     checkFirstOrder(user.id, snapshot.serviceNameAtPurchase || 'Service');
+
+    if (!shouldCharge) {
+      tgFreeOrder({
+        orderRef: orderId, adminName: admin.name, userName: user.name,
+        valueKobo, costKobo, quantity: qty, count: 1, reason: freeReason,
+        service: `${snapshot.serviceNameAtPurchase || 'Service'}${snapshot.tierNameAtPurchase ? ` (${snapshot.tierNameAtPurchase})` : ''}`,
+      });
+    }
 
     tgNewOrder(orderId, `${snapshot.serviceNameAtPurchase || 'Service'} (${snapshot.tierNameAtPurchase || ''}) by ${admin.name}`, qty, chargeKobo, user.name, link, snapshot.platformAtPurchase).catch(() => {});
     logActivity(admin.name, `Created order ${orderId} (${snapshot.serviceNameAtPurchase} ${snapshot.tierNameAtPurchase}, ${qty.toLocaleString()} qty${dripNum ? `, ${dripNum}-day drip` : ''}, ${shouldCharge ? `₦${(chargeKobo / 100).toLocaleString()}` : 'free'}) for ${user.name}`, 'order').catch(e => log.error('Admin Create Order logActivity', e.message));

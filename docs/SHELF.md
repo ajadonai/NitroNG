@@ -440,6 +440,9 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-13 | Four dropdowns anchored again after the RTL pass added insetInlineEnd as a duplicate style attribute (silently dropped by JSX); react/jsx-no-duplicate-props now an error | `5e5786a0` v2.4.155 |
+| 2026-09-13 | Admin create order names the missing tier instead of quoting ₦0, and a free order shows the value it gives away and the cost it spends | `1780dc06` v2.4.156 |
+| 2026-09-13 | A free admin order now needs a reason, records it in the activity log, and raises a Telegram alert with the value given away and the provider cost | `35dd5934` v2.4.157 |
 | 2026-09-13 | Acquisition endpoint: first-ever orders and signups per Lagos day plus signup→buyer by week, behind the cohort reader's tokens, under the robots-allowed prefix — retires the hand-derived cost-per-customer factor | `91c83fc9` v2.4.154 |
 | 2026-09-13 | Abandoned Flutterwave checkouts read "Not completed" in the wallet and "not completed, nothing charged" on return — not Expired/Retrying, not "could not be reached" | `84b512b3` v2.4.132 |
 | 2026-09-13 | The tidy: 184 unused names across 69 files brought to zero outside parked/frozen files — dead imports, props, helpers, components, colour tables, two ignored rate-limit knobs and an ignored tgOutreach param; i18n record followed down | `7bc31d4c` v2.4.152 |
