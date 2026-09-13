@@ -4,7 +4,7 @@ import { requireAdmin, getAdminPages, canSeeSensitive, maskEmail } from '@/lib/a
 import { watBounds } from '@/lib/format';
 import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { getRevenue } from '@/lib/revenue';
-import { DEAD_ORDER_STATES, WALLET_FUNDING } from '@/lib/ledger';
+import { DEAD_ORDER_STATES, WALLET_FUNDING, partialAdjustment as partialAdj } from '@/lib/ledger';
 
 function humanize(raw) {
   let m;
@@ -85,19 +85,9 @@ export async function GET() {
   if (error) return error;
 
   try {
-    const { todayStart, yesterdayStart, yesterdaySameTime } = watBounds();
+    const { todayStart, yesterdayStart } = watBounds();
 
     // All counts + aggregates in parallel
-    // Helper: compute partial order adjustment for a date filter
-    const partialAdj = (orders) => {
-      let charge = 0, cost = 0;
-      for (const p of orders) {
-        const ratio = p.remains / p.quantity;
-        charge += Math.round(p.charge * ratio);
-        cost += Math.round((p.cost || 0) * ratio);
-      }
-      return { charge, cost };
-    };
 
     // Phase 1: aggregates and counts (no relation sub-queries)
     const [
