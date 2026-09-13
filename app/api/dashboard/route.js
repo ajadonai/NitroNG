@@ -119,6 +119,7 @@ export async function GET() {
       select: {
         id: true, name: true, firstName: true, lastName: true, phone: true,
         email: true, balance: true, country: true,
+        password: true,   // only ever reduced to hasPassword below; the hash never leaves
         referralCode: true, referredBy: true, emailVerified: true, createdAt: true,
         orderTourCompleted: true,
         notifOrders: true, notifPromo: true, notifEmail: true,
@@ -352,6 +353,10 @@ export async function GET() {
         tosVersion: user.tosVersion || null,
         orderTourCompleted: user.orderTourCompleted,
         welcomeBonusEligible: !user.firstDepositBonusPaid,
+        // Google sign-ups are stored with password '' (lib/account-deletion.js
+        // accountHasPassword). Settings uses this to ask for the email instead
+        // of a password nobody has before deleting the account.
+        hasPassword: typeof user.password === 'string' && user.password.length > 0,
         bonusCredit: bonusCredit || null,
         topupBonus,
       },

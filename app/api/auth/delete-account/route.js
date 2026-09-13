@@ -7,6 +7,7 @@ import {
   isOrderCancellationLeaseActive,
   isOrderSettlementAccountEligible,
   lockOrderSettlementAccount,
+  verifyAccountDeletionProof,
   withAccountDeletionRetry,
 } from '@/lib/account-deletion';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
@@ -22,14 +23,15 @@ export async function POST(req) {
     const payload = await getCurrentUser();
     if (!payload) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
-    const { password } = await req.json().catch(() => ({}));
+    const { password, confirmEmail } = await req.json().catch(() => ({}));
 
     const user = await prisma.user.findUnique({ where: { id: payload.id } });
     if (!user) return Response.json({ error: 'User not found' }, { status: 404 });
 
-    if (!password) return Response.json({ error: 'Password required to delete account' }, { status: 400 });
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return Response.json({ error: 'Incorrect password' }, { status: 400 });
+    // Password accounts re-enter the password; Google accounts have none and
+    // type their email instead. See verifyAccountDeletionProof for why.
+    const proof = await verifyAccountDeletionProof(user, { password, confirmEmail }, { compare: bcrypt.compare });
+    if (!proof.ok) return Response.json({ error: proof.error }, { status: proof.status });
 
     if (user.status === 'PendingDeletion') {
       return Response.json({ error: 'Account is already scheduled for deletion' }, { status: 400 });
