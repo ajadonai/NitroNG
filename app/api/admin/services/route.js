@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canSeeSensitive } from '@/lib/admin';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
+import { DEAD_ORDER_STATES } from '@/lib/ledger';
 
 export async function GET() {
   const { admin, error } = await requireAdmin('services');
@@ -12,7 +13,7 @@ export async function GET() {
       prisma.service.findMany({
         orderBy: { category: 'asc' },
         include: {
-          _count: { select: { orders: { where: { status: { not: 'Cancelled' }, deletedAt: null } }, tiers: { where: { enabled: true } } } },
+          _count: { select: { orders: { where: { status: { notIn: DEAD_ORDER_STATES }, deletedAt: null } }, tiers: { where: { enabled: true } } } },
         },
       }),
       prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } }),

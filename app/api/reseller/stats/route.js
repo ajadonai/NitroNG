@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { getResellerTerms } from '@/lib/reseller';
+import { DEAD_ORDER_STATES } from '@/lib/ledger';
 
 const WINDOW_DAYS = 30;
 const naira = (kobo) => Math.round(Number(kobo || 0) / 100);
@@ -12,7 +13,7 @@ export async function GET() {
   if (!session) return Response.json({ error: 'Not authenticated' }, { status: 401 });
 
   const since = new Date(Date.now() - WINDOW_DAYS * 86400000);
-  const where = { userId: session.id, createdAt: { gte: since }, deletedAt: null, status: { not: 'Cancelled' } };
+  const where = { userId: session.id, createdAt: { gte: since }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } };
   const [agg, apiOrders, user, resellerTerms, rateSetting] = await Promise.all([
     prisma.order.aggregate({ where, _count: true, _sum: { charge: true } }),
     prisma.order.count({ where: { ...where, source: 'api' } }),

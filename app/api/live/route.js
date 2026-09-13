@@ -13,6 +13,7 @@ import {
   rateLimitUnavailable,
   tooManyRequests,
 } from '@/lib/rate-limit';
+import { WALLET_FUNDING } from '@/lib/ledger';
 
 export const dynamic = 'force-dynamic';
 const LIVE_SESSION_RESULT_LIMIT = 500;
@@ -110,7 +111,7 @@ export async function GET(req) {
           by: ['userId'],
           where: {
             userId: { in: userIds },
-            type: { in: ['deposit', 'admin_credit'] },
+            type: { in: WALLET_FUNDING },
             status: 'Completed',
           },
           _sum: { amount: true },

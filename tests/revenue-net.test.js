@@ -89,7 +89,8 @@ describe('getRevenue', () => {
   it('asks only for Completed refunds', async () => {
     await getRevenue({ db });
     expect(db.transaction.findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({ status: 'Completed', type: { in: ['refund', 'Refund'] } }),
+      // One spelling: the ledger's odd-cased rows were normalised on 13 Sep 2026.
+      where: expect.objectContaining({ status: 'Completed', type: 'refund' }),
     }));
   });
 });

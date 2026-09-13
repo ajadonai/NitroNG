@@ -78,7 +78,7 @@ async function getOrderSummary(userId) {
     )
     SELECT
       COUNT(*)::int AS total,
-      COUNT(*) FILTER (WHERE status <> 'Cancelled')::int AS "nonCancelled",
+      COUNT(*) FILTER (WHERE status NOT IN ('Cancelled', 'Failed', 'Rejected'))::int AS "nonCancelled",
       COUNT(*) FILTER (WHERE status IN ('Pending', 'Processing', 'Dispatching'))::int AS active,
       COUNT(*) FILTER (WHERE status = 'Completed')::int AS completed,
       COUNT(*) FILTER (WHERE "createdAt" >= NOW() - INTERVAL '7 days')::int AS "thisWeek",
@@ -86,7 +86,7 @@ async function getOrderSummary(userId) {
         WHERE "queuedBehind" IS NULL
           AND (status = 'Partial' OR (status = 'Pending' AND "lastError" IS NOT NULL AND "apiOrderId" IS NULL))
       )::int AS attention,
-      COALESCE(SUM(charge) FILTER (WHERE status <> 'Cancelled'), 0)::bigint AS "spentKobo",
+      COALESCE(SUM(charge) FILTER (WHERE status NOT IN ('Cancelled', 'Failed', 'Rejected')), 0)::bigint AS "spentKobo",
       COALESCE(SUM(charge) FILTER (WHERE status = 'Cancelled'), 0)::bigint AS "refundedKobo",
       COALESCE(ROUND(AVG(quantity)), 0)::int AS "averageQuantity",
       (SELECT platform FROM platform_counts) AS "topPlatform"
