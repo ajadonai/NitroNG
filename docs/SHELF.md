@@ -67,7 +67,7 @@ as the work. (Formerly docs/BACKLOG.md.)
   keeping into `landing-v3.jsx`, and the baseline drops by 87 for free.
 
 - **Foreign payment methods — steps 1 and 2 shipped 8 Sep 2026, steps 3 and 4
-  remain.** Signup accepts NG/US/GB/GH/KE (`4776d901`). Flutterwave charges
+  remain.** Signup accepts NG/US/GB/GH/KE (`2c1ac43a`). Flutterwave charges
   in the customer's currency where it can collect in it (GHS, KES — step 3
   below); the other non-naira rail is dollar-denominated USDT.
 
@@ -87,7 +87,7 @@ as the work. (Formerly docs/BACKLOG.md.)
   Deposit rate is now market ÷ 1.15 ≈ ₦1,156/$. A Nigerian paying USDT pays it
   too; Trip chose not to carve that segment out. And there is **one welcome
   bonus ladder for everyone**, in naira, converted on screen — the per-currency
-  ladders built that morning came out again the same afternoon (`bc3b40ec`).
+  ladders built that morning came out again the same afternoon (`9aecd275`).
 
   **Remaining:**
   3. **Flutterwave USD collection — still the real unlock, and now measured.**
@@ -337,7 +337,7 @@ as the work. (Formerly docs/BACKLOG.md.)
   4) never multi-currency wallets.
 
   **Addendum, 7 Sep 2026 — reopened; step 2 shipped** (`80ec76d6` v2.4.104,
-  with `0237a2f1` for the hamburger). Currency and language switchers on all three navs
+  with `f10e687a` for the hamburger). Currency and language switchers on all three navs
   (labelled on desktop, icons only on a phone); prices on pricing/services,
   the dashboard balance and the order-form total convert at one resolved
   deposit rate via `lib/currency.js` + `components/locale.jsx`; public
@@ -422,7 +422,7 @@ as the work. (Formerly docs/BACKLOG.md.)
 ## Closed
 
 - **Currency switch — every money figure in the user dashboard follows the
-  picker** (7–8 Sep 2026, ending `bc3b40ec` — the range start was squashed away, all under `v2.4.104`).
+  picker** (7–8 Sep 2026, ending `9aecd275` — the range start was squashed away, all under `v2.4.104`).
   Landing, overview, new order, order form, wallet (deposit box, native
   quick-picks, bonus cards, summary, coupons, ledger), rewards, tasks, earn,
   orders, referrals, reseller HQ and catalogue. The rule that settled every
@@ -440,28 +440,28 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
-| 2026-09-14 | Public order-count head start 6,000 → 4,000 (real orders 10,363; shown figure 16,363 → 14,363) | `1af978a1` v2.4.158 |
-| 2026-09-14 | Telegram bot: markup was labelled margin (172% beside 63% in one message) — now margin on revenue everywhere; /revenue and /stats stop narrating gross-less-refunded | `1af978a1` v2.4.158 |
-| 2026-09-14 | Browser-extension noise filtered from Sentry: MetaMask rejects a plain object with no frames, so the hint is now checked and extension-rooted stacks are dropped | `1af978a1` v2.4.158 |
-| 2026-09-13 | Four dropdowns anchored again after the RTL pass added insetInlineEnd as a duplicate style attribute (silently dropped by JSX); react/jsx-no-duplicate-props now an error | `5e5786a0` v2.4.155 |
-| 2026-09-13 | Admin create order names the missing tier instead of quoting ₦0, and a free order shows the value it gives away and the cost it spends | `1780dc06` v2.4.156 |
-| 2026-09-13 | A free admin order now needs a reason, records it in the activity log, and raises a Telegram alert with the value given away and the provider cost | `35dd5934` v2.4.157 |
-| 2026-09-13 | Acquisition endpoint: first-ever orders and signups per Lagos day plus signup→buyer by week, behind the cohort reader's tokens, under the robots-allowed prefix — retires the hand-derived cost-per-customer factor | `91c83fc9` v2.4.154 |
-| 2026-09-13 | Abandoned Flutterwave checkouts read "Not completed" in the wallet and "not completed, nothing charged" on return — not Expired/Retrying, not "could not be reached" | `84b512b3` v2.4.132 |
-| 2026-09-13 | The tidy: 184 unused names across 69 files brought to zero outside parked/frozen files — dead imports, props, helpers, components, colour tables, two ignored rate-limit knobs and an ignored tgOutreach param; i18n record followed down | `7bc31d4c` v2.4.152 |
-| 2026-09-13 | partialAdjustment shared from lib/ledger.js (was four copies); email.js on the logger; sentry-filters.js wired into the client init; digest's dead month aggregates gone | `7c486734` v2.4.153 |
-| 2026-09-13 | One definition read everywhere: lib/ledger.js (dead order states, wallet funding) replaces 62 status literals and 21 money-in literals; 25 legacy ledger rows normalised | `d51a27a3` v2.4.148 |
-| 2026-09-13 | Activity is any live order, not Completed only — win-back no longer credits a customer whose last order ended Partial; ad activation and the outreach pool count admin credits as funded | `12d3ee4a` v2.4.149 |
-| 2026-09-13 | Admin-placed orders carry source 'admin', send no Meta Purchase (nor do re-dispatches), and fire the shared first-order hook, which now also recognises a first purchase that was a cart | `e8d7461a` v2.4.150 |
-| 2026-09-13 | One Lagos-day helper: watBounds gains last/next month and year starts; digest, Financials and top-up bonus stop hand-rolling UTC+1 | `e395d281` v2.4.151 |
-| 2026-09-13 | Google sign-ups could never delete their account (stored with password '', the route demanded a password match); they now confirm by typing their email, password accounts unchanged | `ac57758c` v2.4.146 |
-| 2026-09-13 | Sentry noise: a crawler's malformed Next-Router-State-Tree header on GET / was reported as a server error; filtered on Next's error codes, everything else still forwards | `429ec82a` v2.4.147 |
-| 2026-09-12 | Leak audit of the currency/deposit path: short bank transfers refused (charged_amount read), paid-but-mismatched deposits parked in Review with an alert instead of a silent Failed, Kenya quoted in whole shillings, quote stored as quoted, FX refresh failure alerts, and the premium switch's off position made neutral (market, not the legacy cushion) | `7f132381` v2.4.145 |
-| 2026-09-12 | Closed a premium waiver in the currency picker: an uncollectible pick fell straight to naira, so a Ghanaian reading dollar prices was charged naira at market instead of cedis at the padded rate. Falls back to the account's country first now | `f6361f03` v2.4.140 |
-| 2026-09-12 | USD/GBP made display-only after a live test returned Flutterwave's "No Payment method available" — dollar collection is an approval we do not have, so those readers are charged naira and their card converts it back; US and GB accounts were hitting the same dead end | `7f36c9f6` v2.4.140 |
-| 2026-09-12 | stuck_payments paged on normal operation: it raised on any retryable read, and Rejected/Completed rows were not treated as closed. Now it waits for a row with a prior attempt that is still unsettled 30 minutes on, and owes nothing on a closed row | `68d21e16` v2.4.143 |
-| 2026-09-12 | Meta CAPI sends the hashed account country on every Purchase and CompleteRegistration (match quality for the scale-ladder measurement) | `75862696` v2.4.141 |
-| 2026-09-12 | Currency picker live in production with all five currencies selectable; Flutterwave checkout asks for mobile money in Ghana/Kenya and cards everywhere by sending payment_options per charge currency | `5bd129cd` v2.4.140 |
+| 2026-09-14 | Public order-count head start 6,000 → 4,000 (real orders 10,363; shown figure 16,363 → 14,363) | `f7d21d81` v2.4.158 |
+| 2026-09-14 | Telegram bot: markup was labelled margin (172% beside 63% in one message) — now margin on revenue everywhere; /revenue and /stats stop narrating gross-less-refunded | `f7d21d81` v2.4.158 |
+| 2026-09-14 | Browser-extension noise filtered from Sentry: MetaMask rejects a plain object with no frames, so the hint is now checked and extension-rooted stacks are dropped | `f7d21d81` v2.4.158 |
+| 2026-09-13 | Four dropdowns anchored again after the RTL pass added insetInlineEnd as a duplicate style attribute (silently dropped by JSX); react/jsx-no-duplicate-props now an error | `ebe1feb3` v2.4.155 |
+| 2026-09-13 | Admin create order names the missing tier instead of quoting ₦0, and a free order shows the value it gives away and the cost it spends | `5018d2c3` v2.4.156 |
+| 2026-09-13 | A free admin order now needs a reason, records it in the activity log, and raises a Telegram alert with the value given away and the provider cost | `c14a9d13` v2.4.157 |
+| 2026-09-13 | Acquisition endpoint: first-ever orders and signups per Lagos day plus signup→buyer by week, behind the cohort reader's tokens, under the robots-allowed prefix — retires the hand-derived cost-per-customer factor | `563a83f5` v2.4.154 |
+| 2026-09-13 | Abandoned Flutterwave checkouts read "Not completed" in the wallet and "not completed, nothing charged" on return — not Expired/Retrying, not "could not be reached" | `32d7e188` v2.4.132 |
+| 2026-09-13 | The tidy: 184 unused names across 69 files brought to zero outside parked/frozen files — dead imports, props, helpers, components, colour tables, two ignored rate-limit knobs and an ignored tgOutreach param; i18n record followed down | `61f1d8df` v2.4.152 |
+| 2026-09-13 | partialAdjustment shared from lib/ledger.js (was four copies); email.js on the logger; sentry-filters.js wired into the client init; digest's dead month aggregates gone | `38429030` v2.4.153 |
+| 2026-09-13 | One definition read everywhere: lib/ledger.js (dead order states, wallet funding) replaces 62 status literals and 21 money-in literals; 25 legacy ledger rows normalised | `973b137f` v2.4.148 |
+| 2026-09-13 | Activity is any live order, not Completed only — win-back no longer credits a customer whose last order ended Partial; ad activation and the outreach pool count admin credits as funded | `d6069398` v2.4.149 |
+| 2026-09-13 | Admin-placed orders carry source 'admin', send no Meta Purchase (nor do re-dispatches), and fire the shared first-order hook, which now also recognises a first purchase that was a cart | `aad32d5c` v2.4.150 |
+| 2026-09-13 | One Lagos-day helper: watBounds gains last/next month and year starts; digest, Financials and top-up bonus stop hand-rolling UTC+1 | `cde599e3` v2.4.151 |
+| 2026-09-13 | Google sign-ups could never delete their account (stored with password '', the route demanded a password match); they now confirm by typing their email, password accounts unchanged | `5ba0a43a` v2.4.146 |
+| 2026-09-13 | Sentry noise: a crawler's malformed Next-Router-State-Tree header on GET / was reported as a server error; filtered on Next's error codes, everything else still forwards | `dce0a681` v2.4.147 |
+| 2026-09-12 | Leak audit of the currency/deposit path: short bank transfers refused (charged_amount read), paid-but-mismatched deposits parked in Review with an alert instead of a silent Failed, Kenya quoted in whole shillings, quote stored as quoted, FX refresh failure alerts, and the premium switch's off position made neutral (market, not the legacy cushion) | `a5d67466` v2.4.145 |
+| 2026-09-12 | Closed a premium waiver in the currency picker: an uncollectible pick fell straight to naira, so a Ghanaian reading dollar prices was charged naira at market instead of cedis at the padded rate. Falls back to the account's country first now | `e1aeee3c` v2.4.140 |
+| 2026-09-12 | USD/GBP made display-only after a live test returned Flutterwave's "No Payment method available" — dollar collection is an approval we do not have, so those readers are charged naira and their card converts it back; US and GB accounts were hitting the same dead end | `e1aeee3c` v2.4.140 |
+| 2026-09-12 | stuck_payments paged on normal operation: it raised on any retryable read, and Rejected/Completed rows were not treated as closed. Now it waits for a row with a prior attempt that is still unsettled 30 minutes on, and owes nothing on a closed row | `c2465363` v2.4.143 |
+| 2026-09-12 | Meta CAPI sends the hashed account country on every Purchase and CompleteRegistration (match quality for the scale-ladder measurement) | `9f3bedc2` v2.4.141 |
+| 2026-09-12 | Currency picker live in production with all five currencies selectable; Flutterwave checkout asks for mobile money in Ghana/Kenya and cards everywhere by sending payment_options per charge currency | `0a6b8a3b` v2.4.140 |
 | 2026-09-07 | Offline screen: the installed app no longer shows the browser's error page when signal drops. A real service worker precaches one self-contained page and serves it on a failed navigation; it never caches an API response, so no balance is ever shown from cache. Agreed scope: dashboard only, no figures on screen | `cc5adbb6` v2.4.103 |
 | 2026-08-31 | Admin table headers align with their rows (fixed actions column) and dense tables scroll rather than clip | `22bd31d2` v2.4.59 |
 | 2026-08-31 | Pulse shows the day's margin as profit on cost beside the profit figure | `b65eeecb` v2.4.60 |
