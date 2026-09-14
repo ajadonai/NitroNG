@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { fHeld, fN } from "../lib/format";
+import { formatDisplayPrice } from "../lib/currency";
 
 const read = rel => fs.readFileSync(path.join(process.cwd(), rel), "utf8");
 
@@ -28,10 +29,30 @@ describe("money someone holds never rounds up", () => {
   });
 
   it("is used wherever a customer reads their own money", () => {
+    // Two ways to floor, and which one a surface needs depends on whether the
+    // figure follows the currency picker. money(…, { round: "down" }) converts
+    // AND floors — proven below for every currency — so it is what a wallet
+    // balance uses. fHeld floors in naira alone, which is right for a payout:
+    // the money leaves to a Nigerian bank account in naira whatever the page
+    // is being read in. The wallet page used fHeld until 14 Sep 2026 and so
+    // stayed in naira while everything around it converted.
     expect(read("components/dashboard-overview.jsx")).toContain('money(balance, { round: "down" })');
     expect(read("components/dashboard.jsx")).toContain('money(user?.balance || 0, { round: "down" })');
-    expect(read("components/addfunds-page.jsx")).toContain("fHeld(balance)");
+    expect(read("components/addfunds-page.jsx")).toContain('money(balance, { round: "down" })');
     expect(read("components/m/payouts-page.jsx")).toContain("fHeld(data?.availableBalance || 0)");
+  });
+
+  it("floors a converted balance too — a picker must not round money up", () => {
+    const fx = { depositRate: 1155.65, usdRates: { GHS: 11.413414, KES: 129.445665, GBP: 0.739517 } };
+    for (const [code, held, price] of [
+      ["USD", "≈ $4.09", "≈ $4.10"],
+      ["GHS", "≈ ₵46.75", "≈ ₵46.76"],
+      ["KES", "≈ KSh530", "≈ KSh531"],
+      ["GBP", "≈ £3.02", "≈ £3.03"],
+    ]) {
+      expect(formatDisplayPrice(4734.6, { code, round: "down", ...fx }), code).toBe(held);
+      expect(formatDisplayPrice(4734.6, { code, ...fx }), code).toBe(price);
+    }
   });
 
 

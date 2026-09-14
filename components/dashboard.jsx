@@ -700,8 +700,9 @@ function DashboardInner({ initialData }) {
         const s = o.status;
         return {
           id: `ord-${o.id}`, type: "order",
-          title: s === "Completed" ? "Order delivered" : s === "Cancelled" ? "Order cancelled" : "Order in progress",
-          desc: `${o.service || "Service"} ${s === "Completed" ? "delivered" : s === "Cancelled" ? "cancelled" : "started"}`,
+          title: s === "Completed" ? tr("Order delivered") : s === "Cancelled" ? tr("Order cancelled") : tr("Order in progress"),
+          // The service name is the provider's and stays as it is; the verb around it translates.
+          desc: `${o.service || tr("Service")} — ${s === "Completed" ? tr("delivered") : s === "Cancelled" ? tr("cancelled") : tr("started")}`,
           time: o.created ? fD(o.created) : "", ts: new Date(o.created),
           color: s === "Completed" ? (dark_ ? "#60a5fa" : "#2563eb") : s === "Cancelled" ? (dark_ ? "#fca5a5" : "#dc2626") : (dark_ ? "#e0a458" : "#d97706"),
           icon: s === "Completed" ? "check" : s === "Cancelled" ? "x" : "clock",
@@ -709,14 +710,16 @@ function DashboardInner({ initialData }) {
       }),
       ...txs.filter(tx => tx.type === "deposit" && tx.status === "Completed" && tx.date && new Date(tx.date) >= cutoff).map(tx => ({
         id: `dep-${tx.id || tx.reference}`, type: "deposit", title: tr("Funds added"),
-        desc: `${money(tx.amount, { round: "down" })} added via ${tx.method || "Flutterwave"}`,
+        desc: `${money(tx.amount, { round: "down" })} ${tr("added to your wallet")}`,
         time: tx.date ? fD(tx.date) : "", ts: new Date(tx.date),
         color: dark_ ? "#6ee7b7" : "#059669",
         icon: "dollar",
       })),
       ...txs.filter(tx => (tx.type === "bonus" || tx.type === "admin_credit" || tx.type === "referral") && tx.date && new Date(tx.date) >= cutoff).map(tx => ({
-        id: `bonus-${tx.id || tx.reference}`, type: "reward", title: tx.type === "referral" ? "Referral bonus" : tx.type === "bonus" ? "Reward received!" : "Balance credited",
-        desc: `${money(tx.amount, { round: "down" })} — ${(tx.description || "Bonus from Nitro").replace(/\s*\[[^\]]+\]\s*/g, " ").trim()}`,
+        id: `bonus-${tx.id || tx.reference}`, type: "reward", title: tx.type === "referral" ? tr("Referral bonus") : tx.type === "bonus" ? tr("Reward received!") : tr("Balance credited"),
+        // Never the raw note: it carries internal markers, the admin's name and,
+        // on a transfer, another customer's — see txDesc in addfunds-page.jsx.
+        desc: `${money(tx.amount, { round: "down" })} — ${tx.type === "referral" ? tr("Referral commission") : tx.type === "bonus" ? tr("Reward credited") : tr("Credited by Nitro Team")}`,
         time: tx.date ? fD(tx.date) : "", ts: new Date(tx.date),
         color: dark_ ? "#e0a458" : "#d97706",
         icon: "gift",
@@ -724,7 +727,7 @@ function DashboardInner({ initialData }) {
       ...unreadTickets.map(tk => ({
         id: `tkt-${tk.id}`, type: "ticket",
         title: tr("New message from support"),
-        desc: tk.subject || "You have an unread support message",
+        desc: tk.subject || tr("You have an unread support message"),
         time: tk.updated ? fD(tk.updated) : "", ts: new Date(tk.updated),
         color: dark_ ? "#a5b4fc" : "#4f46e5",
         icon: "chat",
@@ -737,7 +740,10 @@ function DashboardInner({ initialData }) {
       if (notifClearedAt && n.ts && n.ts <= new Date(notifClearedAt)) return false;
       return true;
     }).sort((a, b) => (b.ts || 0) - (a.ts || 0));
-  }, [orders, txs, unreadTickets, notifClearedAt, clearedNotifIds]);
+    // tr and money belong here: without them the list keeps the text and the
+    // currency it was first built with, so switching either left the bell
+    // showing the old language until something else happened to invalidate it.
+  }, [orders, txs, unreadTickets, notifClearedAt, clearedNotifIds, tr, money]);
   const bellUnread = notifSynced ? notifItems.filter(n => {
     if (n.alwaysUnread) return true;
     if (readNotifIds.has(n.id)) return false;
