@@ -440,6 +440,9 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-14 | Public order-count head start 6,000 → 4,000 (real orders 10,363; shown figure 16,363 → 14,363) | `1af978a1` v2.4.158 |
+| 2026-09-14 | Telegram bot: markup was labelled margin (172% beside 63% in one message) — now margin on revenue everywhere; /revenue and /stats stop narrating gross-less-refunded | `1af978a1` v2.4.158 |
+| 2026-09-14 | Browser-extension noise filtered from Sentry: MetaMask rejects a plain object with no frames, so the hint is now checked and extension-rooted stacks are dropped | `1af978a1` v2.4.158 |
 | 2026-09-13 | Four dropdowns anchored again after the RTL pass added insetInlineEnd as a duplicate style attribute (silently dropped by JSX); react/jsx-no-duplicate-props now an error | `5e5786a0` v2.4.155 |
 | 2026-09-13 | Admin create order names the missing tier instead of quoting ₦0, and a free order shows the value it gives away and the cost it spends | `1780dc06` v2.4.156 |
 | 2026-09-13 | A free admin order now needs a reason, records it in the activity log, and raises a Telegram alert with the value given away and the provider cost | `35dd5934` v2.4.157 |

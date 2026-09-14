@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { scrubSentryBreadcrumb, scrubSentryEvent } from './lib/monitoring-redaction.js';
-import { sentryIgnoreErrors, isIgnoredBrowserNoise } from './lib/sentry-filters.js';
+import { sentryIgnoreErrors, sentryDenyUrls, isIgnoredBrowserNoise } from './lib/sentry-filters.js';
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -26,6 +26,8 @@ Sentry.init({
   ],
   denyUrls: [
     /^app:\/\//,
+    // Wallet and other browser extensions throwing inside our page.
+    ...sentryDenyUrls,
   ],
   beforeSend(event, hint) {
     if (isIgnoredBrowserNoise(event, hint)) return null;
