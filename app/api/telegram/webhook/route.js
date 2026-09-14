@@ -29,7 +29,13 @@ function reply(chatId, threadId, text) {
 
 // ── Shared helpers ──────────────────────────────────────
 const pct = (a, b) => b === 0 ? (a > 0 ? '🆕' : '—') : `${a >= b ? '+' : ''}${Math.round(((a - b) / b) * 100)}%`;
-const margin = (rev, cost) => cost > 0 ? `${Math.round(((rev - cost) / cost) * 100)}%` : '—';
+/**
+ * Margin: the share of revenue we keep. This was `(rev - cost) / cost` — markup
+ * on cost — under the name `margin`, so /stats printed 266% for a day beside
+ * 63% for the month and read as two different businesses. The business figure
+ * is margin on revenue, and it is the one every other surface quotes.
+ */
+const margin = (rev, cost) => rev > 0 ? `${Math.round(((rev - cost) / rev) * 100)}%` : '—';
 
 // ── /stats — full snapshot ──────────────────────────────
 async function handleStats(chatId, threadId) {
@@ -72,12 +78,12 @@ async function handleStats(chatId, threadId) {
     '',
     '<b>Today</b>',
     `  Revenue: <b>${naira(Math.round(todayRev) * 100)}</b>`,
-    `  Profit: <b>${naira(Math.round(todayRev - todayCost) * 100)}</b> (${margin(todayRev, todayCost)} markup)`,
+    `  Profit: <b>${naira(Math.round(todayRev - todayCost) * 100)}</b> (${margin(todayRev, todayCost)} margin)`,
     `  Money in: <b>${naira(Math.round(todayDep) * 100)}</b> (${todayDepositsAgg._count} deposits)`,
     `  Orders: <b>${todayOrderCount}</b>  ·  New users: <b>${todayUsers}</b>`,
     '',
     '<b>This month</b>',
-    `  Revenue: <b>${naira(Math.round(revNet.net) * 100)}</b> net · ${naira(Math.round(revNet.gross) * 100)} gross less ${naira(Math.round(revNet.refunds) * 100)} refunded`,
+    `  Revenue: <b>${naira(Math.round(revNet.net) * 100)}</b>`,
     `  Cost: <b>${naira(Math.round(revNet.cost + revNet.costWasted) * 100)}</b>`,
     `  Profit: <b>${naira(Math.round(revNet.net - revNet.cost - revNet.costWasted) * 100)}</b> (${Math.round(revNet.netMargin)}% margin)`,
     `  Money in: <b>${naira(Math.round(monthDep) * 100)}</b> (${monthDepositsAgg._count} deposits)`,
@@ -121,8 +127,8 @@ async function handleRevenue(chatId, threadId) {
   await reply(chatId, threadId, [
     '💰 <b>Revenue</b> (what users paid for orders)',
     `  Today: <b>${naira(Math.round(todayRev) * 100)}</b>  ${pct(todayRev, yesterdayRev)} vs yesterday`,
-    `  This month: <b>${naira(Math.round(revMonth.net) * 100)}</b> net · ${naira(Math.round(revMonth.gross) * 100)} gross less ${naira(Math.round(revMonth.refunds) * 100)} refunded`,
-    `  All time: <b>${naira(Math.round(revAll.net) * 100)}</b> net · ${naira(Math.round(revAll.refunds) * 100)} refunded`,
+    `  This month: <b>${naira(Math.round(revMonth.net) * 100)}</b>`,
+    `  All time: <b>${naira(Math.round(revAll.net) * 100)}</b>`,
     '',
     '🏦 <b>Money In</b> (deposits + admin credits)',
     `  Today: <b>${naira(Math.round(todayDep) * 100)}</b> (${todayDepAgg._count} txns)  ${pct(todayDep, yesterdayDep)} vs yesterday`,
@@ -222,16 +228,16 @@ async function handleProfit(chatId, threadId) {
     '',
     '<b>Today</b>',
     `  Revenue: ${naira(Math.round(tRev) * 100)}  ·  Cost: ${naira(Math.round(tCost) * 100)}`,
-    `  Profit: <b>${naira(Math.round(tRev - tCost) * 100)}</b> (${margin(tRev, tCost)} markup)`,
+    `  Profit: <b>${naira(Math.round(tRev - tCost) * 100)}</b> (${margin(tRev, tCost)} margin)`,
     `  ${pct(tRev - tCost, yRev - yCost)} vs yesterday`,
     '',
     '<b>This month</b>',
     `  Revenue: ${naira(Math.round(mRev) * 100)}  ·  Cost: ${naira(Math.round(mCost) * 100)}`,
-    `  Profit: <b>${naira(Math.round(mRev - mCost) * 100)}</b> (${margin(mRev, mCost)} markup)`,
+    `  Profit: <b>${naira(Math.round(mRev - mCost) * 100)}</b> (${margin(mRev, mCost)} margin)`,
     '',
     '<b>All time</b>',
     `  Revenue: ${naira(Math.round(aRev) * 100)}  ·  Cost: ${naira(Math.round(aCost) * 100)}`,
-    `  Profit: <b>${naira(Math.round(aRev - aCost) * 100)}</b> (${margin(aRev, aCost)} markup)`,
+    `  Profit: <b>${naira(Math.round(aRev - aCost) * 100)}</b> (${margin(aRev, aCost)} margin)`,
     '',
     '<b>Cash flow (month)</b>',
     `  Money in: ${naira(Math.round(monthDep) * 100)}`,
