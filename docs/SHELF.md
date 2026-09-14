@@ -440,6 +440,7 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-14 | Wallet and notifications: bell translates (14 strings, deps fixed), ledger descriptions stop printing raw internal notes (they named admins and other customers), glyph icons become SVG, and the balance follows the currency picker | `2d3c6848` v2.4.161 |
 | 2026-09-14 | Public order-count head start 6,000 → 4,000 (real orders 10,363; shown figure 16,363 → 14,363) | `f7d21d81` v2.4.158 |
 | 2026-09-14 | Telegram bot: markup was labelled margin (172% beside 63% in one message) — now margin on revenue everywhere; /revenue and /stats stop narrating gross-less-refunded | `f7d21d81` v2.4.158 |
 | 2026-09-14 | Browser-extension noise filtered from Sentry: MetaMask rejects a plain object with no frames, so the hint is now checked and extension-rooted stacks are dropped | `f7d21d81` v2.4.158 |

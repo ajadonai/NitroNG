@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback, Fragment } from "react";
 import { RailSec, RailCard, RailRow, RailStep, RailEmpty } from "./rail";
 import { useBodyScrollLock } from "./ui-primitives";
 import { useToast } from "./toast";
-import { fN, fHeld, fD, docDateLocale } from "../lib/format";
+import { fN, fD, docDateLocale } from "../lib/format";
 import { useMoney, useT, useLocale } from "./locale";
 import { msg } from "../lib/i18n";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
@@ -24,17 +24,45 @@ import {
 } from "../lib/crypto-payment-ui";
 import { copyText } from '@/lib/clipboard';
 
+/** One drawn shape per row, at the size the tile expects. The ledger used
+ *  typographic glyphs — ↓ ↑ ★ ↩ ＋ ✦ — which render as whatever font the device
+ *  happens to have and sit off the optical centre of the tile. */
+const txSvg = (paths) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths}</svg>
+);
+const I_IN = txSvg(<><path d="M12 4v11" /><path d="m7 10 5 5 5-5" /><path d="M5 20h14" /></>);
+const I_OUT = txSvg(<><path d="M12 20V9" /><path d="m7 14 5-5 5 5" /><path d="M5 4h14" /></>);
+const I_PEOPLE = txSvg(<><path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20" /><circle cx="10" cy="8" r="3.5" /><path d="M20 20v-1.5a3.5 3.5 0 0 0-2.6-3.4" /></>);
+const I_BACK = txSvg(<><path d="M4 12a8 8 0 1 0 2.6-5.9L4 8.5" /><path d="M4 4v4.5h4.5" /></>);
+const I_PLUS = txSvg(<><circle cx="12" cy="12" r="8.5" /><path d="M12 8.5v7M8.5 12h7" /></>);
+const I_MINUS = txSvg(<><circle cx="12" cy="12" r="8.5" /><path d="M8.5 12h7" /></>);
+const I_GIFT = txSvg(<><rect x="3.5" y="8.5" width="17" height="4" rx="1" /><path d="M12 8.5V20M5.5 12.5V20h13v-7.5" /><path d="M12 8.5S10.4 4 8.2 4.9 9.6 8.5 12 8.5zm0 0s1.6-4.5 3.8-3.6S14.4 8.5 12 8.5z" /></>);
+const I_STAR = txSvg(<path d="m12 4 2.2 4.7 5 .6-3.7 3.5.9 5-4.4-2.5L7.6 17.8l.9-5L4.8 9.3l5-.6z" />);
+const I_CLOCK = txSvg(<><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 1.8" /></>);
+const I_BANK = txSvg(<><path d="M3.5 9.5 12 4l8.5 5.5" /><path d="M6 10.5v7M10 10.5v7M14 10.5v7M18 10.5v7" /><path d="M3.5 20.5h17" /></>);
+const I_CARD = txSvg(<><rect x="3" y="5.5" width="18" height="13" rx="2" /><path d="M3 10h18" /><path d="M7 14.5h3" /></>);
+const I_COIN = txSvg(<><circle cx="12" cy="12" r="8.5" /><path d="M14.5 9.5a2.6 2.6 0 0 0-2.5-1.5c-1.4 0-2.5.9-2.5 2s1.1 2 2.5 2 2.5.9 2.5 2-1.1 2-2.5 2a2.6 2.6 0 0 1-2.5-1.5" /><path d="M12 6.5v11" /></>);
+
 const TX_META = {
-  deposit:      { label: msg("Deposit"),       icon: "↓", clr: dk => dk ? "#6ee7b7" : "#059669" },
-  order:        { label: msg("Order"),         icon: "↑", clr: dk => dk ? "#fca5a5" : "#dc2626" },
-  referral:     { label: msg("Referral bonus"),icon: "★", clr: () => "#c47d8e" },
-  refund:       { label: msg("Refund"),        icon: "↩", clr: dk => dk ? "#fcd34d" : "#d97706" },
-  admin_credit: { label: msg("Admin credit"),  icon: "＋", clr: dk => dk ? "#a5b4fc" : "#4f46e5" },
-  admin_gift:   { label: msg("Gift"),          icon: "✦", clr: dk => dk ? "#f0abfc" : "#a855f7" },
-  admin_debit:  { label: msg("Adjustment"),    icon: "↑", clr: dk => dk ? "#fca5a5" : "#dc2626" },
-  bonus:        { label: msg("Task reward"),   icon: "✦", clr: dk => dk ? "#f0abfc" : "#a855f7" },
-  bonus_expired:{ label: msg("Credit expired"),icon: "↑", clr: dk => dk ? "#a1a1aa" : "#71717a" },
+  deposit:      { label: msg("Deposit"),       icon: I_IN,     clr: dk => dk ? "#6ee7b7" : "#059669" },
+  order:        { label: msg("Order"),         icon: I_OUT,    clr: dk => dk ? "#fca5a5" : "#dc2626" },
+  referral:     { label: msg("Referral bonus"),icon: I_PEOPLE, clr: () => "#c47d8e" },
+  refund:       { label: msg("Refund"),        icon: I_BACK,   clr: dk => dk ? "#fcd34d" : "#d97706" },
+  admin_credit: { label: msg("Admin credit"),  icon: I_PLUS,   clr: dk => dk ? "#a5b4fc" : "#4f46e5" },
+  admin_gift:   { label: msg("Gift"),          icon: I_GIFT,   clr: dk => dk ? "#f0abfc" : "#a855f7" },
+  admin_debit:  { label: msg("Adjustment"),    icon: I_MINUS,  clr: dk => dk ? "#fca5a5" : "#dc2626" },
+  bonus:        { label: msg("Task reward"),   icon: I_STAR,   clr: dk => dk ? "#f0abfc" : "#a855f7" },
+  bonus_expired:{ label: msg("Credit expired"),icon: I_CLOCK,  clr: dk => dk ? "#a1a1aa" : "#71717a" },
 };
+/** How a deposit arrived, in the customer's words rather than the gateway's. */
+const DEPOSIT_METHOD = {
+  flutterwave: msg("Card or bank transfer"),
+  paystack: msg("Card or bank transfer"),
+  monnify: msg("Bank transfer"),
+  manual: msg("Bank transfer"),
+  crypto: msg("Crypto"),
+};
+
 function txClr(type, dk) { return (TX_META[type] || TX_META.order).clr(dk); }
 function isFlutterwaveDeposit(tx) {
   return tx.type === "deposit" && (tx.method === "flutterwave" || tx.method == null);
@@ -100,19 +128,47 @@ function fNShort(v, money) {
   if (money) return money(v, { round: "down" }); const a = Math.abs(v); if (a >= 1e8) return `₦${(a/1e6).toFixed(1).replace(/\.0$/,"")}M`; if (a >= 1e6) return `₦${(a/1e6).toFixed(2).replace(/\.?0+$/,"")}M`; if (a >= 1e5) return `₦${(a/1e3).toFixed(1).replace(/\.0$/,"")}K`; return fN(v); }
 function txIcon(type) { return (TX_META[type] || TX_META.order).icon; }
 function txLabel(type) { return (TX_META[type] || { label: type }).label; }
+/**
+ * The one line under a ledger row.
+ *
+ * It used to return the transaction's raw note whenever there was one, and
+ * those notes are written for us, not for the customer: they repeat the amount
+ * that is already on the row, carry internal markers, name the admin who acted,
+ * and — because a transfer is credited with who it came from — named OTHER
+ * customers. "Credited by Soludo (transfer from Thankgod ayomide" was on a real
+ * wallet. Nothing here reads the note any more; every line is built from the
+ * fields the row already shows.
+ */
 function txDesc(tx, tr) {
-  if (tx.type === "order" && tx.reference) {
-    const platform = tx.description?.match(/— (\S+)/)?.[1];
-    const id = tx.reference.startsWith("BULK-") ? `Bulk ${tx.reference}` : tx.reference;
-    return platform ? `${id} · ${platform}` : id;
+  const ref = tx.reference || "";
+  switch (tx.type) {
+    case "order": {
+      // The platform is the only useful thing the note carried, and it is a
+      // single safe word: "Instagram", "Twitter/X".
+      const platform = tx.description?.match(/—\s*([A-Za-z/]+)/)?.[1];
+      const id = ref.startsWith("BULK-") ? `${tr("Bulk")} ${ref}` : ref;
+      if (!id) return tr("Order");
+      return platform ? `${id} · ${platform}` : id;
+    }
+    case "refund":
+      return ref ? `${tr("Refund for")} ${ref.replace(/^(ADM-)?REF-/, "").replace(/-REF$/, "")}` : tr("Order refund");
+    case "deposit":
+      return DEPOSIT_METHOD[tx.method] ? tr(DEPOSIT_METHOD[tx.method]) : tr("Wallet top-up");
+    case "referral":
+      return tr("Referral commission");
+    case "admin_credit":
+      return tr("Credited by Nitro Team");
+    case "admin_gift":
+      return tr("A gift from Nitro");
+    case "admin_debit":
+      return ref === "CASH-REFUND" ? tr("Refunded to your bank") : tr("Balance adjustment");
+    case "bonus":
+      return tr("Reward credited");
+    case "bonus_expired":
+      return tr("Unused credit expired");
+    default:
+      return "";
   }
-  if (tx.description && tx.description !== tx.reference) return tx.description.replace(/\s*\[[^\]]+\]\s*$/, "");
-  if (tx.type === "refund") return tx.reference ? `${tr("Refund for")} ${tx.reference.replace(/^(ADM-)?REF-/, "")}` : tr("Order refund");
-  if (tx.type === "deposit") return tx.reference || tr("Wallet top-up");
-  if (tx.type === "referral") return tr("Referral commission");
-  if (tx.type === "admin_credit" || tx.type === "admin_gift") return (tx.description || tr("Credited by Nitro Team")).replace(/\s*\[[^\]]+\]\s*/g, " ").trim();
-  if (tx.type === "admin_debit") return (tx.description || tr("Balance adjustment")).replace(/\s*\[[^\]]+\]\s*/g, " ").trim();
-  return tx.reference || "";
 }
 
 
@@ -781,7 +837,10 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       {/* ── Balance ── */}
       <div className="rounded-[14px] p-4 mb-2" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
         <div className="text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted">{tr("Balance")}</div>
-        <div className="m text-[30px] desktop:text-[34px] font-bold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.01em" }}>{fHeld(balance)}</div>
+        {/* The balance follows the currency on screen, like every other figure.
+            It was formatted with fHeld, which is naira and only naira, so the
+            one number the page exists for stayed in naira when nothing else did. */}
+        <div className="m text-[30px] desktop:text-[34px] font-bold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.01em" }}>{money(balance, { round: "down" })}</div>
         {lastFunded && <div className="text-[11px] mt-1.5 text-t-text-muted">{tr("Last funded")} {fD(lastFunded.date, true)}</div>}
         <div className="px-0">
             {user?.bonusCredit?.amount > 0 && (() => {
@@ -789,7 +848,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               return (
                 <div className="flex items-center gap-1.5 mt-2 py-2 px-2.5 rounded-lg text-[11px]" style={{ background: dark ? "rgba(240,171,252,.06)" : "rgba(168,85,247,.04)", border: `1px solid ${dark ? "rgba(240,171,252,.14)" : "rgba(168,85,247,.1)"}`, color: dark ? "#f0abfc" : "#a855f7" }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>
-                  <span>{fHeld(user.bonusCredit.amount / 100)} {tr("bonus credit — expires in")} {daysLeft}d</span>
+                  <span>{money(user.bonusCredit.amount / 100, { round: "down" })} {tr("bonus credit — expires in")} {daysLeft}d</span>
                 </div>
               );
             })()}
@@ -1156,7 +1215,13 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
 export function AddFundsSidebar({ txs }) {
   const tr = useT();
   const money = useMoney();
-  const METHOD = { manual: ["BT", "Bank transfer"], crypto: ["CR", "Crypto"], flutterwave: ["CD", "Card"], paystack: ["CD", "Card"], monnify: ["BT", "Bank transfer"], korapay: ["CD", "Card"], alatpay: ["BT", "Bank transfer"] };
+  // Drawn marks, not the two-letter initials ("BT", "CR", "CD", "DP") that
+  // read as codes the customer is expected to know.
+  const METHOD = {
+    manual: [I_BANK, msg("Bank transfer")], monnify: [I_BANK, msg("Bank transfer")], alatpay: [I_BANK, msg("Bank transfer")],
+    crypto: [I_COIN, msg("Crypto")],
+    flutterwave: [I_CARD, msg("Card")], paystack: [I_CARD, msg("Card")], korapay: [I_CARD, msg("Card")],
+  };
   const STATUS = { Completed: "Cleared", Pending: "Waiting", Failed: "Failed", Rejected: "Rejected", Expired: "Expired", Processing: "Processing" };
   const deposits = (txs || []).filter(tx => tx.type === "deposit").slice(0, 5);
   return (
@@ -1170,8 +1235,8 @@ export function AddFundsSidebar({ txs }) {
       <RailSec>{tr("Recent deposits")}</RailSec>
       <RailCard>
         {deposits.length === 0 ? <RailEmpty>{tr("No deposits yet.")}</RailEmpty> : deposits.map(tx => {
-          const [ini, name] = METHOD[tx.method] || ["DP", tx.method ? tx.method.charAt(0).toUpperCase() + tx.method.slice(1) : "Deposit"];
-          return <RailRow key={tx.id || tx.reference} tile={ini} title={name} sub={`${tx.createdAt || tx.date ? fD(tx.createdAt || tx.date, true) : ""} · ${STATUS[tx.status] || tx.status}`} right={money(Math.abs(tx.amount || 0), { round: (tx.amount || 0) < 0 ? "up" : "down" })} />;
+          const [ini, name] = METHOD[tx.method] || [I_IN, msg("Deposit")];
+          return <RailRow key={tx.id || tx.reference} tile={ini} title={tr(name)} sub={`${tx.createdAt || tx.date ? fD(tx.createdAt || tx.date, true) : ""} · ${STATUS[tx.status] || tx.status}`} right={money(Math.abs(tx.amount || 0), { round: (tx.amount || 0) < 0 ? "up" : "down" })} />;
         })}
       </RailCard>
     </div>
