@@ -1,0 +1,39 @@
+<svg width="1200" height="640" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="640" fill="#1a0f14"/>
+<circle cx="1000" cy="130" r="350" fill="#FF7900" opacity="0.06"/>
+<circle cx="1060" cy="210" r="210" fill="#FF7900" opacity="0.04"/>
+<polygon points="0,640 0,530 260,640" fill="#c47d8e" opacity="0.06"/>
+<rect x="740" y="110" width="360" height="270" rx="24" fill="rgba(255,121,0,0.03)" stroke="rgba(255,121,0,0.08)" stroke-width="1.5"/>
+<rect x="788" y="231.5" width="6" height="27" rx="3" fill="rgba(255,121,0,0.174)"/>
+<rect x="799.5" y="205" width="6" height="80" rx="3" fill="rgba(255,121,0,0.2804141854913982)"/>
+<rect x="811" y="192.5" width="6" height="105" rx="3" fill="rgba(255,121,0,0.3296642917412915)"/>
+<rect x="822.5" y="182.5" width="6" height="125" rx="3" fill="rgba(255,121,0,0.3699404514055891)"/>
+<rect x="834" y="175.5" width="6" height="139" rx="3" fill="rgba(255,121,0,0.39761432043403433)"/>
+<rect x="845.5" y="172.5" width="6" height="145" rx="3" fill="rgba(255,121,0,0.41001463141395494)"/>
+<rect x="857" y="173.5" width="6" height="143" rx="3" fill="rgba(255,121,0,0.40563006205721375)"/>
+<rect x="868.5" y="179" width="6" height="132" rx="3" fill="rgba(255,121,0,0.38422401205273765)"/>
+<rect x="880" y="175" width="6" height="140" rx="3" fill="rgba(255,121,0,0.39935257159594717)"/>
+<rect x="891.5" y="188" width="6" height="114" rx="3" fill="rgba(255,121,0,0.34828431698128615)"/>
+<rect x="903" y="203.5" width="6" height="83" rx="3" fill="rgba(255,121,0,0.2868280243540525)"/>
+<rect x="914.5" y="220" width="6" height="50" rx="3" fill="rgba(255,121,0,0.21908138584152337)"/>
+<rect x="926" y="218" width="6" height="54" rx="3" fill="rgba(255,121,0,0.22838018826943712)"/>
+<rect x="937.5" y="205" width="6" height="80" rx="3" fill="rgba(255,121,0,0.27985104749645995)"/>
+<rect x="949" y="194" width="6" height="102" rx="3" fill="rgba(255,121,0,0.3238526701727067)"/>
+<rect x="960.5" y="173" width="6" height="144" rx="3" fill="rgba(255,121,0,0.4089737832379534)"/>
+<rect x="972" y="170" width="6" height="150" rx="3" fill="rgba(255,121,0,0.42716740252890967)"/>
+<rect x="983.5" y="170" width="6" height="150" rx="3" fill="rgba(255,121,0,0.42898223494585863)"/>
+<rect x="995" y="171.5" width="6" height="147" rx="3" fill="rgba(255,121,0,0.4137108687374866)"/>
+<rect x="1006.5" y="179.5" width="6" height="131" rx="3" fill="rgba(255,121,0,0.38194349764357177)"/>
+<rect x="1018" y="191" width="6" height="108" rx="3" fill="rgba(255,121,0,0.3355230988339548)"/>
+<rect x="1029.5" y="205.5" width="6" height="79" rx="3" fill="rgba(255,121,0,0.27740546863983484)"/>
+<rect x="1041" y="209" width="6" height="72" rx="3" fill="rgba(255,121,0,0.2639347456157416)"/>
+<rect x="1052.5" y="218" width="6" height="54" rx="3" fill="rgba(255,121,0,0.22844853124378495)"/>
+<rect x="1064" y="204.5" width="6" height="81" rx="3" fill="rgba(255,121,0,0.2815446577142663)"/>
+<rect x="1075.5" y="193" width="6" height="104" rx="3" fill="rgba(255,121,0,0.3287516817658065)"/>
+<text x="782" y="352" font-family="system-ui" font-size="13" fill="rgba(255,121,0,0.3)">streams · saves · listeners</text>
+<rect x="72" y="72" width="96" height="96" rx="24" fill="#FF7900"/>
+<g transform="translate(96,96) scale(2)" fill="#fff"><path d="M9 18V5l12-2v13" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></g>
+<text x="80" y="440" font-family="Georgia, serif" font-size="56" fill="white" font-weight="700" letter-spacing="-1">Promouvoir sa</text>
+<text x="80" y="516" font-family="Georgia, serif" font-size="56" fill="#FFA44D" font-weight="700" letter-spacing="-1">musique</text>
+<text x="80" y="590" font-family="system-ui" font-size="22" fill="rgba(255,255,255,0.3)" letter-spacing="6">NITRO BLOG</text>
+</svg>

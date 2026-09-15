@@ -1,0 +1,19 @@
+<svg width="1200" height="640" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="640" fill="#1a0f14"/>
+<circle cx="1000" cy="130" r="350" fill="#9146FF" opacity="0.06"/>
+<circle cx="1060" cy="210" r="210" fill="#9146FF" opacity="0.04"/>
+<polygon points="0,640 0,530 260,640" fill="#c47d8e" opacity="0.06"/>
+<rect x="740" y="110" width="360" height="270" rx="24" fill="rgba(145,70,255,0.03)" stroke="rgba(145,70,255,0.08)" stroke-width="1.5"/>
+<rect x="790" y="289" width="42" height="51" rx="7" fill="rgba(145,70,255,0.14800000000000002)"/>
+<rect x="854" y="269" width="42" height="71" rx="7" fill="rgba(145,70,255,0.16720000000000002)"/>
+<rect x="918" y="246" width="42" height="94" rx="7" fill="rgba(145,70,255,0.188)"/>
+<rect x="982" y="255" width="42" height="85" rx="7" fill="rgba(145,70,255,0.18)"/>
+<rect x="1046" y="207" width="42" height="133" rx="7" fill="rgba(145,70,255,0.2248)"/>
+<line x1="782" y1="348" x2="1060" y2="348" stroke="rgba(145,70,255,0.14)" stroke-width="2"/>
+<text x="782" y="372" font-family="system-ui" font-size="13" fill="rgba(145,70,255,0.34)">concurrent viewers</text>
+<rect x="72" y="72" width="96" height="96" rx="24" fill="#9146FF"/>
+<g transform="translate(96,96) scale(2)" fill="#fff"><rect x="2" y="4" width="20" height="13" rx="2" fill="none" stroke="#fff" stroke-width="2"/><path d="M10 9l5 2.5-5 2.5z"/><path d="M8 21h8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></g>
+<text x="80" y="440" font-family="Georgia, serif" font-size="56" fill="white" font-weight="700" letter-spacing="-1">Twitch and Kick</text>
+<text x="80" y="516" font-family="Georgia, serif" font-size="56" fill="#B98CFF" font-weight="700" letter-spacing="-1">in Nigeria</text>
+<text x="80" y="590" font-family="system-ui" font-size="22" fill="rgba(255,255,255,0.3)" letter-spacing="6">NITRO BLOG</text>
+</svg>
