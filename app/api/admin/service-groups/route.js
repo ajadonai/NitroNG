@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canSeeSensitive } from '@/lib/admin';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 import { recordPriceChanges } from '@/lib/price-changes';
+import { closeStrandedGroups } from '@/lib/group-integrity';
 
 export async function GET() {
   const { admin, error } = await requireAdmin('services');
@@ -128,6 +129,28 @@ export async function POST(req) {
       if (updates.description !== undefined) data.description = updates.description?.trim() || null;
       if (Array.isArray(updates.tags)) data.tags = updates.tags.map(t => String(t).trim().toLowerCase()).filter(Boolean);
 
+      // A group that is on must have something to sell.
+      //
+      // Without this, an enabled group whose tiers are all off renders as a
+      // card a customer can open and not order from — a dead end that looks
+      // like stock. The whole of Spotify sat in that state, and Threads
+      // Followers and X/Twitter Followers were still in it when this went in:
+      // in each case somebody switched the tiers off and the group did not
+      // follow, because nothing made it.
+      //
+      // Orderable means the tier is on AND its backing service is on. A tier
+      // pointing at a disabled service is exactly as unbuyable as no tier.
+      if (data.enabled === true) {
+        const orderable = await prisma.serviceTier.count({
+          where: { groupId, enabled: true, service: { enabled: true } },
+        });
+        if (orderable === 0) {
+          return Response.json({
+            error: 'This group has no tier a customer could order. Enable a tier (and its service) first, or leave the group off.',
+          }, { status: 400 });
+        }
+      }
+
       const group = await prisma.serviceGroup.update({ where: { id: groupId }, data });
       await logActivity(admin.name, `Updated service group "${group.name}"`, 'service');
       invalidateServiceCatalogue();
@@ -234,6 +257,12 @@ export async function POST(req) {
         });
       }
       const updated = await prisma.serviceTier.update({ where: { id: tierIdToUpdate }, data });
+      // Switching off the last orderable tier takes the group with it, rather
+      // than leaving a card a customer can open and not order from.
+      if (data.enabled === false) {
+        const closed = await closeStrandedGroups(prisma, [updated.groupId]);
+        if (closed.length) await logActivity(admin.name, `Disabled group "${closed[0]}" — its last orderable tier was switched off`, 'service');
+      }
       if (before && Number(before.sellPer1k) !== Number(updated.sellPer1k)) {
         await recordPriceChanges([{
           tierId: tierIdToUpdate,

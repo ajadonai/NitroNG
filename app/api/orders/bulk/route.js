@@ -813,6 +813,26 @@ export async function POST(req) {
     const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
     const usdRate = Number(usdRateSetting?.value || 1600);
 
+    // The prices a reseller was SHOWN, for the drift check below.
+    //
+    // /api/services/menu and /api/catalogue/full both hand a reseller wholesale
+    // prices, so expectedPrice comes back wholesale. The drift check compared
+    // it against retail sellPer1k, which reads a 10-15% discount as a 10-15%
+    // price RISE — well past the 5% threshold — and refuses every row. Any
+    // enabled reseller would have found bulk ordering simply broken.
+    //
+    // Dormant so far only because all three reseller profiles are disabled and
+    // getResellerTerms returns null for those.
+    //
+    // Resolved once here rather than per row. The transaction below resolves
+    // its own copy for the actual charge; this one only decides whether what
+    // the customer is about to pay still matches what they were quoted, so a
+    // genuine retail increase still shows through wholesaleOf and is still
+    // caught.
+    const quoteTerms = await getResellerTerms(session.id);
+    const quoteMarkup = quoteTerms ? await getMarkupSettings() : null;
+    const asQuoted = (retailKobo) => (quoteTerms ? wholesaleOf(retailKobo, quoteTerms, quoteMarkup) : retailKobo);
+
     // Resolve and validate each row
     const resolved = [];
     const seen = new Set();
@@ -897,11 +917,12 @@ export async function POST(req) {
 
       // A curated row is priced by its tier, a full-list row by the service.
       const serverPrice = Number(tier ? tier.sellPer1k : service.sellPer1k);
+      const quotedPrice = asQuoted(serverPrice);
       const clientPrice = row.expectedPrice ? row.expectedPrice * 100 : null;
       // Handles a null tier: it falls back to the masked public label, so a
       // full-list order never records the provider's own service name.
       const offerSnapshot = buildOrderOfferSnapshot({ tier, service });
-      if (clientPrice && serverPrice > clientPrice && (serverPrice - clientPrice) / clientPrice > 0.05) {
+      if (clientPrice && quotedPrice > clientPrice && (quotedPrice - clientPrice) / clientPrice > 0.05) {
         driftRows.push({
           row: i + 1,
           tierId: tier ? tier.id : null,
@@ -909,9 +930,12 @@ export async function POST(req) {
           service: offerSnapshot.serviceNameAtPurchase,
           tier: tier ? tier.tier : null,
           clientPrice,
-          serverPrice,
+          serverPrice: quotedPrice,
           expectedPrice: clientPrice / 100,
-          currentPrice: serverPrice / 100,
+          // In the money the cart and the menu actually hold. Sending retail
+          // here would have the client overwrite a reseller's wholesale prices
+          // with retail ones on its way to telling them nothing had changed.
+          currentPrice: quotedPrice / 100,
         });
       }
 

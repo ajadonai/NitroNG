@@ -134,3 +134,45 @@ describe('the bulk-mode hint', () => {
     expect(page).not.toMatch(/tap a tier to add it to your cart/);
   });
 });
+
+/**
+ * The price drift guard, against what the customer was actually quoted.
+ *
+ * Both catalogues hand a reseller WHOLESALE prices, so the expectedPrice that
+ * comes back with the cart is wholesale. The guard compared it against retail
+ * sellPer1k, which reads a 10% discount as an 11.1% price rise and a 15% one as
+ * 17.6% — both far past the 5% threshold. Every row of every bulk order from an
+ * enabled reseller would have been refused with price_drift.
+ *
+ * It has never fired because all three reseller profiles are disabled and
+ * getResellerTerms returns null for those. It would have fired on the first
+ * account anybody switched on.
+ */
+describe('the drift guard compares like with like', () => {
+  it('resolves the quoting terms once, outside the row loop', () => {
+    expect(route).toMatch(/const quoteTerms = await getResellerTerms\(session\.id\);/);
+    expect(route).toMatch(/const quoteMarkup = quoteTerms \? await getMarkupSettings\(\) : null;/);
+    expect(route).toMatch(/const asQuoted = \(retailKobo\) => \(quoteTerms \? wholesaleOf\(retailKobo, quoteTerms, quoteMarkup\) : retailKobo\);/);
+  });
+
+  it('compares the quoted price against what the client sent', () => {
+    expect(route).toMatch(/if \(clientPrice && quotedPrice > clientPrice && \(quotedPrice - clientPrice\) \/ clientPrice > 0\.05\)/);
+    // The old comparison must be gone, not merely shadowed.
+    expect(route).not.toMatch(/serverPrice > clientPrice && \(serverPrice - clientPrice\)/);
+  });
+
+  it('still charges off retail, so the discount is applied once and not twice', () => {
+    // asQuoted decides whether the quote still stands. The charge is computed
+    // from serverPrice and the transaction applies wholesale to it separately.
+    expect(route).toMatch(/const charge = Math\.ceil\(serverPrice \* qty \/ 100_000\) \* 100;/);
+    expect(route).toMatch(/wholesaleOf\(r\.charge, bulkTerms, bulkMarkup\)/);
+  });
+
+  it('hands back prices in the money the cart is holding', () => {
+    // The client writes these straight onto cart rows and menu tiers, both of
+    // which hold wholesale for a reseller. Retail here would overwrite their
+    // prices with retail ones while claiming to correct them.
+    expect(route).toMatch(/serverPrice: quotedPrice,/);
+    expect(route).toMatch(/currentPrice: quotedPrice \/ 100,/);
+  });
+});
