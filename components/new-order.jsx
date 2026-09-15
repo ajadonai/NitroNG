@@ -1580,30 +1580,38 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: t.text }}><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.89 2.89 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.11V9.38a6.33 6.33 0 00-.79-.05A6.34 6.34 0 003.14 15.67 6.34 6.34 0 009.48 22a6.34 6.34 0 006.34-6.34V9.17a8.16 8.16 0 004.77 1.53V7.26a4.85 4.85 0 01-1-.57z"/></svg>
                 </div>
-                <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>{tr("TikTok is the one platform we can’t promise on")}</div>
+                {/* An instruction, not a disclaimer. "TikTok is the one
+                    platform we can’t promise on" opened by apologising, which
+                    is a poor way to begin on a platform we want people buying
+                    from — the whole message is three words of advice. */}
+                <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>{tr("Start small on TikTok")}</div>
               </div>
               <div className="text-[13px] leading-[1.6] mb-3" style={{ color: t.textMuted }}>
-                {tr("TikTok changes how it works often, and every change hits delivery.")}
+                {tr("TikTok changes its rules often, and every change lands on delivery. So buy a little first, watch it arrive, then scale — that is how everyone who orders here regularly does it.")}
               </div>
+              {/* Numbered, so three risks read as a short list rather than a
+                  pile-on. The second one now says what happens when an order
+                  falls short, which the old copy never did — it is true, it is
+                  reassuring, and leaving it out made the warning worse than the
+                  facts. */}
               <div className="flex flex-col gap-2 mb-3">
                 {[
-                  <Emph>{tr("An order can come in *slowly*")}</Emph>,
-                  <Emph>{tr("It can *stop short* of the full number")}</Emph>,
-                  <Emph>{tr("Some of what landed can *drop* days later, and on TikTok drops are *not topped back up*")}</Emph>,
+                  <Emph>{tr("It may arrive *slower* than other platforms.")}</Emph>,
+                  <Emph>{tr("It may *stop short* of the full number. You are refunded the part that never came.")}</Emph>,
+                  <Emph>{tr("Some of it can *drop* after a few days, and TikTok drops are *not replaced*.")}</Emph>,
                 ].map((line, i) => (
                   <div key={i} className="flex gap-2.5 text-[13px] leading-[1.5]" style={{ color: t.textMuted }}>
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0 mt-[7px]" style={{ background: t.accent }} />
+                    <span className="w-[18px] h-[18px] rounded-md shrink-0 mt-[1px] flex items-center justify-center text-[10px] font-extrabold"
+                      style={{ background: dark ? "rgba(224,164,88,.16)" : "rgba(224,164,88,.14)", color: dark ? "#e0a458" : "#a8670c" }}>{i + 1}</span>
                     <span>{line}</span>
                   </div>
                 ))}
               </div>
-              <div className="rounded-xl px-3 py-2.5 mb-3 text-[13px] leading-[1.5]" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: t.textMuted }}>
-                <Emph weight={700}>{tr("*Test with a small order first.* Once you see it land, go bigger.")}</Emph>
+              {/* The advice sits WITH the risks rather than under them. */}
+              <div className="rounded-xl px-3 py-2.5 mb-4 text-[13px] leading-[1.5]" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: t.textMuted }}>
+                <Emph weight={700}>{tr("*What we would do:* order the smallest amount the service allows. If it lands clean, come back for the rest the same day.")}</Emph>
               </div>
-              <div className="text-[12.5px] leading-[1.6] mb-4" style={{ color: t.textSoft }}>
-                {tr("Placing a TikTok order means you’re okay with this.")}
-              </div>
-              <button onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>{tr("I understand")}</button>
+              <button onClick={() => { try { localStorage.setItem('nitro_tiktok_disclaimer', String(Date.now())); } catch {} setTiktokDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>{tr("Got it")}</button>
             </div>
           </div>
         </div>
@@ -1618,17 +1626,28 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)" }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: t.text }}><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                 </div>
-                <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>{tr("YouTube subscribers come in slowly, on purpose")}</div>
+                {/* The headline says why, not what. A drip is only worth
+                    explaining if the explanation makes it sound like the
+                    better outcome, which it is. */}
+                <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>{tr("These arrive slowly, and that is the point")}</div>
               </div>
               <div className="text-[13px] leading-[1.6] mb-3" style={{ color: t.textMuted }}>
-                {tr("YouTube watches for sudden jumps, so they are added a little at a time. That way the channel keeps them.")}
+                {tr("YouTube removes subscribers that show up all at once. Yours are added a few at a time so the channel keeps them.")}
               </div>
-              <div className="rounded-[14px] px-3.5 py-3 mb-3" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)" }}>
-                <div className="text-[24px] font-extrabold leading-none -tracking-[.5px]" style={{ color: "var(--t-accent-ink)", fontFamily: "'JetBrains Mono', monospace" }}>50 – 500</div>
-                <div className="text-[13px] leading-[1.4] mt-1.5" style={{ color: t.textMuted }}>{tr("subscribers a day, until your order is done")}</div>
-              </div>
-              <div className="text-[12.5px] leading-[1.6] mb-4" style={{ color: t.textSoft }}>
-                {tr("Nothing to do on your side. You can watch it climb in Orders.")}
+              {/* The rate and the nothing-to-do line were a stat block and a
+                  line of small print. Both are good news, so both get a tick
+                  and the same weight. */}
+              <div className="flex flex-col gap-2 mb-4">
+                {[
+                  <Emph key="rate">{tr("*50 – 500 a day*, every day, until the order is finished.")}</Emph>,
+                  <Emph key="todo">{tr("Nothing for you to do. Watch the count climb in *Orders*.")}</Emph>,
+                ].map((line, i) => (
+                  <div key={i} className="flex gap-2.5 text-[13px] leading-[1.5]" style={{ color: t.textMuted }}>
+                    <span className="w-[18px] h-[18px] rounded-md shrink-0 mt-[1px] flex items-center justify-center text-[11px] font-extrabold"
+                      style={{ background: dark ? "rgba(30,80,60,.34)" : "#e8f5ee", color: dark ? "#4ade80" : "#16a34a" }}>✓</span>
+                    <span>{line}</span>
+                  </div>
+                ))}
               </div>
               <button onClick={() => { try { localStorage.setItem('nitro_youtube_disclaimer', String(Date.now())); } catch {} setYoutubeDisclaimer(false); }} className="w-full py-[11px] rounded-lg border-none text-sm font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ background: t.accent, color: "#fff" }}>{tr("Got it")}</button>
             </div>
