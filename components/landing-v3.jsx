@@ -65,6 +65,18 @@ const LV3_CSS = `
 .lv3-roller>span{grid-area:1/1;display:block;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;letter-spacing:-.5px;opacity:0;transform:translateY(105%);transition:transform .55s cubic-bezier(.2,.7,.2,1),opacity .4s;white-space:nowrap}
 .lv3-roller>span.on{opacity:1;transform:translateY(0)}
 .lv3-roller>span.out{opacity:0;transform:translateY(-105%)}
+/* Brackets as pseudo-elements on each word rather than fixed siblings: the
+   closing one then hugs whatever word is in, with no width measuring and no
+   race with the Cormorant webfont. Every word starts at the same grid edge,
+   so the opening bracket reads as static while the closing one moves. They
+   stay out of the accessibility tree, which spares the screen reader
+   "open bracket business close bracket" every 2.6 seconds.
+   The glyphs are CSS unicode escapes — \\005B and \\005D are [ and ] — so the
+   i18n scanner does not read them as two English strings needing four
+   translations each. A bracket is punctuation, not prose. */
+.lv3-roller span::before,.lv3-roller span::after{font-family:Outfit,system-ui,sans-serif;font-style:normal;font-weight:400;letter-spacing:0;color:var(--bk);opacity:.82}
+.lv3-roller span::before{content:"\\005B";margin-right:.1em}
+.lv3-roller span::after{content:"\\005D";margin-left:.1em}
 .lv3-arc{position:relative;height:420px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:6px 0}
 .lv3-ficon{width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 12px 30px rgba(0,0,0,.18);animation:lv3float 7s ease-in-out infinite}
 .lv3-ficon-sm{width:44px;height:44px}
@@ -304,7 +316,7 @@ function LandingInner({ initialAuthQuery }){
             <div className="text-left relative z-[1] max-desktop:text-center max-desktop:flex max-desktop:flex-col max-desktop:items-center">
               <div className="fu text-[11px] font-bold tracking-[3px] uppercase mb-[22px] max-md:mb-3.5" style={{color:dark?t.accent:"rgba(255,255,255,.72)"}}>{tr("Nigeria's social growth engine")}</div>
               <h1 className="fu fd1 text-[clamp(40px,5vw,66px)] max-md:text-[clamp(34px,9vw,44px)] font-semibold leading-[1.02] -tracking-[2.2px] max-md:-tracking-[1.2px]" style={{color:t.heroText}}>
-                {tr("Your")} <span className="lv3-roller" aria-live="polite">{HERO_WORDS.map((w,i)=><span key={w} className={i===word?"on":i===((word+HERO_WORDS.length-1)%HERO_WORDS.length)?"out":""} style={{color:dark?t.accent:"#fff"}} aria-hidden={i!==word}>{tr(w)}</span>)}</span><br/>{tr("deserves a bigger audience.")}
+                {tr("Your")} <span className="lv3-roller" aria-live="polite" style={{"--bk":dark?t.accent:"#ecc94b"}}>{HERO_WORDS.map((w,i)=><span key={w} className={i===word?"on":i===((word+HERO_WORDS.length-1)%HERO_WORDS.length)?"out":""} style={{color:dark?t.accent:"#fff"}} aria-hidden={i!==word}>{tr(w)}</span>)}</span><br/>{tr("deserves a bigger audience.")}
               </h1>
               <p className="fu fd2 text-[clamp(15px,1.3vw,17.5px)] max-md:text-[14px] leading-[1.65] max-w-[520px] max-desktop:mx-auto mt-6 mb-7 max-md:mt-4 max-md:mb-4" style={{color:t.heroSoft}}>{tr("Followers, likes and views for Instagram, TikTok, YouTube and")} {siteStats.uniquePlatforms?`${siteStats.uniquePlatforms}+`:"25+"} {tr("more platforms.")} {/* "Paid in naira" is the line Google ranks this page on, so it
                   survives untouched for anyone reading in naira — which is every
@@ -349,8 +361,8 @@ function LandingInner({ initialAuthQuery }){
 
               {/* Trust — desktop/tablet */}
               <div className="fu fd4 flex max-md:!hidden max-desktop:justify-center items-center gap-[18px] mt-[22px] text-xs flex-wrap" style={{color:dark?"rgba(255,255,255,.4)":"rgba(255,255,255,.66)"}}>
-                <span className="inline-flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>{tr("Trusted by creators across Nigeria")}</span>
-                {socialLinks.social_whatsapp_support&&<a href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 no-underline" style={{color:"inherit"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>{tr("We reply fast on WhatsApp")}</a>}
+                <span className="inline-flex items-center gap-1.5" style={{color:dark?"#60a5fa":"#bae6fd"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>{tr("Trusted by creators across Nigeria")}</span>
+                {socialLinks.social_whatsapp_support&&<a href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 no-underline" style={{color:dark?"#25d366":"#86efac"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>{tr("We reply fast on WhatsApp")}</a>}
               </div>
             </div>
 
