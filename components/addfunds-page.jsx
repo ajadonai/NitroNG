@@ -4,7 +4,7 @@ import { RailSec, RailCard, RailRow, RailStep, RailEmpty } from "./rail";
 import { useBodyScrollLock } from "./ui-primitives";
 import { useToast } from "./toast";
 import { fN, fD, docDateLocale } from "../lib/format";
-import { useMoney, useT, useLocale } from "./locale";
+import { useMoney, useT, useLocale, useNairaAside } from "./locale";
 import { msg } from "../lib/i18n";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { canChargeIn, depositPresets, foreignChargeAmount, formatMoney } from "../lib/currency";
@@ -211,6 +211,7 @@ export function recoverableFlutterwaveDeposits(txs, excludedReference = null) {
 export default function AddFundsPage({ user, txs, transactionsTotal, walletSummary, dark, t, paymentStatus, setPaymentStatus, gatewayReturnReference, onPlaceOrder, onRefresh }) {
   const tr = useT();
   const money = useMoney();
+  const nairaAside = useNairaAside();
   const loc = useLocale();
   const currency = loc?.currency ?? "NGN";
   const toast = useToast();
@@ -839,8 +840,17 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         <div className="text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted">{tr("Balance")}</div>
         {/* The balance follows the currency on screen, like every other figure.
             It was formatted with fHeld, which is naira and only naira, so the
-            one number the page exists for stayed in naira when nothing else did. */}
+            one number the page exists for stayed in naira when nothing else did.
+
+            And it says the naira underneath when the headline is converted.
+            Every price on this page may honestly be an approximation; a wallet
+            balance is not an estimate of anything, it is a stored naira figure,
+            and the page you top up from is the worst place to be unable to
+            check what you actually hold. */}
         <div className="m text-[30px] desktop:text-[34px] font-bold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.01em" }}>{money(balance, { round: "down" })}</div>
+        {nairaAside(balance, { round: "down" }) && (
+          <div className="m text-[12px] mt-1 text-t-text-muted">{nairaAside(balance, { round: "down" })}</div>
+        )}
         {lastFunded && <div className="text-[11px] mt-1.5 text-t-text-muted">{tr("Last funded")} {fD(lastFunded.date, true)}</div>}
         <div className="px-0">
             {user?.bonusCredit?.amount > 0 && (() => {

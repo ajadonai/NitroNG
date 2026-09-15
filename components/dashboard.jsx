@@ -4,7 +4,7 @@ import { RailSec, RailCard, RailRow } from "./rail";
 import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
-import { useMoney, useT } from "./locale";
+import { useMoney, useT, useNairaAside } from "./locale";
 import { msg } from "../lib/i18n";
 import { DEFAULT_COUNTRY, validatePhone } from "../lib/phone-countries";
 import { PhoneField } from "./phone-field";
@@ -441,6 +441,10 @@ function DashboardInner({ initialData }) {
   // a `const` below that point is still in its temporal dead zone when the memo
   // runs. That shipped, and every dashboard render threw.
   const money = useMoney();
+  // The wallet is the one figure a customer must be able to check against a
+  // receipt, so it carries the naira even when everything else on the page is
+  // converted. Null whenever naira is already the display currency.
+  const nairaAside = useNairaAside();
   const applyThemeMode = (mode) => {
     setThemeMode(mode);
     try { localStorage.setItem("nitro-theme", mode); } catch {}
@@ -1403,7 +1407,8 @@ function DashboardInner({ initialData }) {
           {/* Balance pill — desktop only. Balance as a number, Top up as the action inside it.
               The balance converts on the same rate as every price, so "can I afford
               this" has the same answer whichever unit is on screen. */}
-          <button onClick={() => setActive("add-funds")} aria-label={`Balance ${money(user?.balance || 0, { round: "down" })}. Top up`}
+          <button onClick={() => setActive("add-funds")} title={nairaAside(user?.balance || 0, { round: "down" }) || undefined}
+            aria-label={`Balance ${money(user?.balance || 0, { round: "down" })}${nairaAside(user?.balance || 0, { round: "down" }) ? `, ${nairaAside(user?.balance || 0, { round: "down" })}` : ""}. Top up`}
             className="dash-balance-pill max-desktop:hidden flex items-center gap-2 h-[34px] pl-3 pr-1.5 cursor-pointer text-[13px] font-semibold text-t-text border-none"
             style={{ fontVariantNumeric: "tabular-nums" }}>
             {money(user?.balance || 0, { round: "down" })}
@@ -1531,6 +1536,9 @@ function DashboardInner({ initialData }) {
               <div className="shrink-0 ml-4 py-1.5 px-3 max-md:py-1 max-md:px-2.5 rounded-xl text-right" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
                 <div className="text-[11px] uppercase tracking-[1px] mb-0.5 text-t-text-muted">{tr("Balance")}</div>
                 <div className="m text-lg max-md:text-base font-semibold text-t-green">{money(user?.balance || 0, { round: "down" })}</div>
+                {nairaAside(user?.balance || 0, { round: "down" }) && (
+                  <div className="m text-[11px] mt-px text-t-text-muted">{nairaAside(user?.balance || 0, { round: "down" })}</div>
+                )}
                 {user?.bonusCredit && <div className="text-[11px] mt-0.5 text-accent-ink">{money(user.bonusCredit.amount / 100, { round: "down" })} {tr("bonus — expires in")} {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}
               </div>
             </div>
@@ -1634,7 +1642,12 @@ function DashboardInner({ initialData }) {
             </div>
             <div className="text-right shrink-0">
               <div className="m text-[15px] font-bold leading-tight text-t-text">{money(user?.balance || 0, { round: "down" })}</div>
-              <div className="text-[10px] font-bold uppercase tracking-[1px] text-t-text-muted">wallet</div>
+              {/* The naira takes the second line when there is one to show. The
+                  word "wallet" is a label on a row that already sits under a
+                  wallet icon beside a Top up button; the figure is worth more. */}
+              <div className="text-[10px] font-bold uppercase tracking-[1px] text-t-text-muted">
+                {nairaAside(user?.balance || 0, { round: "down" }) || "wallet"}
+              </div>
             </div>
             <button type="button" aria-label={tr("Top up wallet")} onClick={() => { setActive("add-funds"); setMoreOpen(false); }} className="nitro-money-btn w-[30px] h-[30px] flex items-center justify-center shrink-0">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>

@@ -217,9 +217,18 @@ export function LocaleProvider({ children, initialLang, initialMessages }) {
     [currency, fx],
   );
 
+  // The same figure in naira, whatever the display currency is, and whether the
+  // figure on screen is an approximation at all. formatDisplayPrice prefixes a
+  // "≈" for every non-naira currency, which is honest for a price — the wallet
+  // is a different case, because the balance is not an estimate of anything.
+  // It is a stored naira figure, and a customer who can only read an
+  // approximation of what they hold cannot check it against a receipt.
+  const fmtBase = useCallback((naira, opts) => formatMoney(naira, BASE_CURRENCY, opts), []);
+  const converted = currency !== BASE_CURRENCY;
+
   const value = useMemo(
-    () => ({ currency, setCurrency, lang, setLang, tr, dates, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
-    [currency, setCurrency, lang, setLang, tr, dates, fx, fxPending, fmt, fmtNative, toDisplay, toNaira, ensureRates],
+    () => ({ currency, setCurrency, lang, setLang, tr, dates, fx, fxPending, fmt, fmtNative, fmtBase, converted, toDisplay, toNaira, ensureRates, meta: CURRENCIES[currency] || CURRENCIES[BASE_CURRENCY] }),
+    [currency, setCurrency, lang, setLang, tr, dates, fx, fxPending, fmt, fmtNative, fmtBase, converted, toDisplay, toNaira, ensureRates],
   );
 
   return <LocaleCtx.Provider value={value}>{children}</LocaleCtx.Provider>;
@@ -267,4 +276,25 @@ export function useDates() {
 export function useMoney() {
   const l = useContext(LocaleCtx);
   return l?.fmt ?? ((n, opts) => formatMoney(n, BASE_CURRENCY, opts));
+}
+
+/**
+ * The naira behind a converted figure, for the few places showing an
+ * approximation is not good enough — the wallet balance above all.
+ *
+ *     const naira = useNairaAside();
+ *     const aside = naira(user.balance, { round: "down" });
+ *     {aside && <small>{aside}</small>}
+ *
+ * Returns null when naira IS the display currency, so a caller renders nothing
+ * without having to ask what the currency is, and null outside the provider.
+ */
+export function useNairaAside() {
+  const l = useContext(LocaleCtx);
+  const converted = !!l?.converted;
+  const fmtBase = l?.fmtBase;
+  return useCallback(
+    (naira, opts) => (converted && fmtBase ? fmtBase(naira, opts) : null),
+    [converted, fmtBase],
+  );
 }

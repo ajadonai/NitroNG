@@ -213,7 +213,7 @@ function sortRows(rows, sort) {
   return l;
 }
 
-function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, times }) {
+function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, times, bulk, inCart, onAdd }) {
   const tr = useT();
   const money = useMoney();
   const approval = approvalOf(row);
@@ -239,8 +239,13 @@ function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, time
     .sort((a, b) => (RANK[attrKind(a)] ?? 3) - (RANK[attrKind(b)] ?? 3))
     .slice(0, 2);
   return (
-    <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(row); } }} onClick={() => onPick(row)}
-      className="no-full-row flex items-center justify-between gap-3 py-2.5 px-3 md:py-3 md:px-4 cursor-pointer transition-colors duration-150"
+    // In bulk the row is not the order target — the + at the end is. A full-list
+    // row's detail is the single-order modal, which is gated to single mode, so
+    // a tap here would set state that renders nothing and lock the page behind
+    // a modal that never appears. That was the stuck state fixed in v2.5.36 and
+    // it is not coming back through a different door.
+    <div {...(bulk ? {} : { role: "button", tabIndex: 0, onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(row); } }, onClick: () => onPick(row) })}
+      className={`no-full-row flex items-center justify-between gap-3 py-2.5 px-3 md:py-3 md:px-4 transition-colors duration-150 ${bulk ? "" : "cursor-pointer"}`}
       style={{ borderTop: first ? "none" : `1px solid ${t.cardBorder}`, background: selected ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)") : "transparent" }}>
       {/* The same glyph square the picks card carries, so nine hundred rows are
           scannable by what they deliver and the two views read as one page. */}
@@ -290,11 +295,25 @@ function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, time
         <div className="m text-[14px] md:text-[15px] font-bold" style={{ color: "var(--t-accent-ink)", fontFamily: "'JetBrains Mono', monospace" }}>{money(row.price)}</div>
         <div className="text-[10px] mt-px" style={{ color: t.textMuted }}>{tr("per 1K")}</div>
       </div>
+      {/* Bulk's one action on this row. A count rather than a plus once it is in
+          the cart, the same thing a tier chip shows on the picks side — adding
+          the same service twice for two different links is ordinary, so it
+          counts up rather than toggling. */}
+      {bulk && (
+        <button onClick={e => { e.stopPropagation(); onAdd(row); }}
+          aria-label={inCart > 0 ? `${tr("Add another")} — ${inCart} ${tr("in cart")}` : tr("Add to cart")}
+          className="shrink-0 w-8 h-8 rounded-[9px] border border-solid cursor-pointer font-[inherit] text-[13px] font-bold flex items-center justify-center transition-transform duration-150 hover:-translate-y-px"
+          style={{ color: t.accentInk, background: t.accentLight, borderColor: `color-mix(in srgb, ${t.accent} 45%, transparent)` }}>
+          {inCart > 0 ? <span className="m">{inCart}</span> : (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          )}
+        </button>
+      )}
     </div>
   );
 }
 
-export default function FullList({ platform, platformLabel, search, dark, t, onPick, selectedId, onBackToPicks, cheapestPick, waNumber, userEmail, mine, onToggleSaved }) {
+export default function FullList({ platform, platformLabel, search, dark, t, onPick, selectedId, onBackToPicks, cheapestPick, waNumber, userEmail, mine, onToggleSaved, bulk, cartCounts, onAdd }) {
   const tr = useT();
   const money = useMoney();
   const [data, setData] = useState(null);
@@ -672,7 +691,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
                   <span className="m text-[10.5px] font-bold rounded-full px-[6px] py-[1px]" style={{ fontFamily: "'JetBrains Mono', monospace", background: dark ? "rgba(255,255,255,.1)" : "rgba(131,83,95,.1)", color: t.accentInk }}>{typeCount(x.key).toLocaleString()}</span>
                   {rows.length < inType.length && <span className="ml-auto m text-[10.5px]" style={{ fontFamily: "'JetBrains Mono', monospace", color: t.accentInk, opacity: .7 }}>{rows.length}/{inType.length.toLocaleString()}</span>}
                 </div>
-                {rows.map((r, i) => <Row key={r.id} first={i === 0} row={r} dark={dark} t={t} onPick={onPick} selected={selectedId === r.id} saved={savedSet.has(r.id)} onToggleSaved={onToggleSaved} times={history[r.id]?.times} />)}
+                {rows.map((r, i) => <Row key={r.id} first={i === 0} row={r} dark={dark} t={t} onPick={onPick} selected={selectedId === r.id} saved={savedSet.has(r.id)} onToggleSaved={onToggleSaved} times={history[r.id]?.times} bulk={bulk} inCart={cartCounts?.[`full:${r.id}:null`] || 0} onAdd={onAdd} />)}
                 {/* The number is the promise: the button says exactly how many
                     arrive, and says the true remainder when it is under a step,
                     so it never offers fifteen and hands over two. It grows the
@@ -690,7 +709,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
             );
           })
         ) : (
-          visible.map((r, i) => <Row key={r.id} first={i === 0} row={r} dark={dark} t={t} onPick={onPick} selected={selectedId === r.id} saved={savedSet.has(r.id)} onToggleSaved={onToggleSaved} times={history[r.id]?.times} />)
+          visible.map((r, i) => <Row key={r.id} first={i === 0} row={r} dark={dark} t={t} onPick={onPick} selected={selectedId === r.id} saved={savedSet.has(r.id)} onToggleSaved={onToggleSaved} times={history[r.id]?.times} bulk={bulk} inCart={cartCounts?.[`full:${r.id}:null`] || 0} onAdd={onAdd} />)
         )}
 
         {left > 0 && (

@@ -310,8 +310,23 @@ describe('the picks / full list selector', () => {
     expect(sel).toMatch(/#1d5fa5/);
   });
 
-  it('is not offered in bulk, which has no full list to switch to', () => {
-    expect(sel).toMatch(/orderMode === "single" &&/);
+  it('is offered in bulk too, now that the cart can hold a full-list row', () => {
+    // It was single-only because bulk's cart unit was a (service, tier) pair
+    // and a full-list service has no tier. The cart carries catalogueId now, so
+    // both modes carry both lists and the mode toggle no longer has to run the
+    // customer off the full list to keep the page safe.
+    expect(sel).not.toMatch(/orderMode === "single" &&/);
+    expect(src).not.toMatch(/if \(v === "bulk"\) switchView\("nitro"\)/);
+  });
+
+  it('still fences the stuck state, one door further in', () => {
+    // The frozen page came from tapping a full-list row while the modal that
+    // renders it is gated to single mode: state set, nothing drawn, scroll
+    // locked, no backdrop to dismiss. So in bulk the row is not a tap target
+    // at all — only its + is.
+    const list = fs.readFileSync(path.join(process.cwd(), 'components/full-list.jsx'), 'utf8');
+    expect(list).toMatch(/\{\.\.\.\(bulk \? \{\} : \{ role: "button", tabIndex: 0/);
+    expect(list).toMatch(/\$\{bulk \? "" : "cursor-pointer"\}/);
   });
 });
 
@@ -369,5 +384,30 @@ describe('only the list is a card', () => {
 
   it('lifts the list, so it is the one object on the page', () => {
     expect(full).toMatch(/boxShadow: dark \? "0 6px 22px rgba\(0,0,0,\.35\)" : "0 6px 22px rgba\(20,10,14,\.08\)"/);
+  });
+});
+
+/**
+ * The bulk cart's rows.
+ *
+ * They sit in a flex column that scrolls. A flex child shrinks by default, and
+ * a scrolling flex column squashes its children to fit the box BEFORE the
+ * scrollbar engages — so a cart of thirteen compressed every row to a fraction
+ * of its height, and openCardFrame's overflow:hidden clipped the service name
+ * and the tier badge through the middle instead of letting them spill.
+ *
+ * One row looked fine. Thirteen looked broken, which is exactly the cart size
+ * where somebody is about to spend the most money.
+ */
+describe('the bulk cart rows', () => {
+  const cart = src.slice(src.indexOf('function BulkCartExpanded('));
+
+  it('keeps every row at its natural height in the scrolling column', () => {
+    const scroller = cart.indexOf('ref={rowsScrollRef}');
+    expect(scroller, 'the rows scroller should still be here').toBeGreaterThan(-1);
+    expect(cart.slice(scroller, scroller + 200)).toMatch(/flex flex-col/);
+    // Both variants — collapsed and expanded — are children of it.
+    expect(cart).toMatch(/className="shrink-0 rounded-\[12px\] py-2\.5/);
+    expect(cart).toMatch(/className=\{`shrink-0 rounded-\[12px\] p-3\.5/);
   });
 });

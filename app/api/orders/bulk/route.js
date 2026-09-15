@@ -662,7 +662,11 @@ export async function PATCH(req) {
       const usdRate = Number(usdRateSetting?.value || 1600);
 
       const orderData = completed.map(o => {
-        const charge = Math.ceil(Number(o.tier.sellPer1k) * o.quantity / 100_000) * 100;
+        // A full-list order has no tier and is priced by its service. It could
+        // not reach here before — full-list orders were single-mode only, and a
+        // one-item cart is written with batchId null, so no batch could contain
+        // one. Bulk can hold them now, so this stops assuming.
+        const charge = Math.ceil(Number(o.tier ? o.tier.sellPer1k : o.service.sellPer1k) * o.quantity / 100_000) * 100;
         const cost = Math.ceil(Number(o.service.costPer1k) * usdRate * o.quantity / 100_000) * 100;
         return { original: o, charge: Math.max(100, charge), cost };
       });
@@ -816,8 +820,26 @@ export async function POST(req) {
 
     for (let i = 0; i < orders.length; i++) {
       const row = orders[i];
-      if (!row.tierId || !row.link || !row.quantity) {
+      // A row names either a curated tier or a full-list service, never both.
+      //
+      // The single-order route has resolved catalogueId for a while and the
+      // shared helpers in lib/order-create-input.server.js already branch on a
+      // null tier — minimum falls back to service.min, sellPer1k to
+      // service.sellPer1k, and buildOrderOfferSnapshot masks the provider name
+      // when there is no group to name the offer. This loop predates that and
+      // assumes a tier throughout, so the branch is added here rather than the
+      // whole loop rewritten around helpers: it is the money path, and a
+      // refactor of it is not what this change is.
+      const catalogueId = row.catalogueId;
+      const wantsCatalogue = catalogueId !== undefined && catalogueId !== null;
+      if (wantsCatalogue && row.tierId) {
+        return Response.json({ error: `Row ${i + 1}: a row names a tier or a catalogue service, not both` }, { status: 400 });
+      }
+      if ((!row.tierId && !wantsCatalogue) || !row.link || !row.quantity) {
         return Response.json({ error: `Row ${i + 1}: tier, link, and quantity required` }, { status: 400 });
+      }
+      if (wantsCatalogue && !Number.isInteger(catalogueId)) {
+        return Response.json({ error: `Row ${i + 1}: invalid service` }, { status: 400 });
       }
 
       const trimmedLink = cleanLink(row.link);
@@ -825,26 +847,46 @@ export async function POST(req) {
         return Response.json({ error: `Row ${i + 1}: invalid link` }, { status: 400 });
       }
 
-      const dupKey = `${row.tierId}:${trimmedLink}`;
+      // Namespaced so a tier id and a public catalogue number can never collide
+      // on the same link and mask one of the two as a duplicate.
+      const dupKey = `${wantsCatalogue ? `c${catalogueId}` : `t${row.tierId}`}:${trimmedLink}`;
       if (seen.has(dupKey)) {
-        return Response.json({ error: `Row ${i + 1}: duplicate (same link + same tier)` }, { status: 400 });
+        return Response.json({ error: `Row ${i + 1}: duplicate (same link + same service)` }, { status: 400 });
       }
       seen.add(dupKey);
 
-      const tier = await prisma.serviceTier.findUnique({
-        where: { id: row.tierId },
-        include: { service: true, group: true },
-      });
-      if (!tier || !tier.enabled || !tier.group?.enabled) {
-        return Response.json({ error: `Row ${i + 1}: service tier not available` }, { status: 400 });
+      let tier = null;
+      let service = null;
+      if (wantsCatalogue) {
+        // By the public number on the row, not an internal id the customer
+        // never sees — the same resolution the single route does.
+        const map = await prisma.resellerServiceMap.findUnique({
+          where: { apiId: catalogueId },
+          select: { serviceId: true, retiredAt: true },
+        });
+        if (!map?.serviceId || map.retiredAt) {
+          return Response.json({ error: `Row ${i + 1}: service not available` }, { status: 400 });
+        }
+        service = await prisma.service.findUnique({ where: { id: map.serviceId } });
+      } else {
+        tier = await prisma.serviceTier.findUnique({
+          where: { id: row.tierId },
+          include: { service: true, group: true },
+        });
+        if (!tier || !tier.enabled || !tier.group?.enabled) {
+          return Response.json({ error: `Row ${i + 1}: service tier not available` }, { status: 400 });
+        }
+        service = tier.service;
       }
-      const service = tier.service;
       if (!service || !service.enabled) {
         return Response.json({ error: `Row ${i + 1}: backing service not available` }, { status: 400 });
       }
 
-      const nitroMin = NITRO_MINS[tier.group.type?.toLowerCase()] || 50;
-      const effectiveMin = Math.max(service.min, nitroMin);
+      // The Nitro floor is a property of a curated tier's group. A full-list
+      // row has no group, so the provider's own minimum is the only one there
+      // is — which is what calculateCreateOrderPricing does for single orders.
+      const nitroMin = tier ? (NITRO_MINS[tier.group.type?.toLowerCase()] || 50) : 0;
+      const effectiveMin = tier ? Math.max(service.min, nitroMin) : service.min;
       const qty = Math.floor(Number(row.quantity));
       if (!qty || isNaN(qty) || qty <= 0 || !Number.isFinite(qty)) {
         return Response.json({ error: `Row ${i + 1}: invalid quantity` }, { status: 400 });
@@ -853,15 +895,19 @@ export async function POST(req) {
         return Response.json({ error: `Row ${i + 1}: quantity must be between ${effectiveMin.toLocaleString()} and ${service.max.toLocaleString()}` }, { status: 400 });
       }
 
-      const serverPrice = Number(tier.sellPer1k);
+      // A curated row is priced by its tier, a full-list row by the service.
+      const serverPrice = Number(tier ? tier.sellPer1k : service.sellPer1k);
       const clientPrice = row.expectedPrice ? row.expectedPrice * 100 : null;
+      // Handles a null tier: it falls back to the masked public label, so a
+      // full-list order never records the provider's own service name.
       const offerSnapshot = buildOrderOfferSnapshot({ tier, service });
       if (clientPrice && serverPrice > clientPrice && (serverPrice - clientPrice) / clientPrice > 0.05) {
         driftRows.push({
           row: i + 1,
-          tierId: tier.id,
+          tierId: tier ? tier.id : null,
+          catalogueId: wantsCatalogue ? catalogueId : undefined,
           service: offerSnapshot.serviceNameAtPurchase,
-          tier: tier.tier,
+          tier: tier ? tier.tier : null,
           clientPrice,
           serverPrice,
           expectedPrice: clientPrice / 100,
@@ -875,7 +921,7 @@ export async function POST(req) {
         return Response.json({ error: `Row ${i + 1}: service pricing not configured` }, { status: 400 });
       }
 
-      const tierName = `${offerSnapshot.serviceNameAtPurchase} (${offerSnapshot.tierNameAtPurchase})`;
+      const tierName = `${offerSnapshot.serviceNameAtPurchase}${offerSnapshot.tierNameAtPurchase ? ` (${offerSnapshot.tierNameAtPurchase})` : ''}`;
       const comments = row.comments?.trim().slice(0, 5000) || null;
 
       const at = (service.apiType || '').toLowerCase();
@@ -892,7 +938,8 @@ export async function POST(req) {
 
       let trafficConfig = undefined;
       if (row.trafficConfig != null) {
-        if (!tier.trafficTargeting) {
+        // Traffic targeting is a curated-tier capability; no full-list row has it.
+        if (!tier?.trafficTargeting) {
           return Response.json({ error: `Row ${i + 1}: traffic targeting not available for this tier` }, { status: 400 });
         }
         const tc = row.trafficConfig;
@@ -925,10 +972,10 @@ export async function POST(req) {
         };
       }
 
-      const bulkGroupType = (tier.group?.type || '').toLowerCase();
+      const bulkGroupType = (tier?.group?.type || '').toLowerCase();
       const bulkPlatform = (service.category || '').toLowerCase();
       const bulkDripCfg = getDripConfig(bulkGroupType, bulkPlatform);
-      const dripSchedule = process.env.NODE_ENV !== 'development' && tier.group?.tags?.includes('drip') && bulkDripCfg && qty >= bulkDripCfg.threshold ? calculateIntradayDrip(qty, service.min || 50, new Date(), bulkGroupType, bulkPlatform, { maxSpanHours: 22 }) : null;
+      const dripSchedule = process.env.NODE_ENV !== 'development' && tier?.group?.tags?.includes('drip') && bulkDripCfg && qty >= bulkDripCfg.threshold ? calculateIntradayDrip(qty, service.min || 50, new Date(), bulkGroupType, bulkPlatform, { maxSpanHours: 22 }) : null;
       if (dripSchedule) {
         const durationErr = validateIntradayDuration(dripSchedule.dispatches);
         if (durationErr) return Response.json({ error: `Row ${i + 1}: ${durationErr}` }, { status: 400 });
@@ -1004,7 +1051,7 @@ export async function POST(req) {
             orderId,
             userId: session.id,
             serviceId: o.service.id,
-            tierId: o.tier.id,
+            tierId: o.tier ? o.tier.id : null,
             batchId,
             link: o.link,
             quantity: o.qty,
