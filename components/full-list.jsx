@@ -448,8 +448,20 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
           are one tap back" — which describes a button instead of being one.
           It is a button now, so the sentence gets shorter and the offer gets
           tappable. The icon centres on the whole strip rather than hanging off
-          the first line. */}
-      <div className="flex items-center gap-2.5 flex-wrap mb-3 rounded-[11px] py-2 px-3 border border-solid" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.022)" }}>
+          the first line.
+
+          A tinted band rather than a card or bare text. The card was a box
+          around one sentence; stripping it to a hairline left the sentence with
+          no presence at all, in a stretch of page that had already lost the
+          search fill. A tint says "this is a thing" without claiming to be a
+          separate object.
+
+          Weaker in dark than in light, which looks backwards written down. The
+          same 7% wash that reads as a tint on cream reads as a glow on #0c0814,
+          and this band sits directly under fifteen platform tiles that were
+          already asking for too much there. */}
+      <div className="flex items-center gap-2.5 flex-wrap mb-3 py-2 pl-3 pr-3 rounded-r-[10px]"
+        style={{ borderLeft: `3px solid ${t.accent}`, background: dark ? "rgba(196,125,142,.05)" : "rgba(196,125,142,.07)" }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ color: t.textMuted }} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         <div className="text-[11.5px] leading-[1.5] flex-1 min-w-[190px]" style={{ color: t.textMuted }}>
           <strong style={{ color: t.text }}>{tr("Our wider range.")}</strong>{" "}
@@ -497,9 +509,15 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
           return (
             <button key={x.key} role="tab" aria-selected={on && activeMine === "any"} onClick={() => { setType(x.key); setMineOnly("any"); }} disabled={n === 0}
               className="no-type-tab inline-flex items-baseline gap-1.5 py-[5px] px-2.5 rounded-lg border-none font-[inherit] text-[13px] transition-colors duration-150"
-              style={{ cursor: n === 0 ? "default" : "pointer", opacity: n === 0 ? .35 : 1, background: on ? t.accent : "transparent", color: on ? "#fff" : t.textMuted, fontWeight: on ? 700 : 500 }}>
+              style={{ cursor: n === 0 ? "default" : "pointer", opacity: n === 0 ? .35 : 1, background: on ? t.accent : "transparent", color: on ? "#fff" : t.text, fontWeight: on ? 700 : 600 }}>
               {tr(x.label)}
-              <span className="m text-[10.5px]" style={{ fontFamily: "'JetBrains Mono', monospace", color: on ? "#fff" : t.textMuted, opacity: on ? .75 : .6 }}>{n.toLocaleString()}</span>
+              {/* The count in its own chip. Muted grey text on a muted grey
+                  count read as switched off — seven of eight options looking
+                  disabled is not restraint, it is a dead row. */}
+              <span className="m text-[10px] font-bold rounded-full px-[5px] py-[1px]"
+                style={{ fontFamily: "'JetBrains Mono', monospace",
+                  background: on ? "rgba(255,255,255,.22)" : (dark ? "rgba(255,255,255,.08)" : "rgba(88,52,62,.07)"),
+                  color: on ? "#fff" : t.textMuted }}>{n.toLocaleString()}</span>
             </button>
           );
         })}
@@ -530,7 +548,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
       </div>
 
       {/* ═══ THE LIST ═══ */}
-      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
+      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, boxShadow: dark ? "0 6px 22px rgba(0,0,0,.35)" : "0 6px 22px rgba(20,10,14,.08)" }}>
         {/* Three things stack here and they must not read as one field: this
             toolbar is chrome, a section head is a marker, a row is content.
             Chrome gets the deepest neutral and a hard edge under it. */}

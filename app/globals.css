@@ -426,18 +426,21 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 
 /* Main content */
 .dash-main { flex: 1; overflow: auto; padding: 28px; display: flex; flex-direction: column; min-height: 0; }
-/* The ground: a faint accent wash at the top that scrolls with the page, and a grain over the whole surface. CSS only. */
+/* The ground: a grain over the whole surface, and nothing else. CSS only.
+   There used to be an accent wash at the top of this column too. It was one of
+   two — the other is .nitro-atmo::before, fixed to the viewport — and the two
+   had different origins and different extents, so they never lined up. Worse,
+   this one is painted on the content column, so it began at a hard vertical
+   edge beside the sidebar while the other crossed it. Removed in both modes;
+   light's was the stronger of the two at .22 against dark's .16. */
 .dash-main {
-  background-image: radial-gradient(120% 70% at 12% -6%, rgba(196,125,142,.22), rgba(196,125,142,0) 60%), url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  background-size: 100% 900px, 160px 160px;
-  background-repeat: no-repeat, repeat;
-  background-attachment: local, scroll;
-  background-blend-mode: normal, multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 160px 160px;
+  background-repeat: repeat;
+  background-attachment: scroll;
+  background-blend-mode: multiply;
 }
-.dark .dash-main {
-  background-image: radial-gradient(120% 70% at 12% -6%, rgba(196,125,142,.16), rgba(196,125,142,0) 60%), url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  background-blend-mode: normal, screen;
-}
+.dark .dash-main { background-blend-mode: screen; }
 .dash-main::before { content: none; }
 /* public header links: hover and current */
 .pub-link { transition: background-color .15s, color .15s; }
@@ -1350,7 +1353,8 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .rr-leg > span { display: inline-flex; align-items: center; gap: 6px; }
 .rr-leg i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 
-/* ── Theme atmosphere: a faint aurora at the top of every page and a whisper of grain.
+/* ── Theme atmosphere: a whisper of grain everywhere, and a faint aurora on the
+     pages somebody arrives on — not on the dashboard, see below.
      Fixed, pointer-transparent, under all modals (z 300+) and sheets (z 88+). ── */
 .nitro-atmo {
   position: fixed; inset: 0; pointer-events: none; z-index: 58;
@@ -1368,6 +1372,16 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
     radial-gradient(60% 120% at 15% 0%, rgba(201,127,146,.13), transparent 60%),
     radial-gradient(50% 100% at 85% 0%, rgba(99,102,241,.10), transparent 60%);
 }
+/* The aurora is for the pages somebody arrives on. Behind a sidebar it is the
+   second wash on the same corner — .dash-main carried one too — and the page
+   below it is a working surface where every colour is already doing a job.
+   The grain stays on both; only the colour goes. Both modes.
+
+   :has() and not a prop because the atmosphere is mounted at the root, a
+   sibling of the page, so it cannot be told which route it is over. A browser
+   without :has() simply keeps the aurora, which is the old look and not a
+   broken one. */
+body:has(.dash-main) .nitro-atmo::before { content: none; }
 
 /* ── The theme toggle is a tiny sky: sun and clouds by day, moon and stars by night. ── */
 /* A two-tone ring so the pill is always outlined on ANY background — a white
