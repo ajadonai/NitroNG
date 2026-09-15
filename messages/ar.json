@@ -2181,5 +2181,15 @@
   "These arrive slowly, and that is the point": "يصل هؤلاء ببطء، وهذا هو المقصود",
   "YouTube removes subscribers that show up all at once. Yours are added a few at a time so the channel keeps them.": "يحذف يوتيوب المشتركين الذين يظهرون دفعة واحدة. أما مشتركوك فيُضافون قليلًا بعد قليل لتحتفظ بهم القناة.",
   "*50 – 500 a day*, every day, until the order is finished.": "*٥٠ – ٥٠٠ يوميًا*، كل يوم، حتى يكتمل الطلب.",
-  "Nothing for you to do. Watch the count climb in *Orders*.": "لا شيء عليك فعله. تابع ارتفاع العدد في *الطلبات*."
+  "Nothing for you to do. Watch the count climb in *Orders*.": "لا شيء عليك فعله. تابع ارتفاع العدد في *الطلبات*.",
+  "You've been signed out": "تم تسجيل خروجك",
+  "Sessions last a day, or a week if you ticked \"keep me signed in\".": "تدوم الجلسة يومًا واحدًا، أو أسبوعًا إذا اخترت \"أبقني مسجّلًا\".",
+  "Sessions end after 30 days no matter what. Signing in starts a fresh one.": "تنتهي الجلسة بعد ٣٠ يومًا مهما كان. وتسجيل الدخول يبدأ جلسة جديدة.",
+  "Signed out on this device": "تم تسجيل الخروج على هذا الجهاز",
+  "This happens when you sign out somewhere else, change your password, or pass the five-device limit.": "يحدث هذا عند تسجيل الخروج في مكان آخر، أو تغيير كلمة المرور، أو تجاوز حد الأجهزة الخمسة.",
+  "This account can't be used right now": "لا يمكن استخدام هذا الحساب في الوقت الحالي",
+  "Message us on WhatsApp and we'll tell you why and what to do next.": "راسلنا على واتساب وسنخبرك بالسبب وبما عليك فعله بعد ذلك.",
+  "You'll land back where you were.": "ستعود إلى حيث كنت.",
+  "Didn't expect this?": "لم تكن تتوقع ذلك؟",
+  "— it signs every other device out.": "— فهذا يسجّل خروج كل الأجهزة الأخرى."
 }

@@ -431,6 +431,24 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
 /* ═══════════════════════════════════════════ */
 /* ═══ MAIN DASHBOARD SHELL               ═══ */
 /* ═══════════════════════════════════════════ */
+/**
+ * Leave for the landing page carrying two things the notice needs: why the
+ * session ended, and where the person was when it did. Without the second one
+ * the promise to put them back is a lie, so both travel or neither does.
+ *
+ * The path is read here rather than on the landing page because by the time
+ * the landing page runs, this location is gone.
+ */
+async function signedOutRedirect(res) {
+  let reason = "";
+  try { reason = (await res.clone().json())?.reason || ""; } catch {}
+  const to = window.location.pathname + window.location.search;
+  const p = new URLSearchParams();
+  if (reason) p.set("signed_out", reason);
+  if (to && to !== "/") p.set("to", to);
+  window.location.replace(`/?${p}`);
+}
+
 export default function Dashboard({ initialData }) {
   return <ThemeProvider><DashboardInner initialData={initialData} /></ThemeProvider>;
 }
@@ -1003,7 +1021,7 @@ function DashboardInner({ initialData }) {
         if (!initialData) {
           const phoneRequestGeneration = identityRequestGenerationRef.current;
           const res = await fetch("/api/dashboard", { cache: "no-store" });
-          if (res.status === 401) { window.location.replace("/?session_expired=1"); return; }
+          if (res.status === 401) { await signedOutRedirect(res); return; }
           if (res.ok) {
             const data = await res.json();
             applyDashboardUser(data.user, {
@@ -1158,7 +1176,7 @@ function DashboardInner({ initialData }) {
         if (mRes.ok) { const m = await mRes.json(); if (m.maintenance) { window.location.replace("/maintenance"); return; } }
         const phoneRequestGeneration = identityRequestGenerationRef.current;
         const res = await fetch("/api/dashboard", { cache: "no-store" });
-        if (res.status === 401) { window.location.replace("/?session_expired=1"); return; }
+        if (res.status === 401) { await signedOutRedirect(res); return; }
         if (res.ok) {
           const data = await res.json();
           if (data.user) applyDashboardUser(data.user, {

@@ -2181,5 +2181,15 @@
   "These arrive slowly, and that is the point": "Hawa huwasili polepole, na ndio lengo",
   "YouTube removes subscribers that show up all at once. Yours are added a few at a time so the channel keeps them.": "YouTube huwaondoa wafuasi wanaojitokeza wote kwa mara moja. Wako huongezwa wachache kwa wakati ili chaneli iwabakishe.",
   "*50 – 500 a day*, every day, until the order is finished.": "*50 – 500 kwa siku*, kila siku, hadi agizo litakapokamilika.",
-  "Nothing for you to do. Watch the count climb in *Orders*.": "Huna la kufanya. Tazama idadi ikipanda katika *Maagizo*."
+  "Nothing for you to do. Watch the count climb in *Orders*.": "Huna la kufanya. Tazama idadi ikipanda katika *Maagizo*.",
+  "You've been signed out": "Umetolewa kwenye akaunti",
+  "Sessions last a day, or a week if you ticked \"keep me signed in\".": "Kipindi hudumu siku moja, au wiki moja ukiweka alama \"nibakishe nimeingia\".",
+  "Sessions end after 30 days no matter what. Signing in starts a fresh one.": "Kipindi huisha baada ya siku 30 bila kujali. Kuingia tena huanzisha kipya.",
+  "Signed out on this device": "Umetolewa kwenye kifaa hiki",
+  "This happens when you sign out somewhere else, change your password, or pass the five-device limit.": "Hili hutokea unapotoka kwenye akaunti mahali pengine, ukibadilisha nenosiri, au ukivuka kikomo cha vifaa vitano.",
+  "This account can't be used right now": "Akaunti hii haiwezi kutumika kwa sasa",
+  "Message us on WhatsApp and we'll tell you why and what to do next.": "Tutumie ujumbe WhatsApp nasi tutakueleza sababu na la kufanya baadaye.",
+  "You'll land back where you were.": "Utarudi pale ulipokuwa.",
+  "Didn't expect this?": "Hukulitegemea hili?",
+  "— it signs every other device out.": "— hii hutoa vifaa vingine vyote."
 }

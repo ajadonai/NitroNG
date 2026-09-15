@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
+import { safeReturnTo } from "../lib/safe-return";
 import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
 import { SWITCHER_LIVE, useT, useLocale } from "./locale";
 import { PhoneField } from "./phone-field";
@@ -52,6 +53,7 @@ const HC_CSS = `
 // the possessive on the noun, so both are given a phrasing that carries the
 // same meaning in their own order rather than English word order in disguise.
 const HERO_WORDS = ["music","brand","page","business","church","content"];
+
 const LV3_CSS = `
 .lv3-ring{position:absolute;border-radius:50%;border:1px solid;animation:lv3spin 90s linear infinite}
 .lv3-ring-dash{border-style:dashed;animation-duration:130s;animation-direction:reverse}
@@ -184,7 +186,11 @@ function LandingInner({ initialAuthQuery }){
   const [logoutMsg,setLogoutMsg]=useState(false);
   const [googleError,setGoogleError]=useState(false);
   const [sessionExpired,setSessionExpired]=useState(false);
-  useEffect(()=>{const p=new URLSearchParams(window.location.search);if(p.get("reset")){window.history.replaceState({},"","/");return;}if(p.get("session_expired")){setSessionExpired(true);window.history.replaceState({},"","/");}if(p.get("logout")){setLogoutMsg(true);window.history.replaceState({},"","/");setTimeout(()=>setLogoutMsg(false),4000);}if(p.get("google_error")){setGoogleError(true);window.history.replaceState({},"","/");setTimeout(()=>setGoogleError(false),5000);setModal("login");}if(p.get("error")==="account_pending_deletion"){setHeroError("Account pending deletion. Contact support@nitro.ng before the deletion deadline to cancel.");window.history.replaceState({},"","/");}if(p.get("error")==="disposable_email"){setHeroError("Disposable email addresses aren't allowed. Please sign up with a permanent email.");setModal("signup");window.history.replaceState({},"","/");}if(["google_cancelled","google_state_mismatch","google_token_failed","google_no_email","google_failed","google_missing_params","google_not_configured","google_account_deleted"].includes(p.get("error"))){setGoogleError(true);window.history.replaceState({},"","/");setTimeout(()=>setGoogleError(false),5000);setModal("login");}},[]);
+  // Why they were signed out, and where they were. Both arrive on the URL from
+  // the dashboard; see signedOutRedirect there.
+  const [signOutReason,setSignOutReason]=useState("expired");
+  const [returnTo,setReturnTo]=useState("");
+  useEffect(()=>{const p=new URLSearchParams(window.location.search);if(p.get("reset")){window.history.replaceState({},"","/");return;}if(p.get("session_expired")||p.get("signed_out")){setSessionExpired(true);setSignOutReason(p.get("signed_out")||"expired");setReturnTo(safeReturnTo(p.get("to")));window.history.replaceState({},"","/");}if(p.get("logout")){setLogoutMsg(true);window.history.replaceState({},"","/");setTimeout(()=>setLogoutMsg(false),4000);}if(p.get("google_error")){setGoogleError(true);window.history.replaceState({},"","/");setTimeout(()=>setGoogleError(false),5000);setModal("login");}if(p.get("error")==="account_pending_deletion"){setHeroError("Account pending deletion. Contact support@nitro.ng before the deletion deadline to cancel.");window.history.replaceState({},"","/");}if(p.get("error")==="disposable_email"){setHeroError("Disposable email addresses aren't allowed. Please sign up with a permanent email.");setModal("signup");window.history.replaceState({},"","/");}if(["google_cancelled","google_state_mismatch","google_token_failed","google_no_email","google_failed","google_missing_params","google_not_configured","google_account_deleted"].includes(p.get("error"))){setGoogleError(true);window.history.replaceState({},"","/");setTimeout(()=>setGoogleError(false),5000);setModal("login");}},[]);
   useEffect(()=>{(async()=>{try{const [maintRes,siRes,stRes,prRes]=await Promise.all([fetch("/api/maintenance-check"),fetch("/api/site-info"),fetch("/api/settings"),fetch("/api/pricing")]);if(maintRes.ok){const m=await maintRes.json();if(m.maintenance){window.location.replace("/maintenance");return;}}if(siRes.ok){const d=await siRes.json();if(d.stats)setSiteStats(d.stats);if(d.alerts?.length)setSiteAlerts(d.alerts);}if(stRes.ok){const d=await stRes.json();setSocialLinks(d.settings||{});}if(prRes.ok){const d=await prRes.json();if(d.platforms?.length)setPricingData(d);}}catch{}})();},[]);
   const closeModal=useCallback(()=>setModal(null),[]);
 
@@ -466,7 +472,7 @@ function LandingInner({ initialAuthQuery }){
         ))}
       </div>
 
-      {modal&&<AuthModal key="auth-modal" elevated dark={dark} t={t} mode={modal} setMode={setModal} onClose={closeModal} prefill={heroSignupData} via={heroVia} referralCode={heroRefCode} resetToken={resetToken}/>}
+      {modal&&<AuthModal key="auth-modal" elevated dark={dark} t={t} mode={modal} setMode={setModal} onClose={closeModal} prefill={heroSignupData} via={heroVia} referralCode={heroRefCode} resetToken={resetToken} returnTo={returnTo}/>}
 
       {/* Logout toast */}
       {/* Same proportions as the app's success toast: the tick sits in its own
@@ -478,21 +484,46 @@ function LandingInner({ initialAuthQuery }){
       {/* Floating WhatsApp button */}
       {socialLinks.social_whatsapp_support&&<a href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" aria-label={tr("Chat on WhatsApp")} className="fixed bottom-6 right-6 max-md:bottom-5 max-md:right-4 z-[90] w-14 h-14 max-md:w-12 max-md:h-12 rounded-full flex items-center justify-center no-underline transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(37,211,102,.35)]" style={{background:"#25d366",boxShadow:"0 4px 16px rgba(37,211,102,.3)"}}><svg width="26" height="26" className="max-md:w-[22px] max-md:h-[22px]" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>}
 
-      {/* Session expired banner */}
-      {sessionExpired&&<div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9998] py-4 px-5 rounded-[14px] max-w-[calc(100%-32px)] w-[400px]" style={{background:dark?"rgba(17,22,40,.97)":"rgba(255,255,255,.97)",border:`1px solid ${dark?"rgba(224,164,88,.28)":"rgba(217,119,6,.19)"}`,backdropFilter:"blur(16px)",boxShadow:dark?"0 12px 40px rgba(0,0,0,.5)":"0 12px 40px rgba(0,0,0,.19)",animation:"fu .4s ease"}}>
-        <div className="flex gap-2.5 items-start">
-          <div className="w-7 h-7 rounded-[7px] flex items-center justify-center shrink-0 mt-px" style={{background:dark?"rgba(224,164,88,.12)":"rgba(217,119,6,.08)"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark?"#e0a458":"#d97706"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-          <div className="flex-1">
-            <div className="text-sm font-semibold mb-0.5" style={{color:dark?"#fbbf24":"#92400e"}}>{tr("Session expired")}</div>
-            <div className="text-[13px] leading-[1.5] mb-2.5" style={{color:dark?"#a09b95":"#555250"}}>{tr("Your account was logged in on another device. If this wasn't you, secure your account.")}</div>
-            <div className="flex gap-2 flex-wrap">
-              <button onClick={()=>{setSessionExpired(false);setModal("login");}} className="py-[7px] px-4 rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{background:"linear-gradient(135deg,#c47d8e,#a3586b)",color:"#fff"}}>{tr(tr("Log In"))}</button>
-              <button onClick={()=>{setSessionExpired(false);setModal("forgot");}} className="py-[7px] px-4 rounded-lg text-[13px] font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{background:dark?"rgba(224,164,88,.18)":"rgba(217,119,6,.12)",border:`1px solid ${dark?"rgba(224,164,88,.31)":"rgba(217,119,6,.28)"}`,color:dark?"#e0a458":"#92400e"}}>{tr("Reset Password")}</button>
-            </div>
+      {/* Signed-out notice */}
+      {/* The old copy said the account had been logged into on another device
+          and told the reader to go and secure it. Nitro allows five concurrent
+          sessions, so that is the one cause this notice almost never has —
+          while a 24-hour timeout, which is what nearly everybody is seeing,
+          was being reported to them as a possible account takeover. The reason
+          now arrives from the API and picks the wording. */}
+      {sessionExpired&&(()=>{
+        const blocked=signOutReason==="blocked";
+        const copy={
+          expired:{t:tr("You've been signed out"),b:tr("Sessions last a day, or a week if you ticked \"keep me signed in\".")},
+          aged_out:{t:tr("You've been signed out"),b:tr("Sessions end after 30 days no matter what. Signing in starts a fresh one.")},
+          revoked:{t:tr("Signed out on this device"),b:tr("This happens when you sign out somewhere else, change your password, or pass the five-device limit.")},
+          blocked:{t:tr("This account can't be used right now"),b:tr("Message us on WhatsApp and we'll tell you why and what to do next.")},
+        }[signOutReason]||{t:tr("You've been signed out"),b:tr("Sessions last a day, or a week if you ticked \"keep me signed in\".")};
+        const ring=blocked?(dark?"rgba(224,164,88,.28)":"rgba(217,119,6,.19)"):(dark?"rgba(196,125,142,.30)":"rgba(196,125,142,.24)");
+        return <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9998] py-4 px-5 rounded-[14px] max-w-[calc(100%-32px)] w-[400px]" style={{background:dark?"rgba(17,22,40,.97)":"rgba(255,255,255,.97)",border:`1px solid ${ring}`,backdropFilter:"blur(16px)",boxShadow:dark?"0 12px 40px rgba(0,0,0,.5)":"0 12px 40px rgba(0,0,0,.19)",animation:"fu .4s ease"}}>
+        {/* items-center, not items-start — the badge reads as floating when it
+            sits level with the first line rather than with the block. */}
+        <div className="flex gap-2.5 items-center">
+          <div className="w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0" style={{background:blocked?(dark?"rgba(224,164,88,.12)":"rgba(217,119,6,.08)"):(dark?"rgba(196,125,142,.16)":"rgba(196,125,142,.10)")}}>{blocked
+            ?<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark?"#e0a458":"#d97706"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            :<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark?"#c47d8e":"#a3586b"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold mb-0.5" style={{color:dark?"#eae7e2":"#1c1b19"}}>{copy.t}</div>
+            <div className="text-[13px] leading-[1.5]" style={{color:dark?"#a09b95":"#555250"}}>{copy.b}</div>
           </div>
-          <button onClick={()=>setSessionExpired(false)} className="bg-transparent border-none text-base cursor-pointer p-0 leading-none shrink-0" style={{color:dark?"#8a8580":"#757170"}}>×</button>
+          <button onClick={()=>setSessionExpired(false)} aria-label={tr("Dismiss")} className="bg-transparent border-none text-base cursor-pointer p-0 leading-none shrink-0 self-start" style={{color:dark?"#8a8580":"#757170"}}>×</button>
         </div>
-      </div>}
+        {!blocked&&<>
+          <button onClick={()=>{setSessionExpired(false);setModal("login");}} className="w-full mt-3 py-[9px] rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{background:"linear-gradient(135deg,#c47d8e,#a3586b)",color:"#fff"}}>{tr("Sign in")}</button>
+          {/* Only promised when it is true — returnTo is empty unless the
+              dashboard sent a path, and a promise to restore nothing is worse
+              than saying nothing. */}
+          {returnTo&&<div className="text-[11.5px] leading-[1.5] mt-2 text-center" style={{color:dark?"#8a8580":"#757170"}}>{tr("You'll land back where you were.")}</div>}
+          <div className="text-[11.5px] leading-[1.55] mt-3 pt-2.5" style={{borderTop:`1px solid ${dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.06)"}`,color:dark?"#8a8580":"#757170"}}>
+            {tr("Didn't expect this?")} <button onClick={()=>{setSessionExpired(false);setModal("forgot");}} className="bg-transparent border-none p-0 cursor-pointer underline underline-offset-2 text-[11.5px] font-semibold" style={{color:dark?"#a09b95":"#555250"}}>{tr("Change your password")}</button> {tr("— it signs every other device out.")}
+          </div>
+        </>}
+      </div>;})()}
 
       
     </div>
