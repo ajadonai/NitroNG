@@ -13,6 +13,7 @@ import { msg } from "../lib/i18n";
 import { cleanLink } from "../lib/clean-link";
 import { OrderForm as ExtractedOrderForm } from "./order-form";
 import FullList from "./full-list";
+import { ServiceGlyph } from "./service-glyph";
 import { NotSureHelp, OrderForMeCard } from "./order-help";
 import { TASKS_ENABLED } from './rewards';
 import { openCardFrame } from '@/lib/expandable-card';
@@ -92,6 +93,118 @@ export const PLATFORM_GROUPS = [
 ];
 
 export const PLATFORMS = PLATFORM_GROUPS.flatMap(g => g.platforms);
+
+/**
+ * Each platform's own colour, for the rail down the left of its tile.
+ *
+ * Thirty-six identical grey chips meant nobody recognised a logo — they read
+ * thirty-six labels instead. The rail is the device the service cards already
+ * use for Nigerian and US, so it is a pattern this page owns rather than a new
+ * one.
+ *
+ * Every value is the brand's real colour, taken from simple-icons 16.31.0,
+ * which derives them from the official logo rather than from memory. Several of
+ * these were wrong when written by hand: Instagram had the retired #E1306C,
+ * Facebook the pre-2023 #1877F2, Snapchat a mustard that was not Snapchat
+ * yellow at all. The four with no simple-icons entry are marked.
+ */
+const BRAND = {
+  instagram: "#FF0069", facebook: "#0866FF", youtube: "#FF0000",
+  tiktok: "#000000", twitter: "#000000", threads: "#000000",
+  telegram: "#26A5E4", whatsapp: "#25D366",
+  linkedin: "#0A66C2",   // not in simple-icons; LinkedIn's own brand value
+  snapchat: "#FFFC00", pinterest: "#BD081C", reddit: "#FF4500",
+  discord: "#5865F2", twitch: "#9146FF", kick: "#53FC19",
+  tumblr: "#36465D", quora: "#B92B27", onlyfans: "#00AFF0",
+  clubhouse: "#FFE450", kwai: "#FF4906", vimeo: "#1AB7EA", bluesky: "#1185FE",
+  spotify: "#1ED760", audiomack: "#FFA200",
+  boomplay: "#E94F1D",   // not in simple-icons; taken from the app icon
+  applemusic: "#FA243C", soundcloud: "#FF5500", deezer: "#A238FF",
+  tidal: "#000000",      // not in simple-icons; Tidal's mark is black
+  shazam: "#0088FF", mixcloud: "#5000FF",
+  google: "#4285F4", trustpilot: "#00B67A", appstore: "#0D96F6",
+  playstore: "#414141",
+};
+
+/**
+ * Two substitutions, made only where a real colour cannot do a job, and never
+ * by changing what the brand is.
+ *
+ * ON_DARK: a black mark is invisible on the dark canvas. The rail, the glyph
+ * and the label all take this instead — it is the same brand, lifted to where
+ * the eye can find it.
+ *
+ * INK_ON_LIGHT: Snapchat yellow, Kick green and Clubhouse yellow are correct
+ * colours that cannot carry text on a light ground — #FFFC00 on white is about
+ * 1.1:1. Only the *text* takes this darker value. The rail and the glyph keep
+ * the true colour, because a rail does not have to be read.
+ */
+const ON_DARK = {
+  // Black marks.
+  tiktok: "#f0edea", twitter: "#f0edea", threads: "#f0edea", tidal: "#f0edea",
+  playstore: "#b9b9b9", tumblr: "#8aa4c4",
+  // Deep colours that fall under 3:1 on the dark card. Same hue, lifted.
+  pinterest: "#cf091f",   // #BD081C measures 2.81:1
+  mixcloud: "#7536ff",    // #5000FF measures 2.43:1
+};
+const INK_ON_LIGHT = {
+  // Too light to read as type on white. Same hue, darkened.
+  snapchat: "#7d7000", kick: "#2f8a0d", clubhouse: "#7d6a1a", audiomack: "#9c6500",
+  telegram: "#1a97d5",    // #26A5E4 measures 2.73:1
+  whatsapp: "#1ca24f",    // #25D366 measures 1.95:1
+  onlyfans: "#0098d1",    // #00AFF0 measures 2.47:1
+  vimeo: "#129ac6",       // #1AB7EA measures 2.30:1
+  spotify: "#17a349",     // #1ED760 measures 1.89:1
+  trustpilot: "#00a26d",  // #00B67A measures 2.60:1
+};
+
+/** The colour to paint with: the brand, lifted where a dark ground would eat it. */
+const brandOf = (id, dark) => (dark && ON_DARK[id]) || BRAND[id] || null;
+/** The colour to set type in: the brand, darkened where light ground would lose it. */
+const brandInk = (id, dark) => (dark ? brandOf(id, dark) : (INK_ON_LIGHT[id] || BRAND[id])) || null;
+
+/**
+ * One platform tile. Three places draw these — the desktop grid, the phone's
+ * five-wide window and the expanded sheet — and they differed only in height
+ * and corner radius, so the rail, the brand and the selected state are defined
+ * once here rather than three times in markup.
+ *
+ * No service count on the tile. It carried the curated number, which is right
+ * on Nitro picks and wrong the moment the selector switches to the full list —
+ * Instagram is 19 on one view and 934 on the other, and a badge that does not
+ * move when the list behind it does is worse than no badge.
+ */
+function PlatformTile({ p, active, dark, t, onClick, compact }) {
+  const tr = useT();
+  const brand = brandOf(p.id, dark) || t.accent;
+  const ink = brandInk(p.id, dark) || t.accentInk;
+  // The rail thins on a phone. At five columns a 3px rail on a 62px tile stops
+  // reading as an accent and becomes a stripe across the corner of the tile.
+  const rail = compact ? 2 : 3;
+  return (
+    <button onClick={onClick} title={tr(p.label)}
+      className="no-plat-tile relative rounded-[11px] border border-solid flex flex-col items-start justify-center cursor-pointer font-[inherit] w-full min-w-0 overflow-hidden transition-[transform,box-shadow,border-color,background] duration-150 hover:-translate-y-px"
+      style={{
+        height: compact ? 54 : 58,
+        gap: 5,
+        paddingLeft: rail + (compact ? 6 : 8),
+        paddingRight: compact ? 5 : 7,
+        borderColor: active ? brand : t.cardBorder,
+        background: active
+          ? (dark ? `color-mix(in srgb, ${brand} 17%, #171126)` : `color-mix(in srgb, ${brand} 10%, #fffdfb)`)
+          : (dark ? "#171126" : "#fffdfb"),
+        boxShadow: active
+          ? `inset ${rail}px 0 0 ${brand}, 0 3px 10px color-mix(in srgb, ${brand} 22%, transparent)`
+          : `inset ${rail}px 0 0 ${brand}, 0 1px 2px rgba(20,10,14,.05)`,
+      }}>
+      <span className="flex items-center justify-center [&_svg]:w-[16px] [&_svg]:h-[16px]" style={{ width: 16, height: 16, color: brand }}>{p.icon}</span>
+      <span className="font-medium leading-none w-full text-left overflow-hidden text-ellipsis whitespace-nowrap"
+        style={{ fontSize: compact ? 9.5 : 10, color: active ? ink : t.textMuted, fontWeight: active ? 700 : 500 }}>
+        {p.label.replace(" / X", "/X")}
+      </span>
+    </button>
+  );
+}
 
 const TS = {
   Budget: { bg: "#fef7ed", border: "#e8d5b8", text: "#854F0B", textD: "#f0c98a", bgD: "#2d2210", borderD: "#5a4020", grad: "linear-gradient(135deg,#e0a458,#b45309)", label: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
@@ -263,6 +376,22 @@ function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick }) {
   );
 }
 
+// Every ServiceGroup.type live today, folded onto the glyphs above. The keys
+// are the provider-era spellings the menu still carries — "Channel Members" and
+// "channel-members" are the same thing written twice.
+const TYPE_KEY = {
+  followers: "followers", "podcast-followers": "followers", "monthly-listeners": "followers",
+  listeners: "followers", "community-members": "members", "channel-members": "members",
+  "Channel Members": "members",
+  likes: "likes", saves: "saves",
+  views: "views", "shorts-views": "views", plays: "plays",
+  comments: "comments", "shorts-comments": "comments", reviews: "comments",
+  "verified-comments": "verified",
+  reposts: "shares", reshares: "shares", downloads: "downloads", traffic: "traffic",
+  engagement: "engagement", Standard: "engagement", default: "engagement",
+};
+const glyphKey = (type) => TYPE_KEY[type] || TYPE_KEY[String(type || "").toLowerCase()] || "followers";
+
 function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t, orderMode, activePromotion, waNumber, userEmail, first, cartCounts }) {
   const tr = useT();
   const money = useMoney();
@@ -281,12 +410,25 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
   const lowestPrice = Math.min(...svc.tiers.map(ti => ti.price));
   const activeTier = isSel && selTier ? selTier : null;
   const accent = svc.isPackage ? { light: "#1d4ed8", dark: "#60a5fa", bgL: "#eff6ff", bgD: "rgba(59,130,246,.12)", selBgL: "#dbeafe", selBgD: "#111d3a", shadow: "59,130,246" } : svc.ng ? { light: "#16a34a", dark: "#4ade80", bgL: "#e8f5ee", bgD: "rgba(30,80,60,.24)", selBgL: "#d0f0db", selBgD: "#122a1c", shadow: "22,163,74" } : svc.us ? { light: "#dc2626", dark: "#f87171", bgL: "#fdeeee", bgD: "rgba(80,30,32,.24)", selBgL: "#fadada", selBgD: "#2a1216", shadow: "220,38,38" } : null;
+  // The one colour this card speaks in: its audience where it has one, the
+  // accent where it does not. Both the glyph square and the name read from it.
+  const ink = accent ? (dark ? accent.dark : accent.light) : (isSel ? t.accent : t.accentInk);
   const handlePickTier = (tier, e) => { setExplOpen(false); onPickTier(tier, e); };
   const s = activeTier ? TS[activeTier.tier] : null;
   return (
     <div ref={cardRef} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => onPickService(svc)} className={`no-svc-card py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 cursor-pointer transition-colors duration-150 ease-in-out${isSel ? " relative z-[1]" : ""}`} style={{ borderStyle: "solid", borderColor: isSel ? (accent ? (dark ? accent.dark : accent.light) : t.accent) : t.cardBorder, borderWidth: isSel ? 1.5 : (first ? 0 : "1px 0 0 0"), ...(isSel ? { margin: "6px 8px", borderRadius: 14, boxShadow: `0 6px 20px ${accent ? `rgba(${accent.shadow},.16)` : "rgba(196,125,142,.16)"}` } : {}), ...(!isSel && accent ? { boxShadow: `inset 3px 0 0 ${dark ? accent.dark : accent.light}` } : {}), background: isSel ? (accent ? (dark ? accent.selBgD : accent.selBgL) : (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)")) : accent ? (dark ? accent.bgD : accent.bgL) : "transparent", opacity: selSvc && !isSel ? (dark ? .45 : .6) : 1 }}>
-      <div className="flex items-center justify-between gap-3 max-md:flex-wrap max-md:gap-1.5">
-        <div className="flex-1 min-w-0 max-md:basis-[60%]">
+      <div className="flex items-center justify-between gap-2.5 md:gap-3">
+        {/* The type, as one glyph, in whatever colour the card already carries —
+            Nigerian green, US red, package blue, or the accent. It is the same
+            tinted-square device the platform tiles use, so the two rows of the
+            page read as one family.
+
+            Mixed from the ink rather than reusing the card's own tint: a
+            Nigerian card is already that exact green, so a square tinted the
+            same way was invisible on three rows in five. This lands deeper than
+            whatever it sits on, selected or not. */}
+        <ServiceGlyph type={glyphKey(svc.type)} tone={ink} dark={dark} size={36} radius={11} />
+        <div className="flex-1 min-w-0">
           <div className="text-sm md:text-[15px] desktop:text-base font-semibold mb-1" style={{ color: accent ? (dark ? accent.dark : accent.light) : (isSel ? t.accent : t.text) }}>{svc.name}</div>
           {svc.description && <div className="text-[11px] mb-1.5 leading-snug" style={{ color: t.textMuted }}>{svc.description}</div>}
         </div>
@@ -447,9 +589,42 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   // agree. Device-local on purpose — this is a "have you seen it", not a
   // preference worth a column.
   const [fullListSeen, setFullListSeen] = useState(true);
+  // What this customer has bought before and kept. One fetch, read by both
+  // views: the menu itself is cached across every user, so nothing per-person
+  // can live in it.
+  const [mine, setMine] = useState(null);
   useEffect(() => {
     try { setFullListSeen(!!localStorage.getItem("nitro_full_list_seen")); } catch { setFullListSeen(true); }
   }, []);
+  useEffect(() => {
+    let off = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/orders/mine");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!off) setMine(data);
+      } catch {}
+    })();
+    return () => { off = true; };
+  }, []);
+
+  // Saving is optimistic: the star is a keepsake, not a transaction, and making
+  // somebody wait on a round trip to see it fill would be the wrong trade. On
+  // failure it goes back and says so.
+  const toggleSaved = useCallback(async (apiId, on) => {
+    setMine(m => (m ? { ...m, saved: on ? [...m.saved, apiId] : m.saved.filter(x => x !== apiId) } : m));
+    try {
+      const res = await fetch("/api/catalogue/full/save", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: apiId, on }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setMine(m => (m ? { ...m, saved: on ? m.saved.filter(x => x !== apiId) : [...m.saved, apiId] } : m));
+      toast.error(tr("Could not save that"), tr("Check your connection and try again."));
+    }
+  }, [toast, tr]);
   const [menuData, setMenuData] = useState(null);
   const [menuLoading, setMenuLoading] = useState(true);
   const [menuError, setMenuError] = useState("");
@@ -1072,45 +1247,60 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           The only thing added to the Nitro picks side. Everything below it is
           the page as it was; what changes is which list it draws.
           Bulk builds a cart of curated tiers, which the full list has none of,
-          so the selector is not offered there. */}
+          so the selector is not offered there.
+
+          Two cards rather than a segmented control, because a segmented control
+          splits the width in half and that is a claim: it says the two lists are
+          the same size. They are 19 and 934 on Instagram, 4 and 840 on TikTok —
+          between 1:49 and 1:242. So the count leads at heading size and does the
+          arguing, which no subtitle managed, and the full list takes the blue it
+          already uses on its own view so the two are told apart by colour and
+          not only by position. */}
       {orderMode === "single" && (
-        /* The dark track used to be #0d0a18 on an #0c0814 page — a ratio of
-           1.02, which is to say the control was not there — and the selected
-           side's only cue besides a faint white wash was a black drop shadow,
-           which a dark ground swallows. Same trap SegPill documents. Dark gets
-           a deeper track with a visible rim, and the selected side is carried
-           by an accent wash and an accent hairline instead of a shadow. */
-        <div className="flex gap-1 p-1 mb-3.5 rounded-[15px] border border-solid" role="tablist" aria-label={tr("Which list")}
-          style={{ background: dark ? "#07040f" : "#e7ded4", borderColor: dark ? "rgba(232,180,196,.2)" : t.cardBorder }}>
+        <div className="grid grid-cols-2 gap-2 mb-3.5" role="tablist" aria-label={tr("Which list")}>
           {[
-            { key: "nitro", label: msg("Nitro picks"), sub: msg("Tested every week. Refill-backed."), n: platformCounts[platform] || 0,
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
-            { key: "full", label: msg("Full list"), sub: msg("The rest of our catalogue."), n: fullCount, isNew: !fullListSeen,
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> },
+            { key: "nitro", n: platformCounts[platform] || 0, label: msg("Nitro picks"), sub: msg("Tested every week. Refill-backed."),
+              ink: t.accentInk, edge: t.accent, tintBg: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)", glow: "196,125,142",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg> },
+            { key: "full", n: fullCount, label: msg("Full list"), sub: msg("The rest of our catalogue."), isNew: !fullListSeen,
+              ink: dark ? "#7aa2f7" : "#1d5fa5", edge: dark ? "#7aa2f7" : "#1d5fa5", tintBg: dark ? "rgba(122,162,247,.16)" : "#eaf1fa", glow: dark ? "122,162,247" : "29,95,165",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> },
           ].map(v => {
             const on = view === v.key;
             return (
               <button key={v.key} role="tab" aria-selected={on} onClick={() => switchView(v.key)}
-                className="relative flex items-center gap-2.5 flex-1 py-2.5 px-3 max-md:px-2.5 rounded-[11px] cursor-pointer border-none font-[inherit] text-left min-w-0 transition-all duration-200"
+                className="flex items-center gap-2 md:gap-3 py-2.5 px-2.5 md:py-3 md:px-3.5 rounded-[12px] md:rounded-[13px] border border-solid cursor-pointer font-[inherit] text-left min-w-0 transition-[box-shadow,border-color] duration-150"
                 style={{
-                  background: on ? (dark ? "rgba(196,125,142,.22)" : "#fffdfb") : "transparent",
-                  color: on ? t.accentInk : t.textMuted,
-                  boxShadow: on
-                    ? (dark ? "inset 0 0 0 1.5px rgba(232,180,196,.6)" : "inset 0 0 0 1px rgba(196,125,142,.32), 0 2px 6px rgba(0,0,0,.13)")
-                    : "none",
+                  borderColor: on ? v.edge : t.cardBorder,
+                  background: dark ? "#171126" : "#fffdfb",
+                  boxShadow: on ? `inset 3px 0 0 ${v.edge}, 0 3px 10px rgba(${v.glow},.22)` : "0 1px 2px rgba(20,10,14,.05)",
                 }}>
-                <span className="shrink-0 flex items-center justify-center" style={{ color: on ? t.accent : t.textMuted }}>{v.icon}</span>
-                <span className="flex flex-col gap-px min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[13.5px] font-bold truncate" style={{ color: on ? t.accentInk : t.text }}>{tr(v.label)}</span>
-                    {/* Shown until this browser has opened the full list once.
-                        The list is two-thirds of what Nitro can sell and nobody
-                        was looking for it, so it says so — once. */}
-                    {v.isNew && <span className="text-[9px] font-extrabold uppercase tracking-[.6px] rounded-full px-1.5 py-[1px] shrink-0" style={{ background: t.accent, color: dark ? "#0c0814" : "#fff" }}>{tr("New")}</span>}
+                <span className="shrink-0 rounded-[8px] md:rounded-[10px] flex items-center justify-center w-[28px] h-[28px] md:w-[34px] md:h-[34px]"
+                  style={{ background: on ? v.tintBg : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"), color: on ? v.ink : t.textMuted }}>{v.icon}</span>
+                <span className="flex flex-col min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5 min-w-0 leading-tight">
+                    <span className="text-[12.5px] md:text-[14px] font-semibold truncate" style={{ color: on ? v.ink : t.text }}>{tr(v.label)}</span>
+                    {/* Shown until this browser has opened the full list once. */}
+                    {v.isNew && <span className="text-[8.5px] font-extrabold uppercase tracking-[.6px] rounded-full px-1.5 py-[1px] shrink-0 text-white" style={{ background: t.accent }}>{tr("New")}</span>}
                   </span>
-                  <span className="text-[10.5px] leading-tight truncate max-md:hidden" style={{ color: t.textMuted }}>{tr(v.sub)}</span>
+                  {/* Gone on a phone. Two stacked cards with their subtitles
+                      cost 128px of a 640px screen before the platform tiles
+                      begin; the subtitle is the part read once and furniture
+                      after that, so it is what pays for the height. 128 → 48. */}
+                  <span className="hidden md:block text-[10.5px] leading-tight truncate mt-px" style={{ color: t.textMuted }}>{tr(v.sub)}</span>
                 </span>
-                {v.n != null && <span className="m text-[11px] font-bold rounded-full px-[7px] py-[2px] shrink-0" style={{ fontFamily: "'JetBrains Mono', monospace", background: on ? t.accent : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)"), color: on ? (dark ? "#0c0814" : "#fff") : t.textMuted }}>{v.n.toLocaleString()}</span>}
+                {/* The count sits at the edge rather than in the name, so the
+                    two align in a column and 19 against 934 can still be read
+                    at a glance — the name says what the list is, the number
+                    says how big it is, and neither has to do the other's job.
+
+                    In a pill, like every other count on the page: the section
+                    markers, the platform sheet. A bare number at this size was
+                    the only one on New Order without a surface, and it read as
+                    unfinished rather than restrained. Tinted from the card's
+                    own colour so it pairs with the glyph square opposite it. */}
+                <span className="m text-[11.5px] md:text-[13px] font-bold shrink-0 tabular-nums rounded-full px-1.5 md:px-2 py-[2px] md:py-[3px]"
+                  style={{ fontFamily: "'JetBrains Mono', monospace", color: on ? v.ink : t.textMuted, background: on ? v.tintBg : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)") }}>{v.n == null ? "—" : v.n.toLocaleString()}</span>
               </button>
             );
           })}
@@ -1131,10 +1321,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         {visiblePlatforms.map(p => {
           const isActive = platform === p.id;
           return (
-            <button key={p.id} onClick={() => setPlatform(p.id)} className={`no-plat-tile rounded-[11px] border border-solid flex flex-col items-center justify-center cursor-pointer font-[inherit] w-full px-1 min-w-0 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(0,0,0,.07)]`} style={{ height: 58, gap: 6, borderColor: isActive ? (dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)") : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)") : (dark ? "#111634" : "#faf9f7"), color: isActive ? t.accent : t.text }} title={tr(p.label)}>
-              <span className="flex items-center justify-center [&_svg]:w-[16px] [&_svg]:h-[16px]" style={{ width: 16, height: 16, opacity: isActive ? 1 : .72 }}>{p.icon}</span>
-              <span className="font-medium leading-none w-full text-center overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 10, color: isActive ? t.accent : t.textMuted, fontWeight: isActive ? 600 : 500 }}>{p.label.replace(" / X", "/X")}</span>
-            </button>
+            <PlatformTile key={p.id} p={p} active={isActive} dark={dark} t={t}
+              onClick={() => setPlatform(p.id)} />
           );
         })}
       </div>
@@ -1145,10 +1333,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           {visiblePlatforms.slice(platWindowStart, platWindowStart + 5).map(p => {
             const isActive = platform === p.id;
             return (
-              <button key={p.id} onClick={() => setPlatform(p.id)} className={`no-plat-tile rounded-[10px] border border-solid flex flex-col items-center justify-center cursor-pointer font-[inherit] w-full px-1 min-w-0 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(0,0,0,.07)]`} style={{ height: 54, gap: 6, borderColor: isActive ? (dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)") : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)") : (dark ? "#111634" : "#faf9f7"), color: isActive ? t.accent : t.text }} title={tr(p.label)}>
-              <span className="flex items-center justify-center [&_svg]:w-[15px] [&_svg]:h-[15px]" style={{ width: 15, height: 15, opacity: isActive ? 1 : .72 }}>{p.icon}</span>
-              <span className="font-medium leading-none w-full text-center overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 9.5, color: isActive ? t.accent : t.textMuted, fontWeight: isActive ? 600 : 500 }}>{p.label.replace(" / X", "/X")}</span>
-              </button>
+              <PlatformTile key={p.id} p={p} active={isActive} dark={dark} t={t} compact
+                onClick={() => setPlatform(p.id)} />
             );
           })}
         </div>
@@ -1168,10 +1354,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
               {visiblePlatforms.map((p, i) => {
                 const isActive = platform === p.id;
                 return (
-                  <button key={p.id} onClick={() => { setPlatform(p.id); const rowStart = Math.floor(i / 5) * 5; setPlatWindowStart(Math.min(rowStart, Math.max(0, visiblePlatforms.length - 5))); setPlatExpanded(false); }} className={`no-plat-tile rounded-[10px] border border-solid flex flex-col items-center justify-center cursor-pointer font-[inherit] w-full px-1 min-w-0 transition-[transform,box-shadow,border-color] duration-150 hover:-translate-y-px hover:shadow-[0_3px_10px_rgba(0,0,0,.07)]`} style={{ height: 54, gap: 6, borderColor: isActive ? (dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)") : t.cardBorder, background: isActive ? (dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)") : (dark ? "#171126" : "#ffffff"), color: isActive ? t.accent : t.text }} title={tr(p.label)}>
-              <span className="flex items-center justify-center [&_svg]:w-[15px] [&_svg]:h-[15px]" style={{ width: 15, height: 15, opacity: isActive ? 1 : .72 }}>{p.icon}</span>
-              <span className="font-medium leading-none w-full text-center overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 9.5, color: isActive ? t.accent : t.textMuted, fontWeight: isActive ? 600 : 500 }}>{p.label.replace(" / X", "/X")}</span>
-                  </button>
+                  <PlatformTile key={p.id} p={p} active={isActive} dark={dark} t={t} compact
+                    onClick={() => { setPlatform(p.id); const rowStart = Math.floor(i / 5) * 5; setPlatWindowStart(Math.min(rowStart, Math.max(0, visiblePlatforms.length - 5))); setPlatExpanded(false); }} />
                 );
               })}
             </div>
@@ -1196,7 +1380,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       {view === "full" ? (
         <FullList platform={platform} platformLabel={activePlat?.label || ""} search={search} dark={dark} t={t}
           onPick={pickFullRow} selectedId={fullRow?.id} onBackToPicks={() => switchView("nitro")}
-          cheapestPick={cheapestPick} waNumber={waSupportNumber} userEmail={user?.email} />
+          cheapestPick={cheapestPick} waNumber={waSupportNumber} userEmail={user?.email}
+          mine={mine} onToggleSaved={toggleSaved} />
       ) : (
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" data-tour="no-service-list" ref={listRef} style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
         {filtered.map((svc, i) => <ServiceCard key={svc.id} first={i === 0} cartCounts={cartCounts} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} activePromotion={activePromotion} waNumber={waSupportNumber} userEmail={user?.email} />)}

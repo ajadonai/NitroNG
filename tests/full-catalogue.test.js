@@ -661,3 +661,78 @@ describe('the raw catalogue query stays honest', () => {
     expect(hiddenPackage).toBe(1);
   });
 });
+
+/**
+ * What a full list row is allowed to say.
+ *
+ * A row is for choosing between neighbours; the form is for confirming. So the
+ * row carries only what separates one row from the next, and the order range
+ * lives in the form, where it already builds the quantity presets and the
+ * out-of-range message.
+ */
+describe('the full list row stays a choosing surface', () => {
+  const src = fs.readFileSync(path.join(process.cwd(), 'components/full-list.jsx'), 'utf8');
+  const row = src.slice(src.indexOf('function Row('), src.indexOf('export default function FullList'));
+
+  it('does not repeat the order range the form already carries', () => {
+    // presetsFor(minQty, maxQty) and the "Minimum: N" message are both built
+    // from it in order-form, so a chip here was saying it twice.
+    expect(row).not.toMatch(/row\.min\.toLocaleString\(\)/);
+    expect(row).not.toMatch(/formatMax\(/);
+  });
+
+  it('leaves the delivery rate off the row', () => {
+    // Trip's call: a throughput claim on a list that says plainly it has tested
+    // nothing, and it never changed what anybody ordered.
+    expect(row).toMatch(/!\/\\\/day\/i\.test\(a\)/);
+  });
+
+  it('keeps refill, and ranks location above everything else left', () => {
+    // Refill is the most valuable thing a row without a guarantee can say.
+    // Location separates lookalike rows more often than "High quality" does.
+    expect(row).toMatch(/RANK = \{ location: 0, quality: 1, speed: 2/);
+    expect(row).toMatch(/attrKind\(a\) !== "refill"/);
+    expect(row).toMatch(/\.slice\(0, 2\)/);
+  });
+
+  it('gives the name the whole first line, with the ID leading the one below', () => {
+    const first = row.slice(row.indexOf('{row.label}') - 300, row.indexOf('{row.label}'));
+    expect(first, 'the ID must not share the name line').not.toMatch(/#\{row\.id\}/);
+    expect(row).toMatch(/#\{row\.id\}/);
+  });
+});
+
+/**
+ * The four controls in the list strip colour when they are doing something,
+ * and each takes the colour of what it acts on, so the strip is readable at a
+ * glance rather than needing to be read.
+ */
+describe('the list strip says which controls are on', () => {
+  const src = fs.readFileSync(path.join(process.cwd(), 'components/full-list.jsx'), 'utf8');
+
+  it('colours the sort once it is off its default', () => {
+    // It has no "off" the way Anywhere and Any price do, which is why it had no
+    // colour at all — but Cheapest is where the list starts, so anything else
+    // is a choice somebody made and should look like one.
+    expect(src).toMatch(/const sortChanged = activeSort !== "cheap";/);
+    expect(src).toMatch(/borderColor: sortChanged \? t\.accent/);
+    // Including the two icons inside it, or half the control lights up.
+    expect([...src.matchAll(/color: sortChanged \? t\.accentInk/g)].length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('gives each control the colour of what it acts on', () => {
+    // Refill green, location blue, price amber, and the accent for sort —
+    // because ordering is not a property of a service, it is something we do.
+    expect(src).toMatch(/refillOnly \? \(dark \? "#6ee7b7" : "#059669"\)/);
+    expect(src).toMatch(/activeLocation !== "any" \? \(dark \? "#7aa2f7" : "#1d5fa5"\)/);
+    expect(src).toMatch(/band \? \(dark \? "#e0a458" : "#b45309"\)/);
+  });
+
+  it('says most expensive, not dearest', () => {
+    // "Dearest" is British for costly and reads as a letter greeting to a
+    // Nigerian customer. The Pidgin translation already said "Most expensive",
+    // so the English was the odd one out.
+    expect(src).toMatch(/msg\("Most expensive"\)/);
+    expect(src).not.toMatch(/Dearest/);
+  });
+});

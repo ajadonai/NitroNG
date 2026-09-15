@@ -4,6 +4,7 @@ import { useMoney, useT } from "./locale";
 import { msg } from "../lib/i18n";
 import { attrKind, LOCATION_KEYS, matchesLocation } from "../lib/service-attrs";
 import { NotSureHelp } from "./order-help";
+import { ServiceGlyph } from "./service-glyph";
 
 /* ═══════════════════════════════════════════ */
 /* ═══ FULL LIST                           ═══ */
@@ -46,7 +47,7 @@ const TYPE_ROW = [
 // opinion it does not have.
 const SORTS = [
   { key: "cheap", label: msg("Cheapest") },
-  { key: "dear", label: msg("Dearest") },
+  { key: "dear", label: msg("Most expensive") },
   { key: "min", label: msg("Smallest order") },
   { key: "max", label: msg("Biggest orders") },
   { key: "rated", label: msg("Best rated"), needsVotes: true },
@@ -84,6 +85,16 @@ const PRICE_BANDS = [
   { key: "o20k", lo: 20000, hi: Infinity },
 ];
 
+// Two ways back to a service, and they are not the same thing. "Ordered
+// before" is read from the orders and is simply true or not; "Saved" is a thing
+// somebody chose to do. Neither is offered while it would be empty — a filter
+// that returns nothing is a dead end dressed as a choice, and on day one that
+// is what a Saved tab would be for every customer alive.
+const MINE_ROW = [
+  { key: "ordered", label: msg("Ordered before") },
+  { key: "saved", label: msg("Saved") },
+];
+
 const PAGE = 120;
 const OVERVIEW_PER_TYPE = 5;
 // How many a section grows by when it is opened further. Fifteen is three more
@@ -94,6 +105,11 @@ const OVERVIEW_STEP = 15;
 // Below this nobody has said enough for a percentage to mean anything, so the
 // row shows no figure at all rather than a number built from two opinions.
 export const VOTES_NEEDED = 3;
+// What "most liked" means, as a number rather than a feeling. The same bar the
+// row already uses to turn a thumb green, so the filter keeps exactly the rows
+// that were showing the good figure — a filter and a badge disagreeing about
+// what counts as liked is how people stop trusting both.
+export const WELL_LIKED = 80;
 
 export const THUMB_UP = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>;
 export const THUMB_DOWN = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h3a2 2 0 012 2v7a2 2 0 01-2 2h-3"/></svg>;
@@ -156,6 +172,18 @@ function chipKind(attr) {
 // USA, Indian and Turkish live in the name and nowhere else.
 const hay = (r) => `${r.label} ${(r.attrs || []).join(" ")}`;
 
+/**
+ * A row's audience, as the colour it is drawn in. Nigerian green and US red are
+ * the colours the curated cards give those same two audiences, so a Nigerian
+ * service reads the same on both lists; everything else takes the accent.
+ */
+function rowTone(row, dark, t) {
+  const text = hay(row);
+  if (matchesLocation(text, "nigerian")) return dark ? "#4ade80" : "#16a34a";
+  if (matchesLocation(text, "usa")) return dark ? "#f87171" : "#dc2626";
+  return t.accent;
+}
+
 export function approvalOf(row) {
   const total = (row.up || 0) + (row.down || 0);
   if (total < VOTES_NEEDED) return null;
@@ -185,10 +213,9 @@ function sortRows(rows, sort) {
   return l;
 }
 
-function Row({ row, dark, t, onPick, selected, first }) {
+function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, times }) {
   const tr = useT();
   const money = useMoney();
-  const mx = formatMax(row.max, row.unlimited);
   const approval = approvalOf(row);
   const attrs = row.attrs || [];
   // Both come from refillOf on the server, so the badge and the "Refill only"
@@ -196,26 +223,50 @@ function Row({ row, dark, t, onPick, selected, first }) {
   // filter for refills, because the badge read the name and the filter read the
   // provider's flag.
   const refillText = row.refillLabel || (row.refill ? tr("Refill") : tr("No refill"));
-  // Three facts beyond refill and size on a desktop, two on a phone. The cap is
-  // the point: a row that badges everything is the grey line again in colour.
-  const rest = attrs.filter(a => attrKind(a) !== "refill").slice(0, 3);
+  // Two facts beyond refill, location first.
+  //
+  // The order range and the delivery rate are gone from the row. The range is
+  // in the form — it builds the quantity presets and the out-of-range message —
+  // so showing it here was saying the same thing twice. The rate is gone
+  // outright, Trip's call: it is a claim about throughput on a list that says
+  // plainly it has tested nothing, and it never changed what anybody ordered.
+  //
+  // Location leads what is left: whose accounts these are separates two rows
+  // that otherwise read identically far more often than "High quality" does.
+  const RANK = { location: 0, quality: 1, speed: 2, other: 3 };
+  const rest = attrs
+    .filter(a => attrKind(a) !== "refill" && !/\/day/i.test(a))
+    .sort((a, b) => (RANK[attrKind(a)] ?? 3) - (RANK[attrKind(b)] ?? 3))
+    .slice(0, 2);
   return (
     <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(row); } }} onClick={() => onPick(row)}
       className="no-full-row flex items-center justify-between gap-3 py-2.5 px-3 md:py-3 md:px-4 cursor-pointer transition-colors duration-150"
       style={{ borderTop: first ? "none" : `1px solid ${t.cardBorder}`, background: selected ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)") : "transparent" }}>
+      {/* The same glyph square the picks card carries, so nine hundred rows are
+          scannable by what they deliver and the two views read as one page. */}
+      <ServiceGlyph type={row.type} tone={rowTone(row, dark, t)} dark={dark} size={34} radius={10} className="max-md:!w-[31px] max-md:!h-[31px]" />
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2 min-w-0">
-          <span className="m text-[11px] shrink-0" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>#{row.id}</span>
-          <span className="text-[13px] md:text-sm font-semibold truncate" style={{ color: t.text }}>{row.label}</span>
-        </div>
+        {/* The name gets the whole line. The ID leads the detail line under it,
+            where it can be scanned down a column without truncating a
+            forty-character label. */}
+        <div className="text-[13px] md:text-sm font-semibold truncate" style={{ color: t.text }}>{row.label}</div>
         <div className="flex items-center gap-1 flex-wrap mt-[5px]">
+          <span className="m text-[10.5px] shrink-0" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>#{row.id}</span>
+          <span className="text-[10.5px] opacity-40" style={{ color: t.textMuted }}>·</span>
           <Chip kind={row.refill ? "refill" : "neutral"} dark={dark}>{refillText}</Chip>
-          <Chip dark={dark} mono>{row.min.toLocaleString()}{mx ? ` – ${mx}` : ` ${tr("and up")}`}</Chip>
-          {rest.map((a, i) => (
-            <span key={a} className={i === 2 ? "hidden md:inline-flex" : "inline-flex"}>
-              <Chip kind={chipKind(a)} dark={dark}>{a}</Chip>
+          {rest.map(a => <Chip key={a} kind={chipKind(a)} dark={dark}>{a}</Chip>)}
+          {/* Bought before, which on a list with no Nitro guarantee is the only
+              endorsement that comes from the person reading it.
+              The count and not the date: "last week" does not change what
+              anybody orders, where "you bought this twice" says the one useful
+              thing — it worked for you. */}
+          {times > 0 && (
+            <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold rounded-[5px] px-[6px] py-[1.5px] whitespace-nowrap"
+              style={{ color: t.accentInk, background: t.accentLight }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              {times === 1 ? tr("Ordered once") : `${tr("Ordered")} ${times}×`}
             </span>
-          ))}
+          )}
           {approval != null && (
             <span className="inline-flex items-center gap-1 px-[6px] py-[1.5px] rounded-[5px] text-[10.5px] font-semibold whitespace-nowrap"
               title={`${row.up} ${tr("up")}, ${row.down} ${tr("down")}`}
@@ -225,6 +276,16 @@ function Row({ row, dark, t, onPick, selected, first }) {
           )}
         </div>
       </div>
+      {/* The star sits before the price, so a tap meant for it never lands on
+          the row and opens an order form nobody asked for. */}
+      {onToggleSaved && (
+        <button onClick={e => { e.stopPropagation(); onToggleSaved(row.id, !saved); }} aria-pressed={!!saved}
+          aria-label={saved ? tr("Saved") : tr("Save this service")}
+          className="shrink-0 p-1.5 -m-1.5 cursor-pointer border-none bg-transparent flex items-center justify-center transition-colors duration-150"
+          style={{ color: saved ? (dark ? "#e0a458" : "#b45309") : t.textMuted, opacity: saved ? 1 : .45 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </button>
+      )}
       <div className="text-right shrink-0">
         <div className="m text-[14px] md:text-[15px] font-bold" style={{ color: "var(--t-accent-ink)", fontFamily: "'JetBrains Mono', monospace" }}>{money(row.price)}</div>
         <div className="text-[10px] mt-px" style={{ color: t.textMuted }}>{tr("per 1K")}</div>
@@ -233,7 +294,7 @@ function Row({ row, dark, t, onPick, selected, first }) {
   );
 }
 
-export default function FullList({ platform, platformLabel, search, dark, t, onPick, selectedId, onBackToPicks, cheapestPick, waNumber, userEmail }) {
+export default function FullList({ platform, platformLabel, search, dark, t, onPick, selectedId, onBackToPicks, cheapestPick, waNumber, userEmail, mine, onToggleSaved }) {
   const tr = useT();
   const money = useMoney();
   const [data, setData] = useState(null);
@@ -244,13 +305,15 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
   const [refillOnly, setRefillOnly] = useState(false);
   const [location, setLocation] = useState("any");
   const [price, setPrice] = useState("any");
+  const [mineOnly, setMineOnly] = useState("any");
+  const [likedOnly, setLikedOnly] = useState(false);
   const [shown, setShown] = useState(PAGE);
   // How far each overview section has been opened, keyed by type.
   const [openCounts, setOpenCounts] = useState({});
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true); setError(""); setData(null); setType("all"); setShown(PAGE); setOpenCounts({}); setLocation("any"); setPrice("any");
+    setLoading(true); setError(""); setData(null); setType("all"); setShown(PAGE); setOpenCounts({}); setLocation("any"); setPrice("any"); setMineOnly("any"); setLikedOnly(false);
     (async () => {
       try {
         const res = await fetch(`/api/catalogue/full?platform=${encodeURIComponent(platform)}`);
@@ -264,12 +327,17 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
     return () => { cancelled = true; };
   }, [platform]);
 
-  useEffect(() => { setShown(PAGE); setOpenCounts({}); }, [type, sort, refillOnly, location, price, search]);
+  useEffect(() => { setShown(PAGE); setOpenCounts({}); }, [type, sort, refillOnly, location, price, mineOnly, likedOnly, search]);
 
   const q = search.trim().toLowerCase();
   const all = data?.services || [];
   // Rating can only sort once somebody has rated something on this platform.
   const hasRated = useMemo(() => all.some(r => approvalOf(r) != null), [all]);
+  // Same rule as the Saved tab and the Best rated sort: a control that can only
+  // return nothing is a dead end dressed as a choice, and with no votes cast
+  // that is what this would be for every customer alive.
+  const hasLiked = useMemo(() => all.some(r => approvalOf(r) >= WELL_LIKED), [all]);
+  const likedOn = likedOnly && hasLiked;
   // Origins present on this platform, commonest first, counted off the same
   // text the filter matches on so the number on the option is the number of
   // rows it will leave.
@@ -290,11 +358,23 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
   );
   const activePrice = bands.some(b => b.key === price) ? price : "any";
   const band = bands.find(b => b.key === activePrice);
+
+  const savedSet = useMemo(() => new Set(mine?.saved || []), [mine]);
+  const history = mine?.services || {};
+  // Offered only where they would return something on this platform.
+  const mineTabs = useMemo(() => MINE_ROW.filter(m => all.some(r =>
+    m.key === "saved" ? savedSet.has(r.id) : history[r.id]?.times > 0)), [all, savedSet, history]);
+  const activeMine = mineTabs.some(m => m.key === mineOnly) ? mineOnly : "any";
   const sorts = SORTS.filter(s2 => !s2.needsVotes || hasRated);
   // Switching platforms can withdraw the sort that is selected — the last one
   // had ratings and this one does not. Fall back rather than leave the select
   // showing one thing while the list is ordered by another.
   const activeSort = sorts.some(s2 => s2.key === sort) ? sort : "cheap";
+  // Cheapest is where the list starts, so anything else is a choice somebody
+  // made — the same thing "Anywhere" and "Any price" signal by not being set.
+  // Sort takes the accent rather than a fact colour: the filters are coloured
+  // by what they filter, and ordering is not a property of a service.
+  const sortChanged = activeSort !== "cheap";
 
   // Everything the filters allow, before the type filter. Two things read off
   // this: the type counts, so a pill promises what tapping it would actually
@@ -306,11 +386,14 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
   const beforeType = useMemo(() => {
     let l = all;
     if (refillOnly) l = l.filter(r => r.refill);
+    if (likedOn) l = l.filter(r => approvalOf(r) >= WELL_LIKED);
     if (activeLocation !== "any") l = l.filter(r => matchesLocation(hay(r), activeLocation));
     if (band) l = l.filter(r => r.price >= band.lo && r.price < band.hi);
+    if (activeMine === "saved") l = l.filter(r => savedSet.has(r.id));
+    else if (activeMine === "ordered") l = l.filter(r => history[r.id]?.times > 0);
     if (q) l = l.filter(r => String(r.id).includes(q) || r.label.toLowerCase().includes(q) || (r.attrs || []).join(" ").toLowerCase().includes(q));
     return l;
-  }, [all, q, refillOnly, activeLocation, band]);
+  }, [all, q, refillOnly, likedOn, activeLocation, band, activeMine, savedSet, history]);
 
   const matched = useMemo(
     () => sortRows(q || type === "all" ? beforeType : beforeType.filter(r => r.type === type), activeSort),
@@ -331,7 +414,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
   // the categories that make it readable: five cheapest refill-backed of each
   // type is a better answer than one flat run of them. Only a search flattens,
   // because a search is a lookup and its results have no categories to respect.
-  const overview = type === "all" && !q;
+  const overview = type === "all" && !q && activeMine === "any";
 
   if (loading) return (
     <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
@@ -349,7 +432,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
   if (all.length === 0) return (
     <div className="rounded-xl desktop:rounded-[14px] py-10 px-5 text-center" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
       <div className="text-[15px] mb-1.5" style={{ color: t.textMuted }}>{tr("No full list for this platform yet.")}</div>
-      <div className="text-[13px] mb-3" style={{ color: t.textMuted }}>{tr("Nitro's tested picks are the whole menu here.")}</div>
+      <div className="text-[13px] mb-3" style={{ color: t.textMuted }}>{tr("Our picks are the whole menu here.")}</div>
       <button onClick={onBackToPicks} className="text-[13px] font-bold py-1.5 px-3.5 rounded-full border-[1.5px] border-solid cursor-pointer font-[inherit]" style={{ color: t.accentInk, borderColor: t.accent, background: t.accentLight }}>{tr("Back to Nitro picks")}</button>
     </div>
   );
@@ -369,14 +452,14 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
       <div className="flex items-center gap-2.5 flex-wrap mb-3 rounded-[11px] py-2 px-3 border border-solid" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.022)" }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ color: t.textMuted }} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         <div className="text-[11.5px] leading-[1.5] flex-1 min-w-[190px]" style={{ color: t.textMuted }}>
-          <strong style={{ color: t.text }}>{tr("Outside our tested picks.")}</strong>{" "}
-          {tr("These come exactly as listed, and carry no Nitro refill guarantee.")}
+          <strong style={{ color: t.text }}>{tr("Our wider range.")}</strong>{" "}
+          {tr("Sold exactly as listed, without the Nitro refill guarantee our picks carry.")}
         </div>
         {cheapestPick != null && onBackToPicks && (
           <button onClick={onBackToPicks}
             className="shrink-0 inline-flex items-center gap-1.5 text-[11.5px] font-bold py-[5px] px-3 rounded-full border border-solid cursor-pointer font-[inherit] transition-colors duration-150 max-md:w-full max-md:justify-center"
             style={{ color: t.accentInk, borderColor: t.accent, background: t.accentLight }}>
-            {tr("Tested picks from")} <span className="m" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{money(cheapestPick)}</span>
+            {tr("Our picks from")} <span className="m" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{money(cheapestPick)}</span>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="dir-flip opacity-70" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
         )}
@@ -392,11 +475,27 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
           count rides with each label, because which category is worth opening
           is mostly a question of how much is in it. */}
       <div className="hidden desktop:flex items-center gap-1 mb-3 pb-3 border-b border-solid" role="tablist" aria-label={tr("Type")} style={{ borderBottomColor: t.cardBorder }}>
+        {/* Yours first, then everything. They lead because someone who has been
+            here before is usually back for the same thing, and they are simply
+            absent until they hold something rather than sitting there empty. */}
+        {mineTabs.map(m => {
+          const on = activeMine === m.key;
+          const n = all.filter(r => (m.key === "saved" ? savedSet.has(r.id) : history[r.id]?.times > 0)).length;
+          return (
+            <button key={m.key} role="tab" aria-selected={on} onClick={() => { setMineOnly(on ? "any" : m.key); setType("all"); }}
+              className="no-type-tab inline-flex items-baseline gap-1.5 py-[5px] px-2.5 rounded-lg border-none font-[inherit] text-[13px] cursor-pointer transition-colors duration-150"
+              style={{ background: on ? t.accent : "transparent", color: on ? "#fff" : t.accentInk, fontWeight: on ? 700 : 600 }}>
+              {tr(m.label)}
+              <span className="m text-[10.5px]" style={{ fontFamily: "'JetBrains Mono', monospace", opacity: on ? .75 : .6 }}>{n}</span>
+            </button>
+          );
+        })}
+        {mineTabs.length > 0 && <span className="w-px h-4 mx-1.5 shrink-0" style={{ background: t.cardBorder }} />}
         {TYPE_ROW.map(x => {
           const on = type === x.key;
           const n = typeCount(x.key);
           return (
-            <button key={x.key} role="tab" aria-selected={on} onClick={() => setType(x.key)} disabled={n === 0}
+            <button key={x.key} role="tab" aria-selected={on && activeMine === "any"} onClick={() => { setType(x.key); setMineOnly("any"); }} disabled={n === 0}
               className="no-type-tab inline-flex items-baseline gap-1.5 py-[5px] px-2.5 rounded-lg border-none font-[inherit] text-[13px] transition-colors duration-150"
               style={{ cursor: n === 0 ? "default" : "pointer", opacity: n === 0 ? .35 : 1, background: on ? t.accent : "transparent", color: on ? "#fff" : t.textMuted, fontWeight: on ? 700 : 500 }}>
               {tr(x.label)}
@@ -405,6 +504,22 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
           );
         })}
       </div>
+      {mineTabs.length > 0 && (
+        <div className="desktop:hidden flex gap-1.5 mb-2">
+          {mineTabs.map(m => {
+            const on = activeMine === m.key;
+            const n = all.filter(r => (m.key === "saved" ? savedSet.has(r.id) : history[r.id]?.times > 0)).length;
+            return (
+              <button key={m.key} onClick={() => { setMineOnly(on ? "any" : m.key); setType("all"); }} aria-pressed={on}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 text-[12px] py-[6px] px-2 rounded-[9px] border border-solid cursor-pointer font-[inherit] min-w-0"
+                style={{ borderColor: on ? t.accent : t.cardBorder, background: on ? t.accentLight : "transparent", color: t.accentInk, fontWeight: on ? 700 : 600 }}>
+                <span className="truncate">{tr(m.label)}</span>
+                <span className="m text-[10.5px] opacity-70" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{n}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
       <div className="desktop:hidden relative mb-3">
         <select aria-label={tr("Type")} value={type} onChange={e => setType(e.target.value)}
           className="w-full appearance-none py-[9px] pl-3 pr-9 rounded-[10px] border border-solid text-[13px] font-semibold font-[inherit] outline-none box-border cursor-pointer"
@@ -440,6 +555,17 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ opacity: refillOnly ? 1 : .35 }} aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
               <span className="truncate">{tr("Refill only")}</span>
             </button>
+            {/* Rated well by the people who bought it. The only endorsement
+                this list carries, so it gets a control — but only once there is
+                one to act on. */}
+            {hasLiked && (
+              <button onClick={() => setLikedOnly(v => !v)} aria-pressed={likedOn}
+                className="inline-flex items-center justify-center gap-1 text-[11px] py-[4px] px-2 md:px-2.5 rounded-[8px] cursor-pointer border border-solid font-[inherit] transition-colors duration-150 whitespace-nowrap min-w-0"
+                style={{ color: likedOn ? (dark ? "#6ee7b7" : "#059669") : t.textMuted, fontWeight: likedOn ? 700 : 500, borderColor: likedOn ? (dark ? "rgba(110,231,183,.45)" : "rgba(5,150,105,.4)") : t.cardBorder, background: likedOn ? (dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)") : "transparent" }}>
+                <span className="w-3 h-3 inline-flex shrink-0 [&_svg]:w-3 [&_svg]:h-3">{THUMB_UP}</span>
+                <span className="truncate">{tr("Most liked")}</span>
+              </button>
+            )}
             {/* Where the accounts come from. A filter, not a sort — it decides
                 what is in the list, the way Refill only does, so it sits with
                 that and not in the ordering control beside them. */}
@@ -481,11 +607,11 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
             <div className="relative min-w-0">
               <select aria-label={tr("Sort")} value={activeSort} onChange={e => setSort(e.target.value)}
                 className="w-full appearance-none py-[4px] pl-[25px] pr-[22px] rounded-[8px] border border-solid text-[11px] font-semibold font-[inherit] outline-none box-border cursor-pointer truncate"
-                style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.08)" : "#fffdfb", color: t.text }}>
+                style={{ borderColor: sortChanged ? t.accent : t.cardBorder, color: sortChanged ? t.accentInk : t.text, background: sortChanged ? t.accentLight : (dark ? "rgba(255,255,255,.08)" : "#fffdfb") }}>
                 {sorts.map(s2 => <option key={s2.key} value={s2.key}>{tr(s2.label)}</option>)}
               </select>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-[8px] top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: t.textMuted }} aria-hidden="true"><line x1="4" y1="7" x2="16" y2="7"/><line x1="4" y1="12" x2="13" y2="12"/><line x1="4" y1="17" x2="10" y2="17"/><polyline points="17 14 20 17 23 14"/><line x1="20" y1="17" x2="20" y2="7"/></svg>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute right-[7px] top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: t.textMuted }} aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-[8px] top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: sortChanged ? t.accentInk : t.textMuted }} aria-hidden="true"><line x1="4" y1="7" x2="16" y2="7"/><line x1="4" y1="12" x2="13" y2="12"/><line x1="4" y1="17" x2="10" y2="17"/><polyline points="17 14 20 17 23 14"/><line x1="20" y1="17" x2="20" y2="7"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute right-[7px] top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: sortChanged ? t.accentInk : t.textMuted }} aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
           </div>
         </div>
@@ -497,6 +623,8 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
             <div className="flex items-center justify-center gap-2 flex-wrap">
               {refillOnly && <button onClick={() => setRefillOnly(false)} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Show all, refill or not")}</button>}
               {band && <button onClick={() => setPrice("any")} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Any price")}</button>}
+              {likedOn && <button onClick={() => setLikedOnly(false)} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Any rating")}</button>}
+              {activeMine !== "any" && <button onClick={() => setMineOnly("any")} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Everything")}</button>}
               {activeLocation !== "any" && <button onClick={() => setLocation("any")} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Anywhere")}</button>}
               {type !== "all" && <button onClick={() => setType("all")} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("All types")}</button>}
             </div>
@@ -526,7 +654,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
                   <span className="m text-[10.5px] font-bold rounded-full px-[6px] py-[1px]" style={{ fontFamily: "'JetBrains Mono', monospace", background: dark ? "rgba(255,255,255,.1)" : "rgba(131,83,95,.1)", color: t.accentInk }}>{typeCount(x.key).toLocaleString()}</span>
                   {rows.length < inType.length && <span className="ml-auto m text-[10.5px]" style={{ fontFamily: "'JetBrains Mono', monospace", color: t.accentInk, opacity: .7 }}>{rows.length}/{inType.length.toLocaleString()}</span>}
                 </div>
-                {rows.map((r, i) => <Row key={r.id} first={i === 0} row={r} dark={dark} t={t} onPick={onPick} selected={selectedId === r.id} />)}
+                {rows.map((r, i) => <Row key={r.id} first={i === 0} row={r} dark={dark} t={t} onPick={onPick} selected={selectedId === r.id} saved={savedSet.has(r.id)} onToggleSaved={onToggleSaved} times={history[r.id]?.times} />)}
                 {/* The number is the promise: the button says exactly how many
                     arrive, and says the true remainder when it is under a step,
                     so it never offers fifteen and hands over two. It grows the
@@ -544,7 +672,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
             );
           })
         ) : (
-          visible.map((r, i) => <Row key={r.id} first={i === 0} row={r} dark={dark} t={t} onPick={onPick} selected={selectedId === r.id} />)
+          visible.map((r, i) => <Row key={r.id} first={i === 0} row={r} dark={dark} t={t} onPick={onPick} selected={selectedId === r.id} saved={savedSet.has(r.id)} onToggleSaved={onToggleSaved} times={history[r.id]?.times} />)
         )}
 
         {left > 0 && (
