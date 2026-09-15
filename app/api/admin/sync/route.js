@@ -5,6 +5,7 @@ import { getServices, getBalance, isProviderConfigured, getProviderName, checkOr
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { calculateTierPrice, getProviderBonus } from '@/lib/markup';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
+import { platformOf } from '@/lib/full-catalogue';
 import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
 import { findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 import { lockOrderSettlementAccount, ORDER_SETTLEMENT_ACCOUNT_STATUSES } from '@/lib/account-deletion';
@@ -109,7 +110,7 @@ export async function POST(req) {
         if (ex.name === svc.name && ex.category === category && Number(ex.costPer1k) === costPer1k && ex.min === min && ex.max === max && ex.refill === refill && ex.dripfeed === dripfeed && ex.avgTime === avgTime) {
           continue;
         }
-        toUpdate.push(prisma.service.update({ where: { id: ex.id }, data: { name: svc.name, category, costPer1k, min, max, refill, dripfeed, avgTime } }));
+        toUpdate.push(prisma.service.update({ where: { id: ex.id }, data: { name: svc.name, category, costPer1k, min, max, refill, dripfeed, avgTime, platform: platformOf(svc.name, category) } }));
         updated++;
       }
 

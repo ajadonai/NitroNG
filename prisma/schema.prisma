@@ -121,6 +121,7 @@ model User {
   taskSubmissions  TaskSubmission[]
   outreachContacts OutreachContact[]
   nitroPointLedger NitroPointLedger[]
+  serviceVotes     ServiceVote[]
   // Onboarding funnel: the first time each surface was opened. Set once, never updated.
   firstSeenWalletAt    DateTime?
   firstSeenNewOrderAt  DateTime?
@@ -229,6 +230,19 @@ model Service {
   // conflating the two made "the provider retired this" indistinguishable from
   // "we don't stock this", and the reseller catalogue needs exactly that split.
   providerListedAt DateTime?
+
+  // Which New Order tile sells this, cached from lib/full-catalogue platformOf.
+  // A derived value, stored only because the full list has to filter on it in
+  // SQL: without it the route reads all 9,820 fenced rows and groups them in
+  // memory, with it the query returns the 694 a customer asked for.
+  //
+  // The name decides it, not `category` — 2,655 live services sit under "Other",
+  // "Vip", "Cheapest" and a blue-circle emoji. Null means no tile sells this
+  // platform (VK, Rubika, GitHub) and the full list never asks for it.
+  //
+  // Set on every sync write, so a newly imported service has it immediately.
+  // If platformOf's rules change, run scripts/backfill-service-platform.mjs.
+  platform  String?
   tags      String[] @default([])
   apiType   String   @default("Default")
   avgTime   String   @default("0-2 hrs")
@@ -239,9 +253,11 @@ model Service {
   orders      Order[]
   tiers       ServiceTier[]
   resellerMap ResellerServiceMap?
+  votes       ServiceVote[]
 
   @@unique([apiId, provider])
   @@index([provider])
+  @@index([platform])
   @@map("services")
 }
 
@@ -1332,4 +1348,33 @@ model ResellerServiceMap {
   // a LIVE row has exactly one of tierId/serviceId set; a retired row holds only
   // its ID and date. A live row pointing at nothing is unrepresentable.
   @@map("reseller_service_map")
+}
+
+// ──────────────────────────────────────
+// FULL-LIST VOTES
+// ──────────────────────────────────────
+
+// The full list carries no Nitro testing and no Nitro order history to quote,
+// so the one honest figure it can show is what other customers thought. A vote
+// is one per customer per service, changeable, and only from someone who has
+// actually ordered it — the check lives in the route, which reads their orders.
+//
+// Kept off the Service model on purpose: a service row is rewritten by the
+// nightly provider sync, and a customer's opinion must outlive that.
+model ServiceVote {
+  id        String   @id @default(cuid())
+  userId    String
+  serviceId String
+  // 1 for a thumb up, -1 for a thumb down. An integer rather than an enum so
+  // the aggregate is a SUM the database can do.
+  value     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, serviceId])
+  @@index([serviceId])
+  @@map("service_votes")
 }

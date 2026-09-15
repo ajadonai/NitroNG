@@ -3,6 +3,10 @@ export const maxDuration = 60;
 import prisma from '@/lib/prisma';
 import { mintMissingResellerIds } from '@/lib/reseller-ids';
 import { log } from '@/lib/logger';
+// Which tile sells a service is derived from its name; the column is a cache of
+// that, kept current here so a newly imported service reaches the full list on
+// its first sync rather than waiting for a backfill.
+import { platformOf } from '@/lib/full-catalogue';
 import { getServices, isProviderConfigured, getProviderName, PROVIDER_IDS } from '@/lib/smm';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 import { calculateTierPrice } from '@/lib/markup';
@@ -162,6 +166,7 @@ export async function GET(req) {
           // It is still provider-listed, so the reseller full catalogue sees it.
           enabled: false,
           providerListedAt: new Date(),
+          platform: platformOf(svc.name, f.category),
         });
         continue;
       }
@@ -178,7 +183,7 @@ export async function GET(req) {
       }
       toUpdate.push(prisma.service.update({
         where: { id: ex.id },
-        data: { name: svc.name, category: f.category, costPer1k: f.costPer1k, min: f.min, max: f.max, refill: f.refill, dripfeed: f.dripfeed, cancel: f.cancel, ...(f.avgTime !== '' ? { avgTime: f.avgTime } : {}) },
+        data: { name: svc.name, category: f.category, costPer1k: f.costPer1k, min: f.min, max: f.max, refill: f.refill, dripfeed: f.dripfeed, cancel: f.cancel, platform: platformOf(svc.name, f.category), ...(f.avgTime !== '' ? { avgTime: f.avgTime } : {}) },
       }));
       updated++;
     }
