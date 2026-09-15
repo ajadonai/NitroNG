@@ -12,6 +12,8 @@ import { useMoney, useT, useLocale } from "./locale";
 import { msg } from "../lib/i18n";
 import { cleanLink } from "../lib/clean-link";
 import { OrderForm as ExtractedOrderForm } from "./order-form";
+import FullList from "./full-list";
+import { NotSureHelp, OrderForMeCard } from "./order-help";
 import { TASKS_ENABLED } from './rewards';
 import { openCardFrame } from '@/lib/expandable-card';
 import { TRAFFIC_COUNTRIES, TRAFFIC_CONTINENTS } from "../lib/traffic-targets";
@@ -282,7 +284,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
   const handlePickTier = (tier, e) => { setExplOpen(false); onPickTier(tier, e); };
   const s = activeTier ? TS[activeTier.tier] : null;
   return (
-    <div ref={cardRef} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => onPickService(svc)} className={`no-svc-card py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 cursor-pointer transition-colors duration-150 ease-in-out${isSel ? " relative z-[1]" : ""}`} style={{ borderTop: (first || isSel) ? "none" : `1px solid ${t.cardBorder}`, ...(isSel ? { margin: "6px 8px", borderRadius: 14, border: `1.5px solid ${accent ? (dark ? accent.dark : accent.light) : t.accent}`, boxShadow: `0 6px 20px ${accent ? `rgba(${accent.shadow},.16)` : "rgba(196,125,142,.16)"}` } : {}), ...(!isSel && accent ? { boxShadow: `inset 3px 0 0 ${dark ? accent.dark : accent.light}` } : {}), background: isSel ? (accent ? (dark ? accent.selBgD : accent.selBgL) : (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)")) : accent ? (dark ? accent.bgD : accent.bgL) : "transparent", opacity: selSvc && !isSel ? (dark ? .45 : .6) : 1 }}>
+    <div ref={cardRef} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => onPickService(svc)} className={`no-svc-card py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 cursor-pointer transition-colors duration-150 ease-in-out${isSel ? " relative z-[1]" : ""}`} style={{ borderStyle: "solid", borderColor: isSel ? (accent ? (dark ? accent.dark : accent.light) : t.accent) : t.cardBorder, borderWidth: isSel ? 1.5 : (first ? 0 : "1px 0 0 0"), ...(isSel ? { margin: "6px 8px", borderRadius: 14, boxShadow: `0 6px 20px ${accent ? `rgba(${accent.shadow},.16)` : "rgba(196,125,142,.16)"}` } : {}), ...(!isSel && accent ? { boxShadow: `inset 3px 0 0 ${dark ? accent.dark : accent.light}` } : {}), background: isSel ? (accent ? (dark ? accent.selBgD : accent.selBgL) : (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)")) : accent ? (dark ? accent.bgD : accent.bgL) : "transparent", opacity: selSvc && !isSel ? (dark ? .45 : .6) : 1 }}>
       <div className="flex items-center justify-between gap-3 max-md:flex-wrap max-md:gap-1.5">
         <div className="flex-1 min-w-0 max-md:basis-[60%]">
           <div className="text-sm md:text-[15px] desktop:text-base font-semibold mb-1" style={{ color: accent ? (dark ? accent.dark : accent.light) : (isSel ? t.accent : t.text) }}>{svc.name}</div>
@@ -422,68 +424,10 @@ export function OrderForm(props) {
 /* ═══════════════════════════════════════════ */
 /* ═══ NEW ORDER PAGE                      ═══ */
 /* ═══════════════════════════════════════════ */
-const WA_ICON = <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" className="shrink-0"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.3 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.76-.72 2-1.42.25-.7.25-1.3.18-1.42-.08-.13-.28-.2-.58-.35zM12.05 21.8h-.01a9.87 9.87 0 01-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.85 9.85 0 01-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88a9.83 9.83 0 016.99 2.9 9.82 9.82 0 012.9 7c0 5.45-4.45 9.87-9.9 9.87z"/></svg>;
-
-const waHelpLink = (waNumber, context, email) => `https://wa.me/${waNumber}?text=${encodeURIComponent(
-  (context ? `Hi! I want to order ${context} on Nitro. Can you help me place it?` : "Hi! I'd like to place an order on Nitro. Can you help me?")
-  + (email ? `\n\nMy account: ${email}` : ""),
-)}`;
-
-/**
- * The concierge offer: we place it for them. Used as a quiet inline link in
- * empty states, where there is nothing else on screen to compete with.
- */
-/** On a phone the wa.me link opens the app and leaves an empty tab behind, so
- *  hand off in place there. Desktop keeps the new tab. */
-const openInPlaceOnPhone = e => {
-  if (typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches) {
-    e.preventDefault();
-    window.location.href = e.currentTarget.href;
-  }
-};
-
-export function NotSureHelp({ waNumber, dark, context, email }) {
-  const tr = useT();
-  if (!waNumber) return null;
-  return (
-    <a
-      href={waHelpLink(waNumber, context, email)}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={openInPlaceOnPhone}
-      className="nudge-btn inline-flex items-center gap-2 py-1.5 px-3 rounded-full text-[13px] font-semibold no-underline"
-      style={{ color: dark ? "#4ade80" : "#15803d", background: dark ? "rgba(37,211,102,.12)" : "rgba(37,211,102,.1)", border: `1px solid ${dark ? "rgba(37,211,102,.3)" : "rgba(22,163,74,.25)"}` }}
-    >
-      {WA_ICON}
-      {tr("We can order for you")}
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="dir-flip shrink-0 opacity-70"><polyline points="9 18 15 12 9 6" /></svg>
-    </a>
-  );
-}
-
-/**
- * The same offer as a card, sitting directly under the tier chips of whichever
- * service is open. That is the moment people hesitate, and it costs no scrolling
- * to find.
- */
-export function OrderForMeCard({ waNumber, dark, context, email }) {
-  const tr = useT();
-  if (!waNumber) return null;
-  return (
-    <a
-      href={waHelpLink(waNumber, context, email)}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={e => { e.stopPropagation(); openInPlaceOnPhone(e); }}
-      className="nudge-btn mt-2 inline-flex items-center gap-2 py-1.5 px-3 rounded-full text-[12.5px] no-underline"
-      style={{ color: dark ? "#a8a29a" : "#6b6660", background: dark ? "rgba(37,211,102,.1)" : "rgba(37,211,102,.08)", border: `1px solid ${dark ? "rgba(37,211,102,.26)" : "rgba(22,163,74,.22)"}` }}
-    >
-      <span className="shrink-0 flex" style={{ color: "#25d366" }}>{WA_ICON}</span>
-      <span>{tr("Not sure?")} <b className="font-semibold" style={{ color: dark ? "#4ade80" : "#15803d" }}>{tr("We can order for you")}</b></span>
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="dir-flip shrink-0 opacity-60"><polyline points="9 18 15 12 9 6" /></svg>
-    </a>
-  );
-}
+// The WhatsApp concierge offer lives in ./order-help — the full list needs it
+// too, and New Order imports the full list. Re-exported here so the pages that
+// already take it from this module keep working.
+export { NotSureHelp, OrderForMeCard } from "./order-help";
 
 export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onNavigate, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, tourActive, activePromotion, rewards, socialLinks, refreshRewards }) {
   const tr = useT();
@@ -492,6 +436,20 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const [filterType, setFilterType] = useState("all");
   const [search, setSearch] = useState("");
   const [orderModal, setOrderModal] = useState(false);
+  // Which version of New Order is showing: the curated tiers, or the full
+  // provider list for the same platform. `fullRow` holds the picked full-list
+  // row, which is what makes the order a full-list order all the way through.
+  const [view, setView] = useState("nitro");
+  const [fullCount, setFullCount] = useState(null);
+  const [fullRow, setFullRow] = useState(null);
+  // The "New" flag on the selector, retired the first time this browser opens
+  // the full list. Read after mount so the server and the first client render
+  // agree. Device-local on purpose — this is a "have you seen it", not a
+  // preference worth a column.
+  const [fullListSeen, setFullListSeen] = useState(true);
+  useEffect(() => {
+    try { setFullListSeen(!!localStorage.getItem("nitro_full_list_seen")); } catch { setFullListSeen(true); }
+  }, []);
   const [menuData, setMenuData] = useState(null);
   const [menuLoading, setMenuLoading] = useState(true);
   const [menuError, setMenuError] = useState("");
@@ -669,6 +627,13 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   })();
 
   const filtered = filterType === "all" ? services : services.filter(s => s.type === filterType);
+  // What the full list compares itself against: the cheapest tested tier on
+  // this platform. Packages are priced per order, so they would not be a like
+  // for like against a per-1K row.
+  const cheapestPick = (() => {
+    const prices = services.filter(s => !s.isPackage).flatMap(s => s.tiers.map(ti => ti.pricePer1k || ti.price)).filter(Boolean);
+    return prices.length ? Math.min(...prices) : null;
+  })();
   const hasOrder = selSvc && selTier;
   // Mirrors the single-order endpoint's charge exactly, operation for operation
   // (see calculateCreateOrderPricing): back to integer kobo first, then the same
@@ -682,7 +647,69 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     : 0;
   const activePlat = PLATFORMS.find(p => p.id === platform);
 
-  useEffect(() => { setSelSvc(null); setSelTier(null); setFilterType("all"); setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty(""); setRedeemPoints(false); setTrafficConfig(null); }, [platform]);
+  useEffect(() => { setSelSvc(null); setSelTier(null); setFullRow(null); setFilterType("all"); setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty(""); setRedeemPoints(false); setTrafficConfig(null); }, [platform]);
+
+  // How many the other version holds. Cheap — the route answers this off the
+  // same cache the list itself is built from — and the selector has to carry
+  // the number before anyone taps it, or there is no reason to.
+  useEffect(() => {
+    let cancelled = false;
+    setFullCount(null);
+    (async () => {
+      try {
+        const res = await fetch(`/api/catalogue/full?platform=${encodeURIComponent(platform)}&counts=1`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setFullCount(data.total ?? 0);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [platform]);
+
+  // Nothing stays selected across a version switch: the two lists hold
+  // different things and a half-built order from one has no meaning in the other.
+  const switchView = (next) => {
+    if (next === view) return;
+    setView(next);
+    if (next === "full" && !fullListSeen) {
+      setFullListSeen(true);
+      try { localStorage.setItem("nitro_full_list_seen", "1"); } catch {}
+    }
+    setSelSvc(null); setSelTier(null); setFullRow(null);
+    setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty("");
+  };
+
+  /* A full-list row, dressed as the service/tier pair the order form and the
+     submit path already speak. There is no tier — that is the whole point of
+     this list — so `tier` is null, which is what the form reads to show the
+     "Full list" pill and the provider-terms line instead of a tier badge. */
+  const pickFullRow = (row) => {
+    setFullRow(row);
+    setSelSvc({ id: `full:${row.id}`, name: row.label, type: row.type, fullListId: row.id, tiers: [] });
+    setSelTier({
+      id: null, catalogueId: row.id, tier: null,
+      price: row.price, pricePer1k: row.price, per: "1K",
+      min: row.min, max: row.max, apiType: row.apiType,
+      refill: row.refill ? "Yes" : "No", speed: null,
+      tags: row.dripfeed ? ["drip"] : [],
+    });
+    setQty(String(Math.max(row.min, Math.min(1000, row.max))));
+    setOrderModal(true);
+  };
+
+  const castVote = async (vote) => {
+    if (!fullRow) return;
+    try {
+      const res = await fetch("/api/catalogue/full/vote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: fullRow.id, vote }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(tr("Could not save your rating"), data.error ? tr(data.error) : tr("Something went wrong")); return; }
+      setFullRow(r => (r && r.id === data.id ? { ...r, up: data.up, down: data.down, mine: data.mine || undefined } : r));
+    } catch { toast.error(tr("Could not save your rating"), tr("Check your connection and try again.")); }
+  };
 
   useEffect(() => {
     if (platform !== 'tiktok') return;
@@ -820,14 +847,16 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     submitOrder(dripDaysArg);
   };
   const submitOrder = async (dripDaysArg, confirmDuplicate) => {
-    if (!selTier?.id || !link || orderLoading) return;
+    // A curated order names its tier; a full-list order names the public
+    // service number the row showed. Exactly one of the two is ever set.
+    if ((!selTier?.id && !selTier?.catalogueId) || !link || orderLoading) return;
     const shouldRedeem = redeemPoints && rewards?.points?.redeemable;
     setOrderLoading(true);
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tierId: selTier.id, link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "", ...(dripDaysArg != null ? { dripDays: dripDaysArg } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}), ...(shouldRedeem ? { redeemPoints: true } : {}), ...(trafficConfig ? { trafficConfig } : {}) }),
+        body: JSON.stringify({ ...(selTier.id ? { tierId: selTier.id } : { catalogueId: selTier.catalogueId }), link: `https://${link.trim()}`, quantity: qty, ...(comments?.trim() ? { comments: comments.trim() } : {}), serviceType: selSvc?.type || "", ...(dripDaysArg != null ? { dripDays: dripDaysArg } : {}), ...(confirmDuplicate ? { confirmDuplicate: true } : {}), ...(shouldRedeem ? { redeemPoints: true } : {}), ...(trafficConfig ? { trafficConfig } : {}) }),
         signal: AbortSignal.timeout(30000),
       });
       const data = await res.json();
@@ -1039,6 +1068,55 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
 
       {!menuLoading && !menuError && <>
 
+      {/* ═══ VERSION SELECTOR ═══
+          The only thing added to the Nitro picks side. Everything below it is
+          the page as it was; what changes is which list it draws.
+          Bulk builds a cart of curated tiers, which the full list has none of,
+          so the selector is not offered there. */}
+      {orderMode === "single" && (
+        /* The dark track used to be #0d0a18 on an #0c0814 page — a ratio of
+           1.02, which is to say the control was not there — and the selected
+           side's only cue besides a faint white wash was a black drop shadow,
+           which a dark ground swallows. Same trap SegPill documents. Dark gets
+           a deeper track with a visible rim, and the selected side is carried
+           by an accent wash and an accent hairline instead of a shadow. */
+        <div className="flex gap-1 p-1 mb-3.5 rounded-[15px] border border-solid" role="tablist" aria-label={tr("Which list")}
+          style={{ background: dark ? "#07040f" : "#e7ded4", borderColor: dark ? "rgba(232,180,196,.2)" : t.cardBorder }}>
+          {[
+            { key: "nitro", label: msg("Nitro picks"), sub: msg("Tested every week. Refill-backed."), n: platformCounts[platform] || 0,
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
+            { key: "full", label: msg("Full list"), sub: msg("The rest of our catalogue."), n: fullCount, isNew: !fullListSeen,
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> },
+          ].map(v => {
+            const on = view === v.key;
+            return (
+              <button key={v.key} role="tab" aria-selected={on} onClick={() => switchView(v.key)}
+                className="relative flex items-center gap-2.5 flex-1 py-2.5 px-3 max-md:px-2.5 rounded-[11px] cursor-pointer border-none font-[inherit] text-left min-w-0 transition-all duration-200"
+                style={{
+                  background: on ? (dark ? "rgba(196,125,142,.22)" : "#fffdfb") : "transparent",
+                  color: on ? t.accentInk : t.textMuted,
+                  boxShadow: on
+                    ? (dark ? "inset 0 0 0 1.5px rgba(232,180,196,.6)" : "inset 0 0 0 1px rgba(196,125,142,.32), 0 2px 6px rgba(0,0,0,.13)")
+                    : "none",
+                }}>
+                <span className="shrink-0 flex items-center justify-center" style={{ color: on ? t.accent : t.textMuted }}>{v.icon}</span>
+                <span className="flex flex-col gap-px min-w-0 flex-1">
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[13.5px] font-bold truncate" style={{ color: on ? t.accentInk : t.text }}>{tr(v.label)}</span>
+                    {/* Shown until this browser has opened the full list once.
+                        The list is two-thirds of what Nitro can sell and nobody
+                        was looking for it, so it says so — once. */}
+                    {v.isNew && <span className="text-[9px] font-extrabold uppercase tracking-[.6px] rounded-full px-1.5 py-[1px] shrink-0" style={{ background: t.accent, color: dark ? "#0c0814" : "#fff" }}>{tr("New")}</span>}
+                  </span>
+                  <span className="text-[10.5px] leading-tight truncate max-md:hidden" style={{ color: t.textMuted }}>{tr(v.sub)}</span>
+                </span>
+                {v.n != null && <span className="m text-[11px] font-bold rounded-full px-[7px] py-[2px] shrink-0" style={{ fontFamily: "'JetBrains Mono', monospace", background: on ? t.accent : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)"), color: on ? (dark ? "#0c0814" : "#fff") : t.textMuted }}>{v.n.toLocaleString()}</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* ═══ GROUP TABS ═══ */}
       <div className="flex gap-0.5 mb-3 border-b border-solid" data-tour="no-platform-tabs" style={{ borderBottomColor: t.cardBorder }}>
         {PLATFORM_GROUPS.map(g => (
@@ -1105,16 +1183,21 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-solid" style={{ borderBottomColor: t.cardBorder }}>
         <div className="flex items-center justify-center" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.55)" }}>{activePlat?.icon}</div>
         <span className="text-[18px] font-semibold" style={{ color: t.text }}>{tr(activePlat?.label || "")}</span>
-        <span className="text-[13px] ml-auto" style={{ color: t.textMuted }}>{filtered.length} service{filtered.length !== 1 ? "s" : ""}</span>
+        <span className="text-[13px] ml-auto" style={{ color: t.textMuted }}>{(view === "full" ? (fullCount ?? 0) : filtered.length).toLocaleString()} service{(view === "full" ? fullCount : filtered.length) !== 1 ? "s" : ""}</span>
       </div>
 
       {/* ═══ SEARCH ═══ */}
       <div className="relative mb-3.5">
-        <input aria-label={tr("Search services")} placeholder={`Search ${activePlat?.label || ""} services...`} value={search} onChange={e => setSearch(e.target.value)} className="w-full py-[9px] px-3 pr-8 desktop:py-2.5 desktop:px-3.5 rounded-[10px] border border-solid text-[13px] desktop:text-sm font-[inherit] outline-none box-border focus:ring-2 focus:ring-[#c47d8e]/20 transition-[border-color,box-shadow] duration-200" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.09)" : "#fff", color: t.text }} />
+        <input aria-label={tr("Search services")} placeholder={view === "full" ? `Search ${activePlat?.label || ""} services, or type an ID` : `Search ${activePlat?.label || ""} services...`} value={search} onChange={e => setSearch(e.target.value)} className="w-full py-[9px] px-3 pr-8 desktop:py-2.5 desktop:px-3.5 rounded-[10px] border border-solid text-[13px] desktop:text-sm font-[inherit] outline-none box-border focus:ring-2 focus:ring-[#c47d8e]/20 transition-[border-color,box-shadow] duration-200" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.09)" : "#fff", color: t.text }} />
         {search && <button aria-label={tr("Clear search")} onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
       </div>
 
       {/* ═══ SERVICE CARDS ═══ */}
+      {view === "full" ? (
+        <FullList platform={platform} platformLabel={activePlat?.label || ""} search={search} dark={dark} t={t}
+          onPick={pickFullRow} selectedId={fullRow?.id} onBackToPicks={() => switchView("nitro")}
+          cheapestPick={cheapestPick} waNumber={waSupportNumber} userEmail={user?.email} />
+      ) : (
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" data-tour="no-service-list" ref={listRef} style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
         {filtered.map((svc, i) => <ServiceCard key={svc.id} first={i === 0} cartCounts={cartCounts} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} activePromotion={activePromotion} waNumber={waSupportNumber} userEmail={user?.email} />)}
         {filtered.length === 0 && (
@@ -1126,6 +1209,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           </div>
         )}
       </div>
+      )}
 
       {/* Fixed bottom bar — mobile/tablet — single mode only */}
       {orderMode === "single" && hasOrder && tourActive && (
@@ -1217,7 +1301,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
               </div>
             ) : (
-              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={requestSubmit} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} trafficConfig={trafficConfig} setTrafficConfig={setTrafficConfig} socialLinks={socialLinks} />
+              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={requestSubmit} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} trafficConfig={trafficConfig} setTrafficConfig={setTrafficConfig} socialLinks={socialLinks} fullList={fullRow} onVote={castVote} onBackToPicks={() => { setOrderModal(false); switchView("nitro"); }} />
             )}
           </div>
         </div>
@@ -1690,7 +1774,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-xl font-extrabold tracking-[-.2px]" style={{ color: bulkChrome.text }}>{bulkSuccess.total} order{bulkSuccess.total !== 1 ? "s" : ""} placed</div>
-              <div className="text-[13px] mt-[3px]" style={{ color: bulkChrome.muted }}>{tr("Dispatching to providers now")}</div>
+              <div className="text-[13px] mt-[3px]" style={{ color: bulkChrome.muted }}>{tr("Sending your orders now")}</div>
             </div>
           </div>
 
@@ -1748,7 +1832,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           </div>
 
           <p className="text-xs leading-[1.65] mt-3 mb-0" style={{ color: bulkChrome.muted }}>
-            {tr("Orders are on their way to providers. Pending ones follow automatically, and you can track live status in your order history.")}
+            {tr("Your orders are on their way. Pending ones follow automatically, and you can track live status in your order history.")}
           </p>
 
           {/* WhatsApp channel card */}

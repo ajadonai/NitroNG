@@ -7,6 +7,21 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 ## Open
 
+- **Three Spotify tiers still point at `jap` — found 15 Sep 2026 while turning
+  Spotify back on.** Spotify Podcast Plays / Standard, Spotify Saves / Standard
+  and Spotify Monthly Listeners / Budget. They are switched off and their group
+  "Spotify Podcast Plays" is disabled with them, because it had no other tier
+  and would otherwise have rendered as a card with nothing to order. Re-point
+  them at mtp or dao and they come back; leave them and they retire with the
+  provider. CLAUDE.md counts 14 jap tiers in all, so these are three of that
+  set, not a new problem.
+
+- **Two enabled groups have no enabled tier — Threads Followers and X/Twitter
+  Followers 🇺🇸.** They render as cards a customer can open and not order from,
+  the same state the whole of Spotify was in. Left alone on 15 Sep because only
+  Spotify was in scope: either re-enable a tier or disable the group. Worth a
+  guard so a group can never be enabled without one.
+
 - **Reseller tier ladder — parked 12 Sep 2026, scope complete.** Five tiers
   (Starter 10% → Wholesale 30%) on rolling 30-day retail-equivalent spend,
   automatic promotion on the daily cron, month-end demotion after a grace
@@ -540,6 +555,8 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-15 | Full list types re-sorted across all 28 platforms, not the seven first sampled: Members split out of Followers (472 services needing a channel link, not a profile), Shares made its own type (307 that sat in two places — Instagram Reposts as likes, X Retweets as engagement, the same action), and the catch-all read end to end, 300 labels down to 223. Every move was a real mis-bin: "Follow" rather than "Followers" (Deezer, Quora, Spotify page follows, LinkedIn connects, friend requests), star ratings as reviews, up/downvotes that a word boundary stopped reading as votes, profile visits as views. Spotify restored: 13 tiers and their services re-enabled, 3 jap-backed ones left off | `4f9159de` v2.5.5 |
+| 2026-09-15 | New Order gains a second catalogue. Nitro picks is untouched — the only addition on that side is the two-tab selector; everything new is the Full list: the 9,748 provider services that were imported, priced and refreshed nightly but invisible, now orderable by anyone. Instagram's 1,060 become 599 (per-item packages out, exact twins out), labelled in Nitro's words with a test that no provider tell survives, priced above cost or hidden, grouped by type read off the Nitro label, and carrying a like/dislike only someone who has ordered it can cast. Open: which platforms show it — drawn as the ones we sell, and Twitch, Kick and Discord have provider services but no tested tier, so an admin switch per platform would let them in | `445a0b8d` v2.5 |
 | 2026-09-14 | Ticket system removed from the code — admin page, both API routes, the writing cron pass, overview counts and list, badge, poller queries, permissions and settings toggles. Ify escalation writes an activity line instead. The 46 tickets and 190 replies stay in the database | `6614e1d7` v2.4.170 |
 | 2026-09-14 | One naira formatter replaces twelve of twenty-three `naira()` definitions; the copies disagreed (₦12,345.67 vs ₦12,346 for the same kobo) so rounding is a parameter and every old output is pinned by test | `1bffcfdb` v2.4.168 |
 | 2026-09-14 | Ten spent scripts deleted and a README added; four were deleted and restored because tests already guarded them. Dead 615-line `support-page.jsx` removed, and the rest of the ticket surface measured: not read-only, 744 lines plus references across thirteen files | `8c3e60c2` `b2a48640` v2.4.167 v2.4.169 |

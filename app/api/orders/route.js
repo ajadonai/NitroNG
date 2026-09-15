@@ -768,13 +768,19 @@ export async function POST(req) {
  * here: the same validation, pricing, wholesale, balance debit, creation and
  * provider placement. `source` is stamped on the order so admin can tell them apart.
  */
+// `catalogue` used to be the gate on the direct-serviceId path. Since New Order
+// gained its Full list view the path is open to everyone, so the flag decides
+// nothing here — but the reseller API still sends it, and who a reseller's key
+// may order for is still decided over there, in resolveVisible. Kept so that
+// contract stays visible from this side; deliberately unread.
+// eslint-disable-next-line no-unused-vars
 export async function createOrderForSession(session, body, req, { source = 'web', catalogue = false } = {}) {
   try {
     const parsedInput = parseCreateOrderInput(body);
     if (!parsedInput.ok) return Response.json({ error: parsedInput.error }, { status: 400 });
     const {
       tierId,
-      serviceId,
+      catalogueId,
       link: trimmedLink,
       quantity,
       comments,
@@ -784,6 +790,19 @@ export async function createOrderForSession(session, body, req, { source = 'web'
       isUrl,
       trafficConfig,
     } = parsedInput.value;
+    let { serviceId } = parsedInput.value;
+
+    // The full list orders by the public number on the row, not by an internal
+    // id the customer never sees. Resolved here so everything below is the one
+    // direct-serviceId path, unchanged.
+    if (!tierId && !serviceId && catalogueId !== undefined) {
+      const map = await prisma.resellerServiceMap.findUnique({
+        where: { apiId: catalogueId },
+        select: { serviceId: true, retiredAt: true },
+      });
+      if (!map?.serviceId || map.retiredAt) return Response.json({ error: 'Service not available' }, { status: 400 });
+      serviceId = map.serviceId;
+    }
 
     // Get USD→NGN rate for cost calculation only after the request boundary
     // has accepted the payload.
@@ -828,10 +847,15 @@ export async function createOrderForSession(session, body, req, { source = 'web'
         return Response.json({ error: 'Backing service not available' }, { status: 400 });
       }
     } else {
-      // Legacy flow: direct serviceId. A full-catalogue reseller may order any
-      // listed, priced provider service whether or not it is on the retail menu.
+      // Direct serviceId: the full list. Any listed, priced provider service
+      // may be ordered whether or not it is a curated tier — by anyone, since
+      // 14 Sep 2026, when New Order gained its "Full list" view. It was a
+      // full-catalogue reseller's privilege before that (the `catalogue` flag,
+      // still passed by the reseller API and now informational). The fence is
+      // the same one the list is drawn from, lib/full-catalogue FULL_WHERE:
+      // mtp or dao, still listed by the provider, carrying a real cost.
       service = await prisma.service.findUnique({ where: { id: serviceId } });
-      const inCatalogue = catalogue && service && ['mtp', 'dao'].includes(service.provider) && service.providerListedAt && Number(service.costPer1k) > 0;
+      const inCatalogue = service && ['mtp', 'dao'].includes(service.provider) && service.providerListedAt && Number(service.costPer1k) > 0;
       if (!service || (!service.enabled && !inCatalogue)) {
         return Response.json({ error: 'Service not available' }, { status: 400 });
       }

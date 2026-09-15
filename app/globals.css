@@ -1622,3 +1622,11 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
    modal provide it. */
 .loc-inmodal { display: flex; flex-direction: column; gap: 2px; margin: -4px 0; }
 .loc-inmodal .loc-opt { width: 100%; border-radius: 10px; padding: 11px 12px; }
+
+/* Full-list type row. An unselected tab carries no border and no fill on
+   purpose — eight outlined pills read as a tag cloud rather than a choice — so
+   hover is what tells you it is a control at all. */
+.no-type-tab:not([disabled]):hover { background: rgba(139,74,94,.07); }
+.dark .no-type-tab:not([disabled]):hover,
+[data-theme="dark"] .no-type-tab:not([disabled]):hover { background: rgba(232,180,196,.1); }
+.no-type-tab[aria-selected="true"]:hover { filter: brightness(1.06); }

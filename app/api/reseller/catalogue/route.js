@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { getResellerTerms, getMarkupSettings, wholesaleOf } from '@/lib/reseller';
 import { getServiceCatalogue } from '@/lib/service-catalog';
 import { formatResellerService, dedupeCategoryLabels } from '@/lib/reseller-format';
+import { FULL_WHERE } from '@/lib/full-catalogue';
 
 // Read-only browse for granted resellers. Ordering happens on the order page or
 // through the API; this page exists so a reseller can see what an ID means.
@@ -27,13 +28,9 @@ const platformRank = (name) => {
 };
 const byPlatform = (a, b) => platformRank(a) - platformRank(b) || String(a).localeCompare(String(b));
 
-const fullWhere = {
-  provider: { in: ['mtp', 'dao'] },
-  providerListedAt: { not: null },
-  costPer1k: { gt: 0 },
-  tiers: { none: {} },
-  resellerMap: { isNot: null },
-};
+// One definition of the full list, shared with the customer-facing view at
+// app/api/catalogue/full so the two can never disagree about what it holds.
+const fullWhere = FULL_WHERE;
 
 export async function GET(req) {
   try {

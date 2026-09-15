@@ -413,3 +413,35 @@ describe('resolved offer input rules', () => {
     });
   });
 });
+
+// The full list orders by the number printed on its row — "#2440" — because
+// that is the only service identifier a customer ever sees, and the one they
+// can quote back to support. Added 15 Sep 2026 with the Full list view.
+describe('parseCreateOrderInput — the full list catalogue ID', () => {
+  const base = { link: 'https://instagram.com/tripwears', quantity: 1000 };
+
+  it('accepts a catalogue ID on its own, with no tier and no service', () => {
+    const parsed = parseCreateOrderInput({ ...base, catalogueId: 2440 });
+    expect(parsed.ok).toBe(true);
+    expect(parsed.value).toMatchObject({ catalogueId: 2440, tierId: undefined, serviceId: undefined });
+  });
+
+  it('still refuses a body that names no service at all', () => {
+    expect(parseCreateOrderInput(base)).toEqual({ ok: false, error: 'Service or tier required' });
+  });
+
+  it('refuses anything that is not a positive whole number', () => {
+    // It is a database key on the other side. A string, a float or a negative
+    // would reach Prisma as a lookup nobody wrote.
+    for (const bad of ['2440', 24.4, -1, 0, null, {}, []]) {
+      expect(parseCreateOrderInput({ ...base, catalogueId: bad }).ok, `accepted ${JSON.stringify(bad)}`).toBe(false);
+    }
+  });
+
+  it('carries a tier through untouched when both are sent', () => {
+    // The route prefers the tier; the catalogue ID is only read when there is
+    // neither tier nor service, so a stray one can never redirect an order.
+    const parsed = parseCreateOrderInput({ ...base, tierId: 'tier-std', catalogueId: 2440 });
+    expect(parsed.value).toMatchObject({ tierId: 'tier-std', catalogueId: 2440 });
+  });
+});

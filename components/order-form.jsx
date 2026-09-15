@@ -22,6 +22,38 @@ const TRAFFIC_TYPES = [
   { value: 'blank', label: msg('Blank Referrer') },
 ];
 
+/**
+ * The vote, where the customer is already looking at the service. Only someone
+ * who has ordered it can cast one — the list has no Nitro testing behind it, so
+ * an opinion from someone who never bought it would be worth less than nothing.
+ * Tapping the thumb you already hold clears it.
+ */
+function FullListRate({ fullList, onVote, dark, t }) {
+  const tr = useT();
+  const can = !!fullList.ordered && !!onVote;
+  const THUMB = (down) => down
+    ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h3a2 2 0 012 2v7a2 2 0 01-2 2h-3"/></svg>
+    : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>;
+  return (
+    <div className="mx-5 max-md:mx-3.5 mt-2 flex items-center gap-2">
+      <span className="text-[11px] flex-1 min-w-0" style={{ color: t.textMuted }}>{can ? tr("Rate it") : tr("Rate it after your order")}</span>
+      {[false, true].map(down => {
+        const on = fullList.mine === (down ? "down" : "up");
+        const n = down ? fullList.down : fullList.up;
+        return (
+          <button key={String(down)} type="button" disabled={!can} onClick={() => onVote(down ? "down" : "up")}
+            aria-label={down ? tr("Bad service") : tr("Good service")} aria-pressed={on}
+            className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full border border-solid text-[11px] font-semibold font-[inherit] transition-colors duration-150"
+            style={{ cursor: can ? "pointer" : "default", opacity: can ? 1 : .5, borderColor: on ? (dark ? "#6ee7b7" : "#059669") : t.cardBorder, color: on ? (dark ? "#6ee7b7" : "#059669") : t.textMuted, background: on ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.07)") : "transparent" }}>
+            <span className="w-3.5 h-3.5 inline-flex [&_svg]:w-3.5 [&_svg]:h-3.5">{THUMB(down)}</span>
+            <span className="m" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{n || 0}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Five round numbers between min and max, for the quantity presets. */
 function presetsFor(min, max) {
   const nice = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
@@ -33,7 +65,7 @@ function presetsFor(min, max) {
   return [0, 1, 2, 3, 4].map(i => pool[Math.round(i * step)]);
 }
 
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, inline, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints, trafficConfig, setTrafficConfig, tierStyles = {}, socialLinks = {} }) {
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, inline, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints, trafficConfig, setTrafficConfig, tierStyles = {}, socialLinks = {}, fullList = null, onVote, onBackToPicks }) {
   const tr = useT();
   const money = useMoney();
   const minQty = selTier?.min || 100;
@@ -203,9 +235,38 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               </div>
             );
           })()}
+          {/* A full-list order has no tier to badge. What it has instead is the
+              public service number the row showed — the one thing a customer
+              can quote back to us — and whose refill this is. */}
+          {fullList && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 rounded-full py-[3px] px-2.5 text-[11px] font-semibold border border-solid" style={{ borderColor: t.cardBorder, color: t.textSoft }}>
+                {tr("Full list")}<span className="m opacity-70" style={{ fontFamily: "'JetBrains Mono', monospace" }}>#{fullList.id}</span>
+              </span>
+              {fullList.refill ? (
+                <span className="inline-flex items-center gap-1 rounded-full py-[3px] px-2.5 text-[11px] font-semibold" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", color: dark ? "#6ee7b7" : "#059669" }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                  {tr("Refill included")}
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full py-[3px] px-2.5 text-[11px] font-semibold border border-solid" style={{ borderColor: t.cardBorder, color: t.textMuted }}>{tr("No refill")}</span>
+              )}
+            </div>
+          )}
         </div>
         {onClose && <button onClick={onClose} aria-label={tr("Close")} className="bg-transparent border border-solid rounded-[10px] w-8 h-8 flex items-center justify-center cursor-pointer shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textSoft }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
       </div>
+      )}
+
+      {/* ── Full list: the terms, and the way back to a tested pick ── */}
+      {fullList && (
+        <>
+          <div className="mx-5 max-md:mx-3.5 mt-3 rounded-lg py-2 px-3 flex items-center gap-2 flex-wrap" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)", border: `1px solid ${t.cardBorder}` }}>
+            <span className="text-[11px] leading-[1.5] flex-1 min-w-0" style={{ color: dark ? "#a09890" : "#6e6a65" }}>{tr("Not part of our tested menu.")}</span>
+            {onBackToPicks && <button type="button" onClick={onBackToPicks} className="text-[11px] font-bold cursor-pointer border-none bg-transparent font-[inherit] shrink-0 inline-flex items-center gap-1" style={{ color: t.accentInk }}>{tr("Use Nitro's pick instead")}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="dir-flip"><polyline points="9 18 15 12 9 6"/></svg></button>}
+          </div>
+          <FullListRate fullList={fullList} onVote={onVote} dark={dark} t={t} />
+        </>
       )}
 
       {/* ── Package note (verified comments etc.) ── */}
