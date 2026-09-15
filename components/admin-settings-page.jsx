@@ -263,7 +263,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         {emailMsg && <InlineAlert type={emailMsg.type} dark={dark} className="mb-3">{emailMsg.text}</InlineAlert>}
         {[
           ["site_email_general", "General Email", "info@nitro.ng", "Main contact email shown on landing page and legal pages"],
-          ["site_email_support", "Support Email", "support@nitro.ng", "Support-specific email shown on support, tickets, and banned account pages"],
+          ["site_email_support", "Support Email", "support@nitro.ng", "Support-specific email shown on support and banned account pages"],
         ].map(([key, label, placeholder, hint]) => (
           <div key={key} className="mb-3">
             <label className="text-sm block mb-0.5" style={{ color: t.textMuted }}>{label}</label>
@@ -338,11 +338,8 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         {notifPrefs && updateNotifPref ? (
           <div className="flex flex-col gap-3">
             {[
-              ["new_ticket", "New tickets", "Alert when a user opens a new support ticket"],
-              ["ticket_reply", "Ticket replies", "Alert when a user sends a new message in a ticket"],
               ["deposit", "Deposits", "Alert when a user completes a deposit"],
               ["large_deposit", "Large deposits", "Alert for deposits above the large-deposit threshold"],
-              ["stale_ticket", "Stale tickets", "Escalation alert for unanswered tickets (15+ min)"],
               ["price_alert", "Price alerts", "Alert when services are selling below provider cost"],
             ].map(([key, label, hint]) => (
               <label key={key} className="flex items-center justify-between gap-3 cursor-pointer py-1.5">

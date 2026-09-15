@@ -32,13 +32,6 @@ const PROMO_SLIDES = ['wa', 'ig', ...(TASKS_ENABLED ? ['tasks'] : []), ...(RESEL
 
 const refillLabel = (tier) => tier === "Budget" ? msg("No refill") : tier === "Standard" ? msg("30-day refill") : msg("Lifetime refill");
 const tierClr = { Budget: { text: "#e0a458", bg: "rgba(224,164,88,.1)" }, Standard: { text: "#60a5fa", bg: "rgba(96,165,250,.1)" }, Premium: { text: "#a78bfa", bg: "rgba(167,139,250,.1)" } };
-const crossSells = {
-  follower: { title: "Complete the look", body: "New followers check your posts first. Add likes so your content matches your profile.", cta: "Add Likes", color: "#f43f5e", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="#f43f5e" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> },
-  comment: { title: "Pair it with Likes", body: "Comments without likes look odd. Add likes to match and keep it natural.", cta: "Add Likes", color: "#f43f5e", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="#f43f5e" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> },
-  like: { title: "Make it convincing", body: "Likes are great but comments seal the deal. A few comments make your post pop.", cta: "Add Comments", color: "#3b82f6", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> },
-  view: { title: "Boost the engagement", body: "High views + low likes looks off. Add likes so the numbers tell the right story.", cta: "Add Likes", color: "#f43f5e", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="#f43f5e" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> },
-};
-const getCrossSell = (svc) => { const s = (svc || "").toLowerCase(); return s.includes("follower") ? crossSells.follower : s.includes("comment") ? crossSells.comment : s.includes("like") ? crossSells.like : s.includes("view") ? crossSells.view : crossSells.follower; };
 const formatDeliverySpeed = (speed) => {
   if (!speed) return "Processing now";
   return String(speed)
@@ -105,12 +98,6 @@ const TS = {
 };
 
 
-const TIER_COMPARE = [
-  { label: "Accounts", Budget: "Basic", Standard: "Better", Premium: "Best quality" },
-  { label: "Refill", Budget: "None", Standard: "30 days, free", Premium: "Lifetime, free" },
-  { label: "Starts", Budget: "Slower", Standard: "Fast", Premium: "Priority" },
-  { label: "Best for", Budget: "Quick tests", Standard: "Most people", Premium: "Your main page" },
-];
 
 function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, waNumber, userEmail, orderMode, cartCounts }) {
   const tr = useT();
@@ -1588,11 +1575,20 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
 
   const updateRow = (idx, patch) => setRows(prev => prev.map((r, i) => i === idx ? { ...r, ...patch } : r));
   // Saved handles for bulk rows: the same recent-links route as the single
-  // form, fetched once per platform in the cart. Chips show only while a
+  // form, fetched once per platform in the cart. They show only while a
   // row's link is empty, and never auto-fill in bulk — a cart often spans
   // several accounts, and a pin that filled every new row would be wrong for
   // exactly those carts. The pinned handle still comes first, starred.
+  //
+  // Folded away behind one line per row, three to a page, for the same reason
+  // as the single form and more so: a five-row cart was carrying five open
+  // blocks of wrapping pills. Only one row's panel is open at a time, which is
+  // how a cart is actually filled — one row, then the next.
+  const HANDLES_PER_PAGE = 3;
   const [recentByPlat, setRecentByPlat] = useState({});
+  const [handlesRow, setHandlesRow] = useState(null);
+  const [handlePage, setHandlePage] = useState(0);
+  const openHandles = (idx) => { setHandlesRow(r => (r === idx ? null : idx)); setHandlePage(0); };
   const cartPlatforms = [...new Set(rows.map(r => r.platform).filter(p => p && p !== "webtraffic"))].join(",");
   useEffect(() => {
     if (!cartPlatforms) return undefined;
@@ -1840,16 +1836,39 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                 <input aria-label={tr("Quantity")} disabled={loading} type="number" min={1} step="1" value={row.qty} onChange={e => { const v = Math.min(row.max, Math.floor(Number(e.target.value)) || 0); updateRow(idx, { qty: v }); }} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="w-[76px] py-2 px-2.5 rounded-lg border border-solid text-[11px] font-medium text-right outline-none shrink-0 font-[JetBrains_Mono,monospace] disabled:opacity-50" style={{ background: dark ? "#0f1322" : "#fff", borderColor: qtyBad ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: t.text }} />
               </div>
 
-              {!row.link && chipsFor(row.platform).length > 0 && (
-                <div className="flex flex-wrap gap-1.5 -mt-1 mb-2.5" role="group" aria-label={tr("Recent links")}>
-                  {chipsFor(row.platform).map(r => {
-                    const isPin = pinnedFor(row.platform) === r.link;
-                    return (
-                      <button key={r.link} type="button" disabled={loading} onClick={() => updateRow(idx, { link: r.link.replace(/^https?:\/\//i, "") })} title={r.link} className="m py-[3px] px-2.5 rounded-full border border-solid cursor-pointer font-[inherit] text-[11px] disabled:opacity-50" style={{ borderColor: isPin ? t.accent : t.cardBorder, background: isPin ? t.accentLight : "transparent", color: isPin ? t.accentInk : t.text }}>{isPin ? "★ " : ""}{shortLink(r.link)}</button>
-                    );
-                  })}
-                </div>
-              )}
+              {!row.link && chipsFor(row.platform).length > 0 && (() => {
+                const list = chipsFor(row.platform);
+                const isOpen = handlesRow === idx;
+                const pages = Math.ceil(list.length / HANDLES_PER_PAGE);
+                const page = Math.min(handlePage, pages - 1);
+                const shown = list.slice(page * HANDLES_PER_PAGE, (page + 1) * HANDLES_PER_PAGE);
+                return (
+                  <div className="-mt-1 mb-2.5">
+                    <button type="button" disabled={loading} onClick={() => openHandles(idx)} aria-expanded={isOpen} className="flex items-center gap-1.5 border-0 cursor-pointer p-0 disabled:opacity-50" style={{ background: "transparent", color: dark ? "#d4949f" : "#a0616e" }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+                      <span className="text-[11px] font-medium">{tr("Saved handles")} ({list.length})</span>
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ transform: isOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }} aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    {isOpen && (
+                      <div className="flex flex-col gap-1 mt-1.5" role="group" aria-label={tr("Saved handles")}>
+                        {shown.map(r => {
+                          const isPin = pinnedFor(row.platform) === r.link;
+                          return (
+                            <button key={r.link} type="button" disabled={loading} onClick={() => { updateRow(idx, { link: r.link.replace(/^https?:\/\//i, "") }); setHandlesRow(null); }} title={r.link} className="m w-full text-left truncate py-1.5 px-2.5 rounded-lg border border-solid cursor-pointer font-[inherit] text-[11px] disabled:opacity-50" style={{ borderColor: isPin ? t.accent : t.cardBorder, background: isPin ? t.accentLight : "transparent", color: isPin ? t.accentInk : t.text }}>{isPin ? "★ " : ""}{shortLink(r.link)}</button>
+                          );
+                        })}
+                        {pages > 1 && (
+                          <div className="flex items-center justify-end gap-2 mt-0.5">
+                            <button type="button" onClick={() => setHandlePage(page - 1)} disabled={page === 0} aria-label={tr("Previous")} className="bg-transparent border border-solid rounded-md w-5 h-5 flex items-center justify-center cursor-pointer disabled:opacity-35 disabled:cursor-default" style={{ borderColor: t.cardBorder, color: t.textSoft }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></button>
+                            <span className="text-[10px] tabular-nums" style={{ color: t.textMuted }}>{page + 1}/{pages}</span>
+                            <button type="button" onClick={() => setHandlePage(page + 1)} disabled={page >= pages - 1} aria-label={tr("Next")} className="bg-transparent border border-solid rounded-md w-5 h-5 flex items-center justify-center cursor-pointer disabled:opacity-35 disabled:cursor-default" style={{ borderColor: t.cardBorder, color: t.textSoft }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               {/* Presets + price */}
               <div className="flex justify-between items-center gap-3">
                 <div className="flex gap-1 flex-wrap">

@@ -15,7 +15,6 @@ import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
 import AnnouncementBanner from "./announcement-banner";
 import { OverviewPage, RightSidebar } from "./dashboard-overview";
-import { SegPill } from "./seg-pill";
 import { fD } from "../lib/format";
 import { Avatar } from "./avatar";
 import OrderTour from "./order-tour";
@@ -260,17 +259,31 @@ const NOTIF_ICONS = {
   x: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
   dollar: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
   gift: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg>,
-  chat: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
 };
 
-function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, setClearedAt, readAllAt, setReadAllAt, socialLinks = {} }) {
+// How many rows the panel holds. It was ten, under a footer reading "Showing
+// latest 10 of 23" that named the rest and offered no way to them — there is no
+// notifications page to link to. Thirty and a scroll removes the dead end, and
+// nothing older than 30 days is built into the list in the first place (see the
+// cutoff in notifItems), so the list clears itself without a sweep.
+const NOTIF_LIMIT = 30;
+
+function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, setClearedAt, readAllAt, setReadAllAt, onNavigate }) {
   const tr = useT();
   const [filter, setFilter] = useState("all");
 
   const filtered = filter === "all" ? items : items.filter(n => n.type === filter);
-  const display = filtered.slice(0, 10);
-  const hasMore = filtered.length > 10;
-  const unreadCount = items.filter(n => n.alwaysUnread || (!readIds.has(n.id) && !(readAllAt && n.ts && n.ts <= readAllAt))).length;
+  const display = filtered.slice(0, NOTIF_LIMIT);
+  const unreadCount = items.filter(n => !readIds.has(n.id) && !(readAllAt && n.ts && n.ts <= readAllAt)).length;
+  // Only the kinds that have something in them. Four are produced and the tabs
+  // offered three of them, so rewards were unfilterable.
+  const KINDS = [
+    { key: "all", label: tr("All") },
+    { key: "order", label: tr("Orders") },
+    { key: "deposit", label: tr("Deposits") },
+    { key: "reward", label: tr("Rewards") },
+  ].map(k => ({ ...k, n: k.key === "all" ? items.length : items.filter(i => i.type === k.key).length }))
+   .filter(k => k.n > 0 || k.key === "all");
   const markAllRead = () => {
     const allIds = items.map(n => n.id);
     const now = new Date();
@@ -288,19 +301,32 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
     if (typeof setClearedAt === "function") setClearedAt(now);
     fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clearAll: true }) }).catch(() => {});
   };
+  // One row, not the lot. Clearing a single stale line used to mean clearing
+  // everything, so people left the list alone and it stopped being read.
+  //
+  // The row is hidden on this device and marked read on the server. There is no
+  // per-id clear to call: clearAll persists as a timestamp on the user, and the
+  // cleared-id set is localStorage only. So a row dismissed on a phone is gone
+  // there and merely read on a laptop — the badge is right everywhere, the row
+  // survives on the other device. A notifClearedIds column would close that and
+  // is on the shelf; it is not worth a migration for a row that ages out in 30
+  // days anyway.
+  const dismiss = (id) => {
+    setClearedIds(prev => new Set([...prev, id]));
+    markRead(id);
+  };
+  // A notification about an order that does not open the order is a dead end.
+  // History searches server-side, so seeding its box with the reference lands
+  // on that one order; the wallet has no search, so a deposit or a reward opens
+  // the ledger with its newest entry — the one being announced — at the top.
+  const open = (n) => {
+    markRead(n.id);
+    if (typeof onNavigate === "function") onNavigate(n.type === "order" ? "orders" : "add-funds", n.ref || null);
+    onClose();
+  };
 
-  return (
-    <div className="absolute top-[calc(100%+8px)] w-80 max-md:w-[280px] rounded-[14px] backdrop-blur-[20px] z-50 overflow-hidden" style={{
-      // Anchored to the trigger's trailing edge, which is the right in English
-      // and the left in Arabic. This lived in a second `style` attribute from
-      // 9 Sep to 13 Sep 2026, and JSX keeps only the last of a repeated prop —
-      // so it was dropped at compile time, `right-0` had gone from the class
-      // list in the same edit, and the panel ran off the side of the screen.
-      insetInlineEnd: 0,
-      background: dark ? "rgba(13,16,32,.98)" : "rgba(255,255,255,.98)",
-      borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder,
-      boxShadow: dark ? "0 12px 40px rgba(0,0,0,.5)" : "0 12px 40px rgba(0,0,0,.12)",
-    }}>
+  const body = (
+    <>
       {/* Header */}
       <div className="flex justify-between items-center py-3.5 px-4">
         <div className="flex items-center gap-2">
@@ -312,35 +338,91 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
           {items.length > 0 && <button onClick={clearAll} className="text-[13px] font-semibold bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px text-t-text-muted">{tr("Clear all")}</button>}
         </div>
       </div>
-      {/* Filter tabs */}
-      <div className="px-3.5 pb-2.5">
-        <SegPill value={filter} options={[{value: "all", label: tr("All")}, {value: "order", label: tr("Orders")}, {value: "deposit", label: tr("Deposits")}]} onChange={setFilter} dark={dark} t={t} fill />
-      </div>
+      {/* Filters — counted, and only the kinds that have something in them */}
+      {items.length > 0 && (
+        <div className="flex gap-1.5 px-3.5 pb-2.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+          {KINDS.map(k => (
+            <button key={k.key} onClick={() => setFilter(k.key)} aria-pressed={filter === k.key} className="shrink-0 whitespace-nowrap text-xs font-semibold py-1 px-2.5 rounded-full border border-solid cursor-pointer font-[inherit]" style={filter === k.key ? { background: t.accent, borderColor: t.accent, color: "#fff" } : { background: "transparent", borderColor: t.cardBorder, color: t.textMuted }}>
+              {k.label} <span style={{ opacity: .75, fontVariantNumeric: "tabular-nums" }}>{k.n}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="h-px bg-t-card-border" />
       {/* List */}
-      <div className="max-h-[280px] overflow-y-auto">
+      <div className="max-h-[392px] max-desktop:max-h-none max-desktop:flex-1 overflow-y-auto overscroll-contain">
         {display.length > 0 ? display.map((n, i) => {
-          const isRead = n.alwaysUnread ? false : readIds.has(n.id) || (readAllAt && n.ts && n.ts <= readAllAt);
+          const isRead = readIds.has(n.id) || (readAllAt && n.ts && n.ts <= readAllAt);
+          const newDay = i === 0 || display[i - 1].day !== n.day;
           return (
-            <div key={n.id} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => { if (n.type === "ticket" && socialLinks?.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi *Nitro*, I need help")}`, "_blank"); onClose(); } else { markRead(n.id); } }} className="flex items-start gap-2.5 py-3 px-4 transition-colors duration-150 hover:bg-[rgba(196,125,142,.1)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: !isRead ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)") : "transparent", cursor: "pointer" }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${n.color}15`, color: n.color }}>{NOTIF_ICONS[n.icon]}</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center gap-1.5">
-                  <span className="text-sm text-t-text" style={{ fontWeight: isRead ? 500 : 600 }}>{n.title}</span>
-                  {!isRead && <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-accent" />}
+            <Fragment key={n.id}>
+              {newDay && <div className="sticky top-0 z-[2] py-[7px] px-4 text-[10.5px] font-bold uppercase tracking-[.1em] text-t-text-muted" style={{ background: dark ? "rgba(13,16,32,.98)" : "rgba(255,255,255,.98)", borderBottom: `1px solid ${t.cardBorder}` }}>{n.day}</div>}
+              <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => open(n)} className="relative flex items-start gap-2.5 py-3 pl-4 pr-2.5 cursor-pointer transition-colors duration-150 hover:bg-[rgba(196,125,142,.1)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: !isRead ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)") : "transparent" }}>
+                {!isRead && <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-accent" aria-hidden="true" />}
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${n.color}15`, color: n.color }}>{NOTIF_ICONS[n.icon]}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-center gap-1.5">
+                    <span className="text-sm text-t-text" style={{ fontWeight: isRead ? 500 : 600 }}>{n.title}</span>
+                    {!isRead && <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-accent" />}
+                  </div>
+                  {/* Two lines. Service names are the provider's and they are long;
+                      one clipped line cut off the half that says what happened. */}
+                  <div className="text-[13.5px] mt-0.5 leading-[1.4] text-t-text-soft overflow-hidden" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{n.desc}</div>
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    <span className="text-[12px] text-t-text-muted">{n.time}</span>
+                    {n.ref && <span className="text-[11.5px] font-[JetBrains_Mono,monospace] text-t-text-muted">{n.ref}</span>}
+                    <span className="text-[12px] font-semibold text-accent-ink">· {n.type === "order" ? tr("View order") : tr("View in wallet")}</span>
+                  </div>
                 </div>
-                <div className="text-sm mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-t-text-soft">{n.desc}</div>
-                <div className="text-[13px] mt-[3px] text-t-text-muted">{n.time}</div>
+                <button onClick={e => { e.stopPropagation(); dismiss(n.id); }} aria-label={tr("Dismiss")} title={tr("Dismiss")} className="shrink-0 bg-transparent border-none cursor-pointer p-1 rounded-md leading-none opacity-50 hover:opacity-100 text-t-text-muted">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
               </div>
-            </div>
+            </Fragment>
           );
         }) : (
-          <div className="py-6 px-3.5 text-center text-sm text-t-text-muted">{tr("No notifications")}</div>
+          <div className="py-8 px-5 text-center">
+            <div className="w-10 h-10 mx-auto mb-2.5 rounded-xl flex items-center justify-center text-accent-ink" style={{ background: dark ? "#1c1015" : "#fdf2f4" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            </div>
+            <div className="text-sm font-semibold text-t-text mb-0.5">{tr("Nothing here yet")}</div>
+            <div className="text-[13px] text-t-text-muted">{tr("Order updates, wallet top-ups and rewards land here as they happen.")}</div>
+          </div>
         )}
       </div>
-      {/* Footer */}
-      {hasMore && <div className="py-2 px-3.5 text-center text-xs text-t-text-muted" style={{ borderTop: `1px solid ${t.cardBorder}` }}>{tr("Showing latest 10 of")} {filtered.length}</div>}
-    </div>
+    </>
+  );
+
+  const surface = {
+    background: dark ? "rgba(13,16,32,.98)" : "rgba(255,255,255,.98)",
+    borderWidth: 1, borderStyle: "solid", borderColor: t.cardBorder,
+  };
+
+  return (
+    <>
+      {/* Phone: the house sheet — backdrop, page locked behind it (the scroll
+          lock already covers notifOpen), opaque surface, tap outside to close. */}
+      <div className="dash-notif-overlay" onClick={onClose} />
+      <div className="dash-notif-sheet" role="dialog" aria-modal="true" aria-label={tr("Notifications")} style={{ ...surface, borderBottom: "none" }}>
+        <div className="dash-more-grab" style={{ background: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.18)" }} />
+        {body}
+      </div>
+
+      {/* Desktop: anchored under the bell. 380px, up from 320 — a service name
+          is the provider's and was being cut mid-word at the old width. */}
+      <div className="max-desktop:hidden absolute top-[calc(100%+8px)] w-[380px] rounded-[14px] backdrop-blur-[20px] z-50 overflow-hidden" style={{
+      // Anchored to the trigger's trailing edge, which is the right in English
+      // and the left in Arabic. This lived in a second `style` attribute from
+      // 9 Sep to 13 Sep 2026, and JSX keeps only the last of a repeated prop —
+      // so it was dropped at compile time, `right-0` had gone from the class
+      // list in the same edit, and the panel ran off the side of the screen.
+      insetInlineEnd: 0,
+      ...surface,
+      boxShadow: dark ? "0 12px 40px rgba(0,0,0,.5)" : "0 12px 40px rgba(0,0,0,.12)",
+    }}>
+        {body}
+      </div>
+    </>
   );
 }
 
@@ -476,6 +558,12 @@ function DashboardInner({ initialData }) {
     return () => window.removeEventListener("resize", positionDockSlide);
   }, [active, moreOpen, positionDockSlide]);
   const [notifOpen, setNotifOpen] = useState(false);
+  // The order reference a notification is sending the customer to. History
+  // seeds its search box from this on mount and it is dropped immediately
+  // after, so coming back to History later from the rail opens it unfiltered
+  // rather than still searching an order from days ago.
+  const [ordersFocus, setOrdersFocus] = useState(null);
+  const openFromNotification = useCallback((page, ref) => { setOrdersFocus(ref || null); setActive(page); }, []);
   const [readNotifIds, setReadNotifIds] = useState(() => {
     if (typeof window === 'undefined') return new Set();
     const v = localStorage.getItem("nitro-notif-v");
@@ -565,7 +653,6 @@ function DashboardInner({ initialData }) {
   }, [momentCompleted, a2hsReady, isIos, a2hsDismissed, isStandalone, showOrderTour, chatOpen, moreOpen, notifOpen, leftOpen]);
   const [txs, setTxs] = useState(initialData?.transactions || []);
   const [transactionsTotal, setTransactionsTotal] = useState(initialData?.transactionsTotal ?? initialData?.transactions?.length ?? 0);
-  const [unreadTickets, setUnreadTickets] = useState(initialData?.unreadTickets || []);
   const [walletSummary, setWalletSummary] = useState(initialData?.walletSummary || { funded: 0, spent: 0 });
   const enrichedTxs = useMemo(() => {
     const orderMap = {};
@@ -694,12 +781,14 @@ function DashboardInner({ initialData }) {
   // Build notification items — single source of truth for both bell badge and dropdown
   const notifItems = useMemo(() => {
     const dark_ = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+    // Nothing older than 30 days is ever built into the list, so it clears
+    // itself and there is no sweep to run. This is the auto-clear.
     const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const all = [
       ...orders.filter(o => o.created && new Date(o.created) >= cutoff).map(o => {
         const s = o.status;
         return {
-          id: `ord-${o.id}`, type: "order",
+          id: `ord-${o.id}`, type: "order", ref: o.id,
           title: s === "Completed" ? tr("Order delivered") : s === "Cancelled" ? tr("Order cancelled") : tr("Order in progress"),
           // The service name is the provider's and stays as it is; the verb around it translates.
           desc: `${o.service || tr("Service")} — ${s === "Completed" ? tr("delivered") : s === "Cancelled" ? tr("cancelled") : tr("started")}`,
@@ -724,28 +813,30 @@ function DashboardInner({ initialData }) {
         color: dark_ ? "#e0a458" : "#d97706",
         icon: "gift",
       })),
-      ...unreadTickets.map(tk => ({
-        id: `tkt-${tk.id}`, type: "ticket",
-        title: tr("New message from support"),
-        desc: tk.subject || tr("You have an unread support message"),
-        time: tk.updated ? fD(tk.updated) : "", ts: new Date(tk.updated),
-        color: dark_ ? "#a5b4fc" : "#4f46e5",
-        icon: "chat",
-        alwaysUnread: true,
-      })),
+      // Support used to be a fourth kind here, built from unread tickets and
+      // flagged alwaysUnread — which bypassed both the read check and the
+      // cleared check below, so neither Mark all read nor Clear all could
+      // touch it. 22 customers were carrying a badge they could not clear,
+      // pointing at conversations resolved in June through a system that moved
+      // to WhatsApp. The flags were cleared on 14 Sep 2026 and the rows are
+      // gone from the bell, so a future Ify escalation cannot recreate the
+      // stuck badge. WhatsApp is reachable from the dock float and the rail.
     ];
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today.getTime() - 86400000);
     return all.filter(n => {
-      if (n.alwaysUnread) return true;
       if (clearedNotifIds.has(n.id)) return false;
       if (notifClearedAt && n.ts && n.ts <= new Date(notifClearedAt)) return false;
       return true;
-    }).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    }).sort((a, b) => (b.ts || 0) - (a.ts || 0))
+      // The day heading the panel groups under. Scanning a list stops meaning
+      // reading every timestamp in it.
+      .map(n => ({ ...n, day: !n.ts || isNaN(n.ts) ? tr("Earlier") : n.ts >= today ? tr("Today") : n.ts >= yesterday ? tr("Yesterday") : fD(n.ts) }));
     // tr and money belong here: without them the list keeps the text and the
     // currency it was first built with, so switching either left the bell
     // showing the old language until something else happened to invalidate it.
-  }, [orders, txs, unreadTickets, notifClearedAt, clearedNotifIds, tr, money]);
+  }, [orders, txs, notifClearedAt, clearedNotifIds, tr, money]);
   const bellUnread = notifSynced ? notifItems.filter(n => {
-    if (n.alwaysUnread) return true;
     if (readNotifIds.has(n.id)) return false;
     if (notifReadAllAt && n.ts && n.ts <= notifReadAllAt) return false;
     return true;
@@ -792,8 +883,8 @@ function DashboardInner({ initialData }) {
     return () => window.removeEventListener("nitro-order-tour", handler);
   }, []);
 
-  useEffect(() => { if (isSupport) setUnreadTickets([]); }, [isSupport]);
-
+  // Handed to History on mount, then dropped. History keeps what it seeded.
+  useEffect(() => { if (ordersFocus && active === "orders") setOrdersFocus(null); }, [active, ordersFocus]);
 
   /* Theme — provided by ThemeProvider */
 
@@ -814,7 +905,6 @@ function DashboardInner({ initialData }) {
         if (data.orderSummary) setOrderSummary(data.orderSummary);
         if (data.transactions) setTxs(data.transactions);
         if (data.transactionsTotal != null) setTransactionsTotal(data.transactionsTotal);
-        if (data.unreadTickets) setUnreadTickets(data.unreadTickets);
         if (data.walletSummary) setWalletSummary(data.walletSummary);
         if (data.alerts) setAlerts(data.alerts);
         if (data.currentTosVersion) setCurrentTosVersion(data.currentTosVersion);
@@ -859,7 +949,6 @@ function DashboardInner({ initialData }) {
             if (data.orderSummary) setOrderSummary(data.orderSummary);
             if (data.transactions) setTxs(data.transactions);
             if (data.transactionsTotal != null) setTransactionsTotal(data.transactionsTotal);
-        if (data.unreadTickets) setUnreadTickets(data.unreadTickets);
             if (data.walletSummary) setWalletSummary(data.walletSummary);
             if (data.alerts) setAlerts(data.alerts);
             if (data.currentTosVersion) setCurrentTosVersion(data.currentTosVersion);
@@ -1015,7 +1104,6 @@ function DashboardInner({ initialData }) {
           if (data.orderSummary) setOrderSummary(data.orderSummary);
           if (data.transactions) setTxs(data.transactions);
           if (data.transactionsTotal != null) setTransactionsTotal(data.transactionsTotal);
-        if (data.unreadTickets) setUnreadTickets(data.unreadTickets);
           if (data.walletSummary) setWalletSummary(data.walletSummary);
           if (data.alerts) setAlerts(data.alerts);
         }
@@ -1078,7 +1166,6 @@ function DashboardInner({ initialData }) {
               });
               if (dashData.transactions) setTxs(dashData.transactions);
               if (dashData.transactionsTotal != null) setTransactionsTotal(dashData.transactionsTotal);
-              if (dashData.unreadTickets) setUnreadTickets(dashData.unreadTickets);
               if (dashData.walletSummary) setWalletSummary(dashData.walletSummary);
             }
           } catch {}
@@ -1240,7 +1327,7 @@ function DashboardInner({ initialData }) {
       case "services":
         return <NewOrderPage dark={dark} t={t} user={user} onOrderSuccess={refreshDashboard} onViewOrders={() => setActive("orders")} onNavigate={(id) => setActive(id)} onTopUp={() => setActive("add-funds")} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} comments={noComments} setComments={setNoComments} catModal={noCatModal} setCatModal={setNoCatModal} tourActive={showOrderTour} activePromotion={activePromotion} rewards={rewards} socialLinks={socialLinks} refreshRewards={refreshRewards} />;
       case "orders":
-        return <OrdersPage orders={orders} initialTotal={ordersTotal} orderSummary={orderSummary} txs={enrichedTxs} dark={dark} t={t} onNavigate={setActive} onRefresh={refreshDashboard} waNum={socialLinks.social_whatsapp_support?.replace(/\D/g, "")} email={user?.email} />;
+        return <OrdersPage orders={orders} initialTotal={ordersTotal} orderSummary={orderSummary} txs={enrichedTxs} dark={dark} t={t} onNavigate={setActive} onRefresh={refreshDashboard} waNum={socialLinks.social_whatsapp_support?.replace(/\D/g, "")} email={user?.email} initialSearch={ordersFocus || ""} />;
       case "referrals":
         return <ReferralsPage user={user} dark={dark} t={t} />;
       case "settings":
@@ -1328,7 +1415,7 @@ function DashboardInner({ initialData }) {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
               {bellUnread > 0 && <div className="dash-bell-badge">{bellUnread > 10 ? "10+" : bellUnread}</div>}
             </button>
-            {notifOpen && <NotifDropdown items={notifItems} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} setClearedAt={setNotifClearedAt} readAllAt={notifReadAllAt} setReadAllAt={setNotifReadAllAt} onNavigate={setActive} socialLinks={socialLinks} />}
+            {notifOpen && <NotifDropdown items={notifItems} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} setClearedAt={setNotifClearedAt} readAllAt={notifReadAllAt} setReadAllAt={setNotifReadAllAt} onNavigate={openFromNotification} />}
           </div>
           {/* Avatar → account menu on desktop, Settings on mobile (the More sheet carries the rest there) */}
           <div ref={avRef} className="relative">

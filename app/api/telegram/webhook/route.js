@@ -8,6 +8,7 @@ import { watBounds } from '@/lib/format';
 import { getRevenue } from '@/lib/revenue';
 import { getBalance, PROVIDER_IDS, getProviderName, isProviderConfigured } from '@/lib/smm';
 import { DEAD_ORDER_STATES, WALLET_FUNDING, partialAdjustment as partialAdj } from '@/lib/ledger';
+import { formatKobo as naira } from '@/lib/money';
 
 export const maxDuration = 60;
 
@@ -15,8 +16,6 @@ const ADMIN_TG_IDS = ['8567146346', '1935066216'];
 const ADMIN_TG_NAMES = { '8567146346': 'The Nitro NG', '1935066216': 'Soludo' };
 const TOKEN = process.env.TG_BOT_TOKEN;
 const API = `https://api.telegram.org/bot${TOKEN}`;
-
-function naira(kobo) { return `₦${(kobo / 100).toLocaleString()}`; }
 
 function reply(chatId, threadId, text) {
   if (!TOKEN) return Promise.resolve();

@@ -15,7 +15,6 @@ import { useSessionHeartbeat } from "../lib/use-session-heartbeat";
 
 const AdminOrdersPage = dynamic(() => import("./admin-orders"), { ssr: false });
 const AdminUsersPage = dynamic(() => import("./admin-users"), { ssr: false });
-const AdminTicketsPage = dynamic(() => import("./admin-tickets"), { ssr: false });
 const AdminServicesPage = dynamic(() => import("./admin-services"), { ssr: false });
 const AdminServiceGroupsPage = dynamic(() => import("./admin-service-groups"), { ssr: false });
 const AdminPricingPage = dynamic(() => import("./admin-pricing"), { ssr: false });
@@ -243,7 +242,6 @@ function AdminRightSidebar({ data, active, admin, setActive }) {
   const showActivity = !["leaderboard"].includes(active);
   const activityTypeMap = {
     overview: null, orders: ["order"], finance: ["order", "payment", "user"], users: ["user"], blog: ["blog"],
-    tickets: ["ticket"], // support moved to WhatsApp — page kept for history
     services: ["service"], "menu-builder": ["service"], pricing: ["service", "settings"], payments: ["payment"], team: ["admin"], coupons: ["coupon"],
     alerts: ["alert"], promotions: ["promotion"], settings: ["settings", "maintenance"], notifications: ["notification"], maintenance: ["maintenance"],
     issues: ["system", "alert"], api: ["settings"], crew: ["crew"], acquisition: ["acquisition"],
@@ -251,7 +249,7 @@ function AdminRightSidebar({ data, active, admin, setActive }) {
   const allowedTypes = activityTypeMap[active] || null;
   const filteredActivity = allowedTypes ? (data.activity || []).filter(a => allowedTypes.includes(a.type)) : (data.activity || []);
   const activityLabel = {
-    orders: "Orders, by the team", finance: "Money, by the team", users: "Users, by the team", blog: "Blog activity", tickets: "Ticket activity",
+    orders: "Orders, by the team", finance: "Money, by the team", users: "Users, by the team", blog: "Blog activity",
     services: "Catalogue activity", "menu-builder": "Catalogue activity", pricing: "Pricing activity", payments: "Payments, by the team",
     team: "Team changes", coupons: "Coupon activity", alerts: "Notice activity", promotions: "Promotion activity", notifications: "Notification activity", maintenance: "Maintenance activity",
   }[active] || "What the team did";
@@ -334,9 +332,9 @@ function AdminDashboardInner({ initialData }) {
     return { name: d.admin?.name || "Admin", role: d.admin?.role || "superadmin", email: d.admin?.email || "", pages: d.admin?.pages || "*", customActions: d.admin?.customActions || null };
   });
   const [data, setData] = useState(() => {
-    if (!initialData) return { stats: {}, recentOrders: [], recentUsers: [], openTickets: [], activity: [], unreadTicketCount: 0, pendingManualCount: 0, pendingOrderCount: 0, openIssueCount: 0 };
+    if (!initialData) return { stats: {}, recentOrders: [], recentUsers: [], activity: [], pendingManualCount: 0, pendingOrderCount: 0, openIssueCount: 0 };
     const d = initialData;
-    return { stats: d, recentOrders: d.recentOrders || [], recentUsers: d.recentUsers || [], openTickets: d.openTickets || [], activity: d.activity || [], unreadTicketCount: d.unreadTicketCount || 0, pendingManualCount: d.pendingManualCount || 0, pendingOrderCount: d.pendingOrderCount || 0, openIssueCount: d.openIssueCount || 0, pendingTaskReviewCount: d.pendingTaskReviewCount || 0 };
+    return { stats: d, recentOrders: d.recentOrders || [], recentUsers: d.recentUsers || [], activity: d.activity || [], pendingManualCount: d.pendingManualCount || 0, pendingOrderCount: d.pendingOrderCount || 0, openIssueCount: d.openIssueCount || 0, pendingTaskReviewCount: d.pendingTaskReviewCount || 0 };
   });
   const toastRef = useRef(null);
 
@@ -378,9 +376,7 @@ function AdminDashboardInner({ initialData }) {
           stats: d || {},
           recentOrders: d.recentOrders || [],
           recentUsers: d.recentUsers || [],
-          openTickets: d.openTickets || [],
           activity: d.activity || [],
-          unreadTicketCount: d.unreadTicketCount || 0,
           pendingManualCount: d.pendingManualCount || 0,
           pendingOrderCount: d.pendingOrderCount || 0,
           openIssueCount: d.openIssueCount || 0,
@@ -400,15 +396,14 @@ function AdminDashboardInner({ initialData }) {
   /* ── Admin notification system ── */
   const notifLastPollRef = useRef(null);
   const notifSeenRef = useRef(new Set());
-  const staleLastAlertRef = useRef(new Map());
   const origTitleRef = useRef(typeof document !== 'undefined' ? document.title : '');
   const titleFlashRef = useRef(null);
   const [dnd, setDnd] = useState(() => { try { return localStorage.getItem('nitro-admin-dnd') === '1'; } catch { return false; } });
   const [notifPrefs, setNotifPrefs] = useState(() => {
     try {
       const saved = localStorage.getItem('nitro-admin-notif-prefs');
-      return saved ? JSON.parse(saved) : { new_ticket: true, ticket_reply: true, deposit: true, large_deposit: true, stale_ticket: true, price_alert: true };
-    } catch { return { new_ticket: true, ticket_reply: true, deposit: true, large_deposit: true, stale_ticket: true, price_alert: true }; }
+      return saved ? JSON.parse(saved) : { deposit: true, large_deposit: true, price_alert: true };
+    } catch { return { deposit: true, large_deposit: true, price_alert: true }; }
   });
 
   const toggleDnd = () => {
@@ -454,12 +449,9 @@ function AdminDashboardInner({ initialData }) {
         osc.start(ctx.currentTime + start);
         osc.stop(ctx.currentTime + start + dur);
       };
-      if (type === 'new_ticket') { play(880, 0, 0.12); play(1100, 0.1, 0.12); play(1320, 0.2, 0.18); }
-      else if (type === 'ticket_reply') { play(660, 0, 0.12); play(880, 0.1, 0.15); }
-      else if (type === 'large_deposit') { play(523, 0, 0.1, 0.18); play(659, 0.08, 0.1, 0.18); play(784, 0.16, 0.1, 0.18); play(1047, 0.24, 0.25, 0.18); }
+      if (type === 'large_deposit') { play(523, 0, 0.1, 0.18); play(659, 0.08, 0.1, 0.18); play(784, 0.16, 0.1, 0.18); play(1047, 0.24, 0.25, 0.18); }
       else if (type === 'deposit') { play(784, 0, 0.1); play(1047, 0.1, 0.15); }
       else if (type === 'pending_deposit') { play(587, 0, 0.1, 0.15); play(740, 0.1, 0.1, 0.15); play(587, 0.2, 0.15, 0.15); }
-      else if (type === 'stale_ticket') { play(440, 0, 0.2, 0.18); play(440, 0.3, 0.2, 0.18); play(440, 0.6, 0.3, 0.2); }
       else if (type === 'price_alert') { play(330, 0, 0.15, 0.2); play(262, 0.15, 0.15, 0.2); play(330, 0.3, 0.15, 0.2); play(262, 0.45, 0.25, 0.2); }
     } catch {}
   };
@@ -495,41 +487,26 @@ function AdminDashboardInner({ initialData }) {
 
     const pages = admin?.pages || '';
     const hasPage = (p) => pages === '*' || (Array.isArray(pages) ? pages.includes(p) : String(pages).includes(p));
-    if ((event.type === 'new_ticket' || event.type === 'ticket_reply' || event.type === 'stale_ticket') && !hasPage('tickets')) return;
     if ((event.type === 'deposit' || event.type === 'large_deposit' || event.type === 'pending_deposit') && !hasPage('finance') && !hasPage('payments') && !hasPage('overview')) return;
     if (event.type === 'price_alert' && !hasPage('services') && !hasPage('pricing') && !hasPage('overview')) return;
 
-    if (active === 'tickets' && document.hasFocus() && (event.type === 'new_ticket' || event.type === 'ticket_reply' || event.type === 'stale_ticket')) return;
 
     const key = `${event.type}:${event.id}`;
-    if (event.type === 'stale_ticket') {
-      const now = Date.now();
-      const lastAlert = staleLastAlertRef.current.get(event.id);
-      if (lastAlert) {
-        const interval = event.minutes >= 30 ? 5 * 60000 : 5 * 60000;
-        if (now - lastAlert < interval) return;
-      }
-      staleLastAlertRef.current.set(event.id, now);
-    } else {
-      if (notifSeenRef.current.has(key)) return;
-      notifSeenRef.current.add(key);
-      if (notifSeenRef.current.size > 200) notifSeenRef.current = new Set([...notifSeenRef.current].slice(-100));
-    }
+    if (notifSeenRef.current.has(key)) return;
+    notifSeenRef.current.add(key);
+    if (notifSeenRef.current.size > 200) notifSeenRef.current = new Set([...notifSeenRef.current].slice(-100));
 
     playSound(event.type);
 
     const labels = {
-      new_ticket: { title: 'New ticket dropped', toast: 'warning', body: `${event.user}: ${event.title}` },
-      ticket_reply: { title: `${event.user} dey wait o`, toast: 'info', body: event.title },
       deposit: { title: `Money entered ₦${(event.amount / 100).toLocaleString()}`, toast: 'success', body: `${event.user} just funded` },
       large_deposit: { title: `Whale alert ₦${(event.amount / 100).toLocaleString()}`, toast: 'success', body: `${event.user} came correct` },
       pending_deposit: { title: `Approve ₦${(event.amount / 100).toLocaleString()}`, toast: 'warning', body: `${event.user} sent bank transfer` },
-      stale_ticket: { title: `${event.user} still waiting (${event.minutes}m)`, toast: 'error', body: `${event.title} — reply now` },
       price_alert: { title: `${event.count} service${event.count > 1 ? 's' : ''} selling below cost`, toast: 'error', body: 'Check Pricing page — you\'re losing money' },
     };
     const l = labels[event.type] || { title: 'Notification', toast: 'info', body: '' };
 
-    if (toast) toast[l.toast](l.title, l.body, { duration: event.type === 'stale_ticket' ? 10000 : 6000 });
+    if (toast) toast[l.toast](l.title, l.body, { duration: 6000 });
 
     if (!document.hasFocus()) startTitleFlash();
 
@@ -569,10 +546,8 @@ function AdminDashboardInner({ initialData }) {
               stats: d || {},
               recentOrders: d.recentOrders || [],
               recentUsers: d.recentUsers || [],
-              openTickets: d.openTickets || [],
-              activity: d.activity || [],
-              unreadTicketCount: d.unreadTicketCount || 0,
-              pendingManualCount: d.pendingManualCount || 0,
+                  activity: d.activity || [],
+                  pendingManualCount: d.pendingManualCount || 0,
               pendingOrderCount: d.pendingOrderCount || 0,
               openIssueCount: d.openIssueCount || 0,
               pendingTaskReviewCount: d.pendingTaskReviewCount || 0,
@@ -721,7 +696,6 @@ function AdminDashboardInner({ initialData }) {
       case "orders": return <AdminOrdersPage key={ordersPreset} dark={dark} t={t} admin={admin} initialFilter={ordersPreset} />;
       case "users": return <AdminUsersPage dark={dark} t={t} admin={admin} />;
       case "leaderboard": return <AdminLeaderboardPage dark={dark} t={t} />;
-      case "tickets": return <AdminTicketsPage dark={dark} t={t} adminName={admin?.name || "Admin"} />;
       case "services": return <AdminServicesPage dark={dark} t={t} />;
       case "menu-builder": return <AdminServiceGroupsPage dark={dark} t={t} />;
       case "pricing": return <AdminPricingPage dark={dark} t={t} />;
@@ -904,9 +878,9 @@ function AdminDashboardInner({ initialData }) {
 
         {leftOpen && <div className="dash-overlay" onClick={() => setLeftOpen(false)} />}
 
-        <main className="dash-main bg-t-bg" style={{ ...(active === "tickets" ? { overflow: "hidden" } : {}) }}>
+        <main className="dash-main bg-t-bg" >
           <AnnouncementBanner alerts={adminAlerts} dark={dark} mode="dashboard" />
-          <div key={active} className={`dash-page-enter ${active === "tickets" ? "flex-1 flex flex-col min-h-0 overflow-hidden" : ""}`}>
+          <div key={active} className={`dash-page-enter`}>
             {renderPage()}
           </div>
 

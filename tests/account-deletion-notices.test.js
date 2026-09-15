@@ -339,7 +339,9 @@ describe('deletion-grace entrypoints', () => {
     const login = readFileSync('app/api/auth/login/route.js', 'utf8');
     const signup = readFileSync('app/api/auth/signup/route.js', 'utf8');
     const google = readFileSync('app/api/auth/google/callback/route.js', 'utf8');
-    const landing = readFileSync('components/landing-page.jsx', 'utf8');
+    // The page a customer reaches, not components/landing-page.jsx — that file
+    // had no importer and was deleted on 14 Sep 2026.
+    const landing = readFileSync('components/landing-v3.jsx', 'utf8');
 
     for (const source of [login, signup, google]) {
       expect(source).toContain('isAccountDeletionGraceActive');

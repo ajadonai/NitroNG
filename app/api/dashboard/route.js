@@ -304,16 +304,6 @@ export async function GET() {
       } catch {}
     }
 
-    let unreadTickets = [];
-    try {
-      unreadTickets = await prisma.ticket.findMany({
-        where: { userId: user.id, unreadByUser: true, status: { not: 'Archived' } },
-        select: { ticketId: true, subject: true, updatedAt: true },
-        orderBy: { updatedAt: 'desc' },
-        take: 20,
-      });
-    } catch {}
-
     const currentTosVersion = dashboardSettings.tos_version || null;
 
     const totalOrders = orderSummary.nonCancelled;
@@ -382,11 +372,6 @@ export async function GET() {
         ...(a.actionLabel && a.actionHref ? { action: { label: a.actionLabel, href: a.actionHref } } : {}),
       })),
       currentTosVersion,
-      unreadTickets: unreadTickets.map(tk => ({
-        id: tk.ticketId,
-        subject: tk.subject,
-        updated: tk.updatedAt.toISOString(),
-      })),
     });
   } catch (err) {
     log.error('Dashboard', 'Fatal error', { error: err.message });

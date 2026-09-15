@@ -5,9 +5,10 @@ import { useToast } from "./toast";
 import { FilterDropdown } from "./date-range-picker";
 import { serviceDisplay } from "../lib/service-display";
 import { copyText } from "@/lib/clipboard";
+import { formatNaira as naira } from '../lib/money';
 
 const PROV = { mtp: "MTP", dao: "DAO", jap: "JAP" };
-const naira = (v) => `₦${Math.round(Number(v || 0)).toLocaleString()}`;
+
 const short = (v) => v >= 1e6 ? `${Math.round(v / 1e6)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}K` : String(v || 0);
 const SEARCH = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="20" y1="20" x2="16.5" y2="16.5" /></svg>;
 const CHEV = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>;

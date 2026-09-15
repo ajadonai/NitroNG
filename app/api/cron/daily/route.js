@@ -55,41 +55,6 @@ export async function GET(req) {
     results.cleanup.error = err.message;
   }
 
-  // ═══ TICKETS: auto-close inactive tickets ═══
-  try {
-    const inactiveCutoff = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-    const staleTickets = await prisma.ticket.findMany({
-      where: { status: { in: ['Open', 'In Progress'] }, updatedAt: { lt: inactiveCutoff } },
-      select: { id: true, ticketId: true },
-    });
-
-    let ticketsClosed = 0;
-    for (const ticket of staleTickets) {
-      try {
-        await prisma.ticketReply.create({
-          data: {
-            ticketId: ticket.id,
-            from: 'system',
-            message: 'This ticket has been closed due to inactivity. If you still need help, please open a new ticket.',
-          },
-        });
-        await prisma.ticket.update({
-          where: { id: ticket.id },
-          data: { status: 'Resolved', unreadByUser: true },
-        });
-        ticketsClosed++;
-      } catch (e) {
-        log.error('Ticket auto-close', `Failed to close ticket ${ticket.ticketId}: ${e.message}`);
-      }
-    }
-
-    if (ticketsClosed > 0) log.info('Tickets', `Auto-closed ${ticketsClosed} inactive tickets`);
-    results.tickets = { closed: ticketsClosed };
-  } catch (err) {
-    log.error('Ticket auto-close', err.message);
-    results.tickets = { error: err.message };
-  }
-
   // ═══ LOG RETENTION: prune activity logs older than 90 days ═══
   try {
     const logCutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
@@ -604,7 +569,6 @@ export async function GET(req) {
   const summary = {};
   if (results.cleanup?.deleted) summary['Stale users cleaned'] = results.cleanup.deleted;
   if (results.cleanup?.permanentlyDeleted) summary['Permanently deleted'] = results.cleanup.permanentlyDeleted;
-  if (results.tickets?.closed) summary['Tickets auto-closed'] = results.tickets.closed;
   const nudgeKeys = ['nudgeIdleFunds', 'nudgeIdleBalance'];
   const totalNudges = nudgeKeys.reduce((s, k) => s + (results[k]?.sent || 0), 0);
   if (totalNudges) summary['Nudge emails sent'] = totalNudges;

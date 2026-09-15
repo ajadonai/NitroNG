@@ -7,6 +7,7 @@ import InlineAlert from "./inline-alert";
 import { PlatformIcon } from "./platform-icon";
 import { serviceDisplay } from "../lib/service-display";
 import { openCardFrame, openCardHeader } from "../lib/expandable-card";
+import { formatKobo } from '../lib/money';
 
 // The whole menu as one list, grouped by platform, with the three tier prices
 // on every row so pricing scans without opening anything. An open group takes
@@ -14,7 +15,7 @@ import { openCardFrame, openCardHeader } from "../lib/expandable-card";
 // this page never showed before, its profit on cost. Swap is a first-class action.
 const TIERS = ["Budget", "Standard", "Premium"];
 const TYPES = ["followers", "likes", "views", "comments", "engagement", "plays", "reviews", "saves", "reposts", "downloads", "traffic", "verified-comments", "shorts", "subscribers", "members", "shares", "impressions", "watchtime"];
-const naira = (kobo) => `₦${Math.round(Number(kobo) / 100).toLocaleString("en-NG")}`;
+const naira = (kobo) => formatKobo(kobo, { round: true });
 const CH = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>;
 const SEARCH = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.5" y2="16.5"/></svg>;
 

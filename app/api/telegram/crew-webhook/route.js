@@ -3,6 +3,7 @@ import { log } from '@/lib/logger';
 import { getMemberEarnings, getMemberHeld } from '@/lib/commissions';
 import { sendDM, replyInGroup, crewWelcome, crewDmChiefNewLink, kickFromGroup } from '@/lib/crew-bot';
 import { DEAD_ORDER_STATES } from '@/lib/ledger';
+import { formatKobo as naira } from '@/lib/money';
 
 export const maxDuration = 60;
 
@@ -31,8 +32,6 @@ function getWeekStartUTC() {
   monday.setUTCHours(0, 0, 0, 0);
   return new Date(monday.getTime() - 60 * 60 * 1000);
 }
-
-function naira(kobo) { return `₦${(kobo / 100).toLocaleString()}`; }
 
 async function getMemberSlugs(memberId) {
   const links = await prisma.acquisitionLink.findMany({

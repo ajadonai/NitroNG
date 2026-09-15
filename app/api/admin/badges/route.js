@@ -10,15 +10,14 @@ export async function GET() {
   const { error } = await requireAdmin();
   if (error) return error;
   try {
-    const [unreadTicketCount, pendingManualCount, pendingOrderCount, openIssueCount, pendingTaskReviewCount, pendingRefillCount] = await Promise.all([
-      prisma.ticket.count({ where: { unreadByAdmin: true, status: { in: ['Open', 'In Progress'] } } }).catch(() => 0),
+    const [pendingManualCount, pendingOrderCount, openIssueCount, pendingTaskReviewCount, pendingRefillCount] = await Promise.all([
       prisma.transaction.count({ where: { type: 'deposit', method: 'manual', status: 'Pending', NOT: { note: { contains: '[awaiting_confirmation]' } } } }).catch(() => 0),
       prisma.order.count({ where: { status: { in: ['Pending', 'Processing'] }, deletedAt: null, queuedBehind: null } }).catch(() => 0),
       prisma.adminIssue?.findMany({ where: { status: 'open' }, select: { type: true }, distinct: ['type'] }).then(r => r.length).catch(() => 0) ?? Promise.resolve(0),
       prisma.taskSubmission.count({ where: { status: 'pending' } }).catch(() => 0),
       prisma.order.count({ where: { refillRequestedAt: { not: null }, refillHandledAt: null, deletedAt: null } }).catch(() => 0),
     ]);
-    return Response.json({ unreadTicketCount, pendingManualCount, pendingOrderCount, openIssueCount, pendingTaskReviewCount, pendingRefillCount }, { headers: { 'Cache-Control': 'no-store' } });
+    return Response.json({ pendingManualCount, pendingOrderCount, openIssueCount, pendingTaskReviewCount, pendingRefillCount }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
     log.error('Admin Badges', err.message);
     return Response.json({ error: 'Failed to load counts' }, { status: 500 });

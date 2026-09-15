@@ -3,7 +3,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('@/lib/logger', () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } }));
 
 const { deductBalance, trackBonusConsumption, restoreBonusForRefund, grantWinbackCredit, expireBonusCredits, getBonusInfo } = await import('@/lib/bonus-credit');
-const { applyWelcomeBonus } = await import('@/lib/welcome-bonus');
+const { applyWelcomeBonus, bonusForAmount } = await import('@/lib/welcome-bonus');
+
+// The ladder's own figures are pinned in tests/welcome-bonus-currency.test.js.
+// The tests below are about the IP guard — whether a bonus is paid or withheld —
+// so the amount is incidental and read from the same table the code pays from.
+// Restating it here meant a ladder change broke six tests that are not about the
+// ladder, which is how the 1 Sep cut and the 14 Sep restore both landed.
+const TOP = bonusForAmount(1000000);  // ₦10,000 deposit
+const MID = bonusForAmount(500000);   // ₦5,000
+const LOW = bonusForAmount(250000);   // ₦2,500, the lowest rung that pays
 
 function makeTx() {
   const state = {
@@ -401,10 +410,11 @@ describe('applyWelcomeBonus', () => {
 
     const result = await applyWelcomeBonus(db, 'user1', 250000);
 
-    expect(result).toBe(25000);
+    expect(LOW).toBeGreaterThan(0);  // so "pays" below is never vacuously true
+    expect(result).toBe(LOW);
     expect(db.user.update).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: 'user1' },
-      data: { balance: { increment: 25000 } },
+      data: { balance: { increment: LOW } },
     }));
     expect(db.transaction.create).toHaveBeenCalled();
     expect(db.alert.create).not.toHaveBeenCalled();
@@ -434,7 +444,7 @@ describe('applyWelcomeBonus', () => {
 
     const result = await applyWelcomeBonus(db, 'user4', 1000000);
 
-    expect(result).toBe(150000);
+    expect(result).toBe(TOP);
     expect(db.user.count).not.toHaveBeenCalled();
     expect(db.user.update).toHaveBeenCalled();
   });
@@ -448,7 +458,7 @@ describe('applyWelcomeBonus', () => {
 
     const result = await applyWelcomeBonus(db, 'user5', 500000);
 
-    expect(result).toBe(60000);
+    expect(result).toBe(MID);
     expect(db.user.count).not.toHaveBeenCalled();
   });
 
@@ -465,7 +475,7 @@ describe('applyWelcomeBonus', () => {
 
     const result = await applyWelcomeBonus(db, 'user6', 250000);
 
-    expect(result).toBe(25000);
+    expect(result).toBe(LOW);
     expect(db.user.count).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({
         signupIp: '1.2.3.4',
@@ -486,10 +496,10 @@ describe('applyWelcomeBonus', () => {
 
     const result = await applyWelcomeBonus(db, 'user7', 1000000);
 
-    expect(result).toBe(150000);
+    expect(result).toBe(TOP);
     expect(db.user.update).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: 'user7' },
-      data: { balance: { increment: 150000 } },
+      data: { balance: { increment: TOP } },
     }));
     expect(db.transaction.create).toHaveBeenCalled();
   });
@@ -531,6 +541,6 @@ describe('applyWelcomeBonus', () => {
 
     const result = await applyWelcomeBonus(db, 'user10', 250000);
 
-    expect(result).toBe(25000);
+    expect(result).toBe(LOW);
   });
 });

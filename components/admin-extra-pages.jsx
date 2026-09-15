@@ -219,7 +219,7 @@ const ROLE_INFO = {
   owner:      { color: "#e0a458", desc: "Full platform access. Cannot be modified. Only one owner exists." },
   superadmin: { color: "#c47d8e", desc: "Full access to all admin features. Can manage team and settings." },
   admin:      { color: "#a5b4fc", desc: "Default access to most features. Permissions customizable." },
-  support:    { color: "#6ee7b7", desc: "Tickets, orders, users only. Permissions customizable." },
+  support:    { color: "#6ee7b7", desc: "Orders and users only. Permissions customizable." },
   finance:    { color: "#fcd34d", desc: "Payments and analytics only. Permissions customizable." },
 };
 const ASSIGNABLE_ROLES = ["admin", "support", "finance"];
