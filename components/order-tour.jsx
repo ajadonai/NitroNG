@@ -12,20 +12,101 @@ import { BONUS_PRESETS } from "../lib/welcome-bonus";
 // were translated around it while it went on greeting every French, Swahili and
 // Arabic user in English.
 const STEPS = [
-  { target: "no-platform-tabs", findFirst: ".no-plat-icon-on, .no-mob-plat-on, .no-plat-icon-btn:first-child, .no-mob-plat-btn:first-child", noScroll: true, title: msg("Pick a platform"), desc: msg("Choose which platform you want to grow. Instagram, TikTok, YouTube — we support 28."), icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> },
-  { target: "no-service-list", findFirst: ".no-svc-card", title: msg("Choose a service"), desc: msg("Browse available services — followers, likes, views, comments, and more. Tap one to select it."), icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg> },
-  { target: "no-tier-select", title: msg("Select your tier"), desc: msg("Budget has no refill, Standard includes 30-day refill, Premium has lifetime refill. Pick what fits your needs."), icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>, before: "selectService" },
-  { target: "no-link-input", title: msg("Enter your link & quantity"), desc: msg("Paste your profile or post URL and set how many you want. Minimum varies by service."), icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>, before: "selectTier" },
-  { target: "no-order-bar", title: msg("Place your order"), desc: msg("Review your selection, tap Order, enter your link and you're done. We start processing immediately."), icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
-  { target: "no-mode-toggle", title: msg("Bulk ordering"), desc: msg("Need multiple orders at once? Switch to Bulk mode — add services to a cart and place them all in one go."), icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7v10M12 7v10M16 7v10"/></svg>, before: "clearOrder" },
+  // The selector leads. It decides what every control under it shows, so
+  // teaching the tiles or the tiers before it explains the branches before the
+  // trunk — and it is also the first thing on the page, so the spotlight walks
+  // straight down rather than jumping back up.
+  //
+  // No counts in any of this copy. They are per-platform (Instagram carries 19
+  // picks and 934 others; YouTube's wider list is 1,422) and they move on every
+  // sync, so a number typed in here is wrong for most people reading it. The
+  // live pills on the selector say it instead. The old step 1 claimed "we
+  // support 28" while the page header said 29.
+  { target: "no-list-select", noScroll: true, title: msg("Start here — two lists"),
+    desc: msg("Nitro picks are the ones we test every week and back with a refill. Full list is everything else we carry for this platform — cheaper and far wider, sold exactly as listed. Everything below changes with whichever one you are on."),
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> },
+
+  // findFirst aims at the tile itself. The four selectors this used to try —
+  // no-plat-icon-on, no-mob-plat-on, no-plat-icon-btn, no-mob-plat-btn — are
+  // not rendered anywhere and have not been for a long time, so findTarget fell
+  // back to the anchor every single time. The anchor was the CATEGORY TABS row,
+  // which meant step one explained Instagram and TikTok while circling
+  // "Social / Music / SEO & Reviews". It never errored, because a dead selector
+  // quietly resolves to its ancestor. tests/order-tour-targets.test.js now
+  // fails the build instead.
+  { target: "no-platform-grid", findFirst: ".no-plat-tile", title: msg("Pick a platform"),
+    desc: msg("Choose where you want to grow. Instagram, TikTok, YouTube and more, grouped under the tabs above."),
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> },
+
+  { target: "no-service-list", findFirst: ".no-svc-card", title: msg("Choose a service"),
+    desc: msg("Followers, likes, views, comments and more. Tap one to open it."),
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg> },
+
+  // The chips, not the whole card: the tiers are the thing being described.
+  { target: "no-tier-select", findFirst: ".no-tier-chip", title: msg("Pick a tier"),
+    desc: msg("Budget has no refill. Standard is refilled for 30 days. Premium is refilled for life. Same service, different promise."),
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>, before: "selectService" },
+
+  { target: "no-link-input", title: msg("Enter your link & quantity"),
+    desc: msg("Paste your profile or post URL and set how many you want. The minimum varies by service."),
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>, before: "selectTier" },
+
+  // Restored. This step existed before and I dropped it in the rebuild, which
+  // left the tour going from "enter your link" straight to bulk mode without
+  // ever showing how an order is placed.
+  //
+  // It aims at the submit button INSIDE the modal, not at no-order-bar as it
+  // used to. That bar is the mobile/tablet strip — it does not exist on desktop
+  // at all, and from the tier step onward the modal is open on top of it
+  // anyway. no-submit-btn is rendered on every viewport and is the control the
+  // step is actually describing, whether it reads "Order" or "Top up".
+  // Two readings of the same step, chosen on the balance at render.
+  //
+  // A customer who has never deposited has ₦0, so the button in the modal says
+  // "Top up", not "Order" — and this step was telling them to place an order
+  // while pointing at it. Faking an Order button would be worse than the wrong
+  // words: tapping it fails. So the step describes the control that is there,
+  // and for a bonus-eligible customer it hands straight into the deposit card
+  // that already comes next.
+  { target: "no-submit-btn", title: msg("Place your order"),
+    desc: msg("Check the total, then tap the button. We start straight away — you can watch it fill on the Orders page."),
+    // No Top up variant any more. The form assumes the wallet covers it while
+    // the tour is running (see assumeFunded in order-form), so this step always
+    // points at an Order button and one description is enough. Two earlier
+    // attempts wrote around the problem — first retitling the step, then
+    // explaining the wrong button — instead of removing it.
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
+
+  { target: "no-mode-toggle", title: msg("Ordering a lot at once"),
+    desc: msg("Switch to Bulk and every service gets a plus instead. Fill one cart, pay once."),
+    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7v10M12 7v10M16 7v10"/></svg>, before: "clearOrder" },
 ];
+
+// The first VISIBLE match, not the first match.
+//
+// New Order renders its platform grid twice — a desktop grid and a phone
+// window — with one hidden at any width, so "the first one in the document" is
+// the wrong element half the time. Same for the anchor: both carry
+// data-tour="no-platform-grid".
+//
+// The old version asked querySelector for ONE element and gave up if it was
+// hidden, falling silently back to the anchor. That silence is what let four
+// dead platform selectors survive for months: the tour went on pointing at the
+// category tabs and nothing ever said it could not find a tile.
+function firstVisible(sel) {
+  for (const el of document.querySelectorAll(sel)) {
+    if (el.offsetParent !== null || el.getClientRects().length) return el;
+  }
+  return null;
+}
 
 function findTarget(s) {
   if (s.findFirst) {
-    const el = document.querySelector(s.findFirst);
-    if (el && el.offsetParent !== null) return el;
+    const el = firstVisible(s.findFirst);
+    if (el) return el;
   }
-  return document.querySelector(`[data-tour="${s.target}"]`);
+  const anchor = `[data-tour="${s.target}"]`;
+  return firstVisible(anchor) || document.querySelector(anchor);
 }
 
 function waitForEl(selector, cb, onTimeout, maxWait = 3000) {
@@ -54,6 +135,15 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
   const [resumed, setResumed] = useState(saved?.phase === "touring" && saved.step > 0);
   const [visible, setVisible] = useState(false);
   const [spotRect, setSpotRect] = useState(null);
+  // Asked once, and kept current if they change it mid-session.
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduceMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   const [animKey, setAnimKey] = useState(0);
   const rafRef = useRef(null);
 
@@ -248,38 +338,59 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
   const bg = dark ? "#1a1329" : "#ffffff";
   const border = dark ? "rgba(196,125,142,.22)" : "rgba(0,0,0,.1)";
   const text = dark ? "#f5f3f0" : "#1c1b19";
-  const sub = dark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.5)";
-  const skipC = dark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.3)";
+  // Measured, not guessed. Both of these sat under WCAG's 4.5:1 for normal
+  // text — "Skip tour" and "Esc to exit" worst at 2.12:1 on white and 3.22:1 on
+  // the dark card, which is why they read as almost invisible. The minimum
+  // alpha that clears 4.5:1 is .54 on white and .46 on #1a1329; body copy was
+  // also short at 3.95:1 in light.
+  const sub = dark ? "rgba(255,255,255,0.72)" : "rgba(0,0,0,0.66)";
+  const skipC = dark ? "rgba(255,255,255,0.56)" : "rgba(0,0,0,0.56)";
   const dotOff = dark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
   // The deposit card is a separate phase, not a seventh step: it is never
   // numbered, so it does not belong in the count the rail and the label share.
   const pad = 10;
+  const stepTitle = STEPS[step]?.title;
+  const stepDesc = STEPS[step]?.desc;
   const sr = spotRect;
 
   // Smart tooltip positioning — stays close to the spotlight, avoids edges
+  // Where the card goes, and the one rule it must never break: it cannot cover
+  // the thing it is pointing at.
+  //
+  // Two things the old version did not know about. The dashboard's floating
+  // bottom nav owns the last ~74px at every width 1199 and under — phone,
+  // tablet AND laptop — so "space below" was overstated by that much on three
+  // of the four viewports. And its last-resort branch was
+  // `top = max(70, spotBottom + gap)`, which lands ON the target whenever
+  // neither side fits; the Place-your-order step is exactly that case, because
+  // the order bar is itself pinned to the bottom.
   const tooltipPos = (() => {
     if (!sr) return { bottom: 90, left: "50%", transform: "translateX(-50%)" };
     const tooltipH = 190;
     const tooltipW = 320;
     const gap = 14;
+    const navH = window.innerWidth <= 1199 ? 74 : 0;
+    const floor = window.innerHeight - navH;
     const spotBottom = sr.y + sr.h;
     const spotTop = sr.y;
     const spotCenterX = sr.x + sr.w / 2;
-    const spaceBelow = window.innerHeight - spotBottom;
+    const spaceBelow = floor - spotBottom;
     const spaceAbove = spotTop;
 
     const pos = {};
 
-    // Vertical: prefer below, fall back to above
     if (spaceBelow > tooltipH + gap + 40) {
       pos.top = spotBottom + gap;
     } else if (spaceAbove > tooltipH + gap) {
       pos.bottom = window.innerHeight - spotTop + gap;
     } else {
-      pos.top = Math.max(70, spotBottom + gap);
+      // Neither side fits. Take the roomier one and sit hard against the edge
+      // rather than on the target — a spotlight the card covers is worse than
+      // a card that crowds the edge.
+      if (spaceAbove >= spaceBelow) pos.bottom = Math.max(navH + 10, window.innerHeight - spotTop + gap);
+      else pos.top = Math.min(spotBottom + gap, floor - tooltipH - 10);
     }
 
-    // Horizontal: anchor near the spotlight center, clamped to screen edges
     const halfW = tooltipW / 2;
     let left = spotCenterX;
     if (left - halfW < 16) left = halfW + 16;
@@ -303,7 +414,14 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
           No onClick={finish} on this any more. A full-screen dim that ends
           onboarding on any stray tap gave the customer no undo and no warning —
           leaving is Skip or Escape, both of which say so. */}
-      <svg aria-hidden="true" className="fixed inset-0 w-full h-full z-[100]" style={{ animation: "otOverlayIn .3s ease" }}>
+      {/* Above the order modal, not under it.
+          Selecting a tier opens that modal (handleSelectTier calls
+          setOrderModal(true)), so it is on screen for the link step, the order
+          step and nothing the customer did put it there. At z-100/101 against
+          the modal's z-200 the tour simply disappeared behind it: the form came
+          up and the step vanished. The spotlight cutout still shows the modal
+          through the hole; only the surround is dimmed twice. */}
+      <svg aria-hidden="true" className="fixed inset-0 w-full h-full z-[210]" style={{ animation: "otOverlayIn .3s ease" }}>
         <defs>
           <mask id="orderTourMask">
             <rect width="100%" height="100%" fill="white" />
@@ -314,42 +432,74 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
         {phase === "touring" && sr && <>
           {/* Soft accent glow behind spotlight */}
           <rect x={sr.x - pad} y={sr.y - pad} width={sr.w + pad * 2} height={sr.h + pad * 2} rx="14" fill="none" stroke={accent} strokeWidth="2" opacity="0.6" />
-          <rect x={sr.x - pad - 3} y={sr.y - pad - 3} width={sr.w + pad * 2 + 6} height={sr.h + pad * 2 + 6} rx="17" fill="none" stroke={accent} strokeWidth="2">
-            <animate attributeName="stroke-width" values="2;10" dur="1.6s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.5;0" dur="1.6s" repeatCount="indefinite" />
-          </rect>
+          {/* The ripple: three on arrival, then still.
+              It used to repeat indefinitely, which keeps pulling the eye back
+              to the ring for as long as you are trying to read the words beside
+              it. Three says "here", then gets out of the way. Keyed on the step
+              so it fires again each time the spotlight moves.
+              Skipped entirely for anyone who asked for less motion — the ring
+              and its accent edge above are the signal; this is the garnish. */}
+          {!reduceMotion && (
+            <rect key={`ripple-${step}`} x={sr.x - pad - 3} y={sr.y - pad - 3} width={sr.w + pad * 2 + 6} height={sr.h + pad * 2 + 6} rx="17" fill="none" stroke={accent} strokeWidth="2">
+              <animate attributeName="stroke-width" values="2;10" dur="1.5s" repeatCount="3" fill="freeze" />
+              <animate attributeName="opacity" values="0.55;0" dur="1.5s" repeatCount="3" fill="freeze" />
+            </rect>
+          )}
         </>}
       </svg>
 
       {/* WELCOME CARD */}
       {phase === "welcome" && (
-        <div className="fixed z-[101] top-1/2 left-1/2 text-center rounded-2xl pt-8 px-7 pb-7 max-w-[340px] w-[calc(100%-32px)]" style={{
+        <div className="fixed z-[211] top-1/2 left-1/2 rounded-2xl pt-7 px-6 pb-6 max-w-[340px] w-[calc(100%-32px)]" style={{
           transform: "translate(-50%, -50%)",
           background: bg, border: `1px solid ${border}`,
           boxShadow: dark ? "0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(196,125,142,.08)" : "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,.04)",
           animation: "otWelcomeFadeIn 0.35s cubic-bezier(.4,0,.2,1)",
         }}>
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4" style={{ background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.07)", color: accent }}>
-            <svg className="dir-flip" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          {/* Icon and heading on one line, and the heading says what the tour
+              is for rather than asking a yes/no question.
+
+              The icon used to be M12 5v14M5 12h14 — a plus, which reads as a
+              missing asset on a card about a walkthrough. It is a route now.
+
+              "takes about 15 seconds" is gone. It was written when there were
+              six steps, it is wrong at seven, and it is the same kind of
+              hardcoded claim as "we support 28" — a number nobody maintains.
+              The three lines below are the summary instead, and they stay true
+              when a step is added. They also name the two lists, which is the
+              one thing a returning customer does not already know. */}
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-[38px] h-[38px] rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.07)", color: accent }}>
+              <svg className="dir-flip" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 20l-5.4 1.8 1.8-5.4L16.5 4.3a2.1 2.1 0 013 3z"/><path d="M15 6l3 3"/></svg>
+            </div>
+            <div className="text-[17px] font-bold leading-tight" style={{ color: text }}>{tr("New here? Let us show you the page")}</div>
           </div>
-          <div className="text-lg font-bold mb-1" style={{ color: text }}>{tr("Ready to place an order?")}</div>
-          <div className="text-[13px] leading-[1.6] mb-3" style={{ color: sub }}>{tr("Quick walkthrough — takes about 15 seconds.")}</div>
+          <div className="text-[13px] leading-[1.6] mb-3.5" style={{ color: sub }}>{tr("The two lists, how to pick a service and a tier, and how an order goes out.")}</div>
+          <div className="flex flex-col gap-[7px] mb-4">
+            {[msg("Two lists — tested picks, and everything else"), msg("Pick a platform and a service"), msg("Choose a tier — how long the refill lasts")].map((line, i) => (
+              <div key={line} className="flex items-center gap-2.5 text-[12.5px]" style={{ color: sub }}>
+                <span className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 text-[10.5px] font-extrabold"
+                  style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: accent }}>{i + 1}</span>
+                {tr(line)}
+              </div>
+            ))}
+          </div>
           {eligible && (
             <div className="flex items-center gap-2 rounded-lg py-2 px-3 mb-3" style={{ background: greenBg, border: `1px solid ${greenBorder}` }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
               <span className="text-[11px] font-semibold" style={{ color: green }}>{tr("Up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free on your first deposit")}</span>
             </div>
           )}
-          <div className="flex flex-col gap-2.5">
-            <button onClick={startTour} className="py-3 px-0 rounded-xl text-sm font-semibold border-none cursor-pointer font-[inherit] w-full transition-all duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.35)]" style={{ background: accent, color: "#fff" }}>{tr("Show me how")}</button>
-            <button onClick={finish} className="py-2.5 px-0 rounded-xl text-[13px] font-medium bg-transparent cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ color: skipC, border: "none" }}>{tr("I already know")}</button>
+          <div className="flex gap-2.5">
+            <button onClick={finish} className="py-3 px-4 rounded-xl text-[13px] font-semibold bg-transparent cursor-pointer font-[inherit] shrink-0 transition-all duration-200 hover:-translate-y-px" style={{ color: sub, border: `1px solid ${border}` }}>{tr("Skip")}</button>
+            <button onClick={startTour} className="py-3 px-0 rounded-xl text-sm font-semibold border-none cursor-pointer font-[inherit] flex-1 transition-all duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.35)]" style={{ background: accent, color: "#fff" }}>{tr("Show me how")}</button>
           </div>
         </div>
       )}
 
       {/* Resume notice — only on the step the tour was restored onto. */}
       {phase === "touring" && resumed && (
-        <div className="fixed z-[102] top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 py-1.5 ps-3 pe-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
+        <div className="fixed z-[212] top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 py-1.5 ps-3 pe-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
           style={{ background: bg, border: `1px solid ${border}`, color: sub, boxShadow: "0 8px 22px rgba(0,0,0,.2)" }}>
           {tr("Picked up where you stopped")}
           <button onClick={() => { setResumed(false); setStep(0); setAnimKey(k => k + 1); }}
@@ -359,7 +509,9 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
 
       {/* TOUR STEP CARD */}
       {phase === "touring" && (
-        <div key={animKey} data-tour-tooltip className="fixed z-[101] rounded-2xl py-5 px-5 max-w-[320px] w-[calc(100%-32px)]" style={{
+        <div key={animKey} data-tour-tooltip role="dialog" aria-modal="false"
+          aria-label={`${tr("Step")} ${step + 1} ${tr("of")} ${STEPS.length} — ${tr(STEPS[step].title)}. ${tr("Esc to exit")}`}
+          className="fixed z-[211] rounded-2xl py-5 px-5 max-w-[320px] w-[calc(100%-32px)]" style={{
           ...tooltipPos,
           animation: "otFadeIn 0.3s cubic-bezier(.4,0,.2,1)",
           background: bg, border: `1px solid ${border}`,
@@ -369,15 +521,19 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
               walk. It used to read "of STEPS.length" (six) beside a row of dots
               built from totalDots (seven for a bonus-eligible user), so the two
               halves of the same progress display disagreed on screen. */}
-          <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.07)", color: accent }}>{STEPS[step].icon}</div>
-            <div className="text-[11px] font-bold tracking-[1.5px] uppercase" style={{ color: accent }}>{tr("Step")} {step + 1} {tr("of")} {STEPS.length}</div>
-            <span className="ms-auto text-[10px] font-medium px-1.5 py-0.5 rounded-md max-md:hidden" style={{ color: skipC, border: `1px solid ${border}` }}>{tr("Esc to exit")}</span>
-          </div>
-          {/* tr() at render — STEPS holds msg()-marked English keys, because a
+          {/* Icon and title on one line, as the mockup had it. This used to
+              spend the whole header on "STEP 1 OF 6" in accent caps with an
+              "Esc to exit" chip opposite, pushing the actual heading onto a
+              third row — three pieces of chrome above one sentence. The rail
+              below already says how far along you are, and Escape still works;
+              it is announced to screen readers rather than shouted on screen.
+              tr() at render — STEPS holds msg()-marked English keys, because a
               hook cannot be called at module scope where the array is defined. */}
-          <div className="text-[15px] font-bold mb-1" style={{ color: text }}>{tr(STEPS[step].title)}</div>
-          <div className="text-[12.5px] leading-[1.55] mb-4" style={{ color: sub }}>{tr(STEPS[step].desc)}</div>
+          <div className="flex items-center gap-2.5 mb-2">
+            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.07)", color: accent }}>{STEPS[step].icon}</div>
+            <div className="text-[15px] font-bold leading-tight" style={{ color: text }}>{tr(stepTitle)}</div>
+          </div>
+          <div className="text-[12.5px] leading-[1.55] mb-4" style={{ color: sub }}>{tr(stepDesc)}</div>
 
           {/* One progress rail rather than two counters that can disagree. */}
           <div className="h-[3px] rounded-full overflow-hidden mb-3.5" style={{ background: dotOff }}>
@@ -398,33 +554,47 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
 
       {/* DEPOSIT CARD — bonus-eligible users only */}
       {phase === "deposit" && (
-        <div className="fixed z-[101] top-1/2 left-1/2 text-center rounded-2xl pt-8 px-7 pb-7 max-w-[370px] w-[calc(100%-32px)]" style={{
+        <div className="fixed z-[211] top-1/2 left-1/2 rounded-2xl pt-7 px-6 pb-6 max-w-[370px] w-[calc(100%-32px)]" style={{
           transform: "translate(-50%, -50%)",
           background: bg, border: `1px solid ${border}`,
           boxShadow: dark ? "0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(196,125,142,.08)" : "0 16px 48px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,.04)",
           animation: "otWelcomeFadeIn 0.35s cubic-bezier(.4,0,.2,1)",
         }}>
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4" style={{ background: greenBg, color: green }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          {/* Rows, not tiles.
+              Three tiles of equal weight made the choice read as "which
+              number" rather than "what do I get" — and the figure that actually
+              answers the question, what you end up with to spend, was nowhere
+              on the card. Amount, bonus and total are a row each and cannot
+              line up across three columns.
+              Every figure comes from BONUS_PRESETS, so they follow the ladder
+              whenever it is restored and there is nothing here to edit. */}
+          <div className="flex items-center gap-3 mb-3.5">
+            <div className="w-[38px] h-[38px] rounded-xl flex items-center justify-center shrink-0" style={{ background: greenBg, color: green }}>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            </div>
+            <div className="text-[17px] font-bold leading-tight" style={{ color: text }}>{tr("Add funds to place it")}</div>
           </div>
-          <div className="text-lg font-bold mb-1" style={{ color: text }}>{tr("Add funds to begin")}</div>
-          <div className="text-[13px] leading-[1.6] mb-4" style={{ color: sub }}>{tr("Top up to place your order — your first deposit gets free credit to spend. The more you add, the bigger the bonus.")}</div>
+          <div className="text-[13px] leading-[1.6] mb-4" style={{ color: sub }}>{tr("Your first deposit earns free credit to spend on Nitro.")}</div>
 
-          <div className="flex gap-2 justify-center mb-5">
+          <div className="flex flex-col gap-2 mb-4">
             {BONUS_PRESETS.map((p, i) => (
-              <div key={p.amount} className="py-2 px-3 rounded-lg text-center" style={{
-                background: i === 1 ? (dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)") : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.03)"),
-                border: `1px solid ${i === 1 ? greenBorder : (dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)")}`,
+              <div key={p.amount} className="relative flex items-center gap-3 rounded-xl py-2.5 px-3.5" style={{
+                background: i === 1 ? greenBg : "transparent",
+                border: `1px solid ${i === 1 ? greenBorder : border}`,
               }}>
-                <div className="text-[13px] font-bold" style={{ color: i === 1 ? green : text }}>{money(p.amount)}</div>
-                <div className="text-[11px] font-semibold mt-0.5" style={{ color: i === 1 ? green : sub }}>+{money(p.bonus, { round: "down" })}</div>
+                {i === 1 && (
+                  <span className="absolute -top-2 end-3 text-[9px] font-extrabold uppercase tracking-[.6px] rounded-full px-2 py-px" style={{ background: green, color: "#fff" }}>{tr("Best value")}</span>
+                )}
+                <span className="m text-[15px] font-bold min-w-[72px]" style={{ color: i === 1 ? green : text }}>{money(p.amount)}</span>
+                <span className="text-[12px] font-bold rounded-full px-2 py-px" style={{ background: greenBg, color: green, border: `1px solid ${greenBorder}` }}>+{money(p.bonus, { round: "down" })}</span>
+                <span className="ms-auto text-[11.5px]" style={{ color: sub }}>{money(p.amount + p.bonus, { round: "down" })} {tr("to spend")}</span>
               </div>
             ))}
           </div>
 
-          <div className="flex flex-col gap-2.5">
-            <button onClick={() => { finish(); onTopUp?.(); }} className="py-3 px-0 rounded-xl text-sm font-semibold border-none cursor-pointer font-[inherit] w-full transition-all duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(5,150,105,.3)]" style={{ background: dark ? "#059669" : "#059669", color: "#fff" }}>{tr("Add funds →")}</button>
-            <button onClick={finish} className="py-2.5 px-0 rounded-xl text-[13px] font-medium bg-transparent cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ color: skipC, border: "none" }}>{tr("Maybe later")}</button>
+          <div className="flex gap-2.5 flex-row-reverse">
+            <button onClick={() => { finish(); onTopUp?.(); }} className="py-3 px-0 rounded-xl text-sm font-semibold border-none cursor-pointer font-[inherit] flex-1 transition-all duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(5,150,105,.3)]" style={{ background: dark ? "#059669" : "#059669", color: "#fff" }}>{tr("Add funds →")}</button>
+            <button onClick={finish} className="py-3 px-4 rounded-xl text-[13px] font-semibold bg-transparent shrink-0 cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ color: sub, border: `1px solid ${border}` }}>{tr("Maybe later")}</button>
           </div>
         </div>
       )}

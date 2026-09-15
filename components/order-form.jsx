@@ -65,7 +65,7 @@ function presetsFor(min, max) {
   return [0, 1, 2, 3, 4].map(i => pool[Math.round(i * step)]);
 }
 
-export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, inline, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints, trafficConfig, setTrafficConfig, tierStyles = {}, socialLinks = {}, fullList = null, onVote, onBackToPicks }) {
+export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLink, dark, t, onClose, inline, onSubmit, orderLoading, comments, setComments, loyaltyDiscount = 0, activePromotion = null, balance = null, onTopUp, welcomeBonusEligible, pointsRedeemable = false, pointsBalance = 0, redeemPoints = false, setRedeemPoints, trafficConfig, setTrafficConfig, tierStyles = {}, socialLinks = {}, fullList = null, onVote, onBackToPicks, assumeFunded = false }) {
   const tr = useT();
   const money = useMoney();
   const minQty = selTier?.min || 100;
@@ -527,7 +527,19 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           </div>
           )}
         {(() => {
-          const short = balance != null && qtyNum > 0 && price > balance;
+          // During the tour, the form behaves as though the wallet covers it.
+          //
+          // Trip's call, and the right one: the tour is a demonstration, not a
+          // live order. A new customer has ₦0 by definition, so without this
+          // nearly everybody taking the tour is shown a Top up button on the
+          // step that exists to teach placing an order — the walkthrough ends
+          // by demonstrating the wrong thing.
+          //
+          // Safe because the tour's overlay (fixed inset-0, z-210, no
+          // pointer-events:none) sits above this modal and swallows every
+          // click, so the button it shows cannot be pressed while the tour is
+          // up. It is a picture of the finished flow, not an offer.
+          const short = !assumeFunded && balance != null && qtyNum > 0 && price > balance;
           const hasCut = discountAmount > 0 || cappedPromoDiscount > 0 || pointsDiscount > 0;
           return (<>
           {short && welcomeBonusEligible && (
@@ -559,8 +571,8 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               {short && <span className="text-[11px]" style={{ color: dark ? "#fcd34d" : "#b45309" }}>{tr("Balance")} {money(balance, { round: "down" })} · {tr("short by")} {money(price - balance)}</span>}
             </div>
             {short
-              ? <button onClick={onTopUp} data-tour="no-submit-btn" className="nitro-money-btn shrink-0 h-[44px] px-5 border-none text-[14px] font-bold cursor-pointer font-[inherit]">{tr("Top up")}</button>
-              : <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames || needsKeywords) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || !trafficValid || orderLoading} className="dash-btn-primary shrink-0 h-[44px] px-5 border-none text-[14px] font-bold cursor-pointer font-[inherit] text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: t.accent, opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer || needsKeywords) || (comments || "").trim()) && !commentShort && trafficValid && !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />{tr("Placing...")}</span> : dripOn && showMultiDay ? "Next" : "Place Order"}</button>}
+              ? <button onClick={onTopUp} data-tour="no-submit-btn" data-tour-mode="topup" className="nitro-money-btn shrink-0 h-[44px] px-5 border-none text-[14px] font-bold cursor-pointer font-[inherit]">{tr("Top up")}</button>
+              : <button onClick={() => { if (dripOn && showMultiDay) { setDripStep(2); } else { onSubmit(dripOn && showMultiDay ? clampedDays : undefined); } }} data-tour="no-submit-btn" data-tour-mode="order" disabled={!linkValid || qtyOutOfRange || qtyNum <= 0 || ((needsComments || needsUsernames || needsKeywords) && !(comments || "").trim()) || (needsAnswer && !(comments || "").trim()) || commentShort || !trafficValid || orderLoading} className="dash-btn-primary shrink-0 h-[44px] px-5 border-none text-[14px] font-bold cursor-pointer font-[inherit] text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: t.accent, opacity: linkValid && !qtyOutOfRange && qtyNum > 0 && (!(needsComments || needsUsernames || needsAnswer || needsKeywords) || (comments || "").trim()) && !commentShort && trafficValid && !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />{tr("Placing...")}</span> : dripOn && showMultiDay ? "Next" : "Place Order"}</button>}
           </div>
           </>);
         })()}
@@ -619,7 +631,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               <span className="font-bold text-[18px]" style={{ color: "var(--t-accent-ink)", fontFamily: "'JetBrains Mono', monospace" }}>{money(price)}</span>
             </div>
           </div>
-          <button onClick={() => onSubmit(clampedDays)} data-tour="no-submit-btn" disabled={orderLoading} className="w-full py-2.5 dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />{tr("Placing...")}</span> : "Place Order"}</button>
+          <button onClick={() => onSubmit(clampedDays)} data-tour="no-submit-btn" data-tour-mode="order" disabled={orderLoading} className="w-full py-2.5 dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.38)]" style={{ opacity: !orderLoading ? 1 : .5 }}>{orderLoading ? <span className="inline-flex items-center justify-center gap-2"><NitroLoader size={16} mono ariaHidden />{tr("Placing...")}</span> : "Place Order"}</button>
         </>)}
       </>}
       </div>

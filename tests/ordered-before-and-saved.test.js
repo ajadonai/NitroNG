@@ -187,3 +187,42 @@ describe('the most liked filter', () => {
     expect(full).toMatch(/\{likedOn && <button onClick=\{\(\) => setLikedOnly\(false\)\}/);
   });
 });
+
+/**
+ * The mobile filters carry a mark, not just a word.
+ *
+ * "Saved" and "Ordered before" sat as plain text in their own row on a phone,
+ * which is the one place they are not reinforced by anything else on screen.
+ * The icons are the exact marks the rows already use — the star you tap to
+ * save, the clock on the "Ordered 2×" badge — so the filter and the thing it
+ * filters by read as one idea.
+ */
+describe('the saved and ordered filters are recognisable on a phone', () => {
+  const src = fs.readFileSync(path.join(process.cwd(), 'components/full-list.jsx'), 'utf8');
+
+  it('borrows the marks the rows already carry, rather than inventing any', () => {
+    const map = src.slice(src.indexOf('const MINE_ICON = {'), src.indexOf('const MINE_ROW = ['));
+    // The star on the save control.
+    expect(map).toMatch(/polygon points="12 2 15\.09 8\.26 22 9\.27/);
+    expect(src.slice(src.indexOf('function Row('))).toMatch(/polygon points="12 2 15\.09 8\.26 22 9\.27/);
+    // The clock on the ordered-before badge.
+    expect(map).toMatch(/polyline points="12 6 12 12 16 14"/);
+  });
+
+  it('puts them on both the phone row and the desktop strip', () => {
+    // Phone-only was the first attempt, on the reasoning that these sit beside
+    // eight icon-less type tabs. They do not: a divider separates them up
+    // there, so they are their own group at both sizes.
+    expect([...src.matchAll(/MINE_ICON\[m\.key\]/g)]).toHaveLength(2);
+  });
+
+  it('centres the desktop chip, since a glyph has no baseline to sit on', () => {
+    const strip = src.slice(src.indexOf('{mineTabs.map(m => {'));
+    expect(strip.slice(0, 900)).toMatch(/inline-flex items-center gap-1\.5/);
+  });
+
+  it('keeps both filters mapped, so neither can go plain again', () => {
+    const map = src.slice(src.indexOf('const MINE_ICON = {'), src.indexOf('const MINE_ROW = ['));
+    for (const key of ['ordered', 'saved']) expect(map).toContain(`${key}:`);
+  });
+});

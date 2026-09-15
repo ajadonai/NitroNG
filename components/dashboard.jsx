@@ -5,6 +5,7 @@ import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
 import { useMoney, useT, useNairaAside } from "./locale";
+import FullListNotice, { fullListIsNewsTo, fullListAlreadySeen, markFullListSeen } from "./full-list-notice";
 import { msg } from "../lib/i18n";
 import { DEFAULT_COUNTRY, validatePhone } from "../lib/phone-countries";
 import { PhoneField } from "./phone-field";
@@ -485,6 +486,19 @@ function DashboardInner({ initialData }) {
   const avRef = useRef(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [showOrderTour, setShowOrderTour] = useState(false);
+  // Dismissed this session. The stored flag answers for every later visit; this
+  // only stops the card reappearing the moment it is closed.
+  const [noticeClosed, setNoticeClosed] = useState(false);
+  // Assume it HAS been seen until the browser says otherwise.
+  //
+  // localStorage does not exist on the server, so reading it during render made
+  // the server draw this modal and the client not draw it — a hydration
+  // mismatch that regenerated the whole tree. Starting at `true` means the
+  // server and the first client render agree on nothing-shown, and the effect
+  // below is the only thing that can ever reveal it. Same shape as the "New"
+  // badge in new-order, which reads the same key this way.
+  const [noticeSeen, setNoticeSeen] = useState(true);
+  useEffect(() => { setNoticeSeen(fullListAlreadySeen()); }, []);
   // What's New badge: entries newer than the last time the user opened the changelog.
   const [changelogNew, setChangelogNew] = useState(0);
   const changelogFetched = useRef(false);
@@ -680,6 +694,24 @@ function DashboardInner({ initialData }) {
   const [phoneConfirmation, setPhoneConfirmation] = useState(() => createPhoneConfirmation(initialData?.user));
   const phoneKnown = phoneConfirmation.userId === user?.id && phoneConfirmation.phone !== null;
   const phoneForPrompt = phoneKnown ? phoneConfirmation.phone : null;
+
+  /* ── What a customer meets on their first visit back ──
+     Three one-time cards can all come due at once — a Gmail signup with no
+     phone number, on an account that predates the full list, who never took
+     the tour. Nothing sequenced them before: the phone prompt renders on any
+     page and the tour fires on New Order, so those two could already collide.
+     Both should be seen, one after the other, not one suppressed.
+
+       1  the WhatsApp number   it ASKS for something, and without it we cannot
+                                reach anybody about a refill or a delay
+       2  the full list         a change to the page they are about to use
+       3  the order tour        last, and only if never taken
+
+     Each card advances the queue by satisfying its own condition, so nothing
+     here has to track "step 2 of 3" — the next one simply becomes eligible. */
+  const phoneDue = shouldShowPhonePrompt({ phoneKnown, phone: phoneForPrompt, user, currentTosVersion });
+  const noticeDue = !phoneDue && !noticeClosed && !noticeSeen && fullListIsNewsTo(user);
+  const queueClear = !phoneDue && !noticeDue;
   const [phonePromptVal, setPhonePromptVal] = useState("");
   const [phonePromptCc, setPhonePromptCc] = useState(user?.country || DEFAULT_COUNTRY);
   const [phonePromptSaving, setPhonePromptSaving] = useState(false);
@@ -871,14 +903,17 @@ function DashboardInner({ initialData }) {
 
   // Trigger order tour on first visit to services page
   useEffect(() => {
-    if (!isServices || orderTourChecked.current || !user) return;
+    // queueClear, and the ref is NOT claimed until the queue is clear — the
+    // check used to run once and never again, so a tour blocked behind another
+    // card on the first pass would never have fired at all.
+    if (!isServices || !queueClear || orderTourChecked.current || !user) return;
     orderTourChecked.current = true;
     const orderDone = user.orderTourCompleted || localStorage.getItem("nitro-order-tour-done");
     if (!orderDone) {
       const timer = setTimeout(() => setShowOrderTour(true), 600);
       return () => clearTimeout(timer);
     }
-  }, [isServices, user]);
+  }, [isServices, user, queueClear]);
 
   // Manual order tour trigger from sidebar button
   useEffect(() => {
@@ -1785,6 +1820,11 @@ function DashboardInner({ initialData }) {
       )}
 
       {/* Phone number prompt for existing users */}
+      {noticeDue && (
+        <FullListNotice dark={dark} onClose={() => { markFullListSeen(); setNoticeClosed(true); }}
+          onShowMe={() => { markFullListSeen(); setNoticeClosed(true); setActive("services"); }} />
+      )}
+
       {(phonePromptDone || shouldShowPhonePrompt({ phoneKnown, phone: phoneForPrompt, user, currentTosVersion })) && (
         <div className="fixed inset-0 z-[99998] bg-black/60 backdrop-blur-[6px] flex items-center justify-center p-5">
           <div className="rounded-2xl py-8 px-7 max-w-[420px] w-full shadow-[0_20px_60px_rgba(0,0,0,.3)]" style={{ background: dark ? "#1a1a1a" : "#fff" }}>
