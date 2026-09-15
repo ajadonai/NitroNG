@@ -292,13 +292,13 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
                         else { setDeleteError(data.error || "Failed to delete account"); }
                       } catch { setDeleteError("Request failed"); }
                     }
-                  }} className="py-[9px] px-5 rounded-lg border-[0.5px] text-[13px] font-semibold cursor-pointer bg-transparent whitespace-nowrap" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.25)", color: dark ? "#fca5a5" : "#dc2626", opacity: deleteProof ? 1 : .4 }}>{tr("Delete my account")}</button>
+                  }} className="py-[9px] px-5 rounded-lg border text-[13px] font-semibold cursor-pointer bg-transparent whitespace-nowrap" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.25)", color: dark ? "#fca5a5" : "#dc2626", opacity: deleteProof ? 1 : .4 }}>{tr("Delete my account")}</button>
                   <button onClick={() => { setShowDelete(false); setDeleteProof(""); setDeleteError(""); }} className="py-2.5 px-3.5 rounded-lg bg-transparent text-sm cursor-pointer text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{tr("Cancel")}</button>
                 </div>
                 {deleteError && <div className="text-[13px] mt-2" style={{ color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline align-middle"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {deleteError}</div>}
               </div>
             ) : (
-              <button onClick={() => setShowDelete(true)} className="py-[9px] px-5 rounded-lg border-[0.5px] text-[13px] font-semibold cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.25)", color: dark ? "#fca5a5" : "#dc2626" }}>{tr("Delete my account")}</button>
+              <button onClick={() => setShowDelete(true)} className="py-[9px] px-5 rounded-lg border text-[13px] font-semibold cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.25)", color: dark ? "#fca5a5" : "#dc2626" }}>{tr("Delete my account")}</button>
             )}
             </div>
           )}
@@ -317,15 +317,15 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         <SettingsModal open={pwModalOpen} onClose={() => setPwModalOpen(false)} title={tr("Change password")} subtitle={tr("Keep your account secure")} icon={I_LOCK} dark={dark} t={t}>
           <div className="mb-3">
             <label htmlFor="pw-current" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">{tr("Current password")}</label>
-            <input type="password" id="pw-current" autoComplete="current-password" value={curPw} onChange={e => setCurPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
+            <input type="password" id="pw-current" autoComplete="current-password" value={curPw} onChange={e => setCurPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
           </div>
           <div className="mb-3">
             <label htmlFor="pw-new" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">{tr("New password")}</label>
-            <input type="password" id="pw-new" autoComplete="new-password" value={newPw} onChange={e => setNewPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
+            <input type="password" id="pw-new" autoComplete="new-password" value={newPw} onChange={e => setNewPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
           </div>
           <div className="mb-3">
             <label htmlFor="pw-confirm" className="text-[13px] font-medium block mb-[5px] text-t-text-muted">{tr("Confirm new password")}</label>
-            <input type="password" id="pw-confirm" autoComplete="new-password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border-[0.5px] text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
+            <input type="password" id="pw-confirm" autoComplete="new-password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} className="w-full py-2.5 px-3.5 rounded-lg border text-[15px] outline-none focus-visible:ring-2 focus-visible:ring-[#c47d8e]/40 box-border text-t-text" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)", background: dark ? "rgba(255,255,255,.12)" : "#fff" }} />
           </div>
           <button onClick={changePassword} disabled={pwLoading} className="py-2.5 px-7 dash-btn-primary bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-semibold border-none cursor-pointer mt-1 transition-[transform,box-shadow] duration-200 ease-in-out hover:translate-y-[-1px] hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ opacity: curPw && newPw && confirmPw && !pwLoading ? 1 : .4 }}>{pwLoading ? tr("Updating...") : tr("Update password")}</button>
         </SettingsModal>
@@ -338,7 +338,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
             ["Promotions", "Receive offers and discount alerts", notifPromo, setNotifPromo, "notifPromo"],
             ["Email notifications", "Receive notifications via email", notifEmail, setNotifEmail, "notifEmail"],
           ].map(([title, desc, on, setOn, key], i, arr) => (
-            <div key={title} className="flex items-center justify-between gap-3 py-3" style={{ borderBottom: i < arr.length - 1 ? `0.5px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
+            <div key={title} className="flex items-center justify-between gap-3 py-3" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
               <div>
                 <div className="text-[13px] font-medium text-t-text">{title}</div>
                 <div className="text-[11px] mt-0.5 text-t-text-muted">{desc}</div>
@@ -356,7 +356,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
           ) : sessions.length === 0 ? (
             <div className="text-center text-[13px] py-4 text-t-text-muted">{tr("No active sessions")}</div>
           ) : sessions.map((s, i, arr) => (
-            <div key={s.id} className="flex items-center gap-3 py-3" style={{ borderBottom: i < arr.length - 1 ? `0.5px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
+            <div key={s.id} className="flex items-center gap-3 py-3" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: s.current ? (dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)") }}>
                 {s.deviceType === "mobile" ? (
                   <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke={s.current ? t.green : t.textMuted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
@@ -372,7 +372,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
                 </div>
                 <div className="text-[13px] mt-0.5 text-t-text-muted">{s.ip || "—"} · {fDSession(s.lastActive)}</div>
               </div>
-              {!s.current && <button onClick={(e) => { e.stopPropagation(); revokeSession(s.id); }} disabled={revoking === s.id} className="py-[5px] px-3 rounded-md text-xs font-semibold border-[0.5px] cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)", color: dark ? "#fca5a5" : "#dc2626" }}>{revoking === s.id ? "..." : tr("Revoke")}</button>}
+              {!s.current && <button onClick={(e) => { e.stopPropagation(); revokeSession(s.id); }} disabled={revoking === s.id} className="py-[5px] px-3 rounded-md text-xs font-semibold border cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(252,165,165,.24)" : "rgba(220,38,38,.19)", color: dark ? "#fca5a5" : "#dc2626" }}>{revoking === s.id ? "..." : tr("Revoke")}</button>}
             </div>
           ))}
         </SettingsModal>

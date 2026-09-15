@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { RailSec, RailCard, RailRow, RailLink, RailEmpty, RailLegend } from "./rail";
 import dynamic from "next/dynamic";
+import NavProgress, { NAV_BAR_MIN_MS } from "./nav-progress";
 import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
 import { NitroWordmark } from "./nitro-logo";
 import { ToastProvider } from "./toast";
@@ -286,6 +287,22 @@ function AdminDashboardInner({ initialData }) {
   useSessionHeartbeat('admin');
   const { dark, setDark, toggleTheme, themeMode, setThemeMode } = useTheme();
   const [active, setActiveRaw] = useState("overview");
+
+  /* The same strip the customer side runs, on the same rules: nothing drawn
+     until a page change has outlived NavProgress's own delay, and once drawn it
+     stays long enough to read. Admin pages are the heavier ones — Financials
+     and Orders both fetch on mount — so this is where it earns its keep. */
+  const [navBusy, setNavBusy] = useState(false);
+  const navFirst = useRef(true);
+  useEffect(() => {
+    if (navFirst.current) { navFirst.current = false; return undefined; }
+    setNavBusy(true);
+    let raf2, timer;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => { timer = setTimeout(() => setNavBusy(false), NAV_BAR_MIN_MS); });
+    });
+    return () => { cancelAnimationFrame(raf1); if (raf2) cancelAnimationFrame(raf2); clearTimeout(timer); };
+  }, [active]);
   const setActive = (page) => { setActiveRaw(page); try { localStorage.setItem("nitro-admin-page", page); } catch {} };
   useEffect(() => { try { const saved = localStorage.getItem("nitro-admin-page"); if (saved) setActiveRaw(saved); } catch {} }, []);
 
@@ -634,9 +651,16 @@ function AdminDashboardInner({ initialData }) {
   const t = useMemo(() => ({
     bg: dark ? "#0c0814" : "#efe8e0",
     sidebarBg: dark ? "#120c1e" : "#f0e9e2",
-    sidebarBorder: dark ? "rgba(232,180,196,.18)" : "rgba(139,74,94,.16)",
+    // Read from the CSS tokens rather than restating them.
+    //
+    // These were literals copied from globals.css, so when the line colours
+    // were strengthened — because a rose border at .13 measures 1.20:1 and
+    // reads as grey — every customer surface followed and the whole admin did
+    // not. Admin kept the invisible version. Pointing at the variables means
+    // the next change reaches both without anyone remembering to.
+    sidebarBorder: "var(--t-sidebar-border)",
     cardBg: dark ? "#171126" : "#fffdfb",
-    cardBorder: dark ? "rgba(232,180,196,.15)" : "rgba(139,74,94,.13)",
+    cardBorder: "var(--t-card-border)",
     text: dark ? "#f6f1ee" : "#201b19",
     textSoft: dark ? "#b3ada6" : "#555250",
     textMuted: dark ? "#9d968f" : "#665f5c",
@@ -657,12 +681,13 @@ function AdminDashboardInner({ initialData }) {
     const skBone = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
     return (
       <div className="dash-root bg-t-bg">
-        <nav className="dash-nav bg-t-sidebar-bg" style={{ borderBottom: `0.5px solid ${t.sidebarBorder}` }}>
+      <NavProgress busy={navBusy} />
+        <nav className="dash-nav bg-t-sidebar-bg">
           <div className="dash-nav-left"><div className="dash-logo-static"><div className="nitro-mark h-7 px-3 flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></div></div></div>
           <div className="dash-nav-right"><div className={`${skBone} w-[30px] h-[30px] rounded-full`} /></div>
         </nav>
         <div className="dash-body">
-          <aside className="dash-left bg-t-sidebar-bg" style={{ borderRight: `0.5px solid ${t.sidebarBorder}` }}>
+          <aside className="dash-left bg-t-sidebar-bg" style={{ borderRight: `1px solid ${t.sidebarBorder}` }}>
             {[1,2,3,4,5,6,7,8,9].map(i => <div key={i} className={`${skBone} h-9 rounded-xl mb-1`} />)}
           </aside>
           <main className="dash-main bg-t-bg">
@@ -672,7 +697,7 @@ function AdminDashboardInner({ initialData }) {
               {[1,2,3,4,5].map(i => <div key={i} className="p-[18px] rounded-[14px] border border-solid bg-t-card-bg border-t-card-border"><div className={`${skBone} w-[60%] h-2.5 mb-2.5`} /><div className={`${skBone} w-[45%] h-[22px]`} /></div>)}
             </div>
           </main>
-          <div className="dash-right bg-t-sidebar-bg" style={{ borderLeft: `0.5px solid ${t.sidebarBorder}` }}>
+          <div className="dash-right bg-t-sidebar-bg" style={{ borderLeft: `1px solid ${t.sidebarBorder}` }}>
             <div className={`${skBone} w-[100px] h-2 mb-3.5`} />
             {[1,2,3].map(i => <div key={i} className={`${skBone} h-[50px] rounded-[10px] mb-1.5`} />)}
             <div className="h-0.5 my-3 bg-t-sidebar-border" />
@@ -738,9 +763,10 @@ function AdminDashboardInner({ initialData }) {
     <ToastBridge toastRef={toastRef} />
     <ConfirmProvider dark={dark}>
     <div className="dash-root bg-t-bg">
+      <NavProgress busy={navBusy} />
 
       {/* ═══ TOP NAV ═══ */}
-      <nav className="dash-nav" style={{ background: dark ? "rgba(14,9,22,.9)" : "rgba(248,245,241,.92)", borderBottom: `0.5px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
+      <nav className="dash-nav" style={{ background: dark ? "rgba(14,9,22,.9)" : "rgba(248,245,241,.92)", borderBottom: `1px solid ${t.sidebarBorder}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
         <div className="dash-nav-left">
           <button className="dash-menu-btn" onClick={() => setLeftOpen(!leftOpen)}>
             <div className="dash-hamburger-bars" style={{ opacity: leftOpen ? 0 : 1, position: leftOpen ? "absolute" : "relative" }}>
@@ -802,7 +828,7 @@ function AdminDashboardInner({ initialData }) {
 
       {/* ═══ BODY ═══ */}
       <div className="dash-body">
-        <aside className="dash-left admin-sidebar rail-adm bg-t-sidebar-bg" style={{ borderRight: `0.5px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined }}>
+        <aside className="dash-left admin-sidebar rail-adm bg-t-sidebar-bg" style={{ borderRight: `1px solid ${t.sidebarBorder}`, left: leftOpen ? 0 : undefined }}>
           {(() => {
             const ap = admin?.pages;
             const canSee = (id) => ap === "*" || ap?.includes(id);
@@ -886,7 +912,7 @@ function AdminDashboardInner({ initialData }) {
 
         </main>
 
-        <div className="dash-right bg-t-sidebar-bg" style={{ borderLeft: `0.5px solid ${t.sidebarBorder}` }}>
+        <div className="dash-right bg-t-sidebar-bg" style={{ borderLeft: `1px solid ${t.sidebarBorder}` }}>
           {active === "create-order" ? <div id="create-order-sidebar" className="flex flex-col gap-4 flex-1 overflow-auto min-h-0" /> : active === "leaderboard" ? <AdminLeaderboardSidebar dark={dark} t={t} /> : <AdminRightSidebar data={data} dark={dark} t={t} active={active} admin={admin} setActive={setActive} />}
         </div>
       </div>

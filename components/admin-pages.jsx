@@ -689,7 +689,7 @@ function FinanceBreakdownTab({ dark, t, admin }) {
           { value: "all", label: "All platforms" }, { value: "instagram", label: "Instagram" }, { value: "tiktok", label: "TikTok" }, { value: "youtube", label: "YouTube" },
           { value: "twitter", label: "Twitter/X" }, { value: "telegram", label: "Telegram" }, { value: "facebook", label: "Facebook" }, { value: "spotify", label: "Spotify" },
         ]} />
-        <FilterDropdown dark={dark} t={t} value={tier} onChange={setTier} options={[{ value: "all", label: "All tiers" }, { value: "budget", label: "Budget" }, { value: "standard", label: "Standard" }, { value: "premium", label: "Premium" }]} />
+        <FilterDropdown dark={dark} t={t} value={tier} onChange={setTier} options={[{ value: "all", label: "All tiers" }, { value: "budget", label: "Budget" }, { value: "standard", label: "Standard" }, { value: "premium", label: "Premium" }, { value: "fulllist", label: "Full list" }]} />
         <FilterDropdown dark={dark} t={t} value={provider} onChange={setProvider} options={[{ value: "all", label: "All providers" }, { value: "mtp", label: "MTP" }, { value: "jap", label: "JAP" }, { value: "dao", label: "DaoSMM" }]} />
         <div className="fb-export" ref={csvMenuRef}>
           <button type="button" className="fb-b" onClick={() => setCsvMenuOpen(v => !v)} disabled={reportLoading}>{reportLoading ? "Preparing…" : "Export report"}</button>

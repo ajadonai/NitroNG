@@ -26,10 +26,10 @@ function ShareButtons({ post, dark, size = 34 }) {
   const url = typeof window !== "undefined" ? window.location.href : `https://nitro.ng/blog/${post.slug}`;
   const text = post.title;
   const copy = () => { copyText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); };
-  const linkStyle = { background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", border: `0.5px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}`, color: "#c47d8e" };
-  const xStyle = { background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `0.5px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)"}`, color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.45)" };
-  const waStyle = { background: dark ? "rgba(37,211,102,.08)" : "rgba(37,211,102,.05)", border: `0.5px solid ${dark ? "rgba(37,211,102,.18)" : "rgba(37,211,102,.12)"}`, color: "#25d366" };
-  const copiedStyle = { background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)", color: dark ? "#6ee7b7" : "#059669", border: `0.5px solid ${dark ? "rgba(110,231,183,.2)" : "rgba(5,150,105,.15)"}` };
+  const linkStyle = { background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}`, color: "#c47d8e" };
+  const xStyle = { background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)"}`, color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.45)" };
+  const waStyle = { background: dark ? "rgba(37,211,102,.08)" : "rgba(37,211,102,.05)", border: `1px solid ${dark ? "rgba(37,211,102,.18)" : "rgba(37,211,102,.12)"}`, color: "#25d366" };
+  const copiedStyle = { background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)", color: dark ? "#6ee7b7" : "#059669", border: `1px solid ${dark ? "rgba(110,231,183,.2)" : "rgba(5,150,105,.15)"}` };
   const cls = "rounded-[10px] flex items-center justify-center cursor-pointer border-none transition-all duration-200 hover:-translate-y-px no-underline";
   const dim = { width: size, height: size };
   return (

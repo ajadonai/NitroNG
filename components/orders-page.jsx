@@ -116,7 +116,7 @@ const STATUS_LABEL = {
 
 function Badge({ status, dark }) {
   const tr = useT();
-  return <span className="text-[11px] font-semibold py-0.5 px-1.5 rounded-[5px] border-[0.5px] whitespace-nowrap inline-block leading-tight" style={{ background: sBg(status, dark), color: sClr(status, dark), borderColor: sBrd(status, dark) }}>{tr(STATUS_LABEL[status] || status)}</span>;
+  return <span className="text-[11px] font-semibold py-0.5 px-1.5 rounded-[5px] border whitespace-nowrap inline-block leading-tight" style={{ background: sBg(status, dark), color: sClr(status, dark), borderColor: sBrd(status, dark) }}>{tr(STATUS_LABEL[status] || status)}</span>;
 }
 
 function ProgressBar({ order, dark, detailed }) {
@@ -765,7 +765,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
       ); })()}
 
       {/* Order list */}
-      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
+      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
         {pagedGroups.length > 0 ? pagedGroups.map((item, i) => {
           const createdOf = (g) => g ? (g.type === "batch" ? g.orders[0]?.created : g.order.created) : null;
           const dk = dayKey(createdOf(item));

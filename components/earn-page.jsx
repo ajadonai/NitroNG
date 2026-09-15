@@ -67,7 +67,7 @@ export default function EarnPage({ dark, t }) {
       {tab === 'game' && (
         <div className="space-y-4">
           {/* Game card */}
-          <div className="p-5 max-md:p-4 rounded-2xl" style={{ background: dark ? 'rgba(255,255,255,.04)' : '#fff', border: `0.5px solid ${t.cardBorder}` }}>
+          <div className="p-5 max-md:p-4 rounded-2xl" style={{ background: dark ? 'rgba(255,255,255,.04)' : '#fff', border: `1px solid ${t.cardBorder}` }}>
             <Game2048 dark={dark} t={t} onScoreSubmitted={fetchLeaderboard} />
           </div>
 
@@ -115,7 +115,7 @@ export default function EarnPage({ dark, t }) {
           </div>
 
           {/* ── LEADERBOARD ── */}
-          <div className="rounded-2xl overflow-hidden" style={{ background: dark ? 'rgba(255,255,255,.04)' : '#fff', border: `0.5px solid ${t.cardBorder}` }}>
+          <div className="rounded-2xl overflow-hidden" style={{ background: dark ? 'rgba(255,255,255,.04)' : '#fff', border: `1px solid ${t.cardBorder}` }}>
             {/* LB Header */}
             <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)'}` }}>
               <div className="flex items-center gap-2">
@@ -200,7 +200,7 @@ export default function EarnPage({ dark, t }) {
 
           {/* Past winners */}
           {lb?.pastWinners?.length > 0 && (
-            <div className="rounded-2xl overflow-hidden" style={{ background: dark ? 'rgba(255,255,255,.04)' : '#fff', border: `0.5px solid ${t.cardBorder}` }}>
+            <div className="rounded-2xl overflow-hidden" style={{ background: dark ? 'rgba(255,255,255,.04)' : '#fff', border: `1px solid ${t.cardBorder}` }}>
               <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)'}` }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                 <span className="text-[13px] font-bold" style={{ color: t.text }}>{tr("Hall of Fame")}</span>
@@ -228,7 +228,7 @@ export default function EarnPage({ dark, t }) {
 
       {/* ── VIDEO TAB ── */}
       {tab === 'video' && (
-        <div className="rounded-2xl overflow-hidden" style={{ background: dark ? 'rgba(255,255,255,.04)' : '#fff', border: `0.5px solid ${t.cardBorder}` }}>
+        <div className="rounded-2xl overflow-hidden" style={{ background: dark ? 'rgba(255,255,255,.04)' : '#fff', border: `1px solid ${t.cardBorder}` }}>
           {videoStatus?.enabled ? (
             <div className="p-5 space-y-4">
               <div className="flex items-center justify-between">

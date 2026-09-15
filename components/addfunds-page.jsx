@@ -1170,7 +1170,7 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
       </div>
 
       {/* Transaction list */}
-      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
+      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
         {historyTxs.length > 0 ? historyTxs.map((tx, i) => {
           const dk = dayKeyWallet(tx.date); const prev = i > 0 ? dayKeyWallet(historyTxs[i - 1].date) : null;
           const dayLabel = dk && dk !== prev ? <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-3.5 pt-3 pb-1 text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)", borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}>{dk}</div> : null;
