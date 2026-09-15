@@ -14,7 +14,7 @@ import {
   tooManyRequests,
 } from '@/lib/rate-limit';
 import { getRevenue } from '@/lib/revenue';
-import { DEAD_ORDER_STATES, WALLET_FUNDING, partialAdjustment as partialAdj } from '@/lib/ledger';
+import { DEAD_ORDER_STATES, MONEY_IN, partialAdjustment as partialAdj } from '@/lib/ledger';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,14 +77,14 @@ export async function GET(req) {
       prisma.user.count({ where: { createdAt: { gte: todayStart }, status: { not: 'Deleted' } } }),
       prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
       prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
-      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
       prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
-      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
       prisma.order.count({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null } }),
       prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
       prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
       prisma.order.count({ where: { createdAt: { gte: monthStart }, deletedAt: null } }),
-      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
       prisma.user.count({ where: { createdAt: { gte: monthStart }, emailVerified: true } }),
       prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
       prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
@@ -100,7 +100,7 @@ export async function GET(req) {
         orderBy: { createdAt: 'asc' },
       }),
       prisma.transaction.findMany({
-        where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: thirtyDaysAgo } },
+        where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: thirtyDaysAgo } },
         select: { createdAt: true, amount: true },
         orderBy: { createdAt: 'asc' },
       }),
@@ -126,8 +126,13 @@ export async function GET(req) {
           },
         },
       }),
+      // The Money in feed, and it is rendered under exactly that heading with a
+      // "+" against each row — so it takes MONEY_IN like the totals above it.
+      // Leaving it on WALLET_FUNDING put every gift in the list even after the
+      // figure stopped counting them, which is the more visible half of the
+      // same mistake: one gift, sitting in Money in, named.
       prisma.transaction.findMany({
-        where: { type: { in: WALLET_FUNDING }, status: 'Completed' },
+        where: { type: { in: MONEY_IN }, status: 'Completed' },
         orderBy: { createdAt: 'desc' },
         take: 15,
         include: { user: { select: { name: true, email: true } } },

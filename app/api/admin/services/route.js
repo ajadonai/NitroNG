@@ -3,6 +3,7 @@ import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canSeeSensitive } from '@/lib/admin';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 import { DEAD_ORDER_STATES } from '@/lib/ledger';
+import { closeStrandedGroups } from '@/lib/group-integrity';
 
 export async function GET() {
   const { admin, error } = await requireAdmin('services');
@@ -105,12 +106,18 @@ export async function POST(req) {
       const newEnabled = !service.enabled;
       // If disabling, check for active tiers
       if (!newEnabled) {
-        const activeTiers = await prisma.serviceTier.count({ where: { serviceId, enabled: true } });
+        // The groups these tiers belong to, read BEFORE the cascade — after it
+        // the tiers are off and there is no way back to their groups.
+        const affected = await prisma.serviceTier.findMany({ where: { serviceId, enabled: true }, select: { groupId: true } });
+        const activeTiers = affected.length;
         if (activeTiers > 0) {
           // Disable the tiers too
           await prisma.serviceTier.updateMany({ where: { serviceId, enabled: true }, data: { enabled: false } });
           await prisma.service.update({ where: { id: serviceId }, data: { enabled: false } });
-          await logActivity(admin.name, `Disabled service + ${activeTiers} tier(s): ${service.name}`, 'service');
+          // And any group the cascade just emptied. This is how X/Twitter
+          // Followers 🇺🇸 became a card with nothing to order in it.
+          const closed = await closeStrandedGroups(prisma, affected.map(t => t.groupId));
+          await logActivity(admin.name, `Disabled service + ${activeTiers} tier(s): ${service.name}${closed.length ? ` — and ${closed.length} now-empty group(s): ${closed.join(', ')}` : ''}`, 'service');
           invalidateServiceCatalogue();
           return Response.json({ success: true, enabled: false, cascaded: activeTiers, message: `Disabled service and ${activeTiers} tier(s) in Menu Builder` });
         }

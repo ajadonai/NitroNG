@@ -7,6 +7,36 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 ## Open
 
+- **Deposit bonus ladder — the restore is built and HELD at Trip's word**
+  (held 15 Sep 2026). The rungs run ₦250 / ₦600 / ₦1,500 in the code. The
+  restore to **₦500 / ₦1,200 / ₦3,000** exists as a commit in history and is
+  taken back out by the last commit of the 15 Sep push, so **reverting that
+  commit is how it goes live** — do not retype the values. Trip: "i dont think
+  we need to restore it yet. I will tell you when to."
+
+  The measurements are recorded here because they were written into the commit
+  message that the 15 Sep squash folded away, and they are the whole argument
+  for turning it back on:
+
+  - The 1 Sep cut halved every rung to find out how much of the ladder's pull
+    is the money itself. It is most of it. In the fortnight after, first
+    deposits under ₦2,500 went 28.6% → 36.6% and the ₦1,000 minimum
+    17.5% → 27.9%, while the median held at ₦2,500. The shift lands on 1 Sep,
+    five days before the ad audience widened, so the ladder caused it and not
+    the targeting change.
+  - Seven-day value per first depositor fell ₦5,588 → ₦4,438 with repeat
+    behaviour flat (1.34 → 1.36 deposits), so nobody came back later to make it
+    up. That is ₦401 of face value saved per depositor against ₦726 of gross
+    profit lost — about ₦360k a month.
+  - At full rates the ladder costs 6.1% of the gross profit it produces
+    (₦429k real against ₦7.04M), and every rung pulls: 106 people at ₦10,000
+    against 6 anywhere between ₦5k and ₦10k.
+
+  Restoring also moves the copy that quotes the headline — the emails, the
+  Lagos page, the FAQ knowledge base and the service-type meta all say "up to
+  ₦1,500" while held and "up to ₦3,000" when restored. The revert carries all
+  of it; that is why it is a revert and not a hand edit.
+
 - **Three Spotify tiers still point at `jap` — found 15 Sep 2026 while turning
   Spotify back on.** Spotify Podcast Plays / Standard, Spotify Saves / Standard
   and Spotify Monthly Listeners / Budget. They are switched off and their group
@@ -380,8 +410,9 @@ as the work. (Formerly docs/BACKLOG.md.)
   out**: the only withdrawal surface is the Pit payouts page, whose
   `availableBalance` is `approvedTotal − totalPaid − pendingPayoutTotal` from
   affiliate earnings and never reads `user.balance`. So it is a promise the
-  code keeps by accident rather than by construction, and restoring the ladder
-  on 14 Sep doubled what is sitting in that position. Worth converting to a
+  code keeps by accident rather than by construction. Restoring the ladder would
+  double what sits in that position, which is one more reason to convert it
+  first — the restore is built but held, see the first entry on this shelf. Worth converting to a
   real `BonusCredit` before any new cash-out path ships (cash referrals is the
   one on this list that would open one).
 
