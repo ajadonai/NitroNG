@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Bone } from "./skeleton";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
+import { formatNaira as naira } from '../lib/money';
 
 const DEF_BRACKETS = [
   { min: 0, max: 20, multiplier: 3, label: "Micro" },
@@ -15,7 +16,7 @@ const DEF_BRACKETS = [
 const DEFAULTS = { brackets: DEF_BRACKETS, floorPct: 50, floorCeiling: 5000, ngBonus: 25, resellerDiscount: 20, usdBuffer: 200, fxThreshold: 20, premium: 15, premiumLive: false, tierMults: { Budget: 1, Standard: 1.15, Premium: 1.35 }, provBonuses: { mtp: 0, dao: 0, jap: 0 } };
 const COLORS = ["#34d399", "#6ee7b7", "#60a5fa", "#a78bfa", "#e0a458", "#c47d8e"];
 const PROV = [["mtp", "MoreThanPanel"], ["dao", "DaoSMM"], ["jap", "JAP"]];
-const naira = (v) => `₦${Math.round(Number(v || 0)).toLocaleString()}`;
+
 const range = (b) => `${naira(b.min)} – ${!b.max || b.max >= 999999999 ? "∞" : naira(b.max)}`;
 
 function calcSell(cost, brackets, floorPct, floorCeiling) {

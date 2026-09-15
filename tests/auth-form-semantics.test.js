@@ -17,7 +17,12 @@ describe('authentication form semantics', () => {
   });
 
   it('uses a submit-capable form, connected labels, and a controlled Remember me option in the homepage card', () => {
-    const landing = source('components/landing-page.jsx');
+    // landing-v3.jsx, because that is the page a customer reaches:
+    // app/page.jsx → home-client.jsx → landing-v3.jsx. This read
+    // components/landing-page.jsx until 14 Sep 2026, a file no route had
+    // imported for weeks, so every guarantee below was being checked against
+    // markup nobody could see. Deleted with that discovery.
+    const landing = source('components/landing-v3.jsx');
 
     expect(landing).toContain('<form onSubmit={handleHeroAuthSubmit} noValidate');
     for (const id of [

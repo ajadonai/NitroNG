@@ -6,6 +6,7 @@ import { SkelFacts, SkelList, SkelBar } from './skeleton';
 import { useToast } from './toast';
 import { useConfirm } from './confirm-dialog';
 import InlineAlert from "./inline-alert";
+import { formatKobo as naira } from '../lib/money';
 
 const TZ = 'Africa/Lagos';
 
@@ -36,7 +37,7 @@ const fmtRange = (s, e) => {
   return `${a.day} ${a.mon} – ${b.day} ${b.mon}${yr}`;
 };
 const fmtDay = (d) => { const p = lagos(d); return `${p.day} ${p.mon}${Number(p.year) !== thisYear() ? ` ${p.year}` : ''}`; };
-const naira = (kobo) => `₦${(kobo / 100).toLocaleString()}`;
+
 
 const SEASONAL_STATE = { DRAFT: ['Draft', 'dim'], SCHEDULED: ['Scheduled', 'warn'], ACTIVE: ['Live', 'ok'], PAUSED: ['Paused', 'dim'], ENDED: ['Ended', 'dim'] };
 const stateOf = (c, recurring) => recurring ? (c.active ? ['Live', 'ok'] : ['Paused', 'dim']) : (SEASONAL_STATE[c.status] || SEASONAL_STATE.DRAFT);

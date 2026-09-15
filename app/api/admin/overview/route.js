@@ -14,13 +14,6 @@ function humanize(raw) {
   if ((m = raw.match(/^Cancelled order (.+?) \((.+?)\)(.*)/))) return `Cancelled order ${m[1]}${m[3] ? ` and refunded` : ''}`;
   if ((m = raw.match(/^Requested refill for (.+?) \((.+?)\)/))) return `Refill requested for order ${m[1]}`;
 
-  // Tickets
-  if ((m = raw.match(/^Claimed ticket (.+)/))) return `Claimed a support ticket`;
-  if ((m = raw.match(/^Replied to ticket (.+)/))) return `Replied to a ticket`;
-  if ((m = raw.match(/^Resolved ticket (.+)/))) return `Resolved a support ticket`;
-  if ((m = raw.match(/^Reopened ticket (.+)/))) return `Reopened a ticket`;
-  if ((m = raw.match(/^Archived ticket (.+)/))) return `Archived a ticket`;
-
   // Payments
   if ((m = raw.match(/^(Enabled|Disabled) (.+?) gateway$/))) return `${m[1]} the ${m[2]} gateway`;
   if ((m = raw.match(/^Configured (.+?) gateway keys$/))) return `Updated ${m[1]} gateway keys`;
@@ -96,7 +89,7 @@ export async function GET() {
       todayOrders, todayRevenueAgg, todayUsers, todayDepositsAgg,
       yesterdayRevenueAgg, yesterdayDepositsAgg,
       partials,
-      unreadTicketCount, pendingManualCount, pendingOrderCount, openIssueCount, pendingTaskReviewCount,
+      pendingManualCount, pendingOrderCount, openIssueCount, pendingTaskReviewCount,
       pendingRefillCount,
       yesterdayOrders, yesterdayUsers, pendingDispatchCount, hourRows,
     ] = await Promise.all([
@@ -111,7 +104,6 @@ export async function GET() {
       prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
       prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
       prisma.order.findMany({ where: { deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true, createdAt: true } }),
-      prisma.ticket.count({ where: { unreadByAdmin: true, status: { in: ['Open', 'In Progress'] } } }).catch(() => 0),
       prisma.transaction.count({ where: { type: 'deposit', method: 'manual', status: 'Pending', NOT: { note: { contains: '[awaiting_confirmation]' } } } }).catch(() => 0),
       prisma.order.count({ where: { status: { in: ['Pending', 'Processing'] }, deletedAt: null, queuedBehind: null } }).catch(() => 0),
       prisma.adminIssue?.findMany({ where: { status: 'open' }, select: { type: true }, distinct: ['type'] }).then(r => r.length).catch(() => 0) ?? Promise.resolve(0),
@@ -130,7 +122,7 @@ export async function GET() {
     const partialYesterday = partials.filter(p => p.createdAt >= yesterdayStart && p.createdAt < todayStart);
 
     // Phase 2: queries with relation includes (generate sub-queries)
-    const [recentOrders, recentUsers, openTickets, activityLogs] = await Promise.all([
+    const [recentOrders, recentUsers, activityLogs] = await Promise.all([
       prisma.order.findMany({
         where: { deletedAt: null },
         orderBy: { createdAt: 'desc' },
@@ -152,12 +144,6 @@ export async function GET() {
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: { id: true, name: true, email: true, createdAt: true, balance: true, _count: { select: { orders: { where: { status: { notIn: DEAD_ORDER_STATES }, deletedAt: null } } } } },
-      }),
-      prisma.ticket.findMany({
-        where: { status: 'Open' },
-        orderBy: { createdAt: 'desc' },
-        take: 4,
-        include: { user: { select: { name: true, email: true } } },
       }),
       prisma.activityLog.findMany({
         orderBy: { createdAt: 'desc' },
@@ -207,7 +193,6 @@ export async function GET() {
         costWasted: rev.costWasted,
       } : {}),
       totalDeposits: (depositsAgg._sum.amount || 0) / 100,
-      unreadTicketCount,
       pendingManualCount,
       pendingOrderCount,
       pendingRefillCount,
@@ -218,12 +203,6 @@ export async function GET() {
       partialCount: partials.length,
       pendingDispatchCount,
       ordersByHour,
-      openTickets: openTickets.map(tk => ({
-        id: tk.ticketId || tk.id,
-        subject: tk.subject,
-        user: tk.user?.name || (sensitive ? tk.user?.email : maskEmail(tk.user?.email)) || 'Unknown',
-        created: tk.createdAt.toISOString(),
-      })),
       recentOrders: recentOrders.map(o => {
         const offer = getOrderOfferDisplay(o);
         return {

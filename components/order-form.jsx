@@ -138,12 +138,22 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const linkPlaceholder = getLinkPlaceholder(platform, svcName);
   const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
 
-  // Saved handles. The chips are the customer's last five distinct links on
-  // this platform, read from their own order history — nothing new is
-  // collected. The pin is a per-device preference for now (localStorage); a
-  // synced preference means a column on User and is the follow-up.
+  // Saved handles. The list is the customer's last distinct links on this
+  // platform, read from their own order history — nothing new is collected.
+  // The pin is a per-device preference for now (localStorage); a synced
+  // preference means a column on User and is the follow-up.
+  //
+  // These used to sit open as a row of pills under the link box. Five links
+  // long enough to be truncated wrap to three or four lines, on top of a form
+  // that is already tall on a phone, and they are useful to the minority who
+  // order for more than one account. So the panel is one line until it is
+  // asked for, and pages three at a time once open: the form's height stops
+  // depending on how many accounts someone has ordered for.
+  const HANDLES_PER_PAGE = 3;
   const [recentLinks, setRecentLinks] = useState([]);
   const [pinned, setPinned] = useState(null);
+  const [handlesOpen, setHandlesOpen] = useState(false);
+  const [handlePage, setHandlePage] = useState(0);
   useEffect(() => {
     if (!platform || platform === "webtraffic") { setRecentLinks([]); setPinned(null); return undefined; }
     let dead = false;
@@ -152,6 +162,10 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
       .then(d => { if (!dead) setRecentLinks(Array.isArray(d.links) ? d.links : []); })
       .catch(() => {});
     try { setPinned(localStorage.getItem(`nitro-pin:${platform}`) || null); } catch { setPinned(null); }
+    // A different platform is a different list, so it opens closed on page one
+    // rather than on page three of the last platform's handles.
+    setHandlesOpen(false);
+    setHandlePage(0);
     return () => { dead = true; };
   }, [platform]);
   // A pinned handle fills an EMPTY box and never overwrites what was typed.
@@ -267,19 +281,45 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <input type="url" inputMode="url" aria-label={linkLabel} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
           </div>
           {linkError && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>}
-          {recentLinks.length > 0 && !orderLoading && (
-            <div className="flex flex-wrap gap-1.5 mt-2" role="group" aria-label={tr("Recent links")}>
-              {recentLinks.map(r => {
-                const isPin = pinned === r.link;
-                return (
-                  <span key={r.link} className="inline-flex items-center rounded-full border border-solid overflow-hidden text-[12px]" style={{ borderColor: isPin ? t.accent : t.cardBorder, background: isPin ? t.accentLight : "transparent" }}>
-                    <button type="button" onClick={() => validateLink(r.link)} className="m py-1 pl-2.5 pr-1.5 bg-transparent border-none cursor-pointer font-[inherit] text-[12px]" style={{ color: isPin ? t.accentInk : t.text }} title={r.link}>{shortLink(r.link)}</button>
-                    <button type="button" onClick={() => togglePin(r.link)} aria-pressed={isPin} aria-label={isPin ? tr("Unpin") : tr("Pin as default")} title={isPin ? tr("Unpin") : tr("Pin as default")} className="py-1 pr-2.5 pl-1 bg-transparent border-none cursor-pointer text-[12px]" style={{ color: isPin ? t.accent : t.textMuted }}>{isPin ? "★" : "☆"}</button>
-                  </span>
-                );
-              })}
-            </div>
-          )}
+          {recentLinks.length > 0 && !orderLoading && (() => {
+            // Pinned first, so the handle that auto-fills the box is always on
+            // page one and never hidden behind a Next the customer has to find.
+            const ordered = pinned
+              ? [...recentLinks.filter(r => r.link === pinned), ...recentLinks.filter(r => r.link !== pinned)]
+              : recentLinks;
+            const pages = Math.ceil(ordered.length / HANDLES_PER_PAGE);
+            const page = Math.min(handlePage, pages - 1);
+            const shown = ordered.slice(page * HANDLES_PER_PAGE, (page + 1) * HANDLES_PER_PAGE);
+            return (
+              <div className="mt-2">
+                <button type="button" onClick={() => setHandlesOpen(o => !o)} aria-expanded={handlesOpen} className="flex items-center gap-1.5 border-0 cursor-pointer p-0" style={{ background: "transparent", color: dark ? "#d4949f" : "#a0616e" }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+                  <span className="text-[11px] font-medium">{tr("Saved handles")} ({ordered.length})</span>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ transform: handlesOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }} aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {handlesOpen && (
+                  <div className="flex flex-col gap-1 mt-1.5" role="group" aria-label={tr("Saved handles")}>
+                    {shown.map(r => {
+                      const isPin = pinned === r.link;
+                      return (
+                        <span key={r.link} className="flex items-center rounded-lg border border-solid overflow-hidden text-[12px]" style={{ borderColor: isPin ? t.accent : t.cardBorder, background: isPin ? t.accentLight : "transparent" }}>
+                          <button type="button" onClick={() => validateLink(r.link)} className="m flex-1 min-w-0 text-left py-1.5 pl-2.5 pr-1.5 bg-transparent border-none cursor-pointer font-[inherit] text-[12px] truncate" style={{ color: isPin ? t.accentInk : t.text }} title={r.link}>{shortLink(r.link)}</button>
+                          <button type="button" onClick={() => togglePin(r.link)} aria-pressed={isPin} aria-label={isPin ? tr("Unpin") : tr("Pin as default")} title={isPin ? tr("Unpin") : tr("Pin as default")} className="py-1.5 pr-2.5 pl-1 bg-transparent border-none cursor-pointer text-[12px] shrink-0" style={{ color: isPin ? t.accent : t.textMuted }}>{isPin ? "★" : "☆"}</button>
+                        </span>
+                      );
+                    })}
+                    {pages > 1 && (
+                      <div className="flex items-center justify-end gap-2 mt-0.5">
+                        <button type="button" onClick={() => setHandlePage(page - 1)} disabled={page === 0} aria-label={tr("Previous")} className="bg-transparent border border-solid rounded-md w-6 h-6 flex items-center justify-center cursor-pointer disabled:opacity-35 disabled:cursor-default" style={{ borderColor: t.cardBorder, color: t.textSoft }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></button>
+                        <span className="text-[11px] tabular-nums" style={{ color: t.textMuted }}>{page + 1}/{pages}</span>
+                        <button type="button" onClick={() => setHandlePage(page + 1)} disabled={page >= pages - 1} aria-label={tr("Next")} className="bg-transparent border border-solid rounded-md w-6 h-6 flex items-center justify-center cursor-pointer disabled:opacity-35 disabled:cursor-default" style={{ borderColor: t.cardBorder, color: t.textSoft }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           {!linkError && LINK_EXAMPLES[platform] && (isProfileSvc || isPostSvc || isChannelSvc) && (() => {
               const isCommentLike = svcName.includes("comment like") || svcName.includes("likes (comments)");
               const type = isCommentLike ? "commentLike" : isChannelSvc ? "channel" : isProfileSvc ? "profile" : "post";

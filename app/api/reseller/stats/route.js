@@ -2,9 +2,10 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { getResellerTerms } from '@/lib/reseller';
 import { DEAD_ORDER_STATES } from '@/lib/ledger';
+import { koboToNaira as naira } from '@/lib/money';
 
 const WINDOW_DAYS = 30;
-const naira = (kobo) => Math.round(Number(kobo || 0) / 100);
+
 
 /** The caller's own month for the Reseller HQ facts row: orders, spend, the
  * wholesale saving against retail at their rate, and the wallet. */

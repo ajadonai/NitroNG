@@ -6,6 +6,15 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 const { finalizeDeposit } = await import('@/lib/deposit-finalization');
+const { bonusForAmount } = await import('@/lib/welcome-bonus');
+
+// Every fixture below pays in ₦5,000, so the welcome credit is whatever the
+// ladder pays at that rung. Read from the table the code pays from rather than
+// restated, because this file is about the finalisation transaction — one
+// deposit, one set of credits, committed once — not about the rungs. The rungs
+// are pinned in tests/welcome-bonus-currency.test.js, and restating them here
+// is what made the 1 Sep cut and the 14 Sep restore each break eight tests.
+const WELCOME_5K = bonusForAmount(500_000);
 
 function matches(row, where = {}) {
   if (where.OR && !where.OR.some(branch => matches(row, branch))) return false;
@@ -264,11 +273,11 @@ describe('finalizeDeposit', () => {
       finalized: true,
       depositAmount: 500_000,
       couponBonus: 30_000,
-      welcomeBonus: 60_000,
+      welcomeBonus: WELCOME_5K,
       inviteeBonus: 0,
-      totalUserCredit: 590_000,
+      totalUserCredit: 530_000 + WELCOME_5K,
     });
-    expect(state.users[0].balance).toBe(591_000);
+    expect(state.users[0].balance).toBe(530_000 + WELCOME_5K + 1_000);
     expect(state.users[0].firstDepositBonusPaid).toBe(true);
     expect(state.coupons[0].used).toBe(1);
     expect(state.transactions.find(row => row.id === 'one').status).toBe('Completed');
@@ -298,12 +307,12 @@ describe('finalizeDeposit', () => {
 
     expect(result).toMatchObject({
       finalized: true,
-      welcomeBonus: 60_000,
+      welcomeBonus: WELCOME_5K,
       referrerBonus: 70_000,
       inviteeBonus: 0,
-      totalUserCredit: 560_000,
+      totalUserCredit: 500_000 + WELCOME_5K,
     });
-    expect(state.users.find(row => row.id === 'user-1').balance).toBe(560_000);
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(500_000 + WELCOME_5K);
     expect(state.users.find(row => row.id === 'referrer').balance).toBe(70_000);
     const referralRows = state.transactions.filter(row => row.type === 'referral');
     expect(referralRows).toHaveLength(2);
@@ -395,10 +404,10 @@ describe('finalizeDeposit', () => {
       referralWithheldReason: 'referrer_ineligible',
       referrerBonus: 0,
       inviteeBonus: 0,
-      welcomeBonus: 60_000,
-      totalUserCredit: 560_000,
+      welcomeBonus: WELCOME_5K,
+      totalUserCredit: 500_000 + WELCOME_5K,
     });
-    expect(state.users.find(row => row.id === 'user-1').balance).toBe(560_000);
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(500_000 + WELCOME_5K);
     expect(state.users.find(row => row.id === 'ineligible').balance).toBe(0);
     expect(state.transactions.filter(row => row.type === 'referral')).toHaveLength(0);
   });
@@ -428,10 +437,10 @@ describe('finalizeDeposit', () => {
       referralWithheldReason: 'referrer_eligibility_changed',
       referrerBonus: 0,
       inviteeBonus: 0,
-      welcomeBonus: 60_000,
-      totalUserCredit: 560_000,
+      welcomeBonus: WELCOME_5K,
+      totalUserCredit: 500_000 + WELCOME_5K,
     });
-    expect(state.users.find(row => row.id === 'user-1').balance).toBe(560_000);
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(500_000 + WELCOME_5K);
     expect(state.users.find(row => row.id === 'racing').balance).toBe(0);
     expect(state.transactions.filter(row => row.type === 'referral')).toHaveLength(0);
   });
@@ -580,10 +589,10 @@ describe('finalizeDeposit', () => {
       finalized: true,
       referralPaid: false,
       referralWithheldReason: 'same_ip',
-      welcomeBonus: 60_000,
-      totalUserCredit: 560_000,
+      welcomeBonus: WELCOME_5K,
+      totalUserCredit: 500_000 + WELCOME_5K,
     });
-    expect(state.users.find(row => row.id === 'user-1').balance).toBe(560_000);
+    expect(state.users.find(row => row.id === 'user-1').balance).toBe(500_000 + WELCOME_5K);
     expect(state.users.find(row => row.id === 'same-ip-referrer').balance).toBe(0);
     expect(state.transactions.filter(row => row.type === 'referral')).toHaveLength(0);
   });

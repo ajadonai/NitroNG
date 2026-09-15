@@ -3,13 +3,12 @@ import { log } from '@/lib/logger';
 import { requireAdmin, canPerformAction, logActivity } from '@/lib/admin';
 import { randomBytes } from 'crypto';
 import { DEAD_ORDER_STATES } from '@/lib/ledger';
+import { koboToNaira as naira } from '@/lib/money';
 
 // How far back the activity figures on each reseller look. Only ever computed
 // for people who already have a profile, so it stays a handful of rows.
 const WINDOW_DAYS = 90;
 const SEARCH_LIMIT = 15;
-
-const naira = (kobo) => Math.round(Number(kobo || 0) / 100);
 
 // Recent behaviour per reseller. A collapsed order count is how you notice
 // someone who stopped reselling and is still taking the discount.

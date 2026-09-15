@@ -89,7 +89,7 @@ describe('landing attribution query state', () => {
   it('passes server-resolved state through every landing entrypoint', () => {
     const page = readFileSync('app/page.jsx', 'utf8');
     const home = readFileSync('components/home-client.jsx', 'utf8');
-    const landing = readFileSync('components/landing-page.jsx', 'utf8');
+    const landing = readFileSync('components/landing-v3.jsx', 'utf8');
     const modal = readFileSync('components/auth-modal.jsx', 'utf8');
 
     expect(page).toContain('resolveLandingAuthQuery(await searchParams)');
@@ -103,7 +103,7 @@ describe('landing attribution query state', () => {
 
   it('keeps the auth modal out of server HTML while resolving its initial mode on the server', () => {
     const page = readFileSync('app/page.jsx', 'utf8');
-    const landing = readFileSync('components/landing-page.jsx', 'utf8');
+    const landing = readFileSync('components/landing-v3.jsx', 'utf8');
 
     expect(page).toContain('resolveLandingAuthQuery(await searchParams)');
     expect(page).toContain('<HomeClient initialAuthQuery={initialAuthQuery} />');
@@ -123,12 +123,10 @@ describe('public statistic labels', () => {
     const signupPage = readFileSync('app/signup/page.jsx', 'utf8');
     const pricingPage = readFileSync('app/pricing/page.jsx', 'utf8');
     const faqPage = readFileSync('app/faq/page.jsx', 'utf8');
-    const landing = readFileSync('components/landing-page.jsx', 'utf8');
-    const belowFold = readFileSync('components/landing-below-fold.jsx', 'utf8');
+    const landing = readFileSync('components/landing-v3.jsx', 'utf8');
     const about = readFileSync('components/about-page.jsx', 'utf8');
     const faq = readFileSync('components/faq.jsx', 'utf8');
     const footer = readFileSync('components/shared-nav.jsx', 'utf8');
-    const support = readFileSync('components/support-page.jsx', 'utf8');
     const publicCopy = [
       rootLayout,
       homePage,
@@ -136,17 +134,21 @@ describe('public statistic labels', () => {
       pricingPage,
       faqPage,
       landing,
-      belowFold,
       about,
       faq,
       footer,
-      support,
     ].join('\n');
 
-    expect(landing).toContain('Orders\\nplaced');
-    expect(landing).toContain('Accounts\\ncreated');
-    expect(landing).toContain('Delivery\\nbenchmark');
-    expect(landing).toContain('Live activity:');
+    // Each figure is labelled with what it actually counts. These read
+    // components/landing-page.jsx until 14 Sep 2026 — a file with no importer —
+    // so the honesty guard on the live landing's statistics was vacuous for as
+    // long as v3 had been live. v3 wraps them in tr() and spaces them rather
+    // than splitting on a newline; the guarantee is the label, not the
+    // whitespace. The Live-activity strip was removed in v3 by design, so no
+    // assertion replaces it.
+    expect(landing).toContain('tr("Orders placed")');
+    expect(landing).toContain('tr("Accounts created")');
+    expect(landing).toContain('tr("Delivery benchmark")');
     expect(publicCopy).not.toContain('Orders delivered');
     expect(publicCopy).not.toContain('Active creators');
     expect(publicCopy).not.toContain('orders processing right now');

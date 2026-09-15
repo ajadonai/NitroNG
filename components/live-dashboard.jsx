@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useT } from "./locale";
+import { formatNaira as naira } from '../lib/money';
 
 function timeOnSite(firstSeen) {
   const s = Math.floor((Date.now() - new Date(firstSeen).getTime()) / 1000);
@@ -45,14 +46,12 @@ function pageName(path) {
   if (path === '/about') return 'About';
   if (path === '/faq') return 'FAQ';
   if (path === '/blog') return 'Blog';
-  if (path === '/tickets') return 'Support';
   if (path === '/referrals') return 'Referrals';
   if (path === '/notifications') return 'Notifications';
   if (path.startsWith('/services/')) return 'Browsing: ' + path.split('/').pop().replace(/-/g, ' ');
   if (path.startsWith('/order/')) return 'Viewing Order';
   if (path.startsWith('/blog/')) return 'Reading Blog';
   if (path.startsWith('/admin')) return 'Admin';
-  if (path.startsWith('/ticket/')) return 'Ticket';
   return path;
 }
 
@@ -100,7 +99,7 @@ function conversionSignal(session) {
 
 const SIG_CLS = { 'Hot': 'ok', 'Has Funds': 'run', 'Returning': 'run', 'New User': 'ac', 'Guest': 'dim', 'Admin': 'ac' };
 const SIG_LABEL = { 'Has Funds': 'Has funds', 'New User': 'New' };
-const naira = (n) => `₦${Math.round(n || 0).toLocaleString('en-NG')}`;
+
 
 function DeviceGlyph({ ua }) {
   const mobile = /iPhone|iPad|Android|Mobile/i.test(ua || '');

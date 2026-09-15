@@ -531,7 +531,7 @@ function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDERS PAGE                         ═══ */
 /* ═══════════════════════════════════════════ */
-export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, orderSummary, dark, t, onNavigate, onRefresh, waNum, email }) {
+export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, orderSummary, dark, t, onNavigate, onRefresh, waNum, email, initialSearch = "" }) {
   const tr = useT();
   const money = useMoney();
   const [sumOpen, setSumOpen] = useState(false);
@@ -547,7 +547,11 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
   const confirm = useConfirm();
   const [orders, setOrders] = useState(initialOrders);
   const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
+  // Seeded when a notification opened this page, so "Order delivered" in the
+  // bell lands on that order rather than on the whole history. The search is
+  // server-side, so it finds the order however deep it is; the box shows the
+  // reference with its clear button, so getting back to everything is one tap.
+  const [search, setSearch] = useState(initialSearch || "");
   const [expanded, setExpanded] = useState(null);
   const [expandedBatch, setExpandedBatch] = useState(null);
   const [expandedBatchOrder, setExpandedBatchOrder] = useState(null);

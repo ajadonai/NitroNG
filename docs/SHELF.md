@@ -12,12 +12,16 @@ as the work. (Formerly docs/BACKLOG.md.)
   automatic promotion on the daily cron, month-end demotion after a grace
   month, one Auto / pinned / custom dropdown in the admin Resellers drawer.
   Settled during scoping: flat % off retail with a margin floor (the thinnest
-  band is 1.35× markup, so any flat discount ≥ 26% sells below cost and
-  `tests/markup-reseller.test.js` refuses it); thresholds must count
+  band is 1.5× markup — the Ultra bracket at Budget tier — so any flat discount
+  of 33.3% or more sells below cost, corrected 14 Sep 2026 from the 1.35×/26%
+  this entry used to claim; `tests/markup-reseller.test.js` refuses it); thresholds must count
   retail-equivalent, because orders store the discounted charge and a promoted
   reseller would slow its own measurement; `discountPct` becomes an explicit
   override, not the rate; and the floor clamp is worth shipping on its own —
-  the rate box accepts 40% today. Every charge path already funnels through
+  the rate box accepts anything up to 99% today, not the 40% this entry used to
+  say (`app/api/admin/resellers/route.js`, action `rate`, rejects only `< 0` and
+  `>= 100`). Latent, not bleeding: the three resellers on file are on 15%, 15%
+  and 10%, all well under the floor. Every charge path already funnels through
   `getResellerTerms()` → `wholesaleOf()`, so the hook is one function. The API
   docs already promise this ladder and name a "Scale" tier that exists nowhere;
   T4 takes the name. Trip's call on whether the reseller pricing page mirrors
@@ -30,41 +34,134 @@ as the work. (Formerly docs/BACKLOG.md.)
   the wallet per run and pauses when it runs dry, sidestepping card
   tokenisation and dunning entirely; card billing only if Auto proves demand.
 
-- **Outreach live feed — waiting on one decision.** A Telegram ping when
-  someone a staff member contacted goes on to deposit (name, amount, agent,
-  method, touch), plus a daily per-agent roll-up. `OutreachContact` already
-  holds who/how/when. Blocked only on the attribution window: 14 days and
-  most-recent-touch-wins is the proposal.
+- **Outreach live feed — decided, not yet built.** A Telegram ping when someone
+  a staff member contacted goes on to deposit (name, amount, agent, method,
+  touch), plus a daily per-agent roll-up. `OutreachContact` already holds
+  who/how/when.
+
+  **Attribution: 21 days, most recent touch wins. Trip's call, 14 Sep 2026.**
+  Nothing else blocks the build.
+
+  **Measured rather than guessed.** The only outreach that has ever run is
+  12–26 Aug: 2,068 touches across 1,429 people, of whom **31 went on to
+  deposit** (2.2%). Lag from first touch to first deposit: median 3.1 days,
+  p75 11.2, p90 18.9, longest 23.6. So the proposed 14 days would have caught
+  24 of the 31 and handed the other 7 to "organic"; 21 catches 30; 30 days
+  catches all 31 but buys that last one for nine extra days of looseness, and a
+  window exists to exclude coincidence. Most-recent-touch-wins is close to free
+  either way: only 182 of the 1,429 were touched by more than one agent.
+
+  **Two conditions on that number.** It rests on 31 conversions from a single
+  fortnight, so it is the best answer the data supports and not a proven one —
+  revisit after the next outreach run. And **if the feed ever becomes the basis
+  for paying or ranking agents, tighten it to 14**: a generous window is free
+  when the output is a message saying your call worked, and expensive once money
+  is attached to the credit.
+
+  **Why it is still parked.** A feed that fires 31 times in a fortnight is a
+  quiet channel, and outreach is switched off for lack of staff
+  (`outreach_paused`). Build it when there is a team to read it; the number is
+  settled so nobody has to re-derive it.
+
+- **Adjacent products — researched 14 Sep 2026, revisit soon.** Seven
+  digital-goods verticals that fit the sentence Nitro already answers: a
+  Nigerian wants a digital thing, cannot pay in dollars, and needs it in naira
+  from a wallet they trust. Clickable write-up with providers, published margins
+  and blockers: artifact `59be94ff`.
+
+  **Build, in this order.** (1) **Airtime and data** — VTpass (Nigeria-native,
+  all four networks), Reloadly, eBills, 247API. 2–5% on airtime, 3–7% on data
+  against 157M mobile internet subscriptions. Thin margin on purpose: it is a
+  reason to open the app weekly, measured on wallet-funding frequency, not a
+  profit centre. (2) **Gift cards** — Reloadly Gift Cards, Bitrefill. 3–10%, and
+  it answers Nitro's own founding complaint aimed at a different product.
+  (3) **Bills** — electricity, DStv/GOtv/Startimes, and WAEC/JAMB pins, same key
+  as airtime, no extra integration. (4) **Travel eSIM** — Airalo Partner API
+  (200+ destinations, white-label delivery email), eSIM Go, MobiMatter. The
+  prestige product, not the volume one. (5) **Creator software codes**, wherever
+  the brand issues them, on the gift-card rail.
+
+  **Two hard lines.** **Travel eSIM only, never a Nigerian line** — since 2021
+  every SIM in Nigeria, physical or embedded, must be registered against a NIN,
+  and issuing local lines needs an operator or MVNO partner under NCC rules;
+  foreign-destination eSIMs sit entirely outside that. And **no virtual dollar
+  cards** — the obvious next step after gift cards is a different, regulated
+  business with its own licensing and chargeback exposure.
+
+  **Check before building: betting wallet top-up.** Commercially the largest
+  market here and one line once the bills rail exists, but gambling adjacency is
+  a merchant-category question. Get it in writing from Flutterwave that it does
+  not change Nitro's category or risk rating.
+
+  **Ruled out: social account sales and rented OTP verification numbers.**
+  Every major platform prohibits account transfer and Instagram bans on
+  suspicion, so the product can be destroyed the day after it sells and the
+  refund is ours; supply carries reclamation and stolen accounts; OTP rental is
+  the documented standard tool for bulk fake-account creation. Both are
+  chargeback magnets, and the guest-checkout entry on this shelf already rules
+  out anonymous card payments because chargebacks in this vertical endanger the
+  processor relationship — which is the rail every other product here runs on.
+
+- **Codebase neatness — what the Sep 2026 sweep left as Trip's call.** The sweep
+  itself shipped (Phase 1 pipelines `d51a27a3` `12d3ee4a` `e8d7461a` `e395d281`,
+  Phase 2 tidy `7bc31d4c` `7c486734` `3a19b4a8` `d57869c2`): 184 unused names
+  across 69 files removed, four copies of one loop collapsed, two settings that
+  were accepted and ignored deleted. Four decisions were left open and then
+  lived only in a chat message, which is why they went missing — they are on the
+  shelf now. Two of the original six are since closed (`9add969d`, 14 Sep): the
+  dead landing pair and the composer's cross-sell/TIER_COMPARE data.
+
+  1. **`lib/crew-bot.js` — 14 of its 22 exports are called by nothing**
+     (re-counted 14 Sep). Used: `sendDM`, `replyInGroup`, `crewWelcome`,
+     `crewSignup`, `crewFirstPurchase`, `crewRepeatBuyer`, `crewDmChiefNewLink`,
+     `kickFromGroup`. Unused: `crewLeadChange`, `crewFirstBlood`,
+     `crewMilestone`, `crewStreak`, `crewWeeklyWinner`, `crewMonthlyChampion`,
+     `crewLeaderboard`, `crewAnnouncement`, `crewDailyTip`, `crewDmCommission`,
+     `crewDmPayout`, `crewDmNewSignup`, `crewDmFirstPurchase`, `crewDmInactive`.
+     Read together they are a crew gamification feature — streaks, milestones,
+     weekly winners, commission DMs — written and never wired.
+     **Trip's call, 14 Sep 2026: keep it, it will be useful eventually.** Left
+     exactly as it is; this row exists so the next sweep does not re-propose it.
+
+  2. **Scripts — done** (`8c3e60c2`, 14 Sep). Ten spent one-offs deleted,
+     `scripts/README.md` added naming what every remaining file is for. Four
+     were deleted and put back: `cleanup-seed-data.js`, `seed-testuser.js`,
+     `seed-blog.cjs` and `seed-production.sql` look spent and are not — somebody
+     had already hardened them behind `runGuardedPrismaScript` and written
+     `tests/operational-script-safety.test.js` around them. Six tests failed on
+     the delete and were right to. A script with a test guarding it is a script
+     somebody owns.
+
+  3. **`naira()` — done** (`1bffcfdb`, 14 Sep). `lib/money.js` replaced twelve
+     of the twenty-three definitions. The other eleven stay: each is a different
+     function wearing the same name, and the module says which and why. The
+     reason this needed care rather than a find-and-replace is that the copies
+     disagreed on the answer — ₦12,345.67 from the Telegram bot against ₦12,346
+     from the outreach summary for the same kobo — so `tests/money-module.test.js`
+     pins every old copy's output against its replacement.
+
+  4. **Tickets — done** (`b2a48640` `6614e1d7`, 14 Sep). Removed once Trip
+     established the bots do not need it: nothing in `lib/ify` ever read a
+     ticket back, only wrote one. The surface was larger than this entry once
+     claimed — it said "legacy read-only views" and the daily cron was in fact
+     writing, filing a `TicketReply` on every auto-close — so it took the admin
+     page, both API routes, the cron pass, the overview's count/list/activity
+     translations, the badge, three of the poller's six queries, the dashboard
+     payload, the permission entries and the settings toggles.
+
+     Ify escalation now writes one `logActivity` line instead, which lands in a
+     feed an admin already reads and needed no migration.
+
+     **The data stayed**: 46 tickets and 190 replies, all Resolved. Account
+     deletion still purges a departing customer's, and the stale-signup sweep
+     still refuses to delete anyone holding one — both must keep working while
+     the rows exist. Dropping the models is a separate, destructive decision
+     nobody needs to take yet.
 
 - **Saved handles — the pin is per-device.** Shipped as localStorage in
   order-form.jsx; a synced default needs a `pinnedLinks` column on User and a
   migration. Do it when the first person asks why their pin didn't follow them
   to another phone.
-
-- **Dead cross-sell and tier-compare data inside new-order.jsx, found 10 Sep
-  2026 by the blind-spot sweep.** `crossSells`/`getCrossSell` (four upsell
-  cards: "Complete the look", "Pair it with Likes"…) and `TIER_COMPARE` (the
-  Accounts/Refill/Starts/Best-for table) are defined at module scope and
-  rendered nowhere — nothing in the repo references either. Fifteen of the
-  eighteen module-scope strings the i18n baseline charges to new-order.jsx are
-  these. Not deleted: Trip's call, and the upsell cards read like a feature
-  that was meant to ship rather than one that was removed. Delete or build —
-  either way the baseline drops.
-
-- **Two dead landing files, found 9 Sep 2026 by the translation guard.**
-  `components/landing-page.jsx` (2,000+ lines) and
-  `components/landing-below-fold.jsx` are not reachable from any route:
-  `app/page.jsx` → `components/home-client.jsx` → `components/landing-v3.jsx`
-  is the live path, and nothing imports the other two. They were found the
-  expensive way — the drift guard reported 87 untranslated strings in them and
-  they were an hour from being translated into four languages before anyone
-  checked whether a customer could reach them.
-
-  Not deleted, for two reasons: it is Trip's call, and the landing redesign on
-  `landing-v2-wip` may yet want the markup. They stay in
-  `scripts/i18n-baseline.json` so nobody re-discovers them as new debt; the
-  live debt is 1,311 strings, not 1,398. Delete them, or fold what is worth
-  keeping into `landing-v3.jsx`, and the baseline drops by 87 for free.
 
 - **Foreign payment methods — steps 1 and 2 shipped 8 Sep 2026, steps 3 and 4
   remain.** Signup accepts NG/US/GB/GH/KE (`2c1ac43a`). Flutterwave charges
@@ -250,36 +347,28 @@ as the work. (Formerly docs/BACKLOG.md.)
   any provider claim. Needs a small nightly rollup (order timestamps already
   exist) rather than live queries.
 
-- **Deposit bonus ladder cut — watching, revert if it bites** (1 Sep 2026,
-  `v2.4.78`). Every rung was halved to test how much of the ladder's pull is
-  the money itself:
+- **Per-row notification dismiss is device-local** (noted 14 Sep 2026). The
+  bell's new × hides a row on the device it was tapped on and marks it read
+  everywhere, because there is nowhere to put a per-id clear: `clearAll`
+  persists as `notifClearedAt`, a timestamp on the user, and the cleared-id set
+  is localStorage only. So a row dismissed on a phone is gone there and merely
+  read on a laptop. A `notifClearedIds` column on User closes it. Not worth a
+  migration on its own — every notification ages out of the list at 30 days
+  anyway — so fold it into the next change that touches that table.
 
-  | Deposit | Was | Now |
-  | --- | --- | --- |
-  | ₦2,500+ | ₦500 (20%) | **₦250 (10%)** |
-  | ₦5,000+ | ₦1,200 (24%) | **₦600 (12%)** |
-  | ₦10,000+ | ₦3,000 (30%) | **₦1,500 (15%)** |
-
-  **To put it back:** restore those three numbers in `lib/welcome-bonus.js` —
-  `TIERS` (in kobo: 50000 / 120000 / 300000), `BONUS_PRESETS`, `bonusForNaira`
-  and `nextBonusTier` — then run
-  `grep -rn "up to ₦1,500" lib components` and set the copy back to
-  "up to ₦3,000" everywhere it appears (12 files: emails, landing page, auth
-  modal, order form, order tour, add funds, dashboard nudge, Lagos page, FAQ
-  answers in `service-type-meta.js`, and the assistant's `lib/ify/knowledge.js`
-  tier list). Nothing else moves; there is no migration and no setting.
-
-  **What to watch, and the numbers before the cut** (90 days to 1 Sep): first
-  deposits clustered hard on the thresholds — **₦2,500: 529 people, ₦5,000:
-  374, ₦10,000: 106**, against only 26 at ₦3,000 and 10 at ₦4,000, with 271 at
-  the ₦1,000 minimum and 444 (29%) depositing under ₦2,500 at all. Bonus paid
-  was ₦1,159,400 face value over the quarter (~₦143k/month, ~₦53k/month real
-  at the 37% provider cost of spend-only credit) against ₦5.6M gross profit
-  from those same customers. **The tell that it bit:** the ₦2,500 spike
-  collapsing toward ₦1,000. Rerun the clustering query after two weeks — if
-  the median first deposit falls or the ₦1,000 bucket swells past ~35%, the
-  ₦2,500 rung is the one to restore first (it does the activation work; the
-  ₦10,000 rung is the safest to leave cut).
+- **Welcome bonus is raw balance, not spend-only credit** (noted 14 Sep 2026).
+  `applyWelcomeBonusDetailed` increments `user.balance` and writes a `bonus`
+  transaction; it does not create a `BonusCredit` row the way the top-up bonus
+  and win-back credit do. Everything the customer is told — the assistant's
+  knowledge file, the FAQ answers, the wallet copy — says the money is
+  spend-only and cannot be withdrawn. Checked on 14 Sep and **nothing pays it
+  out**: the only withdrawal surface is the Pit payouts page, whose
+  `availableBalance` is `approvedTotal − totalPaid − pendingPayoutTotal` from
+  affiliate earnings and never reads `user.balance`. So it is a promise the
+  code keeps by accident rather than by construction, and restoring the ladder
+  on 14 Sep doubled what is sitting in that position. Worth converting to a
+  real `BonusCredit` before any new cash-out path ships (cash referrals is the
+  one on this list that would open one).
 
 - **Cash referrals — launch checklist** (built dark in v2.4.75; flip
   `cash_referrals_enabled` to `'true'` to go live): admin payouts page (the
@@ -382,11 +471,22 @@ as the work. (Formerly docs/BACKLOG.md.)
   the picker's currency now that the switcher is live (12 Sep); Flutterwave's
   own page shows the cedi figure.
 
-  **Still open:** step 1 (phone gate — foreigners still cannot sign up); the
-  "Soon" tags on Pidgin/Yoruba/Hausa/Igbo/Kiswahili/Français are a public promise Trip has
-  not yet confirmed; language is a shell (English only, no i18n); and Trip
-  wants "refund to your bank" removed from the refund policy — its own commit
-  with the policy date bumped, and it removes the foreign-refund question.
+  **Still open:** the "Soon" tags on
+  Pidgin/Yoruba/Hausa/Igbo/Kiswahili/Français are a public promise Trip has not
+  yet confirmed.
+
+  **Two items here were already done and the entry had not caught up** (checked
+  14 Sep 2026). **Step 1, the phone gate, is open** — it shipped on 8 Sep as
+  `2c1ac43a` and this entry, written on the 4th, was never updated. Signup
+  accepts NG/US/GB/GH/KE end to end: `validatePhone(country, phone)` in the
+  route, and a `PhoneField` with a country picker on both signup surfaces, the
+  auth modal and the landing hero, each sending `country`. A French number is
+  still refused, which is the supported-country list doing its job.
+  **Language is no longer a shell** — four dictionaries carry 2,078 strings
+  each, with `tests/i18n-drift-guard.test.js` holding the line. And the
+  refund-to-bank line is gone from Terms (`cd9068ab`, 14 Sep); the Refund Policy
+  had already lost it on 7 Sep, and for a week the two documents contradicted
+  each other.
 
 - **Landing redesign v2 — parked, Trip not yet impressed** (4 Sep 2026): the
   full build lives on local branch `landing-v2-wip` (commit `d1838b9f`, never
@@ -440,6 +540,14 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-14 | Ticket system removed from the code — admin page, both API routes, the writing cron pass, overview counts and list, badge, poller queries, permissions and settings toggles. Ify escalation writes an activity line instead. The 46 tickets and 190 replies stay in the database | `6614e1d7` v2.4.170 |
+| 2026-09-14 | One naira formatter replaces twelve of twenty-three `naira()` definitions; the copies disagreed (₦12,345.67 vs ₦12,346 for the same kobo) so rounding is a parameter and every old output is pinned by test | `1bffcfdb` v2.4.168 |
+| 2026-09-14 | Ten spent scripts deleted and a README added; four were deleted and restored because tests already guarded them. Dead 615-line `support-page.jsx` removed, and the rest of the ticket surface measured: not read-only, 744 lines plus references across thirteen files | `8c3e60c2` `b2a48640` v2.4.167 v2.4.169 |
+| 2026-09-14 | Terms stops offering to return unused wallet money to a bank, a week after the Refund Policy stopped; the two had been contradicting each other and Terms is the one that binds | `cd9068ab` v2.4.166 |
+| 2026-09-14 | Dead landing pair and the composer's unrendered upsell data deleted; the three test files reading `landing-page.jsx` now read the live page, which exposed that the public-statistics honesty guard had been vacuous for as long as v3 has been live. Translation debt 293 → 159 strings | `9add969d` v2.4.165 |
+| 2026-09-14 | Bell rows open the order or the wallet entry they name; grouped by day; two-line descriptions; per-row dismiss; counted filter chips including Rewards; 10→30 with no dead footer; phone gets the house bottom sheet. Support rows removed — they carried `alwaysUnread`, which no Mark all read or Clear all could touch, leaving 22 customers with a badge they could not clear; the 25 flags were cleared in the database the same day | `a0d9ec6f` v2.4.164 |
+| 2026-09-14 | Saved handles fold behind one line and page three at a time, in the order form and on every bulk cart row, so the form's height stops depending on how many accounts someone orders for | `5cae78e2` v2.4.163 |
+| 2026-09-14 | Deposit bonus ladder restored to ₦500 / ₦1,200 / ₦3,000 after the two-week test at half rates: sub-₦2,500 first deposits 28.6% → 36.6%, 7-day value per depositor ₦5,588 → ₦4,438 with repeat behaviour flat, about ₦360k/month lost. Tests now read the rungs from `bonusForAmount` instead of restating them | `8e09ea7f` v2.4.162 |
 | 2026-09-14 | Wallet and notifications: bell translates (14 strings, deps fixed), ledger descriptions stop printing raw internal notes (they named admins and other customers), glyph icons become SVG, and the balance follows the currency picker | `2d3c6848` v2.4.161 |
 | 2026-09-14 | Public order-count head start 6,000 → 4,000 (real orders 10,363; shown figure 16,363 → 14,363) | `f7d21d81` v2.4.158 |
 | 2026-09-14 | Telegram bot: markup was labelled margin (172% beside 63% in one message) — now margin on revenue everywhere; /revenue and /stats stop narrating gross-less-refunded | `f7d21d81` v2.4.158 |

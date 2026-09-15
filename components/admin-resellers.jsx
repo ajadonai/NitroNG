@@ -2,8 +2,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "./toast";
 import { useConfirm } from "./confirm-dialog";
+import { formatNaira } from '../lib/money';
 
-const naira = (n) => `₦${Number(n || 0).toLocaleString()}`;
+const naira = (n) => formatNaira(n, { round: false });
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : "—";
 const initials = (name) => (name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
 const SEARCH = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="20" y1="20" x2="16.5" y2="16.5" /></svg>;

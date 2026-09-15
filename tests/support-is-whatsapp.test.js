@@ -39,6 +39,41 @@ describe("support is WhatsApp, not tickets", () => {
     expect(presets).not.toMatch(/"tickets"/);
   });
 
+  it("has no ticket surface left to render, serve or poll", () => {
+    // Removed on 14 Sep 2026 once it was established that the bots do not need
+    // it: nothing in lib/ify ever read a ticket back, only wrote one.
+    for (const gone of [
+      "components/support-page.jsx",
+      "components/admin-tickets.jsx",
+      "app/api/tickets/route.js",
+      "app/api/admin/tickets/route.js",
+    ]) {
+      expect(fs.existsSync(path.join(process.cwd(), gone)), `${gone} is back`).toBe(false);
+    }
+    // And the live code that used to reach for them. The daily cron wrote to
+    // tickets — it auto-closed inactive ones and filed a reply each time — so
+    // this is a guard against a writing path, not just a dead view.
+    for (const file of [
+      "app/api/cron/daily/route.js",
+      "app/api/admin/overview/route.js",
+      "app/api/admin/badges/route.js",
+      "app/api/admin/notifications/poll/route.js",
+      "app/api/dashboard/route.js",
+      "components/admin-dashboard.jsx",
+    ]) {
+      expect(read(file), `${file} touches tickets again`).not.toMatch(/prisma\.ticket/i);
+    }
+  });
+
+  it("does not let Ify open a ticket nobody will read", () => {
+    // Escalation pings the team on Telegram and answers the customer on
+    // WhatsApp. It used to also file a ticket, which nothing read back — the
+    // same write-only breadcrumb the stuck bell badge was made of.
+    const escalate = read("lib/ify/escalate.js");
+    expect(escalate).not.toMatch(/prisma\.ticket/);
+    expect(escalate).toContain("logActivity(");
+  });
+
   it("keeps the ticket code out of anything that ranks work to do", () => {
     // The scanner sorts files by how much untranslated English they hold, and
     // support-page.jsx sat near the top of that list — which is how it kept
