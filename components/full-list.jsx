@@ -90,6 +90,16 @@ const PRICE_BANDS = [
 // somebody chose to do. Neither is offered while it would be empty — a filter
 // that returns nothing is a dead end dressed as a choice, and on day one that
 // is what a Saved tab would be for every customer alive.
+// The icons are not decoration and are not new: each is the exact mark the rows
+// themselves already carry. The star is the control you tap to save a service;
+// the clock is the one on its "Ordered 2×" badge. So the filter and the marker
+// it filters by are visibly the same thing, rather than two words that happen
+// to agree.
+const MINE_ICON = {
+  ordered: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  saved: <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>,
+};
+
 const MINE_ROW = [
   { key: "ordered", label: msg("Ordered before") },
   { key: "saved", label: msg("Saved") },
@@ -514,8 +524,13 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
           const n = all.filter(r => (m.key === "saved" ? savedSet.has(r.id) : history[r.id]?.times > 0)).length;
           return (
             <button key={m.key} role="tab" aria-selected={on} onClick={() => { setMineOnly(on ? "any" : m.key); setType("all"); }}
-              className="no-type-tab inline-flex items-baseline gap-1.5 py-[5px] px-2.5 rounded-lg border-none font-[inherit] text-[13px] cursor-pointer transition-colors duration-150"
+              className="no-type-tab inline-flex items-center gap-1.5 py-[5px] px-2.5 rounded-lg border-none font-[inherit] text-[13px] cursor-pointer transition-colors duration-150"
               style={{ background: on ? t.accent : "transparent", color: on ? "#fff" : t.accentInk, fontWeight: on ? 700 : 600 }}>
+              {/* items-center, not items-baseline: a glyph has no baseline to
+                  sit on and hangs low against one. The type tabs beside these
+                  keep theirs — they are text and a number only. */}
+              <span className="w-[13px] h-[13px] shrink-0 flex items-center [&_svg]:w-[13px] [&_svg]:h-[13px]"
+                style={{ color: on ? "#fff" : t.accent, opacity: on ? .9 : .75 }}>{MINE_ICON[m.key]}</span>
               {tr(m.label)}
               <span className="m text-[10.5px]" style={{ fontFamily: "'JetBrains Mono', monospace", opacity: on ? .75 : .6 }}>{n}</span>
             </button>
@@ -550,6 +565,8 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
               <button key={m.key} onClick={() => { setMineOnly(on ? "any" : m.key); setType("all"); }} aria-pressed={on}
                 className="flex-1 inline-flex items-center justify-center gap-1.5 text-[12px] py-[6px] px-2 rounded-[9px] border border-solid cursor-pointer font-[inherit] min-w-0"
                 style={{ borderColor: on ? t.accent : t.cardBorder, background: on ? t.accentLight : "transparent", color: t.accentInk, fontWeight: on ? 700 : 600 }}>
+                <span className="w-[13px] h-[13px] shrink-0 flex items-center [&_svg]:w-[13px] [&_svg]:h-[13px]"
+                  style={{ color: on ? t.accentInk : t.accent, opacity: on ? 1 : .75 }}>{MINE_ICON[m.key]}</span>
                 <span className="truncate">{tr(m.label)}</span>
                 <span className="m text-[10.5px] opacity-70" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{n}</span>
               </button>

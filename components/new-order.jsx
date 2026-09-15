@@ -1338,7 +1338,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           separation light has. The drop shadow is replaced by what actually
           reads on a dark ground: a hairline ring and a 1px top highlight. */}
       {(
-        <div className="grid grid-cols-2 gap-1 p-1 mb-3.5 rounded-[13px] border border-solid" role="tablist" aria-label={tr("Which list")}
+        <div data-tour="no-list-select" className="grid grid-cols-2 gap-1 p-1 mb-3.5 rounded-[13px] border border-solid" role="tablist" aria-label={tr("Which list")}
           style={{ background: dark ? "rgba(0,0,0,.30)" : "rgba(88,52,62,.05)", borderColor: dark ? "rgba(255,255,255,.05)" : t.cardBorder }}>
           {[
             { key: "nitro", n: platformCounts[platform] || 0, label: msg("Nitro picks"), sub: msg("Tested every week. Refill-backed."),
@@ -1402,7 +1402,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       </div>
 
       {/* ═══ PLATFORM ICONS — desktop only ═══ */}
-      <div className="hidden desktop:grid desktop:grid-cols-10 desktop:gap-2 desktop:mb-4">
+      <div data-tour="no-platform-grid" className="hidden desktop:grid desktop:grid-cols-10 desktop:gap-2 desktop:mb-4">
         {visiblePlatforms.map(p => {
           const isActive = platform === p.id;
           return (
@@ -1413,7 +1413,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       </div>
 
       {/* ═══ MOBILE/TABLET: 5 icon window + expandable grid ═══ */}
-      <div className="hidden max-desktop:block mb-3.5">
+      <div data-tour="no-platform-grid" className="hidden max-desktop:block mb-3.5">
         <div className="grid grid-cols-5 gap-1.5 mb-2">
           {visiblePlatforms.slice(platWindowStart, platWindowStart + 5).map(p => {
             const isActive = platform === p.id;
@@ -1565,7 +1565,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
                 </div>
               </div>
             ) : (
-              <OrderForm selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={requestSubmit} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} trafficConfig={trafficConfig} setTrafficConfig={setTrafficConfig} socialLinks={socialLinks} fullList={fullRow} onVote={castVote} onBackToPicks={() => { setOrderModal(false); switchView("nitro"); }} />
+              <OrderForm assumeFunded={tourActive} selSvc={selSvc} selTier={selTier} platform={platform} qty={qty} setQty={setQty} link={link} setLink={setLink} comments={comments} setComments={setComments} dark={dark} t={t} onClose={() => { setOrderModal(false); setRedeemPoints(false); }} onSubmit={requestSubmit} orderLoading={orderLoading} loyaltyDiscount={menuData?.loyaltyDiscount || 0} loyaltyTier={menuData?.loyaltyTier || null} activePromotion={activePromotion} balance={user?.balance ?? 0} onTopUp={onTopUp} welcomeBonusEligible={user?.welcomeBonusEligible} pointsRedeemable={rewards?.points?.redeemable || false} pointsBalance={rewards?.points?.balance || 0} redeemPoints={redeemPoints} setRedeemPoints={setRedeemPoints} trafficConfig={trafficConfig} setTrafficConfig={setTrafficConfig} socialLinks={socialLinks} fullList={fullRow} onVote={castVote} onBackToPicks={() => { setOrderModal(false); switchView("nitro"); }} />
             )}
           </div>
         </div>
