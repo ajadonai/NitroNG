@@ -106,7 +106,7 @@ function ElevatedShell({ elevated, dark, mode, children }) {
   );
 }
 
-function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode, resetToken: resetTokenProp, elevated = false }) {
+function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode, resetToken: resetTokenProp, elevated = false, returnTo = "" }) {
   const tr = useT();
   const money = useMoney();
   const [method] = useState('email');
@@ -245,7 +245,9 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
         setAuthLoading(false);
         return;
       }
-      window.location.replace('/dashboard');
+      // Back to whatever page the session ended on, when the landing page
+      // passed one through. Already checked same-origin before it got here.
+      window.location.replace(returnTo || '/dashboard');
     } catch (err) {
       console.error('[Login Error]', err);
       setError(tr("Network error. Check your connection and try again."));

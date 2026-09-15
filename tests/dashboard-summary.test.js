@@ -16,7 +16,12 @@ const prisma = {
 };
 
 vi.mock('@/lib/prisma', () => ({ default: prisma }));
-vi.mock('@/lib/auth', () => ({ getCurrentUser: vi.fn().mockResolvedValue({ id: 'user-1' }) }));
+// The route reads getCurrentUserWithReason so a 401 can say why it happened.
+// getCurrentUser stays mocked because other imports in this tree still use it.
+vi.mock('@/lib/auth', () => ({
+  getCurrentUser: vi.fn().mockResolvedValue({ id: 'user-1' }),
+  getCurrentUserWithReason: vi.fn().mockResolvedValue({ user: { id: 'user-1' }, reason: null }),
+}));
 vi.mock('@/lib/logger', () => ({ log: { error: vi.fn() } }));
 vi.mock('@/lib/bonus-credit', () => ({ getBonusInfo: vi.fn().mockResolvedValue(null) }));
 

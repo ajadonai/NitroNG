@@ -2181,5 +2181,15 @@
   "These arrive slowly, and that is the point": "Ils arrivent lentement, et c'est voulu",
   "YouTube removes subscribers that show up all at once. Yours are added a few at a time so the channel keeps them.": "YouTube supprime les abonnés qui apparaissent tous d'un coup. Les vôtres sont ajoutés par petits groupes pour que la chaîne les conserve.",
   "*50 – 500 a day*, every day, until the order is finished.": "*50 à 500 par jour*, chaque jour, jusqu'à la fin de la commande.",
-  "Nothing for you to do. Watch the count climb in *Orders*.": "Vous n'avez rien à faire. Regardez le compteur monter dans *Commandes*."
+  "Nothing for you to do. Watch the count climb in *Orders*.": "Vous n'avez rien à faire. Regardez le compteur monter dans *Commandes*.",
+  "You've been signed out": "Vous avez été déconnecté",
+  "Sessions last a day, or a week if you ticked \"keep me signed in\".": "Une session dure un jour, ou une semaine si vous avez coché « rester connecté ».",
+  "Sessions end after 30 days no matter what. Signing in starts a fresh one.": "Une session prend fin au bout de 30 jours quoi qu'il arrive. Se reconnecter en ouvre une nouvelle.",
+  "Signed out on this device": "Déconnecté sur cet appareil",
+  "This happens when you sign out somewhere else, change your password, or pass the five-device limit.": "Cela arrive quand vous vous déconnectez ailleurs, changez votre mot de passe, ou dépassez la limite de cinq appareils.",
+  "This account can't be used right now": "Ce compte ne peut pas être utilisé pour le moment",
+  "Message us on WhatsApp and we'll tell you why and what to do next.": "Écrivez-nous sur WhatsApp et nous vous dirons pourquoi et quoi faire ensuite.",
+  "You'll land back where you were.": "Vous reviendrez là où vous étiez.",
+  "Didn't expect this?": "Vous ne vous y attendiez pas ?",
+  "— it signs every other device out.": "— cela déconnecte tous les autres appareils."
 }

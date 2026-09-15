@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUserWithReason } from '@/lib/auth';
 import { ok, error } from '@/lib/utils';
 import { getBonusInfo } from '@/lib/bonus-credit';
 import { getTopupProgress } from '@/lib/topup-bonus';
@@ -110,8 +110,10 @@ async function getOrderSummary(userId) {
 
 export async function GET() {
   try {
-    const payload = await getCurrentUser();
-    if (!payload) return error('Not authenticated', 401);
+    // The reason rides along on the 401 so the landing page can say what
+    // actually happened instead of guessing at a device that was never there.
+    const { user: payload, reason } = await getCurrentUserWithReason();
+    if (!payload) return Response.json({ error: 'Not authenticated', reason }, { status: 401 });
     const historyCutoff = transactionHistoryCutoff();
 
     const user = await prisma.user.findUnique({
