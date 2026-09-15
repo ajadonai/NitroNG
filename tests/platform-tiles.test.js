@@ -26,6 +26,33 @@ describe('every platform tile has its own colour', () => {
     expect(ids.length).toBeGreaterThan(30);
   });
 
+  it('keeps every tile in its own colour, chosen or not', () => {
+    // Quieting them at rest was tried and reverted: it read as dull rather than
+    // calm. Seventeen logos are where this page keeps most of its life, and the
+    // crowding it was meant to fix was caused by white cards, not by colour.
+    //
+    // Dark drives that colour softer at rest, which is a different thing: the
+    // rail is still mixed FROM the brand, so the hue survives and no tile turns
+    // grey. What it must never become is a neutral or nothing at all.
+    const from = src.indexOf('function PlatformTile(');
+    const tile = src.slice(from, src.indexOf('\n}', from) + 2);
+    expect(tile).toMatch(/const restRail = dark \? `color-mix\(in srgb, \$\{brand\} 38%, #171126\)` : brand;/);
+    expect(tile).toMatch(/inset \$\{rail\}px 0 0 \$\{restRail\}, 0 1px 2px/);
+    // The icon is the identity and is never dimmed, in either mode.
+    expect(tile).toMatch(/style=\{\{ width: 16, height: 16, color: brand \}\}/);
+  });
+
+  it('gives the chosen tile a rail the others do not have, in dark', () => {
+    // The loud version had no hierarchy either: the tile you were on carried
+    // exactly the rail of the fourteen you were not, and only the outer glow
+    // told them apart. Full strength is now what being chosen means.
+    const from = src.indexOf('function PlatformTile(');
+    const tile = src.slice(from, src.indexOf('\n}', from) + 2);
+    expect(tile).toMatch(/inset \$\{rail\}px 0 0 \$\{brand\}, 0 3px 10px/);
+    // Light keeps the glow it had; only dark steps down.
+    expect(tile).toMatch(/\$\{dark \? 16 : 22\}%, transparent/);
+  });
+
   it('lifts every black mark off the dark canvas', () => {
     // #000000 on #171126 is not a rail, it is a gap.
     const onDark = src.slice(src.indexOf('const ON_DARK = {'), src.indexOf('const INK_ON_LIGHT'));
@@ -216,7 +243,7 @@ describe('the picks / full list selector', () => {
   it('sits two across on a phone rather than stacking', () => {
     // Stacked, with their subtitles, the two cards cost 128px of a 640px screen
     // before the platform tiles begin. Two across is 48px.
-    expect(sel).toMatch(/grid grid-cols-2 gap-2/);
+    expect(sel).toMatch(/grid grid-cols-2/);
     expect(sel).not.toMatch(/grid-cols-1 md:grid-cols-2/);
   });
 
@@ -225,6 +252,29 @@ describe('the picks / full list selector', () => {
     // glyph, count, rail, the blue — survives at both sizes.
     expect(sel).toMatch(/hidden md:block text-\[10\.5px\]/);
     expect(sel).toMatch(/w-\[28px\] h-\[28px\] md:w-\[34px\] md:h-\[34px\]/);
+  });
+
+  it('sinks its track below the page in both modes, not just in light', () => {
+    // The bug this replaces: light sank its track (ink at 5% on cream) and dark
+    // RAISED its own (white at 5% on #0c0814), so the two modes were mirror
+    // images pretending to be the same design. A well that bulges is not a
+    // well, and the card in it has nothing to rise out of.
+    expect(sel).toMatch(/background: dark \? "rgba\(0,0,0,\.30\)" : "rgba\(88,52,62,\.05\)"/);
+  });
+
+  it('lifts the chosen half off that track, and not with a black shadow', () => {
+    // Chosen measured 1.013:1 against its own track and was the darker of the
+    // two — "chosen" read as a faint purple patch. #241c38 in the dug well is
+    // 1.245:1, which is what light already has (1.298:1).
+    //
+    // The lift has to be something that reads on a dark ground: a hairline ring
+    // and a top highlight. 0 1px 3px rgba(20,10,14,.13) is near-black on
+    // near-black, which is why nothing appeared to be selected at all.
+    expect(sel).toMatch(/background: on \? \(dark \? "#241c38" : "#fffdfb"\)/);
+    expect(sel).toMatch(/0 0 0 1px rgba\(255,255,255,\.10\), 0 1px 0 rgba\(255,255,255,\.05\)/);
+    const darkArm = sel.slice(sel.indexOf('boxShadow: on'), sel.indexOf('boxShadow: on') + 320);
+    expect(darkArm, 'the dead black shadow must not be what dark relies on')
+      .not.toMatch(/dark\s*\?\s*`inset 3px 0 0 \$\{v\.edge\}, 0 1px 3px rgba\(20,10,14/);
   });
 
   it('names the list, and puts the count at the edge where the two align', () => {
@@ -243,6 +293,17 @@ describe('the picks / full list selector', () => {
     expect(sel).toMatch(/v\.n == null \? "—"/);
   });
 
+  it('sinks into the ground instead of floating as two cards', () => {
+    // It is chrome, and chrome should not hover. Six white cards on cream — the
+    // selector, the tiles, the search, the notice, the list — all carried the
+    // same weight, so nothing said which was the goods.
+    //
+    // The two tests below own the surfaces: this one owns the rule that only
+    // the chosen half has one at all.
+    expect(sel).toMatch(/rgba\(88,52,62,\.05\)/);
+    expect(sel).toMatch(/: "transparent",/);
+  });
+
   it('tells the two apart by colour, not only position', () => {
     // The full list takes the blue it already uses on its own view.
     expect(sel).toMatch(/#7aa2f7/);
@@ -251,5 +312,62 @@ describe('the picks / full list selector', () => {
 
   it('is not offered in bulk, which has no full list to switch to', () => {
     expect(sel).toMatch(/orderMode === "single" &&/);
+  });
+});
+
+/**
+ * The page had six white cards on cream — selector, tiles, search, notice, list
+ * — every one of them saying "separate object". When everything is a card the
+ * word stops meaning anything, and the page reads as a blur.
+ *
+ * One card now: the list. Everything else is a control, and controls sit flat.
+ */
+describe('only the list is a card', () => {
+  const full = fs.readFileSync(path.join(process.cwd(), 'components/full-list.jsx'), 'utf8');
+
+  it('drops the section header that repeated the tile and the count', () => {
+    // "Instagram · 934 services" said what the tile you just tapped said, and
+    // what the selector count said — three claims about one fact.
+    expect(src).not.toMatch(/═══ SECTION HEADER ═══/);
+    expect(src).not.toMatch(/service\{filtered\.length !== 1/);
+  });
+
+  it('keeps a fill on the search, so the field reads as a field', () => {
+    // Emptied it once. A search box with no fill is an outline on cream, and it
+    // sat directly above a notice that had also just been stripped — the flat
+    // pass took the whole band down with it. The border alone does not say
+    // "type here"; the fill does.
+    //
+    // 5% and not 9% in dark: the same value that reads as paper on cream reads
+    // as a light on #0c0814, and this slab sits directly under fifteen tiles.
+    const search = src.slice(src.indexOf('═══ SEARCH ═══'), src.indexOf('═══ SERVICE CARDS ═══'));
+    expect(search).toMatch(/background: dark \? "rgba\(255,255,255,\.05\)" : "#fff"/);
+  });
+
+  it('makes the notice a tinted band, not a card and not bare text', () => {
+    // The card was a box around one sentence. Stripping it to a hairline left
+    // the sentence with no presence at all, in a stretch of page that had also
+    // just lost the search fill — three flat things in a row. A tint says "this
+    // is a thing" without claiming to be a separate object.
+    const notice = full.slice(full.indexOf('WHAT THIS LIST IS, SAID ONCE'), full.indexOf('═══ TYPE ═══'));
+    expect(notice).toMatch(/borderLeft: `3px solid \$\{t\.accent\}`/);
+    expect(notice).toMatch(/rgba\(196,125,142,\.07\)/);
+    // A band, not a card: the tint and the left rule carry it, with no box
+    // drawn around the sentence. (The back-to-picks button inside it is its
+    // own control and keeps its own border.)
+    const band = notice.slice(notice.indexOf('<div className="flex items-center'));
+    expect(band.slice(0, band.indexOf('>')), 'still not a card').not.toMatch(/border border-solid/);
+  });
+
+  it('keeps the unchosen type tabs readable, not switched off', () => {
+    // Muted text with a muted count read as disabled, and seven of eight
+    // options looking disabled is a dead row rather than a restrained one.
+    const types = full.slice(full.indexOf('═══ TYPE ═══'), full.indexOf('desktop:hidden relative mb-3'));
+    expect(types).toMatch(/color: on \? "#fff" : t\.text,/);
+    expect(types).toMatch(/rounded-full px-\[5px\]/);
+  });
+
+  it('lifts the list, so it is the one object on the page', () => {
+    expect(full).toMatch(/boxShadow: dark \? "0 6px 22px rgba\(0,0,0,\.35\)" : "0 6px 22px rgba\(20,10,14,\.08\)"/);
   });
 });

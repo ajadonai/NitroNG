@@ -98,7 +98,9 @@ export const PLATFORMS = PLATFORM_GROUPS.flatMap(g => g.platforms);
  * Each platform's own colour, for the rail down the left of its tile.
  *
  * Thirty-six identical grey chips meant nobody recognised a logo — they read
- * thirty-six labels instead. The rail is the device the service cards already
+ * thirty-six labels instead. Briefly quieted at rest, to spend colour only on
+ * the chosen tile; that read as dull rather than calm, and seventeen logos are
+ * where this page keeps most of its life. The brands stay on. The rail is the device the service cards already
  * use for Nigerian and US, so it is a pattern this page owns rather than a new
  * one.
  *
@@ -181,6 +183,19 @@ function PlatformTile({ p, active, dark, t, onClick, compact }) {
   // The rail thins on a phone. At five columns a 3px rail on a 62px tile stops
   // reading as an accent and becomes a stripe across the corner of the tile.
   const rail = compact ? 2 : 3;
+  // The rail stands down on the tiles you are not on, in dark only.
+  //
+  // On cream a brand rail reads as a tab. On #0c0814 the same rail is an
+  // ON_DARK value — deliberately brightened so a black mark like TikTok's stays
+  // visible — and fifteen of them at full strength do not sit on the page, they
+  // emit. It also flattened the hierarchy: the tile you were on carried exactly
+  // the same rail as the fourteen you were not, and only the outer glow told
+  // them apart.
+  //
+  // 38% into the card keeps the hue, so every platform still reads as itself
+  // and the icon above it stays true brand. Only the chosen tile gets a rail at
+  // full strength, which is what gives it somewhere to stand out to.
+  const restRail = dark ? `color-mix(in srgb, ${brand} 38%, #171126)` : brand;
   return (
     <button onClick={onClick} title={tr(p.label)}
       className="no-plat-tile relative rounded-[11px] border border-solid flex flex-col items-start justify-center cursor-pointer font-[inherit] w-full min-w-0 overflow-hidden transition-[transform,box-shadow,border-color,background] duration-150 hover:-translate-y-px"
@@ -194,8 +209,8 @@ function PlatformTile({ p, active, dark, t, onClick, compact }) {
           ? (dark ? `color-mix(in srgb, ${brand} 17%, #171126)` : `color-mix(in srgb, ${brand} 10%, #fffdfb)`)
           : (dark ? "#171126" : "#fffdfb"),
         boxShadow: active
-          ? `inset ${rail}px 0 0 ${brand}, 0 3px 10px color-mix(in srgb, ${brand} 22%, transparent)`
-          : `inset ${rail}px 0 0 ${brand}, 0 1px 2px rgba(20,10,14,.05)`,
+          ? `inset ${rail}px 0 0 ${brand}, 0 3px 10px color-mix(in srgb, ${brand} ${dark ? 16 : 22}%, transparent)`
+          : `inset ${rail}px 0 0 ${restRail}, 0 1px 2px rgba(20,10,14,.05)`,
       }}>
       <span className="flex items-center justify-center [&_svg]:w-[16px] [&_svg]:h-[16px]" style={{ width: 16, height: 16, color: brand }}>{p.icon}</span>
       <span className="font-medium leading-none w-full text-left overflow-hidden text-ellipsis whitespace-nowrap"
@@ -1255,9 +1270,24 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           between 1:49 and 1:242. So the count leads at heading size and does the
           arguing, which no subtitle managed, and the full list takes the blue it
           already uses on its own view so the two are told apart by colour and
-          not only by position. */}
+          not only by position.
+
+          A raised card in a sunken well — and dark had to be given the well.
+          The structure was ported from light but the values were not: light
+          sinks its track below the page (ink at 5% on cream) and floats a white
+          card in it, 1.298:1 apart. Dark raised its track ABOVE the page (white
+          at 5% on #0c0814) and then sat a card on it that measured fractionally
+          darker still — 1.013:1, and inverted, so "chosen" read as a faint
+          purple patch. The 0 1px 3px rgba(20,10,14,.13) meant to lift it is
+          near-black on near-black and does nothing.
+
+          So dark digs a real well (black at 30%, below the page) and lifts a
+          real card into it (#241c38), which measures 1.245:1 — the same
+          separation light has. The drop shadow is replaced by what actually
+          reads on a dark ground: a hairline ring and a 1px top highlight. */}
       {orderMode === "single" && (
-        <div className="grid grid-cols-2 gap-2 mb-3.5" role="tablist" aria-label={tr("Which list")}>
+        <div className="grid grid-cols-2 gap-1 p-1 mb-3.5 rounded-[13px] border border-solid" role="tablist" aria-label={tr("Which list")}
+          style={{ background: dark ? "rgba(0,0,0,.30)" : "rgba(88,52,62,.05)", borderColor: dark ? "rgba(255,255,255,.05)" : t.cardBorder }}>
           {[
             { key: "nitro", n: platformCounts[platform] || 0, label: msg("Nitro picks"), sub: msg("Tested every week. Refill-backed."),
               ink: t.accentInk, edge: t.accent, tintBg: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)", glow: "196,125,142",
@@ -1269,11 +1299,14 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
             const on = view === v.key;
             return (
               <button key={v.key} role="tab" aria-selected={on} onClick={() => switchView(v.key)}
-                className="flex items-center gap-2 md:gap-3 py-2.5 px-2.5 md:py-3 md:px-3.5 rounded-[12px] md:rounded-[13px] border border-solid cursor-pointer font-[inherit] text-left min-w-0 transition-[box-shadow,border-color] duration-150"
+                className="flex items-center gap-2 md:gap-3 py-2 px-2 md:py-2.5 md:px-3 rounded-[10px] md:rounded-[11px] border-none cursor-pointer font-[inherit] text-left min-w-0 transition-[box-shadow,background] duration-150"
                 style={{
-                  borderColor: on ? v.edge : t.cardBorder,
-                  background: dark ? "#171126" : "#fffdfb",
-                  boxShadow: on ? `inset 3px 0 0 ${v.edge}, 0 3px 10px rgba(${v.glow},.22)` : "0 1px 2px rgba(20,10,14,.05)",
+                  background: on ? (dark ? "#241c38" : "#fffdfb") : "transparent",
+                  boxShadow: on
+                    ? (dark
+                        ? `inset 3px 0 0 ${v.edge}, 0 0 0 1px rgba(255,255,255,.10), 0 1px 0 rgba(255,255,255,.05)`
+                        : `inset 3px 0 0 ${v.edge}, 0 1px 3px rgba(20,10,14,.13)`)
+                    : "none",
                 }}>
                 <span className="shrink-0 rounded-[8px] md:rounded-[10px] flex items-center justify-center w-[28px] h-[28px] md:w-[34px] md:h-[34px]"
                   style={{ background: on ? v.tintBg : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)"), color: on ? v.ink : t.textMuted }}>{v.icon}</span>
@@ -1363,16 +1396,9 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         )}
       </div>
 
-      {/* ═══ SECTION HEADER ═══ */}
-      <div className="flex items-center gap-2 mb-3 pb-2.5 border-b border-solid" style={{ borderBottomColor: t.cardBorder }}>
-        <div className="flex items-center justify-center" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.55)" }}>{activePlat?.icon}</div>
-        <span className="text-[18px] font-semibold" style={{ color: t.text }}>{tr(activePlat?.label || "")}</span>
-        <span className="text-[13px] ml-auto" style={{ color: t.textMuted }}>{(view === "full" ? (fullCount ?? 0) : filtered.length).toLocaleString()} service{(view === "full" ? fullCount : filtered.length) !== 1 ? "s" : ""}</span>
-      </div>
-
       {/* ═══ SEARCH ═══ */}
       <div className="relative mb-3.5">
-        <input aria-label={tr("Search services")} placeholder={view === "full" ? `Search ${activePlat?.label || ""} services, or type an ID` : `Search ${activePlat?.label || ""} services...`} value={search} onChange={e => setSearch(e.target.value)} className="w-full py-[9px] px-3 pr-8 desktop:py-2.5 desktop:px-3.5 rounded-[10px] border border-solid text-[13px] desktop:text-sm font-[inherit] outline-none box-border focus:ring-2 focus:ring-[#c47d8e]/20 transition-[border-color,box-shadow] duration-200" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.09)" : "#fff", color: t.text }} />
+        <input aria-label={tr("Search services")} placeholder={view === "full" ? `Search ${activePlat?.label || ""} services, or type an ID` : `Search ${activePlat?.label || ""} services...`} value={search} onChange={e => setSearch(e.target.value)} className="w-full py-[9px] px-3 pr-8 desktop:py-2.5 desktop:px-3.5 rounded-[10px] border border-solid text-[13px] desktop:text-sm font-[inherit] outline-none box-border focus:ring-2 focus:ring-[#c47d8e]/20 transition-[border-color,box-shadow] duration-200" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.05)" : "#fff", color: t.text }} />
         {search && <button aria-label={tr("Clear search")} onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
       </div>
 
