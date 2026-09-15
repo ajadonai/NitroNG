@@ -446,7 +446,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
   const overview = type === "all" && !q && activeMine === "any";
 
   if (loading) return (
-    <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
+    <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
       {[1, 2, 3, 4, 5, 6].map(i => (
         <div key={i} className="flex items-center justify-between gap-3 py-3 px-4" style={{ borderTop: i === 1 ? "none" : `1px solid ${t.cardBorder}` }}>
           <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-4 rounded`} style={{ width: `${40 + (i % 3) * 12}%` }} />
@@ -459,7 +459,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
   if (error) return <div className="py-10 text-center text-sm" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{tr(error)}</div>;
 
   if (all.length === 0) return (
-    <div className="rounded-xl desktop:rounded-[14px] py-10 px-5 text-center" style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
+    <div className="rounded-xl desktop:rounded-[14px] py-10 px-5 text-center" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
       <div className="text-[15px] mb-1.5" style={{ color: t.textMuted }}>{tr("No full list for this platform yet.")}</div>
       <div className="text-[13px] mb-3" style={{ color: t.textMuted }}>{tr("Our picks are the whole menu here.")}</div>
       <button onClick={onBackToPicks} className="text-[13px] font-bold py-1.5 px-3.5 rounded-full border-[1.5px] border-solid cursor-pointer font-[inherit]" style={{ color: t.accentInk, borderColor: t.accent, background: t.accentLight }}>{tr("Back to Nitro picks")}</button>

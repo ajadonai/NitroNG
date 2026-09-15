@@ -1462,7 +1462,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           mine={mine} onToggleSaved={toggleSaved}
           bulk={orderMode === "bulk"} cartCounts={cartCounts} onAdd={addFullRowToCart} />
       ) : (
-      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" data-tour="no-service-list" ref={listRef} style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
+      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" data-tour="no-service-list" ref={listRef} style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
         {filtered.map((svc, i) => <ServiceCard key={svc.id} first={i === 0} cartCounts={cartCounts} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} activePromotion={activePromotion} waNumber={waSupportNumber} userEmail={user?.email} />)}
         {filtered.length === 0 && (
           <div className="py-10 text-center px-5">

@@ -671,7 +671,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
       </div>
 
       {/* Orders list */}
-      <div className="adm-card" style={{ background: t.cardBg, border: `0.5px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, opacity: fetching && !loading ? .55 : 1, transition: "opacity .2s" }}>
+      <div className="adm-card" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, opacity: fetching && !loading ? .55 : 1, transition: "opacity .2s" }}>
         {loading ? (
           <div className="px-4"><SkelList dark={dark} rows={6} bare avatar="square" rowH={62} /></div>
         ) : paged.length > 0 ? paged.map((item, idx) => {

@@ -147,14 +147,14 @@ export default function TasksPage({ dark, t }) {
         {/* Stats skeleton */}
         <div className="grid grid-cols-3 gap-2 mb-2.5">
           {[1, 2, 3].map(i => (
-            <div key={i} className="p-3 rounded-xl" style={{ background: cardBg, border: `0.5px solid ${border}` }}>
+            <div key={i} className="p-3 rounded-xl" style={{ background: cardBg, border: `1px solid ${border}` }}>
               <div className={`${sk} w-[50px] h-[8px] rounded mb-2`} />
               <div className={`${sk} w-[60px] h-[14px] rounded`} />
             </div>
           ))}
         </div>
         {/* How it works skeleton */}
-        <div className="rounded-xl py-2.5 px-3.5 mb-3.5 flex items-center gap-3" style={{ background: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.02)', border: `0.5px solid ${border}` }}>
+        <div className="rounded-xl py-2.5 px-3.5 mb-3.5 flex items-center gap-3" style={{ background: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.02)', border: `1px solid ${border}` }}>
           {[1, 2, 3].map(i => (
             <div key={i} className="flex items-center gap-1.5">
               <div className={`${sk} w-4 h-4 rounded-full shrink-0`} />
@@ -170,7 +170,7 @@ export default function TasksPage({ dark, t }) {
         {/* Task cards skeleton */}
         <div className="flex flex-col gap-2">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="rounded-2xl py-[13px] px-[14px] flex items-center gap-3" style={{ background: cardBg, border: `0.5px solid ${border}` }}>
+            <div key={i} className="rounded-2xl py-[13px] px-[14px] flex items-center gap-3" style={{ background: cardBg, border: `1px solid ${border}` }}>
               <div className={`${sk} w-9 h-9 rounded-[11px] shrink-0`} />
               <div className="flex-1 min-w-0">
                 <div className={`${sk} h-[12px] rounded mb-1.5`} style={{ width: `${45 + i * 10}%` }} />

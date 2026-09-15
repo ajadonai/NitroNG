@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
 import { useMoney, useT, useNairaAside } from "./locale";
 import FullListNotice, { fullListIsNewsTo, fullListAlreadySeen, markFullListSeen } from "./full-list-notice";
+import NavProgress, { NAV_BAR_MIN_MS } from "./nav-progress";
 import { msg } from "../lib/i18n";
 import { DEFAULT_COUNTRY, validatePhone } from "../lib/phone-countries";
 import { PhoneField } from "./phone-field";
@@ -489,6 +490,26 @@ function DashboardInner({ initialData }) {
   // Dismissed this session. The stored flag answers for every later visit; this
   // only stops the card reappearing the moment it is closed.
   const [noticeClosed, setNoticeClosed] = useState(false);
+
+  /* Is a page change still settling?
+     True the moment `active` changes, false once the new page has had two
+     frames to paint — one for React to commit, one for the browser to draw —
+     and never for less than NAV_BAR_MIN_MS after that, so a bar that appears
+     at all stays long enough to be read as progress rather than a flicker.
+     NavProgress itself draws nothing until the navigation has outlived its own
+     delay, so the common case — an already-loaded page, one frame — shows no
+     bar at all. */
+  const [navBusy, setNavBusy] = useState(false);
+  const navFirst = useRef(true);
+  useEffect(() => {
+    if (navFirst.current) { navFirst.current = false; return undefined; }
+    setNavBusy(true);
+    let raf2, timer;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => { timer = setTimeout(() => setNavBusy(false), NAV_BAR_MIN_MS); });
+    });
+    return () => { cancelAnimationFrame(raf1); if (raf2) cancelAnimationFrame(raf2); clearTimeout(timer); };
+  }, [active]);
   // Assume it HAS been seen until the browser says otherwise.
   //
   // localStorage does not exist on the server, so reading it during render made
@@ -1303,7 +1324,7 @@ function DashboardInner({ initialData }) {
     return (
       <div className="dash-root bg-t-bg">
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes skeletonShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}`}</style>
-        <nav className="dash-nav bg-t-sidebar-bg border-b-[0.5px] border-t-sidebar-border">
+        <nav className="dash-nav bg-t-sidebar-bg">
           <div className="dash-nav-left">
             <div className="dash-logo-static">
               <div className="nitro-mark h-7 px-3 flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></div>
@@ -1315,7 +1336,7 @@ function DashboardInner({ initialData }) {
           </div>
         </nav>
         <div className="dash-body">
-          <aside className="dash-left bg-t-sidebar-bg border-r-[0.5px] border-t-sidebar-border">
+          <aside className="dash-left bg-t-sidebar-bg border-r border-t-sidebar-border">
             {[1,2,3,4,5,6,7,8].map(i => <div key={i} className={`${skBone} h-9 rounded-xl mb-1`} />)}
           </aside>
           <main className="dash-main bg-t-bg">
@@ -1346,7 +1367,7 @@ function DashboardInner({ initialData }) {
               ))}
             </div>
           </main>
-          <div className="dash-right bg-t-sidebar-bg border-l-[0.5px] border-t-sidebar-border">
+          <div className="dash-right bg-t-sidebar-bg border-l border-t-sidebar-border">
             <div className={`${skBone} w-[100px] h-2 mb-3.5`} />
             {[1,2,3].map(i => <div key={i} className={`${skBone} h-[50px] rounded-[10px] mb-1.5`} />)}
             <div className="h-0.5 my-3 bg-t-sidebar-border" />
@@ -1412,9 +1433,10 @@ function DashboardInner({ initialData }) {
     <ToastProvider dark={dark}>
     <ConfirmProvider dark={dark}>
     <div className="dash-root user-dash bg-t-bg">
+      <NavProgress busy={navBusy} />
 
       {/* ═══ TOP NAV ═══ */}
-      <nav className="dash-nav" style={{ background: dark ? "rgba(14,9,22,.9)" : "rgba(248,245,241,.92)", borderBottom: `0.5px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
+      <nav className="dash-nav" style={{ background: dark ? "rgba(14,9,22,.9)" : "rgba(248,245,241,.92)", borderBottom: `1px solid ${dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)"}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
         <div className="dash-nav-left">
           {/* Mobile/tablet: hamburger + logo as one button to toggle sidebar */}
           <button className="dash-menu-btn" onClick={() => setLeftOpen(!leftOpen)} aria-label={leftOpen ? tr("Close menu") : tr("Open menu")}>
@@ -1491,7 +1513,7 @@ function DashboardInner({ initialData }) {
       <div className="dash-body">
 
         {/* ── LEFT SIDEBAR ── */}
-        <aside className="dash-left bg-t-sidebar-bg border-r-[0.5px] border-t-sidebar-border" style={{ left: leftOpen ? 0 : undefined }}>
+        <aside className="dash-left bg-t-sidebar-bg border-r border-t-sidebar-border" style={{ left: leftOpen ? 0 : undefined }}>
 
             {/* ── Nav items — grouped on desktop, flat on mobile ── */}
             <>
@@ -1607,7 +1629,7 @@ function DashboardInner({ initialData }) {
         </main>
 
         {/* ── RIGHT SIDEBAR ── */}
-        <aside className="dash-right bg-t-sidebar-bg border-l-[0.5px] border-t-sidebar-border">
+        <aside className="dash-right bg-t-sidebar-bg border-l border-t-sidebar-border">
           {isServices ? (
             <ServicesSidebar dark={dark} t={t} />
           ) : isOrders ? (

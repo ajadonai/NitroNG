@@ -165,7 +165,7 @@ export function Field({ label, id, hint, error, dark, className = "", ...inputPr
         aria-invalid={error ? true : undefined}
         className={`w-full py-2.5 px-3.5 rounded-lg text-[15px] box-border text-t-text ${FOCUS_RING} ${className}`}
         style={{
-          border: `0.5px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"}`,
+          border: `1px solid ${dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.18)"}`,
           background: dark ? "rgba(255,255,255,.12)" : "#fff",
         }}
         {...inputProps}

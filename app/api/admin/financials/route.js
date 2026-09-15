@@ -31,7 +31,12 @@ function n(kobo) {
 function applyOrderFilters(where, { platform, tier, provider }) {
   if (platform !== 'all') where.service = { ...(where.service || {}), category: platform };
   if (provider !== 'all') where.service = { ...(where.service || {}), provider };
-  if (tier !== 'all') where.tier = { is: { tier: tier.charAt(0).toUpperCase() + tier.slice(1) } };
+  // "fulllist" is a filter FOR the tier-less rows, which the relation filter
+  // below can never express — it matches on a tier that is not there. Keyed on
+  // the snapshot, so an orphaned Standard order stays under Standard rather
+  // than falling in here.
+  if (tier === 'fulllist') where.AND = [...(where.AND || []), { tierId: null }, { tierNameAtPurchase: null }];
+  else if (tier !== 'all') where.tier = { is: { tier: tier.charAt(0).toUpperCase() + tier.slice(1) } };
   return where;
 }
 
@@ -351,7 +356,7 @@ export async function GET(req) {
       // By tier (can't groupBy relation field, so fetch and aggregate in JS)
       prisma.order.findMany({
         where: orderWhere,
-        select: { charge: true, cost: true, quantity: true, remains: true, status: true, tier: { select: { tier: true } } },
+        select: { charge: true, cost: true, quantity: true, remains: true, status: true, tierNameAtPurchase: true, tier: { select: { tier: true } } },
       }),
       // Top spenders
       prisma.order.groupBy({
@@ -422,7 +427,19 @@ export async function GET(req) {
     // By tier — aggregate from raw orders
     const tierMap = {};
     ordersByTier.forEach(o => {
-      const name = o.tier?.tier || "Unknown";
+      // "Unknown" used to mean two unrelated things and hid the larger one.
+      //
+      // A live tier names itself. Without one there are two cases, and they are
+      // not the same: an order placed off the FULL LIST never had a tier — that
+      // is what the list is — while an ORPHANED order had one that has since
+      // been deleted, and its name is still stamped on the row. Bucketing both
+      // as "Unknown" put ₦355k of ordinary Standard and Budget revenue (90 days,
+      // 130 orders) in a bin labelled as if nobody knew what it was, next to a
+      // trickle of genuine full-list orders.
+      //
+      // The snapshot is the authority here rather than tierId, which goes null
+      // in both cases and so cannot tell them apart.
+      const name = o.tier?.tier || o.tierNameAtPurchase || "Full list";
       if (!tierMap[name]) tierMap[name] = { name, revenue: 0, cost: 0, orders: 0 };
       const eff = effectiveAmounts(o);
       tierMap[name].orders++;
