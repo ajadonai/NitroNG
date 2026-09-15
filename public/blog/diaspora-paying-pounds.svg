@@ -1,0 +1,19 @@
+<svg width="1200" height="640" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="640" fill="#1a0f14"/>
+<circle cx="1000" cy="130" r="350" fill="#012169" opacity="0.06"/>
+<circle cx="1060" cy="210" r="210" fill="#012169" opacity="0.04"/>
+<polygon points="0,640 0,530 260,640" fill="#c47d8e" opacity="0.06"/>
+<rect x="740" y="110" width="360" height="270" rx="24" fill="rgba(1,33,105,0.03)" stroke="rgba(1,33,105,0.08)" stroke-width="1.5"/>
+<circle cx="850" cy="220" r="62" fill="rgba(1,33,105,0.1)" stroke="rgba(1,33,105,0.2)" stroke-width="1.5"/>
+<text x="850" y="242" font-family="Georgia, serif" font-size="52" fill="rgba(1,33,105,0.6)" text-anchor="middle" font-weight="700">£</text>
+<circle cx="990" cy="220" r="62" fill="rgba(1,33,105,0.06)" stroke="rgba(1,33,105,0.12)" stroke-width="1.5"/>
+<text x="990" y="242" font-family="Georgia, serif" font-size="52" fill="rgba(1,33,105,0.3)" text-anchor="middle" font-weight="700">₦</text>
+<path d="M898,200 L942,200 M930,190 L942,200 L930,210" stroke="rgba(1,33,105,0.35)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M942,246 L898,246 M910,236 L898,246 L910,256" stroke="rgba(1,33,105,0.18)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="920" y="340" font-family="system-ui" font-size="13" fill="rgba(1,33,105,0.3)" text-anchor="middle">no dollar card needed</text>
+<rect x="72" y="72" width="96" height="96" rx="24" fill="#012169"/>
+<g transform="translate(96,96) scale(2)" fill="#fff"><path d="M21 15.5l-9-4V5a1.6 1.6 0 10-3.2 0v6.5l-9 4V18l9-2.6V20l-2.4 1.6V23l4-1.2 4 1.2v-1.4L12 20v-4.6l9 2.6z"/></g>
+<text x="80" y="440" font-family="Georgia, serif" font-size="56" fill="white" font-weight="700" letter-spacing="-1">Paying from</text>
+<text x="80" y="516" font-family="Georgia, serif" font-size="56" fill="#6E8FD6" font-weight="700" letter-spacing="-1">abroad</text>
+<text x="80" y="590" font-family="system-ui" font-size="22" fill="rgba(255,255,255,0.3)" letter-spacing="6">NITRO BLOG</text>
+</svg>

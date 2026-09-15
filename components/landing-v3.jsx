@@ -63,7 +63,15 @@ const LV3_CSS = `
 @keyframes lv3aur{from{transform:translate(0,0) scale(1)}to{transform:translate(60px,30px) scale(1.12)}}
 @keyframes lv3aur2{from{transform:translate(0,0) scale(1)}to{transform:translate(-50px,-40px) scale(1.08)}}
 .lv3-grain-h{position:absolute;inset:0;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-.lv3-roller{display:inline-grid;text-align:left;vertical-align:top;height:1.02em;overflow:hidden}
+/* The window has to clear the deepest ink in the line, not the x-height.
+   At 1.02em it cut the descender off "page" and the bottom off both brackets,
+   because overflow:hidden is what hides the word sliding in and it was hiding
+   part of the word that had arrived. The extra height is added below the text —
+   the word sits at the top of its grid cell — so nothing moves up, and the
+   negative margin gives the height back to the line box so "deserves a bigger
+   audience." stays exactly where it was. Both values are in em, so they hold
+   through the clamp() that sizes this heading. */
+.lv3-roller{display:inline-grid;text-align:left;vertical-align:top;height:1.34em;margin-bottom:-.32em;overflow:hidden}
 .lv3-roller>span{grid-area:1/1;display:block;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;letter-spacing:-.5px;opacity:0;transform:translateY(105%);transition:transform .55s cubic-bezier(.2,.7,.2,1),opacity .4s;white-space:nowrap}
 .lv3-roller>span.on{opacity:1;transform:translateY(0)}
 .lv3-roller>span.out{opacity:0;transform:translateY(-105%)}
