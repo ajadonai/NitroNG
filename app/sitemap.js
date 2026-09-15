@@ -1,16 +1,4 @@
-const PLATFORM_SLUGS = {
-  Instagram: 'instagram',
-  tiktok: 'tiktok',
-  TikTok: 'tiktok',
-  YouTube: 'youtube',
-  'Twitter/X': 'x',
-  Facebook: 'facebook',
-  Telegram: 'telegram',
-  Snapchat: 'snapchat',
-  LinkedIn: 'linkedin',
-  Twitch: 'twitch',
-  Discord: 'discord',
-};
+import { PLATFORM_SLUGS } from '@/lib/platform-pages';
 
 export default async function sitemap() {
   const base = 'https://nitro.ng';
@@ -35,6 +23,15 @@ export default async function sitemap() {
     { url: `${base}/contact`, lastModified: '2025-06-15', changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/pit`, lastModified: '2025-06-15', changeFrequency: 'monthly', priority: 0.7 },
     { url: `${base}/resellers`, lastModified: '2026-08-24', changeFrequency: 'monthly', priority: 0.7 },
+    // Public pages that were never listed. /resellers/docs sets robots index
+    // true and its own canonical, so it was always meant to be found; /audit is
+    // a free tool, which is the kind of page other sites link to unprompted;
+    // /changelog changes weekly and is the only page here that proves the site
+    // is alive. /live is still missing on purpose — it exports no metadata at
+    // all, and listing an untitled page spends crawl budget to rank nothing.
+    { url: `${base}/resellers/docs`, lastModified: '2026-08-24', changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${base}/audit`, lastModified: '2026-09-09', changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${base}/changelog`, lastModified: '2026-09-09', changeFrequency: 'weekly', priority: 0.5 },
     { url: `${base}/lagos`, lastModified: '2025-06-15', changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/reviews`, lastModified: '2025-07-01', changeFrequency: 'monthly', priority: 0.7 },
     { url: `${base}/help`, lastModified: '2025-06-15', changeFrequency: 'monthly', priority: 0.5 },

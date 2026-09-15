@@ -19,7 +19,10 @@ export default function ResellersPage() {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://nitro.ng' },
-      { '@type': 'ListItem', position: 2, name: 'Resellers' },
+      // The last item may omit `item` per the spec, and Google accepts it — but
+      // it also renders the trail from what it is given, so naming the URL
+      // removes the one thing a validator can be uncertain about.
+      { '@type': 'ListItem', position: 2, name: 'Resellers', item: 'https://nitro.ng/resellers' },
     ],
   };
   return (
