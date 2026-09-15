@@ -35,6 +35,17 @@ const pct = (a, b) => b === 0 ? (a > 0 ? '🆕' : '—') : `${a >= b ? '+' : ''}
  * is margin on revenue, and it is the one every other surface quotes.
  */
 const margin = (rev, cost) => rev > 0 ? `${Math.round(((rev - cost) / rev) * 100)}%` : '—';
+/**
+ * Markup: what the profit is worth against what we paid for it. Margin answers
+ * "how much of the customer's naira do we keep"; this answers "how much did we
+ * make on the money we put in", which is the sense "percentage profit" usually
+ * carries. They are both right and they are far apart — 223% against 69% on the
+ * same day — so both are printed and both are labelled. The pairing is also
+ * what stops the old bug recurring: the reason a day once read 266% beside a
+ * month at 63% was that one was markup and one was margin, compared as if they
+ * were the same measure.
+ */
+const markup = (rev, cost) => cost > 0 ? `${Math.round(((rev - cost) / cost) * 100)}%` : '—';
 
 // ── /stats — full snapshot ──────────────────────────────
 async function handleStats(chatId, threadId) {
@@ -77,14 +88,14 @@ async function handleStats(chatId, threadId) {
     '',
     '<b>Today</b>',
     `  Revenue: <b>${naira(Math.round(todayRev) * 100)}</b>`,
-    `  Profit: <b>${naira(Math.round(todayRev - todayCost) * 100)}</b> (${margin(todayRev, todayCost)} margin)`,
+    `  Profit: <b>${naira(Math.round(todayRev - todayCost) * 100)}</b> (${margin(todayRev, todayCost)} margin · ${markup(todayRev, todayCost)} on cost)`,
     `  Money in: <b>${naira(Math.round(todayDep) * 100)}</b> (${todayDepositsAgg._count} deposits)`,
     `  Orders: <b>${todayOrderCount}</b>  ·  New users: <b>${todayUsers}</b>`,
     '',
     '<b>This month</b>',
     `  Revenue: <b>${naira(Math.round(revNet.net) * 100)}</b>`,
     `  Cost: <b>${naira(Math.round(revNet.cost + revNet.costWasted) * 100)}</b>`,
-    `  Profit: <b>${naira(Math.round(revNet.net - revNet.cost - revNet.costWasted) * 100)}</b> (${Math.round(revNet.netMargin)}% margin)`,
+    `  Profit: <b>${naira(Math.round(revNet.net - revNet.cost - revNet.costWasted) * 100)}</b> (${Math.round(revNet.netMargin)}% margin · ${markup(revNet.net, revNet.cost + revNet.costWasted)} on cost)`,
     `  Money in: <b>${naira(Math.round(monthDep) * 100)}</b> (${monthDepositsAgg._count} deposits)`,
     `  Orders: <b>${monthOrderCount.toLocaleString()}</b>  ·  New users: <b>${monthUsers}</b>`,
     '',
@@ -227,16 +238,16 @@ async function handleProfit(chatId, threadId) {
     '',
     '<b>Today</b>',
     `  Revenue: ${naira(Math.round(tRev) * 100)}  ·  Cost: ${naira(Math.round(tCost) * 100)}`,
-    `  Profit: <b>${naira(Math.round(tRev - tCost) * 100)}</b> (${margin(tRev, tCost)} margin)`,
+    `  Profit: <b>${naira(Math.round(tRev - tCost) * 100)}</b> (${margin(tRev, tCost)} margin · ${markup(tRev, tCost)} on cost)`,
     `  ${pct(tRev - tCost, yRev - yCost)} vs yesterday`,
     '',
     '<b>This month</b>',
     `  Revenue: ${naira(Math.round(mRev) * 100)}  ·  Cost: ${naira(Math.round(mCost) * 100)}`,
-    `  Profit: <b>${naira(Math.round(mRev - mCost) * 100)}</b> (${margin(mRev, mCost)} margin)`,
+    `  Profit: <b>${naira(Math.round(mRev - mCost) * 100)}</b> (${margin(mRev, mCost)} margin · ${markup(mRev, mCost)} on cost)`,
     '',
     '<b>All time</b>',
     `  Revenue: ${naira(Math.round(aRev) * 100)}  ·  Cost: ${naira(Math.round(aCost) * 100)}`,
-    `  Profit: <b>${naira(Math.round(aRev - aCost) * 100)}</b> (${margin(aRev, aCost)} margin)`,
+    `  Profit: <b>${naira(Math.round(aRev - aCost) * 100)}</b> (${margin(aRev, aCost)} margin · ${markup(aRev, aCost)} on cost)`,
     '',
     '<b>Cash flow (month)</b>',
     `  Money in: ${naira(Math.round(monthDep) * 100)}`,
