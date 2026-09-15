@@ -452,6 +452,43 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 
 /* Avatar */
 .dash-avatar-btn { background: none; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; width: 34px; height: 34px; padding: 2px; border-radius: 999px; }
+/* The name and the chevron appear only where there is genuinely room for them.
+   The gap on the button was already here waiting for a label.
+
+   1400px, not 1200. The nav's right cluster carries five controls — currency,
+   language, the balance pill, the bell and this — and at 1200 with all of them
+   up there is nothing left: the button was squeezed until "Jonathan" rendered
+   as "Jo", which is worse than no name at all.
+
+   flex-shrink: 0 is the other half. A flex row shrinks its children before it
+   overflows, and this button was the one giving way, so the ellipsis was not a
+   long name being truncated — it was a short one being crushed. It holds its
+   width now and simply is not drawn below the breakpoint. */
+.dash-av-name, .dash-av-chev { display: none; }
+.dash-avatar-btn { flex-shrink: 0; }
+@media (min-width: 1400px) {
+  /* 6px on the left, so the face is seated INSIDE the border rather than
+     filling the cap.
+     2px made the avatar concentric with the 17px cap, which reads as a photo
+     pressed into a ring — the two circles share a centre and the gap between
+     them is uniform and thin. Pushing it in gives the button a left margin the
+     way a chip has one, and the cap stops being a frame for the avatar and
+     starts being the edge of a control that contains it. */
+  /* 10px each side, and the avatar comes down to 26 to make room for it.
+     The gap could only ever be so wide while the avatar was 30px in a 34px
+     pill — 6px on the left still left it 2px from the top and bottom, so it
+     read as a large face shoved right rather than a small one sitting inside
+     a control. Shrinking it gives 4px above and below to go with the 10px
+     beside, and the spacing finally reads as spacing rather than as an offset.
+     34px stays: it is the height the bell and the balance pill share. */
+  .dash-avatar-btn { width: auto; padding: 4px 10px; max-width: 190px; }
+  /* Its own colour, from the token. It had none and inherited — and what it
+     inherited from is not theme-aware, so the name came out black on the dark
+     nav. A label on a themed control has to name its own ink. */
+  .dash-av-name { display: block; font-size: 13px; font-weight: 600; max-width: 116px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--t-text); }
+  .dash-av-chev { display: block; width: 13px; height: 13px; flex-shrink: 0; color: var(--t-text-muted); }
+}
 .dash-avatar { width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; }
 
 /* Left sidebar */

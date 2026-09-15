@@ -1484,7 +1484,26 @@ function DashboardInner({ initialData }) {
             <button
               onClick={() => { if (window.matchMedia("(min-width: 1200px)").matches) setAvOpen(o => !o); else { setActive("settings"); setLeftOpen(false); } }}
               className="dash-avatar-btn" aria-label={tr("Account menu")} aria-haspopup="menu" aria-expanded={avOpen}>
-              <Avatar size={30} />
+              {/* 26, not 30. At 30 there was 2px above and below it inside a
+                  34px button, so no amount of side padding made it look seated
+                  — it just looked like a big face pushed off-centre. */}
+              <Avatar size={26} />
+              {/* Avatar, then name, then chevron. Tried it the other way round
+                  and Trip called it back — the face leads.
+                  The first name only, and only on a desktop.
+                  Full names run long here — "Oluwaseun Adebayo-Williams" — and
+                  this button sits to the right of a balance pill and a bell, so
+                  a full name would truncate on the customers who have one and
+                  leave the button a different width for everybody. The first
+                  name almost never truncates, and nothing is lost by shortening
+                  it: the menu below still carries the full name and the email.
+                  Below 1200px the button does not open a menu at all — it goes
+                  straight to Settings — and the nav has no room, so it stays
+                  the bare circle it is today. */}
+              <span className="dash-av-name">{(user?.name || "").trim().split(/\s+/)[0]}</span>
+              {/* It is a dropdown. A face and a name with nothing after them
+                  read as a link to a profile rather than a menu. */}
+              <svg className="dash-av-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             {avOpen && (
               <div role="menu" aria-label={tr("Account")} className="dash-av-menu" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
