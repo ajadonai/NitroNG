@@ -515,7 +515,11 @@ function normalizePriceUpdates(rows = []) {
   const updates = new Map();
   for (const row of rows) {
     const price = Number(row.currentPrice ?? (row.serverPrice != null ? row.serverPrice / 100 : 0));
-    if (row.tierId && Number.isFinite(price) && price > 0) updates.set(row.tierId, price);
+    if (!Number.isFinite(price) || price <= 0) continue;
+    // Namespaced, because a tier id and a public catalogue number are different
+    // counters and would otherwise collide in the same Map.
+    if (row.tierId) updates.set(`t${row.tierId}`, price);
+    else if (row.catalogueId != null) updates.set(`c${row.catalogueId}`, price);
   }
   return updates;
 }
@@ -524,7 +528,8 @@ function applyPriceUpdatesToCartRows(rows, priceRows = [], menuData = null) {
   const serverUpdates = normalizePriceUpdates(priceRows);
   let changed = false;
   const next = rows.map(row => {
-    const nextPrice = serverUpdates.get(row.tierId) || getRowPricePer1k(row, menuData);
+    const key = row.tierId ? `t${row.tierId}` : row.catalogueId != null ? `c${row.catalogueId}` : null;
+    const nextPrice = (key && serverUpdates.get(key)) || getRowPricePer1k(row, menuData);
     if (nextPrice > 0 && row.storedPricePer1k !== nextPrice) {
       changed = true;
       return { ...row, storedPricePer1k: nextPrice };
@@ -542,7 +547,10 @@ function applyPriceUpdatesToMenu(menuData, priceRows = []) {
   const groups = menuData.groups.map(group => {
     let groupChanged = false;
     const tiers = group.tiers.map(tier => {
-      const nextPrice = serverUpdates.get(tier.id);
+      // The menu holds curated tiers only, so it asks for the tier key. The
+      // full list is not in menuData at all — its rows keep the price they were
+      // added with until the server says otherwise.
+      const nextPrice = serverUpdates.get(`t${tier.id}`);
       if (nextPrice > 0 && tier.price !== nextPrice) {
         changed = true;
         groupChanged = true;
@@ -953,6 +961,22 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     setSelTier(tier); setQty(tier.min || 100); setOrderModal(true);
   };
 
+  /* What every add does once the row is in: nudge the cart bar so the eye
+     follows it, and raise one toast for a burst rather than one per tap. */
+  const afterAdd = useCallback((what) => {
+    if (cartBarRef.current) {
+      cartBarRef.current.classList.remove("bulk-pulse"); void cartBarRef.current.offsetWidth; cartBarRef.current.classList.add("bulk-pulse");
+    }
+    const c = toastCoalesceRef.current;
+    c.count++;
+    clearTimeout(c.timer);
+    c.timer = setTimeout(() => {
+      if (c.count === 1) toast.success(tr("Added to cart"), what);
+      else toast.success(tr("Added to cart"), `${c.count} ${tr("orders added")}`);
+      c.count = 0;
+    }, 800);
+  }, [toast, tr]);
+
   const addToCart = useCallback((tier) => {
     if (cartRows.length >= 50) { toast.info(tr("Cart full"), tr("50-row limit reached")); return; }
     const svc = services.find(s => s.tiers.some(t2 => t2.id === tier.id));
@@ -975,21 +999,40 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       expanded: true,
     }]);
 
-    // Pulse cart bar
-    if (cartBarRef.current) {
-      cartBarRef.current.classList.remove("bulk-pulse"); void cartBarRef.current.offsetWidth; cartBarRef.current.classList.add("bulk-pulse");
-    }
+    afterAdd(`${svcName} (${tier.tier})`);
+  }, [cartRows.length, services, platform, toast, afterAdd]);
 
-    // Debounced toast
-    const c = toastCoalesceRef.current;
-    c.count++;
-    clearTimeout(c.timer);
-    c.timer = setTimeout(() => {
-      if (c.count === 1) toast.success(tr("Added to cart"), `${svcName} (${tier.tier})`);
-      else toast.success(tr("Added to cart"), `${c.count} ${tr("orders added")}`);
-      c.count = 0;
-    }, 800);
-  }, [cartRows.length, services, platform, toast]);
+  /* A full-list row, added to the same cart.
+     It carries catalogueId where a picks row carries tierId — the public number
+     on the row, which is what the bulk endpoint resolves, the same way the
+     single-order route has always resolved it. tier stays null because that is
+     what this list is, and the cart reads that null to badge the row "Full
+     list" instead of Budget/Standard/Premium.
+
+     No Nitro minimum applies: that floor is a property of a curated tier's
+     group, and this row has no group, so the provider's own min is the only
+     one there is. The server agrees — calculateCreateOrderPricing has branched
+     that way for single orders all along. */
+  const addFullRowToCart = useCallback((row) => {
+    if (cartRows.length >= 50) { toast.info(tr("Cart full"), tr("50-row limit reached")); return; }
+    const at = (row.apiType || "").toLowerCase();
+    const label = String(row.label || "");
+    const needsReview = /review/i.test(label) && !/review like/i.test(label);
+    setCartRows(prev => [...prev, {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      svcId: `full:${row.id}`, tierId: null, tier: null, catalogueId: row.id,
+      name: label, platform, link: "", qty: Math.max(row.min, Math.min(1000, row.max)),
+      min: row.min, max: row.max,
+      storedPricePer1k: row.price,
+      needsComments: at.includes("custom comment") || at.includes("comment replies") || needsReview,
+      needsMentions: at.includes("mention"),
+      needsPoll: at === "poll",
+      needsKeywords: at === "seo",
+      comments: "", commentsOpen: false,
+      expanded: true,
+    }]);
+    afterAdd(label);
+  }, [cartRows.length, platform, toast, tr, afterAdd]);
 
   // Tour integration — listen for tour events to auto-select service/tier
   useEffect(() => {
@@ -1143,7 +1186,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         body: JSON.stringify({
           idempotencyKey,
           orders: cartRows.map(r => ({
-            tierId: r.tierId, link: `https://${r.link.trim()}`, quantity: r.qty,
+            ...(r.tierId ? { tierId: r.tierId } : { catalogueId: r.catalogueId }),
+            link: `https://${r.link.trim()}`, quantity: r.qty,
             ...(r.comments.trim() ? { comments: r.comments.trim() } : {}),
             ...(r.storedPricePer1k ? { expectedPrice: r.storedPricePer1k } : {}),
           })),
@@ -1206,23 +1250,31 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
   const visiblePlatforms = groupPlatforms.filter(p => (platformCounts[p.id] || 0) > 0);
 
   return (
-    <div ref={mainRef} style={{ paddingBottom: orderMode === "bulk" && cartRows.length > 0 ? 82 : 0 }}>
+    <div ref={mainRef} style={{ paddingBottom: orderMode === "bulk" ? 82 : 0 }}>
       <div className="pb-2 desktop:pb-3.5">
         <div className="flex items-center justify-between gap-3">
           <div className="text-lg desktop:text-[22px] font-semibold" style={{ color: t.text }}>{tr("New Order")}</div>
+          {/* Switching mode no longer has to leave the full list. It did between
+              v2.5.36 and here, because the cart could not hold a tier-less row
+              and a visible full list in bulk was a page that froze on the first
+              tap. The cart holds one now, so both modes carry both lists.
+
+              The stuck state is still fenced, one door further in: the row
+              itself is not a tap target in bulk, only its + is. */}
           <div data-tour="no-mode-toggle"><SegPill value={orderMode} options={["single", "bulk"]} onChange={v => { if (!bulkLoading) setOrderMode(v); }} label={tr("Order mode")} dark={dark} t={t} /></div>
         </div>
         <div className="text-sm desktop:text-[15px] max-md:text-xs mt-0.5" style={{ color: t.textMuted }}>{menuData ? `${allGroups.length} services across ${Object.keys(platformCounts).length} platforms` : "Browse and order social media services"}</div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
 
-      {/* Bulk mode banner */}
-      {orderMode === "bulk" && (
-        <div className="flex items-center gap-2 mb-3 px-0.5 text-[12px]" style={{ color: t.textMuted }}>
-          <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: t.accent }} />
-          <span className="font-semibold" style={{ color: t.text }}>{tr("Bulk mode")}</span><span className="opacity-50">·</span>{tr("tap a tier to add it to your cart")}
-        </div>
-      )}
+      {/* The bulk-mode banner is gone. It said "Bulk mode · tap a tier to add it
+          to your cart" in a bare line above the tabs, and every word of it was
+          already on screen: the ORDER MODE toggle shows which mode you are in,
+          and each service card labels its own tier row "Tier · tap to add" —
+          at the point of action, where an instruction is worth something.
+
+          It was also permanent. It went on explaining how to add a first item
+          to somebody looking at thirteen of them. */}
 
       {/* Mobile/tablet guide */}
       <div className="hidden max-desktop:block">
@@ -1285,7 +1337,7 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
           real card into it (#241c38), which measures 1.245:1 — the same
           separation light has. The drop shadow is replaced by what actually
           reads on a dark ground: a hairline ring and a 1px top highlight. */}
-      {orderMode === "single" && (
+      {(
         <div className="grid grid-cols-2 gap-1 p-1 mb-3.5 rounded-[13px] border border-solid" role="tablist" aria-label={tr("Which list")}
           style={{ background: dark ? "rgba(0,0,0,.30)" : "rgba(88,52,62,.05)", borderColor: dark ? "rgba(255,255,255,.05)" : t.cardBorder }}>
           {[
@@ -1407,7 +1459,8 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
         <FullList platform={platform} platformLabel={activePlat?.label || ""} search={search} dark={dark} t={t}
           onPick={pickFullRow} selectedId={fullRow?.id} onBackToPicks={() => switchView("nitro")}
           cheapestPick={cheapestPick} waNumber={waSupportNumber} userEmail={user?.email}
-          mine={mine} onToggleSaved={toggleSaved} />
+          mine={mine} onToggleSaved={toggleSaved}
+          bulk={orderMode === "bulk"} cartCounts={cartCounts} onAdd={addFullRowToCart} />
       ) : (
       <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" data-tour="no-service-list" ref={listRef} style={{ background: t.cardBg, border: `0.5px solid ${t.cardBorder}` }}>
         {filtered.map((svc, i) => <ServiceCard key={svc.id} first={i === 0} cartCounts={cartCounts} svc={svc} selSvc={selSvc} selTier={selTier} onPickService={pickService} onPickTier={pickTier} dark={dark} t={t} orderMode={orderMode} activePromotion={activePromotion} waNumber={waSupportNumber} userEmail={user?.email} />)}
@@ -1701,7 +1754,16 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
       )}
 
       {/* ═══ BULK CART BAR + EXPANDED ═══ */}
-      {orderMode === "bulk" && cartBounds && cartRows.length > 0 && <BulkCartBar ref={cartBarRef} rows={cartRows} dark={dark} t={t} menuData={menuData} bounds={cartBounds} cartOpen={cartOpen} onClick={() => setCartOpen(true)} />}
+      {/* The bar is up for the whole of bulk mode, not only once something is
+          in it. It had a finished empty state — cart icon, "Your cart", and
+          how to add one — that nothing ever rendered, while a line at the top
+          of the page said the same thing in worse words and never went away.
+
+          So the instruction sits on the object it describes, at the bottom
+          where the cart actually is, and it stops being an instruction by
+          becoming the cart. The hint follows the list you are on, because
+          "tap a tier" is no help on a list that has none. */}
+      {orderMode === "bulk" && cartBounds && <BulkCartBar ref={cartBarRef} rows={cartRows} dark={dark} t={t} menuData={menuData} bounds={cartBounds} cartOpen={cartOpen} onClick={() => setCartOpen(true)} hint={view === "full" ? msg("Tap + on any service to add it") : msg("Tap a tier to add an order")} />}
       {orderMode === "bulk" && cartOpen && cartBounds && <BulkCartExpanded rows={cartRows} setRows={setCartRows} dark={dark} t={t} menuData={menuData} bounds={cartBounds} onClose={() => setCartOpen(false)} onClear={() => { setCartRows([]); setCartOpen(false); }} onPlace={submitBulk} loading={bulkLoading} rowsScrollRef={cartRowsRef} bulkError={bulkError} setBulkError={setBulkError} bulkSuccess={bulkSuccess} setBulkSuccess={setBulkSuccess} onViewOrders={onViewOrders} onTopUp={onTopUp} waChannelUrl={waChannelUrl} />}
       </>}
     </div>
@@ -1788,7 +1850,7 @@ function getRowPrice(row, menuData) {
   return Math.ceil(Math.round(pricePer1k * 100) * row.qty / 100_000);
 }
 
-const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, bounds, cartOpen, onClick }, ref) {
+const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, bounds, cartOpen, onClick, hint }, ref) {
   const tr = useT();
   const money = useMoney();
   const currency = useLocale()?.currency ?? "NGN";
@@ -1806,7 +1868,7 @@ const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, b
         <div className="relative w-[42px] h-[42px] max-md:w-[40px] max-md:h-[40px] rounded-full flex items-center justify-center shrink-0" style={{ background: t.accent, color: "#fff" }}><CartIcon />{!empty && <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10.5px] font-bold flex items-center justify-center" style={{ background: dark ? "#f4f1ed" : "#1c1b19", color: dark ? "#0b0e1a" : "#fff", border: `2px solid ${dark ? "#1a1329" : "#fff"}` }}>{rows.length}</span>}</div>
         <div className="flex flex-col gap-px">
           <span className="text-[13px] font-semibold leading-tight" style={{ color: empty ? t.textMuted : t.text }}>{empty ? "Your cart" : `${rows.length} ${rows.length === 1 ? "order" : "orders"}`}</span>
-          <span className="text-[11px] leading-tight" style={{ color: t.textMuted }}>{empty ? tr("Tap a tier to add an order") : tr("in cart")}</span>
+          <span className="text-[11px] leading-tight" style={{ color: t.textMuted }}>{empty ? tr(hint || msg("Tap a tier to add an order")) : tr("in cart")}</span>
         </div>
       </div>
 
@@ -1896,7 +1958,22 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
     });
     return () => { dead = true; };
   }, [cartPlatforms]);
-  const pinnedFor = (p) => { try { return localStorage.getItem(`nitro-pin:${p}`); } catch { return null; } };
+  // The pin is settable here, not just readable. Bulk could show the star on a
+  // pinned handle but had no way to choose one, so anybody working mostly in
+  // bulk had to open a single order to set a default they could already see.
+  //
+  // localStorage does not re-render, so the choice lives in state and falls
+  // back to what is stored for any platform not touched yet this session.
+  const [pins, setPins] = useState({});
+  const pinnedFor = (p) => {
+    if (p in pins) return pins[p];
+    try { return localStorage.getItem(`nitro-pin:${p}`); } catch { return null; }
+  };
+  const togglePin = (p, url) => {
+    const next = pinnedFor(p) === url ? null : url;
+    setPins(m => ({ ...m, [p]: next }));
+    try { if (next) localStorage.setItem(`nitro-pin:${p}`, next); else localStorage.removeItem(`nitro-pin:${p}`); } catch {}
+  };
   const shortLink = (url) => { const x = String(url).replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""); return x.length > 34 ? x.slice(0, 33) + "…" : x; };
   const chipsFor = (p) => {
     const list = recentByPlat[p] || [];
@@ -2079,9 +2156,17 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
         </div>
       )}
 
-      {/* Rows */}
+      {/* Rows.
+
+          Every row is shrink-0. A flex child shrinks by default, and a flex
+          column that scrolls will still squash its children to fit the box
+          BEFORE the scrollbar engages — so at thirteen rows each one was
+          compressed to a fraction of its natural height, and openCardFrame's
+          overflow:hidden clipped the name and the tier badge in half rather
+          than letting them spill. It only showed on a full cart, which is the
+          worst place for the checkout surface to look broken. */}
       {!bulkSuccess && (
-      <div ref={rowsScrollRef} className="overflow-y-auto flex-1 min-h-0 py-4 px-[18px] max-md:py-3 max-md:px-3.5 flex flex-col gap-3">
+        <div ref={rowsScrollRef} className="overflow-y-auto flex-1 min-h-0 py-4 px-[18px] max-md:py-3 max-md:px-3.5 flex flex-col gap-3">
         {rows.length === 0 && (
           <div className="py-10 text-center text-xs" style={{ color: t.textMuted }}>{tr("Cart is empty. Tap any tier chip to add an order.")}</div>
         )}
@@ -2099,11 +2184,11 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           const linkPreview = row.link.trim() ? (row.link.replace(/^https?:\/\//, "").slice(0, 40) + (row.link.length > 48 ? "…" : "")) : "";
 
           if (isCollapsed) return (
-            <div key={row.id} data-row={idx} onClick={() => updateRow(idx, { expanded: true })} className="rounded-[12px] py-2.5 px-3.5 max-md:py-2 max-md:px-3 border border-solid cursor-pointer transition-all duration-200 hover:border-[rgba(196,125,142,.31)]" style={{ background: dark ? "rgba(255,255,255,.09)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}>
+            <div key={row.id} data-row={idx} onClick={() => updateRow(idx, { expanded: true })} className="shrink-0 rounded-[12px] py-2.5 px-3.5 max-md:py-2 max-md:px-3 border border-solid cursor-pointer transition-all duration-200 hover:border-[rgba(196,125,142,.31)]" style={{ background: dark ? "rgba(255,255,255,.09)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}>
               <div className="flex items-center gap-2.5">
                 <span className="flex items-center justify-center w-5 h-5 shrink-0 [&_svg]:w-[18px] [&_svg]:h-[18px]" style={{ color: t.textMuted }}>{PLATFORMS.find(pl => pl.id === row.platform)?.icon}</span>
                 <div className="text-[13px] font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{row.name}</div>
-                <span className="text-[11px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={{ background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: dark ? TS[row.tier]?.textD : TS[row.tier]?.text }}>{row.tier}</span>
+                <span className="text-[11px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={row.tier ? { background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: dark ? TS[row.tier]?.textD : TS[row.tier]?.text } : { background: t.accentLight, color: t.accentInk }}>{row.tier || tr("Full list")}</span>
                 <span className="text-[11px] max-w-[120px] truncate font-[JetBrains_Mono,monospace] hidden md:inline" style={{ color: t.textMuted }}>{linkPreview}</span>
                 <span className="text-[13px] font-medium shrink-0" style={{ color: t.textMuted }}>{money(rowPrice)}</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -2112,12 +2197,12 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
           );
 
           return (
-            <div key={row.id} data-row={idx} className={`rounded-[12px] p-3.5 px-4 max-md:p-3 max-md:px-3.5 border border-solid transition-all duration-200`} style={(dup || badLink) ? { background: dup ? (dark ? "rgba(239,68,68,.14)" : "#fbe7e7") : (dark ? "rgba(239,68,68,.1)" : "#fef5f5"), borderColor: dark ? "#fca5a5" : "#dc2626" } : { ...openCardFrame(t, dark), margin: 0, borderRadius: 12 }}>
+            <div key={row.id} data-row={idx} className={`shrink-0 rounded-[12px] p-3.5 px-4 max-md:p-3 max-md:px-3.5 border border-solid transition-all duration-200`} style={(dup || badLink) ? { background: dup ? (dark ? "rgba(239,68,68,.14)" : "#fbe7e7") : (dark ? "rgba(239,68,68,.1)" : "#fef5f5"), borderColor: dark ? "#fca5a5" : "#dc2626" } : { ...openCardFrame(t, dark), margin: 0, borderRadius: 12 }}>
               {/* Top: platform + name + tier + collapse + remove */}
               <div className="flex items-center gap-2.5 mb-3">
                 <span className="flex items-center justify-center w-5 h-5 shrink-0 [&_svg]:w-[18px] [&_svg]:h-[18px]" style={{ color: t.textMuted }}>{PLATFORMS.find(pl => pl.id === row.platform)?.icon}</span>
                 <div className="text-[13px] font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{row.name}</div>
-                <span className="text-[11px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={{ background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: dark ? TS[row.tier]?.textD : TS[row.tier]?.text }}>{row.tier}</span>
+                <span className="text-[11px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={row.tier ? { background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: dark ? TS[row.tier]?.textD : TS[row.tier]?.text } : { background: t.accentLight, color: t.accentInk }}>{row.tier || tr("Full list")}</span>
                 {hasValidLink && <button onClick={() => updateRow(idx, { expanded: false })} className="w-[24px] h-[24px] rounded-full bg-transparent border border-solid flex items-center justify-center shrink-0 p-0 cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>}
                 <button onClick={() => removeRow(idx)} disabled={loading} className="w-[24px] h-[24px] rounded-full bg-transparent border border-solid flex items-center justify-center text-[11px] shrink-0 p-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
@@ -2149,7 +2234,10 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                         {shown.map(r => {
                           const isPin = pinnedFor(row.platform) === r.link;
                           return (
-                            <button key={r.link} type="button" disabled={loading} onClick={() => { updateRow(idx, { link: r.link.replace(/^https?:\/\//i, "") }); setHandlesRow(null); }} title={r.link} className="m w-full text-left truncate py-1.5 px-2.5 rounded-lg border border-solid cursor-pointer font-[inherit] text-[11px] disabled:opacity-50" style={{ borderColor: isPin ? t.accent : t.cardBorder, background: isPin ? t.accentLight : "transparent", color: isPin ? t.accentInk : t.text }}>{isPin ? "★ " : ""}{shortLink(r.link)}</button>
+                            <span key={r.link} className="flex items-center rounded-lg border border-solid overflow-hidden text-[11px]" style={{ borderColor: isPin ? t.accent : t.cardBorder, background: isPin ? t.accentLight : "transparent" }}>
+                              <button type="button" disabled={loading} onClick={() => { updateRow(idx, { link: r.link.replace(/^https?:\/\//i, "") }); setHandlesRow(null); }} title={r.link} className="m flex-1 min-w-0 text-left truncate py-1.5 pl-2.5 pr-1 bg-transparent border-none cursor-pointer font-[inherit] text-[11px] disabled:opacity-50" style={{ color: isPin ? t.accentInk : t.text }}>{shortLink(r.link)}</button>
+                              <button type="button" disabled={loading} onClick={() => togglePin(row.platform, r.link)} aria-pressed={isPin} aria-label={isPin ? tr("Unpin") : tr("Pin as default")} title={isPin ? tr("Unpin") : tr("Pin as default")} className="py-1.5 pr-2.5 pl-1 bg-transparent border-none cursor-pointer text-[11px] shrink-0 disabled:opacity-50" style={{ color: isPin ? t.accent : t.textMuted }}>{isPin ? "★" : "☆"}</button>
+                            </span>
                           );
                         })}
                         {pages > 1 && (

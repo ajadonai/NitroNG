@@ -80,7 +80,9 @@ describe('single-order price display parity', () => {
     );
     // Charge and cost, both the reorder path and the main row path.
     expect(bulk).toContain('const charge = Math.ceil(serverPrice * qty / 100_000) * 100;');
-    expect(bulk).toContain('const charge = Math.ceil(Number(o.tier.sellPer1k) * o.quantity / 100_000) * 100;');
+    // The reorder path prices a curated row by its tier and a full-list row by
+    // its service. Both still ceil — that is what this test is about.
+    expect(bulk).toContain('const charge = Math.ceil(Number(o.tier ? o.tier.sellPer1k : o.service.sellPer1k) * o.quantity / 100_000) * 100;');
     expect(bulk).not.toMatch(/const charge = Math\.round\(/);
     expect(bulk).not.toMatch(/const cost = Math\.round\(/);
     // Discounts re-round up, matching the single-order route.
