@@ -8,5 +8,24 @@ export const metadata = {
 };
 
 export default function ResellerDocsPage() {
-  return <ResellerApiDocsView />;
+  // Three levels, which is the point: a one-level page gives Google nothing to
+  // draw but the bare URL, while Home › Resellers › API Documentation is an
+  // actual hierarchy and renders as the trail. It also tells Google these two
+  // pages belong together, so the docs page lends its relevance to /resellers
+  // instead of competing with it.
+  const breadcrumb = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://nitro.ng' },
+      { '@type': 'ListItem', position: 2, name: 'Resellers', item: 'https://nitro.ng/resellers' },
+      { '@type': 'ListItem', position: 3, name: 'API Documentation', item: 'https://nitro.ng/resellers/docs' },
+    ],
+  };
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+      <ResellerApiDocsView />
+    </>
+  );
 }
