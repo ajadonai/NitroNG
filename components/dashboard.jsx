@@ -17,7 +17,7 @@ import { ToastProvider } from "./toast";
 import { ConfirmProvider } from "./confirm-dialog";
 import AnnouncementBanner from "./announcement-banner";
 import { OverviewPage, RightSidebar } from "./dashboard-overview";
-import { fD } from "../lib/format";
+import { fD, fT } from "../lib/format";
 import { Avatar } from "./avatar";
 import OrderTour from "./order-tour";
 import { PAYMENT_STATES, isCreditedPaymentResult } from "../lib/payment-state";
@@ -847,9 +847,12 @@ function DashboardInner({ initialData }) {
         return {
           id: `ord-${o.id}`, type: "order", ref: o.id,
           title: s === "Completed" ? tr("Order delivered") : s === "Cancelled" ? tr("Order cancelled") : tr("Order in progress"),
-          // The service name is the provider's and stays as it is; the verb around it translates.
-          desc: `${o.service || tr("Service")} — ${s === "Completed" ? tr("delivered") : s === "Cancelled" ? tr("cancelled") : tr("started")}`,
-          time: o.created ? fD(o.created) : "", ts: new Date(o.created),
+          // Just the service. The title above already says "Order cancelled",
+          // and the icon beside it is a red ✗ — appending "— cancelled" here
+          // made it three times in one card, on the line that is supposed to
+          // say WHICH order it was.
+          desc: o.service || tr("Service"),
+          time: o.created ? fT(o.created) : "", ts: new Date(o.created),
           color: s === "Completed" ? (dark_ ? "#60a5fa" : "#2563eb") : s === "Cancelled" ? (dark_ ? "#fca5a5" : "#dc2626") : (dark_ ? "#e0a458" : "#d97706"),
           icon: s === "Completed" ? "check" : s === "Cancelled" ? "x" : "clock",
         };
@@ -857,7 +860,7 @@ function DashboardInner({ initialData }) {
       ...txs.filter(tx => tx.type === "deposit" && tx.status === "Completed" && tx.date && new Date(tx.date) >= cutoff).map(tx => ({
         id: `dep-${tx.id || tx.reference}`, type: "deposit", title: tr("Funds added"),
         desc: `${money(tx.amount, { round: "down" })} ${tr("added to your wallet")}`,
-        time: tx.date ? fD(tx.date) : "", ts: new Date(tx.date),
+        time: tx.date ? fT(tx.date) : "", ts: new Date(tx.date),
         color: dark_ ? "#6ee7b7" : "#059669",
         icon: "dollar",
       })),
@@ -866,7 +869,7 @@ function DashboardInner({ initialData }) {
         // Never the raw note: it carries internal markers, the admin's name and,
         // on a transfer, another customer's — see txDesc in addfunds-page.jsx.
         desc: `${money(tx.amount, { round: "down" })} — ${tx.type === "referral" ? tr("Referral commission") : tx.type === "bonus" ? tr("Reward credited") : tr("Credited by Nitro Team")}`,
-        time: tx.date ? fD(tx.date) : "", ts: new Date(tx.date),
+        time: tx.date ? fT(tx.date) : "", ts: new Date(tx.date),
         color: dark_ ? "#e0a458" : "#d97706",
         icon: "gift",
       })),
@@ -888,7 +891,11 @@ function DashboardInner({ initialData }) {
     }).sort((a, b) => (b.ts || 0) - (a.ts || 0))
       // The day heading the panel groups under. Scanning a list stops meaning
       // reading every timestamp in it.
-      .map(n => ({ ...n, day: !n.ts || isNaN(n.ts) ? tr("Earlier") : n.ts >= today ? tr("Today") : n.ts >= yesterday ? tr("Yesterday") : fD(n.ts) }));
+      // dateOnly, so the sticky header is a DAY. It was calling fD without it,
+      // which returns the time and the zone as well — so a header reading
+      // "9 SEPT, 02:06 WAT" sat directly above a row reading "9 Sept, 02:06
+      // WAT". The header groups; the row says when within the group.
+      .map(n => ({ ...n, day: !n.ts || isNaN(n.ts) ? tr("Earlier") : n.ts >= today ? tr("Today") : n.ts >= yesterday ? tr("Yesterday") : fD(n.ts, true) }));
     // tr and money belong here: without them the list keeps the text and the
     // currency it was first built with, so switching either left the bell
     // showing the old language until something else happened to invalidate it.
