@@ -64,7 +64,8 @@
     "20260901090000_add_cash_referrals": "d8d76259a9847f497703cbd9d987dedff800e10d12fbc71035f4bb60d857a6cc",
     "20260907220000_add_user_country": "be3c8edd5f1878e36b414ba7e8886a83526ead88a5bf5e6b9f550e4b9fc521c3",
     "20260915090000_add_service_votes": "727de8909df7eb515fb1a4a5893b6bc12cb42714f663ee5771a28711628a63ae",
-    "20260915120000_add_service_platform": "259babfb6f70502cf27ffdd4ee3c6f63c65d3b4bc8afa00659bb0bb8afa7df98"
+    "20260915120000_add_service_platform": "259babfb6f70502cf27ffdd4ee3c6f63c65d3b4bc8afa00659bb0bb8afa7df98",
+    "20260915140000_add_service_favourites": "b14584c33819a91f5c34c295f6aefc779f8c29924de0aadfa3dd37b7bd28f1ed"
   },
   "appliedOverrides": {
     "0_init": "c864f484fce76fd7b8db286181967d98cdb91559be1081e34df0fd65cc60b7c5",
