@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { watBounds } from '@/lib/format';
 import { log } from "@/lib/logger";
+import { describeReview } from '@/lib/payment-review';
 import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail } from '@/lib/admin';
 import { finalizeDeposit } from '@/lib/deposit-finalization';
 import { notifyDepositFinalized } from '@/lib/deposit-notifications';
@@ -129,8 +130,30 @@ export async function GET(req) {
       prisma.transaction.count({ where: { type: 'deposit', status: { in: ['Failed', 'Rejected', 'Expired'] }, createdAt: { gte: dayStart } } }),
       prisma.transaction.groupBy({ by: ['method'], where: { type: 'deposit', status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),
     ]);
+    // Deposits that succeeded at the bank but not at the quote. Any method,
+    // not just the two this page otherwise lists — the whole problem was that
+    // Flutterwave rows had nowhere to appear.
+    const reviewRows = await prisma.transaction.findMany({
+      where: { type: 'deposit', status: 'Review', paymentReviewResolvedAt: null },
+      orderBy: { paymentReviewAt: 'desc' },
+      take: 50,
+      include: { user: { select: { id: true, name: true, firstName: true, lastName: true, email: true } } },
+    });
+    const reviews = reviewRows.map(tx => ({
+      id: tx.id,
+      reference: tx.reference,
+      method: tx.method,
+      quoted: tx.amount / 100,
+      date: (tx.paymentReviewAt || tx.createdAt).toISOString(),
+      userId: tx.user?.id || null,
+      user: tx.user ? `${tx.user.firstName || tx.user.name || ''} ${tx.user.lastName || ''}`.trim() : 'Unknown',
+      email: sensitive ? (tx.user?.email || '') : maskEmail(tx.user?.email),
+      ...describeReview(tx),
+    }));
+
     const facts = {
       pending: { count: pendingAgg._count || 0, amount: (pendingAgg._sum.amount || 0) / 100 },
+      review: reviews.length,
       today: { count: todayAgg._count || 0, amount: (todayAgg._sum.amount || 0) / 100 },
       month: { count: monthAgg._count || 0, amount: (monthAgg._sum.amount || 0) / 100 },
       failedToday,
@@ -141,6 +164,7 @@ export async function GET(req) {
       facts,
       gateways: masked,
       deposits: deposits.map(formatTx),
+      reviews,
       pendingCount: deposits.filter(d => d.status === 'Pending' && !d.note?.includes('[awaiting_confirmation]')).length,
       canApprove: canPerformAction(admin, 'payments.approve'),
       canConfigure: canPerformAction(admin, 'payments.configure'),
@@ -159,7 +183,7 @@ export async function POST(req) {
       return Response.json({ error: 'Only owner/superadmin can configure payments' }, { status: 403 });
     }
 
-    const { action, gatewayId, enabled, priority, fields, name, desc, moves } = await req.json();
+    const { action, gatewayId, enabled, priority, fields, name, desc, moves, transactionId, amountKobo } = await req.json();
 
     if (action === 'reorder') {
       if (!Array.isArray(moves)) return Response.json({ error: 'Moves required' }, { status: 400 });
@@ -170,6 +194,81 @@ export async function POST(req) {
         data.priority = p;
         await prisma.setting.upsert({ where: { key }, update: { value: JSON.stringify(data) }, create: { key, value: JSON.stringify(data) } });
       }
+      return Response.json({ success: true });
+    }
+
+    // ── Deposits that succeeded at the bank but not at the quote ──
+    //
+    // Credits what actually arrived, never what was quoted. finalizeDeposit
+    // already takes the paid figure explicitly, so this is the same path a
+    // manual approval walks — with the amount supplied by a human who has read
+    // the Flutterwave receipt rather than inferred from the row.
+    if (action === 'credit_review' || action === 'reject_review') {
+      if (!canPerformAction(admin, 'payments.approve')) {
+        return Response.json({ error: 'Not authorized to credit deposits' }, { status: 403 });
+      }
+      if (!transactionId) return Response.json({ error: 'Transaction ID required' }, { status: 400 });
+
+      const tx = await prisma.transaction.findUnique({ where: { id: transactionId } });
+      if (!tx || tx.type !== 'deposit' || tx.status !== 'Review' || tx.paymentReviewResolvedAt) {
+        return Response.json({ error: 'Not a deposit awaiting review, or already resolved' }, { status: 404 });
+      }
+
+      if (action === 'reject_review') {
+        // Stamped and closed in one statement, matched on the state we read.
+        const closed = await prisma.transaction.updateMany({
+          where: { id: tx.id, status: 'Review', paymentReviewResolvedAt: null },
+          data: { status: 'Rejected', paymentReviewResolvedAt: new Date(), note: `${tx.note || ''} [rejected_by:${admin.name}]`.trim() },
+        });
+        if (closed.count !== 1) return Response.json({ error: 'This review was resolved by someone else' }, { status: 409 });
+        await logActivity(admin.name, `Rejected deposit under review ${tx.reference}`, 'payment');
+        return Response.json({ success: true });
+      }
+
+      const kobo = Number(amountKobo);
+      if (!Number.isSafeInteger(kobo) || kobo <= 0) {
+        return Response.json({ error: 'A whole naira amount is required' }, { status: 400 });
+      }
+      // The quote is the ceiling. Crediting more than was asked for cannot be
+      // right under any of the three mismatch shapes, and a typo is the likely
+      // way it would ever happen.
+      if (kobo > tx.amount) {
+        return Response.json({
+          error: `That is more than the ${'\u20A6'}${(tx.amount / 100).toLocaleString()} quoted. Credit what arrived, not more.`,
+        }, { status: 400 });
+      }
+
+      // Claim the review first. If this loses, another admin already acted and
+      // no money moves — the opposite order would credit twice on a race.
+      const claimed = await prisma.transaction.updateMany({
+        where: { id: tx.id, status: 'Review', paymentReviewResolvedAt: null },
+        data: { paymentReviewResolvedAt: new Date() },
+      });
+      if (claimed.count !== 1) return Response.json({ error: 'This review was resolved by someone else' }, { status: 409 });
+
+      const finalized = await finalizeDeposit({
+        transactionId: tx.id,
+        paidAmountKobo: kobo,
+        claimableStatuses: ['Review'],
+        approvedBy: admin.name,
+      });
+      if (!finalized.finalized) {
+        // Hand the review back rather than leaving it closed and uncredited.
+        await prisma.transaction.updateMany({ where: { id: tx.id, status: 'Review' }, data: { paymentReviewResolvedAt: null } });
+        return Response.json({ error: 'Could not credit this deposit' }, { status: 409 });
+      }
+
+      try {
+        await notifyDepositFinalized(finalized, { channel: tx.method === 'flutterwave' ? 'Flutterwave' : tx.method, approvedBy: admin.name });
+      } catch (notifyErr) {
+        log.warn('Admin Payments', `Review credit notification failed for ${tx.reference}: ${notifyErr.message}`);
+      }
+
+      await logActivity(
+        admin.name,
+        `Credited ${'\u20A6'}${(kobo / 100).toLocaleString()} for ${tx.reference} (quoted ${'\u20A6'}${(tx.amount / 100).toLocaleString()}, ${tx.paymentReviewReason || 'mismatch'})`,
+        'payment',
+      );
       return Response.json({ success: true });
     }
 

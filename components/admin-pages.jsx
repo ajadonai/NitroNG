@@ -20,6 +20,7 @@ export function AdminPaymentsPage({ dark, t }) {
   const [tab, setTab] = useState("deposits");
   const [gateways, setGateways] = useState([]);
   const [deposits, setDeposits] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [facts, setFacts] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +47,7 @@ export function AdminPaymentsPage({ dark, t }) {
     fetch(`/api/admin/payments?${params}`).then(r => r.json()).then(d => {
       if (d.gateways) setGateways(d.gateways);
       if (d.deposits) setDeposits(d.deposits);
+      if (d.reviews) setReviews(d.reviews);
       if (d.pendingCount != null) setPendingCount(d.pendingCount);
       if (d.facts) setFacts(d.facts);
       if (d.canApprove != null) setCanApprove(d.canApprove);
@@ -144,6 +146,49 @@ export function AdminPaymentsPage({ dark, t }) {
 
   const FIELD_LABELS = { secretKey: "Secret Key", publicKey: "Public Key", apiKey: "API Key", contractCode: "Contract Code", bankName: "Bank Name", accountNumber: "Account Number", accountName: "Account Name", paymentOptions: "Payment options — leave empty to show everything enabled on the Flutterwave dashboard, or narrow it: card,banktransfer,opay" };
 
+  /**
+   * Credit a deposit that succeeded at the bank but not at the quote.
+   *
+   * The amount is always what arrived, never what was quoted — where the
+   * verifier observed a figure it is offered as one tap, and where it did not
+   * (a currency we hold no rate for) an admin reads it off the Flutterwave
+   * receipt and types it. Either way it is confirmed against the reference
+   * before any money moves.
+   */
+  const creditReview = async (r, kobo) => {
+    const shown = fN(kobo / 100);
+    if (!window.confirm(`Credit ${shown} to ${r.user} for ${r.reference}?\n\nQuoted was ${fN(r.quoted)}. This credits what arrived.`)) return;
+    const res = await fetch("/api/admin/payments", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "credit_review", transactionId: r.id, amountKobo: kobo }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { toast.error(d.error || "Could not credit"); return; }
+    toast.success("Credited", `${shown} to ${r.user}`);
+    refresh(search, statusFilter);
+  };
+
+  const creditTyped = (r) => {
+    const guess = r.creditableKobo != null ? r.creditableKobo / 100 : r.quoted;
+    const raw = window.prompt(`How much actually arrived, in naira?\n\nQuoted ${fN(r.quoted)} \u00B7 ${r.reference}\nRead it off the Flutterwave receipt.`, String(guess));
+    if (raw == null) return;
+    const typed = Number(String(raw).replace(/[,\s\u20A6]/g, ""));
+    if (!Number.isFinite(typed) || typed <= 0) { toast.error("That is not an amount"); return; }
+    creditReview(r, Math.round(typed * 100));
+  };
+
+  const rejectReview = async (r) => {
+    if (!window.confirm(`Reject ${r.reference}?\n\nNothing is credited and the row closes. Only do this when the money did not arrive.`)) return;
+    const res = await fetch("/api/admin/payments", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "reject_review", transactionId: r.id }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { toast.error(d.error || "Could not reject"); return; }
+    toast.success("Rejected", r.reference);
+    refresh(search, statusFilter);
+  };
+
   const STATUS_WORD = { Completed: ["Cleared", "ok"], Pending: ["Waiting", "warn"], Failed: ["Failed", "bad"], Rejected: ["Rejected", "bad"], Expired: ["Expired", "dim"], Processing: ["Processing", "dim"], Review: ["In review", "warn"], Refunded: ["Refunded", "dim"] };
   const METHOD_WORD = { manual: "Bank transfer", crypto: "Crypto", flutterwave: "Flutterwave", monnify: "Monnify", korapay: "KoraPay", alatpay: "ALATPay", paystack: "Paystack" };
   const methodWord = (m) => METHOD_WORD[m] || (m ? m.charAt(0).toUpperCase() + m.slice(1) : "—");
@@ -154,7 +199,7 @@ export function AdminPaymentsPage({ dark, t }) {
   const methodTotal = (facts?.byMethod || []).reduce((n, m) => n + m.amount, 0) || 1;
   const vars = {
     "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
-    "--ac": t.accent, "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)", "--ok": dark ? "#6ee7b7" : "#0a7d54", "--okbg": dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", "--warn": dark ? "#fcd34d" : "#b45309", "--warnbg": dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)", "--bad": dark ? "#fca5a5" : "#c62828",
+    "--ac": t.accent, "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)", "--ok": dark ? "#6ee7b7" : "#0a7d54", "--okbg": dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", "--warn": dark ? "#fcd34d" : "#b45309", "--warnbg": dark ? "rgba(251,191,36,.1)" : "rgba(217,119,6,.08)", "--bad": dark ? "#fca5a5" : "#c62828", "--badbg": dark ? "rgba(252,165,165,.1)" : "rgba(198,40,40,.07)",
   };
   const bone = (h) => <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"}`} style={{ height: h, borderRadius: 14 }} />;
   return (
@@ -178,9 +223,53 @@ export function AdminPaymentsPage({ dark, t }) {
               <div className={"pm-stt" + (facts.pending.count ? " warn" : "")}><b className="m">{facts.pending.count}</b><span>Waiting for approval</span><i>{facts.pending.count ? `${fN(facts.pending.amount)} · bank transfer or crypto` : "nothing waiting"}</i></div>
               <div className="pm-stt"><b className="m">{fN(facts.today.amount)}</b><span>In today</span><i>{facts.today.count} deposit{facts.today.count === 1 ? "" : "s"}{facts.today.count ? ` · ${fN(Math.round(facts.today.amount / facts.today.count))} average` : ""}</i></div>
               <div className="pm-stt"><b className="m">{short(facts.month.amount)}</b><span>This month</span><i>{facts.month.count.toLocaleString()} deposits</i></div>
+              {!!facts.review && <div className="pm-stt bad"><b className="m">{facts.review}</b><span>In review</span><i>paid, but not as quoted</i></div>}
               <div className={"pm-stt" + (facts.failedToday ? " bad" : "")}><b className="m">{facts.failedToday}</b><span>Failed today</span><i>{facts.failedToday ? "declined, expired or rejected" : "none"}</i></div>
             </>}
           </div>
+          {/* Deposits that succeeded at the bank but not at the quote.
+              Above the filters on purpose: these are rare, they are money
+              sitting uncredited, and a status filter could hide them. Before
+              this they rendered nowhere at all — the list below is manual and
+              crypto only, so a Flutterwave mismatch lived in a Sentry alert. */}
+          {reviews.length > 0 && (
+            <div className="pm-review">
+              <div className="pm-review-h">
+                <b>Paid, but not as quoted</b>
+                <span>{reviews.length} deposit{reviews.length === 1 ? "" : "s"} waiting on a decision</span>
+              </div>
+              {reviews.map(r => (
+                <div key={r.id} className="pm-rv">
+                  <span className="pm-un"><span className="pm-av">{initialsOf(r.user)}</span><span className="pm-unt"><b>{r.user}</b><i>{r.email}</i></span></span>
+                  <button type="button" className="pm-ref m" title="Copy the reference" onClick={() => { copyText(r.reference); toast.success("Copied", r.reference); }}>{r.reference}</button>
+                  <span className="pm-rv-money">
+                    <span><i>Quoted</i><b className="m">{fN(r.quoted)}</b></span>
+                    {r.paidKobo != null && <span><i>Arrived</i><b className={"m" + (r.paidKobo < r.quoted * 100 ? " short" : "")}>{fN(r.paidKobo / 100)}</b></span>}
+                    {r.shortKobo > 0 && <span><i>Short by</i><b className="m short">{fN(r.shortKobo / 100)}</b></span>}
+                    {r.gotCurrency && <span><i>Currency</i><b>{r.gotCurrency} not {r.wantCurrency}</b></span>}
+                  </span>
+                  <span className="pm-acts">
+                    {canApprove ? <>
+                      {r.creditableKobo != null
+                        ? <button type="button" className="pm-b sm ok" onClick={() => creditReview(r, r.creditableKobo)}>Credit {fN(r.creditableKobo / 100)}</button>
+                        : <button type="button" className="pm-b sm ok" onClick={() => creditTyped(r)}>Credit…</button>}
+                      {r.creditableKobo != null && <button type="button" className="pm-b sm" onClick={() => creditTyped(r)}>Other amount</button>}
+                      <button type="button" className="pm-b sm bad" onClick={() => rejectReview(r)}>Reject</button>
+                    </> : <span className="pm-dimc">view only</span>}
+                  </span>
+                  <div className="pm-rv-why">
+                    <b>{r.title}.</b>{" "}
+                    {r.reason === "amount_mismatch" && `Flutterwave settled ${r.paidKobo != null ? fN(r.paidKobo / 100) : "a different amount"} against a ${fN(r.quoted)} quote.`}
+                    {r.reason === "currency_mismatch" && `The rail settled in ${r.gotCurrency || "another currency"} against a ${r.wantCurrency || "NGN"} quote. Nitro holds no rate for it, so read the naira figure off the receipt.`}
+                    {r.reason === "reference_mismatch" && `Flutterwave returned ${r.gotReference || "a different reference"} where we sent ${r.reference}.`}
+                    {r.checkDashboard && <em> A matching amount with a different reference is also what a double charge looks like — check the Flutterwave dashboard shows one settlement, not two, before crediting.</em>}
+                    {" "}<span className="pm-dimc">{timeOf(r.date)} · {methodWord(r.method)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="pm-bar">
             <div className="pm-srch">
               <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === "Enter" && doSearch()} placeholder="Search reference, name, email or sender" />
@@ -322,7 +411,7 @@ const PM_CSS = `
 .pm *{box-sizing:border-box}
 .pm .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .pm .r{text-align:right}
-.pm-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
+.pm-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));background:var(--card);border:1px solid var(--line);border-radius:14px}
 .pm-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.pm-stt:first-child{border-left:0}
 .pm-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pm-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px}.pm-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pm-stt.warn b{color:var(--warn)}.pm-stt.bad b{color:var(--bad)}
@@ -335,6 +424,23 @@ const PM_CSS = `
 .pm-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.pm-b:hover{transform:translateY(-1px)}.pm-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .pm-b.sm{height:30px;padding:0 10px;font-size:12px}.pm-b.ok{color:var(--ok);border-color:var(--ok);background:var(--okbg)}.pm-b.bad{color:var(--bad)}
 .pm-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow-x:auto}
+/* Paid, but not as quoted. Carries the bad colour rather than the warn one:
+   waiting-for-approval is routine, this is money sitting uncredited. */
+.pm-review{background:var(--card);border:1px solid var(--bad);border-radius:14px;margin-bottom:14px;overflow:hidden}
+.pm-review-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:12px 16px;background:var(--badbg);border-bottom:1px solid var(--line)}
+.pm-review-h b{font-size:14px;color:var(--ink)}
+.pm-review-h span{font-size:12px;color:var(--mut)}
+.pm-rv{display:grid;grid-template-columns:minmax(150px,1.2fr) minmax(0,.9fr) minmax(220px,1.4fr) auto;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--rail);font-size:13px}
+.pm-rv:first-of-type{border-top:0}
+.pm-rv-money{display:flex;gap:18px;flex-wrap:wrap}
+.pm-rv-money span{display:flex;flex-direction:column;gap:1px;min-width:74px}
+.pm-rv-money i{font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut)}
+.pm-rv-money b{font-size:14px;font-weight:700;color:var(--ink)}
+.pm-rv-money b.short{color:var(--bad)}
+.pm-rv-why{grid-column:1/-1;font-size:12.5px;line-height:1.55;color:var(--mut);background:var(--soft);border-radius:9px;padding:9px 12px}
+.pm-rv-why b{color:var(--ink);font-weight:600}
+.pm-rv-why em{font-style:normal;color:var(--bad)}
+@media(max-width:900px){.pm-rv{grid-template-columns:1fr;gap:9px}}
 .pm-lh,.pm-dr{display:grid;grid-template-columns:minmax(150px,1.3fr) minmax(0,1fr) minmax(110px,.9fr) 90px 50px 90px 148px;align-items:center;gap:12px;padding:0 14px;min-width:710px}
 .pm-lh{height:34px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line)}
 .pm-dr{padding-top:9px;padding-bottom:9px;border-top:1px solid var(--rail);font-size:13px;min-width:0}.pm-dr.pend{background:var(--warnbg)}.pm-dr.sk{display:block}
