@@ -74,53 +74,28 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   0.9%** — the ₦3.25M of "failed attempts" quoted on 11 Sep was abandonment,
   not failure, which is the mistake reading first exists to avoid.
 
-- **Onboarding funnel, second read — DONE 17 Sep. One real wall, and one step
-  that measured nothing.** 2,082 signups since 26 Aug.
+- **Why half of all signups never open the wallet — instrumented 17 Sep, read
+  in October.** The second funnel read is done and is in Closed. It found one
+  wall and one broken instrument.
 
-  **First, the correction.** The read initially showed "99.0% opened New Order"
-  and treated that as reaching the product. It is not. The dashboard opens on
-  the Services tab (`useState("services")`), so the beacon fired on first render
-  for everybody — it measured *logged in*. Trip caught it: *"99% reach the new
-  order cos its automatically the first page everybody lands on."* Confirmed:
-  the 20 accounts (1.0%) without the stamp have no wallet stamp either, so that
-  is a beacon that never ran, not a person who never looked. The true figure is
-  100% and the step carried no information. `firstSeenNewOrderAt` now waits for
-  a service to be **picked**, which is a deliberate act (`v2.5.100`). Data from
-  17 Sep onward means something; everything before it does not.
+  **The wall:** only 47.9% of signups ever open the wallet, and opening it is
+  very nearly the whole prediction — **47.5% of those who do pay, against 0.5%
+  of those who do not**. It is decided fast: 85.6% of payers deposit within an
+  hour of signing up, 93.7% within a day. Not a maturity effect — the cohort
+  with 14+ days to act pays at 24.0%, the same as everyone. And nothing reaches
+  these people: the only pre-order nudge requires `balance > 0`.
 
-  **What survives the correction, and it is the important part:**
+  **What is still unknown, and is the thing worth knowing:** we cannot tell a
+  considered no from a four-second bounce. `firstSeenNewOrderAt` used to fire on
+  the Services tab rendering, and that is the tab the dashboard opens on, so it
+  recorded "logged in". It now waits for a service to be picked (`v2.5.100`), so
+  data from 17 Sep onward separates the two. Give it a few weeks.
 
-  | | of signups |
-  |---|---|
-  | opened the wallet | **47.9%** |
-  | started a payment | 27.3% |
-  | deposit completed | 23.0% |
-  | placed an order | 21.5% |
-
-  Opening the wallet is very nearly the whole prediction: **47.5% of the 997 who
-  opened it paid, against 0.5% of the 1,085 who did not.** Five people in three
-  weeks paid without going there.
-
-  **It is a first-session decision.** 85.6% of payers deposit within an hour of
-  signing up, 93.7% within a day, 99.4% within a week. Not a maturity artefact —
-  the cohort with 14+ days to act pays at 24.0%, the same as everyone.
-
-  **And nothing reaches these people.** The only pre-order nudge in the daily
-  cron requires `balance: { gt: 0 }`, which is for accounts that already funded.
-  There is no message at all for somebody who never went to fund.
-
-  **What is still unknown, and it is the thing worth knowing.** Half of all
-  signups never open the wallet, and we cannot yet tell a considered no from a
-  four-second bounce — whether they saw a price and balked, or never engaged at
-  all. The repointed beacon answers exactly that, and it needs a few weeks.
-
-  **Do not redesign the flow before that data is in.** The temptation is to
-  build a nudge now; 93.7% of everyone who was ever going to pay had already
-  paid within a day, so an email is the weakest of the available answers.
-  Guest-feel checkout is the only item on this shelf that removes the wallet as
-  a separate destination rather than pointing at it, and this is the first hard
-  evidence for it — but it is evidence about *where* people stop, not yet about
-  *why*.
+  **Do not redesign the flow first.** An email is the weakest answer available —
+  93.7% of everyone who was ever going to pay had already paid within a day.
+  Guest-feel checkout is the only shelf item that removes the wallet as a
+  separate destination rather than pointing at it, and this is the first hard
+  evidence for it — evidence about *where* people stop, not yet *why*.
 
 - **Scale ladder gate — judge it on database signups, not Meta.** The Lagos
   ₦30,000 → ₦39,000 budget step stays gated on cost per new customer under
@@ -273,14 +248,6 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
 
 ### Content and long tail
 
-- **Platform pages are finished, on the measurement.** Twenty slugs are
-  crawlable. The remaining twelve tiles will not get a page, and that is a
-  decision rather than a backlog item — see the Closed entry of 17 Sep for the
-  counts. Nine of them have **no curated group at all**, so a page for them
-  would be a headline over a link to the full list, which is the definition of a
-  doorway page. If a tile later gains two or more curated groups it clears the
-  bar and earns a page; until then, nothing here is outstanding.
-
 - **Reseller API v2** — drip-feed and multi-day parameters, webhooks, per-key IP
   allowlists. Brief: `docs/v2/reseller_api_brief.md`.
 
@@ -294,6 +261,24 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   protected routes in CLAUDE.md.
 
 ## Closed
+
+- **The onboarding funnel, read — and the step in it that measured nothing**
+  (17 Sep 2026, `v2.5.100`). 2,082 signups since 26 Aug. The headline of the
+  first read was wrong and Trip caught it: *"99% reach the new order cos its
+  automatically the first page everybody lands on."* The dashboard opens on the
+  Services tab, so `firstSeenNewOrderAt` fired on first render for everybody and
+  recorded *logged in*. Checked rather than assumed — of the 20 accounts (1.0%)
+  without the stamp, **zero** have a wallet stamp, so those are beacons that
+  never ran. The true figure is 100% and the step carried no information; "two
+  thirds looked at New Order and never funded" was never a finding. The beacon
+  now waits for a service to be picked. **The default landing tab is unchanged
+  and intentional** — everyone still lands on New Order; only the measurement
+  moved.
+
+  What survived: 47.9% open the wallet, 47.5% of those pay against 0.5% of those
+  who do not, 85.6% of payers deposit within the hour, and no message reaches
+  anyone who never funded. The open question — bounce or considered no — is now
+  instrumented and back on the shelf as a wait.
 
 - **Five more platform pages, and the other twelve ruled out** (17 Sep 2026,
   `v2.5.99`). Threads, Kick, SoundCloud, Bluesky and Deezer now have
