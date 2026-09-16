@@ -127,9 +127,9 @@ function PwStrength({ pw, dark }) {
   const hasNum = /[0-9]/.test(pw);
   const hasSym = /[^a-zA-Z0-9]/.test(pw);
   const score = (hasLen ? 1 : 0) + (hasUpper ? 1 : 0) + (hasNum ? 1 : 0) + (hasSym ? 1 : 0);
-  const levels = [null, ["Weak", "#ef4444"], ["Fair", "#f59e0b"], ["Good", "#3b82f6"], ["Strong", "#22c55e"]];
+  const levels = [null, [tr("Weak"), "#ef4444"], [tr("Fair"), "#f59e0b"], [tr("Good"), "#3b82f6"], [tr("Strong"), "#22c55e"]];
   const tooShort = pw.length < 6;
-  const [label, color] = tooShort ? [tr("Too short"), "#ef4444"] : (levels[score] || ["Weak", "#ef4444"]);
+  const [label, color] = tooShort ? [tr("Too short"), "#ef4444"] : (levels[score] || [tr("Weak"), "#ef4444"]);
   const fill = tooShort ? 1 : score;
   const empty = dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)";
   return (
@@ -220,7 +220,7 @@ function LandingInner({ initialAuthQuery }){
   const heroSignupFinalSubmit=async()=>{
     setHeroError("");
     if(!heroPw||heroPw.length<6){setHeroError(tr("Password must be at least 6 characters"));return;}
-    if(heroPw!==heroPw2){setHeroError("Passwords don't match");return;}
+    if(heroPw!==heroPw2){setHeroError(tr("Passwords don't match"));return;}
     if(!heroAgree){setHeroError(tr("Please agree to the Terms of Service"));return;}
     setHeroLoading(true);
     try{
@@ -291,7 +291,7 @@ function LandingInner({ initialAuthQuery }){
               because Tailwind v4 positions with the `translate` property and the
               compiler folds an override of it away. */}
           <div className="nav-centre max-desktop:hidden flex flex-1 min-w-0 justify-center mx-3 gap-1 items-center min-[1560px]:absolute min-[1560px]:left-1/2 min-[1560px]:top-1/2 min-[1560px]:-translate-x-1/2 min-[1560px]:-translate-y-1/2 min-[1560px]:flex-none min-[1560px]:mx-0">
-              {[[tr("Tiers"),"tiers"],[tr("Why curated"),"curated"],[tr("How it works"),"how"],[tr("Reviews"),"reviews"]].map(([l,id])=><button key={l} onClick={()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"})} className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{color:"rgba(255,255,255,.75)"}}>{l}</button>)}<a href="/resellers" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:"rgba(255,255,255,.75)"}}>{tr("Resellers")}</a><a href="/blog" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px no-underline" style={{color:"rgba(255,255,255,.75)"}}>{tr("Blog")}</a>
+              {[[tr("Tiers"),"tiers"],[tr("Why curated"),"curated"],[tr("How it works"),"how"],[tr("Reviews"),"reviews"]].map(([l,id])=><button key={l} onClick={()=>document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"})} className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer" style={{color:"rgba(255,255,255,.75)"}}>{l}</button>)}<a href="/resellers" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer no-underline" style={{color:"rgba(255,255,255,.75)"}}>{tr("Resellers")}</a><a href="/blog" className="nav-link-pill py-1.5 px-4 rounded-lg bg-transparent text-sm font-medium border-none cursor-pointer no-underline" style={{color:"rgba(255,255,255,.75)"}}>{tr("Blog")}</a>
           </div>
           <div className="nav-right flex items-center gap-2.5">
             {/* Local only until the currency switch is finished — see SWITCHER_LIVE
@@ -327,7 +327,7 @@ function LandingInner({ initialAuthQuery }){
 
           <div className={`lv3-grid grid grid-cols-[1.1fr_96px_.9fr] max-desktop:grid-cols-1 gap-x-[18px] max-desktop:gap-y-[30px] items-center pt-14 pb-12 max-desktop:pt-6 max-desktop:pb-4 max-md:pb-2 px-[60px] max-desktop:px-10 max-md:px-5 max-w-[1200px] mx-auto w-full relative z-[1] flex-1 max-desktop:text-center max-desktop:min-h-0 ${siteAlerts.length > 0 ? "max-md:pt-[50px]" : "max-md:pt-2"}`}>
             {/* LEFT */}
-            <div className="text-left relative z-[1] max-desktop:text-center max-desktop:flex max-desktop:flex-col max-desktop:items-center">
+            <div className="text-start relative z-[1] max-desktop:text-center max-desktop:flex max-desktop:flex-col max-desktop:items-center">
               <div className="fu text-[11px] font-bold tracking-[3px] uppercase mb-[22px] max-md:mb-3.5" style={{color:dark?t.accent:"rgba(255,255,255,.72)"}}>{tr("Nigeria's social growth engine")}</div>
               <h1 className="fu fd1 text-[clamp(40px,5vw,66px)] max-md:text-[clamp(34px,9vw,44px)] font-semibold leading-[1.02] -tracking-[2.2px] max-md:-tracking-[1.2px]" style={{color:t.heroText}}>
                 {tr("Your")} <span className="lv3-roller" aria-live="polite" style={{"--bk":dark?t.accent:"#ecc94b"}}>{HERO_WORDS.map((w,i)=><span key={w} className={i===word?"on":i===((word+HERO_WORDS.length-1)%HERO_WORDS.length)?"out":""} style={{color:dark?t.accent:"#fff"}} aria-hidden={i!==word}>{tr(w)}</span>)}</span><br/>{tr("deserves a bigger audience.")}
@@ -354,7 +354,7 @@ function LandingInner({ initialAuthQuery }){
                 <style>{HC_CSS}</style>
                 <div className="hc w-full max-w-[380px] max-md:max-w-full" style={{"--cbg":dark?"#171126":"#fff","--cink":dark?"#f2efe9":"#1a1a1a","--cmut":dark?"rgba(255,255,255,.5)":"rgba(0,0,0,.45)","--cdim":dark?"rgba(255,255,255,.35)":"rgba(0,0,0,.35)","--cline":dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.08)","--acbg":dark?"rgba(196,125,142,.16)":"rgba(196,125,142,.1)","--shadow":dark?"0 20px 60px rgba(0,0,0,.5)":"0 20px 60px rgba(0,0,0,.16)"}}>
                   <div className={"hc-facts"+(siteStats.processing==null?" three":"")}>
-                    {[[siteStats.orders||"0","Orders"],[siteStats.users||"0","Accounts"],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,"Delivery"]]:[])].map(([num,label])=>
+                    {[[siteStats.orders||"0",tr("Orders")],[siteStats.users||"0",tr("Accounts")],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,tr("Delivery")]]:[])].map(([num,label])=>
                       <div key={label} className="hc-f"><b><CountUp value={num}/></b><span>{label}</span></div>
                     )}
                     {siteStats.processing!=null&&<div className="hc-f live"><b><CountUp value={siteStats.processing}/></b><span><i/>{tr("Delivering now")}</span></div>}
@@ -444,7 +444,7 @@ function LandingInner({ initialAuthQuery }){
                 </>}
                 <button type="submit" disabled={heroLoading} className="w-full py-3.5 px-0 rounded-xl text-base font-semibold mb-3.5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{background:heroLoading?"#999":t.btnPrimary,color:"#fff",opacity:heroLoading?.7:1,boxShadow:heroLoading?"none":"0 4px 16px rgba(196,125,142,.38)"}}>{heroLoading&&<NitroLoader size={16} mono ariaHidden />}{heroAuth==="login"?(heroLoading?tr("Logging in..."):tr("Log In")):heroAuth==="forgot"?(heroLoading?tr("Sending…"):tr("Send Reset Link")):(heroSignupStep===2?(heroLoading?tr("Creating..."):tr("Create Account")):(heroLoading?tr("Please wait..."):tr("Continue →")))}</button>
                 {heroAuth==="signup"&&heroSignupStep===2&&<button type="button" onClick={()=>{setHeroSignupStep(1);setHeroError("")}} className="w-full py-2 px-0 bg-transparent text-sm font-medium mb-2 text-t-text-soft">{tr("← Back to Step 1")}</button>}
-                <div className="text-center text-[13px] text-t-text-muted">{heroAuth==="signup"&&heroSignupStep===1?"Takes 30 seconds. ":""}{heroAuth==="login"?tr("Don't have an account?") + " ":heroAuth==="forgot"?"Remember your password? ":"Already have an account? "}<button type="button" onClick={()=>{setHeroAuth(heroAuth==="forgot"?"login":heroAuth==="login"?"signup":"login");setHeroSignupStep(1);setHeroError("")}} className="bg-transparent font-semibold text-[13px] text-accent-ink">{heroAuth==="forgot"?tr("Log In"):heroAuth==="login"?tr("Sign Up Free"):tr("Log In")}</button></div>
+                <div className="text-center text-[13px] text-t-text-muted">{heroAuth==="signup"&&heroSignupStep===1?tr("Takes 30 seconds.") + " ":""}{heroAuth==="login"?tr("Don't have an account?") + " ":heroAuth==="forgot"?tr("Remember your password?") + " ":tr("Already have an account?") + " "}<button type="button" onClick={()=>{setHeroAuth(heroAuth==="forgot"?"login":heroAuth==="login"?"signup":"login");setHeroSignupStep(1);setHeroError("")}} className="bg-transparent font-semibold text-[13px] text-accent-ink">{heroAuth==="forgot"?tr("Log In"):heroAuth==="login"?tr("Sign Up Free"):tr("Log In")}</button></div>
                 {heroError&&<InlineAlert type="error" dark={dark} className="mt-3">{heroError}</InlineAlert>}
                 {heroSuccess&&<InlineAlert type="success" dark={dark} className="mt-3">{heroSuccess}</InlineAlert>}
               </form>
