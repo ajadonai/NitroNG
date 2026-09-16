@@ -533,16 +533,6 @@ as the work. (Formerly docs/BACKLOG.md.)
   with kick, threads and webtraffic, which have both curated groups and real
   volume behind them.
 
-- **The i18n detector cannot see array-literal labels** (16 Sep 2026). An
-  Arabic reader saw "Orders", "Accounts" and "Delivery" in English on the hero
-  stats while the drift guard stayed green, because `scanRepo` finds nothing at
-  all in `components/landing-v3.jsx` — it knows JSX text nodes, quoted values on
-  prose-ish keys and a few attributes, but not `[value, "Label"]` inside a map.
-  Six strings were wrapped by hand in `v2.5.79`. Teaching the detector that
-  shape is the durable fix; check the blast radius first, since widening it will
-  surface hits across the app that then need either wrapping or a
-  DELIBERATELY_ENGLISH entry.
-
 - **The `[dir="ltr"]` specificity trap — worth writing down properly** (16 Sep
   2026). It has now caused three separate live bugs. The RTL build plugin
   rewrites asymmetric physical properties into `[dir="ltr"] .sel`, which is
@@ -580,6 +570,14 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **The array-literal blind spot is ratcheted shut** (16 Sep 2026, `v2.5.91`).
+  `[value, "Orders"]` was invisible to the detector, which is how English
+  shipped on the Arabic hero under a green guard. A hard rule was measured and
+  rejected: 534 strings across 40 files match, and most are correctly English.
+  Instead every file carries its 16 Sep count as a budget it may never exceed,
+  and the 43 files at zero can never gain one. Proven against the original bug.
+
 
 - **Four platform pages written, so the landing claim has some evidence**
   (16 Sep 2026, `v2.5.90`). WhatsApp, Audiomack, Boomplay and Google — picked
