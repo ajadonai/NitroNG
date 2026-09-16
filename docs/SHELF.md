@@ -533,19 +533,6 @@ as the work. (Formerly docs/BACKLOG.md.)
   with kick, threads and webtraffic, which have both curated groups and real
   volume behind them.
 
-- **The `[dir="ltr"]` specificity trap — worth writing down properly** (16 Sep
-  2026). It has now caused three separate live bugs. The RTL build plugin
-  rewrites asymmetric physical properties into `[dir="ltr"] .sel`, which is
-  (0,2,0), and a media query adds no specificity of its own — so any
-  `@media ... { .sel }` written to override it silently loses. It cost the
-  locale pills a night, it left `max-desktop:text-center` on the hero column
-  never applying at any width, and it compounded rather than cancelled the nav's
-  `left-1/2` + `-translate-x-1/2` so the Arabic links drew straight through the
-  currency pills. The fixes that work: logical properties (`padding-inline`,
-  `text-start`) so no `[dir]` rule is generated, or a selector that out-specifies
-  it. Worth a short section in CLAUDE.md rather than a shelf note, and worth a
-  guardrail test if one can be written cheaply.
-
 - **`ResellerProfile.catalog` is now unread** (16 Sep 2026, `v2.5.77`). The
   column still exists and nothing reads or writes it. Dropping it is a
   migration and a separate decision; it was left in place to keep the history
@@ -570,6 +557,15 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **The `[dir="ltr"]` trap is written down and the three fixes are pinned**
+  (16 Sep 2026, `v2.5.92`). CLAUDE.md now has a section on why a media query
+  cannot outrank a `[dir]` rule, the three bugs it caused, and the three fixes
+  that work — logical property first, out-specify second, mirror the pair
+  third. A general detector was measured and rejected: two of the three were
+  Tailwind utilities, so no scan of `globals.css` would have found them. The
+  tests pin the fixes instead.
+
 
 - **The array-literal blind spot is ratcheted shut** (16 Sep 2026, `v2.5.91`).
   `[value, "Orders"]` was invisible to the detector, which is how English
