@@ -28,7 +28,7 @@
   "app/resellers/docs/page.jsx": 1,
   "app/resellers/page.jsx": 4,
   "app/reviews/page.jsx": 4,
-  "app/services/[platform]/page.jsx": 16,
+  "app/services/[platform]/page.jsx": 20,
   "app/services/page.jsx": 4,
   "app/signup/page.jsx": 2,
   "app/terms/page.jsx": 2,
