@@ -5,7 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { placeOrder, checkOrder } from '@/lib/smm';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
-import { getResellerTerms, getMarkupSettings, wholesaleOf } from '@/lib/reseller';
+import { getResellerTerms, getMarkupSettings, wholesaleOf, costKoboPer1k } from '@/lib/reseller';
 import { sendEmail, batchPlacementEmail } from '@/lib/email';
 import { getWhatsAppChannelUrl } from '@/lib/settings';
 import { cleanLink } from '@/lib/clean-link';
@@ -831,7 +831,12 @@ export async function POST(req) {
     // caught.
     const quoteTerms = await getResellerTerms(session.id);
     const quoteMarkup = quoteTerms ? await getMarkupSettings() : null;
-    const asQuoted = (retailKobo) => (quoteTerms ? wholesaleOf(retailKobo, quoteTerms, quoteMarkup) : retailKobo);
+    // Per-1k on both sides: serverPrice below is sellPer1k, so the cost handed
+    // to the floor has to be per 1k as well or the comparison is between two
+    // different quantities.
+    const asQuoted = (retailKobo, costPer1k) => (quoteTerms
+      ? wholesaleOf(retailKobo, quoteTerms, quoteMarkup, costKoboPer1k(costPer1k, quoteMarkup))
+      : retailKobo);
 
     // Resolve and validate each row
     const resolved = [];
@@ -917,7 +922,7 @@ export async function POST(req) {
 
       // A curated row is priced by its tier, a full-list row by the service.
       const serverPrice = Number(tier ? tier.sellPer1k : service.sellPer1k);
-      const quotedPrice = asQuoted(serverPrice);
+      const quotedPrice = asQuoted(serverPrice, service.costPer1k);
       const clientPrice = row.expectedPrice ? row.expectedPrice * 100 : null;
       // Handles a null tier: it falls back to the masked public label, so a
       // full-list order never records the provider's own service name.
@@ -1038,7 +1043,8 @@ export async function POST(req) {
       // Apply wholesale, or the Nitro Status + promotion discounts, and total up
       const orderData = resolved.map(r => {
         if (bulkTerms) {
-          const finalCharge = Math.max(100, wholesaleOf(r.charge, bulkTerms, bulkMarkup));
+          // r.cost is this row's whole-order cost in kobo, matching r.charge.
+          const finalCharge = Math.max(100, wholesaleOf(r.charge, bulkTerms, bulkMarkup, r.cost));
           return { ...r, discount: 0, promoDiscount: 0, finalCharge };
         }
         const discount = computeNitroDiscount(r.charge, nitroTier);

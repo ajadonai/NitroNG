@@ -2,7 +2,7 @@ import { log } from "@/lib/logger";
 import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { getPublicServiceLabel } from '@/lib/public-service-label';
-import { getResellerTerms, getMarkupSettings, wholesaleOf } from '@/lib/reseller';
+import { getResellerTerms, getMarkupSettings, wholesaleOf, costKoboPer1k } from '@/lib/reseller';
 
 export async function GET() {
   try {
@@ -14,7 +14,7 @@ export async function GET() {
       orderBy: { category: 'asc' },
       select: {
         id: true, name: true, category: true,
-        sellPer1k: true, min: true, max: true,
+        sellPer1k: true, costPer1k: true, min: true, max: true,
         refill: true, avgTime: true,
       },
     });
@@ -28,7 +28,7 @@ export async function GET() {
         name: getPublicServiceLabel(s.name, s.category),
         category: s.category,
         platform: s.category.toLowerCase().replace('twitter/x', 'twitter'),
-        rate: wholesaleOf(Number(s.sellPer1k), terms, settings) / 100,
+        rate: wholesaleOf(Number(s.sellPer1k), terms, settings, costKoboPer1k(s.costPer1k, settings)) / 100,
         min: s.min,
         max: s.max,
         refill: s.refill,

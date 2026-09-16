@@ -15,7 +15,7 @@
 // Errors follow the convention third-party panels parse: HTTP 200 with
 // { "error": "..." }. Only a bad key answers 401.
 import prisma from '@/lib/prisma';
-import { getResellerTerms, getMarkupSettings, wholesaleOf } from '@/lib/reseller';
+import { getResellerTerms, getMarkupSettings, wholesaleOf, costKoboPer1k } from '@/lib/reseller';
 import { formatResellerService, dedupeCategoryLabels } from '@/lib/reseller-format';
 import { platformOf } from '@/lib/full-catalogue';
 import { standardType, describeService, extraOrderFields } from '@/lib/reseller-instructions';
@@ -127,7 +127,7 @@ async function listServices(terms) {
       // bold-unicode "Premium" — and a category is the one field a panel
       // prints straight into its own storefront.
       category: s.platform || platformOf(s.name, s.category) || 'other',
-      rate: money(wholesaleOf(retail, terms, settings)),
+      rate: money(wholesaleOf(retail, terms, settings, costKoboPer1k(s.costPer1k, settings))),
       min: s.min,
       max: s.max,
       refill: !!s.refill,

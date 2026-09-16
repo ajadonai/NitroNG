@@ -140,11 +140,33 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   `discountPct` becomes an explicit override, not the rate. The API docs already
   promise this ladder and name a "Scale" tier that exists nowhere; T4 takes it.
 
-  **The floor clamp is worth shipping on its own.** Confirmed 16 Sep: the rate
-  box still rejects only `< 0` and `>= 100` (`app/api/admin/resellers/route.js`,
-  action `rate`). Latent rather than bleeding — the three resellers on file are
-  on 15%, 15% and 10%, all well under the floor. Trip's call on whether the
+  **The margin floor is DONE and shipped ahead of the ladder** (`v2.5.102`).
+  Trip's rule, 17 Sep: *"our worst case scenario should be margin of 10% at 30%
+  tier."* The tier rate is a ceiling on the discount now, not a promise about it
+  — the promise is `price >= cost / 0.9`, applied per service in the price path.
+  A reseller on Wholesale gets the full 30% wherever 30% is affordable and 25.9%
+  on the thinnest band, which is exactly 10% margin. Measured across the live
+  catalogue: 219 quotable services, 10 clamped (4.6%), **0 under 10%**, worst
+  case exactly 10.00%. It also closes the rate box for free — 40% can still be
+  typed in and simply stops biting where it would cost money.
+
+  **Still to build: the ladder itself** — the five tiers, the nightly promotion,
+  month-end demotion after a grace month, and the Auto / pinned / custom
+  dropdown. **Mockup: artifact `02ba676e`.**
+
+  **Open for Trip.** (1) The five thresholds — ₦50k/₦250k/₦750k/₦2M are proposed
+  rather than measured; there is no reseller volume to fit a curve to. (2) What
+  happens to the three existing resellers on day one: two drop from 15% to 10%
+  under Auto, because the global rate is already 20%. (3) The badge must read
+  **"up to 30%"** in the docs and the drawer, since the thinnest services charge
+  25.9% — a flat claim would be the one untrue thing here. (4) Whether the
   reseller pricing page mirrors the retail one.
+
+  **Found while building:** three services are priced at 1.02×–1.11× markup **at
+  retail**, so a walk-in customer already earns us under 10% on them. The floor
+  caps wholesale at retail rather than charging a reseller above the public
+  price, so those rows are hidden from the reseller catalogue instead. That is a
+  stale retail price to fix, not a reseller question.
 
   **Mockup, 17 Sep 2026: artifact `02ba676e`.** Built on the live brackets
   rather than the defaults in `lib/markup.js`, which are stale — production

@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { log } from '@/lib/logger';
 import { getCurrentUser } from '@/lib/auth';
-import { getResellerTerms, getMarkupSettings, wholesaleOf } from '@/lib/reseller';
+import { getResellerTerms, getMarkupSettings, wholesaleOf, costKoboPer1k } from '@/lib/reseller';
 import { isKnownPlatform, buildAll } from '@/lib/full-catalogue';
 
 // The customer-facing full list, one platform at a time.
@@ -127,12 +127,17 @@ export async function GET(req) {
     const myVote = new Map(mine.map(v => [v.serviceId, v.value > 0 ? 'up' : 'down']));
     const canVote = new Set(ordered.map(o => o.serviceId));
 
-    const priceOf = terms ? (naira) => wholesaleOf(Math.round(naira * 100), terms, settings) / 100 : (naira) => naira;
+    // Per row, because the margin floor is per service: the same rate is worth
+    // 30% on a cheap one and 25.9% on the thinnest. costPer1k comes off the row
+    // and is never returned in the response.
+    const priceOf = terms
+      ? (naira, costPer1k) => wholesaleOf(Math.round(naira * 100), terms, settings, costKoboPer1k(costPer1k, settings)) / 100
+      : (naira) => naira;
     const services = rows.map(r => {
       const v = votes.get(r.serviceId);
       return {
         id: r.id, label: r.label, attrs: r.attrs, type: r.type,
-        price: Math.round(priceOf(r.price)),
+        price: Math.round(priceOf(r.price, r.costPer1k)),
         min: r.min, max: r.max, unlimited: r.unlimited,
         refill: r.refill, refillLabel: r.refillLabel, dripfeed: r.dripfeed, apiType: r.apiType,
         up: v?.up || 0, down: v?.down || 0,
