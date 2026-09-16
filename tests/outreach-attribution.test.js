@@ -77,8 +77,13 @@ describe('the attribution rule', () => {
     expect(mocks.findFirst.mock.calls[0][0].where.contactedAt.lte).toEqual(earlier);
   });
 
-  it('states the window as a number one edit changes', () => {
-    expect(ATTRIBUTION_DAYS).toBe(14);
-    expect(src).toMatch(/It is a judgement, not a measurement/);
+  it('sits at the edge of the measured distribution, not on a round number', () => {
+    // 25 conversions out of 530 people written to. 7 days catches 15 of them,
+    // 14 catches 20, 21 catches all 25, and 30 catches the same 25 — so 21 is
+    // the smallest window that loses nobody, and every day past it is pure
+    // looseness in which a coincidence can be credited to an agent.
+    expect(ATTRIBUTION_DAYS).toBe(21);
+    expect(src).toMatch(/longest\n \* 18\.9/);
+    expect(src).toMatch(/tighten it to 14/);
   });
 });
