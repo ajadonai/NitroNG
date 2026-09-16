@@ -189,8 +189,14 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   every tier on retail for that band); the simulator never quotes above retail,
   matching `lib/markup.js`; the ceiling display clamps at 0 instead of going
   negative at a high floor; the drop-out rule reads one month, as Trip said.
-  Mockups: ladder `02ba676e`, admin page `4eb3b4ca` — **the admin page is live:
-  every box recomputes the simulator and the profitability table.**
+  Mockups: ladder `02ba676e`, pricing page `4eb3b4ca` (live — every box
+  recomputes), **resellers page `ac056a0a`** (17 Sep): the list gains
+  tier, mode and a 30-day bar against the amount that holds the tier; the
+  drawer replaces the free-text "Personal rate" with Auto / Pin / Custom, shows
+  the first-month deadline, the seat progress, their rates by band, and "Rate
+  before the ladder" so day one's cut is visible; one new surface, Tier
+  history. Built on the three real resellers — all on Starter, first month;
+  Emmanuel's four orders all came through the API.
 
   **Profitability, measured 17 Sep on 90 days of real orders** (₦12.56M
   revenue, 63.4% blended margin, repriced as if every buyer were a reseller):
