@@ -1297,10 +1297,19 @@ function DashboardInner({ initialData }) {
     verify();
   }, [gatewayReturnReference]);
 
-  /* Close notif on outside click */
+  /* Close notif on outside click.
+     "Outside" has to mean outside the panel as well as outside the bell. The
+     mobile sheet is portalled to <body>, so it is not a DOM descendant of
+     notifRef any more — every tap inside it counted as outside and closed the
+     sheet before a button could fire, which is why the actions did nothing.
+     The desktop dropdown still lives inside notifRef, so both are checked. */
   useEffect(() => {
     if (!notifOpen) return;
-    const handler = (e) => { if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false); };
+    const handler = (e) => {
+      if (notifRef.current?.contains(e.target)) return;
+      if (e.target.closest?.(".dash-notif-sheet")) return;
+      setNotifOpen(false);
+    };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [notifOpen]);
