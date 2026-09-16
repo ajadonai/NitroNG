@@ -1198,16 +1198,87 @@ function MiniBar({ pct, color, dark }) {
   );
 }
 
-function SparkChart({ data, color, height = 64 }) {
-  const max = Math.max(...data, 1);
+/**
+ * A tracking link's clicks and signups, on slots the server has already filled.
+ *
+ * Everything that made the old chart lie is decided before it gets here: the
+ * route emits one slot per bucket whether or not anything happened in it, so
+ * bar count equals range, and both series are bucketed onto the same instants,
+ * so slot N is the same date in each. This draws what it is given and does no
+ * arithmetic about time at all.
+ *
+ * Two scales, one set of slots. The signup series has to keep its own scale —
+ * three beside sixty-seven is invisible otherwise — but the old chart implied a
+ * shared one by drawing both to the same ceiling, so a 3-signup bar stood
+ * exactly as tall as a 67-click bar. The peak of each is named in the legend
+ * instead, and the signup bar is drawn narrow and in front so it reads as a
+ * second measure rather than as part of the first.
+ */
+function TimelineChart({ slots, bucket, dark, t, height = 84 }) {
+  const clickPeak = Math.max(...slots.map(s => s.clicks), 1);
+  const signupPeak = Math.max(...slots.map(s => s.signups), 1);
+  const hasSignups = slots.some(s => s.signups > 0);
+  const signupColour = dark ? "#a5b4fc" : "#6366f1";
+
+  const fmt = (iso, opts) => new Date(iso).toLocaleString('en-GB', { timeZone: 'Africa/Lagos', ...opts });
+  const dayOf = (iso) => fmt(iso, { day: '2-digit', month: '2-digit' });
+  // On 24h the window spans two dates, so the older one is tinted and the
+  // boundary is visible without reading a single label.
+  const lastDay = slots.length ? dayOf(slots[slots.length - 1].at) : null;
+
+  const label = (iso) => bucket === 'hour'
+    ? fmt(iso, { hour: '2-digit', minute: '2-digit', hour12: false })
+    : fmt(iso, { day: 'numeric', month: 'short' });
+
+  // Aim for five or six labels whatever the range, rather than hiding them all
+  // above fourteen buckets — which is what left 30d with no axis at all.
+  const step = Math.max(1, Math.round(slots.length / 5));
+
   return (
-    <div className="flex items-end gap-[2px]" style={{ height }}>
-      {data.map((v, i) => (
-        <div key={i} className="flex-1 rounded-t-[2px] transition-all duration-300 relative group/bar cursor-default" style={{ height: `${Math.max(4, (v / max) * 100)}%`, background: v === max ? color : `${color}55` }}>
-          <div className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-semibold px-1.5 py-0.5 rounded whitespace-nowrap opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none z-10" style={{ background: "#1a1d2e", color: "#eee", border: "1px solid rgba(255,255,255,.1)" }}>{v}</div>
-        </div>
-      ))}
-    </div>
+    <>
+      <div className="flex items-end gap-[2px]" style={{ height }}>
+        {slots.map((sl) => {
+          const yesterday = bucket === 'hour' && dayOf(sl.at) !== lastDay;
+          const clickPct = (sl.clicks / clickPeak) * 100;
+          return (
+            <div key={sl.at} className="flex-1 relative group/bar cursor-default h-full flex items-end min-w-0">
+              {/* A day with nothing in it draws as a floor, not as a gap. The
+                  difference between "this link went quiet for three weeks" and
+                  "this link is doing fine" was previously invisible. */}
+              <div className="w-full rounded-t-[2px] transition-all duration-300" style={{
+                height: sl.clicks === 0 ? '2px' : `${Math.max(3, clickPct)}%`,
+                background: sl.clicks === 0
+                  ? (dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)")
+                  : sl.clicks === clickPeak ? t.accent : `${t.accent}55`,
+                opacity: yesterday ? 0.55 : 1,
+                ...(sl.partial ? { outline: `1px dashed ${dark ? "rgba(255,255,255,.3)" : "rgba(0,0,0,.2)"}`, outlineOffset: '-1px' } : {}),
+              }} />
+              {hasSignups && sl.signups > 0 && (
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-t-[2px]" style={{
+                  width: '42%', height: `${Math.max(3, (sl.signups / signupPeak) * 100)}%`,
+                  background: signupColour, opacity: yesterday ? 0.5 : 0.9,
+                }} />
+              )}
+              <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-semibold px-1.5 py-1 rounded whitespace-nowrap opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none z-10 leading-tight"
+                style={{ background: "#1a1d2e", color: "#eee", border: "1px solid rgba(255,255,255,.1)" }}>
+                {label(sl.at)}{sl.partial ? " · in progress" : ""}<br />{sl.clicks} clicks{hasSignups ? ` · ${sl.signups} signups` : ""}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex mt-2">
+        {slots.map((sl, i) => (
+          <span key={sl.at} className="flex-1 text-[9px] text-center min-w-0 truncate" style={{ color: t.textMuted }}>
+            {i % step === 0 ? label(sl.at) : ""}
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-4 mt-2 flex-wrap">
+        <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ background: t.accent }} /><span className="text-[10px]" style={{ color: t.textMuted }}>Clicks · peak {clickPeak.toLocaleString()}</span></div>
+        {hasSignups && <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ background: signupColour }} /><span className="text-[10px]" style={{ color: t.textMuted }}>Signups · own scale, peak {signupPeak.toLocaleString()}</span></div>}
+      </div>
+    </>
   );
 }
 
@@ -1275,18 +1346,32 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
   const periodSignups = analytics.periodSignups ?? link.signups ?? 0;
   const periodOrders = analytics.periodOrders ?? link.orders ?? 0;
   const periodRevenue = analytics.periodRevenue ?? (link.revenue || 0) / 100;
-  const convRate = analytics.totalClicks > 0 ? ((periodSignups / analytics.totalClicks) * 100).toFixed(1) : "0";
-  const orderRate = periodSignups > 0 ? ((periodOrders / periodSignups) * 100).toFixed(1) : "0";
+  // An em dash where there is nothing to divide by. "0.0% conversion" on a
+  // link with no clicks in the window is a measurement nobody took, printed as
+  // though it were a result.
+  const convRate = analytics.totalClicks > 0 ? `${((periodSignups / analytics.totalClicks) * 100).toFixed(1)}% conversion` : "\u2014";
+  const orderRate = periodSignups > 0 ? `${((periodOrders / periodSignups) * 100).toFixed(1)}% of signups` : "\u2014";
 
-  const timelineData = range === "24h"
-    ? Array.from({ length: 24 }, (_, h) => { const m = analytics.timeline.find(t => t.bucket === h); return m ? m.clicks : 0; })
-    : analytics.timeline.map(t => t.clicks);
-  const signupTimelineData = range === "24h"
-    ? Array.from({ length: 24 }, (_, h) => { const m = (analytics.signupTimeline || []).find(t => t.bucket === h); return m ? m.signups : 0; })
-    : (analytics.signupTimeline || []).map(t => t.signups);
-  const timelineLabels = range === "24h"
-    ? Array.from({ length: 24 }, (_, i) => `${i}:00`)
-    : analytics.timeline.map(t => { const d = new Date(t.bucket); return d.toLocaleDateString('en', { month: 'short', day: 'numeric' }); });
+  // The server sends one slot per bucket, already zero-filled and already
+  // bucketed in Lagos, so there is no time arithmetic left to do here.
+  const slots = analytics.timeline || [];
+  const fmtWindow = () => {
+    if (!analytics.windowStart) return analytics.label || "";
+    const o = { timeZone: 'Africa/Lagos', day: 'numeric', month: 'short' };
+    const a = new Date(analytics.windowStart);
+    // windowEnd is the instant after the last slot, so the readable end is one
+    // step back — otherwise "Last 7 days" names an eighth day it never drew.
+    // Clamped to now as well, because the final bucket is the one in progress:
+    // on weekly buckets the raw end is next Sunday, and a caption that reads
+    // "15 Jun – 20 Sept" on the 16th is naming a date that has not happened.
+    const rawEnd = new Date(analytics.windowEnd).getTime() - 1;
+    const b = new Date(Math.min(rawEnd, Date.now()));
+    if (analytics.bucket === 'hour') {
+      const h = { timeZone: 'Africa/Lagos', hour: '2-digit', minute: '2-digit', hour12: false };
+      return `${analytics.label} · ${a.toLocaleString('en-GB', h)} → ${b.toLocaleString('en-GB', h)}`;
+    }
+    return `${analytics.label} · ${a.toLocaleDateString('en-GB', o)} – ${b.toLocaleDateString('en-GB', o)}`;
+  };
 
   const browserColors = { Chrome: "#4caf50", Safari: "#60a5fa", Firefox: "#ff9800", Instagram: "#e040fb", Facebook: "#1877f2", TikTok: "#ff0050", Edge: "#03a9f4", Opera: "#ff1b2d" };
   const accentColors = ["#c47d8e", "#60a5fa", "#a78bfa", "#6ee7b7", "#fcd34d", "#f43f5e", "#f97316", "#06b6d4"];
@@ -1297,8 +1382,8 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         {[
           ["Total Clicks", analytics.totalClicks.toLocaleString(), `${analytics.uniqueClicks.toLocaleString()} unique`, t.accent],
-          ["Signups", periodSignups.toLocaleString(), `${convRate}% conversion`, dark ? "#a5b4fc" : "#6366f1"],
-          ["Orders", periodOrders.toLocaleString(), `${orderRate}% of signups`, dark ? "#6ee7b7" : "#059669"],
+          ["Signups", periodSignups.toLocaleString(), convRate, dark ? "#a5b4fc" : "#6366f1"],
+          ["Orders", periodOrders.toLocaleString(), orderRate, dark ? "#6ee7b7" : "#059669"],
           ["Revenue", fN(periodRevenue), `${fN(analytics.periodProfit ?? 0)} profit`, dark ? "#fcd34d" : "#d97706"],
         ].map(([label, val, sub, color]) => (
           <div key={label} className="rounded-xl p-3.5 relative overflow-hidden" style={cardStyle}>
@@ -1309,43 +1394,51 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
         ))}
       </div>
 
-      {/* Timeline */}
-      {timelineData.length > 0 && (
-        <div className="rounded-xl p-4 mb-4" style={cardStyle}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-sm font-semibold" style={{ color: t.text }}>Click Timeline</div>
-              <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{range === "24h" ? "Today, by hour" : range === "7d" ? "Last 7 days" : range === "all" ? "All time" : "Last 30 days"}</div>
-            </div>
-            <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
-              {["24h", "7d", "30d"].map(p => (
-                <button key={p} onClick={() => setRange(p)} className="px-3 py-1.5 text-[11px] font-semibold border-none cursor-pointer" style={{ background: range === p ? "rgba(196,125,142,.15)" : "transparent", color: range === p ? t.accent : t.textMuted }}>{p}</button>
-              ))}
-            </div>
+      {/* The lifetime figures, plainly labelled as lifetime.
+          They used to sit in the card row without saying so: 57 all-time
+          signups over 40 clicks in a 30-day window printed as "142.5%
+          conversion". They are still worth seeing — they are just not the
+          same question as the row above them. */}
+      {analytics.lifetime && (
+        <div className="rounded-xl px-4 py-3 mb-4 flex items-center gap-4 flex-wrap" style={cardStyle}>
+          <div className="text-[10px] font-semibold uppercase tracking-[1.5px] shrink-0" style={{ color: t.textMuted }}>
+            All time{analytics.lifetime.since ? ` · since ${new Date(analytics.lifetime.since).toLocaleDateString('en-GB', { timeZone: 'Africa/Lagos', day: 'numeric', month: 'short', year: 'numeric' })}` : ""}
           </div>
-          <div className="relative">
-            <SparkChart data={timelineData} color={t.accent} height={72} />
-            {signupTimelineData.some(v => v > 0) && (
-              <div className="absolute inset-0" style={{ opacity: 0.5 }}>
-                <SparkChart data={signupTimelineData} color={dark ? "#a5b4fc" : "#6366f1"} height={72} />
+          <div className="flex items-center gap-5 flex-wrap ml-auto">
+            {[["Clicks", analytics.lifetime.clicks.toLocaleString()],
+              ["Signups", analytics.lifetime.signups.toLocaleString()],
+              ["Orders", analytics.lifetime.orders.toLocaleString()],
+              ["Revenue", fN(analytics.lifetime.revenue)]].map(([k, v]) => (
+              <div key={k} className="flex items-baseline gap-1.5">
+                <span className="text-[13px] font-bold" style={{ color: t.text }}>{v}</span>
+                <span className="text-[10.5px]" style={{ color: t.textMuted }}>{k}</span>
               </div>
-            )}
+            ))}
           </div>
-          {signupTimelineData.some(v => v > 0) && (
-            <div className="flex gap-4 mt-2">
-              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ background: t.accent }} /><span className="text-[10px]" style={{ color: t.textMuted }}>Clicks</span></div>
-              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ background: dark ? "#a5b4fc" : "#6366f1" }} /><span className="text-[10px]" style={{ color: t.textMuted }}>Signups</span></div>
+        </div>
+      )}
+
+      {/* Timeline */}
+      {slots.length > 0 && (
+        <div className="rounded-xl p-4 mb-4" style={cardStyle}>
+          <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold" style={{ color: t.text }}>Click Timeline</div>
+              {/* The window it is really showing. "Today, by hour" was a caption
+                  for a rolling 24 hours across two dates. */}
+              <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{fmtWindow()}</div>
             </div>
-          )}
-          {timelineLabels.length <= 14 && (
-            <div className="flex justify-between mt-2">
-              {timelineLabels.map((l, i) => (
-                range === "24h"
-                  ? (i % 4 === 0 && <span key={i} className="text-[9px]" style={{ color: t.textMuted }}>{l}</span>)
-                  : <span key={i} className="text-[9px] flex-1 text-center" style={{ color: t.textMuted }}>{l}</span>
+            {/* 90d and All were added because 30 days was the longest on offer
+                and these links are older than that — 60% of alabi-ad's history
+                could not be opened at all. All buckets by week, since 92 daily
+                bars is noise where 13 weekly bars is a trend. */}
+            <div className="flex rounded-lg overflow-hidden shrink-0" style={{ border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
+              {["24h", "7d", "30d", "90d", "all"].map(p => (
+                <button key={p} onClick={() => setRange(p)} className="px-2.5 py-1.5 text-[11px] font-semibold border-none cursor-pointer" style={{ background: range === p ? "rgba(196,125,142,.15)" : "transparent", color: range === p ? t.accent : t.textMuted }}>{p === "all" ? "All" : p}</button>
               ))}
             </div>
-          )}
+          </div>
+          <TimelineChart slots={slots} bucket={analytics.bucket} dark={dark} t={t} />
         </div>
       )}
 
