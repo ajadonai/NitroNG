@@ -7,492 +7,315 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 ## Open
 
-- **Deposit bonus ladder — the restore is built and HELD at Trip's word**
-  (held 15 Sep 2026). The rungs run ₦250 / ₦600 / ₦1,500 in the code. The
-  restore to **₦500 / ₦1,200 / ₦3,000** exists as a commit in history and is
-  taken back out by the last commit of the 15 Sep push, so **reverting that
-  commit is how it goes live** — do not retype the values. Trip: "i dont think
-  we need to restore it yet. I will tell you when to."
+Grouped by what is actually blocking each one. Verified against the code and the
+database on 16 Sep 2026 — several entries had gone stale and are now in Closed.
 
-  The measurements are recorded here because they were written into the commit
-  message that the 15 Sep squash folded away, and they are the whole argument
-  for turning it back on:
+### Waiting on Trip — one word or one flip
 
-  - The 1 Sep cut halved every rung to find out how much of the ladder's pull
-    is the money itself. It is most of it. In the fortnight after, first
-    deposits under ₦2,500 went 28.6% → 36.6% and the ₦1,000 minimum
-    17.5% → 27.9%, while the median held at ₦2,500. The shift lands on 1 Sep,
-    five days before the ad audience widened, so the ladder caused it and not
-    the targeting change.
-  - Seven-day value per first depositor fell ₦5,588 → ₦4,438 with repeat
-    behaviour flat (1.34 → 1.36 deposits), so nobody came back later to make it
-    up. That is ₦401 of face value saved per depositor against ₦726 of gross
-    profit lost — about ₦360k a month.
-  - At full rates the ladder costs 6.1% of the gross profit it produces
-    (₦429k real against ₦7.04M), and every rung pulls: 106 people at ₦10,000
-    against 6 anywhere between ₦5k and ₦10k.
+- **Deposit bonus ladder — the restore is built and HELD.** Rungs run
+  ₦250 / ₦600 / ₦1,500 live. The restore to **₦500 / ₦1,200 / ₦3,000** is a
+  **revert of `235935f5`**, not a retype — that commit carries the copy too (the
+  emails, the Lagos page, the FAQ knowledge base, the service-type meta all
+  quote the headline). Trip: *"i dont think we need to restore it yet. I will
+  tell you when to."*
 
-  Restoring also moves the copy that quotes the headline — the emails, the
-  Lagos page, the FAQ knowledge base and the service-type meta all say "up to
-  ₦1,500" while held and "up to ₦3,000" when restored. The revert carries all
-  of it; that is why it is a revert and not a hand edit.
+  The argument for turning it back on, measured after the 1 Sep halving:
+  first deposits under ₦2,500 went 28.6% → 36.6% and the ₦1,000 minimum
+  17.5% → 27.9%, median holding at ₦2,500; the shift lands on 1 Sep, five days
+  before the ad audience widened, so it is the ladder and not the targeting.
+  Seven-day value per first depositor fell ₦5,588 → ₦4,438 with repeat
+  behaviour flat (1.34 → 1.36), so nobody made it up later — ₦401 of face value
+  saved against ₦726 of gross profit lost, about **₦360k a month**. At full
+  rates the ladder costs 6.1% of the gross profit it produces (₦429k against
+  ₦7.04M) and every rung pulls: 106 people at ₦10,000 against 6 anywhere
+  between ₦5k and ₦10k.
 
-- **Reseller tier ladder — parked 12 Sep 2026, scope complete.** Five tiers
-  (Starter 10% → Wholesale 30%) on rolling 30-day retail-equivalent spend,
-  automatic promotion on the daily cron, month-end demotion after a grace
-  month, one Auto / pinned / custom dropdown in the admin Resellers drawer.
-  Settled during scoping: flat % off retail with a margin floor (the thinnest
-  band is 1.5× markup — the Ultra bracket at Budget tier — so any flat discount
-  of 33.3% or more sells below cost, corrected 14 Sep 2026 from the 1.35×/26%
-  this entry used to claim; `tests/markup-reseller.test.js` refuses it); thresholds must count
-  retail-equivalent, because orders store the discounted charge and a promoted
-  reseller would slow its own measurement; `discountPct` becomes an explicit
-  override, not the rate; and the floor clamp is worth shipping on its own —
-  the rate box accepts anything up to 99% today, not the 40% this entry used to
-  say (`app/api/admin/resellers/route.js`, action `rate`, rejects only `< 0` and
-  `>= 100`). Latent, not bleeding: the three resellers on file are on 15%, 15%
-  and 10%, all well under the floor. Every charge path already funnels through
-  `getResellerTerms()` → `wholesaleOf()`, so the hook is one function. The API
-  docs already promise this ladder and name a "Scale" tier that exists nowhere;
-  T4 takes the name. Trip's call on whether the reseller pricing page mirrors
-  the retail pricing page layout.
+- **Cash referrals — built dark, flip `cash_referrals_enabled`** (v2.4.75;
+  confirmed still unset). Before it goes live: the admin payouts page (the API
+  at `/api/admin/referral-payouts` already lists, completes and rejects), the
+  referrer "your cash is on hold" email, void-on-refund for reversed deposits, a
+  Terms update for cash payouts, and Trip's sign-off on ₦500 cash / ₦600 wallet
+  / ₦2,500 gate / ₦5,000 min / 7-day hold (`ref_cash_amount`,
+  `ref_cash_wallet_amount`, `ref_cash_min_payout`, `ref_cash_hold_days`).
 
-- **Subscription — parked 12 Sep 2026, shape undecided.** The recommendation on
-  record: sell scheduling ("Nitro Auto": a service and a weekly amount that
-  runs itself), not a discount — a discount subscription answers the same
-  question as the reseller ladder and answers it worse. First version charges
-  the wallet per run and pauses when it runs dry, sidestepping card
-  tokenisation and dunning entirely; card billing only if Auto proves demand.
+  This is the one item that opens a real cash-out path. The welcome bonus is now
+  spend-only `BonusCredit` rather than raw balance, so that exposure is closed
+  before this ships rather than after.
 
-- **Adjacent products — researched 14 Sep 2026, revisit soon.** Seven
-  digital-goods verticals that fit the sentence Nitro already answers: a
-  Nigerian wants a digital thing, cannot pay in dollars, and needs it in naira
-  from a wallet they trust. Clickable write-up with providers, published margins
-  and blockers: artifact `59be94ff`.
+- **Monthly top-up bonus — built dark, set `topup_bonus_enabled`** (v2.4.89;
+  confirmed still unset). Instant-unlock ladder: cross ₦30k in a Lagos calendar
+  month → ₦1,500, ₦60k → +₦2,700, ₦100k → +₦5,800 (cumulative 5/7/10%), paid
+  inside `finalizeDeposit` as spend-only BonusCredit (`topup_month`, 30-day
+  expiry), first-ever deposit and resellers excluded, one award per user per
+  month per rung. Before flipping: Trip signs off the rungs, decide whether the
+  deposit email mentions the prize (Telegram already counts it), and watch the
+  monthly cost against the ~₦45k face estimate. Mock `7adc3631`, backend brief
+  `5b60a686`.
 
-  **Build, in this order.** (1) **Airtime and data** — VTpass (Nigeria-native,
-  all four networks), Reloadly, eBills, 247API. 2–5% on airtime, 3–7% on data
-  against 157M mobile internet subscriptions. Thin margin on purpose: it is a
-  reason to open the app weekly, measured on wallet-funding frequency, not a
-  profit centre. (2) **Gift cards** — Reloadly Gift Cards, Bitrefill. 3–10%, and
-  it answers Nitro's own founding complaint aimed at a different product.
-  (3) **Bills** — electricity, DStv/GOtv/Startimes, and WAEC/JAMB pins, same key
-  as airtime, no extra integration. (4) **Travel eSIM** — Airalo Partner API
-  (200+ destinations, white-label delivery email), eSIM Go, MobiMatter. The
-  prestige product, not the volume one. (5) **Creator software codes**, wherever
-  the brand issues them, on the gift-card rail.
+- **The "Soon" tags on six languages are a public promise nobody has
+  confirmed.** Pidgin, Yoruba, Hausa, Igbo, Kiswahili and Français are labelled
+  Soon on the switcher. Four dictionaries carry 2,078 strings each and
+  `tests/i18n-drift-guard.test.js` holds the line, so the machinery is real —
+  the question is whether Nitro is promising the other six.
 
-  **Two hard lines.** **Travel eSIM only, never a Nigerian line** — since 2021
-  every SIM in Nigeria, physical or embedded, must be registered against a NIN,
-  and issuing local lines needs an operator or MVNO partner under NCC rules;
-  foreign-destination eSIMs sit entirely outside that. And **no virtual dollar
-  cards** — the obvious next step after gift cards is a different, regulated
-  business with its own licensing and chargeback exposure.
+### Waiting on data or a date
 
-  **Check before building: betting wallet top-up.** Commercially the largest
-  market here and one line once the bills rail exists, but gambling adjacency is
-  a merchant-category question. Get it in writing from Flutterwave that it does
-  not change Nitro's category or risk rating.
+- **Checkout abandonment — instrumented, not yet running.** `gatewayHandoffAt`
+  is stamped immediately before the redirect and `/api/admin/checkout-funnel`
+  splits one bucket into **left_at_gateway** (saw the page, walked away — a
+  pricing, trust or method question) and **never_arrived** (closed the tab
+  before it loaded — a slow handoff, and ours to fix).
 
-  **Ruled out: social account sales and rented OTP verification numbers.**
-  Every major platform prohibits account transfer and Instagram bans on
-  suspicion, so the product can be destroyed the day after it sells and the
-  refund is ours; supply carries reclamation and stolen accounts; OTP rental is
-  the documented standard tool for bulk fake-account creation. Both are
-  chargeback magnets, and the guest-checkout entry on this shelf already rules
-  out anonymous card payments because chargebacks in this vertical endanger the
-  processor relationship — which is the rail every other product here runs on.
+  **The clock starts at the deploy, not at 16 Sep.** Checked on 16 Sep: zero
+  deposits carry a handoff stamp, because the code is committed and not yet
+  live. Read a fortnight from the push, then change the flow — not before.
+  Sizing: ~16.6% true leakage, roughly ₦20k/day of deposits and ₦13k/day of
+  gross profit, order of ₦130k/month if worked. **Real payment failure is
+  0.9%** — the ₦3.25M of "failed attempts" quoted on 11 Sep was abandonment,
+  not failure, which is the mistake reading first exists to avoid.
 
-- **Codebase neatness — what the Sep 2026 sweep left as Trip's call.** The sweep
-  itself shipped (Phase 1 pipelines `d51a27a3` `12d3ee4a` `e8d7461a` `e395d281`,
-  Phase 2 tidy `7bc31d4c` `7c486734` `3a19b4a8` `d57869c2`): 184 unused names
-  across 69 files removed, four copies of one loop collapsed, two settings that
-  were accepted and ignored deleted. Four decisions were left open and then
-  lived only in a chat message, which is why they went missing — they are on the
-  shelf now. Two of the original six are since closed (`9add969d`, 14 Sep): the
-  dead landing pair and the composer's cross-sell/TIER_COMPARE data.
+- **Onboarding funnel, second read — ready now.** `firstSeenWalletAt` and
+  `firstSeenNewOrderAt` have been collecting since 26 Aug 2026, so the 30 days
+  are in. Rerun the funnel and find where the 74% who never pay actually stop.
 
-  1. **`lib/crew-bot.js` — 14 of its 22 exports are called by nothing**
-     (re-counted 14 Sep). Used: `sendDM`, `replyInGroup`, `crewWelcome`,
-     `crewSignup`, `crewFirstPurchase`, `crewRepeatBuyer`, `crewDmChiefNewLink`,
-     `kickFromGroup`. Unused: `crewLeadChange`, `crewFirstBlood`,
-     `crewMilestone`, `crewStreak`, `crewWeeklyWinner`, `crewMonthlyChampion`,
-     `crewLeaderboard`, `crewAnnouncement`, `crewDailyTip`, `crewDmCommission`,
-     `crewDmPayout`, `crewDmNewSignup`, `crewDmFirstPurchase`, `crewDmInactive`.
-     Read together they are a crew gamification feature — streaks, milestones,
-     weekly winners, commission DMs — written and never wired.
-     **Trip's call, 14 Sep 2026: keep it, it will be useful eventually.** Left
-     exactly as it is; this row exists so the next sweep does not re-propose it.
+- **Scale ladder gate — judge it on database signups, not Meta.** The Lagos
+  ₦30,000 → ₦39,000 budget step stays gated on cost per new customer under
+  ₦1,600 measured from **real signup counts in the DB**. The CAPI identity fix
+  (v2.4.99) makes cost-per-order and ROAS look better from 4 Sep for
+  measurement reasons alone — Meta correctly claiming orders it already drove —
+  so no metric may be compared across that boundary.
 
-  2. **Scripts — done** (`8c3e60c2`, 14 Sep). Ten spent one-offs deleted,
-     `scripts/README.md` added naming what every remaining file is for. Four
-     were deleted and put back: `cleanup-seed-data.js`, `seed-testuser.js`,
-     `seed-blog.cjs` and `seed-production.sql` look spent and are not — somebody
-     had already hardened them behind `runGuardedPrismaScript` and written
-     `tests/operational-script-safety.test.js` around them. Six tests failed on
-     the delete and were right to. A script with a test guarding it is a script
-     somebody owns.
+### Waiting on someone outside Nitro
 
-  3. **`naira()` — done** (`1bffcfdb`, 14 Sep). `lib/money.js` replaced twelve
-     of the twenty-three definitions. The other eleven stay: each is a different
-     function wearing the same name, and the module says which and why. The
-     reason this needed care rather than a find-and-replace is that the copies
-     disagreed on the answer — ₦12,345.67 from the Telegram bot against ₦12,346
-     from the outreach summary for the same kobo — so `tests/money-module.test.js`
-     pins every old copy's output against its replacement.
+- **Flutterwave USD collection — the last step of foreign payments.** Tested
+  live 12 Sep: GHS collects (mobile money shows), KES is built the same way, and
+  a USD charge returns *"Oops! No Payment method available."* — Flutterwave
+  resolves no method for it. "Pay with international card" means a foreign card
+  may pay one of **our** charges; it is not permission to denominate in dollars.
+  Until they approve it, USD and GBP are display-only (`canChargeIn()` in
+  `lib/currency.js`) and a dollar reader is charged the naira their figure
+  converts to.
 
-  4. **Tickets — done** (`b2a48640` `6614e1d7`, 14 Sep). Removed once Trip
-     established the bots do not need it: nothing in `lib/ify` ever read a
-     ticket back, only wrote one. The surface was larger than this entry once
-     claimed — it said "legacy read-only views" and the daily cron was in fact
-     writing, filing a `TicketReply` on every auto-close — so it took the admin
-     page, both API routes, the cron pass, the overview's count/list/activity
-     translations, the badge, three of the poller's six queries, the dashboard
-     payload, the permission entries and the settings toggles.
+  **When it is enabled: add the code to `COLLECTIBLE` and nothing else moves** —
+  the quote, the stored `providerPriceCurrency`, the verification and the
+  per-currency `payment_options` are all already written for it.
 
-     Ify escalation now writes one `logActivity` line instead, which lands in a
-     feed an admin already reads and needed no migration.
+  Everything else here has shipped. The phone gate accepts NG/US/GB/GH/KE
+  (`2c1ac43a`); the switcher is live with prices, balance and order totals
+  converting at one resolved rate; the premium is **on at 15%**
+  (`fx_premium_live=1`, `fx_premium_percent=15` — both confirmed in the database
+  on 16 Sep). The premium is collected only on a charge Nitro denominates — GHS,
+  KES and USDT. A naira charge paid by a foreign card converts at the card
+  network's rate, so it collects **0%**; that is structural, and USD collection
+  is the only thing that closes it. Which is why an uncollectible currency pick
+  falls back to the **country**, never straight to naira — otherwise the picker
+  would be a premium waiver.
 
-     **The data stayed**: 46 tickets and 190 replies, all Resolved. Account
-     deletion still purges a departing customer's, and the stale-signup sweep
-     still refuses to delete anyone holding one — both must keep working while
-     the rows exist. Dropping the models is a separate, destructive decision
-     nobody needs to take yet.
+  **Do not** build per-country wallets or a second price list. The premium lives
+  in the deposit rate, and that is settled.
 
-- **Foreign payment methods — steps 1 and 2 shipped 8 Sep 2026, steps 3 and 4
-  remain.** Signup accepts NG/US/GB/GH/KE (`2c1ac43a`). Flutterwave charges
-  in the customer's currency where it can collect in it (GHS, KES — step 3
-  below); the other non-naira rail is dollar-denominated USDT.
+- **Betting wallet top-up — get it in writing.** Commercially the largest of the
+  adjacent products and one line once the bills rail exists, but gambling
+  adjacency is a merchant-category question. Confirm with Flutterwave that it
+  does not change Nitro's category or risk rating before building anything.
 
-  **Done:** the gateway list is cut by the country on the account —
-  `app/api/payments/gateways/route.js` marks every rail `nigeriaOnly` except
-  crypto, hides the rest for a foreign account, and returns how many it hid so
-  the wallet can say why in one line ("Card and bank transfer are Nigerian-only
-  for now. USDT works from anywhere, and credits your wallet in naira."). A
-  gateway id it does not recognise is treated as Nigerian; no session or no
-  country reads as Nigeria, which is the list it always returned.
-  `tests/gateways-by-country.test.js`.
+### Designs agreed, not built
 
-  **Also decided the same day:** the deposit premium is ON at 15%
-  (`fx_premium_live = 1`, `fx_premium_percent = 15`) — Trip's call after
-  finding the off state was not neutral but the legacy cushioned rate, which
-  had been crediting every USDT deposit 15% above market (₦20,000 per $100).
-  Deposit rate is now market ÷ 1.15 ≈ ₦1,156/$. A Nigerian paying USDT pays it
-  too; Trip chose not to carve that segment out. And there is **one welcome
-  bonus ladder for everyone**, in naira, converted on screen — the per-currency
-  ladders built that morning came out again the same afternoon (`9aecd275`).
+- **Reseller tier ladder — scope complete, 12 Sep 2026.** Five tiers (Starter
+  10% → Wholesale 30%) on rolling 30-day retail-equivalent spend, automatic
+  promotion on the daily cron, month-end demotion after a grace month, one
+  Auto / pinned / custom dropdown in the admin drawer. Settled: flat % off
+  retail with a margin floor — the thinnest band is 1.5× markup, so any flat
+  discount of **33.3% or more sells below cost** (`tests/markup-reseller.test.js`
+  refuses it); thresholds count retail-equivalent, because orders store the
+  discounted charge and a promoted reseller would slow its own measurement;
+  `discountPct` becomes an explicit override, not the rate. The API docs already
+  promise this ladder and name a "Scale" tier that exists nowhere; T4 takes it.
 
-  **Remaining:**
-  3. **Flutterwave USD collection — still the real unlock, and now measured.**
-     Tested live on 12 Sep: GHS collects (mobile money shows) and KES is built
-     the same way, but a USD charge returns **"Oops! No Payment method
-     available. Please engage merchant for support."** — Flutterwave resolves
-     no method for it. "Pay with international card", which the dashboard has
-     switched on, means a card issued abroad may pay one of OUR charges; it is
-     not permission to denominate the charge in dollars. That needs USD
-     collection, a separate approval. Until Trip has it, USD and GBP are
-     display-only (`canChargeIn()` in `lib/currency.js`) and a dollar reader is
-     charged the naira their figure converts to, which their card converts back
-     at the network rate. **When Flutterwave enables it: add the code to
-     `COLLECTIBLE` and nothing else moves** — the quote, the stored
-     `providerPriceCurrency`, the verification and the per-currency
-     `payment_options` are all already written for it.
-  4. **Done 12 Sep.** `SWITCHER_LIVE` is on in production and all five
-     currencies are `active` in `lib/currency.js` (the four foreign ones lost
-     their Soon tag). The picker also decides what Flutterwave charges in,
-     where Flutterwave can collect in it: cedis and shillings, not dollars or
-     pounds (see 3). In naira it falls back to the account's country
-     (`COUNTRY_CURRENCY`), so a Ghanaian who never touched it still gets cedis
-     and mobile money. The wallet stays naira either way.
+  **The floor clamp is worth shipping on its own.** Confirmed 16 Sep: the rate
+  box still rejects only `< 0` and `>= 100` (`app/api/admin/resellers/route.js`,
+  action `rate`). Latent rather than bleeding — the three resellers on file are
+  on 15%, 15% and 10%, all well under the floor. Trip's call on whether the
+  reseller pricing page mirrors the retail one.
 
-     **Where the 15% premium is actually collected** (measured 12 Sep, and the
-     reason the fallback order matters): only on a charge *we* denominate —
-     GHS and KES card/mobile-money, and USDT, where we do the conversion. Every
-     naira charge paid by a foreign card converts at the card network's rate,
-     not ours, so it collects **0%** whatever currency the page is read in;
-     that is structural, not a gap in the code, and USD collection (3) is the
-     only thing that closes it. It does mean an uncollectible pick must fall
-     back to the **country**, never straight to naira — otherwise the picker is
-     a premium waiver: a Ghanaian selecting dollars would be charged naira and
-     pay market. Pinned by "a Ghanaian cannot pick their way out of cedis".
+- **Subscription — shape undecided, 12 Sep 2026.** Recommendation on record:
+  sell **scheduling**, not a discount ("Nitro Auto" — a service and a weekly
+  amount that runs itself). A discount subscription answers the same question as
+  the reseller ladder and answers it worse. First version charges the wallet per
+  run and pauses when it runs dry, sidestepping card tokenisation and dunning
+  entirely; card billing only if Auto proves demand.
 
-  **Do not** build per-country wallets or a second price list — both ruled out
-  in the International Nitro entry, and the premium lives in the deposit rate.
+- **Adjacent products — researched 14 Sep 2026.** Seven digital-goods verticals
+  that fit the sentence Nitro already answers: a Nigerian wants a digital thing,
+  cannot pay in dollars, needs it in naira from a wallet they trust. Write-up
+  with providers, margins and blockers: artifact `59be94ff`.
 
-- **Checkout abandonment — instrumented 16 Sep 2026, now read it.** The beacon
-  is live (`v2.5.94`): `gatewayHandoffAt` is stamped immediately before the
-  redirect, and `/api/admin/checkout-funnel` splits what used to be one bucket
-  into **left_at_gateway** (saw it, walked away — a pricing, trust or method
-  question) and **never_arrived** (closed the tab before it loaded — a slow or
-  broken handoff, and ours to fix).
+  Build in this order. **(1) Airtime and data** — VTpass (Nigeria-native, all
+  four networks), Reloadly, eBills, 247API. 2–5% on airtime, 3–7% on data
+  against 157M mobile internet subscriptions; thin margin on purpose, measured
+  on wallet-funding frequency rather than profit. **(2) Gift cards** — Reloadly,
+  Bitrefill, 3–10%, and it answers Nitro's own founding complaint aimed at a
+  different product. **(3) Bills** — electricity, DStv/GOtv/Startimes, WAEC/JAMB
+  pins, same key as airtime. **(4) Travel eSIM** — Airalo Partner API, eSIM Go,
+  MobiMatter; the prestige product, not the volume one. **(5) Creator software
+  codes** on the gift-card rail.
 
-  **Do not change the flow until a fortnight of data is in.** Rows before
-  16 Sep carry no handoff, so the reader's `since` defaults to that date rather
-  than counting them all as never_arrived. The sizing stands: ~16.6% true
-  leakage, roughly ₦20k/day of deposits and ₦13k/day of gross profit, on the
-  order of ₦130k/month if worked. Real payment failure is 0.9% — the ₦3.25M of
-  "failed attempts" quoted on 11 Sep was abandonment, not failure, which is the
-  mistake reading first exists to avoid.
+  **Two hard lines.** Travel eSIM only, **never a Nigerian line** — every SIM in
+  Nigeria must be registered against a NIN since 2021 and issuing local lines
+  needs an operator or MVNO partner under NCC rules. And **no virtual dollar
+  cards** — a different, regulated business with its own licensing and
+  chargeback exposure.
 
-- **Auto data-saver — parked design, agreed 6 Sep 2026** (the improved version
-  of the audit's "Data-Saver toggle"): no manual toggle — animations cost CPU,
-  not data, and a switch nobody finds helps nobody. Instead the app reads the
-  browser's own signals: `navigator.connection.saveData` (the user's OS-level
-  Data Saver, exposed by Chrome on Android — exactly our audience) and
-  `effectiveType` (`"3g"`/`"2g"`). When either says constrained:
-  **lengthen the polling intervals** (the real data eater — the dashboard's
-  pollers, not the visuals), pause ambient animation (aurora, marquee, ticker
-  pulses — reduced-motion plumbing already exists everywhere new), and defer
-  heavy assets. One small hook (`useDataSaver()`) consumed by the pollers and
-  the atmosphere layer; zero settings UI; helps precisely the users on weak
-  networks without them doing anything. Optional later: a one-line "data saver
-  on" indicator so support can explain why charts feel slower.
+  **Ruled out: social account sales and rented OTP numbers.** Every major
+  platform prohibits account transfer and Instagram bans on suspicion, so the
+  product can be destroyed the day after it sells and the refund is ours; OTP
+  rental is the documented standard tool for bulk fake-account creation. Both
+  are chargeback magnets, and chargebacks in this vertical endanger the
+  processor relationship every other product here runs on.
 
-- **Outcome Bundles ("Campaign Goals") — parked design, agreed 6 Sep 2026**
-  (the improved version of the audit's bundles item): sell outcomes, not line
-  items — "New Brand Launch" packages followers + views + saves in one
-  checkout. Two corrections to the naive version: **(1) bundles must resolve
-  dynamically, never pin service IDs** — a bundle item is a rule ("the enabled
-  Standard-tier Instagram Followers service"), because services retire and get
-  swapped (NTR-9182 taught this) and a flagship product must not silently
-  break; **(2) bundles are not one-click on inputs** — followers need a
-  profile link, views and saves need post links, so the composer asks for
-  "your profile + one or two posts" and fans those into the right items. The
-  rails already exist: bulk checkout places up to 50 orders with
-  retry-then-refund, so a bundle is a curated bulk template with a friendly
-  face. Surface as a "Campaign Goals" entry on the order page (and a landing
-  section later). Admin: bundle builder (name, pitch, item rules, quantities).
-  **Open for Trip:** the bundle list (Brand Launch / Music Drop / Going Viral
-  etc.), whether bundles carry a small discount (it is the incentive, and it
-  is margin), and whether resellers see them (probably not — they compose
-  their own).
+- **Auto data-saver — agreed 6 Sep 2026.** No manual toggle: animations cost CPU
+  rather than data, and a switch nobody finds helps nobody. Read the browser's
+  own signals instead — `navigator.connection.saveData` (Chrome on Android,
+  exactly our audience) and `effectiveType` `3g`/`2g`. When either says
+  constrained: **lengthen the polling intervals** (the real data eater), pause
+  ambient animation, defer heavy assets. One `useDataSaver()` hook consumed by
+  the pollers and the atmosphere layer; zero settings UI.
 
-- **Guest-feel checkout ("order first, account at payment") — parked design,
-  agreed 6 Sep 2026** (build when Trip reopens it; more audit items incoming):
-  an external audit flagged "no guest checkout" as a conversion barrier. Half
-  the claim is already false — `/pricing` is public, server-rendered from the
-  live catalogue, and headlines "Every price in naira, before you sign up" —
-  so pricing visibility needs nothing. The real wall is **testing the
-  platform**: today it is signup → fund wallet → order, three steps before any
-  value. The agreed answer is NOT true guest checkout, for three structural
-  reasons: refunds and refill cover resolve into the wallet (card reversals
-  mean processor fees, delays and disputes); anonymous one-off card payments
-  are how carders test stolen cards, and chargebacks endanger the processor
-  relationship itself in this vertical; and the wallet is the retention
-  flywheel — welcome bonus, referrals and the shelved top-up game all hang off
-  deposits. Instead: **keep the account, shrink it, and move it to the end.**
+- **Outcome Bundles ("Campaign Goals") — agreed 6 Sep 2026.** Sell outcomes, not
+  line items: "New Brand Launch" packages followers + views + saves in one
+  checkout. Two corrections to the naive version: bundles must **resolve
+  dynamically, never pin service IDs** (a bundle item is a rule — "the enabled
+  Standard-tier Instagram Followers service" — because services retire and get
+  swapped, which NTR-9182 taught); and bundles are **not one-click on inputs**,
+  since followers need a profile link and views need post links, so the composer
+  asks for "your profile + one or two posts" and fans those out. Bulk checkout
+  already places up to 50 orders with retry-then-refund, so a bundle is a
+  curated bulk template with a friendly face.
 
-  **The flow.** 1) A public order composer (no auth): pick service and tier,
-  paste the link, choose quantity, see the exact naira price live — priced from
-  the same catalogue as `/api/pricing` via a public quote endpoint. 2) At pay
-  time the buyer gives **email + WhatsApp number only** — no password, no name
-  — and the account is created implicitly (passwordless; the NG phone gate at
-  `app/api/auth/signup/route.js:45` applies unchanged until International
-  Nitro opens it). 3) **One payment sized exactly to the order** — no
-  fund-then-order two-step. The charge carries an order intent
-  (`{serviceId, tierId, link, qty}` stored with the pending deposit); on
-  webhook success `finalizeDeposit` credits the wallet and the order is placed
-  in the same transaction chain, debiting the fresh balance — same idempotency
-  discipline as the referral/top-up credits. The wallet stays the ledger, so
-  refunds and refills land exactly as they do for everyone else. 4) After
-  payment: a session via magic link / OTP, an order-status link by email and
-  WhatsApp, and a normal account with history waiting when they return.
+  **Open for Trip:** the bundle list (Brand Launch / Music Drop / Going Viral),
+  whether bundles carry a discount (it is the incentive, and it is margin), and
+  whether resellers see them (probably not — they compose their own).
 
-  **Why this shape wins:** the buyer experiences guest checkout (zero fields
-  until pay, one payment), while Nitro keeps the wallet rail, the fraud fence
-  (phone + email uniqueness, deposit history, existing velocity checks), the
-  bonus flywheel (the payment IS a first deposit), and CAPI identity — email
-  and phone hashed at purchase plus the visitor's own fbc/fbp cookies, a
-  better match than a true guest could ever give.
+- **Guest-feel checkout — agreed 6 Sep 2026, and measure first.** An audit
+  flagged "no guest checkout" as a conversion barrier. Half of that is already
+  false: `/pricing` is public, server-rendered from the live catalogue, and
+  headlines "Every price in naira, before you sign up". The real wall is
+  **testing the platform** — signup → fund wallet → order is three steps before
+  any value.
 
-  **Touchpoints when built:** public composer component (candidates: landing
-  hero, `/pricing`, `/services`); public quote endpoint; implicit-account
-  variant of signup (skip password, reuse `check-email`/`check-phone` and the
-  phone gate); order-intent field on the deposit + execution inside
-  `finalizeDeposit`; passwordless session issuance; the order pipeline itself
-  unchanged.
+  Not true guest checkout, for three structural reasons: refunds and refill
+  cover resolve into the wallet (card reversals mean fees, delays and disputes);
+  anonymous one-off card payments are how carders test stolen cards, and
+  chargebacks endanger the processor relationship; and the wallet is the
+  retention flywheel. Instead **keep the account, shrink it, move it to the
+  end**: a public composer priced from the same catalogue as `/api/pricing`;
+  email + WhatsApp number only at pay time, account created implicitly
+  (passwordless, NG phone gate unchanged); **one payment sized exactly to the
+  order**, carrying an order intent so `finalizeDeposit` credits the wallet and
+  places the order in the same transaction chain; then a magic-link session and
+  a status link. The buyer experiences guest checkout while Nitro keeps the
+  wallet rail, the fraud fence, the bonus flywheel and CAPI identity.
 
-  **Open decisions for Trip:** does the welcome bonus apply to the implicit
-  first deposit (it is a first deposit — probably yes, it is the hook); a
-  minimum order size for the flow (the ₦1,000 deposit minimum exists); where
-  the composer lives; passwordless forever vs a password nudge on the second
-  visit; and **measure first** — pull the funnel from `/pricing` and
-  `/services` visits to signup before building, because if that leak is small
-  this whole item is low priority.
+  **Measure before building.** Pull the funnel from `/pricing` and `/services`
+  visits to signup. If that leak is small this whole item drops down the list.
 
-  **Addendum (6 Sep 2026) — measured speed stats:** the audit's "real-time
-  speeds" idea joins this item, with one hard rule: provider speed fields are
-  never shown (house rule — they identify the source on sight). Instead compute
-  Nitro's own numbers from order history — median time-to-start and
-  time-to-complete per service over the last ~100 orders — and show them on the
-  public composer and service pages as "starts in ~4 min · completes in ~2 hrs,
-  measured from recent orders". Honest, ours, and a stronger trust signal than
-  any provider claim. Needs a small nightly rollup (order timestamps already
-  exist) rather than live queries.
+  **Addendum — measured speed stats.** The audit's "real-time speeds" idea joins
+  this item with one hard rule: **provider speed fields are never shown** (house
+  rule — they identify the source on sight). Compute Nitro's own numbers from
+  order history instead — median time-to-start and time-to-complete per service
+  over the last ~100 orders — and show them as "starts in ~4 min · completes in
+  ~2 hrs, measured from recent orders". Needs a small nightly rollup, not live
+  queries.
 
-- **Cash referrals — launch checklist** (built dark in v2.4.75; flip
-  `cash_referrals_enabled` to `'true'` to go live): admin payouts page (the
-  API at `/api/admin/referral-payouts` already lists/completes/rejects), the
-  referrer "your cash is on hold" email (the wallet email correctly stays
-  silent in cash mode), void-on-refund for reversed deposits, Terms update for
-  cash payouts, and Trip's sign-off on the four numbers (₦500 cash / ₦600
-  wallet / ₦2,500 gate / ₦5,000 min · 7-day hold — all settings:
-  `ref_cash_amount`, `ref_cash_wallet_amount`, `ref_cash_min_payout`,
-  `ref_cash_hold_days`).
+- **Landing redesign v2 — parked, Trip not impressed** (4 Sep 2026). The full
+  build is on local branch `landing-v2-wip` (`d1838b9f`, never pushed); the mock
+  is artifact `213efb73`. It contains: a one-viewport fold (sticky nav, centred
+  links, announcement bar, hero with a working order-starter priced from
+  `/api/pricing`, platform marquee, stat band), Why Nitro with five feature
+  cards and both product screenshots, priced platform list, three steps, pricing
+  cards, resellers section with the Emeka quote, blush pull-quote, plum closer;
+  fully theme-tokenised, honest platform count (`uniquePlatforms`, fixing the
+  old 152+ groups-as-platforms bug).
 
-- **Monthly top-up bonus — launch checklist** (built dark in v2.4.89; set
-  `topup_bonus_enabled` to `'true'` to go live): the instant-unlock ladder —
-  cross ₦30k in a Lagos calendar month → ₦1,500, ₦60k → +₦2,700, ₦100k →
-  +₦5,800 (cumulative 5%/7%/10%), paid inside `finalizeDeposit` as spend-only
-  BonusCredit (`source 'topup_month'`, 30-day expiry), first-ever deposit and
-  resellers excluded, one award per user/month/rung via transaction
-  idempotencyKey `topup:YYYY-MM:r<minKobo>`. The wallet card, amount nudge and
-  unlock toast render only when the flag is on. Settings:
-  `topup_bonus_rungs` (JSON `[{min,prize}]` kobo), `topup_bonus_expiry_days`.
-  Before flipping: Trip signs off the rungs, decide whether the deposit email
-  mentions the prize (Telegram already counts it in the bonus total), and
-  watch the monthly cost against the ~₦45k face estimate. Design notes:
-  mock artifact 7adc3631, backend brief artifact 5b60a686.
+  Standing taste notes from the review rounds: no duplicated stats or CTAs,
+  bare-number stat band rather than cards, icons not text and placed in true
+  empty zones, hamburger only below desktop, login prominent but not oversized,
+  sections must not blend (alternating surfaces), richness over minimalism below
+  the fold. Next pass: iterate on the branch or restart. Production landing is
+  untouched.
 
-- **Scale ladder gate — measure from the database, not Meta** (note, 4 Sep 2026):
-  the CAPI identity fix (v2.4.99) will make cost-per-order and ROAS look better
-  from 4 Sep for measurement reasons alone — Meta correctly claiming orders it
-  already drove. The Lagos ₦30,000 → ₦39,000 budget step stays gated on cost
-  per new customer under ₦1,600 measured from **real signup counts in the DB**,
-  not Meta-attributed orders. Match-quality verification ~8 Sep: if phone
-  coverage reads high but the Purchase score is still 7.5, suspect
-  normalisation. No metric comparisons across the 4 Sep boundary.
+  (`landing-v3` is a **dead branch** — 0 commits ahead of main, its work already
+  merged. Safe to delete whenever somebody is tidying branches.)
 
-- **International Nitro — parked design, agreed 4 Sep 2026** (build nothing
-  until Trip reopens it): Nigerians keep the cheaper Nitro; foreigners pay a
-  premium. The mechanism is **one padded exchange rate, not a second price
-  list**: the wallet and the whole catalogue stay in naira forever, and a
-  foreign-currency deposit (Flutterwave USD, and the crypto rail) credits the
-  wallet at Nitro's own sell rate set below mid-market — market ₦1,529/$,
-  credit at e.g. ₦1,300/$ ≈ +17% — so the premium follows the **payment
-  currency**, not nationality or IP, needs no detection, and extends to
-  GHS/KES/GBP as the same % over mid-market. One admin setting (fx sell rate
-  or premium %); "≈ $" display prices are computed at the padded rate so what
-  foreigners see is what they pay. **Premium % is undecided** — the ~15–20%
-  above is a placeholder for Trip to set. The signup gate lives at
-  `app/api/auth/signup/route.js:45` (rejects anything not `[789]`+9 digits):
-  opening it means generic E.164 (8–15 digits with country code), strict NG
-  validation kept for local-looking numbers, plus touches to `check-phone`,
-  the auth modal's +234 UI, and admin phone search; wa.me links, phone
-  uniqueness and the CAPI hasher already handle foreign numbers. **Sequence
-  when reopened:** 1) open the phone gate (small — it is also the demand
-  meter), 2) "≈ $" at the padded rate on pricing/order/add-funds (small),
-  3) Flutterwave USD collection crediting naira at the padded rate (medium),
-  4) never multi-currency wallets.
+### Content and long tail
 
-  **Addendum, 7 Sep 2026 — reopened; step 2 shipped** (`80ec76d6` v2.4.104,
-  with `f10e687a` for the hamburger). Currency and language switchers on all three navs
-  (labelled on desktop, icons only on a phone); prices on pricing/services,
-  the dashboard balance and the order-form total convert at one resolved
-  deposit rate via `lib/currency.js` + `components/locale.jsx`; public
-  `/api/fx`; admin "Foreign deposits" card on the pricing page. Decisions
-  made: **premium is 15%**, admin-editable (`fx_premium_percent`), stored as a
-  percentage so it keeps its meaning as the naira moves. **No currency lock**
-  — the premium sits inside the exchange at deposit, so switching the display
-  cannot dodge it (three tests pin this); a lock would also have trapped
-  Nigerian USDT payers, since crypto is dollar-denominated. **The balance
-  converts** on the same rate as prices, so "can I afford this" has one
-  answer in any unit. Naira is shown alongside a foreign figure in exactly one
-  place: the crypto modal's rate line.
+- **17 platforms still have no `/services/<slug>` page** (after `v2.5.90` added
+  four). Crawlable now: 15 slugs. Missing, by full-list volume — kick 147,
+  webtraffic 95, threads 66, quora 45, reddit 41, onlyfans 35, trustpilot 29,
+  deezer 24, kwai 19, bluesky 15, soundcloud 10, applemusic 10, pinterest 6,
+  shazam 3, vimeo 2, tumblr 2, tidal 1.
 
-  **Two corrections to the entry above.** (1) The worked example's "market
-  ₦1,529" was `markup_usd_rate` — market plus the ₦200 pricing cushion. Real
-  mid-market was ≈₦1,324; every figure here was recomputed on it. (2) The
-  crypto rail has always credited at that cushioned rate, i.e. **above**
-  market — a ~13% subsidy on every USDT deposit that nobody chose. It now reads
-  `lib/fx-deposit.js`; with `fx_premium_live` off (the default) behaviour is
-  byte-identical, and flipping it on moves USDT to the premium rate. That flip
-  is ~36% more dollars per naira for USDT payers, mostly in Nigeria, so it is a
-  deliberate act in Admin, announced first — not a side effect of shipping.
+  Four were written rather than seventeen on purpose: each is ~18 strings of
+  real prose plus four translations, and thin pages across every remaining tile
+  are doorway pages, which Google treats worse than no page at all. Pick the
+  next batch the same way — depth first, starting with **kick, threads and
+  webtraffic**, which have both curated groups and real volume behind them.
 
-  **Addendum, 12 Sep 2026 — step 3 built (v2.4.140), country-driven.** The
-  Flutterwave charge currency follows the signup country (GH → GHS, KE → KES,
-  GB → GBP, US → USD, else NGN), because mobile money — how Ghana and Kenya
-  pay — only appears on a charge in its own currency. The naira credit is
-  fixed at initialise from `resolveDepositRate()`, the foreign figure is
-  ceiled to the cent and stored on the row (`providerPriceAmount/Currency`),
-  verification checks that quote and that currency, and the wallet is credited
-  the stored naira, never the foreign minor units. Missing rate → naira charge,
-  as before. **The premium is the same admin flip as USDT, and in production
-  it is ON** (`fx_premium_live=1`, 15%, checked 12 Sep): ₦5,000 costs a
-  Ghanaian GH₵49.39 against GH₵42.94 at market — +15.0% — and the same +15%
-  in KES, USD and GBP. Turning the flag off used to put every foreign charge
-  at the legacy cushioned rate, ~13% *above* market — the subsidy described
-  below — so the off position of a premium switch was a giveaway; since the
-  12 Sep leak audit, **off means market: no premium, no subsidy**
-  (`lib/fx-deposit.js`, `source: 'market'`), and legacy is only the fallback
-  when no market rate exists. Either way it is one switch in Admin, never a
-  side effect of a deploy. The add-funds box speaks
-  the picker's currency now that the switcher is live (12 Sep); Flutterwave's
-  own page shows the cedi figure.
+- **Reseller API v2** — drip-feed and multi-day parameters, webhooks, per-key IP
+  allowlists. Brief: `docs/v2/reseller_api_brief.md`.
 
-  **Still open:** the "Soon" tags on
-  Pidgin/Yoruba/Hausa/Igbo/Kiswahili/Français are a public promise Trip has not
-  yet confirmed.
+- **Outreach re-engagement — paused, no staff.** The ~2,000 signups a month who
+  never start a payment. The whole outreach machine is off via Admin → Outreach
+  → Pause (`outreach_paused` confirmed `true` on 16 Sep). Resume there when there
+  is a team again, then pick this up. The conversion feed and daily roll-up are
+  built and waiting behind the same flag.
 
-  **Two items here were already done and the entry had not caught up** (checked
-  14 Sep 2026). **Step 1, the phone gate, is open** — it shipped on 8 Sep as
-  `2c1ac43a` and this entry, written on the 4th, was never updated. Signup
-  accepts NG/US/GB/GH/KE end to end: `validatePhone(country, phone)` in the
-  route, and a `PhoneField` with a country picker on both signup surfaces, the
-  auth modal and the landing hero, each sending `country`. A French number is
-  still refused, which is the supported-country list doing its job.
-  **Language is no longer a shell** — four dictionaries carry 2,078 strings
-  each, with `tests/i18n-drift-guard.test.js` holding the line. And the
-  refund-to-bank line is gone from Terms (`cd9068ab`, 14 Sep); the Refund Policy
-  had already lost it on 7 Sep, and for a week the two documents contradicted
-  each other.
-
-- **Landing redesign v2 — parked, Trip not yet impressed** (4 Sep 2026): the
-  full build lives on local branch `landing-v2-wip` (commit `d1838b9f`, never
-  pushed); the design mock is artifact `213efb73`. What it contains: a
-  one-viewport fold (sticky nav with centred links and announcement bar above,
-  hero with a working order-starter widget priced from `/api/pricing`, platform
-  marquee, clean stat band), Why Nitro with the five feature cards and both
-  product screenshots, priced platform list, three steps, pricing cards,
-  resellers section with the Emeka quote, single blush pull-quote, plum closer,
-  existing footer; fully theme-tokenised (light and dark verified), trust line,
-  gift-icon CTA, height-stepped fold, no em dashes in copy, honest platform
-  count (`uniquePlatforms`, fixing the old 152+ groups-as-platforms bug).
-  Standing taste notes from the rounds: no duplicated stats or CTAs, bare-number
-  stat band not cards, icons not text and positioned in true empty zones,
-  hamburger only below desktop, login prominent but not oversized, sections must
-  not blend (alternating surfaces), richness over minimalism below the fold.
-  Next session: either iterate on the branch or restart the design; the current
-  production landing is untouched.
-
-- **17 platforms still have no `/services/<slug>` page** (16 Sep 2026, after
-  `v2.5.90` added four). Crawlable now: 15 slugs. Still missing, by full-list
-  volume — kick 147, webtraffic 95, threads 66, quora 45, reddit 41, onlyfans
-  35, trustpilot 29, deezer 24, kwai 19, bluesky 15, soundcloud 10, applemusic
-  10, pinterest 6, shazam 3, vimeo 2, tumblr 2, tidal 1.
-
-  Four were written rather than seventeen on purpose: each entry is ~18 strings
-  of real prose plus four translations of each, and thin pages across every
-  remaining tile are doorway pages, which Google treats worse than no page at
-  all. The next batch should be picked the same way — depth first, starting
-  with kick, threads and webtraffic, which have both curated groups and real
-  volume behind them.
-
-- **Reseller API follow-ups** (v2 of the API, not started): drip-feed and
-  multi-day parameters, webhooks, per-key IP allowlists. Brief:
-  `docs/v2/reseller_api_brief.md`.
-- **Onboarding funnel, second read** — after ~30 days of `firstSeenWalletAt` /
-  `firstSeenNewOrderAt` data (from 26 Aug 2026), rerun the funnel and see where
-  the 74% who never pay actually stop.
-- **Outreach re-engagement** — the ~2,000 signups a month who never start a
-  payment. **Paused (26 Aug 2026): no staff.** The whole outreach machine is
-  off via Admin → Outreach → Pause (`outreach_paused` setting); resume there
-  when there is a team again, then pick this up.
-- **Cohort / ops** — anything the nightly cohort check surfaces (see the
-  protected routes in CLAUDE.md).
+- **Cohort / ops** — anything the nightly cohort check surfaces. See the
+  protected routes in CLAUDE.md.
 
 ## Closed
+
+- **The Sep 2026 neatness sweep is finished, all four decisions taken** (16 Sep
+  2026; work itself shipped 14 Sep). The sweep removed 184 unused names across
+  69 files, collapsed four copies of one loop and deleted two settings that were
+  accepted and ignored (`d51a27a3` `12d3ee4a` `e8d7461a` `e395d281` `7bc31d4c`
+  `7c486734` `3a19b4a8` `d57869c2` `9add969d`). The four questions it left open
+  lived only in a chat message, which is how they went missing; all four are now
+  answered.
+
+  **`lib/crew-bot.js` stays.** 14 of its 22 exports are called by nothing —
+  read together they are a crew gamification feature (streaks, milestones,
+  weekly winners, commission DMs) written and never wired. **Trip's call: keep
+  it, it will be useful eventually.** This line exists so the next sweep does
+  not re-propose it.
+
+  **Scripts** (`8c3e60c2`): ten spent one-offs deleted, `scripts/README.md`
+  names what every remaining file is for. Four were deleted and put back —
+  `cleanup-seed-data.js`, `seed-testuser.js`, `seed-blog.cjs` and
+  `seed-production.sql` look spent and are not; somebody had already hardened
+  them behind `runGuardedPrismaScript` with a test around them. Six tests failed
+  on the delete and were right to. A script with a test guarding it is a script
+  somebody owns.
+
+  **`naira()`** (`1bffcfdb`): `lib/money.js` replaced twelve of twenty-three
+  definitions. The other eleven stay — each is a different function wearing the
+  same name, and the module says which and why. It needed care rather than a
+  find-and-replace because the copies disagreed: ₦12,345.67 from the Telegram
+  bot against ₦12,346 from the outreach summary for the same kobo.
+  `tests/money-module.test.js` pins every old copy against its replacement.
+
+  **Tickets** (`b2a48640` `6614e1d7`): removed once Trip established the bots do
+  not need it — nothing in `lib/ify` ever read a ticket back, only wrote one.
+  The surface was larger than the entry claimed: it said "legacy read-only
+  views" while the daily cron was filing a `TicketReply` on every auto-close. It
+  took the admin page, both API routes, the cron pass, the translations, the
+  badge, three of the poller's six queries, the dashboard payload, the
+  permission entries and the settings toggles. Ify escalation writes one
+  `logActivity` line now. **The data stayed** — 46 tickets, 190 replies, all
+  Resolved; account deletion still purges a departing customer's and the
+  stale-signup sweep still refuses to delete anyone holding one. Dropping the
+  models is a separate destructive decision nobody needs to take yet.
+
 
 - **The whole admin reads days in Lagos now** (16 Sep 2026, `v2.5.98`). Fault 08
   of the 15 Sep tracking review, raised then rather than fixed because
