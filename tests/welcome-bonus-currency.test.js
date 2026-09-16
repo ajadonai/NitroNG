@@ -15,27 +15,23 @@ const read = rel => fs.readFileSync(path.join(process.cwd(), rel), "utf8");
  * rebuilds them without meaning to.
  */
 describe("welcome bonus — one ladder for everyone", () => {
-  // This file is the one place the ladder's figures are written down. Every
-  // other test reads them from bonusForAmount, so changing a rung touches this
-  // file and nothing else — the 1 Sep cut and the 14 Sep restore each broke six
-  // unrelated IP-guard tests before that was true.
   it("is a bracket, not a decaying percentage", () => {
-    // ₦2,500 opens the 20% bracket and ₦4,999 is still in it. Trip's rule.
-    expect(bonusForAmount(250000)).toBe(50000);
-    expect(bonusForAmount(499900)).toBe(50000);
-    expect(bonusForAmount(500000)).toBe(120000);
-    expect(bonusForAmount(999900)).toBe(120000);
-    expect(bonusForAmount(1000000)).toBe(300000);
+    // ₦2,500 opens the 10% bracket and ₦4,999 is still in it. Trip's rule.
+    expect(bonusForAmount(250000)).toBe(25000);
+    expect(bonusForAmount(499900)).toBe(25000);
+    expect(bonusForAmount(500000)).toBe(60000);
+    expect(bonusForAmount(999900)).toBe(60000);
+    expect(bonusForAmount(1000000)).toBe(150000);
     expect(bonusForAmount(249900)).toBe(0);
   });
 
-  it("opens each bracket on 20 / 24 / 30%", () => {
-    expect(TIERS.map(t => Math.round((t.bonus / t.min) * 100))).toEqual([30, 24, 20]);
+  it("opens each bracket on 10 / 12 / 15%", () => {
+    expect(TIERS.map(t => Math.round((t.bonus / t.min) * 100))).toEqual([15, 12, 10]);
   });
 
   it("caps free money at the top bracket, however large the deposit", () => {
-    expect(bonusForAmount(100000000)).toBe(300000);
-    expect(MAX_BONUS_NAIRA).toBe(3000);
+    expect(bonusForAmount(100000000)).toBe(150000);
+    expect(MAX_BONUS_NAIRA).toBe(1500);
   });
 
   it("shows the cards from the same table it pays from", () => {
