@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity } from '@/lib/admin';
-import { getServices, getBalance, isProviderConfigured, getProviderName, checkOrder } from '@/lib/smm';
+import { getServices, getBalance, isProviderConfigured, getProviderName, checkOrder, PROVIDER_IDS } from '@/lib/smm';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { calculateTierPrice, getProviderBonus } from '@/lib/markup';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
@@ -23,7 +23,7 @@ export async function GET() {
   const { error } = await requireAdmin('services');
   if (error) return error;
 
-  const ids = ['mtp', 'jap', 'dao'];
+  const ids = PROVIDER_IDS;
   const status = Object.fromEntries(ids.map(id => [id, isProviderConfigured(id)]));
   // The Providers page: balance, how much of each catalogue is on the menu, orders sent, last sync.
   let providers = {};
@@ -59,7 +59,7 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const { action, provider: pid } = body;
-    const VALID_PROVIDERS = ['mtp', 'jap', 'dao'];
+    const VALID_PROVIDERS = PROVIDER_IDS;
 
     if (action === 'test') {
       const providerId = pid || 'mtp';
@@ -446,7 +446,7 @@ export async function POST(req) {
       markupRows.forEach(s => { ms[s.key] = s.value; });
       const usdRate = Number(ms.markup_usd_rate) || 1600;
 
-      const configuredProviders = ['mtp', 'jap', 'dao'].filter(isProviderConfigured);
+      const configuredProviders = PROVIDER_IDS.filter(isProviderConfigured);
       const rateMaps = {};
       const stats = { synced: 0, updated: 0, repriced: 0, losers: 0, errors: 0 };
 
@@ -531,7 +531,7 @@ export async function POST(req) {
     if (action === 'test-order') {
       const { serviceId, provider: testProvider, link, quantity } = body;
       if (!serviceId || !link || !quantity) return Response.json({ error: 'Need serviceId, link, quantity' }, { status: 400 });
-      const providerId = testProvider || 'jap';
+      const providerId = testProvider || 'mtp';
       if (!isProviderConfigured(providerId)) return Response.json({ error: `${getProviderName(providerId)} not configured` }, { status: 400 });
 
       const { placeOrder, getBalance: getBal } = await import('@/lib/smm');
@@ -549,7 +549,7 @@ export async function POST(req) {
     if (action === 'check-provider-order') {
       const { orderId: checkId, provider: checkProvider } = body;
       if (!checkId) return Response.json({ error: 'Need orderId' }, { status: 400 });
-      const providerId = checkProvider || 'jap';
+      const providerId = checkProvider || 'mtp';
       if (!isProviderConfigured(providerId)) return Response.json({ error: `${getProviderName(providerId)} not configured` }, { status: 400 });
       try {
         const result = await checkOrder(providerId, checkId);
@@ -562,7 +562,7 @@ export async function POST(req) {
     if (action === 'cancel-provider-order') {
       const { orderId: cancelId, provider: cancelProvider } = body;
       if (!cancelId) return Response.json({ error: 'Need orderId' }, { status: 400 });
-      const providerId = cancelProvider || 'jap';
+      const providerId = cancelProvider || 'mtp';
       if (!isProviderConfigured(providerId)) return Response.json({ error: `${getProviderName(providerId)} not configured` }, { status: 400 });
       const { cancelOrder } = await import('@/lib/smm');
       try {

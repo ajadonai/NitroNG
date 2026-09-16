@@ -32,7 +32,6 @@ function validProductionEnv() {
     NOWPAYMENTS_IPN_SECRET: strongSecret('nowpayments'),
     BREVO_API_KEY: strongSecret('brevo'),
     MTP_API_KEY: strongSecret('mtp'),
-    JAP_API_KEY: strongSecret('jap'),
     DAOSMM_API_KEY: strongSecret('dao'),
     NEXT_PUBLIC_SENTRY_DSN: 'https://public-key@o123.ingest.sentry.io/456',
     IP_HASH_SALT: strongSecret('ip-hash'),
@@ -222,16 +221,14 @@ describe('production environment validation', () => {
     const env = {
       ...validProductionEnv(),
       MTP_API_URL: 'http://morethanpanel.example/api/v2',
-      JAP_API_URL: 'https://api-user:api-password@jap.example/api/v2',
-      DAOSMM_API_URL: 'not-a-url',
+      DAOSMM_API_URL: 'https://api-user:api-password@dao.example/api/v2',
     };
 
     expect(() => validateProductionEnv(env, { phase: 'build' })).toThrow(
       expect.objectContaining({
         errors: expect.arrayContaining([
           'MTP_API_URL must use HTTPS in production',
-          'JAP_API_URL must not contain credentials',
-          'DAOSMM_API_URL must be a valid absolute URL',
+          'DAOSMM_API_URL must not contain credentials',
         ]),
       }),
     );
@@ -242,8 +239,7 @@ describe('production environment validation', () => {
       env: {
         NODE_ENV: 'test',
         MTP_API_URL: 'http://127.0.0.1:4101/api/v2',
-        JAP_API_URL: 'http://localhost:4102/mock',
-        DAOSMM_API_URL: 'https://provider.example/api/v2',
+        DAOSMM_API_URL: 'http://localhost:4102/mock',
       },
       phase: 'runtime',
     })).toMatchObject({ ok: true, production: false });

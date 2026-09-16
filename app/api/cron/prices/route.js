@@ -3,7 +3,7 @@ export const maxDuration = 60;
 import { serviceDisplay } from '@/lib/service-display';
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
-import { getServices, isProviderConfigured } from '@/lib/smm';
+import { getServices, isProviderConfigured, PROVIDER_IDS } from '@/lib/smm';
 import { calculateTierPrice, getProviderBonus } from '@/lib/markup';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 import { recordPriceChanges } from '@/lib/price-changes';
@@ -21,7 +21,7 @@ export async function GET(req) {
     markupRows.forEach(s => { ms[s.key] = s.value; });
     const usdRate = Number(ms.markup_usd_rate) || 1600;
 
-    const providers = ['mtp', 'jap', 'dao'].filter(isProviderConfigured);
+    const providers = PROVIDER_IDS.filter(isProviderConfigured);
     const rateMaps = {};
     const dripMaps = {};
     const typeMaps = {};

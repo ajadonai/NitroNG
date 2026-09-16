@@ -308,7 +308,7 @@ export async function POST(req) {
 const LOW_BALANCE_USD = 10;
 
 async function verifyResolution(type, meta) {
-  const providerMap = { MoreThanPanel: 'mtp', JustAnotherPanel: 'jap', DaoSMM: 'dao' };
+  const providerMap = { MoreThanPanel: 'mtp', DaoSMM: 'dao' };
 
   if (type === 'low_balance') {
     const providers = meta.providers || [meta];

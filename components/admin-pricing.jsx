@@ -13,9 +13,9 @@ const DEF_BRACKETS = [
   { min: 5000, max: 20000, multiplier: 1.5, label: "Premium" },
   { min: 20000, max: 999999999, multiplier: 1.35, label: "Ultra" },
 ];
-const DEFAULTS = { brackets: DEF_BRACKETS, floorPct: 50, floorCeiling: 5000, ngBonus: 25, resellerDiscount: 20, usdBuffer: 200, fxThreshold: 20, premium: 15, premiumLive: false, tierMults: { Budget: 1, Standard: 1.15, Premium: 1.35 }, provBonuses: { mtp: 0, dao: 0, jap: 0 } };
+const DEFAULTS = { brackets: DEF_BRACKETS, floorPct: 50, floorCeiling: 5000, ngBonus: 25, resellerDiscount: 20, usdBuffer: 200, fxThreshold: 20, premium: 15, premiumLive: false, tierMults: { Budget: 1, Standard: 1.15, Premium: 1.35 }, provBonuses: { mtp: 0, dao: 0 } };
 const COLORS = ["#34d399", "#6ee7b7", "#60a5fa", "#a78bfa", "#e0a458", "#c47d8e"];
-const PROV = [["mtp", "MoreThanPanel"], ["dao", "DaoSMM"], ["jap", "JAP"]];
+const PROV = [["mtp", "MoreThanPanel"], ["dao", "DaoSMM"]];
 
 const range = (b) => `${naira(b.min)} – ${!b.max || b.max >= 999999999 ? "∞" : naira(b.max)}`;
 
@@ -101,7 +101,7 @@ export default function AdminPricingPage({ dark, t }) {
       if (v.fx_premium_percent !== undefined && v.fx_premium_percent !== "") next.premium = Number(v.fx_premium_percent);
       next.premiumLive = v.fx_premium_live === "1";
       try { if (v.markup_tier_multipliers) next.tierMults = JSON.parse(v.markup_tier_multipliers); } catch {}
-      next.provBonuses = { mtp: Number(v.markup_provider_bonus_mtp || 0), dao: Number(v.markup_provider_bonus_dao || 0), jap: Number(v.markup_provider_bonus_jap || 0) };
+      next.provBonuses = { mtp: Number(v.markup_provider_bonus_mtp || 0), dao: Number(v.markup_provider_bonus_dao || 0) };
       if (v.markup_usd_market) setUsdMarket(Number(v.markup_usd_market));
       setS(next); setLoaded(true);
     }).catch(() => setLoaded(true));
@@ -112,7 +112,7 @@ export default function AdminPricingPage({ dark, t }) {
     markup_ng_bonus: String(v.ngBonus), markup_reseller_discount: String(v.resellerDiscount), markup_usd_buffer: String(v.usdBuffer), markup_fx_threshold: String(v.fxThreshold),
     fx_premium_percent: String(v.premium ?? 15), fx_premium_live: v.premiumLive ? "1" : "0",
     markup_tier_multipliers: JSON.stringify(v.tierMults),
-    markup_provider_bonus_mtp: String(v.provBonuses.mtp || 0), markup_provider_bonus_dao: String(v.provBonuses.dao || 0), markup_provider_bonus_jap: String(v.provBonuses.jap || 0),
+    markup_provider_bonus_mtp: String(v.provBonuses.mtp || 0), markup_provider_bonus_dao: String(v.provBonuses.dao || 0),
   });
   const persist = async (next) => {
     setSaving(true);
@@ -267,7 +267,7 @@ export default function AdminPricingPage({ dark, t }) {
           </Modal>
           <Modal open={open === "pv"} onClose={close} title="Provider discounts" footer={foot(() => persist(draft))}>
             <p className="pr-hint">When a provider gives us a volume discount, keep it: prices to customers stay the same and the margin on that provider grows.</p>
-            {PROV.map(([k, n]) => <Row key={k} label={n} hint={k === "jap" ? "Being retired" : k === "mtp" ? "Main provider" : "Second provider"}><NumInput value={draft.provBonuses[k] || 0} decimal min={0} max={50} fallback={0} onChange={v => d({ provBonuses: { ...draft.provBonuses, [k]: v } })} /><em className="pr-u">%</em></Row>)}
+            {PROV.map(([k, n]) => <Row key={k} label={n} hint={k === "mtp" ? "Main provider" : "Second provider"}><NumInput value={draft.provBonuses[k] || 0} decimal min={0} max={50} fallback={0} onChange={v => d({ provBonuses: { ...draft.provBonuses, [k]: v } })} /><em className="pr-u">%</em></Row>)}
           </Modal>
           <Modal open={open === "rs"} onClose={close} title="Reseller discount" footer={foot(() => persist(draft))}>
             <p className="pr-hint">Taken off the finished price, after everything else, so it can only ever remove this much and never gets near cost. Applies to the curated and the full catalogue.</p>

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Pull full service catalogues from MTP, JAP, and DaoSMM
+// Pull full service catalogues from MTP and DaoSMM
 // Usage: node scripts/pull-providers.mjs
 
 import 'dotenv/config';
@@ -10,11 +10,6 @@ const PROVIDERS = {
     name: 'MoreThanPanel',
     url: process.env.MTP_API_URL || 'https://morethanpanel.com/api/v2',
     key: process.env.MTP_API_KEY,
-  },
-  jap: {
-    name: 'JustAnotherPanel',
-    url: process.env.JAP_API_URL || 'https://justanotherpanel.com/api/v2',
-    key: process.env.JAP_API_KEY,
   },
   dao: {
     name: 'DaoSMM',

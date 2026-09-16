@@ -501,7 +501,6 @@ export async function GET(req) {
     const LOW_BALANCE_USD = 10;
     const providers = [
       { id: 'mtp', name: 'MoreThanPanel', hasKey: !!process.env.MTP_API_KEY },
-      { id: 'jap', name: 'JustAnotherPanel', hasKey: !!process.env.JAP_API_KEY },
       { id: 'dao', name: 'DaoSMM', hasKey: !!process.env.DAOSMM_API_KEY },
     ];
 

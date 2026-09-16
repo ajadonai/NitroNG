@@ -41,6 +41,7 @@ vi.mock('@/lib/smm', () => ({
   isProviderConfigured: () => true,
   getProviderName: value => value,
   checkOrder: (...args) => mocks.checkOrder(...args),
+  PROVIDER_IDS: ['mtp', 'dao'],
 }));
 vi.mock('@/lib/bulk-dispatch', () => ({
   placeWithProvider: (...args) => mocks.placeWithProvider(...args),
