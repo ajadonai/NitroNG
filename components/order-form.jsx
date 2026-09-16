@@ -1,7 +1,8 @@
 'use client';
 import { TRAFFIC_COUNTRIES, TRAFFIC_CONTINENTS } from '@/lib/traffic-targets';
 import { docDateLocale } from "../lib/format";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useToast } from "./toast";
 import { BONUS_PRESETS, MAX_BONUS_NAIRA, bonusForNaira } from "../lib/welcome-bonus";
 import { calculateOrderPrice, formatOrderQuantity, getDripSchedule, getLinkPlaceholder, LINK_EXAMPLES, MULTIDAY_THRESHOLD, validateOrderLink } from "../lib/order-form-core";
 import NitroLoader from "./nitro-loader";
@@ -28,7 +29,12 @@ const TRAFFIC_TYPES = [
  * an opinion from someone who never bought it would be worth less than nothing.
  * Tapping the thumb you already hold clears it.
  */
-function FullListRate({ fullList, onVote, dark, t }) {
+/**
+ * A disabled button teaches nothing: you tap it, nothing happens, and at 50%
+ * opacity on a phone it does not read as disabled in the first place. It still
+ * looks inactive, but the tap now says why rather than swallowing itself.
+ */
+function FullListRate({ fullList, onVote, onNeedOrder, dark, t }) {
   const tr = useT();
   const can = !!fullList.ordered && !!onVote;
   const THUMB = (down) => down
@@ -41,7 +47,7 @@ function FullListRate({ fullList, onVote, dark, t }) {
         const on = fullList.mine === (down ? "down" : "up");
         const n = down ? fullList.down : fullList.up;
         return (
-          <button key={String(down)} type="button" disabled={!can} onClick={() => onVote(down ? "down" : "up")}
+          <button key={String(down)} type="button" onClick={() => can ? onVote(down ? "down" : "up") : onNeedOrder?.()}
             aria-label={down ? tr("Bad service") : tr("Good service")} aria-pressed={on}
             className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full border border-solid text-[11px] font-semibold font-[inherit] transition-colors duration-150"
             style={{ cursor: can ? "pointer" : "default", opacity: can ? 1 : .5, borderColor: on ? (dark ? "#6ee7b7" : "#059669") : t.cardBorder, color: on ? (dark ? "#6ee7b7" : "#059669") : t.textMuted, background: on ? (dark ? "rgba(110,231,183,.1)" : "rgba(5,150,105,.07)") : "transparent" }}>
@@ -91,6 +97,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
     redeemPoints,
   });
   const s = selTier ? tierStyles[selTier.tier] : null;
+  const toast = useToast();
   const [linkError, setLinkError] = useState("");
   const [linkHelpOpen, setLinkHelpOpen] = useState(false);
   const [dripOn, setDripOn] = useState(false);
@@ -185,6 +192,26 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const [recentLinks, setRecentLinks] = useState([]);
   const [pinned, setPinned] = useState(null);
   const [handlesOpen, setHandlesOpen] = useState(false);
+  const handlesRef = useRef(null);
+  const formatsRef = useRef(null);
+  /**
+   * Both disclosures close when the tap lands anywhere else.
+   *
+   * They are inline expanders rather than overlays, so nothing was dismissing
+   * them — open the saved handles, open the accepted formats, and the form kept
+   * both stacked under the link box for the rest of the order. Pointerdown
+   * rather than click so they are gone before whatever was tapped reacts, and
+   * capture so a stopPropagation inside the form cannot swallow it.
+   */
+  useEffect(() => {
+    if (!handlesOpen && !linkHelpOpen) return undefined;
+    const onDown = (e) => {
+      if (handlesOpen && !handlesRef.current?.contains(e.target)) setHandlesOpen(false);
+      if (linkHelpOpen && !formatsRef.current?.contains(e.target)) setLinkHelpOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  }, [handlesOpen, linkHelpOpen]);
   const [handlePage, setHandlePage] = useState(0);
   useEffect(() => {
     if (!platform || platform === "webtraffic") { setRecentLinks([]); setPinned(null); return undefined; }
@@ -262,10 +289,10 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
       {fullList && (
         <>
           <div className="mx-5 max-md:mx-3.5 mt-3 rounded-lg py-2 px-3 flex items-center gap-2 flex-wrap" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)", border: `1px solid ${t.cardBorder}` }}>
-            <span className="text-[11px] leading-[1.5] flex-1 min-w-0" style={{ color: dark ? "#a09890" : "#6e6a65" }}>{tr("Sold as listed, without our refill guarantee.")}</span>
+            <span className="text-[11px] leading-[1.5] flex-1 min-w-0" style={{ color: dark ? "#a09890" : "#6e6a65" }}>{tr("Sold as listed — the refill and speed shown on this service are the terms you get.")}</span>
             {onBackToPicks && <button type="button" onClick={onBackToPicks} className="text-[11px] font-bold cursor-pointer border-none bg-transparent font-[inherit] shrink-0 inline-flex items-center gap-1" style={{ color: t.accentInk }}>{tr("Use Nitro's pick instead")}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="dir-flip"><polyline points="9 18 15 12 9 6"/></svg></button>}
           </div>
-          <FullListRate fullList={fullList} onVote={onVote} dark={dark} t={t} />
+          <FullListRate fullList={fullList} onVote={onVote} onNeedOrder={() => toast.info(tr("Order it first"), tr("Rating is for people who have actually used the service."))} dark={dark} t={t} />
         </>
       )}
 
@@ -352,7 +379,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             const page = Math.min(handlePage, pages - 1);
             const shown = ordered.slice(page * HANDLES_PER_PAGE, (page + 1) * HANDLES_PER_PAGE);
             return (
-              <div className="mt-2">
+              <div className="mt-2" ref={handlesRef}>
                 <button type="button" onClick={() => setHandlesOpen(o => !o)} aria-expanded={handlesOpen} className="flex items-center gap-1.5 border-0 cursor-pointer p-0" style={{ background: "transparent", color: dark ? "#d4949f" : "#a0616e" }}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
                   <span className="text-[11px] font-medium">{tr("Saved handles")} ({ordered.length})</span>
@@ -386,7 +413,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
               const type = isCommentLike ? "commentLike" : isChannelSvc ? "channel" : isProfileSvc ? "profile" : "post";
               const examples = LINK_EXAMPLES[platform][type] || LINK_EXAMPLES[platform].profile;
               if (!examples || !examples.length) return null;
-              return <div className="mt-1.5">
+              return <div className="mt-1.5" ref={formatsRef}>
                 <button type="button" onClick={() => setLinkHelpOpen(o => !o)} className="flex items-center gap-1.5 border-0 cursor-pointer p-0 mb-0" style={{ background: "transparent", color: dark ? "#d4949f" : "#a0616e" }}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                   <span className="text-[11px] font-medium">{tr("We accept these formats")}</span>
