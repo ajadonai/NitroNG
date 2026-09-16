@@ -1717,10 +1717,14 @@ body:has(.dash-main) .nitro-atmo::before { content: none; }
      the three circles one family. The painted ground stays: on a phone it is
      the button's colour rather than a pill, and it is the only thing left
      saying which currency or language is selected once the label is gone. */
-  .loc-coin, .loc-flag { width: 26px; height: 26px; }
-  .loc-flag svg { width: 26px; height: 26px; }
-  .loc-coin { font-size: 13px; }
-  .loc-coin.wide { font-size: 9px; }
+  /* 23px, not 26. The avatar next to these is a flat 26px image with no ring,
+     while the roundel carries a 1.5px ring outside its box — so at 26 it read
+     as 29 and sat visibly larger than the avatar. 23 + 1.5 either side is 26
+     on the nose, which is the number the eye is actually comparing. */
+  .loc-coin, .loc-flag { width: 23px; height: 23px; }
+  .loc-flag svg { width: 23px; height: 23px; }
+  .loc-coin { font-size: 11.5px; }
+  .loc-coin.wide { font-size: 8px; }
 }
 
 /* Above the cookie banner (z 9999), which otherwise drew over the mobile sheet
