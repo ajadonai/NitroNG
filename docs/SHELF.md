@@ -169,7 +169,26 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   create. Now: a new reseller gets one full month on Starter regardless; after
   that, a month under the threshold plus a grace month reverts them to retail
   pricing (profile kept, discount gone, restored the night they clear it again).
-  ₦25,000 drawn as the entry; all three current resellers sit under it.
+  **Starter is ₦100,000 — Trip's number, 17 Sep.** Trade had to move above
+  it, so the drawn ladder reads ₦100k / ₦250k / ₦500k / ₦1M / ₦2M; the four
+  above Starter are proposals. The rule, in Trip's words: *"a user in starter
+  that doesn't hit the minimum after a month gets put on normal pricing"* —
+  confirmed, one month, no grace month unless Trip asks for it back (the
+  original spec had one; it is a one-line switch). **Lifetime seat, Trip's
+  idea: ₦1,000,000 of lifetime retail-equivalent spend keeps the Starter seat
+  for good** — the reseller still moves between tiers on rolling volume but
+  can never be put on normal pricing. It protects the seat, not the tier: a
+  dormant lifetime reseller costs 10% of whatever little they spend, which is
+  bounded and cheap; locking Wholesale would not be. Nobody on file qualifies;
+  the largest lifetime spend among the three is ₦122,323.
+
+  **Reviewed 17 Sep for leaks and errors** (Trip asked). No provider names, no
+  customer data, no cost on any customer-facing surface. Band-level profit
+  maths agrees with the per-order run to within ₦900 on ₦4–7M. Four fixes: a
+  non-number in a cap box now means "no cap", not 0% (which would have put
+  every tier on retail for that band); the simulator never quotes above retail,
+  matching `lib/markup.js`; the ceiling display clamps at 0 instead of going
+  negative at a high floor; the drop-out rule reads one month, as Trip said.
   Mockups: ladder `02ba676e`, admin page `4eb3b4ca` — **the admin page is live:
   every box recomputes the simulator and the profitability table.**
 
