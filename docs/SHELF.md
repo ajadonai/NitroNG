@@ -520,12 +520,18 @@ as the work. (Formerly docs/BACKLOG.md.)
   the mockup and the 9-fault write-up from the earlier session before starting;
   do not re-diagnose from scratch.
 
-- **19 of 31 platforms have no `/services/<slug>` page** (16 Sep 2026). Landing
-  section 03 now claims 31 platforms and only 12 are crawlable, so the claim
-  has no evidence behind it. `lib/platform-pages.js` is the one list and
-  `tests/platform-page-parity` asserts both directions, so adding a slug there
-  without writing its page is worse than leaving it out — a sitemap entry that
-  404s is crawl budget spent on nothing. Scope this as its own piece.
+- **17 platforms still have no `/services/<slug>` page** (16 Sep 2026, after
+  `v2.5.90` added four). Crawlable now: 15 slugs. Still missing, by full-list
+  volume — kick 147, webtraffic 95, threads 66, quora 45, reddit 41, onlyfans
+  35, trustpilot 29, deezer 24, kwai 19, bluesky 15, soundcloud 10, applemusic
+  10, pinterest 6, shazam 3, vimeo 2, tumblr 2, tidal 1.
+
+  Four were written rather than seventeen on purpose: each entry is ~18 strings
+  of real prose plus four translations of each, and thin pages across every
+  remaining tile are doorway pages, which Google treats worse than no page at
+  all. The next batch should be picked the same way — depth first, starting
+  with kick, threads and webtraffic, which have both curated groups and real
+  volume behind them.
 
 - **The i18n detector cannot see array-literal labels** (16 Sep 2026). An
   Arabic reader saw "Orders", "Accounts" and "Delivery" in English on the hero
@@ -574,6 +580,13 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **Four platform pages written, so the landing claim has some evidence**
+  (16 Sep 2026, `v2.5.90`). WhatsApp, Audiomack, Boomplay and Google — picked
+  on depth rather than count, each with curated groups and real full-list
+  volume. 11 crawlable slugs to 15. 68 new strings, translated into all four
+  languages. The remainder is in Open above, ranked.
+
 
 - **A pinned handle follows the person, not the phone** (16 Sep 2026,
   `v2.5.89`). `User.pinnedLinks` holds a JSON map of platform id to link, served

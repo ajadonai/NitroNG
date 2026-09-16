@@ -5,7 +5,7 @@ import { msg } from '@/lib/i18n';
 
 export const revalidate = 300;
 
-const PLATFORM_ORDER = ['instagram', 'tiktok', 'youtube', 'x', 'facebook', 'telegram', 'spotify', 'snapchat', 'linkedin', 'twitch', 'discord'];
+const PLATFORM_ORDER = ['instagram', 'tiktok', 'youtube', 'x', 'facebook', 'telegram', 'spotify', 'snapchat', 'linkedin', 'twitch', 'discord', 'whatsapp', 'audiomack', 'boomplay', 'google'];
 
 export async function generateStaticParams() {
   return PLATFORM_ORDER.map(platform => ({ platform }));
@@ -312,6 +312,116 @@ const PLATFORM_META = {
       { q: msg('Will bought Discord members chat or participate?'), a: msg('No. These are member and online counts, not active participants. They make a new server look established so real people are willing to join. Building actual conversation is on you.') },
       { q: msg('Can Discord ban my server for this?'), a: msg('Discord acts against servers involved in spam, scams or automated abuse rather than against member counts specifically, but there is real risk in any inflated growth and nobody can promise you otherwise. Keep the volume proportionate and make sure the server itself is genuinely doing something.') },
       { q: msg('Do you need admin access to my server?'), a: msg('No. We only need a public permanent invite link. We never ask for admin access, bot tokens or your Discord login.') },
+    ],
+  },
+  whatsapp: {
+    name: 'WhatsApp',
+    h1: msg('Buy WhatsApp Channel Followers and Group Members in Nigeria'),
+    title: 'Buy WhatsApp Channel Followers in Nigeria | Naira Pricing',
+    metaDesc: 'Buy WhatsApp channel followers, group members and status views in Nigeria. Naira pricing, no foreign card needed. Start from ₦1,000.',
+    heroDesc: msg('WhatsApp is where Nigerian business actually happens — the orders, the enquiries, the follow-ups. A channel with nine followers or a group nobody joins does not get used, and the customers who would have bought from you never see the post. Nitro carries WhatsApp channel, group and status services priced in Naira, from ₦1,000.'),
+    mainService: 'followers',
+    kw: 'buy WhatsApp channel followers Nigeria',
+    whatYouGet: [
+      msg('Channel followers, so a new channel is worth subscribing to'),
+      msg('Group members to fill a room before you invite real people into it'),
+      msg('Status and channel post views'),
+      msg('Emoji reactions on channel posts'),
+    ],
+    whySection: [
+      msg('A channel with no followers gets no forwards. WhatsApp shows the follower count before anyone reads a single post, and on a platform where sharing happens by forwarding rather than by algorithm, that number decides whether your post leaves the channel at all.'),
+      msg('Groups are where Nigerian trade actually runs. Wholesale, resale, logistics, church, school runs — the group is the shop. An empty group reads as a shop nobody visits, and the people you most want in it are the least likely to be the first ones there.'),
+      msg('Your link has to be public and open. A channel needs its invite link on, a group needs a link that is not capped or expired. If the link stops working partway, whatever was not delivered returns to your Nitro wallet.'),
+      msg('Nobody needs your phone or your login. We work from the public link and nothing else. We never ask for a verification code, and anyone who does is trying to take your account.'),
+      msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
+    ],
+    faq: [
+      { q: msg('What link do you need for a WhatsApp channel?'), a: msg('The public channel link, the one that starts whatsapp.com/channel. Open your channel, tap the name, and copy the invite link. We never need your phone number or your login.') },
+      { q: msg('Will WhatsApp ban my number for this?'), a: msg('Followers are added to a channel or group, not to your account, so your number is not doing anything WhatsApp would act on. The real risk on WhatsApp has always been mass messaging strangers, which is a different thing entirely and not something we do.') },
+      { q: msg('Do the members talk in the group?'), a: msg('No. These fill the member count so a new group looks worth joining. They do not post, buy or reply. Getting real conversation going is on you, and it is much easier in a room that does not look empty.') },
+      { q: msg('Can I order for a group with a joining limit?'), a: msg('Take the limit off first. A capped or expired invite link stops the order partway, and while the undelivered value comes back to your wallet, it is a wasted day. Set the link to no expiry and no maximum before you order.') },
+    ],
+  },
+  audiomack: {
+    name: 'Audiomack',
+    h1: msg('Buy Audiomack Plays, Followers and Likes in Nigeria'),
+    title: 'Buy Audiomack Plays in Nigeria | Naira Pricing',
+    metaDesc: 'Buy Audiomack plays, followers, likes and reups in Nigeria. Naira pricing, no foreign card needed. Start from ₦1,000.',
+    heroDesc: msg('Audiomack is where a lot of Nigerian music is actually heard first, and a song sitting on 40 plays gets skipped by the people who could have pushed it. Nitro carries Audiomack plays, followers, likes and reups priced in Naira, from ₦1,000.'),
+    mainService: 'views',
+    kw: 'buy Audiomack plays Nigeria',
+    whatYouGet: [
+      msg('Plays on a song, an album or a playlist'),
+      msg('Followers on your artist profile'),
+      msg('Likes and reups on individual songs'),
+    ],
+    whySection: [
+      msg('Play count is the first thing a blog, a DJ or an A&R looks at. Nobody listens to a link cold. They look at the number, decide whether anyone else has bothered, and play it or close it on that basis — which makes the first few thousand plays the hardest and the most useful you will ever get.'),
+      msg('Reups travel further than plays do. A reup puts your song on somebody else’s profile, so it reaches their followers rather than sitting on yours waiting to be found. For a new release it is the service that does the most per naira.'),
+      msg('Audiomack is not Spotify and does not pay like it. Nobody is monetising plays here, which means nobody is policing them the way a royalty platform does. What you are buying is the look of traction in front of the people who decide what gets pushed.'),
+      msg('Release first, then push. Getting plays onto a song that is already up and already shared works. Getting them onto a link nobody has seen builds a number with no story behind it, and people can tell.'),
+      msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
+    ],
+    faq: [
+      { q: msg('What link do you need for Audiomack?'), a: msg('The public song, album or profile URL from audiomack.com. Open the page in a browser and copy what is in the address bar. We never need your Audiomack login.') },
+      { q: msg('Do Audiomack plays pay royalties?'), a: msg('Audiomack does pay some creators through its own programmes, and bought plays are not what those programmes are counting. Treat this as visibility in front of blogs, DJs and labels, not as income.') },
+      { q: msg('How fast do plays arrive?'), a: msg('It depends on the service you pick, and each one shows its own speed and start time on the row before you order. Gradual is the sensible choice on a new release — a song going from 40 to 90,000 plays overnight is the kind of thing people screenshot.') },
+      { q: msg('Can I push a whole album?'), a: msg('Yes. Album and playlist links work the same way a song link does. If you want the plays spread across tracks rather than landing on one, order per song instead.') },
+    ],
+  },
+  boomplay: {
+    name: 'Boomplay',
+    h1: msg('Buy Boomplay Streams, Followers and Likes in Nigeria'),
+    title: 'Buy Boomplay Streams in Nigeria | Naira Pricing',
+    metaDesc: 'Buy Boomplay streams, followers, likes and favourites in Nigeria. Naira pricing, no foreign card needed. Start from ₦1,000.',
+    heroDesc: msg('Boomplay is the biggest music platform on the continent and the one most Nigerian listeners actually open. A song with no streams does not get picked up by the charts, the playlists or the people who read them. Nitro carries Boomplay streams, followers and likes priced in Naira, from ₦1,000.'),
+    mainService: 'views',
+    kw: 'buy Boomplay streams Nigeria',
+    whatYouGet: [
+      msg('Streams on a song or an album'),
+      msg('Followers on your artist profile'),
+      msg('Likes, favourites and shares'),
+      msg('Nigerian streams specifically, where the service offers them'),
+    ],
+    whySection: [
+      msg('Boomplay charts by region, which is the whole opportunity. A song that charts in Nigeria gets in front of Nigerian listeners, and the number that gets you there is smaller than anything you would need on a global platform.'),
+      msg('Where the streams come from matters more here than the count. Nigerian streams on a Nigerian artist read as real, and the services that say so are worth the extra over a worldwide figure that looks nothing like your actual audience.'),
+      msg('The profile carries the release. Followers on an artist profile mean the next drop lands in front of somebody instead of starting again from nothing, which is why the artists who keep releasing build followers first and streams second.'),
+      msg('Boomplay pays out on streams, so keep the volume sane. This is a platform with a royalty programme, and inflated numbers on a monetised account is the one place where being greedy actually costs you something. Push the song, do not farm it.'),
+      msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
+    ],
+    faq: [
+      { q: msg('What link do you need for Boomplay?'), a: msg('The public song, album or artist URL from boomplay.com or the share link from the app. We never need your Boomplay login.') },
+      { q: msg('Can this affect my Boomplay royalties?'), a: msg('Boomplay does pay on streams, and any platform that pays on a number also watches that number. Keep the volume proportionate to where you actually are, and do not run it on a song that is already earning — the visibility is the point, not the payout.') },
+      { q: msg('Can I get Nigerian streams specifically?'), a: msg('Where a service offers Nigerian streams it says so on the row before you order, and those cost more than worldwide ones. For a Nigerian artist they are usually worth it: the audience matches the music and the regional charts are what you are aiming at.') },
+      { q: msg('How long does a Boomplay order take?'), a: msg('Each service shows its own speed and start time on the row. Most start within the hour and deliver over a day or more, which is what you want on a new release.') },
+    ],
+  },
+  google: {
+    name: 'Google',
+    h1: msg('Buy Google Reviews and Maps Engagement in Nigeria'),
+    title: 'Buy Google Reviews in Nigeria | Naira Pricing',
+    metaDesc: 'Buy Google reviews, Maps ratings and business profile engagement in Nigeria. Naira pricing, no foreign card needed. Start from ₦1,000.',
+    heroDesc: msg('For a Nigerian business, the Google listing is the shopfront. Somebody searches your name, sees two reviews and a 3.1, and never calls. Nitro carries Google review and business profile services priced in Naira, from ₦1,000.'),
+    mainService: 'comments',
+    kw: 'buy Google reviews Nigeria',
+    whatYouGet: [
+      msg('Reviews on your Google Business Profile'),
+      msg('Ratings on your Maps listing'),
+      msg('Custom review text you write yourself'),
+    ],
+    whySection: [
+      msg('Reviews decide the call, not the ranking. Two listings sit next to each other, one has eleven reviews and one has none, and the phone rings at the first. For a business people have not heard of, the review count is the entire reason a stranger picks up the phone.'),
+      msg('Write the reviews yourself and they read like your customers. The services that take custom text let you say what people actually say about you — the specific thing you are good at, in the words a Nigerian customer would use. Generic five-star praise reads as bought because it is the one thing every bought review has in common.'),
+      msg('This is the riskiest thing we sell, and pretending otherwise would not help you. Google removes reviews it does not believe, and it is better at this than the social platforms are. Reviews can and do disappear. Order small, order slowly, and never all at once.'),
+      msg('It works alongside asking real customers, not instead of it. The businesses this goes well for are the ones already getting a few genuine reviews, where bought ones fill the gaps. On a listing with nothing real behind it, a wall of new reviews is exactly the pattern Google looks for.'),
+      msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
+    ],
+    faq: [
+      { q: msg('What do you need to leave a Google review?'), a: msg('The public link to your Google Business Profile or Maps listing. Search your business name on Google Maps, tap Share, and copy the link. We never need access to your Google account.') },
+      { q: msg('Will Google remove the reviews?'), a: msg('Some, sometimes. Google filters reviews it does not trust, and no panel anywhere can promise otherwise. Ordering a small number spread over time survives far better than a burst, and a listing with real reviews already on it survives better than one without.') },
+      { q: msg('Can I write the review text myself?'), a: msg('Yes, on the services that support custom comments. You send one review per line and each goes out as written. This is the option worth paying for — specific, ordinary language about the thing you actually do is what makes a review believable.') },
+      { q: msg('Is this safe for my business listing?'), a: msg('It carries real risk and we would rather say so. Google can filter reviews, and in serious cases it can flag a listing. Keep it small, keep it slow, keep asking real customers, and do not let bought reviews outnumber genuine ones.') },
     ],
   },
 };
