@@ -341,7 +341,12 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
       const el = findTarget(STEPS[step]);
       if (!el) {
         // The target may still be rendering from the previous step's tap.
-        if (tries++ < 20) setTimeout(attempt, 100);
+        if (tries++ < 20) { setTimeout(attempt, 100); return; }
+        // Two seconds of looking and it is not there. Something upstream is
+        // showing a screen this step was not written for, and a tour parked on
+        // an empty spotlight is worse than a slightly shorter one — so move on
+        // rather than sit there. Past the last step, end cleanly.
+        if (step < STEPS.length - 1) next(); else finish();
         return;
       }
       const r = el.getBoundingClientRect();

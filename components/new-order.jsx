@@ -888,6 +888,22 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
     onOpenedFullList?.();
   }, [openFullList]);
 
+  /**
+   * The tour teaches the curated flow, so it has to be looking at it.
+   *
+   * Four of its seven steps point at things that only exist in the "nitro"
+   * view: the service list, the tier chips, a platform tile, a service card.
+   * The full list is a different component and carries no tour anchors at all,
+   * so starting the tour from there left those steps with nothing to find —
+   * and "Show me" on the full-list notice now drops people onto exactly that
+   * view, which made it easy to hit. Switching back costs the reader nothing:
+   * the tour is about the curated list and ends by pointing at the selector
+   * that leads to the other one.
+   */
+  useEffect(() => {
+    if (tourActive && view === "full") switchView("nitro");
+  }, [tourActive, view]);
+
   /* A full-list row, dressed as the service/tier pair the order form and the
      submit path already speak. There is no tier — that is the whole point of
      this list — so `tier` is null, which is what the form reads to show the
