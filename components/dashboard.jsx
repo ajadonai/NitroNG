@@ -1491,15 +1491,15 @@ function DashboardInner({ initialData }) {
               this" has the same answer whichever unit is on screen. */}
           <button onClick={() => setActive("add-funds")} title={nairaAside(user?.balance || 0, { round: "down" }) || undefined}
             aria-label={`Balance ${money(user?.balance || 0, { round: "down" })}${nairaAside(user?.balance || 0, { round: "down" }) ? `, ${nairaAside(user?.balance || 0, { round: "down" })}` : ""}. Top up`}
-            className="dash-balance-pill max-desktop:hidden flex items-center gap-2 h-[34px] pl-3 pr-1.5 cursor-pointer text-[13px] font-semibold text-t-text border-none"
+            className="dash-balance-pill max-desktop:hidden flex items-center gap-2 h-[34px] pl-1.5 pr-3 cursor-pointer text-[13px] font-semibold text-t-text border-none"
             style={{ fontVariantNumeric: "tabular-nums" }}>
-            {money(user?.balance || 0, { round: "down" })}
             <span className="nitro-money text-[11px] font-bold py-1 px-2.5 rounded-full">{tr("Top up")}</span>
+            {money(user?.balance || 0, { round: "down" })}
           </button>
           {/* Notification bell */}
           <div ref={notifRef} className="relative">
-            <button onClick={() => setNotifOpen(!notifOpen)} className="dash-bell" aria-label={tr("Notifications")} style={{ color: t.textSoft }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <button onClick={() => setNotifOpen(!notifOpen)} className="dash-bell" aria-label={tr("Notifications")} style={{ color: t.text }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
               {bellUnread > 0 && <div className="dash-bell-badge">{bellUnread > 10 ? "10+" : bellUnread}</div>}
             </button>
             {notifOpen && <NotifDropdown items={notifItems} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} setClearedAt={setNotifClearedAt} readAllAt={notifReadAllAt} setReadAllAt={setNotifReadAllAt} onNavigate={openFromNotification} />}

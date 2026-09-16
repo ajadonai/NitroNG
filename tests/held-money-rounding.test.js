@@ -57,10 +57,10 @@ describe("money someone holds never rounds up", () => {
 
 
   it("the welcome bonus never rounds up — it is a promise, not a price", () => {
-    // Caught on the landing hero when the top rung was ₦1,500: ÷ 1529 = $0.98103,
-    // which rounded like a price reads $0.99 and offers a cent that is not given.
-    // Trip found it there after it was already fixed on the dashboard, so the
-    // check covers every surface that quotes the figure, at whatever the rung is.
+    // ₦1,500 ÷ 1529 = $0.98103. Rounded like a price it reads $0.99, which
+    // offers a cent that is not given. Trip caught this on the landing hero
+    // after it was already fixed on the dashboard, so it is checked across
+    // every surface that quotes the figure.
     const dir = path.join(process.cwd(), "components");
     const offenders = fs.readdirSync(dir, { recursive: true })
       .filter(f => typeof f === "string" && f.endsWith(".jsx"))

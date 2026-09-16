@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { CURRENCIES, CURRENCY_CODES, canDisplay, isActive } from "../lib/currency";
 import { useLocale, useT, LANGUAGES } from "./locale";
 import { useBodyScrollLock } from "./ui-primitives";
+import { flagSvg, LOCALE_FLAG } from "../lib/flags";
 
 /**
  * The two nav controls. Same pill as the sky toggle: ringed, 999px, labelled
@@ -16,17 +17,53 @@ import { useBodyScrollLock } from "./ui-primitives";
  * open — backdrop, scroll lock, opaque card — per the modal rules.
  */
 
-const GLOBE = (
-  <svg className="loc-gl" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
-    <circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18" />
-  </svg>
-);
 const CHEV = <svg className="loc-cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>;
 const TICK = <svg className="loc-tk" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>;
 
 const MOBILE = "(max-width: 1023px)";
 
-function Picker({ label, trigger, children, open, setOpen }) {
+/**
+ * Greetings, not language names. A reader who does not know the word "Pidgin"
+ * knows "How far", and a reader who cannot read Latin script recognises مرحبا.
+ * Deliberately not translated: each one is already in its own language, which
+ * is the whole point of it.
+ */
+const GREETING = { en: "Hello", pcm: "How far", fr: "Bonjour", sw: "Habari", ar: "مرحبا" };
+
+/** The currency roundel. One gold for all five — the ground says which country,
+ *  this says money, and money looks the same everywhere. */
+function Coin({ symbol, wide }) {
+  return <span className={`loc-coin${wide ? " wide" : ""}`} aria-hidden="true">{symbol}</span>;
+}
+
+/** The same circle, carrying drawn flag artwork. See lib/flags.js for why these
+ *  are drawn rather than the emoji this file used to print. */
+function Flag({ code }) {
+  return (
+    <span className="loc-flag" aria-hidden="true"
+      dangerouslySetInnerHTML={{ __html: flagSvg(LOCALE_FLAG[code] || "gb", 24) }} />
+  );
+}
+
+/**
+ * The greeting, rolling. Every greeting is stacked in one grid cell and the
+ * current one slid into view, the same way the hero's changing word works — so
+ * the box can size itself to the widest and nothing is measured at runtime.
+ */
+function Greeting({ code }) {
+  const codes = Object.keys(GREETING);
+  const i = Math.max(0, codes.indexOf(code));
+  return (
+    <span className="loc-greet">
+      {codes.map((c, n) => (
+        <i key={c} className={n === i ? "on" : n === (i - 1 + codes.length) % codes.length ? "out" : ""}
+          aria-hidden={n !== i}>{GREETING[c]}</i>
+      ))}
+    </span>
+  );
+}
+
+function Picker({ label, trigger, children, open, setOpen, ground }) {
   const id = useId();
   const trig = useRef(null);
   // Where the desktop popover hangs. Null on a phone, where CSS pins the same
@@ -60,7 +97,7 @@ function Picker({ label, trigger, children, open, setOpen }) {
 
   return (
     <div className="loc-wrap">
-      <button ref={trig} type="button" className={`loc-pill${open ? " open" : ""}`} aria-haspopup="menu" aria-expanded={open} aria-controls={id} aria-label={label}
+      <button ref={trig} type="button" className={`loc-pill${open ? " open" : ""}${ground ? " painted" : ""}`} data-ground={ground || undefined} aria-haspopup="menu" aria-expanded={open} aria-controls={id} aria-label={label}
         onClick={() => setOpen(o => !o)}>
         {trigger}
       </button>
@@ -89,10 +126,10 @@ export function CurrencySwitcher() {
   return (
     <Picker label={tr("Currency")} open={open} setOpen={(v) => { if (v) ensureRates?.(); setOpen(v); }}
       trigger={<>
-        <span className={`loc-sym${currency === "KES" ? " wide" : ""}`} aria-hidden="true">{meta.symbol}</span>
+        <Coin symbol={meta.symbol} wide={currency === "KES"} />
         <span className="loc-cd">{currency}</span>
         {CHEV}
-      </>}>
+      </>} ground={currency}>
       <div className="loc-sec">{tr("Show prices in")}</div>
       <CurrencyOptions onPick={() => setOpen(false)} />
     </Picker>
@@ -144,10 +181,13 @@ export function LanguageSwitcher() {
   return (
     <Picker label={tr("Language")} open={open} setOpen={setOpen}
       trigger={<>
-        {GLOBE}
-        <span className="loc-cd">{current.code.toUpperCase().slice(0, 2)}</span>
+        <Flag code={current.code} />
+        {/* The greeting is the label. "Hello" beside a Union flag does not need
+            "EN" after it, and the two-letter code was the least readable thing
+            in the nav. It rolls on the hero's curve; the flag springs in. */}
+        <Greeting code={current.code} />
         {CHEV}
-      </>}>
+      </>} ground={current.code}>
       <div className="loc-sec">{tr("Language")}</div>
       <LanguageOptions onPick={() => setOpen(false)} />
     </Picker>
@@ -168,8 +208,9 @@ export function LanguageOptions({ onPick }) {
           <button key={l.code} type="button" role="menuitemradio" aria-checked={on} disabled={!l.available}
             className={`loc-opt${on ? " on" : ""}${l.available ? "" : " soon"}`}
             onClick={() => { if (l.available) { setLang(l.code); onPick?.(); } }}>
-            <span className="loc-ofg" aria-hidden="true">{l.flag}</span>
+            <Flag code={l.code} />
             <span className="loc-onm">{l.label}</span>
+            <span className="loc-ogr" aria-hidden="true">{GREETING[l.code]}</span>
             {l.available ? TICK : <span className="loc-soon">{tr("Soon")}</span>}
           </button>
         );

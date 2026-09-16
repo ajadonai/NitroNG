@@ -1558,9 +1558,12 @@ body:has(.dash-main) .nitro-atmo::before { content: none; }
    globe is left, which is what lets both fit in a 360px bar. One menu serves
    both breakpoints: a popover under the pill on a desktop, a bottom sheet on a
    phone. The surface is opaque and the backdrop closes it, per the modal rules. */
-.loc-wrap { position: relative; display: inline-flex; }
+/* Both shrink-0: a flex child gives up its width before the row overflows, and
+   with overflow:hidden on the painted pill that clipped "Bonjour" to "Bonj"
+   instead of pushing the nav. Same fault the avatar button had. */
+.loc-wrap { position: relative; display: inline-flex; flex-shrink: 0; }
 .loc-pill {
-  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
+  display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 12px 0 6px; flex-shrink: 0;
   border: none; cursor: pointer; border-radius: 999px !important; font: inherit;
   font-size: 12.5px; font-weight: 700; white-space: nowrap; color: inherit;
   background: #fff;
@@ -1576,6 +1579,94 @@ body:has(.dash-main) .nitro-atmo::before { content: none; }
 .loc-pill:hover { transform: translateY(-1.5px); }
 .loc-pill:active, .loc-pill.open { transform: scale(.97); }
 .loc-pill:focus-visible { outline: 2px solid #c47d8e; outline-offset: 3px; }
+
+/* ── The painted pill ────────────────────────────────────────────────────── */
+/* The sky toggle is a real blue sky and a real night at full strength, so a
+   tinted wash beside it always looked like the lesser control. These grounds
+   are painted the same way, and one rule decides them: the country's flag.
+   Nothing else feeds in. The dollar was the greenback green before this, which
+   put it 35 rgb units from Nigeria's green — close enough to read as the same
+   pill; flag-true it is 100 away. Every stop clears 4.5:1 against white text,
+   which is what makes this saturation affordable, and Ghana runs green-first
+   so the gold coin is not sitting on gold. */
+/* position + overflow are load-bearing: the ground is a ::before at inset:0,
+   and .loc-pill had no position of its own, so it resolved against whatever
+   was positioned further up and washed the page gold. overflow clips it to
+   the 999px radius. */
+.loc-pill.painted { position: relative; overflow: hidden; }
+.loc-pill.painted { color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,.28), inset 0 0 0 1.5px rgba(255,255,255,.34),
+              0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(0,0,0,.22); }
+.dark .loc-pill.painted { color: #fff; }
+/* The chevron is furniture and may sit back. The label is a label: NGN and
+   "Bonjour" are the same kind of thing and must be the same white, and a .9
+   opacity on one of them read as two different greys. */
+.loc-pill.painted .loc-cv { opacity: .75; }
+.loc-pill.painted .loc-cd, .loc-pill.painted .loc-greet { color: #fff; opacity: 1; }
+.loc-pill.painted::before { content: ""; position: absolute; inset: 0; z-index: 0;
+  transition: background .5s ease; }
+/* A sheen across every ground, the way a struck coin catches light. */
+.loc-pill.painted::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(105deg, transparent 26%, rgba(255,255,255,.16) 47%, transparent 66%); }
+.loc-pill.painted > * { position: relative; z-index: 2; }
+
+.loc-pill[data-ground="NGN"]::before, .loc-pill[data-ground="pcm"]::before { background: linear-gradient(135deg,#007a49,#00402a); }
+.loc-pill[data-ground="USD"]::before { background: linear-gradient(135deg,#1f3a8f,#8c1f2f); }
+.loc-pill[data-ground="GBP"]::before, .loc-pill[data-ground="en"]::before { background: linear-gradient(135deg,#012169,#0a1230); }
+.loc-pill[data-ground="GHS"]::before { background: linear-gradient(135deg,#0f5c3a,#8a6418); }
+.loc-pill[data-ground="KES"]::before, .loc-pill[data-ground="sw"]::before { background: linear-gradient(135deg,#a82e20,#141414); }
+.loc-pill[data-ground="fr"]::before { background: linear-gradient(135deg,#2246b8,#8c1f34); }
+.loc-pill[data-ground="ar"]::before { background: linear-gradient(135deg,#8a6418,#3a2a0c); }
+
+/* One gold for every currency: the ground says which country, the coin says
+   money, and money looks the same everywhere. */
+.loc-coin { width: 24px; height: 24px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: #422d06;
+  background: radial-gradient(circle at 34% 28%, #ffeab0, #e8b84a 56%, #bf8a28);
+  box-shadow: 0 0 0 1.5px rgba(255,255,255,.6), 0 1px 3px rgba(0,0,0,.4); }
+.loc-coin.wide { font-size: 8.5px; }
+
+/* The flag, already round from lib/flags.js — nothing to crop or nudge. */
+/* overflow:hidden is what makes it round. A border-radius on the span alone
+   does not clip a child, and a radius on the <svg> does not clip its contents
+   either — the artwork was relying entirely on a clipPath inside the file, and
+   the moment that did not resolve a square flag sat in a round button. The
+   container clips now, so the shape does not depend on the artwork at all. */
+/* The separating ring is OUTSIDE the roundel, not inset. Inset, it was drawn
+   on top of the artwork and vanished wherever the artwork matched the ground
+   behind it — the Union flag is navy on a navy pill, so its edge disappeared
+   and the cross read as floating and off-centre. Outside, the roundel is an
+   object sitting on the ground whatever colour either of them is. */
+.loc-flag { width: 24px; height: 24px; border-radius: 50%; overflow: hidden; flex-shrink: 0; display: inline-flex;
+  box-shadow: 0 0 0 1.5px rgba(255,255,255,.6), 0 1px 3px rgba(0,0,0,.4); }
+.loc-flag svg { display: block; width: 100%; height: 100%; }
+.loc-opt .loc-flag { width: 20px; height: 20px; }
+.loc-opt .loc-flag svg { width: 20px; height: 20px; }
+.loc-ogr { font-size: 11px; opacity: .55; flex-shrink: 0; }
+
+/* The greeting rolls on the hero word's curve. Every greeting is stacked in one
+   grid cell, so the box sizes itself to the widest and nothing is measured at
+   runtime — no second render, no race with a webfont. */
+/* flex-shrink:0 because the pill is a flex row and a flex item will shrink
+   below its content before the row overflows — which clipped "Bonjour" to "B". */
+/* align-items:center rather than the hero's negative margin. That trick gives
+   height back to a LINE BOX; in a flex row it shortens the margin box instead,
+   so align-items:center placed the greeting lower than the currency code beside
+   it. Centring inside the cell puts the text on the same optical line and still
+   leaves room for the descender in "Bonjour". */
+.loc-greet { display: inline-grid; align-items: center; overflow: hidden; height: 1.35em;
+  text-align: left; flex-shrink: 0; }
+.loc-greet i { grid-area: 1/1; display: block; white-space: nowrap; font-style: normal;
+  font-size: 12.5px; font-weight: 700; opacity: 0; transform: translateY(105%);
+  transition: transform .46s cubic-bezier(.2,.7,.2,1), opacity .3s; }
+.loc-greet i.on { opacity: 1; transform: translateY(0); }
+.loc-greet i.out { opacity: 0; transform: translateY(-105%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .loc-greet i, .loc-pill.painted::before { transition: none; }
+}
+
 .loc-sym { display: inline-flex; align-items: center; justify-content: center; min-width: 15px;
            font-size: 13.5px; font-weight: 800; line-height: 1; }
 .loc-sym.wide { font-size: 11px; }
@@ -1585,8 +1676,17 @@ body:has(.dash-main) .nitro-atmo::before { content: none; }
 .loc-pill.open .loc-cv { transform: rotate(180deg); }
 @media (max-width: 1023px) {
   .loc-pill { width: 34px; padding: 0; justify-content: center; gap: 0; }
-  .loc-pill .loc-cd, .loc-pill .loc-cv { display: none; }
+  .loc-pill .loc-cd, .loc-pill .loc-cv, .loc-pill .loc-greet { display: none; }
   .loc-sym { min-width: 0; }
+  /* 26px in a 34px button, which is the avatar's own geometry — that one is a
+     26px image in the same button and reads correctly, so matching it makes
+     the three circles one family. The painted ground stays: on a phone it is
+     the button's colour rather than a pill, and it is the only thing left
+     saying which currency or language is selected once the label is gone. */
+  .loc-coin, .loc-flag { width: 26px; height: 26px; }
+  .loc-flag svg { width: 26px; height: 26px; }
+  .loc-coin { font-size: 13px; }
+  .loc-coin.wide { font-size: 9px; }
 }
 
 /* Above the cookie banner (z 9999), which otherwise drew over the mobile sheet
