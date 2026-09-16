@@ -99,7 +99,6 @@ export async function GET(req) {
       summary: {
         active: activeIds.length,
         revoked: profiles.length - activeIds.length,
-        onFullCatalogue: profiles.filter(p => p.enabled && p.catalog === 'full').length,
         orders: resellerSide._count,
         revenue: resellerRevenue,
         // Their share of the business, which is the number that says whether the
@@ -115,7 +114,6 @@ export async function GET(req) {
         name: p.user?.name || '',
         email: p.user?.email || '',
         userStatus: p.user?.status || '',
-        catalog: p.catalog,
         enabled: p.enabled,
         discountPct: p.discountPct,
         approvedBy: p.approvedBy,
@@ -133,7 +131,11 @@ export async function GET(req) {
   }
 }
 
-const CATALOGS = ['curated', 'full'];
+// The `catalog` column is still on ResellerProfile and is deliberately no
+// longer read or written. There is one catalogue now — the API serves the full
+// list to every key — so a per-account setting could only ever disagree with
+// what the API actually does. Dropping the column is a migration and a separate
+// decision; leaving it unread costs nothing and keeps the history.
 
 export async function POST(req) {
   const { admin, error } = await requireAdmin('resellers', true);
@@ -149,12 +151,9 @@ export async function POST(req) {
     return Response.json({ error: 'Invalid request' }, { status: 400 });
   }
 
-  const { action, userId, catalog, notes, discountPct } = body || {};
+  const { action, userId, notes, discountPct } = body || {};
   if (!userId || typeof userId !== 'string') {
     return Response.json({ error: 'userId required' }, { status: 400 });
-  }
-  if (catalog !== undefined && !CATALOGS.includes(catalog)) {
-    return Response.json({ error: 'catalog must be curated or full' }, { status: 400 });
   }
 
   try {
@@ -171,7 +170,6 @@ export async function POST(req) {
         create: {
           userId,
           apiKey: randomBytes(24).toString('hex'),
-          catalog: catalog || 'curated',
           enabled: true,
           approvedBy: admin.name,
           approvedAt: new Date(),
@@ -181,14 +179,13 @@ export async function POST(req) {
         // integration that was already built does not have to be rewired.
         update: {
           enabled: true,
-          ...(catalog ? { catalog } : {}),
           approvedBy: admin.name,
           approvedAt: new Date(),
           ...(notes !== undefined ? { notes: notes || null } : {}),
         },
       });
-      await logActivity(admin.name, `Approved reseller ${who} (${profile.catalog} catalogue)`);
-      return Response.json({ success: true, profile: { catalog: profile.catalog, enabled: profile.enabled } });
+      await logActivity(admin.name, `Approved reseller ${who}`);
+      return Response.json({ success: true, profile: { enabled: profile.enabled } });
     }
 
     if (action === 'revoke') {
@@ -225,15 +222,6 @@ export async function POST(req) {
       await prisma.resellerProfile.update({ where: { userId }, data: { notes: notes || null } });
       await logActivity(admin.name, `Updated note on reseller ${who}`);
       return Response.json({ success: true });
-    }
-
-    if (action === 'catalog') {
-      if (!catalog) return Response.json({ error: 'catalog required' }, { status: 400 });
-      const profile = await prisma.resellerProfile.findUnique({ where: { userId } });
-      if (!profile) return Response.json({ error: 'Not a reseller' }, { status: 404 });
-      await prisma.resellerProfile.update({ where: { userId }, data: { catalog } });
-      await logActivity(admin.name, `Set reseller ${who} to ${catalog} catalogue`);
-      return Response.json({ success: true, catalog });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });

@@ -76,7 +76,7 @@ export default function AdminResellersPage({ dark, t }) {
   );
   const grant = async (u) => {
     const ok = await confirm({ title: `Make ${u.name || u.email} a reseller?`, body: confirmBody("They pay wholesale on every order from now on.", u.orders, u.spend), confirmLabel: "Grant access" });
-    if (ok) act(u.userId, "approve", { catalog: "curated" });
+    if (ok) act(u.userId, "approve");
   };
   const restore = async (r) => {
     const ok = await confirm({ title: `Restore ${r.name || r.email}?`, body: confirmBody("Wholesale pricing resumes on their next order.", r.recentOrders, r.recentSpend), confirmLabel: "Restore" });
@@ -116,7 +116,7 @@ export default function AdminResellersPage({ dark, t }) {
 
       <div className="re-stats">
         {loading || !sum ? Array.from({ length: 4 }, (_, i) => <div key={i} className="re-stt">{bone(64, 20)}{bone(80, 10)}{bone(100, 10)}</div>) : <>
-          <div className="re-stt"><b className="m">{sum.active}</b><span>Active</span><i>{sum.revoked ? `${sum.revoked} revoked` : "none revoked"}{sum.onFullCatalogue ? ` · ${sum.onFullCatalogue} on the full catalogue` : ""}</i></div>
+          <div className="re-stt"><b className="m">{sum.active}</b><span>Active</span><i>{sum.revoked ? `${sum.revoked} revoked` : "none revoked"}</i></div>
           <div className="re-stt"><b className="m">{sum.orders.toLocaleString()}</b><span>Orders</span><i>last {data.windowDays} days</i></div>
           <div className="re-stt"><b className="m">{naira(sum.revenue)}</b><span>Revenue</span><i>{sum.revenueShare}% of all sales</i></div>
           <div className="re-stt"><b className="m">{naira(sum.avgOrder)}</b><span>Average order</span><i>everyone: {naira(sum.avgOrderEveryone)}</i></div>
@@ -139,7 +139,7 @@ export default function AdminResellersPage({ dark, t }) {
               <span className="re-un">
                 <span className="re-av">{initials(r.name || r.email)}</span>
                 <span className="re-unt">
-                  <b><span>{r.name || r.email}</span><span className={`re-ch ${r.catalog === "full" ? "full" : "cur"}`}>{r.catalog === "full" ? "Full catalogue" : "Curated"}</span>{r.apiOrders > 0 && <span className="re-ch api">API · {r.apiOrders}</span>}</b>
+                  <b><span>{r.name || r.email}</span>{r.apiOrders > 0 && <span className="re-ch api">API · {r.apiOrders}</span>}</b>
                 </span>
               </span>
               <span className="r m re-act"><b>{r.recentOrders}</b> · {naira(r.recentSpend)}</span>
@@ -182,14 +182,6 @@ export default function AdminResellersPage({ dark, t }) {
               <button type="button" className="re-x" onClick={() => setOpenId(null)} aria-label="Close">✕</button>
             </div>
             <div className="re-st"><i className={`re-dot ${openR.enabled ? "ok" : "bad"}`} />{openR.enabled ? "Active" : "Revoked"}<span className="re-cnt" style={{ marginLeft: "auto" }}>granted {fmtDate(openR.approvedAt)}{openR.approvedBy ? ` by ${openR.approvedBy}` : ""}</span></div>
-            <div className="re-fld">
-              <label>Catalogue</label>
-              <div className="re-segs">
-                {[["curated", "Curated"], ["full", "Full — API only"]].map(([v, l]) => (
-                  <button type="button" key={v} className={`re-seg${openR.catalog === v ? " on" : ""}`} disabled={!openR.enabled || !!busy} onClick={() => { if (openR.catalog !== v) act(openR.userId, "catalog", { catalog: v }, "catalog"); }}>{l}</button>
-                ))}
-              </div>
-            </div>
             <div className="re-fld">
               <label>Personal rate</label>
               <div className="re-inl">

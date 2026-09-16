@@ -49,7 +49,7 @@ export async function GET(req) {
     return Response.json({
       groups: priced,
       platforms: catalogue.platforms,
-      ...(terms ? { reseller: true, catalog: terms.catalog } : {}),
+      ...(terms ? { reseller: true } : {}),
       ...(loyaltyDiscount > 0 ? { loyaltyDiscount, loyaltyTier: loyaltyTierName } : {}),
     });
   } catch (err) {

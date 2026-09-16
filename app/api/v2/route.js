@@ -1,18 +1,24 @@
 // The reseller API: POST /api/v2, form-encoded, the SMM-panel convention.
 //
-// It is a second door to the same shop. Any verified account holds a key; the
-// catalogue is what that account sees on the site (curated, or full once
-// approved), prices are what that account pays (retail, or wholesale once
-// approved), and an order goes through the exact function the web route uses,
-// stamped source: "api".
+// It is a second door to the same shop. Any verified account holds a key, the
+// API serves one catalogue — the full list — prices are what that account pays
+// (retail, or wholesale once approved), and an order goes through the exact
+// function the web route uses, stamped source: "api".
+//
+// One catalogue, deliberately. The API used to serve the curated tiers as well,
+// gated on a per-account flag, which meant two accounts calling the same
+// endpoint got different service lists and the same ID could be valid for one
+// and unknown to the other. A panel integrating against that has no stable
+// contract. The full list is the whole orderable catalogue and every key sees
+// all of it.
 //
 // Errors follow the convention third-party panels parse: HTTP 200 with
 // { "error": "..." }. Only a bad key answers 401.
 import prisma from '@/lib/prisma';
 import { getResellerTerms, getMarkupSettings, wholesaleOf } from '@/lib/reseller';
-import { getServiceCatalogue } from '@/lib/service-catalog';
 import { formatResellerService, dedupeCategoryLabels } from '@/lib/reseller-format';
-import { standardType, describeTier, describeService, extraOrderFields } from '@/lib/reseller-instructions';
+import { platformOf } from '@/lib/full-catalogue';
+import { standardType, describeService, extraOrderFields } from '@/lib/reseller-instructions';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { FULL_CATALOGUE_WHERE } from '@/lib/reseller-ids';
 import { createOrderForSession, patchOrderForSession } from '@/app/api/orders/route';
@@ -60,10 +66,14 @@ async function userForKey(key) {
 }
 
 /**
- * The service or tier a reseller ID points at, only if that reseller may see
- * it. Curated keys see tiers; full keys see tiers and full-catalogue services.
+ * The service a reseller ID points at, if the API sells it.
+ *
+ * Tier-backed IDs are refused here as well as being absent from the listing.
+ * An ID the catalogue never returns but the order endpoint quietly accepts is
+ * a contract nobody can read off the API, and it is how a panel ends up
+ * depending on something we never published.
  */
-async function resolveVisible(apiId, terms) {
+async function resolveVisible(apiId) {
   const id = Number(apiId);
   if (!Number.isInteger(id) || id <= 0) return { error: 'Incorrect service ID' };
   const map = await prisma.resellerServiceMap.findUnique({
@@ -76,12 +86,8 @@ async function resolveVisible(apiId, terms) {
   });
   if (!map) return { error: 'Incorrect service ID' };
   if (map.retiredAt) return { error: 'Service discontinued' };
-  if (map.tier) {
-    if (!map.tier.enabled || !map.tier.group?.enabled) return { error: 'Service not available' };
-    return { tierId: map.tier.id };
-  }
+  if (map.tier) return { error: 'Incorrect service ID' };
   if (map.service) {
-    if (terms?.catalog !== 'full') return { error: 'Incorrect service ID' };
     const s = map.service;
     // `enabled` is the retail menu switch, not a supply switch: the full
     // catalogue is every listed, priced provider service, exactly as `services`
@@ -94,45 +100,13 @@ async function resolveVisible(apiId, terms) {
 
 async function listServices(terms) {
   const settings = await getMarkupSettings();
-  const out = [];
-  // Curated tiers, priced on the tier, exactly as the catalogue page shows them.
-  const catalogue = await getServiceCatalogue();
-  const tierIds = catalogue.groups.flatMap(g => g.tiers.map(t => t.id));
-  const tierMaps = await prisma.resellerServiceMap.findMany({
-    where: { tierId: { in: tierIds }, retiredAt: null },
-    select: { apiId: true, tierId: true },
-  });
-  const idByTier = Object.fromEntries(tierMaps.map(m => [m.tierId, m.apiId]));
-  const botSettings = await prisma.setting.findMany({ where: { key: { in: ['discord_bot_url', 'discord_bot_url_premium'] } } }).catch(() => []);
-  const botMap = Object.fromEntries(botSettings.map(s => [s.key, s.value]));
-  const botUrl = botMap.discord_bot_url || 'https://nowon.tools';
-  const botUrlPremium = botMap.discord_bot_url_premium || botUrl;
-  for (const g of catalogue.groups) {
-    for (const t of g.tiers) {
-      const apiId = idByTier[t.id];
-      if (!apiId) continue;
-      out.push({
-        service: apiId,
-        name: `${g.name} · ${t.tier}`,
-        type: standardType(t.apiType, { customComments: !!t.customComments }),
-        category: g.platform,
-        rate: money(wholesaleOf(Math.round(t.price * 100), terms, settings)),
-        min: t.min,
-        max: t.max,
-        refill: !!t.refill,
-        cancel: false,
-        description: describeTier(g, t, { botUrl: t.tier === 'Premium' ? botUrlPremium : botUrl }),
-      });
-    }
-  }
-  if (terms?.catalog !== 'full') return out;
-  // The full list, priced on the service, with the same labels the catalogue uses.
   const usdSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
   const usdRate = Number(usdSetting?.value || 1600);
   const services = await prisma.service.findMany({
     where: FULL_WHERE,
     select: {
-      name: true, category: true, sellPer1k: true, costPer1k: true, min: true, max: true, refill: true, cancel: true, dripfeed: true, apiType: true,
+      name: true, category: true, platform: true, sellPer1k: true, costPer1k: true, min: true, max: true,
+      refill: true, cancel: true, dripfeed: true, apiType: true,
       resellerMap: { select: { apiId: true, retiredAt: true } },
     },
     orderBy: [{ category: 'asc' }, { costPer1k: 'asc' }, { id: 'asc' }],
@@ -147,7 +121,12 @@ async function listServices(terms) {
       service: s.resellerMap.apiId,
       label: fmt.label,
       attrs: fmt.attrs,
-      category: s.category,
+      // The Nitro tile, never the provider's own category. Theirs carries the
+      // house style this API exists to hide — 169 services filed under a blue
+      // circle, 281 under "Vip", others under "Cheapest", "Private" and a
+      // bold-unicode "Premium" — and a category is the one field a panel
+      // prints straight into its own storefront.
+      category: s.platform || platformOf(s.name, s.category) || 'other',
       rate: money(wholesaleOf(retail, terms, settings)),
       min: s.min,
       max: s.max,
@@ -158,11 +137,13 @@ async function listServices(terms) {
       _raw: s.name,
     });
   }
+  // Runs on the Nitro tile the rows now carry, so two services reading alike
+  // are separated within the tile a customer would compare them in.
   dedupeCategoryLabels(rows);
-  for (const r of rows) {
-    out.push({ service: r.service, name: r.label, type: r.type, category: r.category, rate: r.rate, min: r.min, max: r.max, refill: r.refill, cancel: r.cancel, description: r.description });
-  }
-  return out;
+  return rows.map(r => ({
+    service: r.service, name: r.label, type: r.type, category: r.category, rate: r.rate,
+    min: r.min, max: r.max, refill: r.refill, cancel: r.cancel, description: r.description,
+  }));
 }
 
 function statusOf(order) {
@@ -205,7 +186,7 @@ export async function POST(req) {
     case 'services':
       return Response.json(await listServices(terms));
     case 'add': {
-      const target = await resolveVisible(p.service, terms);
+      const target = await resolveVisible(p.service);
       if (target.error) return err(target.error);
       const quantity = Number(p.quantity);
       if (!Number.isInteger(quantity) || quantity <= 0) return err('Incorrect quantity');
@@ -215,7 +196,7 @@ export async function POST(req) {
       const replay = await prisma.order.findFirst({
         where: {
           userId: user.id, source: 'api', link: String(p.link), quantity, deletedAt: null,
-          ...(target.tierId ? { tierId: target.tierId } : { serviceId: target.serviceId }),
+          serviceId: target.serviceId,
           createdAt: { gte: new Date(Date.now() - 60 * 1000) },
         },
         orderBy: { createdAt: 'desc' },
@@ -223,12 +204,14 @@ export async function POST(req) {
       });
       if (replay) return Response.json({ order: replay.orderId });
       const res = await createOrderForSession(session, {
-        ...(target.tierId ? { tierId: target.tierId } : { serviceId: target.serviceId }),
+        serviceId: target.serviceId,
         link: String(p.link),
         quantity,
         ...extraOrderFields(p),
         confirmDuplicate: true,
-      }, req, { source: 'api', catalogue: terms?.catalog === 'full' });
+        // Always a full-catalogue service now: resolveVisible returns nothing
+        // else, so there is no longer a flag to read off the account.
+      }, req, { source: 'api', catalogue: true });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.order?.id) return err(data?.error || 'Order could not be placed');
       return Response.json({ order: data.order.id });

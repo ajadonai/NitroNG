@@ -2,7 +2,6 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getCurrentUser } from '@/lib/auth';
 import { getResellerTerms, getMarkupSettings, wholesaleOf } from '@/lib/reseller';
-import { getServiceCatalogue } from '@/lib/service-catalog';
 import { formatResellerService, dedupeCategoryLabels } from '@/lib/reseller-format';
 import { FULL_WHERE } from '@/lib/full-catalogue';
 
@@ -42,60 +41,37 @@ export async function GET(req) {
     // A one-field probe so the dashboard can decide whether to show the tab
     // without paying for a catalogue build.
     if (new URL(req.url).searchParams.get('probe')) {
-      return Response.json({ reseller: true, catalog: terms.catalog });
+      return Response.json({ reseller: true });
     }
 
     const settings = await getMarkupSettings();
     const usdRate = Number(settings.markup_usd_rate) || 1600;
     const url = new URL(req.url);
-    const view = url.searchParams.get('view') || 'curated';
     const category = url.searchParams.get('category');
     const q = url.searchParams.get('q')?.trim();
 
-    if (view === 'full' && terms.catalog !== 'full') {
-      return Response.json({ error: 'Your account is on the curated catalogue' }, { status: 403 });
-    }
-
-    if (view === 'curated') {
-      const catalogue = await getServiceCatalogue();
-      // Reseller IDs ride along so the page can show what to put in an API call.
-      const maps = await prisma.resellerServiceMap.findMany({
-        where: { tierId: { not: null }, retiredAt: null },
-        select: { apiId: true, tierId: true },
-      });
-      const idByTier = Object.fromEntries(maps.map(m => [m.tierId, m.apiId]));
-      const groups = [...catalogue.groups].sort((a, b) => byPlatform(a.platform, b.platform) || a.name.localeCompare(b.name)).map(g => ({
-        name: g.name,
-        platform: g.platform,
-        tiers: g.tiers.map(t => ({
-          apiId: idByTier[t.id] || null,
-          tier: t.tier,
-          price: wholesaleOf(Math.round(t.price * 100), terms, settings) / 100,
-          retail: t.price,
-          min: t.min,
-          max: t.max,
-          refill: t.refill,
-          speed: t.speed,
-        })),
-      }));
-      return Response.json({ view, catalog: terms.catalog, groups });
-    }
-
-    // Full list. No category and no search: just the accordion skeleton.
+    // No category and no search: just the accordion skeleton.
+    //
+    // Grouped by the Nitro tile, never the provider's own category. Theirs
+    // carries the house style this whole layer exists to hide — 169 services
+    // filed under a blue circle, 281 under "Vip", others under "Cheapest",
+    // "Private" and a bold-unicode "Premium" — and /api/v2 already sends the
+    // tile, so grouping the browse page any other way would have a reseller
+    // reading "Vip" on the site and "instagram" in the API for one service.
     if (!category && !q) {
       const cats = await prisma.service.groupBy({
-        by: ['category'],
-        where: fullWhere,
+        by: ['platform'],
+        where: { ...fullWhere, platform: { not: null } },
         _count: true,
       });
-      cats.sort((a, b) => byPlatform(a.category, b.category));
-      return Response.json({ view, catalog: terms.catalog, categories: cats.map(c => ({ name: c.category, count: c._count })) });
+      cats.sort((a, b) => byPlatform(a.platform, b.platform));
+      return Response.json({ categories: cats.map(c => ({ name: c.platform, count: c._count })) });
     }
 
     const offset = Math.max(0, Number(url.searchParams.get('offset')) || 0);
     const where = {
       ...fullWhere,
-      ...(category ? { category } : {}),
+      ...(category ? { platform: category } : {}),
       ...(q ? (/^\d+$/.test(q)
         ? { resellerMap: { is: { apiId: Number(q), retiredAt: null } } }
         : { name: { contains: q, mode: 'insensitive' } }) : {}),
@@ -103,7 +79,7 @@ export async function GET(req) {
     const services = await prisma.service.findMany({
       where,
       select: {
-        name: true, category: true, sellPer1k: true, costPer1k: true,
+        name: true, category: true, platform: true, sellPer1k: true, costPer1k: true,
         min: true, max: true, refill: true, cancel: true, dripfeed: true,
         resellerMap: { select: { apiId: true, retiredAt: true } },
       },
@@ -128,7 +104,7 @@ export async function GET(req) {
         label: fmt.label,
         attrs: fmt.attrs,
         grade: fmt.grade,
-        category: s.category,
+        category: s.platform,
         price: wholesaleOf(retail, terms, settings) / 100,
         min: s.min,
         max: s.max,
@@ -143,7 +119,7 @@ export async function GET(req) {
     // hasMore is judged on the fetched page, not a count query: one page over-
     // fetching by a hair beats a second COUNT on every expand.
     return Response.json({
-      view, catalog: terms.catalog, services: rows,
+      services: rows,
       ...(q ? { query: q, limit: SEARCH_LIMIT } : { offset, hasMore: services.length === PAGE_SIZE }),
       ...(hiddenStale ? { hiddenStale } : {}),
     });

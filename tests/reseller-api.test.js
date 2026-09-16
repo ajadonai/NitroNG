@@ -19,12 +19,7 @@ vi.mock('@/lib/reseller', () => ({
   getMarkupSettings: vi.fn().mockResolvedValue({}),
   wholesaleOf: vi.fn((retail) => Math.round(retail * 0.8)),
 }));
-import { getServiceCatalogue } from '@/lib/service-catalog';
-vi.mock('@/lib/service-catalog', () => ({
-  getServiceCatalogue: vi.fn().mockResolvedValue({ groups: [
-    { id: 'g1', name: 'Instagram Followers', platform: 'Instagram', tiers: [{ id: 'tier-std', tier: 'Standard', price: 2400, min: 100, max: 50000, refill: true }] },
-  ] }),
-}));
+vi.mock('@/lib/full-catalogue', () => ({ platformOf: vi.fn(() => 'instagram') }));
 vi.mock('@/lib/reseller-format', () => ({
   formatResellerService: vi.fn((name) => ({ label: name, attrs: [], grade: null })),
   dedupeCategoryLabels: vi.fn((rows) => rows),
@@ -55,8 +50,11 @@ async function call(params) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockPrisma.user.findUnique.mockImplementation(({ where }) => Promise.resolve(where?.apiKey ? { ...user, emailVerified: true } : { balance: user.balance }));
-  getResellerTerms.mockResolvedValue({ catalog: 'curated', discountPct: null });
-  mockPrisma.resellerServiceMap.findMany.mockResolvedValue([{ apiId: 3877, tierId: 'tier-std' }]);
+  getResellerTerms.mockResolvedValue({ discountPct: null });
+  mockPrisma.resellerServiceMap.findMany.mockResolvedValue([]);
+  mockPrisma.service.findMany.mockResolvedValue([
+    { name: 'TikTok Views [Fast]', category: 'TikTok', platform: 'tiktok', sellPer1k: 52000n, costPer1k: 0.2, min: 500, max: 1000000, refill: false, cancel: false, resellerMap: { apiId: 4102, retiredAt: null } },
+  ]);
   mockPrisma.setting.findUnique.mockResolvedValue({ value: '1600' });
   mockPrisma.order.findFirst.mockResolvedValue(null);
 });
@@ -85,51 +83,71 @@ describe('balance and services', () => {
     const r = await call({ key: 'k'.repeat(16), action: 'balance' });
     expect(r.body).toEqual({ balance: '123456.00', currency: 'NGN' });
   });
-  it('an account with no terms gets the curated tiers at retail, and no full list', async () => {
-    getResellerTerms.mockResolvedValue(null);
+  it('serves the full list, and only the full list, to every key', async () => {
+    // One catalogue on purpose. Two accounts calling the same endpoint used to
+    // get different service lists off a per-account flag, so the same ID could
+    // be valid for one and unknown to the other — no contract a panel can
+    // integrate against.
     const r = await call({ key: 'k'.repeat(16), action: 'services' });
     expect(r.status).toBe(200);
-    expect(r.body).toHaveLength(1);
-    expect(mockPrisma.service.findMany).not.toHaveBeenCalled();
+    expect(r.body.map(s => s.service)).toEqual([4102]);
+    expect(r.body[0]).toMatchObject({ name: 'TikTok Views [Fast]', rate: '416.00' });
   });
-  it('a curated key sees only the curated tiers, at wholesale', async () => {
+
+  it('gives an account with no reseller terms the same list, at retail', async () => {
+    getResellerTerms.mockResolvedValue(null);
     const r = await call({ key: 'k'.repeat(16), action: 'services' });
-    expect(r.body).toEqual([{ service: 3877, name: 'Instagram Followers · Standard', type: 'Default', category: 'Instagram', rate: '1920.00', min: 100, max: 50000, refill: true, cancel: false, description: '' }]);
-    expect(mockPrisma.service.findMany).not.toHaveBeenCalled();
+    expect(r.body.map(s => s.service)).toEqual([4102]);
   });
-  it('a full key sees the curated tiers and the full list', async () => {
-    getResellerTerms.mockResolvedValue({ catalog: 'full', discountPct: null });
+
+  it('never returns a curated tier', async () => {
+    mockPrisma.resellerServiceMap.findMany.mockResolvedValue([{ apiId: 3877, tierId: 'tier-std' }]);
+    const r = await call({ key: 'k'.repeat(16), action: 'services' });
+    expect(r.body.map(s => s.service)).not.toContain(3877);
+  });
+
+  it('drops a retired ID from the listing', async () => {
     mockPrisma.service.findMany.mockResolvedValue([
-      { name: 'TikTok Views [Fast]', category: 'TikTok', sellPer1k: 52000n, costPer1k: 0.2, min: 500, max: 1000000, refill: false, cancel: false, resellerMap: { apiId: 4102, retiredAt: null } },
-      { name: 'Retired thing', category: 'TikTok', sellPer1k: 52000n, costPer1k: 0.2, min: 1, max: 1, refill: false, cancel: false, resellerMap: { apiId: 4103, retiredAt: new Date() } },
+      { name: 'TikTok Views [Fast]', category: 'TikTok', platform: 'tiktok', sellPer1k: 52000n, costPer1k: 0.2, min: 500, max: 1000000, refill: false, cancel: false, resellerMap: { apiId: 4102, retiredAt: null } },
+      { name: 'Retired thing', category: 'TikTok', platform: 'tiktok', sellPer1k: 52000n, costPer1k: 0.2, min: 1, max: 1, refill: false, cancel: false, resellerMap: { apiId: 4103, retiredAt: new Date() } },
     ]);
     const r = await call({ key: 'k'.repeat(16), action: 'services' });
-    expect(r.body.map(s => s.service)).toEqual([3877, 4102]);
-    expect(r.body[1]).toMatchObject({ name: 'TikTok Views [Fast]', rate: '416.00', category: 'TikTok' });
+    expect(r.body.map(s => s.service)).toEqual([4102]);
+  });
+
+  it('sends the Nitro tile as the category, never the provider\'s own', async () => {
+    // A category is the one field a panel prints straight into its own
+    // storefront, and the provider's carries the house style this API exists
+    // to hide: 169 services under a blue circle, 281 under "Vip", others under
+    // "Cheapest", "Private" and a bold-unicode "Premium".
+    mockPrisma.service.findMany.mockResolvedValue([
+      { name: 'Instagram Followers', category: '\u{1F535}', platform: 'instagram', sellPer1k: 52000n, costPer1k: 0.2, min: 1, max: 100000, refill: false, cancel: false, resellerMap: { apiId: 4200, retiredAt: null } },
+    ]);
+    const r = await call({ key: 'k'.repeat(16), action: 'services' });
+    expect(r.body[0].category).toBe('instagram');
   });
 });
 
 describe('add', () => {
   it('places an order through the shared web path with source api', async () => {
-    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: { id: 'tier-std', enabled: true, group: { enabled: true } }, service: null });
+    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: null, service: { id: 's9', enabled: true, provider: 'dao', providerListedAt: new Date(), costPer1k: 2 } });
     createOrderForSession.mockResolvedValue(Response.json({ success: true, order: { id: 'NTR-4211', status: 'Processing' } }));
-    const r = await call({ key: 'k'.repeat(16), action: 'add', service: '3877', link: 'https://instagram.com/x', quantity: '1000' });
+    const r = await call({ key: 'k'.repeat(16), action: 'add', service: '4102', link: 'https://instagram.com/x', quantity: '1000' });
     expect(r.body).toEqual({ order: 'NTR-4211' });
     const [session, body, , opts] = createOrderForSession.mock.calls[0];
     expect(session.id).toBe('u1');
-    expect(body).toMatchObject({ tierId: 'tier-std', link: 'https://instagram.com/x', quantity: 1000, confirmDuplicate: true });
-    expect(opts).toMatchObject({ source: 'api', catalogue: false });
+    expect(body).toMatchObject({ serviceId: 's9', link: 'https://instagram.com/x', quantity: 1000, confirmDuplicate: true });
+    expect(opts).toMatchObject({ source: 'api', catalogue: true });
   });
   it('a retry inside sixty seconds answers with the order already placed', async () => {
-    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: { id: 'tier-std', enabled: true, group: { enabled: true } }, service: null });
+    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: null, service: { id: 's9', enabled: true, provider: 'dao', providerListedAt: new Date(), costPer1k: 2 } });
     mockPrisma.order.findFirst.mockResolvedValue({ orderId: 'NTR-4211' });
-    const r = await call({ key: 'k'.repeat(16), action: 'add', service: '3877', link: 'https://instagram.com/x', quantity: '1000' });
+    const r = await call({ key: 'k'.repeat(16), action: 'add', service: '4102', link: 'https://instagram.com/x', quantity: '1000' });
     expect(r.body).toEqual({ order: 'NTR-4211' });
     expect(createOrderForSession).not.toHaveBeenCalled();
-    expect(mockPrisma.order.findFirst.mock.calls[0][0].where).toMatchObject({ userId: 'u1', source: 'api', link: 'https://instagram.com/x', quantity: 1000, tierId: 'tier-std' });
+    expect(mockPrisma.order.findFirst.mock.calls[0][0].where).toMatchObject({ userId: 'u1', source: 'api', link: 'https://instagram.com/x', quantity: 1000, serviceId: 's9' });
   });
-  it('a full key can order a listed service the retail menu has switched off', async () => {
-    getResellerTerms.mockResolvedValue({ catalog: 'full', discountPct: null });
+  it('can order a listed service the retail menu has switched off', async () => {
     mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: null, service: { id: 's9', enabled: false, provider: 'dao', providerListedAt: new Date(), costPer1k: 2 } });
     createOrderForSession.mockResolvedValue(Response.json({ success: true, order: { id: 'NTR-77', status: 'Processing' } }));
     const r = await call({ key: 'k'.repeat(16), action: 'add', service: '4102', link: 'https://x.com/a', quantity: '1000' });
@@ -139,9 +157,12 @@ describe('add', () => {
     expect(body.serviceId).toBe('s9');
     expect(opts).toMatchObject({ source: 'api', catalogue: true });
   });
-  it('a curated key cannot order a full-list ID', async () => {
-    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: null, service: { id: 's1', enabled: true, provider: 'mtp', providerListedAt: new Date(), costPer1k: 1 } });
-    const r = await call({ key: 'k'.repeat(16), action: 'add', service: '4102', link: 'https://t.co/x', quantity: '500' });
+  it('refuses a curated tier ID, the same way the listing omits it', async () => {
+    // An ID the catalogue never returns but the order endpoint quietly accepts
+    // is a contract nobody can read off the API, and it is how a panel comes to
+    // depend on something we never published.
+    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: { id: 'tier-std', enabled: true, group: { enabled: true } }, service: null });
+    const r = await call({ key: 'k'.repeat(16), action: 'add', service: '3877', link: 'https://t.co/x', quantity: '500' });
     expect(r.body).toEqual({ error: 'Incorrect service ID' });
     expect(createOrderForSession).not.toHaveBeenCalled();
   });
@@ -152,7 +173,7 @@ describe('add', () => {
     expect(r.body).toEqual({ error: 'Service discontinued' });
   });
   it('passes the web path error through as { error }', async () => {
-    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: { id: 'tier-std', enabled: true, group: { enabled: true } }, service: null });
+    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: null, service: { id: 's9', enabled: true, provider: 'dao', providerListedAt: new Date(), costPer1k: 2 } });
     createOrderForSession.mockResolvedValue(Response.json({ error: 'Insufficient balance' }, { status: 400 }));
     const r = await call({ key: 'k'.repeat(16), action: 'add', service: '3877', link: 'https://instagram.com/x', quantity: '1000' });
     expect(r.status).toBe(200);
@@ -161,31 +182,41 @@ describe('add', () => {
 });
 
 describe('instructions', () => {
-  const withSetup = () => {
-    getServiceCatalogue.mockResolvedValueOnce({ groups: [
-      { id: 'g2', name: 'Discord Members (Offline)', platform: 'Discord', type: 'followers', description: 'Invite link must never expire.', tiers: [{ id: 'tier-dc', tier: 'Standard', price: 3900, min: 100, max: 10000, refill: false }] },
-      { id: 'g3', name: 'Website Traffic', platform: 'Website', type: 'views', tiers: [{ id: 'tier-web', tier: 'Standard', price: 1500, min: 1000, max: 100000, refill: false, trafficTargeting: true, apiType: 'Web Traffic' }] },
-      { id: 'g4', name: 'Instagram Comments', platform: 'Instagram', type: 'comments', tiers: [{ id: 'tier-cm', tier: 'Premium', price: 9000, min: 10, max: 500, refill: false, customComments: true }] },
-    ] });
-    mockPrisma.resellerServiceMap.findMany.mockResolvedValue([{ apiId: 102, tierId: 'tier-dc' }, { apiId: 103, tierId: 'tier-web' }, { apiId: 104, tierId: 'tier-cm' }]);
-  };
-  it('each service carries a standard type and the instructions a buyer needs', async () => {
-    withSetup();
+  // Every description now comes off the service itself — its apiType and its
+  // drip-feed flag — because the API no longer serves a curated tier that could
+  // carry hand-written group copy.
+  const svc = (over) => ({
+    name: 'A service', category: 'Other', platform: 'instagram',
+    sellPer1k: 52000n, costPer1k: 0.2, min: 10, max: 10000,
+    refill: false, cancel: false, dripfeed: false, apiType: 'Default',
+    resellerMap: { apiId: 100, retiredAt: null }, ...over,
+  });
+
+  it('gives each service a standard type and the instructions its buyer needs', async () => {
+    mockPrisma.service.findMany.mockResolvedValue([
+      svc({ apiType: 'Custom Comments', resellerMap: { apiId: 104, retiredAt: null } }),
+      svc({ apiType: 'Web Traffic', resellerMap: { apiId: 103, retiredAt: null } }),
+      svc({ apiType: 'Default', dripfeed: true, resellerMap: { apiId: 105, retiredAt: null } }),
+    ]);
     const r = await call({ key: 'k'.repeat(16), action: 'services' });
-    const discord = r.body.find(s => s.service === 102);
-    expect(discord.type).toBe('Default');
-    expect(discord.description).toContain('Invite link must never expire.');
-    expect(discord.description).toContain('1. Add the bot to your server');
-    expect(discord.description).toContain('never expire');
-    const traffic = r.body.find(s => s.service === 103);
-    expect(traffic.description).toContain('country');
-    expect(traffic.description).toContain('referrer');
-    const comments = r.body.find(s => s.service === 104);
+    const comments = r.body.find(x => x.service === 104);
     expect(comments.type).toBe('Custom Comments');
     expect(comments.description).toContain('one comment per line');
+    const traffic = r.body.find(x => x.service === 103);
+    expect(traffic.description).toContain('country');
+    expect(traffic.description).toContain('referrer');
+    const drip = r.body.find(x => x.service === 105);
+    expect(drip.description).toContain('drip-feed');
   });
+
+  it('never leaks the provider type straight through', async () => {
+    mockPrisma.service.findMany.mockResolvedValue([svc({ apiType: 'Something Upstream Invented' })]);
+    const r = await call({ key: 'k'.repeat(16), action: 'services' });
+    expect(r.body[0].type).toBe('Default');
+  });
+
   it('add folds traffic targeting and list parameters into the order', async () => {
-    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: { id: 'tier-web', enabled: true, group: { enabled: true } }, service: null });
+    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: null, service: { id: 's-web', enabled: true, provider: 'dao', providerListedAt: new Date(), costPer1k: 2 } });
     createOrderForSession.mockResolvedValue(Response.json({ success: true, order: { id: 'NTR-9', status: 'Processing' } }));
     const r = await call({ key: 'k'.repeat(16), action: 'add', service: '103', link: 'https://example.com', quantity: '1000', country: 'ng', device: 'Mobile', keyword: 'buy shoes lagos', usernames: 'a\nb' });
     expect(r.status).toBe(200);
@@ -193,10 +224,11 @@ describe('instructions', () => {
     expect(body.trafficConfig).toEqual({ country: 'ng', device: 'mobile', trafficType: 'keyword', keyword: 'buy shoes lagos', referrer: '' });
     expect(body.comments).toBe('a\nb');
   });
+
   it('add without extras sends neither comments nor traffic', async () => {
-    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: { id: 'tier-std', enabled: true, group: { enabled: true } }, service: null });
+    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: null, service: { id: 's9', enabled: true, provider: 'dao', providerListedAt: new Date(), costPer1k: 2 } });
     createOrderForSession.mockResolvedValue(Response.json({ success: true, order: { id: 'NTR-10', status: 'Processing' } }));
-    await call({ key: 'k'.repeat(16), action: 'add', service: '3877', link: 'https://instagram.com/x', quantity: '100' });
+    await call({ key: 'k'.repeat(16), action: 'add', service: '4102', link: 'https://instagram.com/x', quantity: '100' });
     const [, body] = createOrderForSession.mock.calls[0];
     expect(body.comments).toBeUndefined();
     expect(body.trafficConfig).toBeUndefined();

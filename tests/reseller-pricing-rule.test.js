@@ -13,13 +13,15 @@ beforeEach(() => {
 
 describe('getResellerTerms', () => {
   it('returns terms for an enabled profile', async () => {
-    db.resellerProfile.findUnique.mockResolvedValue({ enabled: true, catalog: 'full', discountPct: 35 });
-    expect(await getResellerTerms('u1')).toEqual({ catalog: 'full', discountPct: 35 });
+    // No catalogue in here any more: there is one catalogue, the API serves it
+    // to every key, so terms carry the rate and nothing else.
+    db.resellerProfile.findUnique.mockResolvedValue({ enabled: true, discountPct: 35 });
+    expect(await getResellerTerms('u1')).toEqual({ discountPct: 35 });
   });
 
   // Revoking disables rather than deletes, so the row still exists.
   it('treats a revoked profile as a retail customer', async () => {
-    db.resellerProfile.findUnique.mockResolvedValue({ enabled: false, catalog: 'curated', discountPct: null });
+    db.resellerProfile.findUnique.mockResolvedValue({ enabled: false, discountPct: null });
     expect(await getResellerTerms('u1')).toBeNull();
   });
 

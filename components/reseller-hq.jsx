@@ -36,7 +36,6 @@ const P = {
 };
 
 const WA_TEXT = "Hi! I'd like wholesale prices on my Nitro account. Here's what my business does:";
-const WA_FULL = "Hi! I'm a Nitro reseller and I'd like the full catalogue on my account.";
 
 function Styles({ dark, t }) {
   const grad = 'linear-gradient(135deg, #c47d8e, #8b5e6b)';
@@ -95,7 +94,7 @@ const Feat = ({ icon, title, body, tone }) => <div className="rhq-feat"><span cl
 const Steps = ({ items }) => <div className="rhq-steps">{items.map(([t, b], i) => <div key={t} className="rhq-step"><span className="rhq-step-n">{String(i + 1).padStart(2, '0')}</span><h4>{t}</h4><p>{b}</p></div>)}</div>;
 const Faq = ({ items }) => <div className="rhq-faq">{items.map(([q, a]) => <details key={q} className="rhq-faq-item"><summary className="rhq-faq-btn">{q}<span className="rhq-faq-chev">{I(P.arrow, 12)}</span></summary><div className="rhq-faq-ans">{a}</div></details>)}</div>;
 
-function Catalogues({ full }) {
+function Catalogues() {
   const tr = useT();
   const Cat = ({ icon, tone, title, badge, tag, desc, stats }) => (
     <div className="rhq-cat">
@@ -106,14 +105,19 @@ function Catalogues({ full }) {
   );
   return (
     <div className="rhq-grid2">
-      <Cat icon={P.layers} tone="" title={tr("Nitro Curated")} badge={full ? null : 'DEFAULT'} tag="The catalogue we stake our name on" desc={tr("Hand-picked, stress-tested services in Budget, Standard and Premium tiers. Refill-backed where it counts. Order from New Order or the API.")} stats={[['Services', '227'], ['Refill', 'Guaranteed'], ['Order via', 'Site + API']]} />
-      <Cat icon={P.globe} tone="blue" title={tr("Full Catalogue")} badge={full ? 'ON' : null} tag="Everything our providers can reach" desc={full ? tr("Thousands of services across every platform, at wholesale, each on its own refill and cancel terms. API only. On your account now.") : tr("Thousands of services across every platform, at wholesale, each on its own refill and cancel terms. API only. On request: message support and we switch you.")} stats={[['Services', '9,400+'], ['Refill', 'Per service'], ['Order via', 'API']]} />
+      <Cat icon={P.globe} tone="blue" title={tr("One catalogue")} tag="Everything our providers can reach"
+        desc={tr("Every service Nitro can place, on one list, each on its own refill and speed terms. The same list the site shows, the same IDs, the same prices your account pays.")}
+        stats={[['Services', '7,500+'], ['Platforms', '31'], ['Settles in', 'Naira']]} />
+      <Cat icon={P.layers} tone="" title={tr("One set of IDs")} tag="Stable, and yours to integrate against"
+        desc={tr("A service keeps its ID for as long as we carry it. When a provider drops one it answers “Service discontinued” rather than vanishing, so your panel can tell the difference.")}
+        stats={[['ID', 'Permanent'], ['Retired', 'Says so'], ['Order via', 'Site + API']]} />
     </div>
   );
 }
 
+
 const FAQ = [
-  ['Which services can my key order?', 'Whatever your account sees: the curated tiers, at retail or at wholesale once approved, or the full list once we switch you. An ID outside your catalogue answers "Incorrect service ID".'],
+  ['Which services can my key order?', 'All of them. Every key sees the same catalogue — there is no per-account list and nothing to be switched on. What changes once you are approved is the price, not the list. An ID we do not carry answers "Incorrect service ID"; one we used to carry answers "Service discontinued".'],
   ['Do API orders run gradual delivery?', 'No. API orders go at natural speed; you set expectations with your own customers.'],
   ['What happens to orders that cannot deliver?', 'They refund to your wallet automatically.'],
   ['How do I get wholesale?', 'Message us on WhatsApp about your business. Once approved, the same key returns wholesale rates; consistent volume earns a personal rate on top.'],
@@ -154,10 +158,10 @@ function ProspectInner() {
             <Feat icon={P.refund} title={tr("Auto refunds")} body={tr("Anything we can't deliver refunds to your wallet automatically. Never out of pocket.")} />
             <Feat icon={P.clock} title={tr("Live tracking")} body={tr("Start count, remains and status on every order, pollable so your panel can show it.")} />
           </div>
-          <SecHead label={tr("Catalogues")} sub={tr("Curated by default, full on request")} />
+          <SecHead label={tr("The catalogue")} sub={tr("One list, every key, every platform")} />
           <Catalogues full={false} waLink={waLink} />
           <SecHead label={tr("How to join")} sub={tr("Three steps, no forms")} />
-          <Steps items={[['Grab your key in Settings', 'Every verified account has one. Point your panel at nitro.ng/api/v2 and order the curated list at the price you already see.'], ['Message us for wholesale', 'Tell us about your business: your panel, your clients, or the volume you push. We switch your account, and the same key starts returning lower rates.'], ['Order like you always did', 'Same order page, same wallet, same history. Only the price changes.']]} />
+          <Steps items={[['Grab your key in Settings', 'Every verified account has one. Point your panel at nitro.ng/api/v2 and order the whole catalogue at the price you already see.'], ['Message us for wholesale', 'Tell us about your business: your panel, your clients, or the volume you push. The list does not change — the same key simply starts returning lower rates.'], ['Order like you always did', 'Same order page, same wallet, same history. Only the price changes.']]} />
           <div className="rhq-honest"><span className="rhq-sec-label">{tr("The honest bit")}</span><p>{tr("Reseller pricing replaces retail perks: loyalty discounts, promo codes and Nitro Points do not stack on top. Wholesale is the deal. Full-catalogue services carry the provider's own terms, shown on every row.")}</p></div>
           <div className="rhq-closer"><div><h3>{tr("Start where you are.")}</h3><p>{tr("Your key is already in Settings. Wholesale is one message away.")}</p></div><Wa /></div>
         </main>
@@ -173,23 +177,22 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
   const money = useMoney();
   const toast = useToast();
   const [key, setKey] = useState(null);
-  const [catalog, setCatalog] = useState('curated');
   const [shown, setShown] = useState(false);
   const [rates, setRates] = useState([]);
   const [rotating, setRotating] = useState(false);
   const [wholesale, setWholesale] = useState(false);
   const [stats, setStats] = useState(null);
   useEffect(() => {
-    fetch('/api/reseller/key').then(r => r.ok ? r.json() : null).then(d => { if (d?.apiKey) { setKey(d.apiKey); setCatalog(d.catalog || 'curated'); setWholesale(!!d.wholesale); } }).catch(() => {});
+    fetch('/api/reseller/key').then(r => r.ok ? r.json() : null).then(d => { if (d?.apiKey) { setKey(d.apiKey); setWholesale(!!d.wholesale); } }).catch(() => {});
     fetch('/api/reseller/stats').then(r => r.ok ? r.json() : null).then(d => { if (d && !d.error) setStats(d); }).catch(() => {});
-    fetch('/api/reseller/catalogue?view=curated').then(r => r.ok ? r.json() : null).then(d => {
-      const rows = [];
-      for (const g of d?.groups || []) for (const tier of g.tiers || []) if (rows.length < 3 && tier.retail && tier.price && tier.retail > tier.price) rows.push([`${g.name} · ${tier.tier}`, tier.retail, tier.price]);
-      setRates(rows);
+    // Three real rows off the live catalogue, as a sample of what this account
+    // pays. Instagram because it is the tile most resellers open first.
+    fetch('/api/reseller/catalogue?category=instagram').then(r => r.ok ? r.json() : null).then(d => {
+      setRates((d?.services || []).slice(0, 3).map(x => [x.label, x.price, x.price]));
     }).catch(() => {});
   }, []);
   const waNum = (socialLinks?.social_whatsapp_reseller || socialLinks?.social_whatsapp_support || FALLBACK_WA).replace(/\D/g, '');
-  const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(wholesale ? WA_FULL : WA_TEXT)}`;
+  const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(WA_TEXT)}`;
   const masked = key ? `${key.slice(0, 8)}${'•'.repeat(12)}${key.slice(-4)}` : '';
   const copyKey = () => { if (!key) return; try { copyText(key); toast.success('API key copied'); } catch {} };
   const rotate = async () => {
@@ -203,11 +206,10 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
     } catch { toast.error('Network error'); }
     setRotating(false);
   };
-  const full = catalog === 'full';
   return (
     <div>
       <Styles dark={dark} t={t} />
-      <div className="rhq-phead"><div><span className="rhq-pill">{tr("Reseller HQ")}</span><h1 className="rhq-h1" style={{ fontSize: 22, margin: '8px 0 2px' }}>{wholesale ? tr("Wholesale is on.") : tr("Your API is ready.")}</h1><p>{wholesale ? tr("Everything you need, in one place.") : tr("Retail prices today. Wholesale is one message away.")}</p></div><span className="rhq-badge-sm big">{wholesale ? (full ? tr("FULL CATALOGUE") : 'WHOLESALE') : 'RETAIL'}</span></div>
+      <div className="rhq-phead"><div><span className="rhq-pill">{tr("Reseller HQ")}</span><h1 className="rhq-h1" style={{ fontSize: 22, margin: '8px 0 2px' }}>{wholesale ? tr("Wholesale is on.") : tr("Your API is ready.")}</h1><p>{wholesale ? tr("Everything you need, in one place.") : tr("Retail prices today. Wholesale is one message away.")}</p></div><span className="rhq-badge-sm big">{wholesale ? 'WHOLESALE' : 'RETAIL'}</span></div>
       {wholesale && stats && (
         <div className="rhq-stats">
           <div className="rhq-stt"><b>{stats.orders.toLocaleString()}</b><span>{tr("Orders ·")} {stats.windowDays} days</span><i>{stats.apiOrders.toLocaleString()} {tr("through the API")}</i></div>
@@ -234,9 +236,8 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
       <SecHead label={tr("Quick start")} sub={tr("Three calls and you are selling")} />
       <Steps items={[['Add Nitro as a provider', 'Set the API URL to nitro.ng/api/v2 in your panel and paste your key.'], ['Pull the services', 'Your panel calls services and gets your catalogue, your prices, our IDs.'], ['Place an order', 'add with a service ID, link and quantity. Track it with status.']]} />
       <div className="rhq-acts"><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="rhq-btn-p blue">{I(P.book, 13)} {tr("Read the docs")}</a><button type="button" className="rhq-btn-g" onClick={() => onNavigate?.('catalogue')}>{tr("Browse the catalogue")}</button></div>
-      <SecHead label={tr("Your catalogue")} sub={full ? tr("Curated and the full list") : wholesale ? tr("Curated today, full on request") : tr("Curated, at retail")} />
-      <Catalogues full={full} waLink={waLink} />
-      {wholesale && !full && <div className="rhq-acts"><a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-g" style={{ color: dark ? '#4ade80' : '#16a34a' }}>{WA_ICON} {tr("Ask for the full list")}</a></div>}
+      <SecHead label={tr("Your catalogue")} sub={wholesale ? tr("Every service, at wholesale") : tr("Every service, at retail")} />
+      <Catalogues />
       {rates.length > 0 && <>
         <SecHead label={tr("Your rates today")} sub={tr("Per 1,000 · retail struck through")} />
         <div className="rhq-rates">{rates.map(([name, retail, price]) => <div key={name} className="rhq-rate"><span>{name}</span><b><s>{money(Number(retail))}</s>{money(Number(price))}</b></div>)}</div>
