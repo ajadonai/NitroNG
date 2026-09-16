@@ -316,6 +316,15 @@ describe('the grade badges', () => {
     expect(attrs).toMatch(/'High quality': 'HQ'/);
   });
 
+  it('shortens the refill chip too, which is drawn from a different field', () => {
+    // The refill badge comes from row.refillLabel, and `rest` filters refill
+    // attributes out on purpose — so this chip was the one badge on the row
+    // that never met the shortening map, and "Lifetime guarantee" stayed long
+    // on a phone while UHQ and HQ shortened around it.
+    expect(full).toMatch(/<AttrText attr=\{refillText\} \/>/);
+    expect(full, 'refill chip must not render the raw string').not.toMatch(/dark=\{dark\}>\{refillText\}</);
+  });
+
   it('leaves the full wording to the API and the wide screen', () => {
     // "Lifetime" on a phone is a trim, not a rename: serviceAttributes still
     // writes "Lifetime guarantee", which is what a reseller reads.

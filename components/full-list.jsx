@@ -250,6 +250,11 @@ function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, time
   // filter can never disagree — #9364 used to read "No refill" and survive a
   // filter for refills, because the badge read the name and the filter read the
   // provider's flag.
+  // Through AttrText like every other badge, because this one is drawn from
+  // refillLabel rather than from `rest` — `rest` filters refill attributes out
+  // by design, so the refill chip was the one badge on the row that never met
+  // the shortening map. "Lifetime guarantee" stayed long on a phone while UHQ
+  // and HQ shortened around it.
   const refillText = row.refillLabel || (row.refill ? tr("Refill") : tr("No refill"));
   // Two facts beyond refill, location first.
   //
@@ -287,7 +292,7 @@ function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, time
         <div className="text-[13px] md:text-sm font-semibold truncate" style={{ color: t.text }}>{row.label}</div>
         <div className="m text-[10.5px] mt-[3px] leading-none" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>#{row.id}</div>
         <div className="flex items-center gap-1 flex-wrap mt-[5px]">
-          <Chip kind={row.refill ? "refill" : "neutral"} dark={dark}>{refillText}</Chip>
+          <Chip kind={row.refill ? "refill" : "neutral"} dark={dark}><AttrText attr={refillText} /></Chip>
           {rest.map(a => <Chip key={a} kind={chipKind(a)} dark={dark}><AttrText attr={a} /></Chip>)}
           {/* Bought before, which on a list with no Nitro guarantee is the only
               endorsement that comes from the person reading it.
