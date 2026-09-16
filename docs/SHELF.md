@@ -359,21 +359,6 @@ as the work. (Formerly docs/BACKLOG.md.)
   any provider claim. Needs a small nightly rollup (order timestamps already
   exist) rather than live queries.
 
-- **Welcome bonus is raw balance, not spend-only credit** (noted 14 Sep 2026).
-  `applyWelcomeBonusDetailed` increments `user.balance` and writes a `bonus`
-  transaction; it does not create a `BonusCredit` row the way the top-up bonus
-  and win-back credit do. Everything the customer is told — the assistant's
-  knowledge file, the FAQ answers, the wallet copy — says the money is
-  spend-only and cannot be withdrawn. Checked on 14 Sep and **nothing pays it
-  out**: the only withdrawal surface is the Pit payouts page, whose
-  `availableBalance` is `approvedTotal − totalPaid − pendingPayoutTotal` from
-  affiliate earnings and never reads `user.balance`. So it is a promise the
-  code keeps by accident rather than by construction. Restoring the ladder would
-  double what sits in that position, which is one more reason to convert it
-  first — the restore is built but held, see the first entry on this shelf. Worth converting to a
-  real `BonusCredit` before any new cash-out path ships (cash referrals is the
-  one on this list that would open one).
-
 - **Cash referrals — launch checklist** (built dark in v2.4.75; flip
   `cash_referrals_enabled` to `'true'` to go live): admin payouts page (the
   API at `/api/admin/referral-payouts` already lists/completes/rejects), the
@@ -546,6 +531,24 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **The welcome bonus is spend-only credit now, and it never expires** (16 Sep
+  2026, `v2.5.95`). It had been plain balance since launch: 1,349 grants,
+  ₦1,293,050, more than half of every naira sitting in a wallet, with nothing
+  marking it as promotional. "Bonus cannot be withdrawn" was true only because
+  no withdrawal path reads `user.balance` — a promise kept by accident, and
+  cash referrals would have opened exactly such a path. It now writes a
+  `BonusCredit` the way the top-up bonus and win-back credit always have.
+  **No expiry**, on the measurement: 91.0% of recipients order within 24 hours
+  and 94.5% within 30 days, so a 30-day deadline would have motivated nobody
+  and put a clock on 1,277 people's money to recover ₦51,250 from 72 who never
+  ordered at all. `expiresAt` is nullable so "never" is representable rather
+  than faked with a far-future date; Postgres sorts NULLs last, so a perishable
+  win-back credit is always spent before the permanent welcome one.
+  **Not backfilled** — deliberately. The 1,349 existing grants have no row and
+  will not get one: most of that money is long spent, so a backfill would claim
+  the full grant still remains and put a bonus line on wallets whose owners
+  would have no idea what it referred to. Going forward only.
 
 - **`ResellerProfile.catalog` dropped, and the full list has a guide** (16 Sep
   2026, `v2.5.93`). The column had been unread since `v2.5.77`; the three values

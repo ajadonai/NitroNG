@@ -1687,7 +1687,7 @@ function DashboardInner({ initialData }) {
                 {nairaAside(user?.balance || 0, { round: "down" }) && (
                   <div className="m text-[11px] mt-px text-t-text-muted">{nairaAside(user?.balance || 0, { round: "down" })}</div>
                 )}
-                {user?.bonusCredit && <div className="text-[11px] mt-0.5 text-accent-ink">{money(user.bonusCredit.amount / 100, { round: "down" })} {tr("bonus — expires in")} {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</div>}
+                {user?.bonusCredit && <div className="text-[11px] mt-0.5 text-accent-ink">{money(user.bonusCredit.amount / 100, { round: "down" })} {user.bonusCredit.expiresAt ? <>{tr("bonus — expires in")} {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</> : tr("bonus")}</div>}
               </div>
             </div>
             <div className="page-divider bg-t-card-border" />

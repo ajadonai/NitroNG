@@ -1115,7 +1115,7 @@ model BonusCredit {
   amountGranted   Int
   amountRemaining Int
   grantedAt       DateTime  @default(now())
-  expiresAt       DateTime
+  expiresAt       DateTime? // null means it never expires — the welcome bonus
   expiredAt       DateTime?
 
   user   User               @relation(fields: [userId], references: [id])

@@ -32,6 +32,7 @@ function createPaymentDb({
   beforeWalletFence,
 }) {
   const state = {
+    bonusCredits: [],
     transactions: deposits.map(row => ({ type: 'deposit', status: 'Pending', note: '', ...row })),
     users: users.map(row => ({
       balance: 0,
@@ -51,6 +52,10 @@ function createPaymentDb({
 
   let effectSequence = 0;
   const tx = {
+    // The welcome bonus writes a spend-only credit alongside the balance now.
+    // The harness records the grants so a test can assert on them; nothing
+    // here reads them back, because getBonusInfo is not in this path.
+    bonusCredit: { create: vi.fn(async ({ data }) => { state.bonusCredits.push({ ...data }); return { id: `bc-${state.bonusCredits.length}`, ...data }; }) },
     transaction: {
       findUnique: vi.fn(async ({ where }) => {
         const row = state.transactions.find(item => matches(item, where));
