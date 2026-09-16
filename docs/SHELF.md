@@ -161,7 +161,17 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   pays less than Wholesale held at 22%, so climbing a tier raises the price.
   Only Ultra binds on today's brackets; five of six rows read "no cap".
   **Tier thresholds are editable on the page** (Trip: "we need to be able to
-  change tier amount"). Mockups: ladder `02ba676e`, admin page `4eb3b4ca`.
+  change tier amount"). **Starter's threshold is the price of admission** —
+  Trip, 17 Sep: *"if a reseller doesnt hit the volume of start, they drop out of
+  the program after a month right?"* The first draft had Starter at ₦0, which
+  meant nobody ever dropped out and a reseller doing ₦5k a month was a retail
+  customer with a 10% badge — exactly what the break-even table says not to
+  create. Now: a new reseller gets one full month on Starter regardless; after
+  that, a month under the threshold plus a grace month reverts them to retail
+  pricing (profile kept, discount gone, restored the night they clear it again).
+  ₦25,000 drawn as the entry; all three current resellers sit under it.
+  Mockups: ladder `02ba676e`, admin page `4eb3b4ca` — **the admin page is live:
+  every box recomputes the simulator and the profitability table.**
 
   **Profitability, measured 17 Sep on 90 days of real orders** (₦12.56M
   revenue, 63.4% blended margin, repriced as if every buyer were a reseller):
