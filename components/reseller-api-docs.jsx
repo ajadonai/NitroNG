@@ -146,15 +146,9 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
 
   const [lang, setLang] = useState('curl');
   const [activeSec, setActiveSec] = useState('start');
-  const [stats, setStats] = useState(null);
   const docRef = useRef(null);
   const toast = useToast();
 
-  useEffect(() => {
-    fetch('/api/site-info').then(r => r.json()).then(d => { if (d?.stats) setStats(d.stats); }).catch(() => {});
-  }, []);
-
-  const curatedCount = stats?.services || 0;
 
   const copyText = useCallback((text) => {
     copyToClipboard(text);
@@ -340,7 +334,7 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
                 {/* Catalogs */}
                 <div className="rad-sec" id="catalogs">
                   <h2>{tr("Catalogs & rates")}</h2>
-                  <div className="rad-desc">{tr("Your key serves the catalogue on your account, curated by default and the full list on request:")} <b style={{ color: t.text }}>{tr("Nitro Curated")}</b> ({curatedCount ? `${curatedCount} tested` : 'tested'} {tr("services in Budget, Standard and Premium tiers) or the")} <b style={{ color: t.text }}>{tr("Full Catalogue")}</b> {tr("(thousands of raw provider services). The")} <code>services</code> {tr("action always returns your current list at your current reseller rates. Rates improve automatically as your monthly volume climbs the ladder.")}</div>
+                  <div className="rad-desc">{tr("Every key serves the same catalogue — there is no per-account list and nothing to switch on. The")} <code>services</code> {tr("action returns all of it at your current reseller rates, and rates improve automatically as your monthly volume climbs the ladder.")}</div>
                 </div>
 
                 {/* services */}

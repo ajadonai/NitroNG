@@ -16,7 +16,7 @@ async function own() {
   return { user };
 }
 const mint = () => `ntr_live_${randomBytes(20).toString('hex')}`;
-async function terms(userId) { const t = await getResellerTerms(userId); return { catalog: t?.catalog || 'curated', wholesale: !!t }; }
+async function terms(userId) { const t = await getResellerTerms(userId); return { wholesale: !!t }; }
 
 /** Read the key, minting it the first time. */
 export async function GET() {
