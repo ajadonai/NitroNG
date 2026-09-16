@@ -11,8 +11,13 @@ export async function GET(req) {
     const linkId = url.searchParams.get('linkId');
     const range = url.searchParams.get('range') || '7d';
 
+    // "All" is one of the three buttons the panel actually shows, and it was
+    // missing from this map — so `rangeMs['all']` was undefined, the `||` fell
+    // through to a week, and the All view served seven days of clicks under an
+    // All heading. On alabi-ad that printed 2,384 clicks where the true figure
+    // is 30,664, and ₦352,109 of revenue against ₦4,180,578.
     const rangeMs = { '24h': 86400000, '7d': 604800000, '30d': 2592000000 };
-    const since = new Date(Date.now() - (rangeMs[range] || rangeMs['7d']));
+    const since = range === 'all' ? new Date(0) : new Date(Date.now() - (rangeMs[range] || rangeMs['7d']));
     const where = { createdAt: { gte: since }, ...(linkId ? { linkId } : {}) };
 
     const slug = linkId
@@ -30,6 +35,7 @@ export async function GET(req) {
       referrerBreakdown,
       timelineRaw,
       signupTimelineRaw,
+      periodSignups,
       revenueStats,
     ] = await Promise.all([
       prisma.linkClick.count({ where }),
@@ -83,17 +89,31 @@ export async function GET(req) {
           : prisma.$queryRaw`SELECT DATE("createdAt") AS bucket, COUNT(*)::int AS signups FROM users WHERE "signupSource" = ${slug} AND "deletedAt" IS NULL AND "createdAt" >= ${since} GROUP BY bucket ORDER BY bucket`)
         : Promise.resolve([]),
 
+      // Signups inside the window, so the row describes one period.
+      //
+      // The card was reading the link list's all-time total against this
+      // route's windowed clicks — 3,465 signups over 2,384 clicks, printed as
+      // "145.3% conversion". A conversion above 100% is not a rounding
+      // problem, it is two different questions sharing a percentage sign.
+      slug
+        ? prisma.user.count({ where: { signupSource: slug, deletedAt: null, createdAt: { gte: since } } })
+        : Promise.resolve(0),
+
       // Revenue + orders for this link
       slug
         ? prisma.$queryRaw`
-            SELECT COUNT(o.id)::int AS orders, COALESCE(SUM(o.charge),0)::int AS revenue, COALESCE(SUM(o.cost),0)::int AS cost
+            SELECT COUNT(o.id)::int AS orders, COALESCE(SUM(o.charge),0)::bigint AS revenue, COALESCE(SUM(o.cost),0)::bigint AS cost
             FROM orders o JOIN users u ON o."userId" = u.id
             WHERE u."signupSource" = ${slug} AND u."deletedAt" IS NULL AND o."deletedAt" IS NULL AND o.status NOT IN ('Cancelled') AND o."createdAt" >= ${since}
           `
         : Promise.resolve([{ orders: 0, revenue: 0, cost: 0 }]),
     ]);
 
-    const rev = revenueStats[0] || { orders: 0, revenue: 0, cost: 0 };
+    // bigint keeps the sum from overflowing in Postgres; Number keeps it
+    // JSON-serialisable on the way out. ₦4.18m of kobo is 418,057,800 — well
+    // inside a double, and nowhere near the 32-bit int the cast used to use.
+    const raw = revenueStats[0] || { orders: 0, revenue: 0, cost: 0 };
+    const rev = { orders: Number(raw.orders), revenue: Number(raw.revenue), cost: Number(raw.cost) };
 
     return Response.json({
       totalClicks,
@@ -106,6 +126,7 @@ export async function GET(req) {
       referrers: referrerBreakdown.map(r => ({ source: r.referrer, clicks: r._count })),
       timeline: timelineRaw,
       signupTimeline: signupTimelineRaw,
+      periodSignups,
       periodRevenue: rev.revenue / 100,
       periodOrders: rev.orders,
       periodProfit: (rev.revenue - rev.cost) / 100,
