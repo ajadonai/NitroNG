@@ -1,4 +1,7 @@
 import prisma from '@/lib/prisma';
+import { getMarkupSettings } from '@/lib/reseller';
+import { tiersFrom, resolveRate, ladderLive, bandCapsFrom, seatLifetimeFrom } from '@/lib/reseller-tiers';
+import { spendFor } from '@/lib/reseller-spend';
 import { log } from '@/lib/logger';
 import { requireAdmin, canPerformAction, logActivity } from '@/lib/admin';
 import { randomBytes } from 'crypto';
@@ -42,6 +45,14 @@ export async function GET(req) {
       orderBy: { createdAt: 'desc' },
     });
     const activity = await activityFor(profiles.map(p => p.userId));
+
+    // Retail-equivalent spend, which is the money the ladder is measured in and
+    // is not the same as `recentSpend` above — that one is what they actually
+    // paid, over a 90-day window, and is what the page has always shown.
+    const settings = await getMarkupSettings();
+    const tiers = tiersFrom(settings);
+    const spend = await spendFor(profiles.map(p => p.userId));
+    const seatAt = seatLifetimeFrom(settings);
 
     // Search is only offered when asked for, so opening the tab costs one query.
     let results = [];
@@ -123,7 +134,22 @@ export async function GET(req) {
         recentOrders: activity[p.userId]?.orders || 0,
         recentSpend: activity[p.userId]?.spend || 0,
         apiOrders: activity[p.userId]?.apiOrders || 0,
+
+        // ── the ladder ──
+        tierMode: p.tierMode,
+        tier: p.tier,
+        pinnedTier: p.pinnedTier,
+        tierSince: p.tierSince,
+        firstMonthEndsAt: p.firstMonthEndsAt,
+        seatForLife: p.seatForLife,
+        seatEarnedAt: p.seatEarnedAt,
+        // What they pay today, resolved the same way the price path resolves it,
+        // so the drawer can never print a rate the checkout disagrees with.
+        rate: resolveRate(p, settings),
+        rollingSpend: Math.round(spend.get(p.userId)?.rolling || 0),
+        lifetimeSpend: Math.round(spend.get(p.userId)?.lifetime || 0),
       })),
+      ladder: { live: ladderLive(settings), tiers, bandCaps: bandCapsFrom(settings), seatLifetime: seatAt },
     });
   } catch (err) {
     log.error('AdminResellers', err.message);
@@ -213,6 +239,63 @@ export async function POST(req) {
       await logActivity(admin.name, blank
         ? `Reset reseller ${who} to the global wholesale rate`
         : `Set reseller ${who} wholesale rate to ${Math.round(n)}%`);
+      return Response.json({ success: true });
+    }
+
+    /**
+     * Auto, pinned or custom — the control that replaced the free-text rate box.
+     *
+     * The old box took any number under 100 and had no idea what a tier was, so
+     * "why is this account on 35%" had no answer beyond somebody's memory. Every
+     * change here writes a tier event with the admin's name on it.
+     */
+    if (action === 'mode') {
+      const profile = await prisma.resellerProfile.findUnique({ where: { userId } });
+      if (!profile) return Response.json({ error: 'Not a reseller' }, { status: 404 });
+
+      const settings = await getMarkupSettings();
+      const tiers = tiersFrom(settings);
+      const mode = String(body.mode || '').trim();
+      if (!['auto', 'pinned', 'custom'].includes(mode)) {
+        return Response.json({ error: 'Mode must be auto, pinned or custom' }, { status: 400 });
+      }
+
+      const data = { tierMode: mode };
+      let what = '';
+
+      if (mode === 'pinned') {
+        const t = tiers.find(x => x.id === String(body.pinnedTier || ''));
+        if (!t) return Response.json({ error: 'Unknown tier' }, { status: 400 });
+        data.pinnedTier = t.id;
+        // The pinned rung is also where the ladder resumes from when unpinned,
+        // so a reseller does not fall off the moment the pin comes off.
+        data.tier = t.id;
+        data.tierSince = new Date();
+        what = `pinned to ${t.name} (${t.pct}%)`;
+      } else if (mode === 'custom') {
+        const n = Number(body.discountPct);
+        if (!Number.isFinite(n) || n < 0 || n >= 100) {
+          return Response.json({ error: 'Rate must be between 0 and 99' }, { status: 400 });
+        }
+        data.discountPct = Math.round(n);
+        data.pinnedTier = null;
+        what = `on a custom ${Math.round(n)}%`;
+      } else {
+        data.pinnedTier = null;
+        what = 'back on the ladder';
+      }
+
+      await prisma.resellerProfile.update({ where: { userId }, data });
+      await prisma.resellerTierEvent.create({
+        data: {
+          userId,
+          fromTier: profile.tier,
+          toTier: data.tier ?? profile.tier,
+          reason: mode === 'pinned' ? 'pinned' : mode === 'custom' ? 'custom' : 'unpinned',
+          actor: admin.name,
+        },
+      });
+      await logActivity(admin.name, `Reseller ${who} ${what}`);
       return Response.json({ success: true });
     }
 

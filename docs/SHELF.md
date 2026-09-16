@@ -129,111 +129,37 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
 
 ### Designs agreed, not built
 
-- **Reseller tier ladder — scope complete, 12 Sep 2026.** Five tiers (Starter
-  10% → Wholesale 30%) on rolling 30-day retail-equivalent spend, automatic
-  promotion on the daily cron, month-end demotion after a grace month, one
-  Auto / pinned / custom dropdown in the admin drawer. Settled: flat % off
-  retail with a margin floor — the thinnest band is 1.5× markup, so any flat
-  discount of **33.3% or more sells below cost** (`tests/markup-reseller.test.js`
-  refuses it); thresholds count retail-equivalent, because orders store the
-  discounted charge and a promoted reseller would slow its own measurement;
-  `discountPct` becomes an explicit override, not the rate. The API docs already
-  promise this ladder and name a "Scale" tier that exists nowhere; T4 takes it.
+- **Reseller tier ladder — BUILT 17 Sep, switched off.** Set
+  `reseller_tiers_live` to `'true'` in Admin → Pricing → Reseller discount to go
+  live. Nothing changes a price until then; verified against production, where a
+  reseller on a 15% profile still gets 15% with the flag off.
 
-  **The margin floor is DONE and shipped ahead of the ladder** (`v2.5.102`).
-  Trip's rule, 17 Sep: *"our worst case scenario should be margin of 10% at 30%
-  tier."* The tier rate is a ceiling on the discount now, not a promise about it
-  — the promise is `price >= cost / 0.9`, applied per service in the price path.
-  A reseller on Wholesale gets the full 30% wherever 30% is affordable and 25.9%
-  on the thinnest band, which is exactly 10% margin. Measured across the live
-  catalogue: 219 quotable services, 10 clamped (4.6%), **0 under 10%**, worst
-  case exactly 10.00%. It also closes the rate box for free — 40% can still be
-  typed in and simply stops biting where it would cost money.
+  **The rungs** (Trip's numbers): Starter ₦100,000/10%, Trade ₦250,000/15%, Bulk
+  ₦500,000/20%, Scale ₦1,000,000/25%, Wholesale ₦2,000,000/30%, on rolling
+  30-day **retail-equivalent** spend. Below Starter is normal pricing.
 
-  **Still to build: the ladder itself and the admin page.** Trip's call on
-  shape, 17 Sep: reseller pricing gets **the same band structure as the retail
-  pricing page** — a per-band cap on the discount, read from the same
-  `markup_brackets` so the two cannot drift, with the floor becoming the
-  validation on the input rather than a silent clamp at charge time. Chosen
-  shape is **A: one rate per tier plus one cap per band** (11 numbers),
-  effective = `min(tierPct, bandCap)`, over B, a full 5×6 matrix. **The cap
-  must bind every tier**, not only the top — cap only Wholesale and Scale on 25%
-  pays less than Wholesale held at 22%, so climbing a tier raises the price.
-  Only Ultra binds on today's brackets; five of six rows read "no cap".
-  **Tier thresholds are editable on the page** (Trip: "we need to be able to
-  change tier amount"). **Starter's threshold is the price of admission** —
-  Trip, 17 Sep: *"if a reseller doesnt hit the volume of start, they drop out of
-  the program after a month right?"* The first draft had Starter at ₦0, which
-  meant nobody ever dropped out and a reseller doing ₦5k a month was a retail
-  customer with a 10% badge — exactly what the break-even table says not to
-  create. Now: a new reseller gets one full month on Starter regardless; after
-  that, a month under the threshold plus a grace month reverts them to retail
-  pricing (profile kept, discount gone, restored the night they clear it again).
-  **Starter is ₦100,000 — Trip's number, 17 Sep.** Trade had to move above
-  it, so the drawn ladder reads ₦100k / ₦250k / ₦500k / ₦1M / ₦2M; the four
-  above Starter are proposals. The rule, in Trip's words: *"a user in starter
-  that doesn't hit the minimum after a month gets put on normal pricing"* —
-  confirmed, one month, no grace month unless Trip asks for it back (the
-  original spec had one; it is a one-line switch). **Lifetime seat, Trip's
-  idea: ₦1,000,000 of lifetime retail-equivalent spend keeps the Starter seat
-  for good** — the reseller still moves between tiers on rolling volume but
-  can never be put on normal pricing. It protects the seat, not the tier: a
-  dormant lifetime reseller costs 10% of whatever little they spend, which is
-  bounded and cheap; locking Wholesale would not be. Nobody on file qualifies;
-  the largest lifetime spend among the three is ₦122,323.
+  **The rules.** Promotion is immediate, the night it is earned. Demotion only at
+  a Lagos month end, one rung at a time. A new reseller is judged from the end of
+  their first *full* calendar month. ₦1,000,000 of lifetime spend latches a seat
+  that keeps the bottom rung for good — the seat, not the tier. Band caps hold
+  the dearest services back (Ultra 22%) and bind **every** tier, since capping
+  only the top makes Scale cheaper than Wholesale. The 10% margin floor sits
+  under all of it as the backstop.
 
-  **Reviewed 17 Sep for leaks and errors** (Trip asked). No provider names, no
-  customer data, no cost on any customer-facing surface. Band-level profit
-  maths agrees with the per-order run to within ₦900 on ₦4–7M. Four fixes: a
-  non-number in a cap box now means "no cap", not 0% (which would have put
-  every tier on retail for that band); the simulator never quotes above retail,
-  matching `lib/markup.js`; the ceiling display clamps at 0 instead of going
-  negative at a high floor; the drop-out rule reads one month, as Trip said.
-  Mockups: ladder `02ba676e`, pricing page `4eb3b4ca` (live — every box
-  recomputes), **resellers page `ac056a0a`** (17 Sep): the list gains
-  tier, mode and a 30-day bar against the amount that holds the tier; the
-  drawer replaces the free-text "Personal rate" with Auto / Pin / Custom, shows
-  the first-month deadline, the seat progress, their rates by band, and "Rate
-  before the ladder" so day one's cut is visible; one new surface, Tier
-  history. Built on the three real resellers — all on Starter, first month;
-  Emmanuel's four orders all came through the API.
+  **Still to decide before flipping** (all editable in Admin): the four
+  thresholds above Starter are proposals, not measurements; the Ultra cap is
+  drawn at 22% against a 25.9% ceiling; whether the reseller pricing page mirrors
+  the retail one; and the reseller docs must read **"up to 30%"**, since the
+  dearest services charge less.
 
-  **Profitability, measured 17 Sep on 90 days of real orders** (₦12.56M
-  revenue, 63.4% blended margin, repriced as if every buyer were a reseller):
-  every tier is profitable on every order — worst single service 10%, blended
-  never under 48.1%. But a 30% discount on a 63% margin business is a **46.4%
-  cut in profit**, so the thresholds are the profitability lever, not the
-  floor. Break-even volume — how many retail customers' spend a reseller must
-  bring to earn the same profit: Starter 1.19×, Trade 1.31×, Bulk 1.46×, Scale
-  1.64×, **Wholesale 1.87×**. Below that a tier is a discount to somebody who
-  would have paid retail; above it, new money. Set thresholds against this.
-  Nothing to cannibalise today: the three resellers on file are all tiny.
+  **Nobody is affected on day one.** Checked 17 Sep: all three reseller profiles
+  are `enabled: false` and have been since August — `getResellerTerms` returns
+  null for every one of them, so **there are no active resellers and everybody
+  pays retail today**. Earlier notes on this shelf describing them as "on 15%,
+  15% and 10%" were reading the recorded rate on a revoked profile. Their spend
+  would put all three on normal pricing anyway.
 
-  **Open for Trip.** (1) The five thresholds — ₦50k/₦250k/₦750k/₦2M are proposed
-  rather than measured; there is no reseller volume to fit a curve to. (2) What
-  happens to the three existing resellers on day one: two drop from 15% to 10%
-  under Auto, because the global rate is already 20%. (3) The badge must read
-  **"up to 30%"** in the docs and the drawer, since the thinnest services charge
-  25.9% — a flat claim would be the one untrue thing here. (4) Whether the
-  reseller pricing page mirrors the retail one.
-
-  **Found while building:** three services are priced at 1.02×–1.11× markup **at
-  retail**, so a walk-in customer already earns us under 10% on them. The floor
-  caps wholesale at retail rather than charging a reseller above the public
-  price, so those rows are hidden from the reseller catalogue instead. That is a
-  stale retail price to fix, not a reseller question.
-
-  **Mockup, 17 Sep 2026: artifact `02ba676e`.** Built on the live brackets
-  rather than the defaults in `lib/markup.js`, which are stale — production
-  runs a thinnest band of **1.5×** (Ultra at Budget tier), so 33.3% is cost and
-  a 30% Wholesale tier leaves **4.8%** margin there. Four questions on the
-  mockup for Trip: the five thresholds (₦50k/₦250k/₦750k/₦2M, proposed not
-  measured — there is no reseller volume to fit a curve to); what happens to the
-  three existing resellers on day one, since two would drop from 15% to 10%
-  under Auto; whether 30% is the right top or 25% (which leaves 11.1%); and the
-  pricing-page question above. Note the global `markup_reseller_discount` is
-  **20%** today, so T3 is the current rate and the ladder moves people either
-  side of where they already sit.
+  Mockups: ladder `02ba676e`, pricing page `4eb3b4ca`, resellers page `ac056a0a`.
 
 - **Subscription — shape undecided, 12 Sep 2026.** Recommendation on record:
   sell **scheduling**, not a discount ("Nitro Auto" — a service and a weekly

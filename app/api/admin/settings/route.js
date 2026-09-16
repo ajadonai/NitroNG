@@ -8,6 +8,10 @@ const ALLOWED_KEYS = new Set([
   'markup_usd_rate', 'markup_usd_buffer', 'markup_usd_market', 'markup_fx_threshold',
   'fx_premium_percent', 'fx_premium_live',
   'markup_tier_multipliers', 'markup_reseller_discount',
+  // The reseller ladder. Nothing here changes a price until reseller_tiers_live
+  // is 'true', so the rungs can be set and checked before anybody is moved.
+  'reseller_tiers', 'reseller_band_caps', 'reseller_seat_lifetime',
+  'markup_reseller_margin_floor', 'reseller_tiers_live',
   'markup_provider_bonus_mtp', 'markup_provider_bonus_dao', 'markup_provider_bonus_jap',
   'min_deposit', 'min_order',
   'ref_enabled', 'ref_referrer_bonus', 'ref_invitee_bonus', 'ref_min_deposit',

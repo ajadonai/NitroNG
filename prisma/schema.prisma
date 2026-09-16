@@ -376,6 +376,16 @@ model Order {
   parentOrderId           String?
   source                  String    @default("web") // "web" | "api"
   loyaltyDiscount         Int       @default(0)
+
+  /// What this order would have cost at the site price, when wholesale took it
+  /// below that. Null on every retail order, where `charge` already is retail.
+  ///
+  /// Recorded rather than reconstructed because the reseller ladder measures
+  /// spend retail-equivalent, and the alternative — dividing charge back out by
+  /// the rate — needs to know the rate that was in force on the day, which
+  /// nothing stored. Pre-ladder rows are null and count at their charge, which
+  /// understates three accounts by the 10-15% they were already getting.
+  retailCharge            Int?
   nitroStatusAtPurchase   String?
   serviceNameAtPurchase   String?
   tierNameAtPurchase      String?
@@ -1296,15 +1306,72 @@ model ResellerProfile {
   approvedAt DateTime?
   notes      String?
 
-  // Per-reseller discount, overriding markup_reseller_discount when set. Null
-  // means "use the global rate", so high-volume resellers can be rewarded without
-  // every other reseller becoming a row to maintain.
+  // Per-reseller discount. Before the ladder this overrode the global rate; it
+  // is now the number behind tierMode 'custom' and means nothing in the other
+  // two modes. Kept rather than renamed: three live rows point at it and the
+  // column is the record of what they were on before the ladder.
   discountPct Int?
+
+  // ── The ladder ──
+  //
+  // 'auto' follows rolling 30-day spend, 'pinned' holds pinnedTier regardless,
+  // 'custom' uses discountPct. Mode is the admin's choice and outranks the
+  // ladder in two of the three, which is why it is stored beside the tier
+  // rather than inferred from it.
+  tierMode   String  @default("auto")
+  pinnedTier String?
+
+  // The rung as last evaluated. **Null means normal pricing** — a reseller who
+  // fell below the first threshold. That is a real state, not a missing value:
+  // it is where somebody who stopped buying ends up, and it has to be
+  // distinguishable from a profile the cron has not reached yet, which is what
+  // tierSince answers.
+  tier      String?
+  tierSince DateTime?
+
+  // No demotion before this. A reseller granted access on the 28th should not be
+  // judged on three days of trading, so the first full calendar month is theirs.
+  firstMonthEndsAt DateTime?
+
+  // A latch, never cleared: once lifetime retail-equivalent spend passes
+  // reseller_seat_lifetime, the bottom rung is permanent. Stored rather than
+  // recomputed so the moment it was earned is a fact with a date on it.
+  seatForLife   Boolean   @default(false)
+  seatEarnedAt  DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  tierEvents ResellerTierEvent[]
+
   @@map("reseller_profiles")
+}
+
+/// Every move on the ladder, with a reason and an author.
+///
+/// The same argument as approvedBy on the profile: a reseller found on 30% in
+/// three months needs a traceable reason, and "the cron did it in September" is
+/// only an answer if September wrote it down. Rolling spend is recorded at the
+/// moment of the decision because the 30-day window has moved by the time
+/// anybody reads the row.
+model ResellerTierEvent {
+  id      String          @id @default(cuid())
+  userId  String
+  profile ResellerProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  fromTier String?
+  toTier   String?
+  /// promoted | demoted | dropped | restored | pinned | unpinned | custom | seat
+  reason   String
+  /// Retail-equivalent spend over the rolling window, at decision time.
+  spendKobo Int?
+  /// Admin name, or null when the nightly evaluation did it.
+  actor     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("reseller_tier_events")
 }
 
 model OutreachContact {

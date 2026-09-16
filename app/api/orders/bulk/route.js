@@ -1045,7 +1045,10 @@ export async function POST(req) {
         if (bulkTerms) {
           // r.cost is this row's whole-order cost in kobo, matching r.charge.
           const finalCharge = Math.max(100, wholesaleOf(r.charge, bulkTerms, bulkMarkup, r.cost));
-          return { ...r, discount: 0, promoDiscount: 0, finalCharge };
+          // r.charge is the retail figure this row was priced at, so it is the
+          // retail-equivalent the ladder measures. Recorded only when wholesale
+          // actually moved it; on a retail order `charge` already is retail.
+          return { ...r, discount: 0, promoDiscount: 0, finalCharge, retailCharge: finalCharge < r.charge ? r.charge : null };
         }
         const discount = computeNitroDiscount(r.charge, nitroTier);
         const afterLoyalty = discount > 0 ? Math.max(100, Math.ceil((r.charge - discount) / 100) * 100) : r.charge;
@@ -1086,6 +1089,7 @@ export async function POST(req) {
             link: o.link,
             quantity: o.qty,
             charge: o.finalCharge,
+            ...(o.retailCharge ? { retailCharge: o.retailCharge } : {}),
             cost: o.cost,
             comments: o.comments,
             ...(o.trafficConfig ? { trafficConfig: o.trafficConfig } : {}),
