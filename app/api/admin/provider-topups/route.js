@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canPerformAction } from '@/lib/admin';
+import { PROVIDER_IDS } from '@/lib/smm';
 
 export async function GET(req) {
   const { error } = await requireAdmin('finance');
@@ -70,15 +71,15 @@ export async function POST(req) {
   try {
     const { provider, amount, note } = await req.json();
 
-    if (!provider || !['mtp', 'jap', 'dao'].includes(provider)) {
-      return Response.json({ error: 'Invalid provider (mtp, jap, dao)' }, { status: 400 });
+    if (!provider || !PROVIDER_IDS.includes(provider)) {
+      return Response.json({ error: `Invalid provider (${PROVIDER_IDS.join(', ')})` }, { status: 400 });
     }
     const amountKobo = Math.round(Number(amount) * 100);
     if (!amountKobo || amountKobo <= 0) {
       return Response.json({ error: 'Amount must be positive' }, { status: 400 });
     }
 
-    const providerNames = { mtp: 'MTP', jap: 'JAP', dao: 'DaoSMM' };
+    const providerNames = { mtp: 'MTP', dao: 'DaoSMM' };
 
     const topup = await prisma.providerTopup.create({
       data: {

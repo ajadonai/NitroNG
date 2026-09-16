@@ -174,16 +174,30 @@ Tasks to complete on or before launch day:
 
 ## Providers
 
-Three upstream SMM providers supply the catalogue:
+Two upstream SMM providers supply the catalogue.
 
 | Key | Name | Services | Orders to date | Status |
 |---|---|---|---|---|
 | `mtp` | MoreThanPanel | 4,839 | 6,050 | primary |
 | `dao` | DaoSMM | 6,224 | 1,045 | secondary |
-| `jap` | Just Another Panel | 5,981 | 22 | barely used, being dropped |
 
-`jap` was never adopted properly but 14 curated tiers still point at it, so it
-cannot simply be deleted. Retire those tiers before removing the provider.
+`lib/smm.js` is the register, and `PROVIDER_IDS` is the list. Anything that
+enumerates providers should read that export rather than writing the keys out
+by hand — several places did, which is why removing one took eleven files.
+
+**`jap` (Just Another Panel) was disconnected on 16 Sep 2026.** It was never
+adopted properly: 22 orders in its whole life against MTP's 6,050. Its 14
+curated tiers were retired over 15–16 Sep, the last four groups switched off
+once they were found to have no orders at all and no honest replacement, and
+the provider was then removed from the register, the crons, the admin UI and
+the env validation.
+
+Its 6,023 service rows are **deliberately still in the table**, because 22
+historical orders point at them and deleting them would either be refused by
+the foreign key or erase what those customers actually bought. They are marked
+`providerListedAt: null` and `enabled: false`, which is what every catalogue
+query already fences on, so nothing can surface or reprice them. Do not "tidy
+them up" — the rows are the receipts.
 
 **Never expose provider names or their raw service names to resellers or users.**
 Provider service names carry a recognisable house style (emoji, pipe-delimited

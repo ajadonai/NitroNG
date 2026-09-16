@@ -690,7 +690,7 @@ function FinanceBreakdownTab({ dark, t, admin }) {
           { value: "twitter", label: "Twitter/X" }, { value: "telegram", label: "Telegram" }, { value: "facebook", label: "Facebook" }, { value: "spotify", label: "Spotify" },
         ]} />
         <FilterDropdown dark={dark} t={t} value={tier} onChange={setTier} options={[{ value: "all", label: "All tiers" }, { value: "budget", label: "Budget" }, { value: "standard", label: "Standard" }, { value: "premium", label: "Premium" }, { value: "fulllist", label: "Full list" }]} />
-        <FilterDropdown dark={dark} t={t} value={provider} onChange={setProvider} options={[{ value: "all", label: "All providers" }, { value: "mtp", label: "MTP" }, { value: "jap", label: "JAP" }, { value: "dao", label: "DaoSMM" }]} />
+        <FilterDropdown dark={dark} t={t} value={provider} onChange={setProvider} options={[{ value: "all", label: "All providers" }, { value: "mtp", label: "MTP" }, { value: "dao", label: "DaoSMM" }]} />
         <div className="fb-export" ref={csvMenuRef}>
           <button type="button" className="fb-b" onClick={() => setCsvMenuOpen(v => !v)} disabled={reportLoading}>{reportLoading ? "Preparing…" : "Export report"}</button>
           {csvMenuOpen && (
@@ -755,7 +755,7 @@ function FinanceBreakdownTab({ dark, t, admin }) {
             <header><h3>Record a provider top-up</h3><span className="fo-cnt">so cash out stays true</span></header>
             <div className="fo-cb">
               <div className="fb-row3">
-                <select value={topupProvider} onChange={e => setTopupProvider(e.target.value)} className="fb-in"><option value="mtp">MoreThanPanel</option><option value="dao">DaoSMM</option><option value="jap">JAP</option></select>
+                <select value={topupProvider} onChange={e => setTopupProvider(e.target.value)} className="fb-in"><option value="mtp">MoreThanPanel</option><option value="dao">DaoSMM</option></select>
                 <input type="number" min="0" value={topupAmount} onChange={e => setTopupAmount(e.target.value)} placeholder="₦ amount" className="fb-in m" />
                 <input value={topupNote} onChange={e => setTopupNote(e.target.value)} placeholder="Note (optional)" className="fb-in" />
               </div>

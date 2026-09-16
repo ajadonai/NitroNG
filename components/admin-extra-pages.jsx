@@ -1054,7 +1054,6 @@ export function AdminAPIPage({ dark, t }) {
   const PROVIDERS = [
     { id: "mtp", name: "MoreThanPanel", role: "primary", host: "morethanpanel.com" },
     { id: "dao", name: "DaoSMM", role: "secondary", host: "daosmm.com" },
-    { id: "jap", name: "JustAnotherPanel", role: "being retired", host: "justanotherpanel.com" },
   ];
   const [loading, setLoading] = useState(true);
   const [info, setInfo] = useState({});
@@ -1810,7 +1809,7 @@ const TL_CSS = `
 /* ═══ ADMIN ISSUES PAGE                   ═══ */
 /* ═══════════════════════════════════════════ */
 
-const PROVIDER_NAMES = { mtp: "MoreThanPanel", jap: "JustAnotherPanel", dao: "DaoSMM" };
+const PROVIDER_NAMES = { mtp: "MoreThanPanel", dao: "DaoSMM" };
 const LOW_BALANCE_USD = 10;
 // How loud an issue is: red needs a decision from a person, amber can wait a day, grey is routine.
 const ISSUE_SEVERITY = { crypto_payment_review: "high", order_failure: "high", void_failed: "high", low_balance: "medium", dangling_tier: "medium", dead_service: "medium", ghost_dispatch: "medium", price_alert: "medium", revived_service: "low" };

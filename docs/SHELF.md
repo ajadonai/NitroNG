@@ -601,6 +601,20 @@ as the work. (Formerly docs/BACKLOG.md.)
 
 ## Closed
 
+- **jap is disconnected** (16 Sep 2026, `v2.5.86`). Removed from `lib/smm.js`
+  (the register), the balance, prices and daily crons, the admin sync, topups,
+  issues and pricing pages, the env validation and the pull-providers script —
+  eleven files, because several wrote `['mtp','jap','dao']` out by hand instead
+  of reading `PROVIDER_IDS`. `tests/provider-register` now pins that, so the
+  next provider change is one edit.
+
+  The 6,023 service rows stay: 22 orders point at them, and deleting them would
+  either be refused by the foreign key or erase what those customers bought.
+  They are `providerListedAt: null` and `enabled: false`, which is what every
+  catalogue query already fences on. CLAUDE.md says so, and says not to tidy
+  them up.
+
+
 - **The two empty groups are filled, and the hole that emptied them is shut**
   (16 Sep 2026, `v2.5.85`). Threads Followers and X/Twitter Followers 🇺🇸 were
   enabled with zero tiers, rendering as cards a customer could open and buy
