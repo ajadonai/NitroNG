@@ -64,35 +64,6 @@ as the work. (Formerly docs/BACKLOG.md.)
   the wallet per run and pauses when it runs dry, sidestepping card
   tokenisation and dunning entirely; card billing only if Auto proves demand.
 
-- **Outreach live feed — decided, not yet built.** A Telegram ping when someone
-  a staff member contacted goes on to deposit (name, amount, agent, method,
-  touch), plus a daily per-agent roll-up. `OutreachContact` already holds
-  who/how/when.
-
-  **Attribution: 21 days, most recent touch wins. Trip's call, 14 Sep 2026.**
-  Nothing else blocks the build.
-
-  **Measured rather than guessed.** The only outreach that has ever run is
-  12–26 Aug: 2,068 touches across 1,429 people, of whom **31 went on to
-  deposit** (2.2%). Lag from first touch to first deposit: median 3.1 days,
-  p75 11.2, p90 18.9, longest 23.6. So the proposed 14 days would have caught
-  24 of the 31 and handed the other 7 to "organic"; 21 catches 30; 30 days
-  catches all 31 but buys that last one for nine extra days of looseness, and a
-  window exists to exclude coincidence. Most-recent-touch-wins is close to free
-  either way: only 182 of the 1,429 were touched by more than one agent.
-
-  **Two conditions on that number.** It rests on 31 conversions from a single
-  fortnight, so it is the best answer the data supports and not a proven one —
-  revisit after the next outreach run. And **if the feed ever becomes the basis
-  for paying or ranking agents, tighten it to 14**: a generous window is free
-  when the output is a message saying your call worked, and expensive once money
-  is attached to the credit.
-
-  **Why it is still parked.** A feed that fires 31 times in a fortnight is a
-  quiet channel, and outreach is switched off for lack of staff
-  (`outreach_paused`). Build it when there is a team to read it; the number is
-  settled so nobody has to re-derive it.
-
 - **Adjacent products — researched 14 Sep 2026, revisit soon.** Seven
   digital-goods verticals that fit the sentence Nitro already answers: a
   Nigerian wants a digital thing, cannot pay in dollars, and needs it in naira
@@ -495,14 +466,26 @@ as the work. (Formerly docs/BACKLOG.md.)
   Next session: either iterate on the branch or restart the design; the current
   production landing is untouched.
 
-- **Tracking-link analytics, items 01–07 — approved, mockup exists, never
-  built** (16 Sep 2026). Trip said "Go ahead" a long while back and the build
-  never happened. What shipped in `v2.5.74` is only the two faults Trip pointed
-  at on 16 Sep: "All" silently serving seven days, and the 145.3% conversion
-  from mixing an all-time numerator with a windowed denominator. The other
-  diagnosed faults — the ones the original mockup covers — are still open. Find
-  the mockup and the 9-fault write-up from the earlier session before starting;
-  do not re-diagnose from scratch.
+- **Admin days are cut in UTC everywhere except the tracking page** (raised
+  15 Sep as fault 08, never ruled on; the tracking page was fixed on its own
+  16 Sep in `v2.5.80`). `createdAt` is a plain timestamp, so `DATE(...)` cuts
+  the day at midnight UTC — 1am in Lagos. **1,935 of 44,500 clicks, 4.3%, land
+  in that hour** and are filed on the day before the one they happened on, so a
+  late-night campaign push lands on the wrong date.
+
+  The tracking panel now cuts in Lagos. `/api/admin/analytics` and
+  `/api/admin/financials` still count back in raw milliseconds from now, which
+  is both the UTC boundary and the partial-first-bar fault the tracking page
+  just lost. So the two disagree today, by design rather than by accident —
+  fixing one page was the approved work, and fixing the rest is a decision
+  about what every number in the admin means, which is Trip's.
+
+  `/api/cron/cohort-stats/acquisition` already cuts in Lagos and is **PROTECTED**
+  — it is not part of this and must not be touched.
+
+  **Trip's call:** move the whole admin to WAT days (every historical figure
+  shifts slightly, once), or leave the tracking page as the odd one out and
+  write that down.
 
 - **17 platforms still have no `/services/<slug>` page** (16 Sep 2026, after
   `v2.5.90` added four). Crawlable now: 15 slugs. Still missing, by full-list
@@ -531,6 +514,40 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **The tracking panel's seven faults are fixed, and the feed pings live**
+  (16 Sep 2026, `v2.5.80` and `v2.5.97`). The 15 Sep review found nine things
+  wrong with tracking-link analytics; 01–07 were approved and are now all shut,
+  pinned by `tests/tracking-link-analytics.test.js`. Five of them were one bug
+  wearing different clothes — nobody agreed what "the last 30 days" meant. It
+  meant now minus 30×86400000, which lands mid-afternoon and drew a stub first
+  bar (65 clicks against a 408 average on alabi-ad, a 6× dip that never
+  happened); it meant whatever days the database returned, so a month with
+  traffic on ten days drew ten bars and called it thirty; at 24h it meant the
+  hour digit, so a window opening at 20:00 drew yesterday's 21:00 at the far
+  right. The other two: the card row mixed an all-time numerator with a
+  windowed denominator and printed 142.5% conversion, and 30 days was the
+  longest range offered for links three months old. Now: one window feeds every
+  figure, every slot is emitted whether or not anything happened in it, both
+  series sit on the same slots with their own peaks named in the legend, 90d
+  and All are offered with the bucket following the range, and the lifetime
+  totals live on a strip that says they are lifetime. **Fault 08 is not part of
+  this** — it moved to Open, because it is admin-wide.
+
+  The **outreach live feed** shipped alongside it: `tgOutreachConversion` fires
+  from `lib/deposit-notifications` the moment a contacted person's deposit
+  completes, and `/api/cron/outreach-daily` posts the per-agent roll-up each
+  evening — sent even on a zero day, because a silent channel and a quiet one
+  look identical. Attribution is **21 days, most recent human touch wins**, and
+  the window is measured rather than assumed: of 530 people a staff member
+  actually wrote to, 25 deposited afterwards, with the gap running median 2.6
+  days, p75 11.2, p90 17.0 and longest 18.9. Seven days would catch 15 of the
+  25, 14 catches 20, 21 catches all of them, and 30 catches exactly the same 25
+  — so 21 is the smallest window that loses nobody. It shipped at 14 by mistake
+  and was corrected to Trip's recorded call. **If this ever decides pay or
+  rank, tighten it to 14.** The recycler's `expired` rows can never earn
+  credit. Still gated on `outreach_paused`, so it stays quiet while outreach is
+  off for lack of staff.
 
 - **The welcome bonus is spend-only credit now, and it never expires** (16 Sep
   2026, `v2.5.95`). It had been plain balance since launch: 1,349 grants,
