@@ -37,30 +37,26 @@ as the work. (Formerly docs/BACKLOG.md.)
   ₦1,500" while held and "up to ₦3,000" when restored. The revert carries all
   of it; that is why it is a revert and not a hand edit.
 
-- **Seven live tiers still sell through `jap`, and most cannot be re-pointed**
-  (16 Sep 2026, found while closing the Spotify item). Every one is switched on
-  and orderable right now: Boomplay Streams 🇳🇬 / Standard, Clubhouse Followers
-  / Budget and Premium, SoundCloud Plays / Budget, and Tidal Followers,
-  Listeners and Plays / Standard. CLAUDE.md counts 14 jap tiers; this is what is
-  left of that set, and it is the whole of what breaks when the provider goes.
+- **Five jap tiers left, none of them ever ordered** (16 Sep 2026, after
+  `v2.5.83` swapped the two that could be swapped). Clubhouse Followers /
+  Budget and Premium, and Tidal Followers, Listeners and Plays / Standard.
+  Between them: **zero orders, all time.** Four whole groups, every tier jap.
 
-  The catalogue was searched for replacements and only one is clean:
-  - **Boomplay 🇳🇬** — mtp has Boomplay Streams at $297 against jap's $308, but
-    only Ghanaian, Egyptian and ungeographed ones. None is Nigerian, and a
-    non-NG service cannot sit under a 🇳🇬 label.
-  - **Clubhouse** — one candidate, Turkish-only at $802 against jap's $720 and
-    $840. Wrong audience for a group called plain "Clubhouse Followers".
-  - **SoundCloud Plays** — mtp at $95 against jap's $28. Re-pointing triples the
-    cost basis under a tier selling at ₦15.63/1k.
-  - **Tidal** — the only mtp match is "Tidal Music | 1 Month" with min = max =
-    1000, a subscription package rather than followers, listeners or plays.
-    **There is no replacement for any of the three Tidal tiers.**
+  Neither can be swapped honestly:
+  - **Clubhouse** — one candidate in the whole catalogue, mtp's Turkish-only
+    followers at $8.02 against jap's $7.20 and $8.40. Two tiers, one service:
+    pointing both at it makes Budget and Premium the same product at different
+    prices, and pointing either at it makes a group called plain "Clubhouse
+    Followers" quietly Turkish.
+  - **Tidal** — the only match in the catalogue is "Tidal Music | 1 Month" with
+    min = max = 1000, a subscription package rather than followers, listeners
+    or plays. There is no replacement for any of the three.
 
-  So this is a decision, not a task: accept the cost jumps and the wrong
-  audiences, retire those groups when jap goes, or keep jap alive for these
-  seven. Nothing was swapped on a guess, because a Ghanaian service under a
-  Nigerian label or a Turkish one under a plain label is worse than an honest
-  gap.
+  **Recommendation: retire all four groups.** Nobody has ever bought them, no
+  honest replacement exists, and they are the entire remaining exposure when
+  jap is dropped. The alternative is keeping jap alive for products with no
+  demand. Left for Trip because disabling four customer-facing groups is a
+  product call, not a cleanup.
 
 - **Two enabled groups have no enabled tier — Threads Followers and X/Twitter
   Followers 🇺🇸.** They render as cards a customer can open and not order from,
@@ -631,6 +627,15 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **Two of the seven jap tiers moved to providers we are keeping** (16 Sep 2026,
+  `v2.5.83`). Boomplay Streams 🇳🇬 to an mtp service that is both cheaper
+  ($2.97 against $3.08) and actually Nigerian, with identical limits — the
+  first search missed it because it carries the 🇳🇬 flag rather than the word.
+  SoundCloud Plays to mtp at $0.95 against jap's $0.28, which is the real cost
+  of leaving jap and shows up as ₦1,563 → ₦3,432 per 1,000. Both repriced by
+  `calculateTierPrice`. The five that remain are in Open above.
+
 
 - **Spotify is fully off `jap`** (16 Sep 2026, `v2.5.82`). Two of the three
   tiers on the shelf note had already been re-pointed at mtp and dao by the
