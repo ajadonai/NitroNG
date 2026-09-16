@@ -15,7 +15,7 @@ import prisma from '@/lib/prisma';
 import { tgFlush, tgOutreachDaily, STAFF_NAMES } from '@/lib/telegram';
 import { isOutreachPaused } from '@/lib/outreach-pause';
 import { ATTRIBUTION_DAYS, NOT_HUMAN_WORK } from '@/lib/outreach-attribution';
-import { snap, LAGOS } from '@/lib/acquisition-window';
+import { snap, LAGOS } from '@/lib/report-window';
 
 export const maxDuration = 60;
 

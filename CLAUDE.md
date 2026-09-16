@@ -240,6 +240,37 @@ Two of the three were Tailwind utilities rather than anything in
 When a responsive override does not appear to apply, check the built sheet for
 a `[dir]` rule on the same selector before assuming the media query is wrong.
 
+## A day in the admin is a Lagos day
+
+`createdAt` is a plain `TIMESTAMP`, so anything that truncates it naively cuts
+the day at **midnight UTC — 1am in Lagos**. Measured 16 Sep 2026: **275 of
+10,050 orders over 90 days (2.7%)** fall in that hour, and every one of them was
+being reported on the day before it happened. A campaign pushed at 1:30am on
+Friday showed up on Thursday.
+
+`lib/report-window.js` is the only place that decides what a day is. Use it:
+
+- `reportWindow(range, { now, from, to })` → `{ since, until }` for a reporting
+  page. `until` is **always exclusive**.
+- `windowFor(range)` → the same window plus slots and a bucket size, for charts.
+- `snap(at, 'hour' | 'day' | 'week')` → the instant that Lagos unit begins.
+  Weeks start Monday, because that is where Postgres `date_trunc('week')` cuts.
+
+**Do not** write `now - N * 86400000` for a reporting range. It lands
+mid-afternoon on the Nth date back, so the oldest day is a fragment and the
+total changes every time the page is reloaded. That was the same bug on three
+pages at once.
+
+**Do not** reach for `setHours` or `setDate` to move a day boundary — both run
+in whatever timezone the server happens to be deployed in.
+
+A rolling duration is a different thing and stays raw milliseconds: a 30-day
+bonus expiry, a 7-day hold, a 24h retry window. Those count from an event, not
+from midnight.
+
+`/api/cron/cohort-stats/acquisition` already cuts in Lagos and is **PROTECTED** —
+do not touch it.
+
 ## Git conventions
 
 All commits and deploys are authored as `Trip <devbyadonai@gmail.com>`. Set `git config user.name "Trip"` and `git config user.email "devbyadonai@gmail.com"` before committing. **Do not** add `Co-Authored-By` trailers or any other attribution — `devbyadonai@gmail.com` is the sole contributor on every commit.
