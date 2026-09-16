@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin } from '@/lib/admin';
-import { watBounds } from '@/lib/format';
+import { reportWindow, snap } from '@/lib/report-window';
 import { getRevenue } from '@/lib/revenue';
 import { DEAD_ORDER_STATES, WALLET_FUNDING } from '@/lib/ledger';
 
@@ -15,18 +15,14 @@ export async function GET(req) {
     const fromParam = url.searchParams.get('from');
     const toParam = url.searchParams.get('to');
 
-    const { now } = watBounds();
-    let since, until;
-    if (fromParam) {
-      since = new Date(new Date(fromParam).getTime() - 60 * 60 * 1000);
-      if (toParam) { until = new Date(new Date(toParam).getTime() + 23 * 60 * 60 * 1000 - 1); }
-    } else if (range === 'all') { since = null; }
-    else if (range === '24h') since = new Date(now - 24 * 60 * 60 * 1000);
-    else if (range === '7d') since = new Date(now - 7 * 24 * 60 * 60 * 1000);
-    else if (range === '90d') since = new Date(now - 90 * 24 * 60 * 60 * 1000);
-    else since = new Date(now - 30 * 24 * 60 * 60 * 1000);
+    // Whole Lagos days, from the one place that decides what a day is. This
+    // used to count back in raw milliseconds from the current instant, so the
+    // oldest day in every range was a fragment and the figures moved while you
+    // watched them.
+    const now = new Date();
+    const { since, until } = reportWindow(range, { now, from: fromParam, to: toParam });
 
-    const dateFilter = since ? { gte: since, ...(until && { lte: until }) } : {};
+    const dateFilter = since ? { gte: since, ...(until && { lt: until }) } : {};
 
     const [ordersAgg, userCount, depositAgg, adminCreditAgg, adminGiftAgg, couponBonusAgg, referralBonusAgg, refundAgg, ordersByStatus, topServices, allOrders, chartOrders, chartDeposits, providerTopupAgg] = await Promise.all([
       prisma.order.aggregate({
@@ -142,9 +138,9 @@ export async function GET(req) {
       .map(p => ({ ...p, revenue: Math.round(p.revenue), cost: Math.round(p.cost) }));
 
     // Revenue is net of the refunds that actually reverse it: lib/revenue.js.
-    // dateFilter closes with lte on a custom range; getRevenue takes an exclusive end, so hand it the next millisecond.
-    const revTo = dateFilter?.lte ? new Date(dateFilter.lte.getTime() + 1) : dateFilter?.lt;
-    const rev = await getRevenue({ from: dateFilter?.gte, to: revTo });
+    // Every window closes exclusively now, custom ranges included, which is
+    // what getRevenue already wanted — so there is no millisecond to add.
+    const rev = await getRevenue({ from: dateFilter?.gte, to: dateFilter?.lt });
 
     // The same figures for the period before this one, so the page can say better or worse.
     // Only when the range has a start; "all time" has nothing to compare against.
@@ -191,7 +187,9 @@ export async function GET(req) {
     const totalWalletObligations = totalRefunds + totalCouponBonuses + totalReferralBonuses + totalAdminGifts;
     const netCashFlow = totalMoneyIn - totalMoneyOut;
 
-    // Build daily chart data
+    // Build daily chart data.
+    // The +1h is the Lagos offset, applied inline rather than through Intl
+    // because this runs once per order and Nigeria has no DST to get wrong.
     const dayMap = {};
     const toDay = (d) => { const w = new Date(new Date(d).getTime() + 60 * 60 * 1000); return w.toISOString().slice(0, 10); };
     chartOrders.forEach(o => {
@@ -205,14 +203,15 @@ export async function GET(req) {
       if (!dayMap[day]) dayMap[day] = { orders: 0, revenue: 0, cost: 0, deposits: 0 };
       dayMap[day].deposits += (tx.amount || 0) / 100;
     });
-    // Fill in missing days
+    // Fill in missing days, walking true Lagos day starts. `setDate` advanced
+    // the date in whatever timezone the server happened to run in, which is a
+    // silent dependency on the deploy region for a chart about Nigerian days.
     const chartData = [];
-    const chartStart = since || (Object.keys(dayMap).length ? new Date(Object.keys(dayMap).sort()[0]) : now);
-    const d = new Date(chartStart);
-    while (d <= now) {
+    const chartStart = snap(since || (Object.keys(dayMap).length ? new Date(Object.keys(dayMap).sort()[0]) : now), 'day');
+    const lastDay = snap(until ? new Date(until.getTime() - 1) : now, 'day');
+    for (let d = chartStart; d <= lastDay; d = snap(new Date(d.getTime() + 36 * 3600000), 'day')) {
       const key = toDay(d);
       chartData.push({ date: key, orders: dayMap[key]?.orders || 0, revenue: Math.round(dayMap[key]?.revenue || 0), cost: Math.round(dayMap[key]?.cost || 0), deposits: Math.round(dayMap[key]?.deposits || 0) });
-      d.setDate(d.getDate() + 1);
     }
 
     return Response.json({

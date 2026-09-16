@@ -466,27 +466,6 @@ as the work. (Formerly docs/BACKLOG.md.)
   Next session: either iterate on the branch or restart the design; the current
   production landing is untouched.
 
-- **Admin days are cut in UTC everywhere except the tracking page** (raised
-  15 Sep as fault 08, never ruled on; the tracking page was fixed on its own
-  16 Sep in `v2.5.80`). `createdAt` is a plain timestamp, so `DATE(...)` cuts
-  the day at midnight UTC — 1am in Lagos. **1,935 of 44,500 clicks, 4.3%, land
-  in that hour** and are filed on the day before the one they happened on, so a
-  late-night campaign push lands on the wrong date.
-
-  The tracking panel now cuts in Lagos. `/api/admin/analytics` and
-  `/api/admin/financials` still count back in raw milliseconds from now, which
-  is both the UTC boundary and the partial-first-bar fault the tracking page
-  just lost. So the two disagree today, by design rather than by accident —
-  fixing one page was the approved work, and fixing the rest is a decision
-  about what every number in the admin means, which is Trip's.
-
-  `/api/cron/cohort-stats/acquisition` already cuts in Lagos and is **PROTECTED**
-  — it is not part of this and must not be touched.
-
-  **Trip's call:** move the whole admin to WAT days (every historical figure
-  shifts slightly, once), or leave the tracking page as the odd one out and
-  write that down.
-
 - **17 platforms still have no `/services/<slug>` page** (16 Sep 2026, after
   `v2.5.90` added four). Crawlable now: 15 slugs. Still missing, by full-list
   volume — kick 147, webtraffic 95, threads 66, quora 45, reddit 41, onlyfans
@@ -514,6 +493,36 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **The whole admin reads days in Lagos now** (16 Sep 2026, `v2.5.98`). Fault 08
+  of the 15 Sep tracking review, raised then rather than fixed because
+  correcting one page would have made it disagree with every other. `createdAt`
+  is a plain timestamp, so a naive truncation cuts the day at midnight UTC —
+  1am in Lagos. **275 of 10,050 orders over 90 days, 2.7%, sit in that hour**
+  and were being reported on the day before they happened.
+
+  Three faults, not one. The presets on both finance pages counted back in raw
+  milliseconds from the current instant, so "Last 30 days" meant thirty days and
+  one afternoon, the oldest day was a fragment, and the total moved while you
+  watched it. The date picker beside those presets cut its days in UTC on
+  financials and in Lagos on analytics, so the same fortnight gave two answers
+  depending on which page you asked. And its end edge was set with `setHours`,
+  which is the server's timezone rather than anybody's — an hour that moves with
+  the deploy region.
+
+  `lib/acquisition-window.js` is now `lib/report-window.js`, because it stopped
+  being about acquisition the moment the finance pages imported it, and it gained
+  `reportWindow()` — one resolver for every admin range, deferring to the
+  charts' own `windowFor` for the day ranges so a page and the chart on it can
+  never mean different weeks. Every window closes exclusively, custom ranges
+  included; the analytics chart walks true Lagos day starts instead of
+  `setDate`. Totals move by under 0.5% — that is only the partial fragment
+  going. The invariant is in CLAUDE.md so it does not drift back, along with the
+  line that matters: a rolling duration (a 30-day expiry, a 7-day hold) is a
+  different thing and stays raw milliseconds.
+
+  `/api/cron/cohort-stats/acquisition` already cut in Lagos and is PROTECTED —
+  untouched.
 
 - **The tracking panel's seven faults are fixed, and the feed pings live**
   (16 Sep 2026, `v2.5.80` and `v2.5.97`). The 15 Sep review found nine things

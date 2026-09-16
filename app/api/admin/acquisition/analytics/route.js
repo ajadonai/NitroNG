@@ -2,7 +2,7 @@
  * What one tracking link did, over a window that means what it says.
  *
  * The seven faults this answers are written up in the 15 Sep review; the window
- * arithmetic and the reasons behind it live in lib/acquisition-window. The
+ * arithmetic and the reasons behind it live in lib/report-window. The
  * short version is that every figure here now comes from one window, every
  * chart slot is emitted whether or not anything happened in it, and days are
  * cut in Lagos rather than UTC.
@@ -15,7 +15,7 @@ import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { log } from '@/lib/logger';
 import { requireAdmin } from '@/lib/admin';
-import { windowFor, fill, isRange, RANGES, LAGOS } from '@/lib/acquisition-window';
+import { windowFor, fill, isRange, RANGES, LAGOS } from '@/lib/report-window';
 
 export const maxDuration = 60;
 

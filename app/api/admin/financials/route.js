@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { requireAdmin, canSeeSensitive, maskEmail } from '@/lib/admin';
-import { watBounds } from '@/lib/format';
+import { reportWindow } from '@/lib/report-window';
 import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { getRevenue } from '@/lib/revenue';
 import { DEAD_ORDER_STATES } from '@/lib/ledger';
@@ -275,24 +275,19 @@ export async function GET(req) {
     const tier = url.searchParams.get('tier') || 'all';
     const provider = url.searchParams.get('provider') || 'all';
 
+    // Whole Lagos days, resolved by the same function the analytics page and
+    // the tracking charts use. Three things were wrong here at once: the
+    // presets counted back in raw milliseconds from the current instant; the
+    // date picker beside them cut its days in UTC, so the same fortnight gave
+    // a different answer depending on how you asked for it; and its end edge
+    // was set with `setHours`, which is the server's timezone rather than
+    // anybody's — an hour that moved with the deploy region.
     const now = new Date();
-    const { monthStart, lastMonthStart, yearStart } = watBounds();
-    let since, rangeEnd = null;
-    if (fromParam) {
-      since = new Date(fromParam);
-      if (toParam) { rangeEnd = new Date(toParam); rangeEnd.setHours(23, 59, 59, 999); }
-    } else if (range === 'all') { since = null; }
-    else if (range === '24h') since = new Date(now - 24 * 60 * 60 * 1000);
-    else if (range === '7d') since = new Date(now - 7 * 24 * 60 * 60 * 1000);
-    else if (range === '90d') since = new Date(now - 90 * 24 * 60 * 60 * 1000);
-    else if (range === 'month') { since = monthStart; }
-    else if (range === 'lastmonth') { since = lastMonthStart; rangeEnd = monthStart; }
-    else if (range === 'year') { since = yearStart; }
-    else since = new Date(now - 30 * 24 * 60 * 60 * 1000);
+    const { since, until: rangeEnd } = reportWindow(range, { now, from: fromParam, to: toParam });
 
-    // Build order filters
-    const rangeEndOp = fromParam ? 'lte' : 'lt';
-    const dateCond = since ? { gte: since, ...(rangeEnd ? { [rangeEndOp]: rangeEnd } : {}) } : undefined;
+    // Build order filters. One exclusive end for every range, so a row landing
+    // on the final millisecond is counted once and by one page.
+    const dateCond = since ? { gte: since, ...(rangeEnd ? { lt: rangeEnd } : {}) } : undefined;
     const orderWhere = applyOrderFilters(
       { deletedAt: null, status: { notIn: DEAD_ORDER_STATES }, ...(dateCond && { createdAt: dateCond }) },
       { platform, tier, provider },

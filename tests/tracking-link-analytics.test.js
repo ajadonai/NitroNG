@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { windowFor, snap, fill, RANGES } from '@/lib/acquisition-window';
+import { windowFor, snap, fill, RANGES } from '@/lib/report-window';
 
 /**
  * The tracking-link panel, and the seven faults reviewed on 15 Sep.
