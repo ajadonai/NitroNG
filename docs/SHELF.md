@@ -37,14 +37,30 @@ as the work. (Formerly docs/BACKLOG.md.)
   ₦1,500" while held and "up to ₦3,000" when restored. The revert carries all
   of it; that is why it is a revert and not a hand edit.
 
-- **Three Spotify tiers still point at `jap` — found 15 Sep 2026 while turning
-  Spotify back on.** Spotify Podcast Plays / Standard, Spotify Saves / Standard
-  and Spotify Monthly Listeners / Budget. They are switched off and their group
-  "Spotify Podcast Plays" is disabled with them, because it had no other tier
-  and would otherwise have rendered as a card with nothing to order. Re-point
-  them at mtp or dao and they come back; leave them and they retire with the
-  provider. CLAUDE.md counts 14 jap tiers in all, so these are three of that
-  set, not a new problem.
+- **Seven live tiers still sell through `jap`, and most cannot be re-pointed**
+  (16 Sep 2026, found while closing the Spotify item). Every one is switched on
+  and orderable right now: Boomplay Streams 🇳🇬 / Standard, Clubhouse Followers
+  / Budget and Premium, SoundCloud Plays / Budget, and Tidal Followers,
+  Listeners and Plays / Standard. CLAUDE.md counts 14 jap tiers; this is what is
+  left of that set, and it is the whole of what breaks when the provider goes.
+
+  The catalogue was searched for replacements and only one is clean:
+  - **Boomplay 🇳🇬** — mtp has Boomplay Streams at $297 against jap's $308, but
+    only Ghanaian, Egyptian and ungeographed ones. None is Nigerian, and a
+    non-NG service cannot sit under a 🇳🇬 label.
+  - **Clubhouse** — one candidate, Turkish-only at $802 against jap's $720 and
+    $840. Wrong audience for a group called plain "Clubhouse Followers".
+  - **SoundCloud Plays** — mtp at $95 against jap's $28. Re-pointing triples the
+    cost basis under a tier selling at ₦15.63/1k.
+  - **Tidal** — the only mtp match is "Tidal Music | 1 Month" with min = max =
+    1000, a subscription package rather than followers, listeners or plays.
+    **There is no replacement for any of the three Tidal tiers.**
+
+  So this is a decision, not a task: accept the cost jumps and the wrong
+  audiences, retire those groups when jap goes, or keep jap alive for these
+  seven. Nothing was swapped on a guess, because a Ghanaian service under a
+  Nigerian label or a Turkish one under a plain label is worse than an honest
+  gap.
 
 - **Two enabled groups have no enabled tier — Threads Followers and X/Twitter
   Followers 🇺🇸.** They render as cards a customer can open and not order from,
@@ -615,6 +631,16 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **Spotify is fully off `jap`** (16 Sep 2026, `v2.5.82`). Two of the three
+  tiers on the shelf note had already been re-pointed at mtp and dao by the
+  15–16 Sep cleanup; the third left "Spotify Podcast Plays" as an enabled-
+  looking group with no tiers in it, switched off so it would not render a card
+  with nothing to order. It carries a dao Standard tier now — global, lifetime
+  guaranteed, 10K-1M/day — priced by `calculateTierPrice`, the same function the
+  nightly prices cron uses, so the row is not a hand-typed number the next run
+  quietly corrects. All twelve Spotify groups are live and none is jap-backed.
+
 
 - **The tracking panel, the full list's words, the landing catalogue section,
   one reseller catalogue, the sky theme control and the Arabic nav**
