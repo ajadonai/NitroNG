@@ -203,6 +203,43 @@ them up" — the rows are the receipts.
 Provider service names carry a recognisable house style (emoji, pipe-delimited
 speed and refill fields) that identifies the source on sight.
 
+## The `[dir="ltr"]` specificity trap
+
+An RTL build plugin rewrites asymmetric physical CSS into direction-scoped
+rules. `padding: 0 12px 0 6px` on `.sel` becomes `[dir="ltr"] .sel` plus a
+mirrored `[dir="rtl"] .sel`. That selector is **(0,2,0)**.
+
+A media query adds no specificity of its own. `@media (max-width: 767px) { .sel
+{ … } }` is still **(0,1,0)**, so it loses to the `[dir]` rule at every width —
+silently, with both rules present in the sheet and one simply never applying.
+
+This has caused three live bugs:
+
+- The locale pills ignored their mobile rule entirely. Cost most of a night,
+  and was only found by measuring the running page rather than reading the CSS.
+- `max-desktop:text-center` on the hero column **had never applied at any
+  width**, because Tailwind's `.text-left` became `[dir="ltr"] .text-left`. The
+  block was centred by flex while the text inside stayed left-aligned.
+- The nav's `left-1/2` + `-translate-x-1/2` stopped cancelling and started
+  compounding under RTL: the plugin flips the inset and not the translate, so
+  the Arabic links were drawn straight through the currency pills.
+
+**What works:**
+
+1. **Use a logical property** so no `[dir]` rule is generated at all —
+   `padding-inline`, `margin-inline`, `inset-inline`, `text-start`/`text-end`.
+   This is the fix to reach for first: it removes the collision rather than
+   winning it.
+2. **Out-specify it** where a physical property is genuinely wanted —
+   `[dir="rtl"] .sel` is (0,2,0) and beats a bare class.
+3. **Mirror the pair.** If you flip an inset you must flip the translate with
+   it, or the two compound instead of cancelling.
+
+Two of the three were Tailwind utilities rather than anything in
+`globals.css`, so **no scan of our own stylesheet would have caught them**.
+When a responsive override does not appear to apply, check the built sheet for
+a `[dir]` rule on the same selector before assuming the media query is wrong.
+
 ## Git conventions
 
 All commits and deploys are authored as `Trip <devbyadonai@gmail.com>`. Set `git config user.name "Trip"` and `git config user.email "devbyadonai@gmail.com"` before committing. **Do not** add `Co-Authored-By` trailers or any other attribution — `devbyadonai@gmail.com` is the sole contributor on every commit.
