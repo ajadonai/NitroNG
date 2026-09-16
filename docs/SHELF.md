@@ -74,45 +74,53 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   0.9%** — the ₦3.25M of "failed attempts" quoted on 11 Sep was abandonment,
   not failure, which is the mistake reading first exists to avoid.
 
-- **Onboarding funnel, second read — DONE 17 Sep, and it found one wall.**
-  2,082 signups since 26 Aug. The funnel:
+- **Onboarding funnel, second read — DONE 17 Sep. One real wall, and one step
+  that measured nothing.** 2,082 signups since 26 Aug.
 
-  | step | of signups |
+  **First, the correction.** The read initially showed "99.0% opened New Order"
+  and treated that as reaching the product. It is not. The dashboard opens on
+  the Services tab (`useState("services")`), so the beacon fired on first render
+  for everybody — it measured *logged in*. Trip caught it: *"99% reach the new
+  order cos its automatically the first page everybody lands on."* Confirmed:
+  the 20 accounts (1.0%) without the stamp have no wallet stamp either, so that
+  is a beacon that never ran, not a person who never looked. The true figure is
+  100% and the step carried no information. `firstSeenNewOrderAt` now waits for
+  a service to be **picked**, which is a deliberate act (`v2.5.100`). Data from
+  17 Sep onward means something; everything before it does not.
+
+  **What survives the correction, and it is the important part:**
+
+  | | of signups |
   |---|---|
-  | verified email | 100.0% |
-  | opened New Order | 99.0% |
-  | **opened the wallet** | **47.9%** |
+  | opened the wallet | **47.9%** |
   | started a payment | 27.3% |
   | deposit completed | 23.0% |
   | placed an order | 21.5% |
 
-  **The leak is one step, and it is not the one anybody was watching.** 99% of
-  signups reach New Order. Fewer than half ever open the wallet. Of the 1,603
-  who never paid, **1,061 — two thirds — opened New Order and never once opened
-  the wallet.**
-
   Opening the wallet is very nearly the whole prediction: **47.5% of the 997 who
   opened it paid, against 0.5% of the 1,085 who did not.** Five people in three
-  weeks paid without visiting it.
+  weeks paid without going there.
 
-  **It is decided in the first session.** 85.6% of payers deposit within an hour
-  of signing up, 93.7% within a day, 99.4% within a week. Not a maturity
-  artefact either — the cohort with 14+ days to act pays at 24.0%, the same as
-  everyone.
+  **It is a first-session decision.** 85.6% of payers deposit within an hour of
+  signing up, 93.7% within a day, 99.4% within a week. Not a maturity artefact —
+  the cohort with 14+ days to act pays at 24.0%, the same as everyone.
 
   **And nothing reaches these people.** The only pre-order nudge in the daily
-  cron requires `balance: { gt: 0 }` — it is for people who funded and did not
-  order. There is no message at all for somebody who looked at the product and
-  never went to fund.
+  cron requires `balance: { gt: 0 }`, which is for accounts that already funded.
+  There is no message at all for somebody who never went to fund.
 
-  **What this argues for**, in order of how directly it hits the wall:
-  guest-feel checkout, which removes the wallet as a separate destination
-  altogether (one payment sized to the order) and is the only item on this shelf
-  that addresses the wall rather than the symptom; a first-session prompt from
-  New Order to funding, since the hour after signup is the entire window; and a
-  never-funded nudge, which is the cheapest of the three and the weakest, given
-  93.7% of the people who were ever going to pay had already paid by the time
-  any email could arrive.
+  **What is still unknown, and it is the thing worth knowing.** Half of all
+  signups never open the wallet, and we cannot yet tell a considered no from a
+  four-second bounce — whether they saw a price and balked, or never engaged at
+  all. The repointed beacon answers exactly that, and it needs a few weeks.
+
+  **Do not redesign the flow before that data is in.** The temptation is to
+  build a nudge now; 93.7% of everyone who was ever going to pay had already
+  paid within a day, so an email is the weakest of the available answers.
+  Guest-feel checkout is the only item on this shelf that removes the wallet as
+  a separate destination rather than pointing at it, and this is the first hard
+  evidence for it — but it is evidence about *where* people stop, not yet about
+  *why*.
 
 - **Scale ladder gate — judge it on database signups, not Meta.** The Lagos
   ₦30,000 → ₦39,000 budget step stays gated on cost per new customer under

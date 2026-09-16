@@ -522,14 +522,9 @@ function DashboardInner({ initialData }) {
   const [leftOpen, setLeftOpen] = useState(false);
   const [avOpen, setAvOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false); // the concierge panel: a sheet on a phone, a docked window on a desktop
-  // Onboarding funnel: tell the server the first time Wallet and New Order are opened.
+  // Onboarding funnel. The effect itself lives further down, because the
+  // new_order signal now depends on the lifted service selection.
   const seenSurfaces = useRef(new Set());
-  useEffect(() => {
-    const surface = active === "add-funds" ? "wallet" : active === "services" ? "new_order" : null;
-    if (!surface || seenSurfaces.current.has(surface)) return;
-    seenSurfaces.current.add(surface);
-    fetch("/api/telemetry/first-seen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ surface }) }).catch(() => {});
-  }, [active]);
   const [dockMsg, setDockMsg] = useState("");
   const dockInputRef = useRef(null);
   const avRef = useRef(null);
@@ -964,6 +959,27 @@ function DashboardInner({ initialData }) {
   const [noLink, setNoLink] = useState("");
   const [noComments, setNoComments] = useState("");
   const [noCatModal, setNoCatModal] = useState(false);
+
+  /* Onboarding funnel: the first time Wallet is opened, and the first time a
+     service is actually chosen.
+  
+     `new_order` used to fire when the Services tab became active, and the
+     Services tab is the tab the dashboard opens on — so it stamped every
+     account that ever loaded the page and measured "logged in". It read 99.0%
+     of 2,082 signups, and the 1.0% without it had no wallet stamp either,
+     which is a beacon that never ran rather than a person who never looked.
+     Trip spotted it: "99% reach the new order cos its automatically the first
+     page everybody lands on."
+  
+     Picking a service is a deliberate act, so it separates somebody who
+     considered an order from somebody who landed and left. That is the
+     distinction the funnel exists to draw and the one it could not draw. */
+  useEffect(() => {
+    const surface = active === "add-funds" ? "wallet" : (active === "services" && noSelSvc) ? "new_order" : null;
+    if (!surface || seenSurfaces.current.has(surface)) return;
+    seenSurfaces.current.add(surface);
+    fetch("/api/telemetry/first-seen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ surface }) }).catch(() => {});
+  }, [active, noSelSvc]);
   const isServices = active === "services";
   const isOrders = active === "orders";
   const isReferrals = active === "referrals";
