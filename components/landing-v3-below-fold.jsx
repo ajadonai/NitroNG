@@ -157,6 +157,16 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
   const bgRose = dark ? "#1a1220" : "#f7dde4";
   const [qt, qn, qr, qinit, qc] = QUOTES[qi];
 
+  // The three figures section 03 claims, counted by the same buildAll the list
+  // itself runs — so the landing page and the rows behind "Browse the full
+  // list" cannot drift apart. The fallbacks are what was measured on 16 Sep
+  // 2026 and cover the render before /api/site-info lands; they are not the
+  // source of truth. A constant here goes stale within a week of a sync and
+  // nobody notices, which is how the blog came to quote 17,852.
+  const nFull = siteStats?.fullList || 7581;
+  const nCurated = siteStats?.services || 267;
+  const nPlat = siteStats?.fullPlatforms || 31;
+
   return (
     <div ref={wrapRef} style={{ color: text }}>
       <style>{BF_CSS}</style>
@@ -242,12 +252,67 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
         </section>
       </div>
 
-      {/* ━━━ 03 STEPS ━━━ */}
+      {/* ━━━ 03 FULL LIST ━━━ */}
+      {/* Directly after curation, because it only makes sense as the answer to
+          it: we curated, and we kept everything else. Before this the landing
+          page had one catalogue story and it was the curated one — a good pitch
+          for a creator buying their first thousand followers, and the wrong
+          pitch entirely for a reseller, who is not looking for a shortlist
+          somebody else vetted. Every number in here is measured, not rounded up
+          from the services table: 7,581 is what a customer can actually open
+          and order, after packages, duplicates and untiled rows come out. */}
+      <div className="relative overflow-hidden" style={{ background: t.bg }}>
+        <div className="lv3-glow" style={{ width: 600, height: 600, top: -240, left: "6%", background: dark ? "rgba(96,165,250,.09)" : "rgba(96,165,250,.16)" }}/>
+        <div className="lv3-grain"/>
+        <section id="catalogue" className="snap-section relative max-w-[1200px] mx-auto py-[88px] px-[60px] max-desktop:py-16 max-desktop:px-10 max-md:py-[52px] max-md:px-5">
+          <div className="lv3-sh" data-reveal><span className="num">03</span><h2>{tr("And when you want")} <span className="serif">{tr("everything else.")}</span></h2></div>
+          <div className="grid grid-cols-[1fr_1.1fr] max-desktop:grid-cols-1 gap-[60px] max-desktop:gap-[34px] items-center mt-2">
+            <div>
+              <p className="lv3-sub" data-reveal="1" style={{ color: soft }}>{tr("The curated list is")} {nCurated.toLocaleString()} {tr("services we test and stand behind. Behind it sits the full list —")} {nFull.toLocaleString()} {tr("more, every one priced in naira, each carrying its own refill and speed terms. It is the same catalogue our resellers buy through the API, and it is open to anyone with an account.")}</p>
+              <div data-reveal="2" className="flex flex-col gap-3 mt-[26px] ml-[30px] max-md:ml-0">
+                {[[<><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></>,`${nPlat} ${tr("platforms, not just the big four")}`,tr("Spotify, Audiomack, Boomplay, Threads, WhatsApp, Twitch, Google reviews. The full list reaches every one of them.")],[<><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></>,tr("Priced in naira, no dollar card"),tr("The full list costs what it costs. No FX at checkout, no virtual card, no middleman taking a cut on the way.")],[<><path d="M4 7V4h16v3M9 20h6M12 4v16"/></>,tr("Terms printed on every row"),tr("The refill and speed shown on a service are the terms you get — said plainly, rather than cover we did not buy.")]].map(([ico, b, s], i) => (
+                  <div key={i} className="flex gap-3 items-start">
+                    <div className="w-[30px] h-[30px] rounded-[9px] flex items-center justify-center shrink-0" style={{ background: "rgba(196,125,142,.16)", color: "#c47d8e" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{ico}</svg></div>
+                    <div><b className="block text-[14.5px]">{b}</b><span className="text-[13px] leading-[1.5]" style={{ color: soft }}>{s}</span></div>
+                  </div>
+                ))}
+              </div>
+              {/* Two buttons because the section serves two readers: a creator
+                  who wants the wider catalogue, and a reseller who wants the
+                  API. Both land on pages that already exist and already rank. */}
+              <div data-reveal="3" className="flex flex-wrap gap-2.5 mt-7 ml-[30px] max-md:ml-0">
+                <a href="/services" className="inline-flex items-center gap-2 py-[11px] px-[18px] rounded-full text-[13.5px] font-bold no-underline text-white" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>{tr("Browse the full list")}</a>
+                <a href="/resellers" className="inline-flex items-center gap-2 py-[11px] px-[18px] rounded-full text-[13.5px] font-bold no-underline" style={{ color: text, border: `1px solid ${brd}`, background: panel }}>{tr("Reseller API")}</a>
+              </div>
+            </div>
+            <div data-reveal="2" className="rounded-[18px] p-[26px] max-md:p-[18px]" style={{ background: panel, border: `1px solid ${brd}` }}>
+              <div className="grid grid-cols-2 gap-x-5 gap-y-[22px]">
+                {[[nFull.toLocaleString(), tr("Full list"), tr("Live and orderable today"), true],[nCurated.toLocaleString(), tr("Curated"), tr("Tested, tiered, refill-backed"), false],[String(nPlat), tr("Platforms"), tr("From Instagram to Boomplay"), false],["₦", tr("One currency"), tr("Naira in, naira out"), false]].map(([v, k, d, acc]) => (
+                  <div key={k}>
+                    <div className="m text-[30px] max-md:text-[26px] font-extrabold -tracking-[1.5px] leading-none" style={{ color: acc ? "#c47d8e" : text }}>{v}</div>
+                    <div className="text-[12.5px] font-bold mt-2">{k}</div>
+                    <div className="text-[11.5px] leading-[1.45] mt-0.5" style={{ color: muted }}>{d}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="h-px my-[22px]" style={{ background: hair }}/>
+              <div className="flex flex-wrap gap-1.5">
+                {["Instagram","TikTok","YouTube","Spotify","Telegram","Facebook","Twitch","WhatsApp","Audiomack","Boomplay","Threads",`+ ${Math.max(nPlat - 11, 0)} ${tr("more")}`].map(c => (
+                  <span key={c} className="text-[11.5px] font-semibold py-[5px] px-[10px] rounded-full" style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.045)", color: soft }}>{c}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div className="h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(196,125,142,.5),transparent)" }}/>
+
+      {/* ━━━ 04 STEPS ━━━ */}
       <div className="relative overflow-hidden" style={{ background: t.bg }}>
         <div className="lv3-glow" style={{ width: 560, height: 560, bottom: -280, right: "8%", background: dark ? "rgba(242,184,102,.08)" : "rgba(242,184,102,.16)" }}/>
         <div className="lv3-grain"/>
         <section id="how" className="snap-section relative max-w-[1200px] mx-auto py-[88px] px-[60px] max-desktop:py-16 max-desktop:px-10 max-md:py-[52px] max-md:px-5">
-          <div className="lv3-sh" data-reveal><span className="num">03</span><h2>{tr("Three steps,")} <span className="serif">{tr("no waiting.")}</span></h2></div>
+          <div className="lv3-sh" data-reveal><span className="num">04</span><h2>{tr("Three steps,")} <span className="serif">{tr("no waiting.")}</span></h2></div>
           <div data-reveal="1" className="grid grid-cols-3 max-md:grid-cols-1 gap-10 max-desktop:gap-6 max-md:gap-[22px] mt-9 ml-[30px] max-md:ml-0">
             {[["/01",tr("Fund your wallet"),<>{tr("Card, transfer or crypto. From")} {money(1000)}{tr(", and your first deposit earns up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free.")}</>],["/02",tr("Paste your link"),tr("Pick the service and tier, paste the post or profile, choose instant or gradual delivery.")],["/03",tr("Watch it deliver"),tr("Progress live on your dashboard, usually within minutes. Refill cover on Standard and Premium.")]].map(([n, h, p]) => (
               <div key={n}><div className="m text-xs font-bold mb-3" style={{ color: "#c47d8e" }}>{n}</div><h4 className="text-lg font-bold mb-2">{h}</h4><p className="text-[14.5px] leading-[1.6]" style={{ color: soft }}>{p}</p></div>
@@ -257,13 +322,13 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
       </div>
       <div className="h-px" style={{ background: "linear-gradient(90deg,transparent,rgba(196,125,142,.5),transparent)" }}/>
 
-      {/* ━━━ 04 REVIEWS (bento) ━━━ */}
+      {/* ━━━ 05 REVIEWS (bento) ━━━ */}
       <div className="relative overflow-hidden" style={{ background: bgRose }}>
         <div className="lv3-glow" style={{ width: 700, height: 700, top: -300, left: -200, background: "rgba(196,125,142,.26)" }}/>
         <div className="lv3-glow" style={{ width: 520, height: 520, bottom: -240, right: -120, background: dark ? "rgba(196,125,142,.1)" : "rgba(255,255,255,.55)" }}/>
         <div className="lv3-grain"/>
         <section id="reviews" className="snap-section relative max-w-[1200px] mx-auto py-[88px] px-[60px] max-desktop:py-16 max-desktop:px-10 max-md:py-[52px] max-md:px-5">
-          <div className="lv3-sh" data-reveal><span className="num">04</span><h2>{tr("Creators who")} <span className="serif">{tr("trust us.")}</span></h2></div>
+          <div className="lv3-sh" data-reveal><span className="num">05</span><h2>{tr("Creators who")} <span className="serif">{tr("trust us.")}</span></h2></div>
           <p className="lv3-sub" data-reveal="1" style={{ color: soft }}>{tr("Real reviews from Nigerian creators and businesses growing with Nitro. Tap the video.")}</p>
           <div className="lv3-bento" data-reveal="2">
             <div className="lv3-bcard flex flex-col justify-center min-h-[340px] max-md:min-h-0 overflow-hidden py-[34px] px-9 max-md:py-[26px] max-md:px-[22px]" style={{ gridArea: "feat", background: panel, border: `1px solid ${brd}` }}>
@@ -322,7 +387,10 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
               <p data-reveal="2" className="text-[16.5px] leading-[1.7] max-w-[480px] mt-[18px] mb-[26px]" style={{ color: "rgba(255,255,255,.82)" }}>{tr("Every minute you wait, someone with worse content and better numbers is getting the deal, the booking, the follow. Fund a wallet, pick a tier, watch it move.")}</p>
               <div data-reveal="3" className="flex gap-3 flex-wrap items-center max-md:flex-col max-md:items-stretch">
                 <a href="/signup" onClick={e => { e.preventDefault(); setModal("signup"); }} className="py-4 px-[34px] rounded-full text-[15.5px] font-extrabold no-underline text-center transition-transform duration-200 hover:scale-[1.04]" style={{ background: "#fff", color: "#1a1a1a", boxShadow: "0 10px 32px rgba(0,0,0,.2)" }}>{tr("Start Growing Now →")}</a>
-                {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 py-[15px] px-6 rounded-full text-[14.5px] font-bold text-white no-underline transition-colors duration-200" style={{ background: "rgba(37,211,102,.2)", border: "1px solid rgba(37,211,102,.5)" }}><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d={WA_PATH}/></svg>{tr("Ask us anything")}</a>}
+                {/* Colours, both themes and the hover live in .lv3-wa — an inline
+                    style cannot be beaten by a :hover rule, which is why this
+                    button carried a transition and never moved. */}
+                {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="lv3-wa inline-flex items-center justify-center gap-2 py-[15px] px-6 rounded-full text-[14.5px] font-bold no-underline"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d={WA_PATH}/></svg>{tr("Ask us anything")}</a>}
               </div>
               <div data-reveal="3" className="flex items-center gap-3 mt-[26px] text-[13px]" style={{ color: "rgba(255,255,255,.8)" }}>
                 <div className="flex">{[["TM","#e0a458"],["AB","#6ee7b7"],["EN","#a5b4fc"],["BI","#f472b6"],["KD","#fbbf24"]].map(([a, c], i) => <i key={a} className="not-italic w-[30px] h-[30px] rounded-full text-[10px] font-extrabold flex items-center justify-center text-white" style={{ background: c, border: "2px solid rgba(255,255,255,.9)", marginLeft: i ? -9 : 0 }}>{a}</i>)}</div>

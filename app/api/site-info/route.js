@@ -1,6 +1,8 @@
 import prisma from '@/lib/prisma';
 import { ok } from '@/lib/utils';
 import { publicOrderCount } from '@/lib/public-counts';
+import { fullListSize } from '@/lib/full-list-size';
+import { getMarkupSettings } from '@/lib/reseller';
 
 export const revalidate = 300;
 
@@ -18,6 +20,16 @@ export async function GET() {
       platformCount = groups;
       serviceCount = tiers;
       uniquePlatforms = distinctPlatforms.length;
+    } catch {}
+
+    // The full list, counted rather than written down. The landing page says
+    // how many services sit behind the curated menu, and that number moves
+    // every time the sync adds or drops one — a constant in the markup would
+    // be stale within a week and nobody would notice.
+    let fullList = { services: 0, platforms: 0 };
+    try {
+      const settings = await getMarkupSettings();
+      fullList = await fullListSize(Number(settings.markup_usd_rate) || 1600);
     } catch {}
 
     const PROCESSING_BASE = 20;
@@ -71,6 +83,8 @@ export async function GET() {
         platforms: platformCount || 0,
         services: serviceCount || 0,
         uniquePlatforms: uniquePlatforms || 0,
+        fullList: fullList.services || 0,
+        fullPlatforms: fullList.platforms || 0,
         ...(deliveryRate != null ? { deliveryRate } : {}),
         ...(processingCount != null ? { processing: processingCount } : {}),
       },
