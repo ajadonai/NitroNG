@@ -1748,7 +1748,12 @@ function DashboardInner({ initialData }) {
       {/* The install moment: over the dock, once ever, on a live second completion */}
       {installMoment && <>
         <div className="fixed inset-0 z-[92] desktop:hidden backdrop-blur-[6px]" style={{ background: "rgba(0,0,0,.28)" }} onClick={closeInstallMoment} />
-        <div role="dialog" aria-modal="true" aria-label={tr("Add Nitro to your home screen")} className="dash-install-moment fixed left-3 right-3 z-[93] rounded-[18px] p-3.5 desktop:hidden" style={{ bottom: "calc(88px + env(safe-area-inset-bottom))", background: dark ? "#1d1430" : "#fff", border: `1px solid ${dark ? "rgba(232,180,196,.16)" : "rgba(139,74,94,.14)"}`, boxShadow: dark ? "0 18px 50px rgba(0,0,0,.5)" : "0 18px 50px rgba(0,0,0,.24)" }}>
+        {/* 12px off the bottom, matching the 12px it already sits in from each
+            side. It used to clear 88px for the bottom nav — but this prompt's
+            own backdrop is z-92 and the nav is z-91, so the nav is covered the
+            whole time the prompt is up. It was leaving a gap for something
+            nobody could see, and floating instead of sitting on the edge. */}
+        <div role="dialog" aria-modal="true" aria-label={tr("Add Nitro to your home screen")} className="dash-install-moment fixed left-3 right-3 z-[93] rounded-[18px] p-3.5 desktop:hidden" style={{ bottom: "calc(12px + env(safe-area-inset-bottom))", background: dark ? "#1d1430" : "#fff", border: `1px solid ${dark ? "rgba(232,180,196,.16)" : "rgba(139,74,94,.14)"}`, boxShadow: dark ? "0 18px 50px rgba(0,0,0,.5)" : "0 18px 50px rgba(0,0,0,.24)" }}>
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
               {/* The real lifetime count — "Two" only when it is actually two. */}
