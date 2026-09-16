@@ -28,22 +28,36 @@ export function ThemeToggle({ dark, onToggle, size = "md", className = "" }) {
   );
 }
 
-// The three-mode theme control (Auto / Light / Dark), styled like the sky
-// toggle: a highlight springs under the active mode and its icon glows. Styled
-// by .theme-pill in globals.css. `mode` is themeMode; `onMode(id)` applies it.
-const TP_ICONS = {
-  auto: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18z" fill="currentColor" stroke="none"/></svg>,
-  day: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>,
-  night: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>,
-};
+/**
+ * The three-mode theme control — the same sky as ThemeToggle, with a third
+ * stop.
+ *
+ * It used to be three grey glyphs on a plain capsule, sitting six pixels from a
+ * working sky in the same menu. Now it is that sky: the gradient runs day on
+ * the left to night on the right, clouds sit over the day end and stars over
+ * the night end, and the knob is the sun or the moon depending on where it has
+ * stopped.
+ *
+ * Day, Auto, Night — in that order, because it is the order the sky is painted
+ * in. Auto lands in the middle, which is exactly where the gradient turns, and
+ * its knob is drawn half sun and half moon: the horizon, which is what auto
+ * means and what no icon ever managed to say.
+ *
+ * Styled by .theme-sky in globals.css. `mode` is themeMode; `onMode(id)`
+ * applies it.
+ */
+const TP_LABEL = { day: "Light", auto: "Auto", night: "Dark" };
 export function ThemePill({ mode = "auto", onMode, className = "" }) {
   const tr = useT();
   return (
-    <div role="group" aria-label={tr("Theme")} className={`theme-pill ${className}`} data-m={mode}>
-      <span className="tp-hl" aria-hidden="true" />
-      {[["auto", "Auto"], ["day", "Light"], ["night", "Dark"]].map(([id, label]) => (
-        <button key={id} type="button" onClick={() => onMode?.(id)} aria-pressed={mode === id} aria-label={tr(label)} title={tr(label)}
-          className={`tp-seg tp-${id}`}>{TP_ICONS[id]}</button>
+    <div role="group" aria-label={tr("Theme")} className={`theme-sky ${className}`} data-m={mode}>
+      <span className="ts-d" aria-hidden="true" /><span className="ts-n" aria-hidden="true" />
+      <span className="cl c1" aria-hidden="true" /><span className="cl c2" aria-hidden="true" />
+      <span className="st s1" aria-hidden="true" /><span className="st s2" aria-hidden="true" /><span className="st s3" aria-hidden="true" />
+      <span className="knob" aria-hidden="true"><span className="sun" /><span className="moon" /></span>
+      {["day", "auto", "night"].map(id => (
+        <button key={id} type="button" onClick={() => onMode?.(id)} aria-pressed={mode === id}
+          aria-label={tr(TP_LABEL[id])} title={tr(TP_LABEL[id])} className={`ts-seg ts-${id}`} />
       ))}
     </div>
   );

@@ -70,10 +70,23 @@ describe('the nav account button', () => {
 
   it('seats the avatar inside the border rather than filling the cap', () => {
     // At 2px the avatar was concentric with the 17px cap — a photo pressed into
-    // a ring. The left padding gives the control a margin the way a chip has
-    // one. Two earlier attempts went the other way, tighter, which was wrong.
-    expect(css).toMatch(/\.dash-avatar-btn \{ width: auto; padding: 4px 10px;/);
+    // a ring. Two earlier attempts went tighter and were wrong, but both kept
+    // the face at 30px, which is what actually made a small inset read badly:
+    // 30 in a 34px pill leaves 2px above and below, so the avatar looked shoved
+    // sideways however much room was beside it.
+    //
+    // 6px is the geometry the rest of the cluster already uses — .loc-pill for
+    // currency and language, pl-1.5 pr-3 on the balance pill — so the face now
+    // starts on the same left edge as every icon beside it.
+    //
+    // The face itself was never the problem: <Avatar size={26}> sets its own
+    // inline width, so it already cleared 4px top and bottom. Only the lead was
+    // wrong. The .dash-avatar rule in the sheet styles nothing at all now —
+    // pre-existing dead code, left alone rather than swept up here.
+    expect(css).toMatch(/\.dash-avatar-btn \{ width: auto; padding-block: 0; padding-inline: 6px 12px;/);
+    expect(css, 'the neighbours it is matching').toMatch(/\.loc-pill \{[^}]*padding-inline: 6px 12px/s);
     const dash = readFileSync(new URL('../components/dashboard.jsx', import.meta.url), 'utf8');
+    expect(dash).toMatch(/dash-balance-pill[^"]*pl-1\.5 pr-3/);
     expect(dash).not.toMatch(/avatarPx/);
   });
 

@@ -47,7 +47,11 @@ describe('the navigation strip', () => {
     // Pink leads and the rest trail, the order the mark itself draws in:
     // NitroLoader paints four copies 75ms apart with pink undelayed on top.
     // The bar grows rightward, so pink sits at the right-hand leading edge.
-    const grad = css.match(/linear-gradient\(90deg, (#[^)]*)\)/)[1];
+    // Scoped to the bar's own rule. This used to take the first 90deg gradient
+    // anywhere in the sheet, so it broke the moment another rule above it in
+    // the file happened to use one — which is a test failing about a stranger.
+    const rule = css.match(/\.nitro-navbar i \{[^}]*\}/s)[0];
+    const grad = rule.match(/linear-gradient\(90deg, (#[^)]*)\)/)[1];
     const order = [...grad.matchAll(/#[0-9a-f]{6}/g)].map(m => m[0]);
     expect(order[0]).toBe('#ecc94b');
     expect(order[order.length - 1]).toBe('#c47d8e');
