@@ -1238,13 +1238,18 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   /* Same backdrop and sheet geometry as More, so the two read as one pattern.
      The list scrolls inside the sheet rather than the sheet scrolling, so the
      header and filters stay put while a long list moves under them. */
+  /* The same band the currency and language menus use (10000 / 10001), because
+     this is the same kind of thing: a sheet portalled to <body> that owns the
+     screen while it is up. At 88/89 it sat under the bottom nav (91), the
+     WhatsApp button (92) and the cookie banner (9999) — invisible behind all
+     three the moment portalling took it out of the nav's stacking context. */
   .dash-notif-overlay {
-    display: block; position: fixed; inset: 0; z-index: 88;
+    display: block; position: fixed; inset: 0; z-index: 10000;
     background: rgba(0,0,0,0.4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   }
   .dash-notif-sheet {
     display: flex; flex-direction: column;
-    position: fixed; bottom: 0; left: 0; right: 0; top: auto; z-index: 89;
+    position: fixed; bottom: 0; left: 0; right: 0; top: auto; z-index: 10001;
     width: auto; max-height: 82vh; overflow: hidden;
     border-radius: 22px 22px 0 0; padding: 10px 0 env(safe-area-inset-bottom);
     box-shadow: 0 -20px 60px rgba(0,0,0,0.3);

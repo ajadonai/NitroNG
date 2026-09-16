@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useRef, useCallback, useTransition, Fragment } from "react";
+import { createPortal } from "react-dom";
 import { RailSec, RailCard, RailRow } from "./rail";
 import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
@@ -271,6 +272,11 @@ const NOTIF_ICONS = {
 const NOTIF_LIMIT = 30;
 
 function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedIds, setClearedIds, setClearedAt, readAllAt, setReadAllAt, onNavigate }) {
+  // document.body does not exist while this renders on the server, so the
+  // portal waits for the client. One render without the sheet is invisible:
+  // the dropdown only mounts once somebody has tapped the bell.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const tr = useT();
   const [filter, setFilter] = useState("all");
 
@@ -352,11 +358,14 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
       )}
       <div className="h-px bg-t-card-border" />
       {/* List */}
-      {/* min-h-0 is what makes this scroll on a phone. A flex child defaults to
-          min-height:auto and refuses to shrink below its content, so flex-1 with
-          overflow-y-auto grew the list past the sheet instead of scrolling
-          inside it — and the sheet's overflow:hidden then clipped the last
-          notifications out of reach entirely. */}
+      {/* min-h-0 is belt and braces, not the mechanism — measured, the list
+          scrolls without it. A flex item only gets an automatic minimum size
+          when its own overflow is visible, and this one is overflow-y-auto, so
+          its minimum was already zero. Kept because it states the intent and
+          costs nothing, but the sheet was never failing to scroll: it was
+          opening behind the header, which is a different bug two commits back.
+          With 40 notifications the sheet holds at 82vh and 2,120px of list
+          scrolls inside a 542px window. */}
       <div className="max-h-[392px] max-desktop:max-h-none max-desktop:flex-1 max-desktop:min-h-0 overflow-y-auto overscroll-contain">
         {display.length > 0 ? display.map((n, i) => {
           const isRead = readIds.has(n.id) || (readAllAt && n.ts && n.ts <= readAllAt);
@@ -408,12 +417,24 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
   return (
     <>
       {/* Phone: the house sheet — backdrop, page locked behind it (the scroll
-          lock already covers notifOpen), opaque surface, tap outside to close. */}
-      <div className="dash-notif-overlay" onClick={onClose} />
-      <div className="dash-notif-sheet" role="dialog" aria-modal="true" aria-label={tr("Notifications")} style={{ ...surface, borderBottom: "none" }}>
-        <div className="dash-more-grab" style={{ background: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.18)" }} />
-        {body}
-      </div>
+          lock already covers notifOpen), opaque surface, tap outside to close.
+          Portalled to <body>, and that is load-bearing rather than tidiness:
+          the sheet is position:fixed, and a fixed element positions against the
+          nearest ancestor carrying a transform, filter or backdrop-filter
+          instead of the viewport. The bell sits inside the nav, so "inset: auto
+          0 0" pinned the sheet to the bottom of the HEADER — it opened above
+          the page, clipped, with no way to reach it. locale-switcher.jsx hit
+          exactly this and portals for the same reason. */}
+      {mounted && createPortal(
+        <>
+          <div className="dash-notif-overlay" onClick={onClose} />
+          <div className="dash-notif-sheet" role="dialog" aria-modal="true" aria-label={tr("Notifications")} style={{ ...surface, borderBottom: "none" }}>
+            <div className="dash-more-grab" style={{ background: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.18)" }} />
+            {body}
+          </div>
+        </>,
+        document.body,
+      )}
 
       {/* Desktop: anchored under the bell. 380px, up from 320 — a service name
           is the provider's and was being cut mid-word at the old width. */}
