@@ -390,7 +390,7 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
                     <span className="text-[12px] font-semibold text-accent-ink">· {n.type === "order" ? tr("View order") : tr("View in wallet")}</span>
                   </div>
                 </div>
-                <button onClick={e => { e.stopPropagation(); dismiss(n.id); }} aria-label={tr("Dismiss")} title={tr("Dismiss")} className="shrink-0 bg-transparent border-none cursor-pointer p-1 rounded-md leading-none opacity-50 hover:opacity-100 text-t-text-muted">
+                <button onClick={e => { e.stopPropagation(); dismiss(n.id); }} aria-label={tr("Dismiss")} title={tr("Dismiss")} className="nitro-x">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
               </div>
@@ -1755,7 +1755,7 @@ function DashboardInner({ initialData }) {
               <div className="text-sm font-bold leading-snug text-t-text">{momentCompleted === 2 ? tr("Two") : Number(momentCompleted || 0).toLocaleString()} {tr("orders delivered.")}<br/>{tr("You’re a regular now.")}</div>
               <div className="text-xs leading-[1.5] mt-1 text-t-text-muted">{isIos ? tr("Keep Nitro one tap away for tracking the next one.") : tr("Put Nitro on your home screen and track the next one in one tap. No app store, no download size.")}</div>
             </div>
-            <button type="button" aria-label={tr("Dismiss")} onClick={closeInstallMoment} className="shrink-0 w-[26px] h-[26px] rounded-lg flex items-center justify-center border-none cursor-pointer text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>
+            <button type="button" aria-label={tr("Dismiss")} onClick={closeInstallMoment} className="nitro-x">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
