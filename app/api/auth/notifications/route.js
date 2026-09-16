@@ -11,13 +11,15 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: session.id },
-      select: { notifOrders: true, notifPromo: true, notifEmail: true, notifClearedAt: true, notifReadAllAt: true, notifReadIds: true, themePreference: true, perPagePreference: true },
+      select: { notifOrders: true, notifPromo: true, notifEmail: true, notifClearedAt: true, notifReadAllAt: true, notifReadIds: true, notifClearedIds: true, themePreference: true, perPagePreference: true },
     });
 
     if (!user) return error('User not found', 404);
 
     let readIds = [];
     try { readIds = user.notifReadIds ? JSON.parse(user.notifReadIds) : []; } catch {}
+    let clearedIds = [];
+    try { clearedIds = user.notifClearedIds ? JSON.parse(user.notifClearedIds) : []; } catch {}
 
     return ok({
       notifOrders: user.notifOrders,
@@ -26,6 +28,7 @@ export async function GET() {
       notifClearedAt: user.notifClearedAt,
       notifReadAllAt: user.notifReadAllAt,
       notifReadIds: readIds,
+      notifClearedIds: clearedIds,
       themePreference: user.themePreference || 'auto',
       perPagePreference: user.perPagePreference || 10,
     });
@@ -63,6 +66,21 @@ export async function POST(req) {
       data.notifReadAllAt = new Date(body.readAllAt);
     }
 
+    // A row somebody dismissed, on every device rather than the one they
+    // tapped. The × used to hide it locally and mark it read everywhere, so it
+    // came back on the next device as an ordinary read row.
+    //
+    // Merged rather than replaced, and capped at the most recent 500 like the
+    // read set, because two devices can each dismiss different rows between
+    // syncs and the later write must not erase the earlier one.
+    if (Array.isArray(body.clearedIds)) {
+      const owner = await prisma.user.findUnique({ where: { id: session.id }, select: { notifClearedIds: true } });
+      let existing = [];
+      try { existing = owner?.notifClearedIds ? JSON.parse(owner.notifClearedIds) : []; } catch {}
+      const merged = [...new Set([...existing, ...body.clearedIds.filter(v => typeof v === 'string').slice(0, 500)])];
+      data.notifClearedIds = JSON.stringify(merged.slice(-500));
+    }
+
     // Mark all as read — store the IDs
     if (Array.isArray(body.readIds)) {
       // Merge with existing
@@ -91,7 +109,9 @@ export async function POST(req) {
     // Clear all — set timestamp
     if (body.clearAll === true) {
       data.notifClearedAt = new Date();
-      data.notifReadIds = '[]'; // Reset read IDs since everything is cleared
+      // The timestamp covers everything before it, so both id sets start over.
+      data.notifReadIds = '[]';
+      data.notifClearedIds = '[]';
     }
 
     if (Object.keys(data).length === 0) {

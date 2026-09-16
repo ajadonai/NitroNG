@@ -1,0 +1,13 @@
+-- A notification dismissed on a phone should stay dismissed on a laptop.
+--
+-- The bell's per-row × hid the row on the device it was tapped on and marked it
+-- read everywhere else, because there was nowhere to put a per-id clear:
+-- `clearAll` persists as `notifClearedAt`, a single timestamp, and the
+-- cleared-id set lived only in localStorage. So a row dismissed on one device
+-- came back on the next as merely read.
+--
+-- Mirrors notifReadIds exactly — a JSON array in a nullable text column, capped
+-- in the route at the most recent 500 — rather than earning a table. Every
+-- notification ages out of the list at 30 days, so this set is small and
+-- self-pruning, and a row nobody has dismissed stays NULL.
+ALTER TABLE "users" ADD COLUMN "notifClearedIds" TEXT;

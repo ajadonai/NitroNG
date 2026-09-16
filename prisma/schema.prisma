@@ -64,6 +64,7 @@ model User {
   notifClearedAt         DateTime?
   notifReadAllAt         DateTime?
   notifReadIds           String? // JSON array of read notification IDs
+  notifClearedIds        String? // JSON array of dismissed notification IDs
   themePreference        String    @default("auto") // "auto" | "night" | "day"
   perPagePreference      Int       @default(10) // Orders per page: 10, 25, 50
   tourCompleted          Boolean   @default(false)
@@ -107,26 +108,26 @@ model User {
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
-  orders           Order[]
-  transactions     Transaction[]
-  tickets          Ticket[]
-  sessions         Session[]
-  waitlist         Waitlist[]
-  gameSessions     GameSession[]
-  gameScores       GameScore[]
-  gameRewards      GameReward[]
-  videoWatches     VideoWatch[]
-  crewMember       CrewMember?
-  bonusCredits     BonusCredit[]
-  taskSubmissions  TaskSubmission[]
-  outreachContacts OutreachContact[]
-  nitroPointLedger NitroPointLedger[]
-  serviceVotes     ServiceVote[]
-  serviceFavourites ServiceFavourite[]
+  orders              Order[]
+  transactions        Transaction[]
+  tickets             Ticket[]
+  sessions            Session[]
+  waitlist            Waitlist[]
+  gameSessions        GameSession[]
+  gameScores          GameScore[]
+  gameRewards         GameReward[]
+  videoWatches        VideoWatch[]
+  crewMember          CrewMember?
+  bonusCredits        BonusCredit[]
+  taskSubmissions     TaskSubmission[]
+  outreachContacts    OutreachContact[]
+  nitroPointLedger    NitroPointLedger[]
+  serviceVotes        ServiceVote[]
+  serviceFavourites   ServiceFavourite[]
   // Onboarding funnel: the first time each surface was opened. Set once, never updated.
-  firstSeenWalletAt    DateTime?
-  firstSeenNewOrderAt  DateTime?
-  resellerProfile  ResellerProfile?
+  firstSeenWalletAt   DateTime?
+  firstSeenNewOrderAt DateTime?
+  resellerProfile     ResellerProfile?
 
   @@index([signupIp])
   @@index([createdAt])
@@ -209,22 +210,22 @@ model AdminSession {
 // ──────────────────────────────────────
 
 model Service {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   apiId     Int
   name      String
   category  String
-  provider  String   @default("mtp") // 'mtp' | 'jap' | 'dao'
+  provider  String  @default("mtp") // 'mtp' | 'jap' | 'dao'
   costPer1k BigInt
   sellPer1k BigInt
-  markup    Int      @default(54)
-  min       Int      @default(100)
-  max       Int      @default(50000)
-  refill    Boolean  @default(false)
-  dripfeed  Boolean  @default(false)
+  markup    Int     @default(54)
+  min       Int     @default(100)
+  max       Int     @default(50000)
+  refill    Boolean @default(false)
+  dripfeed  Boolean @default(false)
   // Whether the provider supports the cancel action on this service. Returned by
   // every provider, ignored until the reseller API needed it: a reseller must
   // know before ordering whether an order can be pulled back.
-  cancel    Boolean  @default(false)
+  cancel    Boolean @default(false)
 
   // Stamped every time the provider's live catalogue still lists this service.
   // Kept separate from `enabled`, which records whether Nitro chose to sell it —
@@ -286,24 +287,24 @@ model ServiceGroup {
 }
 
 model ServiceTier {
-  id         String   @id @default(cuid())
-  groupId    String
-  serviceId  String?
-  tier       String   @default("Standard")
-  sellPer1k  BigInt
-  refill     Boolean  @default(false)
-  refillDays Int      @default(0)
-  speed      String   @default("0-2 hrs")
-  enabled     Boolean  @default(true)
-  pricePinned    Boolean  @default(false)
-  customComments    Boolean  @default(false)
-  trafficTargeting  Boolean  @default(false)
-  sortOrder      Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String   @id @default(cuid())
+  groupId          String
+  serviceId        String?
+  tier             String   @default("Standard")
+  sellPer1k        BigInt
+  refill           Boolean  @default(false)
+  refillDays       Int      @default(0)
+  speed            String   @default("0-2 hrs")
+  enabled          Boolean  @default(true)
+  pricePinned      Boolean  @default(false)
+  customComments   Boolean  @default(false)
+  trafficTargeting Boolean  @default(false)
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  group       ServiceGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  service     Service?     @relation(fields: [serviceId], references: [id])
+  group       ServiceGroup        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  service     Service?            @relation(fields: [serviceId], references: [id])
   orders      Order[]
   resellerMap ResellerServiceMap?
 
@@ -370,7 +371,7 @@ model Order {
   refundedAt              DateTime?
   redispatchedAt          DateTime?
   refillRequestedAt       DateTime?
-  refillHandledAt         DateTime?   // set when an admin sends the refill; cleared when the customer asks again
+  refillHandledAt         DateTime? // set when an admin sends the refill; cleared when the customer asks again
   parentOrderId           String?
   source                  String    @default("web") // "web" | "api"
   loyaltyDiscount         Int       @default(0)
@@ -1280,12 +1281,12 @@ model IfyPromiseUpdate {
 // ──────────────────────────────────────
 
 model ResellerProfile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-  apiKey    String   @unique
-  catalog   String   @default("curated") // "curated" | "full"
-  enabled   Boolean  @default(true)
+  id      String  @id @default(cuid())
+  userId  String  @unique
+  user    User    @relation(fields: [userId], references: [id])
+  apiKey  String  @unique
+  catalog String  @default("curated") // "curated" | "full"
+  enabled Boolean @default(true)
 
   // Who granted wholesale pricing, when, and on what basis. Without this a
   // reseller found in three months has no traceable reason for the discount.
@@ -1331,9 +1332,9 @@ model OutreachContact {
 }
 
 model ResellerServiceMap {
-  apiId     Int          @id @default(autoincrement())
-  tierId    String?      @unique
-  serviceId String?      @unique
+  apiId     Int     @id @default(autoincrement())
+  tierId    String? @unique
+  serviceId String? @unique
 
   // A reseller-facing ID is a permanent commitment: once hardcoded into someone's
   // panel it must answer forever. Rows are therefore never deleted — a service
