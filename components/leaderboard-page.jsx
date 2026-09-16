@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from "react";
+import { useDataSaver, pollEvery } from "./use-data-saver";
 import { docDateLocale } from "../lib/format";
 import { useT } from "./locale";
 import { RailSec, RailCard, RailRow, RailLink } from "./rail";
@@ -100,10 +101,11 @@ export default function LeaderboardPage({ dark, t }) {
 
   useEffect(() => { setLoading(true); fetchLeaderboard(); }, [fetchLeaderboard]);
 
+  const saving = useDataSaver();
   useEffect(() => {
-    const iv = setInterval(fetchLeaderboard, 60000);
+    const iv = setInterval(fetchLeaderboard, pollEvery(60000, saving));
     return () => clearInterval(iv);
-  }, [fetchLeaderboard]);
+  }, [fetchLeaderboard, saving]);
 
   const list = data?.[tab] || [];
   const podium = list.slice(0, 3);

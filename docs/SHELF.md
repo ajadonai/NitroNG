@@ -52,12 +52,6 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   monthly cost against the ~₦45k face estimate. Mock `7adc3631`, backend brief
   `5b60a686`.
 
-- **The "Soon" tags on six languages are a public promise nobody has
-  confirmed.** Pidgin, Yoruba, Hausa, Igbo, Kiswahili and Français are labelled
-  Soon on the switcher. Four dictionaries carry 2,078 strings each and
-  `tests/i18n-drift-guard.test.js` holds the line, so the machinery is real —
-  the question is whether Nitro is promising the other six.
-
 ### Waiting on data or a date
 
 - **Checkout abandonment — instrumented, not yet running.** `gatewayHandoffAt`
@@ -152,6 +146,18 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   on 15%, 15% and 10%, all well under the floor. Trip's call on whether the
   reseller pricing page mirrors the retail one.
 
+  **Mockup, 17 Sep 2026: artifact `02ba676e`.** Built on the live brackets
+  rather than the defaults in `lib/markup.js`, which are stale — production
+  runs a thinnest band of **1.5×** (Ultra at Budget tier), so 33.3% is cost and
+  a 30% Wholesale tier leaves **4.8%** margin there. Four questions on the
+  mockup for Trip: the five thresholds (₦50k/₦250k/₦750k/₦2M, proposed not
+  measured — there is no reseller volume to fit a curve to); what happens to the
+  three existing resellers on day one, since two would drop from 15% to 10%
+  under Auto; whether 30% is the right top or 25% (which leaves 11.1%); and the
+  pricing-page question above. Note the global `markup_reseller_discount` is
+  **20%** today, so T3 is the current rate and the ladder moves people either
+  side of where they already sit.
+
 - **Subscription — shape undecided, 12 Sep 2026.** Recommendation on record:
   sell **scheduling**, not a discount ("Nitro Auto" — a service and a weekly
   amount that runs itself). A discount subscription answers the same question as
@@ -191,14 +197,6 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   rental is the documented standard tool for bulk fake-account creation. Both
   are chargeback magnets, and chargebacks in this vertical endanger the
   processor relationship every other product here runs on.
-
-- **Auto data-saver — agreed 6 Sep 2026.** No manual toggle: animations cost CPU
-  rather than data, and a switch nobody finds helps nobody. Read the browser's
-  own signals instead — `navigator.connection.saveData` (Chrome on Android,
-  exactly our audience) and `effectiveType` `3g`/`2g`. When either says
-  constrained: **lengthen the polling intervals** (the real data eater), pause
-  ambient animation, defer heavy assets. One `useDataSaver()` hook consumed by
-  the pollers and the atmosphere layer; zero settings UI.
 
 - **Outcome Bundles ("Campaign Goals") — agreed 6 Sep 2026.** Sell outcomes, not
   line items: "New Brand Launch" packages followers + views + saves in one
@@ -261,6 +259,41 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   protected routes in CLAUDE.md.
 
 ## Closed
+
+- **Auto data-saver — the connection decides, not a settings toggle** (17 Sep
+  2026, `v2.5.101`). The audit asked for a Data-Saver switch. That was wrong
+  twice: the things it would turn off — aurora, grain, shimmer — cost CPU and
+  battery rather than data, so the name lies; and a setting nobody finds helps
+  nobody. `useDataSaver()` asks the browser instead: `saveData` (the OS-level
+  Data Saver, which Chrome on Android exposes — exactly our audience) and
+  `effectiveType` of 2g/slow-2g/3g, which is measured round-trip time rather
+  than the radio badge, so a congested Lagos 4G cell reports honestly.
+
+  When either says constrained: the two dashboard pollers stretch 45s → 135s
+  and 60s → 180s, the leaderboard 60s → 180s, and `<html data-saver>` drops the
+  aurora, the grain, the star twinkle and four shimmer loops. Re-read on the
+  connection's own `change` event, so walking out of wifi onto mobile data
+  applies mid-session — and `saving` is in the effect dependencies, because an
+  interval already running does not change length on its own.
+
+  **What it deliberately does not touch.** The crypto deposit poll, which runs
+  while somebody watches for a payment to confirm — the kilobytes are not worth
+  a person believing their money vanished. Every `animate-pulse`, all four of
+  which are status indicators (deposit pending, payment confirming, batch
+  running, promotion live); a live state drawn as a dead one is a worse bug than
+  a warm phone. Skeleton shimmer, which says the page is loading, which is
+  exactly what a slow connection needs to be told. And no settings UI, which was
+  the point.
+
+- **The "Soon" language tags were already gone** (17 Sep 2026). The shelf
+  carried this as an open promise to Trip since 4 Sep. It was stale, and worse,
+  partly invented: it named Yoruba, Hausa and Igbo, which have never existed in
+  the codebase. Checked against the running code — `AVAILABLE_LOCALES` holds all
+  four dictionaries (`pcm`, `fr`, `sw`, `ar`), every currency is `active`, and
+  the `Soon` branch in the picker is a guard for a locale that arrives without a
+  dictionary, not a label sitting on any of these. Nothing to ship; the only
+  change was a comment in `components/locale.jsx` still claiming the set was
+  "Empty today". Trip: *"move on from it."*
 
 - **The onboarding funnel, read — and the step in it that measured nothing**
   (17 Sep 2026, `v2.5.100`). 2,082 signups since 26 Aug. The headline of the
