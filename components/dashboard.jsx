@@ -330,7 +330,7 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
   const body = (
     <>
       {/* Header */}
-      <div className="flex justify-between items-center py-3.5 px-4">
+      <div className="flex justify-between items-center py-3.5 px-4 shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-base font-semibold text-t-text">{tr("Notifications")}</span>
           {unreadCount > 0 && <span className="text-xs py-0.5 px-1.5 rounded-[5px] font-semibold text-accent-ink" style={{ background: dark ? "#1c1015" : "#fdf2f4" }}>{unreadCount}</span>}
@@ -342,7 +342,7 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
       </div>
       {/* Filters — counted, and only the kinds that have something in them */}
       {items.length > 0 && (
-        <div className="flex gap-1.5 px-3.5 pb-2.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+        <div className="flex gap-1.5 px-3.5 pb-2.5 overflow-x-auto shrink-0" style={{ scrollbarWidth: "none" }}>
           {KINDS.map(k => (
             <button key={k.key} onClick={() => setFilter(k.key)} aria-pressed={filter === k.key} className="shrink-0 whitespace-nowrap text-xs font-semibold py-1 px-2.5 rounded-full border border-solid cursor-pointer font-[inherit]" style={filter === k.key ? { background: t.accent, borderColor: t.accent, color: "#fff" } : { background: "transparent", borderColor: t.cardBorder, color: t.textMuted }}>
               {k.label} <span style={{ opacity: .75, fontVariantNumeric: "tabular-nums" }}>{k.n}</span>
@@ -352,7 +352,12 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
       )}
       <div className="h-px bg-t-card-border" />
       {/* List */}
-      <div className="max-h-[392px] max-desktop:max-h-none max-desktop:flex-1 overflow-y-auto overscroll-contain">
+      {/* min-h-0 is what makes this scroll on a phone. A flex child defaults to
+          min-height:auto and refuses to shrink below its content, so flex-1 with
+          overflow-y-auto grew the list past the sheet instead of scrolling
+          inside it — and the sheet's overflow:hidden then clipped the last
+          notifications out of reach entirely. */}
+      <div className="max-h-[392px] max-desktop:max-h-none max-desktop:flex-1 max-desktop:min-h-0 overflow-y-auto overscroll-contain">
         {display.length > 0 ? display.map((n, i) => {
           const isRead = readIds.has(n.id) || (readAllAt && n.ts && n.ts <= readAllAt);
           const newDay = i === 0 || display[i - 1].day !== n.day;
