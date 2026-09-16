@@ -37,12 +37,6 @@ as the work. (Formerly docs/BACKLOG.md.)
   ₦1,500" while held and "up to ₦3,000" when restored. The revert carries all
   of it; that is why it is a revert and not a hand edit.
 
-- **Two enabled groups have no enabled tier — Threads Followers and X/Twitter
-  Followers 🇺🇸.** They render as cards a customer can open and not order from,
-  the same state the whole of Spotify was in. Left alone on 15 Sep because only
-  Spotify was in scope: either re-enable a tier or disable the group. Worth a
-  guard so a group can never be enabled without one.
-
 - **Reseller tier ladder — parked 12 Sep 2026, scope complete.** Five tiers
   (Starter 10% → Wholesale 30%) on rolling 30-day retail-equivalent spend,
   automatic promotion on the daily cron, month-end demotion after a grace
@@ -606,6 +600,21 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **The two empty groups are filled, and the hole that emptied them is shut**
+  (16 Sep 2026, `v2.5.85`). Threads Followers and X/Twitter Followers 🇺🇸 were
+  enabled with zero tiers, rendering as cards a customer could open and buy
+  nothing from. Both have real supply, so both got a Budget/Standard/Premium
+  ladder off mtp and dao — ₦3,162 / ₦15,192 / ₦40,363 and ₦4,082 / ₦10,660 /
+  ₦50,612 — each refill promise matching what the provider states in its own
+  name, all priced by `calculateTierPrice`.
+
+  The guard the note asked for already existed in two places and missed the
+  third: enabling a group with nothing orderable is refused, and disabling the
+  last orderable tier takes the group with it, but **deleting** it did not.
+  That is how all three stranded groups actually happened. `delete-tier` calls
+  `closeStrandedGroups` now. Enabled groups with no enabled tier: 0.
+
 
 - **jap is down to zero live tiers, so the provider can be dropped** (16 Sep
   2026, `v2.5.84`). Clubhouse Followers and the three Tidal groups are switched

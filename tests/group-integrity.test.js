@@ -35,6 +35,20 @@ describe('a group cannot be a dead end', () => {
     expect(groups).toMatch(/closeStrandedGroups\(prisma, \[updated\.groupId\]\)/);
   });
 
+  it('takes the group down when its last orderable tier is deleted', () => {
+    // The hole the other two guards left open, and the one that actually
+    // stranded every group we found: Spotify Podcast Plays, Threads Followers
+    // and X/Twitter Followers 🇺🇸 were each left enabled with zero tiers
+    // because the last tier was deleted rather than switched off, and only the
+    // disable path called the cascade.
+    const del = groups.slice(groups.indexOf("action === 'delete-tier'"), groups.indexOf("action === 'recalculate-prices'"));
+    expect(del).toMatch(/await prisma\.serviceTier\.delete\(\{ where: \{ id: tierIdToDelete \} \}\);/);
+    expect(del).toMatch(/closeStrandedGroups\(prisma, \[existing\.groupId\]\)/);
+    // After the delete, not before — the tier still counts until it is gone.
+    expect(del.indexOf('serviceTier.delete')).toBeLessThan(del.indexOf('closeStrandedGroups'));
+    expect(del).toMatch(/its last orderable tier was deleted/);
+  });
+
   it('does the same when a disabled service cascades through its tiers', () => {
     expect(services).toMatch(/closeStrandedGroups\(prisma, affected\.map\(t => t\.groupId\)\)/);
   });
