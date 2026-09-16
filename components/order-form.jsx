@@ -289,7 +289,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
       {fullList && (
         <>
           <div className="mx-5 max-md:mx-3.5 mt-3 rounded-lg py-2 px-3 flex items-center gap-2 flex-wrap" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)", border: `1px solid ${t.cardBorder}` }}>
-            <span className="text-[11px] leading-[1.5] flex-1 min-w-0" style={{ color: dark ? "#a09890" : "#6e6a65" }}>{tr("Sold as listed — the refill and speed shown on this service are the terms you get.")}</span>
+            <span className="text-[11px] leading-[1.5] flex-1 min-w-0" style={{ color: dark ? "#a09890" : "#6e6a65" }}>{tr("Sold as listed — the terms shown are the terms you get.")}</span>
             {onBackToPicks && <button type="button" onClick={onBackToPicks} className="text-[11px] font-bold cursor-pointer border-none bg-transparent font-[inherit] shrink-0 inline-flex items-center gap-1" style={{ color: t.accentInk }}>{tr("Use Nitro's pick instead")}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="dir-flip"><polyline points="9 18 15 12 9 6"/></svg></button>}
           </div>
           <FullListRate fullList={fullList} onVote={onVote} onNeedOrder={() => toast.info(tr("Order it first"), tr("Rating is for people who have actually used the service."))} dark={dark} t={t} />

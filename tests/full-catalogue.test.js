@@ -72,7 +72,7 @@ describe('what a customer is shown', () => {
     const { rows } = one([svc()], { usdRate });
     expect(rows).toHaveLength(1);
     expect(rows[0].label).toBe('Instagram Followers');
-    expect(rows[0].attrs).toEqual(['30-day refill', 'Instant start', 'High quality']);
+    expect(rows[0].attrs).toEqual(['30-day refill', 'Instant', 'High quality']);
     // Nothing the provider wrote survives anywhere on the row.
     for (const value of [rows[0].label, ...rows[0].attrs]) {
       expect(looksLikeProviderText(value), `provider text in "${value}"`).toBe(false);
@@ -480,6 +480,27 @@ describe('which tile a service lands on', () => {
     // Otherwise Google reviews filed under a junk category reach no tile.
     expect(platformOf('Google Custom Reviews | Turkey | 30 Day Refill', 'Provided')).toBe('google');
     expect(platformOf('Trustpilot Reviews', '🔵')).toBe('trustpilot');
+  });
+
+  it('reads a platform named as a traffic source as web traffic', () => {
+    // "USA Traffic from Instagram" is website traffic — Instagram is where the
+    // visitor comes from, not the thing being grown. 95 orderable rows say this
+    // and 30 of them were sitting on a social tile, so a customer opening
+    // Instagram to buy followers found website traffic among them.
+    expect(platformOf('USA Traffic from Instagram [USA 🇺🇸]', 'USA')).toBe('webtraffic');
+    expect(platformOf('Website Traffic From Google [WW]', 'Web')).toBe('webtraffic');
+    expect(platformOf('Worldwide Traffic from Mixed Social Networks', 'Worldwide')).toBe('webtraffic');
+    // And the 65 that named no platform at all reached no tile before this, so
+    // they were orderable and unreachable.
+    expect(platformOf('🇯🇵 Crypto Niche Traffic from Japan', 'Cryptocurrency')).toBe('webtraffic');
+  });
+
+  it('still reads a platform that merely mentions traffic as that platform', () => {
+    // The rule is about a source, not the word. These are really LinkedIn and
+    // really YouTube, and blunting them to web traffic would be the same bug
+    // pointing the other way.
+    expect(platformOf('LinkedIn Post Clicks [Organic Traffic]', 'LinkedIn')).toBe('linkedin');
+    expect(platformOf('YouTube Views [High Retention Traffic]', 'YouTube')).toBe('youtube');
   });
 
   it('declines to guess when a name says two platforms', () => {

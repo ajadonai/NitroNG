@@ -179,7 +179,10 @@ describe('the most liked filter', () => {
   it('counts as a filter, not a sort', () => {
     // It decides what is in the list. Best rated, which orders it, stays in the
     // sort — two controls, two jobs, the mistake "Refill first" was removed for.
-    expect(full).toMatch(/if \(likedOn\) l = l\.filter/);
+    // It sits in NARROW, the named list of things that decide what is in the
+    // list — which is also what lets a dropdown count itself out when working
+    // out which of its own options are still reachable.
+    expect(full).toMatch(/out\.push\(\["liked", r => approvalOf\(r\) >= WELL_LIKED\]\)/);
     expect(full).toMatch(/\{ key: "rated", label: msg\("Best rated"\), needsVotes: true \}/);
   });
 
@@ -224,5 +227,89 @@ describe('the saved and ordered filters are recognisable on a phone', () => {
   it('keeps both filters mapped, so neither can go plain again', () => {
     const map = src.slice(src.indexOf('const MINE_ICON = {'), src.indexOf('const MINE_ROW = ['));
     for (const key of ['ordered', 'saved']) expect(map).toContain(`${key}:`);
+  });
+});
+
+/**
+ * A dropdown may only offer what tapping it would actually leave.
+ *
+ * Both menus used to count the whole platform. With Followers and "under
+ * ₦1,000" already on, the origin menu still offered Turkish because the
+ * platform carried forty Turkish services somewhere — and tapping it emptied
+ * the list. The counts are taken against every other active filter now, with
+ * the facet's own filter left out, because counting Turkish against Turkish
+ * only ever returns "all of them".
+ */
+describe('the filter menus offer only what is reachable', () => {
+  const full = read('components/full-list.jsx');
+  it('counts a facet against everything except itself', () => {
+    expect(full).toMatch(/const facet = useCallback\(\(except\) => \{/);
+    expect(full).toMatch(/NARROW\.filter\(\(\[k\]\) => k !== except\)/);
+    // And the type applies, because a menu above a list of Followers has to
+    // describe Followers — except during a search, which is platform-wide.
+    expect(full).toMatch(/return q \|\| type === "all" \? l : l\.filter\(r => r\.type === type\);/);
+  });
+
+  it('counts the origin menu and the price menu off that, not off the platform', () => {
+    expect(full).toMatch(/const rows = facet\("location"\);/);
+    expect(full).toMatch(/const rows = facet\("price"\);/);
+  });
+
+  it('keeps a chosen option listed even when nothing is left under it', () => {
+    // A select showing a value absent from its own options is worse than a
+    // zero, and the empty state already offers the way back out.
+    expect(full).toMatch(/\.filter\(\(\[k, c\]\) => c > 0 \|\| k === activeLocation\)/);
+    expect(full).toMatch(/offeredBands\.filter\(b => b\.key === activePrice \|\|/);
+  });
+
+  it('still validates a stored choice against the platform, not the facet', () => {
+    // Otherwise tapping a price band would silently reset the origin, because
+    // the origin briefly stopped being offered.
+    expect(full).toMatch(/const activeLocation = offeredLocations\.some/);
+    expect(full).toMatch(/const activePrice = offeredBands\.some/);
+  });
+});
+
+/**
+ * One control over both grades. A provider writes the top grade three ways and
+ * the ordinary one two; somebody filtering for quality does not want the best
+ * services dropped because they picked the other word.
+ */
+describe('the quality filter', () => {
+  const full = read('components/full-list.jsx');
+  const attrs = read('lib/service-attrs.js');
+  it('covers both grades from one list', () => {
+    expect(attrs).toMatch(/export const QUALITY_ATTRS = \['Ultra high quality', 'High quality'\];/);
+    expect(full).toMatch(/out\.push\(\["quality", r => isGraded\(r\.attrs\)\]\)/);
+  });
+
+  it('is not offered on a platform carrying no graded service', () => {
+    expect(full).toMatch(/const hasQuality = useMemo\(\(\) => all\.some\(r => isGraded\(r\.attrs\)\), \[all\]\);/);
+    expect(full).toMatch(/const qualityOn = qualityOnly && hasQuality;/);
+    expect(full).toMatch(/\{hasQuality && \(/);
+  });
+
+  it('offers a way back out of it', () => {
+    expect(full).toMatch(/\{qualityOn && <button onClick=\{\(\) => setQualityOnly\(false\)\}/);
+  });
+});
+
+/**
+ * The abbreviation belongs to the narrow screen, not to the vocabulary. The
+ * reseller API sends "Ultra high quality"; a 360px row shows UHQ.
+ */
+describe('the grade badges', () => {
+  const full = read('components/full-list.jsx');
+  const attrs = read('lib/service-attrs.js');
+  it('abbreviates in CSS rather than by measuring the viewport', () => {
+    // The row is server-rendered. A width read on the client would hydrate
+    // with whichever form the server guessed.
+    expect(full).toMatch(/<span className="max-md:hidden">\{attr\}<\/span>/);
+    expect(full).toMatch(/<span className="md:hidden" title=\{attr\}>\{short\}<\/span>/);
+  });
+
+  it('abbreviates only the two that do not fit', () => {
+    expect(attrs).toMatch(/'Ultra high quality': 'UHQ'/);
+    expect(attrs).toMatch(/'High quality': 'HQ'/);
   });
 });
