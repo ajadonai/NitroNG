@@ -29,7 +29,12 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   const [search, setSearch] = useState("");
   const [platFilter, setPlatFilter] = useState("all");
   const [ngFilter, setNgFilter] = useState(false);
-  const [hideOff, setHideOff] = useState(false);
+  // Defaults to on. The builder fetches every group and tier with no enabled
+  // filter, so out of the box it listed 231 groups and 399 tiers when only 169
+  // and 267 are live — the dead ones outnumbered nothing, they just buried the
+  // real menu. The toggle is still there to bring them back, and nothing is
+  // deleted: an off service is off, not gone.
+  const [hideOff, setHideOff] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [newG, setNewG] = useState({ name: "", platform: "", type: "followers", nigerian: false });
   const [busy, setBusy] = useState(false);
