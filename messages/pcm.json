@@ -2287,5 +2287,20 @@
   "Can I write the review text myself?": "I fit write di review text myself?",
   "Yes, on the services that support custom comments. You send one review per line and each goes out as written. This is the option worth paying for — specific, ordinary language about the thing you actually do is what makes a review believable.": "Yes, on di services wey support custom comments. You send one review per line and each one dey go out as written. Dis na di option wey worth di money — specific, ordinary language about di thing wey you actually dey do na wetin dey make review believable.",
   "Is this safe for my business listing?": "Dis safe for my business listing?",
-  "It carries real risk and we would rather say so. Google can filter reviews, and in serious cases it can flag a listing. Keep it small, keep it slow, keep asking real customers, and do not let bought reviews outnumber genuine ones.": "E carry real risk and we rather talk am. Google fit filter reviews, and for serious cases e fit flag listing. Keep am small, keep am slow, keep asking real customers, and no let bought reviews outnumber genuine ones."
+  "It carries real risk and we would rather say so. Google can filter reviews, and in serious cases it can flag a listing. Keep it small, keep it slow, keep asking real customers, and do not let bought reviews outnumber genuine ones.": "E carry real risk and we rather talk am. Google fit filter reviews, and for serious cases e fit flag listing. Keep am small, keep am slow, keep asking real customers, and no let bought reviews outnumber genuine ones.",
+  "The service ID": "Di service ID",
+  "Every service keeps the same ID for as long as we carry it, so this is how you find one again — paste it into the search box. It is also the ID a reseller uses through the API.": "Every service dey keep di same ID for as long as we carry am, so na so you go take find am again — paste am inside di search box. Na di same ID reseller dey use through di API.",
+  "What happens if it drops": "Wetin go happen if e drop",
+  "The provider's own promise, not ours. Some say 30 days, some say lifetime, some say no refill at all — and a service with no refill is a cheaper product, not a broken one.": "Na di provider own promise, no be our own. Some dey talk 30 days, some dey talk lifetime, some talk say no refill at all — and service wey no get refill na cheaper product, no be spoilt one.",
+  "Instant": "Instant",
+  "When it starts": "Wen e go start",
+  "Instant means minutes. Anything without it says 0-24 hours, which is the outside edge rather than a prediction. A precise figure like “Starts in 0-3 min” is the provider's own.": "Instant mean minutes. Anything wey no get am dey talk 0-24 hours, wey be di outside edge, no be prediction. Precise figure like “Starts in 0-3 min” na di provider own.",
+  "What the accounts are like": "Wetin di accounts be like",
+  "The provider's grade: ultra high quality and high quality. It is their word, not a Nitro test — which is what the whole of this list is.": "Na di provider grade: ultra high quality and high quality. Na dia word, no be Nitro test — na wetin dis whole list be.",
+  "Save it for next time": "Save am for next time",
+  "A list this size is hard to search twice. The star keeps a service on your Saved tab, and unlike the rating it costs nothing and needs no order behind it.": "List wey big like dis hard to search twice. Di star dey keep service for your Saved tab, and unlike di rating e no cost anything and e no need order behind am.",
+  "What other buyers said": "Wetin other buyers talk",
+  "The only opinion on this list that is not the provider's. It appears once three people who actually ordered it have voted, and you can only vote on something you have bought.": "Na di only opinion for dis list wey no be di provider own. E dey show once three people wey actually order am don vote, and na only something wey you don buy you fit vote for.",
+  "How to read this list": "How to read dis list",
+  "Nitro has not tested anything here. Every row carries the provider's own terms, printed on the row, and these are the six things worth reading before you order.": "Nitro never test anything for here. Every row carry di provider own terms, print for di row, and na dis six things worth reading before you order."
 }

@@ -67,7 +67,8 @@
     "20260915120000_add_service_platform": "259babfb6f70502cf27ffdd4ee3c6f63c65d3b4bc8afa00659bb0bb8afa7df98",
     "20260915140000_add_service_favourites": "b14584c33819a91f5c34c295f6aefc779f8c29924de0aadfa3dd37b7bd28f1ed",
     "20260916150000_add_notif_cleared_ids": "e05a43fb5374ee0b353edd184f3ac8eed935e24270990f456ad8a99e42637c8d",
-    "20260916160000_add_pinned_links": "0c85a3f80bba28edf78360377af077acaba8afa98cba2065bd18f5d653027b08"
+    "20260916160000_add_pinned_links": "0c85a3f80bba28edf78360377af077acaba8afa98cba2065bd18f5d653027b08",
+    "20260916170000_drop_reseller_catalog": "38e1f1a4e8a2c6ecbec46df5c44f6d96b9a3ac18406a190376799b55e4d5f55a"
   },
   "appliedOverrides": {
     "0_init": "c864f484fce76fd7b8db286181967d98cdb91559be1081e34df0fd65cc60b7c5",

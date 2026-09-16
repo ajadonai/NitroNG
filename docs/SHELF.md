@@ -533,16 +533,6 @@ as the work. (Formerly docs/BACKLOG.md.)
   with kick, threads and webtraffic, which have both curated groups and real
   volume behind them.
 
-- **`ResellerProfile.catalog` is now unread** (16 Sep 2026, `v2.5.77`). The
-  column still exists and nothing reads or writes it. Dropping it is a
-  migration and a separate decision; it was left in place to keep the history
-  of who was on which catalogue.
-
-- **The full list has no guide of its own** (16 Sep 2026). The main tour
-  deliberately forces the curated view, so it cannot teach the full list. If
-  the full list is going to carry a landing section pointing at it, it probably
-  wants a short separate guide — not started, not scoped.
-
 - **Reseller API follow-ups** (v2 of the API, not started): drip-feed and
   multi-day parameters, webhooks, per-key IP allowlists. Brief:
   `docs/v2/reseller_api_brief.md`.
@@ -557,6 +547,15 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **`ResellerProfile.catalog` dropped, and the full list has a guide** (16 Sep
+  2026, `v2.5.93`). The column had been unread since `v2.5.77`; the three values
+  it held are recorded in the migration itself so the history survives the drop.
+  And the full list now has "How to read this list" — six annotated facts off a
+  single row, reachable from the notice above it, reopenable. The order tour
+  could never teach this: it forces the curated view on purpose, because its
+  argument is that Nitro tests the picks.
+
 
 - **The `[dir="ltr"]` trap is written down and the three fixes are pinned**
   (16 Sep 2026, `v2.5.92`). CLAUDE.md now has a section on why a media query

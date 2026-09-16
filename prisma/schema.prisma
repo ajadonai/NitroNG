@@ -1286,7 +1286,6 @@ model ResellerProfile {
   userId  String  @unique
   user    User    @relation(fields: [userId], references: [id])
   apiKey  String  @unique
-  catalog String  @default("curated") // "curated" | "full"
   enabled Boolean @default(true)
 
   // Who granted wholesale pricing, when, and on what basis. Without this a
