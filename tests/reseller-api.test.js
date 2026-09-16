@@ -18,6 +18,10 @@ vi.mock('@/lib/reseller', () => ({
   getResellerTerms: vi.fn(),
   getMarkupSettings: vi.fn().mockResolvedValue({}),
   wholesaleOf: vi.fn((retail) => Math.round(retail * 0.8)),
+  // The margin floor needs a cost beside every price. Stubbed rather than
+  // omitted: leaving it out makes the route throw on import, which is a
+  // confusing way to be told a real export is missing.
+  costKoboPer1k: vi.fn((cents) => Number(cents) * 1600),
 }));
 vi.mock('@/lib/full-catalogue', () => ({ platformOf: vi.fn(() => 'instagram') }));
 vi.mock('@/lib/reseller-format', () => ({

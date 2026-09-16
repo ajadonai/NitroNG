@@ -2,7 +2,8 @@ import { log } from "@/lib/logger";
 import { getCurrentUser } from '@/lib/auth';
 import { getServiceCatalogue } from '@/lib/service-catalog';
 import { getEligibleSpendKobo, getNitroStatus } from '@/lib/nitro-rewards';
-import { getResellerTerms, getMarkupSettings, wholesaleOf } from '@/lib/reseller';
+import { getResellerTerms, getMarkupSettings, wholesaleOf, costKoboPer1k } from '@/lib/reseller';
+import prisma from '@/lib/prisma';
 
 export async function GET(req) {
   try {
@@ -21,12 +22,21 @@ export async function GET(req) {
     let priced = groups;
     if (terms) {
       const settings = await getMarkupSettings();
+      // Costs are fetched here rather than cached on the catalogue, because the
+      // catalogue is one shared object served to every customer and provider
+      // cost is the last thing that should ride along in it. One query, keyed
+      // by the serviceIds already on the tiers, and it only runs for resellers.
+      const ids = [...new Set(groups.flatMap(g => g.tiers.map(t => t.serviceId).filter(Boolean)))];
+      const costRows = ids.length
+        ? await prisma.service.findMany({ where: { id: { in: ids } }, select: { id: true, costPer1k: true } })
+        : [];
+      const costOf = new Map(costRows.map(r => [r.id, costKoboPer1k(r.costPer1k, settings)]));
       priced = groups.map(g => ({
         ...g,
         tiers: g.tiers.map(t => ({
           ...t,
           // Stored in naira here, and resellerPrice works in kobo.
-          price: wholesaleOf(Math.round(t.price * 100), terms, settings) / 100,
+          price: wholesaleOf(Math.round(t.price * 100), terms, settings, costOf.get(t.serviceId) ?? null) / 100,
         })),
       }));
     }

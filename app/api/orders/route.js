@@ -435,7 +435,10 @@ export async function patchOrderForSession(session, body, req) {
       // never alongside them.
       const reorderTerms = await getResellerTerms(session.id);
       if (reorderTerms) {
-        charge = wholesaleOf(charge, reorderTerms, await getMarkupSettings());
+        // `cost` above is this order's cost in kobo, the same basis as `charge`,
+        // which is what the margin floor needs — a per-1k floor against a
+        // 250-unit charge would clamp small orders up to the price of a thousand.
+        charge = wholesaleOf(charge, reorderTerms, await getMarkupSettings(), cost);
       }
 
       // Apply Nitro Status discount to reorder
@@ -881,7 +884,10 @@ export async function createOrderForSession(session, body, req, { source = 'web'
     // that reaches below cost.
     const resellerTerms = await getResellerTerms(session.id);
     if (resellerTerms) {
-      charge = wholesaleOf(charge, resellerTerms, await getMarkupSettings());
+      // `cost` is this order's cost in kobo, the same basis as `charge`, which
+      // is what the margin floor needs. Without it a 30% rate on the thinnest
+      // band leaves 4.8% and 33.3% sells at what we paid.
+      charge = wholesaleOf(charge, resellerTerms, await getMarkupSettings(), cost);
     }
 
     // Apply Nitro Status discount based on eligible lifetime spend

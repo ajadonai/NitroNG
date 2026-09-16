@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getCurrentUser } from '@/lib/auth';
-import { getResellerTerms, getMarkupSettings, wholesaleOf } from '@/lib/reseller';
+import { getResellerTerms, getMarkupSettings, wholesaleOf, resellerFloorKobo } from '@/lib/reseller';
 import { formatResellerService, dedupeCategoryLabels } from '@/lib/reseller-format';
 import { FULL_WHERE } from '@/lib/full-catalogue';
 
@@ -97,7 +97,16 @@ export async function GET(req) {
       // The widened prices cron is still working through years of stale prices.
       // A price at or below cost is stale, not a bargain — hide it rather than
       // quote a number we would never honour.
+      //
+      // The same goes for one that cannot clear the reseller margin floor. Three
+      // services are priced at 1.02x to 1.11x markup at RETAIL, so a walk-in
+      // customer already earns us under 10% on them; the floor caps wholesale at
+      // retail rather than charging a reseller more than the public price, which
+      // means those rows would quote a margin we said we would never accept.
+      // Hiding them is the honest answer until the retail price is fixed.
       if (!retail || retail <= costKobo) { hiddenStale++; continue; }
+      const floor = resellerFloorKobo(costKobo, settings);
+      if (floor !== null && retail < floor) { hiddenStale++; continue; }
       const fmt = formatResellerService(s.name, s.category);
       rows.push({
         id: s.resellerMap.apiId,
@@ -105,7 +114,7 @@ export async function GET(req) {
         attrs: fmt.attrs,
         grade: fmt.grade,
         category: s.platform,
-        price: wholesaleOf(retail, terms, settings) / 100,
+        price: wholesaleOf(retail, terms, settings, costKobo) / 100,
         min: s.min,
         max: s.max,
         refill: s.refill,

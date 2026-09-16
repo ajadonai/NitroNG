@@ -152,7 +152,12 @@ describe('the drift guard compares like with like', () => {
   it('resolves the quoting terms once, outside the row loop', () => {
     expect(route).toMatch(/const quoteTerms = await getResellerTerms\(session\.id\);/);
     expect(route).toMatch(/const quoteMarkup = quoteTerms \? await getMarkupSettings\(\) : null;/);
-    expect(route).toMatch(/const asQuoted = \(retailKobo\) => \(quoteTerms \? wholesaleOf\(retailKobo, quoteTerms, quoteMarkup\) : retailKobo\);/);
+    // It also takes the service's per-1k cost now, because the margin floor is
+    // per service: the same rate is worth 30% on a cheap one and 25.9% on the
+    // thinnest. Both sides of the comparison stay per 1k.
+    expect(route).toMatch(/const asQuoted = \(retailKobo, costPer1k\) => \(quoteTerms/);
+    expect(route).toMatch(/wholesaleOf\(retailKobo, quoteTerms, quoteMarkup, costKoboPer1k\(costPer1k, quoteMarkup\)\)/);
+    expect(route).toMatch(/asQuoted\(serverPrice, service\.costPer1k\)/);
   });
 
   it('compares the quoted price against what the client sent', () => {
@@ -165,7 +170,9 @@ describe('the drift guard compares like with like', () => {
     // asQuoted decides whether the quote still stands. The charge is computed
     // from serverPrice and the transaction applies wholesale to it separately.
     expect(route).toMatch(/const charge = Math\.ceil\(serverPrice \* qty \/ 100_000\) \* 100;/);
-    expect(route).toMatch(/wholesaleOf\(r\.charge, bulkTerms, bulkMarkup\)/);
+    // r.cost is the row's whole-order cost, matching r.charge — a per-1k floor
+    // against a 250-unit charge would clamp small orders up to a thousand.
+    expect(route).toMatch(/wholesaleOf\(r\.charge, bulkTerms, bulkMarkup, r\.cost\)/);
   });
 
   it('hands back prices in the money the cart is holding', () => {
