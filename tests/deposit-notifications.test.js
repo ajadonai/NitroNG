@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   tgPayment: vi.fn(),
   tgBonusWithheld: vi.fn(),
   tgOutreachAlert: vi.fn(),
+  tgOutreachConversion: vi.fn(),
+  attributedTouch: vi.fn(),
   sendOutreach: vi.fn(),
   transactionCount: vi.fn(),
   sendEmail: vi.fn(),
@@ -23,7 +25,10 @@ vi.mock('@/lib/telegram', () => ({
   tgPayment: mocks.tgPayment,
   tgBonusWithheld: mocks.tgBonusWithheld,
   tgOutreachAlert: mocks.tgOutreachAlert,
+  tgOutreachConversion: mocks.tgOutreachConversion,
+  STAFF_NAMES: { '1935066216': 'Soludo' },
 }));
+vi.mock('@/lib/outreach-attribution', () => ({ attributedTouch: mocks.attributedTouch }));
 vi.mock('@/lib/ify/outreach', () => ({ sendOutreach: mocks.sendOutreach }));
 vi.mock('@/lib/prisma', () => ({
   default: { transaction: { count: mocks.transactionCount } },
@@ -64,6 +69,10 @@ beforeEach(() => {
   mocks.tgPayment.mockResolvedValue(undefined);
   mocks.tgBonusWithheld.mockResolvedValue(undefined);
   mocks.tgOutreachAlert.mockResolvedValue(undefined);
+  mocks.tgOutreachConversion.mockResolvedValue(undefined);
+  // Nobody contacted this person, which is the ordinary case: 31 of 2,406
+  // deposits over 60 days attribute to an agent.
+  mocks.attributedTouch.mockResolvedValue(null);
   mocks.sendOutreach.mockResolvedValue({ ok: true });
   mocks.transactionCount.mockResolvedValue(0);
   mocks.sendEmail.mockResolvedValue({ success: true });
