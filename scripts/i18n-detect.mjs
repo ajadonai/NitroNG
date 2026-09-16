@@ -236,6 +236,65 @@ const PROSE_ATTR = new RegExp(`\\b(${PROSE_NAMES})=${QUOTED}`, "g");
 // earns its keep: `function txStatusMeta(tx, dk)` is a plain helper called from
 // a render, and the older `[A-Za-z]` here let the wrapper put tr() inside it —
 // where tr is not a parameter, not in scope, and a ReferenceError on first use.
+/**
+ * A quoted string sitting bare inside an array literal: `[value, "Orders"]`.
+ *
+ * The shape that let English ship under a green guard. The hero stats were
+ * `[[siteStats.orders || "0", "Orders"], [siteStats.users || "0", "Accounts"]]`
+ * mapped to `<span>{label}</span>`, and an Arabic reader saw ORDERS, ACCOUNTS
+ * and DELIVERY in English while this file reported components/landing-v3.jsx
+ * as having nothing in it at all. It knows markup and prose-ish keys; a bare
+ * element of an array is neither.
+ *
+ * It cannot be a hard rule. 534 strings across 40 files match it, and most are
+ * correctly English: platform names (Instagram, Boomplay), tier names (Budget,
+ * Standard, Premium), the names in the testimonials, HTTP verbs in the API
+ * docs. Demanding 534 exemptions would be worse than the bug.
+ *
+ * So it is a ratchet instead. Every file carries the count it had the day this
+ * went in, and may never exceed it — 43 files are already at zero and can never
+ * gain one. It does not clean anything up; it stops the same mistake being made
+ * twice in the places that are currently right.
+ */
+const ARRAY_PROSE = /(?<=[[,]\s*)(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')(?=\s*[,\]])/g;
+
+/** Prose rather than an identifier, a class, a colour or a version. */
+function looksLikeProse(v) {
+  return v.length >= 3 && v.length <= 90
+    && /^[A-Z]/.test(v) && /[a-z]/.test(v)
+    && !/[/#<>{}$\\]/.test(v)
+    && !/^[A-Z][a-z]+([A-Z][a-z]*)+$/.test(v)   // CamelCase identifiers
+    && !/^\w+\.\w+/.test(v)                     // dotted paths
+    && !/^\d/.test(v);
+}
+
+/** `Map<relativePath, Set<string>>` of bare array prose, for the ratchet. */
+export function scanArrayProse(root = process.cwd()) {
+  const out = new Map();
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (!/\.(js|jsx)$/.test(entry.name)) continue;
+      const rel = path.relative(root, full).split(path.sep).join('/');
+      if (NOT_SCANNED.some(re => re.test(rel))) continue;
+      const src = fs.readFileSync(full, 'utf8');
+      // Only files that already translate something. A file with no tr() at
+      // all is not a translated surface and is somebody else's problem.
+      if (!/\b(tr|msg)\s*\(/.test(src)) continue;
+      const found = new Set();
+      for (const m of src.matchAll(ARRAY_PROSE)) {
+        const v = m[1] ?? m[2];
+        if (v && looksLikeProse(v)) found.add(v);
+      }
+      if (found.size) out.set(rel, found);
+    }
+  };
+  for (const dir of SCANNED) walk(path.join(root, dir));
+  return out;
+}
+
 const COMPONENT_START = /^(?:export\s+)?(?:default\s+)?function\s+[A-Z]\w*|^(?:export\s+)?const\s+[A-Z]\w*\s*=\s*(?:\(|function|forwardRef|memo)/;
 
 function componentMask(lines) {
