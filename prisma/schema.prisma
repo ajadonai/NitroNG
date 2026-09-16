@@ -65,6 +65,7 @@ model User {
   notifReadAllAt         DateTime?
   notifReadIds           String? // JSON array of read notification IDs
   notifClearedIds        String? // JSON array of dismissed notification IDs
+  pinnedLinks            String? // JSON map of platform id -> pinned link
   themePreference        String    @default("auto") // "auto" | "night" | "day"
   perPagePreference      Int       @default(10) // Orders per page: 10, 25, 50
   tourCompleted          Boolean   @default(false)

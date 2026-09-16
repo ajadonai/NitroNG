@@ -188,11 +188,6 @@ as the work. (Formerly docs/BACKLOG.md.)
      the rows exist. Dropping the models is a separate, destructive decision
      nobody needs to take yet.
 
-- **Saved handles — the pin is per-device.** Shipped as localStorage in
-  order-form.jsx; a synced default needs a `pinnedLinks` column on User and a
-  migration. Do it when the first person asks why their pin didn't follow them
-  to another phone.
-
 - **Foreign payment methods — steps 1 and 2 shipped 8 Sep 2026, steps 3 and 4
   remain.** Signup accepts NG/US/GB/GH/KE (`2c1ac43a`). Flutterwave charges
   in the customer's currency where it can collect in it (GHS, KES — step 3
@@ -579,6 +574,14 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **A pinned handle follows the person, not the phone** (16 Sep 2026,
+  `v2.5.89`). `User.pinnedLinks` holds a JSON map of platform id to link, served
+  on the same request that fetches the recent links so the page still makes one
+  call. One pin per platform, because one box gets filled; cleared with a null
+  link rather than a second action; and the column is parsed defensively since
+  it is text and may hold anything. Migration applied.
+
 
 - **A dismissed notification stays dismissed on every device** (16 Sep 2026,
   `v2.5.88`). The bell's × hid the row where it was tapped and marked it read

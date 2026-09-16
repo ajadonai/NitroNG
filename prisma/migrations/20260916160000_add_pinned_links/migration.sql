@@ -1,0 +1,13 @@
+-- A pinned handle should follow the person, not the phone.
+--
+-- New Order offers the last five links somebody ordered for on a platform, and
+-- one of them can be pinned so it fills the box next time. That pin lived in
+-- localStorage, so it was per-device: a creator who pins their main account on
+-- a laptop opens the same page on their phone and finds nothing pinned, which
+-- is the opposite of what pinning is for.
+--
+-- A JSON object keyed by platform id — {"instagram":"https://…"} — in a
+-- nullable text column, the same shape notifReadIds and notifClearedIds use. A
+-- table would be three columns and a join for a value that is never queried,
+-- only read whole.
+ALTER TABLE "users" ADD COLUMN "pinnedLinks" TEXT;

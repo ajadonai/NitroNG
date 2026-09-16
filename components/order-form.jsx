@@ -218,9 +218,16 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
     let dead = false;
     fetch(`/api/orders/recent-links?platform=${encodeURIComponent(platform)}`)
       .then(r => (r.ok ? r.json() : { links: [] }))
-      .then(d => { if (!dead) setRecentLinks(Array.isArray(d.links) ? d.links : []); })
-      .catch(() => {});
-    try { setPinned(localStorage.getItem(`nitro-pin:${platform}`) || null); } catch { setPinned(null); }
+      .then(d => {
+        if (dead) return;
+        setRecentLinks(Array.isArray(d.links) ? d.links : []);
+        // The pin arrives with the links, from the account rather than the
+        // browser. It used to be read out of localStorage here, which made it
+        // per-device: a handle pinned on a laptop was simply absent on a phone.
+        setPinned(d.pinned || null);
+      })
+      .catch(() => { if (!dead) setPinned(null); });
+    setPinned(null);
     // A different platform is a different list, so it opens closed on page one
     // rather than on page three of the last platform's handles.
     setHandlesOpen(false);
@@ -232,7 +239,13 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const togglePin = (url) => {
     const next = pinned === url ? null : url;
     setPinned(next);
-    try { if (next) localStorage.setItem(`nitro-pin:${platform}`, next); else localStorage.removeItem(`nitro-pin:${platform}`); } catch {}
+    // Optimistic: the star flips immediately and the write follows. A failed
+    // write leaves the old pin on the server, which the next visit corrects —
+    // better than a star that hesitates on every tap.
+    fetch("/api/orders/recent-links", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ platform, link: next }),
+    }).catch(() => {});
   };
   const shortLink = (url) => { const s = String(url).replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""); return s.length > 34 ? s.slice(0, 33) + "…" : s; };
 
