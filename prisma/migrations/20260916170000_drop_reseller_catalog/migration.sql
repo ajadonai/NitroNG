@@ -1,0 +1,14 @@
+-- There is one catalogue now, so a per-account setting can only disagree with
+-- what the API actually does.
+--
+-- The reseller API used to serve the curated tiers as well, gated on this
+-- column, which meant two accounts calling the same endpoint got different
+-- service lists and the same ID could be valid for one and unknown to the
+-- other. v2.5.77 made every key see the full list and stopped reading the
+-- column; nothing has read or written it since.
+--
+-- The history it held, recorded here because the column is about to stop
+-- existing. Three profiles on 16 Sep 2026, every one of them disabled:
+--   full     1
+--   curated  2
+ALTER TABLE "reseller_profiles" DROP COLUMN "catalog";

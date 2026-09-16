@@ -2287,5 +2287,20 @@
   "Can I write the review text myself?": "هل يمكنني كتابة نص التقييم بنفسي؟",
   "Yes, on the services that support custom comments. You send one review per line and each goes out as written. This is the option worth paying for — specific, ordinary language about the thing you actually do is what makes a review believable.": "نعم، في الخدمات التي تدعم التعليقات المخصّصة. ترسل تقييمًا واحدًا في كل سطر ويخرج كل منها كما كُتب. هذا هو الخيار الذي يستحق ثمنه — فاللغة المحدّدة العادية عمّا تفعله فعلًا هي ما يجعل التقييم مقنعًا.",
   "Is this safe for my business listing?": "هل هذا آمن لبطاقة نشاطي التجاري؟",
-  "It carries real risk and we would rather say so. Google can filter reviews, and in serious cases it can flag a listing. Keep it small, keep it slow, keep asking real customers, and do not let bought reviews outnumber genuine ones.": "ينطوي على خطر حقيقي ونفضّل قول ذلك. يمكن لجوجل تصفية التقييمات، وفي الحالات الجادة قد يضع علامة على البطاقة. أبقِه صغيرًا وبطيئًا، واستمر في طلب تقييمات العملاء الحقيقيين، ولا تدع المشتراة تفوق الأصيلة."
+  "It carries real risk and we would rather say so. Google can filter reviews, and in serious cases it can flag a listing. Keep it small, keep it slow, keep asking real customers, and do not let bought reviews outnumber genuine ones.": "ينطوي على خطر حقيقي ونفضّل قول ذلك. يمكن لجوجل تصفية التقييمات، وفي الحالات الجادة قد يضع علامة على البطاقة. أبقِه صغيرًا وبطيئًا، واستمر في طلب تقييمات العملاء الحقيقيين، ولا تدع المشتراة تفوق الأصيلة.",
+  "The service ID": "معرّف الخدمة",
+  "Every service keeps the same ID for as long as we carry it, so this is how you find one again — paste it into the search box. It is also the ID a reseller uses through the API.": "تحتفظ كل خدمة بالمعرّف نفسه طوال فترة توفيرنا لها، وبه تجدها مجددًا — الصقه في مربع البحث. وهو المعرّف نفسه الذي يستخدمه الموزّع عبر الـAPI.",
+  "What happens if it drops": "ماذا يحدث إذا انخفضت",
+  "The provider's own promise, not ours. Some say 30 days, some say lifetime, some say no refill at all — and a service with no refill is a cheaper product, not a broken one.": "إنه وعد المزوّد لا وعدنا. بعضهم يقول 30 يومًا، وبعضهم مدى الحياة، وبعضهم لا تعويض إطلاقًا — والخدمة بلا تعويض منتج أرخص، لا منتج معطوب.",
+  "Instant": "فوري",
+  "When it starts": "متى تبدأ",
+  "Instant means minutes. Anything without it says 0-24 hours, which is the outside edge rather than a prediction. A precise figure like “Starts in 0-3 min” is the provider's own.": "الفوري يعني دقائق. وأي خدمة بدونه تقول 0-24 ساعة، وهي الحدّ الأقصى لا توقّعًا. أما رقم دقيق مثل “Starts in 0-3 min” فهو من المزوّد نفسه.",
+  "What the accounts are like": "كيف تبدو الحسابات",
+  "The provider's grade: ultra high quality and high quality. It is their word, not a Nitro test — which is what the whole of this list is.": "تصنيف المزوّد: جودة عالية جدًا وجودة عالية. إنها كلمته لا اختبار من نيترو — وهذا ينطبق على هذه القائمة كلها.",
+  "Save it for next time": "احفظها للمرة القادمة",
+  "A list this size is hard to search twice. The star keeps a service on your Saved tab, and unlike the rating it costs nothing and needs no order behind it.": "قائمة بهذا الحجم يصعب البحث فيها مرتين. النجمة تحفظ الخدمة في تبويب المحفوظات لديك، وبخلاف التقييم لا تكلّف شيئًا ولا تتطلب طلبًا سابقًا.",
+  "What other buyers said": "ما قاله المشترون الآخرون",
+  "The only opinion on this list that is not the provider's. It appears once three people who actually ordered it have voted, and you can only vote on something you have bought.": "الرأي الوحيد في هذه القائمة الذي ليس من المزوّد. يظهر بمجرد أن يصوّت ثلاثة أشخاص طلبوها فعلًا، ولا يمكنك التصويت إلا على ما اشتريته.",
+  "How to read this list": "كيف تقرأ هذه القائمة",
+  "Nitro has not tested anything here. Every row carries the provider's own terms, printed on the row, and these are the six things worth reading before you order.": "لم يختبر نيترو أي شيء هنا. كل صف يحمل شروط المزوّد مطبوعة عليه، وهذه هي الأمور الستة الجديرة بالقراءة قبل الطلب."
 }

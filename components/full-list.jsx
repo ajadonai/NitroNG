@@ -4,6 +4,7 @@ import { useMoney, useT } from "./locale";
 import { msg } from "../lib/i18n";
 import { ATTR_SHORT, attrKind, isGraded, LOCATION_KEYS, matchesLocation } from "../lib/service-attrs";
 import { NotSureHelp } from "./order-help";
+import { FullListGuide } from "./full-list-guide";
 import { ServiceGlyph } from "./service-glyph";
 
 /* ═══════════════════════════════════════════ */
@@ -351,6 +352,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
   const [sort, setSort] = useState("cheap");
   const [refillOnly, setRefillOnly] = useState(false);
   const [qualityOnly, setQualityOnly] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [location, setLocation] = useState("any");
   const [price, setPrice] = useState("any");
   const [mineOnly, setMineOnly] = useState("any");
@@ -564,7 +566,13 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ color: t.textMuted }} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         <div className="text-[11.5px] leading-[1.5] flex-1 min-w-[190px]" style={{ color: t.textMuted }}>
           <strong style={{ color: t.text }}>{tr("Our wider range.")}</strong>{" "}
-          {tr("Each service brings its own refill and speed.")}
+          {tr("Each service brings its own refill and speed.")}{" "}
+          {/* The order tour cannot teach this list — it forces the curated view
+              on purpose, since its argument is that Nitro tests the picks. So
+              the densest row on the site had nothing explaining it. */}
+          <button onClick={() => setGuideOpen(true)}
+            className="font-bold border-none bg-transparent p-0 cursor-pointer font-[inherit] text-[11.5px] underline underline-offset-2"
+            style={{ color: t.accentInk }}>{tr("How to read this list")}</button>
         </div>
         {cheapestPick != null && onBackToPicks && (
           <button onClick={onBackToPicks}
@@ -835,6 +843,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
           </button>
         )}
       </div>
+      <FullListGuide open={guideOpen} onClose={() => setGuideOpen(false)} dark={dark} t={t} />
     </>
   );
 }
