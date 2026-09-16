@@ -37,27 +37,6 @@ as the work. (Formerly docs/BACKLOG.md.)
   ₦1,500" while held and "up to ₦3,000" when restored. The revert carries all
   of it; that is why it is a revert and not a hand edit.
 
-- **Five jap tiers left, none of them ever ordered** (16 Sep 2026, after
-  `v2.5.83` swapped the two that could be swapped). Clubhouse Followers /
-  Budget and Premium, and Tidal Followers, Listeners and Plays / Standard.
-  Between them: **zero orders, all time.** Four whole groups, every tier jap.
-
-  Neither can be swapped honestly:
-  - **Clubhouse** — one candidate in the whole catalogue, mtp's Turkish-only
-    followers at $8.02 against jap's $7.20 and $8.40. Two tiers, one service:
-    pointing both at it makes Budget and Premium the same product at different
-    prices, and pointing either at it makes a group called plain "Clubhouse
-    Followers" quietly Turkish.
-  - **Tidal** — the only match in the catalogue is "Tidal Music | 1 Month" with
-    min = max = 1000, a subscription package rather than followers, listeners
-    or plays. There is no replacement for any of the three.
-
-  **Recommendation: retire all four groups.** Nobody has ever bought them, no
-  honest replacement exists, and they are the entire remaining exposure when
-  jap is dropped. The alternative is keeping jap alive for products with no
-  demand. Left for Trip because disabling four customer-facing groups is a
-  product call, not a cleanup.
-
 - **Two enabled groups have no enabled tier — Threads Followers and X/Twitter
   Followers 🇺🇸.** They render as cards a customer can open and not order from,
   the same state the whole of Spotify was in. Left alone on 15 Sep because only
@@ -627,6 +606,16 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **jap is down to zero live tiers, so the provider can be dropped** (16 Sep
+  2026, `v2.5.84`). Clubhouse Followers and the three Tidal groups are switched
+  off — five tiers, zero orders between them all time, and no honest replacement
+  in the catalogue: the only Clubhouse candidate is Turkish-only and the only
+  Tidal match is a one-month subscription package. Tiers are disabled rather
+  than deleted, so the price history survives and a switch back is one flag.
+  CLAUDE.md's note that 14 jap tiers block removing the provider is now stale:
+  **0 enabled, in 0 enabled groups.**
+
 
 - **Two of the seven jap tiers moved to providers we are keeping** (16 Sep 2026,
   `v2.5.83`). Boomplay Streams 🇳🇬 to an mtp service that is both cheaper
