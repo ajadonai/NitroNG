@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useMoney, useT } from "./locale";
 import { msg } from "../lib/i18n";
-import { attrKind, LOCATION_KEYS, matchesLocation } from "../lib/service-attrs";
+import { ATTR_SHORT, attrKind, isGraded, LOCATION_KEYS, matchesLocation } from "../lib/service-attrs";
 import { NotSureHelp } from "./order-help";
 import { ServiceGlyph } from "./service-glyph";
 
@@ -168,6 +168,23 @@ function Chip({ kind = "neutral", dark, mono, children }) {
   );
 }
 
+/**
+ * A badge's text, abbreviated only where the screen is too narrow to carry the
+ * words. Both forms are rendered and CSS picks one, rather than measuring the
+ * viewport in JS: this row is server-rendered, and a width read on the client
+ * would hydrate with whichever form the server guessed.
+ */
+function AttrText({ attr }) {
+  const short = ATTR_SHORT[attr];
+  if (!short) return attr;
+  return (
+    <>
+      <span className="max-md:hidden">{attr}</span>
+      <span className="md:hidden" title={attr}>{short}</span>
+    </>
+  );
+}
+
 /** A location chip takes its audience's colour where we have one for it. */
 function chipKind(attr) {
   const kind = attrKind(attr);
@@ -270,7 +287,7 @@ function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, time
         <div className="m text-[10.5px] mt-[3px] leading-none" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>#{row.id}</div>
         <div className="flex items-center gap-1 flex-wrap mt-[5px]">
           <Chip kind={row.refill ? "refill" : "neutral"} dark={dark}>{refillText}</Chip>
-          {rest.map(a => <Chip key={a} kind={chipKind(a)} dark={dark}>{a}</Chip>)}
+          {rest.map(a => <Chip key={a} kind={chipKind(a)} dark={dark}><AttrText attr={a} /></Chip>)}
           {/* Bought before, which on a list with no Nitro guarantee is the only
               endorsement that comes from the person reading it.
               The count and not the date: "last week" does not change what
@@ -333,6 +350,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
   const [type, setType] = useState("all");
   const [sort, setSort] = useState("cheap");
   const [refillOnly, setRefillOnly] = useState(false);
+  const [qualityOnly, setQualityOnly] = useState(false);
   const [location, setLocation] = useState("any");
   const [price, setPrice] = useState("any");
   const [mineOnly, setMineOnly] = useState("any");
@@ -357,7 +375,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
     return () => { cancelled = true; };
   }, [platform]);
 
-  useEffect(() => { setShown(PAGE); setOpenCounts({}); }, [type, sort, refillOnly, location, price, mineOnly, likedOnly, search]);
+  useEffect(() => { setShown(PAGE); setOpenCounts({}); }, [type, sort, refillOnly, qualityOnly, location, price, mineOnly, likedOnly, search]);
 
   const q = search.trim().toLowerCase();
   const all = data?.services || [];
@@ -368,26 +386,32 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
   // that is what this would be for every customer alive.
   const hasLiked = useMemo(() => all.some(r => approvalOf(r) >= WELL_LIKED), [all]);
   const likedOn = likedOnly && hasLiked;
+  // Most platforms carry graded services; a few carry none. Offering the
+  // control there would be a filter that can only empty the list.
+  const hasQuality = useMemo(() => all.some(r => isGraded(r.attrs)), [all]);
+  const qualityOn = qualityOnly && hasQuality;
   // Origins present on this platform, commonest first, counted off the same
   // text the filter matches on so the number on the option is the number of
   // rows it will leave.
-  const locations = useMemo(() => {
+  const offeredLocations = useMemo(() => {
     const n = {};
     for (const r of all) {
       for (const k of LOCATION_KEYS) if (matchesLocation(hay(r), k)) n[k] = (n[k] || 0) + 1;
     }
     return Object.entries(n).filter(([, c]) => c >= LOCATION_MIN).sort((a, b) => b[1] - a[1]);
   }, [all]);
-  const activeLocation = locations.some(([k]) => k === location) ? location : "any";
+  // Validated against the platform, not against what the other filters leave:
+  // a choice must not silently reset itself because a price band was tapped.
+  const activeLocation = offeredLocations.some(([k]) => k === location) ? location : "any";
   // Only bands with something in them, for the same reason the location control
   // lists only origins it carries: an option that returns nothing is a dead end
   // dressed as a choice.
-  const bands = useMemo(
+  const offeredBands = useMemo(
     () => PRICE_BANDS.filter(b => all.some(r => r.price >= b.lo && r.price < b.hi)),
     [all],
   );
-  const activePrice = bands.some(b => b.key === price) ? price : "any";
-  const band = bands.find(b => b.key === activePrice);
+  const activePrice = offeredBands.some(b => b.key === price) ? price : "any";
+  const band = offeredBands.find(b => b.key === activePrice);
 
   const savedSet = useMemo(() => new Set(mine?.saved || []), [mine]);
   const history = mine?.services || {};
@@ -413,17 +437,62 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
   // A search reaches the whole platform — someone who types "story" does not
   // want it narrowed to the type they happen to be looking at. A bare number is
   // a service ID.
-  const beforeType = useMemo(() => {
-    let l = all;
-    if (refillOnly) l = l.filter(r => r.refill);
-    if (likedOn) l = l.filter(r => approvalOf(r) >= WELL_LIKED);
-    if (activeLocation !== "any") l = l.filter(r => matchesLocation(hay(r), activeLocation));
-    if (band) l = l.filter(r => r.price >= band.lo && r.price < band.hi);
-    if (activeMine === "saved") l = l.filter(r => savedSet.has(r.id));
-    else if (activeMine === "ordered") l = l.filter(r => history[r.id]?.times > 0);
-    if (q) l = l.filter(r => String(r.id).includes(q) || r.label.toLowerCase().includes(q) || (r.attrs || []).join(" ").toLowerCase().includes(q));
-    return l;
-  }, [all, q, refillOnly, likedOn, activeLocation, band, activeMine, savedSet, history]);
+  //
+  // Every narrowing is named, because the dropdowns need to ask what the list
+  // would look like without their own. Counting a facet against its own filter
+  // is what made the origin list offer countries that were not there: with
+  // Followers and "under ₦1,000" already on, the platform carrying 40 Turkish
+  // services says nothing about whether any survive, and the menu offered
+  // Turkish anyway — a tap that emptied the list.
+  const NARROW = useMemo(() => {
+    const out = [];
+    if (refillOnly) out.push(["refill", r => r.refill]);
+    if (qualityOn) out.push(["quality", r => isGraded(r.attrs)]);
+    if (likedOn) out.push(["liked", r => approvalOf(r) >= WELL_LIKED]);
+    if (activeLocation !== "any") out.push(["location", r => matchesLocation(hay(r), activeLocation)]);
+    if (band) out.push(["price", r => r.price >= band.lo && r.price < band.hi]);
+    if (activeMine === "saved") out.push(["mine", r => savedSet.has(r.id)]);
+    else if (activeMine === "ordered") out.push(["mine", r => history[r.id]?.times > 0]);
+    if (q) out.push(["search", r => String(r.id).includes(q) || r.label.toLowerCase().includes(q) || (r.attrs || []).join(" ").toLowerCase().includes(q)]);
+    return out;
+  }, [refillOnly, qualityOn, likedOn, activeLocation, band, activeMine, savedSet, history, q]);
+
+  const beforeType = useMemo(
+    () => all.filter(r => NARROW.every(([, f]) => f(r))),
+    [all, NARROW],
+  );
+
+  /**
+   * What one dropdown should count against: everything else that is on, plus
+   * the type, minus its own filter. Type is included because a menu sitting
+   * above a list of Followers has to describe Followers — except during a
+   * search, which deliberately reaches the whole platform.
+   */
+  const facet = useCallback((except) => {
+    const preds = NARROW.filter(([k]) => k !== except).map(([, f]) => f);
+    const l = all.filter(r => preds.every(f => f(r)));
+    return q || type === "all" ? l : l.filter(r => r.type === type);
+  }, [all, NARROW, q, type]);
+
+  // Origins that are actually reachable from here, counted honestly. The
+  // selected one stays listed whatever the count: a select showing a value
+  // absent from its own options is worse than a zero.
+  const locations = useMemo(() => {
+    const rows = facet("location");
+    const n = {};
+    for (const r of rows) {
+      for (const k of LOCATION_KEYS) if (matchesLocation(hay(r), k)) n[k] = (n[k] || 0) + 1;
+    }
+    return offeredLocations
+      .map(([k]) => [k, n[k] || 0])
+      .filter(([k, c]) => c > 0 || k === activeLocation)
+      .sort((a, b) => b[1] - a[1]);
+  }, [facet, offeredLocations, activeLocation]);
+
+  const bands = useMemo(() => {
+    const rows = facet("price");
+    return offeredBands.filter(b => b.key === activePrice || rows.some(r => r.price >= b.lo && r.price < b.hi));
+  }, [facet, offeredBands, activePrice]);
 
   const matched = useMemo(
     () => sortRows(q || type === "all" ? beforeType : beforeType.filter(r => r.type === type), activeSort),
@@ -495,7 +564,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ color: t.textMuted }} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         <div className="text-[11.5px] leading-[1.5] flex-1 min-w-[190px]" style={{ color: t.textMuted }}>
           <strong style={{ color: t.text }}>{tr("Our wider range.")}</strong>{" "}
-          {tr("Sold exactly as listed, without the Nitro refill guarantee our picks carry.")}
+          {tr("Each service brings its own refill and speed.")}
         </div>
         {cheapestPick != null && onBackToPicks && (
           <button onClick={onBackToPicks}
@@ -593,8 +662,14 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
           {/* Just the count. The sort control beside it says which sort is on,
               and in the overview each section carries its own shown/total —
               captioning a layout the reader is already looking at only
-              crowds the strip. */}
-          <span className="text-[12px] w-full md:w-auto md:mr-auto min-w-0 truncate" style={{ color: t.textMuted }}>
+              crowds the strip.
+              
+              Desktop only. On a phone it took the full width of the toolbar's
+              first line and put "277 services" directly above a two-column
+              grid of filters, which read as a label for them. The list is
+              right there underneath and the platform tile already carries a
+              count, so nothing is lost by dropping it at this width. */}
+          <span className="hidden md:inline text-[12px] md:w-auto md:mr-auto min-w-0 truncate" style={{ color: t.textMuted }}>
             <strong className="m" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{matched.length.toLocaleString()}</strong>
             {" "}
             {q ? `${tr("results for")} “${search.trim()}”`
@@ -607,9 +682,32 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
             <button onClick={() => setRefillOnly(v => !v)} aria-pressed={refillOnly}
               className="inline-flex items-center justify-center gap-1 text-[11px] py-[4px] px-2 md:px-2.5 rounded-[8px] min-w-0 cursor-pointer border border-solid font-[inherit] transition-colors duration-150 whitespace-nowrap min-w-0"
               style={{ color: refillOnly ? (dark ? "#6ee7b7" : "#059669") : t.textMuted, fontWeight: refillOnly ? 700 : 500, borderColor: refillOnly ? (dark ? "rgba(110,231,183,.45)" : "rgba(5,150,105,.4)") : t.cardBorder, background: refillOnly ? (dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.08)") : "transparent" }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ opacity: refillOnly ? 1 : .35 }} aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              {/* The replay arrow, not a tick. A tick says "yes, this one";
+                  refill says "we put it back", and the landing page already
+                  draws that idea with exactly this mark on "Retested, and
+                  delisted when it slips". Same idea, same glyph. */}
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ opacity: refillOnly ? 1 : .35 }} aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
               <span className="truncate">{tr("Refill only")}</span>
             </button>
+            {/* One control over both grades. A provider writes the top one
+                three ways and the ordinary one two, and somebody filtering for
+                quality does not want the best services dropped because they
+                picked the other word — the row still says which grade it is.
+                Violet, the colour the quality chip already uses, so the filter
+                and the badges it keeps are visibly the same fact. */}
+            {hasQuality && (
+              <button onClick={() => setQualityOnly(v => !v)} aria-pressed={qualityOn}
+                className="inline-flex items-center justify-center gap-1 text-[11px] py-[4px] px-2 md:px-2.5 rounded-[8px] cursor-pointer border border-solid font-[inherit] transition-colors duration-150 whitespace-nowrap min-w-0"
+                style={{ color: qualityOn ? (dark ? "#a78bfa" : "#6d28d9") : t.textMuted, fontWeight: qualityOn ? 700 : 500, borderColor: qualityOn ? (dark ? "rgba(167,139,250,.45)" : "rgba(109,40,217,.4)") : t.cardBorder, background: qualityOn ? (dark ? "rgba(167,139,250,.14)" : "#f3ecfa") : "transparent" }}>
+                {/* A gem, because the star is taken. Every row on this list
+                    carries a star meaning "saved", and the Saved filter uses
+                    the same mark deliberately so the control and the marker it
+                    filters by are visibly one thing. A second star meaning
+                    something else would undo that. */}
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ opacity: qualityOn ? 1 : .35 }} aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M11 3 8 9l4 12 4-12-3-6"/><path d="M2 9h20"/></svg>
+                <span className="truncate">{tr("High quality")}</span>
+              </button>
+            )}
             {/* Rated well by the people who bought it. The only endorsement
                 this list carries, so it gets a control — but only once there is
                 one to act on. */}
@@ -677,6 +775,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
             <div className="text-[13px] mb-3" style={{ color: t.textMuted }}>{tr("Try a shorter word, or a service ID.")}</div>
             <div className="flex items-center justify-center gap-2 flex-wrap">
               {refillOnly && <button onClick={() => setRefillOnly(false)} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Show all, refill or not")}</button>}
+              {qualityOn && <button onClick={() => setQualityOnly(false)} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Any quality")}</button>}
               {band && <button onClick={() => setPrice("any")} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Any price")}</button>}
               {likedOn && <button onClick={() => setLikedOnly(false)} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Any rating")}</button>}
               {activeMine !== "any" && <button onClick={() => setMineOnly("any")} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Everything")}</button>}
