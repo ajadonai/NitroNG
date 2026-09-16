@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ATTR_SHORT } from '@/lib/service-attrs';
+import { serviceAttributes } from '@/lib/reseller-format';
 
 const mockPrisma = {
   order: { groupBy: vi.fn() },
@@ -308,8 +310,16 @@ describe('the grade badges', () => {
     expect(full).toMatch(/<span className="md:hidden" title=\{attr\}>\{short\}<\/span>/);
   });
 
-  it('abbreviates only the two that do not fit', () => {
+  it('shortens only the three that do not fit', () => {
+    expect(attrs).toMatch(/'Lifetime guarantee': 'Lifetime'/);
     expect(attrs).toMatch(/'Ultra high quality': 'UHQ'/);
     expect(attrs).toMatch(/'High quality': 'HQ'/);
+  });
+
+  it('leaves the full wording to the API and the wide screen', () => {
+    // "Lifetime" on a phone is a trim, not a rename: serviceAttributes still
+    // writes "Lifetime guarantee", which is what a reseller reads.
+    expect(serviceAttributes('Spotify Plays | Lifetime Guaranteed')).toContain('Lifetime guarantee');
+    expect(Object.keys(ATTR_SHORT)).toEqual(['Lifetime guarantee', 'Ultra high quality', 'High quality']);
   });
 });
