@@ -248,21 +248,20 @@ as the work. (Formerly docs/BACKLOG.md.)
   **Do not** build per-country wallets or a second price list — both ruled out
   in the International Nitro entry, and the premium lives in the deposit rate.
 
-- **Checkout abandonment — a project, sized 13 Sep 2026, not started.** 60.0%
-  of deposit initiations end in a funded wallet; after netting the 58% who
-  complete within 7 days, true leakage is about 16.6% — roughly ₦20k/day of
-  deposits and ₦13k/day of gross profit, on the order of ₦130k/month if worked.
-  Unremarkable for a Nigerian payment flow: a UX opportunity, not an emergency.
-  The ₦3.25M of "failed attempts" quoted on 11 Sep was never real — real
-  payment failure is 0.9%; the rest was abandonment. Instrument before
-  redesigning. Today the rows say *initiated* (Pending written) and *finished*
-  (Completed), and Flutterwave's `provider_not_found` says the customer never
-  submitted the form — but nothing records whether they reached Flutterwave's
-  page at all. One `navigator.sendBeacon` from the add-funds page immediately
-  before the redirect (reference + stage) splits "closed before the gateway
-  loaded" from "saw the gateway and left", and the page's own steps (amount →
-  method → pay) can ride the existing telemetry route. Read a fortnight of that
-  before changing the flow.
+- **Checkout abandonment — instrumented 16 Sep 2026, now read it.** The beacon
+  is live (`v2.5.94`): `gatewayHandoffAt` is stamped immediately before the
+  redirect, and `/api/admin/checkout-funnel` splits what used to be one bucket
+  into **left_at_gateway** (saw it, walked away — a pricing, trust or method
+  question) and **never_arrived** (closed the tab before it loaded — a slow or
+  broken handoff, and ours to fix).
+
+  **Do not change the flow until a fortnight of data is in.** Rows before
+  16 Sep carry no handoff, so the reader's `since` defaults to that date rather
+  than counting them all as never_arrived. The sizing stands: ~16.6% true
+  leakage, roughly ₦20k/day of deposits and ₦13k/day of gross profit, on the
+  order of ₦130k/month if worked. Real payment failure is 0.9% — the ₦3.25M of
+  "failed attempts" quoted on 11 Sep was abandonment, not failure, which is the
+  mistake reading first exists to avoid.
 
 - **Auto data-saver — parked design, agreed 6 Sep 2026** (the improved version
   of the audit's "Data-Saver toggle"): no manual toggle — animations cost CPU,

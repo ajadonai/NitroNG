@@ -466,6 +466,7 @@ model Transaction {
   providerPaymentStatus          String?
   providerActuallyPaid           Decimal?  @db.Decimal(36, 18)
   providerLastVerifiedAt         DateTime?
+  gatewayHandoffAt               DateTime?
   paymentReconciliationAttemptAt DateTime?
   paymentReviewFingerprint       String?
   paymentReviewReason            String?
