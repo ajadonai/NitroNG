@@ -343,6 +343,17 @@ export async function POST(req) {
 
       await prisma.serviceTier.delete({ where: { id: tierIdToDelete } });
 
+      // Deleting the last orderable tier takes the group with it, the same way
+      // switching the last one off does.
+      //
+      // This was the hole the other two guards left open, and it is how every
+      // stranded group actually happened: Spotify Podcast Plays, Threads
+      // Followers and X/Twitter Followers 🇺🇸 were each left enabled with zero
+      // tiers because their last tier was deleted rather than disabled, and
+      // only the disable path called this.
+      const closed = await closeStrandedGroups(prisma, [existing.groupId]);
+      if (closed.length) await logActivity(admin.name, `Disabled group "${closed[0]}" — its last orderable tier was deleted`, 'service');
+
       await logActivity(admin.name, `Deleted ${existing.tier} tier from "${existing.group.name}"`, 'service');
       invalidateServiceCatalogue();
       return Response.json({ success: true });
