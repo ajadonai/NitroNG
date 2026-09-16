@@ -1597,7 +1597,7 @@ body:has(.dash-main) .nitro-atmo::before { content: none; }
    instead of pushing the nav. Same fault the avatar button had. */
 .loc-wrap { position: relative; display: inline-flex; flex-shrink: 0; }
 .loc-pill {
-  display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 12px 0 6px; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 7px; height: 34px; padding-block: 0; padding-inline: 6px 12px; flex-shrink: 0;
   border: none; cursor: pointer; border-radius: 999px !important; font: inherit;
   font-size: 12.5px; font-weight: 700; white-space: nowrap; color: inherit;
   background: #fff;
