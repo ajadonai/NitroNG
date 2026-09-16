@@ -312,16 +312,20 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
   // One row, not the lot. Clearing a single stale line used to mean clearing
   // everything, so people left the list alone and it stopped being read.
   //
-  // The row is hidden on this device and marked read on the server. There is no
-  // per-id clear to call: clearAll persists as a timestamp on the user, and the
-  // cleared-id set is localStorage only. So a row dismissed on a phone is gone
-  // there and merely read on a laptop — the badge is right everywhere, the row
-  // survives on the other device. A notifClearedIds column would close that and
-  // is on the shelf; it is not worth a migration for a row that ages out in 30
-  // days anyway.
+  // Dismissed everywhere, not merely here. This used to hide the row on the
+  // device it was tapped on and mark it read on the server, because there was
+  // nowhere to put a per-id clear — so the row came back on a laptop as an
+  // ordinary read line and had to be dismissed again. notifClearedIds closes
+  // that: the id is sent, merged with whatever other devices have dismissed,
+  // and read back on the next sync.
+  //
+  // Still marked read as well. The two sets answer different questions — read
+  // decides the badge, cleared decides the list — and a dismissed row must not
+  // keep counting toward the badge on a device that has not synced yet.
   const dismiss = (id) => {
     setClearedIds(prev => new Set([...prev, id]));
     markRead(id);
+    fetch("/api/auth/notifications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clearedIds: [id] }) }).catch(() => {});
   };
   // A notification about an order that does not open the order is a dead end.
   // History searches server-side, so seeding its box with the reference lands
@@ -1088,6 +1092,12 @@ function DashboardInner({ initialData }) {
             }
             if (Array.isArray(nd.notifReadIds) && nd.notifReadIds.length > 0) {
               setReadNotifIds(prev => new Set([...prev, ...nd.notifReadIds]));
+            }
+            // Rows dismissed on another device. Merged rather than replaced:
+            // this device may have dismissed something since its last sync, and
+            // the server's copy is not yet aware of it.
+            if (Array.isArray(nd.notifClearedIds) && nd.notifClearedIds.length > 0) {
+              setClearedNotifIds(prev => new Set([...prev, ...nd.notifClearedIds]));
             }
             // Sync theme from server (overrides localStorage on new devices)
             if (nd.themePreference && nd.themePreference !== "auto") {

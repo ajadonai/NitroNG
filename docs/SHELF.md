@@ -365,15 +365,6 @@ as the work. (Formerly docs/BACKLOG.md.)
   any provider claim. Needs a small nightly rollup (order timestamps already
   exist) rather than live queries.
 
-- **Per-row notification dismiss is device-local** (noted 14 Sep 2026). The
-  bell's new × hides a row on the device it was tapped on and marks it read
-  everywhere, because there is nowhere to put a per-id clear: `clearAll`
-  persists as `notifClearedAt`, a timestamp on the user, and the cleared-id set
-  is localStorage only. So a row dismissed on a phone is gone there and merely
-  read on a laptop. A `notifClearedIds` column on User closes it. Not worth a
-  migration on its own — every notification ages out of the list at 30 days
-  anyway — so fold it into the next change that touches that table.
-
 - **Welcome bonus is raw balance, not spend-only credit** (noted 14 Sep 2026).
   `applyWelcomeBonusDetailed` increments `user.balance` and writes a `bonus`
   transaction; it does not create a `BonusCredit` row the way the top-up bonus
@@ -588,6 +579,14 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **A dismissed notification stays dismissed on every device** (16 Sep 2026,
+  `v2.5.88`). The bell's × hid the row where it was tapped and marked it read
+  everywhere, so it came back on a laptop as an ordinary read line. `User.
+  notifClearedIds` mirrors `notifReadIds` — a JSON array in a nullable text
+  column, capped at 500, merged on write so two devices cannot erase each
+  other's dismissals. Migration applied.
+
 
 - **Deposits that succeeded at the bank but not at the quote have a surface**
   (16 Sep 2026, `v2.5.87`). A Flutterwave mismatch parked as `Review` and told
