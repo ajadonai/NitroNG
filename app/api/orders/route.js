@@ -433,12 +433,18 @@ export async function patchOrderForSession(session, body, req) {
 
       // Same rule as a fresh order: wholesale instead of the retail discounts,
       // never alongside them.
+    // Retail-equivalent, captured before wholesale takes it down. The ladder
+    // measures spend at the site price, and dividing the charge back out later
+    // needs the rate that was in force on the day, which nothing stores.
+    let reorderRetailCharge = null;
       const reorderTerms = await getResellerTerms(session.id);
       if (reorderTerms) {
         // `cost` above is this order's cost in kobo, the same basis as `charge`,
         // which is what the margin floor needs — a per-1k floor against a
         // 250-unit charge would clamp small orders up to the price of a thousand.
+        const retailBefore = charge;
         charge = wholesaleOf(charge, reorderTerms, await getMarkupSettings(), cost);
+        if (charge < retailBefore) reorderRetailCharge = retailBefore;
       }
 
       // Apply Nitro Status discount to reorder
@@ -505,6 +511,7 @@ export async function patchOrderForSession(session, body, req) {
             orderId: newOrderId, userId: session.id, serviceId: order.serviceId,
             tierId: order.tierId, link: order.link, quantity: order.quantity,
             charge, cost,
+            ...(reorderRetailCharge ? { retailCharge: reorderRetailCharge } : {}),
             comments: order.comments,
             ...(order.trafficConfig ? { trafficConfig: order.trafficConfig } : {}),
             loyaltyDiscount: reorderLoyaltyDiscount,
@@ -882,12 +889,18 @@ export async function createOrderForSession(session, body, req, { source = 'web'
     // client, and it replaces the retail discounts below rather than stacking:
     // a wholesale rate compounded with loyalty and a promotion is the one path
     // that reaches below cost.
+    // Retail-equivalent, captured before wholesale takes it down. The ladder
+    // measures spend at the site price, so that a promoted reseller does not
+    // measure slower the better it does.
+    let retailCharge = null;
     const resellerTerms = await getResellerTerms(session.id);
     if (resellerTerms) {
       // `cost` is this order's cost in kobo, the same basis as `charge`, which
       // is what the margin floor needs. Without it a 30% rate on the thinnest
       // band leaves 4.8% and 33.3% sells at what we paid.
+      const retailBefore = charge;
       charge = wholesaleOf(charge, resellerTerms, await getMarkupSettings(), cost);
+      if (charge < retailBefore) retailCharge = retailBefore;
     }
 
     // Apply Nitro Status discount based on eligible lifetime spend
@@ -1000,6 +1013,7 @@ export async function createOrderForSession(session, body, req, { source = 'web'
               quantity: qty,
               charge,
               cost,
+              ...(retailCharge ? { retailCharge } : {}),
               comments: comments ? comments.split('\n').map(l => l.trim().replace(/^[“”””]+|[“”””]+$/g, '').trim()).filter(Boolean).join('\n').slice(0, 5000) : null,
               ...(trafficConfig ? { trafficConfig } : {}),
               loyaltyDiscount,

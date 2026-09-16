@@ -1,5 +1,9 @@
 {
   "algorithm": "sha256",
+  "appliedOverrides": {
+    "0_init": "c864f484fce76fd7b8db286181967d98cdb91559be1081e34df0fd65cc60b7c5",
+    "20260717020200_add_live_session_user_seen_index": "e63266406bc55d24fb18a6d07dc9f27840e2163d4034fd59a517cda34d56757a"
+  },
   "migrations": {
     "0_init": "56e9d79aee8cc02b5ec681f5b604c68be7ee764e315ad3b2de80dfb3a4b8db05",
     "20260413230430_add_tour_fields": "d91f024d2d58fa8eba34f3d791bd39e034e8bf4ad59e30faa9041aa865cc9f2c",
@@ -70,10 +74,8 @@
     "20260916160000_add_pinned_links": "0c85a3f80bba28edf78360377af077acaba8afa98cba2065bd18f5d653027b08",
     "20260916170000_drop_reseller_catalog": "38e1f1a4e8a2c6ecbec46df5c44f6d96b9a3ac18406a190376799b55e4d5f55a",
     "20260916180000_add_checkout_handoff": "b8a5746f65de3a7b4bb85694c1f9aecc35e6a2d055d5e8b7564c839e4f943fc4",
-    "20260916190000_bonus_credit_no_expiry": "5a6f99fb57e7bbb4cea082ec41c8b9fe486800565a59595c70d0543a994c7d9f"
-  },
-  "appliedOverrides": {
-    "0_init": "c864f484fce76fd7b8db286181967d98cdb91559be1081e34df0fd65cc60b7c5",
-    "20260717020200_add_live_session_user_seen_index": "e63266406bc55d24fb18a6d07dc9f27840e2163d4034fd59a517cda34d56757a"
+    "20260916190000_bonus_credit_no_expiry": "5a6f99fb57e7bbb4cea082ec41c8b9fe486800565a59595c70d0543a994c7d9f",
+    "20260917120000_reseller_tier_ladder": "4e6750537306834f1109378fc061c092591b11bad4b473df87b4ff57f9de8bac",
+    "20260917130000_order_retail_charge": "349de5aff1f28a7c99bd27eaa49099cc81d3f2caf9f74454f2fab28e82b0e50d"
   }
 }

@@ -17,6 +17,7 @@ export default function AdminResellersPage({ dark, t }) {
   const [busy, setBusy] = useState(null);
   const [noteDraft, setNoteDraft] = useState({});
   const [rateDraft, setRateDraft] = useState({});
+  const [modeDraft, setModeDraft] = useState({});
   const [grantOpen, setGrantOpen] = useState(false);
   const [openId, setOpenId] = useState(null); // userId whose drawer is open
   const [query, setQuery] = useState("");
@@ -98,7 +99,22 @@ export default function AdminResellersPage({ dark, t }) {
   const rows = data ? [...data.resellers.filter(r => r.enabled), ...data.resellers.filter(r => !r.enabled)] : [];
   const sum = data?.summary;
   const openR = openId ? rows.find(r => r.userId === openId) : null;
-  const header = <div className="re-rh"><span>Reseller</span><span className="r">Orders · spend, {data?.windowDays || 90}d</span><span>Status</span><span /></div>;
+  const ladder = data?.ladder || { live: false, tiers: [], bandCaps: {}, seatLifetime: 0 };
+  const mode = (r) => r?.tierMode || "auto";
+  const tierOf = (r) => ladder.tiers.find(t => t.id === (mode(r) === "pinned" ? r.pinnedTier : r.tier)) || null;
+  // The rung above whatever they are on, which is the only one worth naming.
+  const nextRung = (r) => {
+    const cur = tierOf(r);
+    return ladder.tiers.find(t => t.threshold > (cur?.threshold ?? -1)) || null;
+  };
+  const header = (
+    <div className="re-rh">
+      <span>Reseller</span>
+      {ladder.live && <span>Tier</span>}
+      <span className="r">Orders · spend, {data?.windowDays || 90}d</span>
+      <span>Status</span><span />
+    </div>
+  );
 
   return (
     <div className="re" style={vars}>
@@ -123,7 +139,7 @@ export default function AdminResellersPage({ dark, t }) {
         </>}
       </div>
 
-      <div className="re-list">
+      <div className={"re-list" + (ladder.live ? " ladder" : "")}>
         {header}
         {loading ? Array.from({ length: 5 }, (_, i) => (
           <div key={i} className="re-rr sk">
@@ -142,6 +158,10 @@ export default function AdminResellersPage({ dark, t }) {
                   <b><span>{r.name || r.email}</span>{r.apiOrders > 0 && <span className="re-ch api">API · {r.apiOrders}</span>}</b>
                 </span>
               </span>
+              {ladder.live && <span className="re-tier">{r.rate?.tier
+                ? <span className="re-ch tier">{r.rate.tier} {r.rate.tierName}</span>
+                : <span className="re-ch retail">Normal pricing</span>}
+                {r.tierMode !== "auto" && <span className={`re-ch ${r.tierMode}`}>{r.tierMode === "pinned" ? "Pinned" : "Custom"}</span>}</span>}
               <span className="r m re-act"><b>{r.recentOrders}</b> · {naira(r.recentSpend)}</span>
               <span className="re-st"><i className={`re-dot ${on ? "ok" : "bad"}`} />{on ? "Active" : "Revoked"}</span>
               <svg className="re-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
@@ -182,21 +202,72 @@ export default function AdminResellersPage({ dark, t }) {
               <button type="button" className="re-x" onClick={() => setOpenId(null)} aria-label="Close">✕</button>
             </div>
             <div className="re-st"><i className={`re-dot ${openR.enabled ? "ok" : "bad"}`} />{openR.enabled ? "Active" : "Revoked"}<span className="re-cnt" style={{ marginLeft: "auto" }}>granted {fmtDate(openR.approvedAt)}{openR.approvedBy ? ` by ${openR.approvedBy}` : ""}</span></div>
-            <div className="re-fld">
-              <label>Personal rate</label>
-              <div className="re-inl">
-                <input className="re-in m re-rate" value={rateDraft[openR.userId] ?? (openR.discountPct ?? "")} placeholder={`${data.globalDiscount}%`} disabled={!openR.enabled || !!busy} inputMode="numeric" aria-label="Discount rate"
-                  onChange={e => setRateDraft(p => ({ ...p, [openR.userId]: e.target.value.replace(/[^0-9]/g, "") }))}
-                  onBlur={() => { const v = rateDraft[openR.userId]; if (v === undefined || v === String(openR.discountPct ?? "")) return; act(openR.userId, "rate", { discountPct: v }, "rate"); }} />
-                <span className="re-cnt">below retail · default is {data.globalDiscount}%</span>
+            {ladder.live ? (
+              <div className="re-fld">
+                <label>Rate</label>
+                {/* Auto, pinned or custom. The free-text box this replaced took
+                    any number under 100 and had no idea what a tier was, so
+                    "why is this account on 35%" had no answer but memory. */}
+                <div className="re-modes">
+                  {[
+                    { id: "auto", title: `Auto${tierOf(openR) ? ` — ${tierOf(openR).name}, ${tierOf(openR).pct}%` : " — normal pricing"}`,
+                      sub: nextRung(openR) ? `Follows 30-day spend. Next: ${naira(nextRung(openR).threshold)} for ${nextRung(openR).name}, ${nextRung(openR).pct}%.` : "Follows 30-day spend, re-checked nightly." },
+                    { id: "pinned", title: "Pin a tier", sub: "Holds a tier whatever they spend. For a reseller you have made a deal with." },
+                    { id: "custom", title: "Custom rate", sub: "An explicit percentage. Band caps and the margin floor still apply." },
+                  ].map(m => (
+                    <button type="button" key={m.id} className={"re-mode" + (mode(openR) === m.id ? " on" : "")} disabled={!openR.enabled || !!busy}
+                      onClick={() => { if (m.id === "auto") act(openR.userId, "mode", { mode: "auto" }, "mode"); else setModeDraft(d => ({ ...d, [openR.userId]: m.id })); }}>
+                      <i className="re-rd" />
+                      <span><b>{m.title}</b><i>{m.sub}</i>
+                        {m.id === "pinned" && (mode(openR) === "pinned" || modeDraft[openR.userId] === "pinned") && (
+                          <span className="re-sub">
+                            <select className="re-in" defaultValue={openR.pinnedTier || ""} disabled={!!busy} aria-label="Tier"
+                              onClick={e => e.stopPropagation()}
+                              onChange={e => e.target.value && act(openR.userId, "mode", { mode: "pinned", pinnedTier: e.target.value }, "mode")}>
+                              <option value="">Choose a tier…</option>
+                              {ladder.tiers.map(t => <option key={t.id} value={t.id}>{t.name} · {t.pct}%</option>)}
+                            </select>
+                          </span>
+                        )}
+                        {m.id === "custom" && (mode(openR) === "custom" || modeDraft[openR.userId] === "custom") && (
+                          <span className="re-sub">
+                            <input className="re-in m" style={{ width: 70 }} inputMode="numeric" aria-label="Custom rate"
+                              defaultValue={openR.discountPct ?? ""} placeholder="%" disabled={!!busy}
+                              onClick={e => e.stopPropagation()}
+                              onBlur={e => { const v = e.target.value.replace(/[^0-9]/g, ""); if (v !== "") act(openR.userId, "mode", { mode: "custom", discountPct: v }, "mode"); }} />
+                            <span className="re-cnt">% below retail</span>
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="re-fld">
+                <label>Personal rate</label>
+                <div className="re-inl">
+                  <input className="re-in m re-rate" value={rateDraft[openR.userId] ?? (openR.discountPct ?? "")} placeholder={`${data.globalDiscount}%`} disabled={!openR.enabled || !!busy} inputMode="numeric" aria-label="Discount rate"
+                    onChange={e => setRateDraft(p => ({ ...p, [openR.userId]: e.target.value.replace(/[^0-9]/g, "") }))}
+                    onBlur={() => { const v = rateDraft[openR.userId]; if (v === undefined || v === String(openR.discountPct ?? "")) return; act(openR.userId, "rate", { discountPct: v }, "rate"); }} />
+                  <span className="re-cnt">below retail · default is {data.globalDiscount}%</span>
+                </div>
+              </div>
+            )}
             <div className="re-fld">
               <label>Why they have it</label>
               <input className="re-in re-why" value={noteDraft[openR.userId] ?? openR.notes ?? ""} placeholder="Why they have it…" disabled={!!busy} aria-label="Reason"
                 onChange={e => setNoteDraft(p => ({ ...p, [openR.userId]: e.target.value }))}
                 onBlur={() => { const v = noteDraft[openR.userId]; if (v === undefined || v === (openR.notes ?? "")) return; act(openR.userId, "notes", { notes: v }, "notes"); }} />
             </div>
+            {ladder.live && (
+              <div className="re-facts">
+                <div className="re-fact"><span>Toward {ladder.tiers[0]?.name}</span><b className="m">{naira(openR.rollingSpend)} of {naira(ladder.tiers[0]?.threshold || 0)}</b></div>
+                <div className="re-fact"><span>Toward a seat for life</span><b className="m">{openR.seatForLife ? "Earned" : `${naira(openR.lifetimeSpend)} of ${naira(ladder.seatLifetime)}`}</b></div>
+                {openR.firstMonthEndsAt && new Date(openR.firstMonthEndsAt) > new Date() &&
+                  <div className="re-fact"><span>First judged</span><b>{fmtDate(openR.firstMonthEndsAt)}</b></div>}
+              </div>
+            )}
             <div className="re-facts">
               <div className="re-fact"><span>Orders · {data?.windowDays || 90} days</span><b className="m">{openR.recentOrders} · {naira(openR.recentSpend)}</b></div>
               <div className="re-fact"><span>Through the API</span><b className="m">{openR.apiOrders || 0} of {openR.recentOrders}</b></div>
@@ -228,6 +299,9 @@ const CSS = `
 .re-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.re-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}.re-stt i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .re-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow-x:auto}
 .re-rh,.re-rr{display:grid;grid-template-columns:minmax(160px,1fr) minmax(120px,auto) 84px 18px;align-items:center;gap:10px;padding:0 14px}
+/* The ladder adds a tier column. Scoped to .ladder so the pre-ladder page
+   keeps the four-column grid it has always had. */
+.re-list.ladder .re-rh,.re-list.ladder .re-rr{grid-template-columns:minmax(150px,1fr) minmax(120px,auto) minmax(110px,auto) 84px 18px}
 .re-rh{height:34px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line);white-space:nowrap}
 .re-rr{width:100%;padding-top:10px;padding-bottom:10px;border:0;border-top:1px solid var(--rail);background:transparent;color:var(--ink);font:inherit;font-size:13px;text-align:left;cursor:pointer;min-width:0}.re-rr:hover{background:var(--soft)}.re-rr.sk:hover{background:none}.re-rr.sk{cursor:default}
 .re-rr.off .re-un,.re-rr.off .re-act{opacity:.5;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -237,7 +311,22 @@ const CSS = `
 .re-unt b{display:flex;align-items:center;gap:6px;font-weight:600;min-width:0}.re-unt b>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .re-unt i{font-style:normal;font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .re-ch{font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 6px;border-radius:6px;flex-shrink:0;white-space:nowrap}.re-ch.full{background:var(--acbg);color:var(--ac)}.re-ch.cur{background:var(--soft);color:var(--mut);border:1px solid var(--line)}.re-ch.api{background:var(--bluebg);color:var(--blue)}
-.re-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.re-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}.re-dot.ok{background:var(--ok)}.re-dot.bad{background:var(--bad)}
+.re-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.re-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.re-tier{display:flex;gap:5px;flex-wrap:wrap;min-width:0}
+.re-ch.tier{background:var(--acbg,rgba(196,125,142,.1));color:var(--ac)}
+.re-ch.retail{background:rgba(0,0,0,.05);color:var(--muted)}
+.re-ch.pinned{background:var(--bluebg);color:var(--blue)}
+.re-ch.custom{background:rgba(133,79,11,.1);color:#854F0B}
+.re-modes{display:flex;flex-direction:column;gap:6px}
+.re-mode{display:grid;grid-template-columns:14px 1fr;gap:10px;align-items:start;width:100%;text-align:left;
+  padding:10px 12px;border-radius:10px;border:1.5px solid var(--rail);background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
+.re-mode.on{border-color:var(--ac);background:var(--acbg,rgba(196,125,142,.08))}
+.re-mode:disabled{opacity:.55;cursor:default}
+.re-rd{width:13px;height:13px;border-radius:50%;border:2px solid var(--muted);margin-top:3px}
+.re-mode.on .re-rd{border-color:var(--ac);background:var(--ac);box-shadow:inset 0 0 0 2.5px var(--card)}
+.re-mode b{display:block;font-size:13px;font-weight:600}
+.re-mode i{display:block;font-size:11.5px;color:var(--muted);font-style:normal;margin-top:1px}
+.re-sub{display:flex;gap:8px;align-items:center;margin-top:8px}.re-dot.ok{background:var(--ok)}.re-dot.bad{background:var(--bad)}
 .re-in{height:34px;padding:0 11px;border-radius:9px;border:1px solid var(--line);background:var(--soft);font:inherit;font-size:12.5px;color:var(--ink);outline:none;min-width:0;width:100%}.re-in:focus{border-color:var(--acln)}.re-in::placeholder{color:var(--dim)}.re-in:disabled{cursor:not-allowed;opacity:.6}
 .re-rate{text-align:center;width:76px;flex-shrink:0}.re-why{font-size:12.5px}
 .re-act{white-space:nowrap;font-size:12.5px}.re-act b{font-weight:700}
@@ -269,7 +358,9 @@ const CSS = `
   .re-stats{grid-template-columns:1fr 1fr}.re-stt:nth-child(3){border-left:0}.re-stt:nth-child(n+3){border-top:1px solid var(--line)}.re-stt b{font-size:17px}
   .re-rh{display:none}
   .re-list{background:none;border:0;border-radius:0;display:flex;flex-direction:column;gap:10px}
-  .re-rr{display:grid;grid-template-columns:1fr auto 18px;grid-template-areas:"un st chev" "act act act";gap:6px 10px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;min-width:0}.re-rr:hover{background:var(--card)}
+  .re-rr{display:grid;grid-template-columns:1fr auto 18px;grid-template-areas:"un st chev" "act act act";gap:6px 10px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;min-width:0}
+  .re-list.ladder .re-rr{grid-template-columns:1fr auto 18px;grid-template-areas:"un st chev" "tier tier tier" "act act act"}
+  .re-tier{grid-area:tier}.re-rr:hover{background:var(--card)}
   .re-un{grid-area:un}.re-st{grid-area:st;justify-self:end;align-self:center}.re-chev{grid-area:chev;align-self:center}
   .re-act{grid-area:act;text-align:left;font-size:12.5px;padding-left:44px}.re-act::after{content:" · last 90 days";color:var(--dim)}
   .re-rr.sk{grid-template-areas:"un st chev" "act act act"}

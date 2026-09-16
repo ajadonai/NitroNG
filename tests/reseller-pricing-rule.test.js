@@ -13,10 +13,13 @@ beforeEach(() => {
 
 describe('getResellerTerms', () => {
   it('returns terms for an enabled profile', async () => {
-    // No catalogue in here any more: there is one catalogue, the API serves it
-    // to every key, so terms carry the rate and nothing else.
-    db.resellerProfile.findUnique.mockResolvedValue({ enabled: true, discountPct: 35 });
-    expect(await getResellerTerms('u1')).toEqual({ discountPct: 35 });
+    // Terms carry the ladder state as well as the rate now — tier, mode and pin
+    // — because the price path resolves the rung itself. A price path that
+    // cannot see the pin is one that eventually disagrees with the page showing
+    // it. No catalogue: there is one catalogue and the API serves it to everyone.
+    const profile = { enabled: true, discountPct: 35, tierMode: 'auto', tier: 'T3', pinnedTier: null, seatForLife: false };
+    db.resellerProfile.findUnique.mockResolvedValue(profile);
+    expect(await getResellerTerms('u1')).toEqual(profile);
   });
 
   // Revoking disables rather than deletes, so the row still exists.

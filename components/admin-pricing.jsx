@@ -13,7 +13,8 @@ const DEF_BRACKETS = [
   { min: 5000, max: 20000, multiplier: 1.5, label: "Premium" },
   { min: 20000, max: 999999999, multiplier: 1.35, label: "Ultra" },
 ];
-const DEFAULTS = { brackets: DEF_BRACKETS, floorPct: 50, floorCeiling: 5000, ngBonus: 25, resellerDiscount: 20, usdBuffer: 200, fxThreshold: 20, premium: 15, premiumLive: false, tierMults: { Budget: 1, Standard: 1.15, Premium: 1.35 }, provBonuses: { mtp: 0, dao: 0 } };
+const DEFAULTS = { brackets: DEF_BRACKETS, floorPct: 50, floorCeiling: 5000, ngBonus: 25, resellerDiscount: 20, usdBuffer: 200, fxThreshold: 20, premium: 15, premiumLive: false, tierMults: { Budget: 1, Standard: 1.15, Premium: 1.35 }, provBonuses: { mtp: 0, dao: 0 }, rsLive: false };
+
 const COLORS = ["#34d399", "#6ee7b7", "#60a5fa", "#a78bfa", "#e0a458", "#c47d8e"];
 const PROV = [["mtp", "MoreThanPanel"], ["dao", "DaoSMM"]];
 
@@ -102,6 +103,10 @@ export default function AdminPricingPage({ dark, t }) {
       next.premiumLive = v.fx_premium_live === "1";
       try { if (v.markup_tier_multipliers) next.tierMults = JSON.parse(v.markup_tier_multipliers); } catch {}
       next.provBonuses = { mtp: Number(v.markup_provider_bonus_mtp || 0), dao: Number(v.markup_provider_bonus_dao || 0) };
+      // Read-only here. The ladder is set up on its own page; this one only
+      // needs to know whether it has taken over, so the card does not claim a
+      // flat rate is in force when the rungs are deciding.
+      next.rsLive = v.reseller_tiers_live === "true";
       if (v.markup_usd_market) setUsdMarket(Number(v.markup_usd_market));
       setS(next); setLoaded(true);
     }).catch(() => setLoaded(true));
@@ -168,7 +173,7 @@ export default function AdminPricingPage({ dark, t }) {
     { id: "ti", title: "Tier prices", sub: `Standard costs ${pct(s.tierMults.Standard || 1)} more than Budget. Premium costs ${pct(s.tierMults.Premium || 1)} more.` },
     { id: "ng", title: "Nigerian services", sub: `Priced ${s.ngBonus}% higher than the same service worldwide.` },
     { id: "pv", title: "Provider discounts", sub: PROV.filter(([k]) => s.provBonuses[k]).length ? `Extra ${PROV.filter(([k]) => s.provBonuses[k]).map(([k, n]) => `${s.provBonuses[k]}% kept on ${n}`).join(", ")}.` : "Nothing extra kept on any provider." },
-    { id: "rs", title: "Reseller discount", sub: `Resellers pay ${s.resellerDiscount}% less than the site price on every order.` },
+    { id: "rs", title: "Reseller discount", sub: `Resellers pay ${s.resellerDiscount}% less than the site price on every order.${s.rsLive ? " The tier ladder is on, and it decides the rate instead." : ""} Tiers and band caps live on Reseller pricing.` },
     { id: "fx", title: "Dollar rate", sub: usdMarket ? `${naira(usdRate)} to the dollar today: the market rate plus a ${naira(s.usdBuffer)} cushion. Checked every morning.` : `A ${naira(s.usdBuffer)} cushion on the market rate. Checked every morning.` },
     { id: "fd", title: "Foreign deposits", sub: !usdMarket ? `A ${s.premium}% premium on dollar deposits, ${s.premiumLive ? "switched on" : "set but not yet switched on"}.`
         : s.premiumLive ? `Dollars credit at ${naira(Math.round(usdMarket / (1 + (s.premium || 0) / 100)))} to the dollar — ${s.premium}% under the market rate. $100 lands as ${naira(Math.round(100 * usdMarket / (1 + (s.premium || 0) / 100)))}.`
@@ -272,7 +277,9 @@ export default function AdminPricingPage({ dark, t }) {
           <Modal open={open === "rs"} onClose={close} title="Reseller discount" footer={foot(() => persist(draft))}>
             <p className="pr-hint">Taken off the finished price, after everything else, so it can only ever remove this much and never gets near cost. Applies to the curated and the full catalogue.</p>
             <Row label="Resellers pay less by" hint={`Standard on the cost you are trying: ${naira(Math.ceil(std * (1 - (draft.resellerDiscount || 0) / 100)))}`}><NumInput value={draft.resellerDiscount} onChange={v => d({ resellerDiscount: v })} min={0} max={90} fallback={20} /><em className="pr-u">%</em></Row>
+
           </Modal>
+
           <Modal open={open === "fx"} onClose={close} title="Dollar rate" footer={foot(() => persist(draft))}>
             <Row label="Market rate this morning" hint="Fetched automatically"><b className="m">{usdMarket ? naira(usdMarket) : "—"}</b></Row>
             <Row label="Cushion on top" hint="Covers the rate moving between checks"><em className="pr-u">₦</em><NumInput value={draft.usdBuffer} onChange={v => d({ usdBuffer: v })} min={0} max={1000} fallback={200} width={76} /></Row>
@@ -319,6 +326,12 @@ const CSS = `
 .pr-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.pr-cnt{font-size:11.5px;color:var(--dim)}
 .pr-cb{padding:4px 16px 12px;display:flex;flex-direction:column}
 .pr-in{height:32px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:inherit;font-size:13px;color:var(--ink);text-align:right;outline:none}.pr-in:focus{border-color:var(--acln)}
+.pr-in.bad{border-color:#c62828;box-shadow:0 0 0 1px #c62828}
+.pr-sec{font-size:10.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--ac);margin:18px 0 2px;padding-top:14px;border-top:1px solid var(--line)}
+.pr-sw{width:40px;height:23px;border-radius:99px;border:0;background:var(--line);position:relative;cursor:pointer;padding:0;transition:background .18s;flex-shrink:0}
+.pr-sw i{position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:#fff;transition:transform .18s;display:block;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.pr-sw.on{background:var(--ac)}
+.pr-sw.on i{transform:translateX(17px)}
 .pr-u{font-style:normal;font-size:12px;color:var(--mut);margin:0 6px}.pr-ctl{display:inline-flex;align-items:center;flex-shrink:0}
 .pr-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--rail);font-size:13.5px}.pr-row:first-child,.pr-hint+.pr-row{border-top:0}
 .pr-row>span:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}.pr-row b{font-weight:600}.pr-row i{font-style:normal;font-size:12px;color:var(--mut)}
