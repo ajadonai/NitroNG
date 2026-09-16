@@ -74,9 +74,45 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   0.9%** — the ₦3.25M of "failed attempts" quoted on 11 Sep was abandonment,
   not failure, which is the mistake reading first exists to avoid.
 
-- **Onboarding funnel, second read — ready now.** `firstSeenWalletAt` and
-  `firstSeenNewOrderAt` have been collecting since 26 Aug 2026, so the 30 days
-  are in. Rerun the funnel and find where the 74% who never pay actually stop.
+- **Onboarding funnel, second read — DONE 17 Sep, and it found one wall.**
+  2,082 signups since 26 Aug. The funnel:
+
+  | step | of signups |
+  |---|---|
+  | verified email | 100.0% |
+  | opened New Order | 99.0% |
+  | **opened the wallet** | **47.9%** |
+  | started a payment | 27.3% |
+  | deposit completed | 23.0% |
+  | placed an order | 21.5% |
+
+  **The leak is one step, and it is not the one anybody was watching.** 99% of
+  signups reach New Order. Fewer than half ever open the wallet. Of the 1,603
+  who never paid, **1,061 — two thirds — opened New Order and never once opened
+  the wallet.**
+
+  Opening the wallet is very nearly the whole prediction: **47.5% of the 997 who
+  opened it paid, against 0.5% of the 1,085 who did not.** Five people in three
+  weeks paid without visiting it.
+
+  **It is decided in the first session.** 85.6% of payers deposit within an hour
+  of signing up, 93.7% within a day, 99.4% within a week. Not a maturity
+  artefact either — the cohort with 14+ days to act pays at 24.0%, the same as
+  everyone.
+
+  **And nothing reaches these people.** The only pre-order nudge in the daily
+  cron requires `balance: { gt: 0 }` — it is for people who funded and did not
+  order. There is no message at all for somebody who looked at the product and
+  never went to fund.
+
+  **What this argues for**, in order of how directly it hits the wall:
+  guest-feel checkout, which removes the wallet as a separate destination
+  altogether (one payment sized to the order) and is the only item on this shelf
+  that addresses the wall rather than the symptom; a first-session prompt from
+  New Order to funding, since the hour after signup is the entire window; and a
+  never-funded nudge, which is the cheapest of the three and the weakest, given
+  93.7% of the people who were ever going to pay had already paid by the time
+  any email could arrive.
 
 - **Scale ladder gate — judge it on database signups, not Meta.** The Lagos
   ₦30,000 → ₦39,000 budget step stays gated on cost per new customer under
@@ -113,11 +149,6 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
 
   **Do not** build per-country wallets or a second price list. The premium lives
   in the deposit rate, and that is settled.
-
-- **Betting wallet top-up — get it in writing.** Commercially the largest of the
-  adjacent products and one line once the bills rail exists, but gambling
-  adjacency is a merchant-category question. Confirm with Flutterwave that it
-  does not change Nitro's category or risk rating before building anything.
 
 ### Designs agreed, not built
 
@@ -159,6 +190,11 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   pins, same key as airtime. **(4) Travel eSIM** — Airalo Partner API, eSIM Go,
   MobiMatter; the prestige product, not the volume one. **(5) Creator software
   codes** on the gift-card rail.
+
+  **Ruled out by Trip, 17 Sep 2026: nothing gambling-related.** Betting wallet
+  top-up was on this list as the largest market of the lot and one line once the
+  bills rail exists. It is off, and not on a technicality about merchant
+  categories — Nitro is not doing bet-adjacent products. Do not re-propose it.
 
   **Two hard lines.** Travel eSIM only, **never a Nigerian line** — every SIM in
   Nigeria must be registered against a NIN since 2021 and issuing local lines
@@ -227,39 +263,15 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   ~2 hrs, measured from recent orders". Needs a small nightly rollup, not live
   queries.
 
-- **Landing redesign v2 — parked, Trip not impressed** (4 Sep 2026). The full
-  build is on local branch `landing-v2-wip` (`d1838b9f`, never pushed); the mock
-  is artifact `213efb73`. It contains: a one-viewport fold (sticky nav, centred
-  links, announcement bar, hero with a working order-starter priced from
-  `/api/pricing`, platform marquee, stat band), Why Nitro with five feature
-  cards and both product screenshots, priced platform list, three steps, pricing
-  cards, resellers section with the Emeka quote, blush pull-quote, plum closer;
-  fully theme-tokenised, honest platform count (`uniquePlatforms`, fixing the
-  old 152+ groups-as-platforms bug).
-
-  Standing taste notes from the review rounds: no duplicated stats or CTAs,
-  bare-number stat band rather than cards, icons not text and placed in true
-  empty zones, hamburger only below desktop, login prominent but not oversized,
-  sections must not blend (alternating surfaces), richness over minimalism below
-  the fold. Next pass: iterate on the branch or restart. Production landing is
-  untouched.
-
-  (`landing-v3` is a **dead branch** — 0 commits ahead of main, its work already
-  merged. Safe to delete whenever somebody is tidying branches.)
-
 ### Content and long tail
 
-- **17 platforms still have no `/services/<slug>` page** (after `v2.5.90` added
-  four). Crawlable now: 15 slugs. Missing, by full-list volume — kick 147,
-  webtraffic 95, threads 66, quora 45, reddit 41, onlyfans 35, trustpilot 29,
-  deezer 24, kwai 19, bluesky 15, soundcloud 10, applemusic 10, pinterest 6,
-  shazam 3, vimeo 2, tumblr 2, tidal 1.
-
-  Four were written rather than seventeen on purpose: each is ~18 strings of
-  real prose plus four translations, and thin pages across every remaining tile
-  are doorway pages, which Google treats worse than no page at all. Pick the
-  next batch the same way — depth first, starting with **kick, threads and
-  webtraffic**, which have both curated groups and real volume behind them.
+- **Platform pages are finished, on the measurement.** Twenty slugs are
+  crawlable. The remaining twelve tiles will not get a page, and that is a
+  decision rather than a backlog item — see the Closed entry of 17 Sep for the
+  counts. Nine of them have **no curated group at all**, so a page for them
+  would be a headline over a link to the full list, which is the definition of a
+  doorway page. If a tile later gains two or more curated groups it clears the
+  bar and earns a page; until then, nothing here is outstanding.
 
 - **Reseller API v2** — drip-feed and multi-day parameters, webhooks, per-key IP
   allowlists. Brief: `docs/v2/reseller_api_brief.md`.
@@ -274,6 +286,46 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   protected routes in CLAUDE.md.
 
 ## Closed
+
+- **Five more platform pages, and the other twelve ruled out** (17 Sep 2026,
+  `v2.5.99`). Threads, Kick, SoundCloud, Bluesky and Deezer now have
+  `/services/<slug>` pages — real prose, four translations each, twenty slugs
+  crawlable in total.
+
+  The shelf said "17 platforms still have no page" and named kick, threads and
+  webtraffic as the next batch. Measuring first changed the answer: **webtraffic
+  has no curated group at all** — 95 full-list services and nothing curated — so
+  a page for it would have been a headline over a search box.
+
+  The bar was the one the first four cleared: two or more curated groups behind
+  the page. Threads clears it by more than any page written so far (10 groups,
+  14 tiers, four of them Nigerian-targeted), then Kick (4/4), SoundCloud (4/4),
+  Bluesky (4/5) and Deezer (2/2).
+
+  **Twelve did not clear it and are not coming back**: trustpilot, shazam and
+  vimeo have a single group each; webtraffic, quora, reddit, onlyfans, kwai,
+  applemusic, pinterest, tumblr and tidal have **none**. Thin pages across every
+  remaining tile are doorway pages, which Google treats worse than no page at
+  all — so writing them would have cost the pages that work. If one of those
+  tiles later gains two curated groups it earns a page then.
+
+  The five SEO `<title>` tags stay English like the fifteen before them: they
+  target English-language Nigerian search queries, and the i18n baseline moved
+  20 → 25 to record exactly that and nothing else.
+
+- **"Lifetime" on a phone, second attempt** (17 Sep 2026, `v2.5.99`). The first
+  fix added `'Lifetime guarantee': 'Lifetime'` to `ATTR_SHORT` and shipped, and
+  Trip reported the badge still reading long. It was.
+
+  The refill chip is the one badge on a full-list row that is **not** drawn from
+  the attribute list. It comes from `row.refillLabel`, and the list that feeds
+  every other badge filters refill attributes out by design
+  (`attrKind(a) !== "refill"`) — so the chip never met `AttrText` and never met
+  the shortening map. UHQ and HQ shortened around it while it stayed long, which
+  is exactly what Trip was looking at.
+
+  It renders through `AttrText` now, and a test asserts the chip is not printed
+  raw, so the two paths cannot drift apart again.
 
 - **The Sep 2026 neatness sweep is finished, all four decisions taken** (16 Sep
   2026; work itself shipped 14 Sep). The sweep removed 184 unused names across

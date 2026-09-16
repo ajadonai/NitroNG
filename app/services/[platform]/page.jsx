@@ -5,7 +5,7 @@ import { msg } from '@/lib/i18n';
 
 export const revalidate = 300;
 
-const PLATFORM_ORDER = ['instagram', 'tiktok', 'youtube', 'x', 'facebook', 'telegram', 'spotify', 'snapchat', 'linkedin', 'twitch', 'discord', 'whatsapp', 'audiomack', 'boomplay', 'google'];
+const PLATFORM_ORDER = ['instagram', 'tiktok', 'youtube', 'x', 'facebook', 'telegram', 'spotify', 'snapchat', 'linkedin', 'twitch', 'discord', 'whatsapp', 'audiomack', 'boomplay', 'google', 'threads', 'kick', 'soundcloud', 'bluesky', 'deezer'];
 
 export async function generateStaticParams() {
   return PLATFORM_ORDER.map(platform => ({ platform }));
@@ -422,6 +422,148 @@ const PLATFORM_META = {
       { q: msg('Will Google remove the reviews?'), a: msg('Some, sometimes. Google filters reviews it does not trust, and no panel anywhere can promise otherwise. Ordering a small number spread over time survives far better than a burst, and a listing with real reviews already on it survives better than one without.') },
       { q: msg('Can I write the review text myself?'), a: msg('Yes, on the services that support custom comments. You send one review per line and each goes out as written. This is the option worth paying for — specific, ordinary language about the thing you actually do is what makes a review believable.') },
       { q: msg('Is this safe for my business listing?'), a: msg('It carries real risk and we would rather say so. Google can filter reviews, and in serious cases it can flag a listing. Keep it small, keep it slow, keep asking real customers, and do not let bought reviews outnumber genuine ones.') },
+    ],
+  },
+  // ── Added 17 Sep 2026. Five more, picked on the same bar as the first four:
+  // two or more curated groups behind the page. The other twelve tiles on the
+  // "missing" list did not clear it — nine have no curated group at all — so
+  // they came off the shelf instead of getting thin pages. ──
+  threads: {
+    name: 'Threads',
+    h1: msg('Buy Threads Followers, Likes and Reposts in Nigeria'),
+    title: 'Buy Threads Followers in Nigeria | Naira Pricing',
+    metaDesc: 'Buy Threads followers, likes, reposts and comments in Nigeria. Nigerian accounts available. Naira pricing, no foreign card needed. From ₦1,000.',
+    heroDesc: msg('Threads runs on your Instagram account, so the people who find you there already know the handle. An empty Threads profile beside a working Instagram reads as abandoned, which is worse than not being on it at all. Nitro carries Threads followers, likes, reposts and comments priced in Naira, from ₦1,000 — including Nigerian accounts.'),
+    mainService: 'followers',
+    kw: 'buy Threads followers Nigeria',
+    whatYouGet: [
+      msg('Followers on your Threads profile, in Budget, Standard and Premium'),
+      msg('Likes and comments on individual posts'),
+      msg('Reposts and reshares, which is how a post travels here'),
+      msg('Nigerian followers, likes, comments and reposts, on the groups that carry them'),
+    ],
+    whySection: [
+      msg('Your Threads profile is your Instagram profile. Same handle, same name, same picture, and anyone who taps through from one sees the other. That is the argument for not leaving it empty: it is not a separate account nobody knows about, it is a second room in a house people already visit.'),
+      msg('Reposts are the distribution. Threads has no hashtag culture and no share-to-story habit, so a post moves because somebody reposted it into their own followers. That makes reposts worth more per unit here than likes, and it is the one number that decides whether a post leaves your own followers at all.'),
+      msg('Nigerian accounts are available on Threads, and on this platform they matter. A Lagos business with ten thousand followers who have never heard of Lagos does not convert, and the replies under your posts are public — a Nigerian comment reads as a Nigerian audience to everyone who scrolls past it.'),
+      msg('Your profile has to be public for the order to run. A private Threads profile cannot be followed by the service, and anything not delivered comes back to your wallet.'),
+      msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
+    ],
+    faq: [
+      { q: msg('What link do you need for Threads?'), a: msg('Your public profile URL — threads.net followed by your handle — or the direct link to a post for likes, comments and reposts. We never need your Instagram or Threads login.') },
+      { q: msg('Does this touch my Instagram account?'), a: msg('No. Threads and Instagram share a login, but the follower counts are separate and an order here lands on Threads only. Your Instagram numbers do not move.') },
+      { q: msg('Can I get Nigerian followers on Threads?'), a: msg('Yes, on the groups that say so — followers, likes, comments and reposts all have a Nigerian option. They cost more than worldwide accounts and for a Nigerian audience they are usually worth it, because the replies are public and the names are visible.') },
+      { q: msg('Why did my order not start?'), a: msg('A private profile is the usual reason. Threads has to be public for the whole of the order, and if it goes private partway, whatever was not delivered is refunded to your wallet.') },
+    ],
+  },
+  kick: {
+    name: 'Kick',
+    h1: msg('Buy Kick Followers and Live Viewers in Nigeria'),
+    title: 'Buy Kick Followers and Live Viewers in Nigeria | Naira Pricing',
+    metaDesc: 'Buy Kick followers, live viewers, clip views and video views in Nigeria. Naira pricing, no foreign card needed. Start from ₦1,000.',
+    heroDesc: msg('Kick sorts its directory by who is being watched right now, so a stream with two viewers sits below one with two hundred and nobody scrolls that far. Nitro carries Kick followers, live viewers, clip views and video views priced in Naira, from ₦1,000.'),
+    mainService: 'followers',
+    kw: 'buy Kick followers Nigeria',
+    whatYouGet: [
+      msg('Followers on your Kick channel'),
+      msg('Live viewers held on the stream for an hour'),
+      msg('Views on clips'),
+      msg('Views on uploaded videos and past broadcasts'),
+    ],
+    whySection: [
+      msg('The directory is ranked by live viewers, and that is the whole problem with starting out. Nobody browses to the bottom of a category, so a stream with nothing on the counter is invisible for exactly as long as it has nothing on the counter. Getting onto the first screen is the only way anyone arrives by accident.'),
+      msg('Live viewers are timed, not permanent. The one-hour service holds a count on a stream while it is running and then it ends, which is the honest shape of the product — it buys you position during the stream, not a number that stays afterwards. Order it when you are actually going live.'),
+      msg('Followers are what survive the stream. They put your channel in somebody’s following list and get them the notification next time, which is the part that compounds. Viewers get you found once; followers get you found again.'),
+      msg('Clips are how Kick streamers get discovered off-platform. A clip with views gets picked up and reposted to TikTok and X, and those are the numbers people check before they share something.'),
+      msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
+    ],
+    faq: [
+      { q: msg('What link do you need for Kick?'), a: msg('Your channel URL — kick.com followed by your username — or the direct clip or video link for views. We never need your Kick login.') },
+      { q: msg('When should I order live viewers?'), a: msg('Start the stream first, then place the order. The viewers are held for an hour on a stream that is actually running, so ordering them before you go live wastes the window.') },
+      { q: msg('Do the live viewers chat?'), a: msg('No. They are viewers on the counter, not participants, and anyone claiming otherwise is selling you bot accounts that get channels banned. The count is what moves you up the directory; the conversation is still yours to start.') },
+      { q: msg('Can I get banned for this?'), a: msg('Keep it proportionate to your channel and you are buying visibility, not faking a community. The risk on any platform is a number that makes no sense beside everything else on the account — a thousand viewers on a channel with forty followers is the shape that gets looked at.') },
+    ],
+  },
+  soundcloud: {
+    name: 'SoundCloud',
+    h1: msg('Buy SoundCloud Plays, Followers and Reposts in Nigeria'),
+    title: 'Buy SoundCloud Plays in Nigeria | Naira Pricing',
+    metaDesc: 'Buy SoundCloud plays, followers, likes and reposts in Nigeria. Naira pricing, no foreign card needed. Start from ₦1,000.',
+    heroDesc: msg('SoundCloud is where the record goes before the DSPs, and where A&Rs and DJs actually go looking. A track with forty plays does not get opened by either. Nitro carries SoundCloud plays, followers, likes and reposts priced in Naira, from ₦1,000.'),
+    mainService: 'plays',
+    kw: 'buy SoundCloud plays Nigeria',
+    whatYouGet: [
+      msg('Plays on a track, at Budget pricing'),
+      msg('Followers on your artist profile'),
+      msg('Likes on individual tracks'),
+      msg('Reposts, which is how a track spreads on SoundCloud'),
+    ],
+    whySection: [
+      msg('Reposts are the engine here, not likes. SoundCloud built its feed around the repost — a track lands in somebody’s followers because another account reposted it — so the repost is the only action that actually moves your record to new ears. Likes are a signal; reposts are distribution.'),
+      msg('The play count is a gatekeeper before it is a vanity number. DJs, blogs and A&Rs use it as the first filter on whether to open a link at all, and a track sitting under a hundred plays reads as nobody has heard it, whether or not that is true.'),
+      msg('It is the platform where unfinished work lives. Snippets, demos, freestyles and loosies go to SoundCloud precisely because they do not belong on Spotify yet, which means the numbers here decide what gets finished and what gets dropped.'),
+      msg('Followers carry the next upload. A profile with followers means your next track opens with plays instead of starting at zero, and for an artist releasing regularly that is the difference between building and restarting each time.'),
+      msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
+    ],
+    faq: [
+      { q: msg('What link do you need for SoundCloud?'), a: msg('The public track URL for plays, likes and reposts, or your profile URL for followers. A private or unlisted track cannot be delivered to, so make it public first. We never need your SoundCloud login.') },
+      { q: msg('Do plays count towards SoundCloud monetisation?'), a: msg('Do not treat this as a payout strategy. SoundCloud pays on monetised tracks and any platform that pays on a number watches that number closely — run this for visibility on a track you are pushing, not on one that is already earning.') },
+      { q: msg('What is the difference between a like and a repost?'), a: msg('A like is a private signal on your track. A repost puts the track into the feed of everybody who follows the account that reposted it, which is why reposts cost more and why they are the ones worth buying if you are choosing.') },
+      { q: msg('How fast do SoundCloud orders run?'), a: msg('Each service shows its own start time and speed on the row before you order. Plays usually start quickly and spread over a day, which is what you want on a new upload.') },
+    ],
+  },
+  bluesky: {
+    name: 'Bluesky',
+    h1: msg('Buy Bluesky Followers, Likes and Reposts in Nigeria'),
+    title: 'Buy Bluesky Followers in Nigeria | Naira Pricing',
+    metaDesc: 'Buy Bluesky followers, likes, reposts and comments in Nigeria. Naira pricing, no foreign card needed. Start from ₦1,000.',
+    heroDesc: msg('Bluesky is small enough that a few hundred followers still puts you in front of people, which is the part that stops being true on every platform eventually. Nitro carries Bluesky followers, likes, reposts and comments priced in Naira, from ₦1,000.'),
+    mainService: 'followers',
+    kw: 'buy Bluesky followers Nigeria',
+    whatYouGet: [
+      msg('Followers on your Bluesky handle'),
+      msg('Likes on individual posts'),
+      msg('Reposts, which carry a post into new feeds'),
+      msg('Comments, in Standard and Premium'),
+    ],
+    whySection: [
+      msg('The timeline is chronological and unranked, so nothing is being hidden from you by an algorithm — but nothing is being promoted for you either. On Bluesky reach is almost entirely who follows you and who reposts you, which makes the follower count a more direct lever here than on any platform that ranks a feed.'),
+      msg('Being early is the actual asset. Handles, audiences and the habit of checking a platform all get harder to win the longer you wait, and the accounts that carry weight on any network are usually the ones that were there before it was obvious. Bluesky is at the stage where a modest number still reads as established.'),
+      msg('Reposts travel further than likes because there is no algorithm doing the travelling. A repost is the entire distribution mechanism: it moves your post into somebody else’s followers and that is the only way it leaves yours.'),
+      msg('Comments are visible social proof and they last. On a chronological feed a post with a conversation under it is the one that people stop on, and Premium comments read as people rather than as filler.'),
+      msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
+    ],
+    faq: [
+      { q: msg('What link do you need for Bluesky?'), a: msg('Your handle or profile URL for followers, and the direct post link for likes, reposts and comments. We never need your Bluesky login or an app password.') },
+      { q: msg('Do I need to be on a custom domain?'), a: msg('No. A standard bsky.social handle works exactly the same as a custom domain one. If you do move to a custom domain later, place new orders against the new handle.') },
+      { q: msg('What is the difference between Standard and Premium comments?'), a: msg('Premium comments come from accounts with more history and post something that reads as a person. Standard is cheaper and shorter. Both are described on the row before you order.') },
+      { q: msg('Is Bluesky worth it if my audience is Nigerian?'), a: msg('Honestly, it is smaller here than X or Instagram, so treat it as claiming ground rather than as your main channel. If you are already posting on X, crossposting and building a Bluesky base costs you very little and the handle is worth holding.') },
+    ],
+  },
+  deezer: {
+    name: 'Deezer',
+    h1: msg('Buy Deezer Followers and Likes in Nigeria'),
+    title: 'Buy Deezer Followers in Nigeria | Naira Pricing',
+    metaDesc: 'Buy Deezer followers and track likes in Nigeria. Naira pricing, no foreign card needed. Start from ₦1,000.',
+    heroDesc: msg('Deezer is where a lot of francophone West Africa actually listens, which makes it the platform Nigerian artists keep forgetting when they plan a release across the region. Nitro carries Deezer followers and likes priced in Naira, from ₦1,000.'),
+    mainService: 'followers',
+    kw: 'buy Deezer followers Nigeria',
+    whatYouGet: [
+      msg('Followers on your Deezer artist profile'),
+      msg('Likes on individual tracks'),
+    ],
+    whySection: [
+      msg('It is the francophone route. Deezer has real weight in Senegal, Côte d’Ivoire, Cameroon and across French-speaking Africa, so for a Nigerian artist planning a release beyond Lagos it reaches listeners that Spotify and Apple Music do not. The market next door is the cheapest one to grow into.'),
+      msg('Followers on an artist profile get your releases in front of the same people twice. Deezer notifies followers of a new release, which means the profile you build on one drop is the audience waiting for the next, rather than a number that sits there looking good.'),
+      msg('Track likes are what the editorial side reads. Deezer runs curated playlists the same way every DSP does, and engagement on a track is part of what puts it in front of whoever is building them.'),
+      msg('Keep it proportionate on a monetised profile. Deezer pays on streams, so this is a platform where an implausible number is worth avoiding — build the profile, do not farm the payout.'),
+      msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
+    ],
+    faq: [
+      { q: msg('What link do you need for Deezer?'), a: msg('Your artist profile URL for followers, or the track URL for likes. Both are the public deezer.com links or the share link from the app. We never need your Deezer login.') },
+      { q: msg('Does Nitro sell Deezer streams?'), a: msg('Not at the moment — the curated Deezer groups are followers and likes. If streams appear on a provider we carry, they show up in the full list, which you can search from the order page.') },
+      { q: msg('Is Deezer worth it for a Nigerian artist?'), a: msg('It depends where you want to be heard. For Lagos alone, Boomplay and Audiomack are closer to where people are. For a release meant to travel across West Africa, particularly the French-speaking markets, Deezer is the one that gets skipped and should not be.') },
+      { q: msg('How long does a Deezer order take?'), a: msg('Each service shows its own start time and speed on the row. Most start within the hour and deliver over a day or more.') },
     ],
   },
 };
