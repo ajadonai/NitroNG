@@ -1,6 +1,33 @@
+/**
+ * What one tracking link did, over a window that means what it says.
+ *
+ * The seven faults this answers are written up in the 15 Sep review; the window
+ * arithmetic and the reasons behind it live in lib/acquisition-window. The
+ * short version is that every figure here now comes from one window, every
+ * chart slot is emitted whether or not anything happened in it, and days are
+ * cut in Lagos rather than UTC.
+ *
+ * Lifetime totals are not gone — they are on their own labelled strip, where 57
+ * signups and ₦89,541 are plainly all-time instead of silently sitting in a
+ * 30-day row and producing a 142.5% conversion rate.
+ */
 import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { log } from '@/lib/logger';
 import { requireAdmin } from '@/lib/admin';
+import { windowFor, fill, isRange, RANGES, LAGOS } from '@/lib/acquisition-window';
+
+export const maxDuration = 60;
+
+/**
+ * `date_trunc` in Lagos, back as a UTC instant.
+ *
+ * The column is a plain timestamp, so it is read as UTC, shifted into Lagos,
+ * truncated there, then shifted back — which is what makes a "day" run midnight
+ * to midnight in Lagos instead of 1am to 1am.
+ */
+const lagosBucket = (unit, col) => Prisma.sql`
+  (date_trunc(${unit}, ${col} AT TIME ZONE 'UTC' AT TIME ZONE ${LAGOS}) AT TIME ZONE ${LAGOS}) AT TIME ZONE 'UTC'`;
 
 export async function GET(req) {
   const { error } = await requireAdmin('acquisition');
@@ -9,128 +36,136 @@ export async function GET(req) {
   try {
     const url = new URL(req.url);
     const linkId = url.searchParams.get('linkId');
-    const range = url.searchParams.get('range') || '7d';
+    const rangeParam = url.searchParams.get('range') || '7d';
+    const range = isRange(rangeParam) ? rangeParam : '7d';
 
-    // "All" is one of the three buttons the panel actually shows, and it was
-    // missing from this map — so `rangeMs['all']` was undefined, the `||` fell
-    // through to a week, and the All view served seven days of clicks under an
-    // All heading. On alabi-ad that printed 2,384 clicks where the true figure
-    // is 30,664, and ₦352,109 of revenue against ₦4,180,578.
-    const rangeMs = { '24h': 86400000, '7d': 604800000, '30d': 2592000000 };
-    const since = range === 'all' ? new Date(0) : new Date(Date.now() - (rangeMs[range] || rangeMs['7d']));
-    const where = { createdAt: { gte: since }, ...(linkId ? { linkId } : {}) };
-
-    const slug = linkId
-      ? (await prisma.acquisitionLink.findUnique({ where: { id: linkId }, select: { slug: true } }))?.slug
+    const link = linkId
+      ? await prisma.acquisitionLink.findUnique({ where: { id: linkId }, select: { slug: true, createdAt: true } })
       : null;
+    const slug = link?.slug || null;
+
+    // The first click, on every range and not only on "all". It anchors two
+    // things that have to agree: where the All-time chart begins, and the date
+    // the lifetime strip counts from. Resolving it only for "all" made "Since"
+    // mean the link's creation date on four ranges and its first click on the
+    // fifth, which is the same class of quiet mismatch this whole route is
+    // being rewritten to remove. One indexed query either way.
+    const firstClick = await prisma.linkClick.findFirst({
+      where: linkId ? { linkId } : {},
+      orderBy: { createdAt: 'asc' },
+      select: { createdAt: true },
+    });
+    const firstAt = firstClick?.createdAt || link?.createdAt || null;
+
+    const win = windowFor(range, { firstAt });
+    const since = win.start;
+    const until = win.end;
+    const inWindow = { createdAt: { gte: since, lt: until }, ...(linkId ? { linkId } : {}) };
+    const bucketUnit = win.bucket;
+
+    const clickWhere = linkId
+      ? Prisma.sql`"linkId" = ${linkId} AND "createdAt" >= ${since} AND "createdAt" < ${until}`
+      : Prisma.sql`"createdAt" >= ${since} AND "createdAt" < ${until}`;
 
     const [
-      totalClicks,
-      uniqueRaw,
-      deviceBreakdown,
-      countryBreakdown,
-      cityBreakdown,
-      browserBreakdown,
-      osBreakdown,
-      referrerBreakdown,
-      timelineRaw,
-      signupTimelineRaw,
-      periodSignups,
-      revenueStats,
+      totalClicks, uniqueRaw,
+      deviceBreakdown, countryBreakdown, cityBreakdown,
+      browserBreakdown, osBreakdown, referrerBreakdown,
+      clickSeries, signupSeries,
+      periodSignups, periodMoney,
+      lifetimeClicks, lifetimeSignups, lifetimeMoney,
     ] = await Promise.all([
-      prisma.linkClick.count({ where }),
+      prisma.linkClick.count({ where: inWindow }),
 
-      linkId
-        ? prisma.$queryRaw`SELECT COUNT(DISTINCT "ipHash")::int AS cnt FROM link_clicks WHERE "linkId" = ${linkId} AND "createdAt" >= ${since}`
-        : prisma.$queryRaw`SELECT COUNT(DISTINCT "ipHash")::int AS cnt FROM link_clicks WHERE "createdAt" >= ${since}`,
+      prisma.$queryRaw`SELECT COUNT(DISTINCT "ipHash")::int AS cnt FROM link_clicks WHERE ${clickWhere}`,
 
-      prisma.linkClick.groupBy({
-        by: ['deviceType'], where, _count: true,
-        orderBy: { _count: { deviceType: 'desc' } },
-      }),
+      prisma.linkClick.groupBy({ by: ['deviceType'], where: inWindow, _count: true, orderBy: { _count: { deviceType: 'desc' } } }),
+      prisma.linkClick.groupBy({ by: ['country'], where: { ...inWindow, country: { not: null } }, _count: true, orderBy: { _count: { country: 'desc' } }, take: 10 }),
+      prisma.linkClick.groupBy({ by: ['city'], where: { ...inWindow, city: { not: null } }, _count: true, orderBy: { _count: { city: 'desc' } }, take: 10 }),
+      prisma.linkClick.groupBy({ by: ['browser'], where: { ...inWindow, browser: { not: null } }, _count: true, orderBy: { _count: { browser: 'desc' } }, take: 8 }),
+      prisma.linkClick.groupBy({ by: ['os'], where: { ...inWindow, os: { not: null } }, _count: true, orderBy: { _count: { os: 'desc' } }, take: 8 }),
+      prisma.linkClick.groupBy({ by: ['referrer'], where: { ...inWindow, referrer: { not: null } }, _count: true, orderBy: { _count: { referrer: 'desc' } }, take: 8 }),
 
-      prisma.linkClick.groupBy({
-        by: ['country'], where: { ...where, country: { not: null } }, _count: true,
-        orderBy: { _count: { country: 'desc' } }, take: 10,
-      }),
+      // Both series are bucketed the same way onto the same instants, so slot N
+      // is the same date in each — the overlay used to be a second chart with
+      // its own length, where bar 4 of one was not bar 4 of the other.
+      prisma.$queryRaw`
+        SELECT ${lagosBucket(bucketUnit, Prisma.sql`"createdAt"`)} AS bucket, COUNT(*)::int AS clicks
+        FROM link_clicks WHERE ${clickWhere} GROUP BY 1 ORDER BY 1`,
 
-      prisma.linkClick.groupBy({
-        by: ['city'], where: { ...where, city: { not: null } }, _count: true,
-        orderBy: { _count: { city: 'desc' } }, take: 10,
-      }),
-
-      prisma.linkClick.groupBy({
-        by: ['browser'], where: { ...where, browser: { not: null } }, _count: true,
-        orderBy: { _count: { browser: 'desc' } }, take: 8,
-      }),
-
-      prisma.linkClick.groupBy({
-        by: ['os'], where: { ...where, os: { not: null } }, _count: true,
-        orderBy: { _count: { os: 'desc' } }, take: 8,
-      }),
-
-      prisma.linkClick.groupBy({
-        by: ['referrer'], where: { ...where, referrer: { not: null } }, _count: true,
-        orderBy: { _count: { referrer: 'desc' } }, take: 8,
-      }),
-
-      range === '24h'
-        ? (linkId
-          ? prisma.$queryRaw`SELECT EXTRACT(HOUR FROM "createdAt")::int AS bucket, COUNT(*)::int AS clicks FROM link_clicks WHERE "linkId" = ${linkId} AND "createdAt" >= ${since} GROUP BY bucket ORDER BY bucket`
-          : prisma.$queryRaw`SELECT EXTRACT(HOUR FROM "createdAt")::int AS bucket, COUNT(*)::int AS clicks FROM link_clicks WHERE "createdAt" >= ${since} GROUP BY bucket ORDER BY bucket`)
-        : (linkId
-          ? prisma.$queryRaw`SELECT DATE("createdAt") AS bucket, COUNT(*)::int AS clicks FROM link_clicks WHERE "linkId" = ${linkId} AND "createdAt" >= ${since} GROUP BY bucket ORDER BY bucket`
-          : prisma.$queryRaw`SELECT DATE("createdAt") AS bucket, COUNT(*)::int AS clicks FROM link_clicks WHERE "createdAt" >= ${since} GROUP BY bucket ORDER BY bucket`),
-
-      // Signup timeline for this link's slug
       slug
-        ? (range === '24h'
-          ? prisma.$queryRaw`SELECT EXTRACT(HOUR FROM "createdAt")::int AS bucket, COUNT(*)::int AS signups FROM users WHERE "signupSource" = ${slug} AND "deletedAt" IS NULL AND "createdAt" >= ${since} GROUP BY bucket ORDER BY bucket`
-          : prisma.$queryRaw`SELECT DATE("createdAt") AS bucket, COUNT(*)::int AS signups FROM users WHERE "signupSource" = ${slug} AND "deletedAt" IS NULL AND "createdAt" >= ${since} GROUP BY bucket ORDER BY bucket`)
+        ? prisma.$queryRaw`
+            SELECT ${lagosBucket(bucketUnit, Prisma.sql`"createdAt"`)} AS bucket, COUNT(*)::int AS signups
+            FROM users WHERE "signupSource" = ${slug} AND "deletedAt" IS NULL
+              AND "createdAt" >= ${since} AND "createdAt" < ${until} GROUP BY 1 ORDER BY 1`
         : Promise.resolve([]),
 
-      // Signups inside the window, so the row describes one period.
-      //
-      // The card was reading the link list's all-time total against this
-      // route's windowed clicks — 3,465 signups over 2,384 clicks, printed as
-      // "145.3% conversion". A conversion above 100% is not a rounding
-      // problem, it is two different questions sharing a percentage sign.
       slug
-        ? prisma.user.count({ where: { signupSource: slug, deletedAt: null, createdAt: { gte: since } } })
+        ? prisma.user.count({ where: { signupSource: slug, deletedAt: null, createdAt: { gte: since, lt: until } } })
         : Promise.resolve(0),
 
-      // Revenue + orders for this link
       slug
         ? prisma.$queryRaw`
             SELECT COUNT(o.id)::int AS orders, COALESCE(SUM(o.charge),0)::bigint AS revenue, COALESCE(SUM(o.cost),0)::bigint AS cost
             FROM orders o JOIN users u ON o."userId" = u.id
-            WHERE u."signupSource" = ${slug} AND u."deletedAt" IS NULL AND o."deletedAt" IS NULL AND o.status NOT IN ('Cancelled') AND o."createdAt" >= ${since}
-          `
-        : Promise.resolve([{ orders: 0, revenue: 0, cost: 0 }]),
+            WHERE u."signupSource" = ${slug} AND u."deletedAt" IS NULL AND o."deletedAt" IS NULL
+              AND o.status NOT IN ('Cancelled') AND o."createdAt" >= ${since} AND o."createdAt" < ${until}`
+        : Promise.resolve([{ orders: 0, revenue: 0n, cost: 0n }]),
+
+      // ── the all-time strip ──
+      prisma.linkClick.count({ where: linkId ? { linkId } : {} }),
+      slug ? prisma.user.count({ where: { signupSource: slug, deletedAt: null } }) : Promise.resolve(0),
+      slug
+        ? prisma.$queryRaw`
+            SELECT COUNT(o.id)::int AS orders, COALESCE(SUM(o.charge),0)::bigint AS revenue
+            FROM orders o JOIN users u ON o."userId" = u.id
+            WHERE u."signupSource" = ${slug} AND u."deletedAt" IS NULL AND o."deletedAt" IS NULL
+              AND o.status NOT IN ('Cancelled')`
+        : Promise.resolve([{ orders: 0, revenue: 0n }]),
     ]);
 
-    // bigint keeps the sum from overflowing in Postgres; Number keeps it
-    // JSON-serialisable on the way out. ₦4.18m of kobo is 418,057,800 — well
-    // inside a double, and nowhere near the 32-bit int the cast used to use.
-    const raw = revenueStats[0] || { orders: 0, revenue: 0, cost: 0 };
-    const rev = { orders: Number(raw.orders), revenue: Number(raw.revenue), cost: Number(raw.cost) };
+    const money = (v) => Number(v || 0) / 100;
+    const p = periodMoney[0] || { orders: 0, revenue: 0n, cost: 0n };
+    const life = lifetimeMoney[0] || { orders: 0, revenue: 0n };
+
+    // One map per bucket instant, then one pass to emit every slot.
+    const signupByBucket = new Map(signupSeries.map(r => [new Date(r.bucket).getTime(), Number(r.signups)]));
+    const timeline = fill(win, clickSeries, ['clicks']).map(slot => ({
+      ...slot,
+      signups: signupByBucket.get(new Date(slot.at).getTime()) || 0,
+    }));
 
     return Response.json({
+      range,
+      bucket: win.bucket,
+      label: RANGES[range].label,
+      windowStart: win.start.toISOString(),
+      windowEnd: win.end.toISOString(),
+      slots: win.slots,
+
       totalClicks,
       uniqueClicks: uniqueRaw[0]?.cnt || 0,
+      periodSignups,
+      periodOrders: Number(p.orders),
+      periodRevenue: money(p.revenue),
+      periodProfit: money(Number(p.revenue) - Number(p.cost)),
+
+      // Plainly labelled, so nothing on the card row is secretly all-time.
+      lifetime: {
+        clicks: lifetimeClicks,
+        signups: lifetimeSignups,
+        orders: Number(life.orders),
+        revenue: money(life.revenue),
+        since: firstAt ? new Date(firstAt).toISOString() : null,
+      },
+
+      timeline,
       devices: Object.fromEntries(deviceBreakdown.map(d => [d.deviceType, d._count])),
       countries: countryBreakdown.map(c => ({ code: c.country, clicks: c._count })),
       cities: cityBreakdown.map(c => ({ name: c.city, clicks: c._count })),
       browsers: browserBreakdown.map(b => ({ name: b.browser, clicks: b._count })),
       os: osBreakdown.map(o => ({ name: o.os, clicks: o._count })),
       referrers: referrerBreakdown.map(r => ({ source: r.referrer, clicks: r._count })),
-      timeline: timelineRaw,
-      signupTimeline: signupTimelineRaw,
-      periodSignups,
-      periodRevenue: rev.revenue / 100,
-      periodOrders: rev.orders,
-      periodProfit: (rev.revenue - rev.cost) / 100,
-      range,
     });
   } catch (err) {
     log.error('Acquisition Analytics', err.message);
