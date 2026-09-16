@@ -358,11 +358,14 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
       )}
       <div className="h-px bg-t-card-border" />
       {/* List */}
-      {/* min-h-0 is what makes this scroll on a phone. A flex child defaults to
-          min-height:auto and refuses to shrink below its content, so flex-1 with
-          overflow-y-auto grew the list past the sheet instead of scrolling
-          inside it — and the sheet's overflow:hidden then clipped the last
-          notifications out of reach entirely. */}
+      {/* min-h-0 is belt and braces, not the mechanism — measured, the list
+          scrolls without it. A flex item only gets an automatic minimum size
+          when its own overflow is visible, and this one is overflow-y-auto, so
+          its minimum was already zero. Kept because it states the intent and
+          costs nothing, but the sheet was never failing to scroll: it was
+          opening behind the header, which is a different bug two commits back.
+          With 40 notifications the sheet holds at 82vh and 2,120px of list
+          scrolls inside a 542px window. */}
       <div className="max-h-[392px] max-desktop:max-h-none max-desktop:flex-1 max-desktop:min-h-0 overflow-y-auto overscroll-contain">
         {display.length > 0 ? display.map((n, i) => {
           const isRead = readIds.has(n.id) || (readAllAt && n.ts && n.ts <= readAllAt);
