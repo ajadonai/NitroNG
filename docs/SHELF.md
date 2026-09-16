@@ -253,18 +253,6 @@ as the work. (Formerly docs/BACKLOG.md.)
   **Do not** build per-country wallets or a second price list — both ruled out
   in the International Nitro entry, and the premium lives in the deposit rate.
 
-- **Flutterwave Review rows have no admin surface yet** (12 Sep leak audit).
-  A successful payment whose figures are not the ones quoted — a bank
-  transfer that arrived short, a cedi/shilling figure the rail rounded, a
-  currency we did not ask for — now parks as `Review` (with
-  `paymentReviewReason`) and raises `deposit_paid_mismatch` in Sentry carrying
-  both amounts, instead of a silent `Failed` that re-verified to the same
-  verdict every sweep while the money sat uncredited. Resolution today: credit
-  what arrived from the users drawer, reason = the reference. Admin → Payments
-  lists only manual and crypto deposits, so these rows surface through the
-  alert alone; give them a row and an "approve as ₦X" action when the first
-  one lands.
-
 - **Checkout abandonment — a project, sized 13 Sep 2026, not started.** 60.0%
   of deposit initiations end in a funded wallet; after netting the 58% who
   complete within 7 days, true leakage is about 16.6% — roughly ₦20k/day of
@@ -600,6 +588,27 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **Deposits that succeeded at the bank but not at the quote have a surface**
+  (16 Sep 2026, `v2.5.87`). A Flutterwave mismatch parked as `Review` and told
+  only Sentry — Admin → Payments lists manual and crypto, so the row rendered
+  nowhere and the money sat in our Flutterwave balance uncredited. It now shows
+  above the filters (a status filter could otherwise hide it), across every
+  method, with quoted, arrived and the gap, and a button that names the figure
+  rather than saying "approve".
+
+  The rules that decide how money moves are in `lib/payment-review.js` and
+  pinned by tests: credit what arrived and never the quote, never more than was
+  quoted, no invented rate for a currency we do not hold one for, claim the
+  review before the credit so a race cannot pay twice, and hand it back if the
+  credit fails. A reference mismatch with a matching amount carries a warning,
+  because that is also what a double charge looks like.
+
+  Evidence is written into the note as `[flutterwave_paid:…]`, the same way this
+  table already carries `[approved_by:…]` — no migration, and the figures travel
+  with the row instead of living in an alert. Zero of these existed when it was
+  built.
+
 
 - **jap is disconnected** (16 Sep 2026, `v2.5.86`). Removed from `lib/smm.js`
   (the register), the balance, prices and daily crons, the admin sync, topups,
