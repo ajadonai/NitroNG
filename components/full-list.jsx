@@ -261,13 +261,14 @@ function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, time
           scannable by what they deliver and the two views read as one page. */}
       <ServiceGlyph type={row.type} tone={rowTone(row, dark, t)} dark={dark} size={34} radius={10} className="max-md:!w-[31px] max-md:!h-[31px]" />
       <div className="min-w-0 flex-1">
-        {/* The name gets the whole line. The ID leads the detail line under it,
-            where it can be scanned down a column without truncating a
-            forty-character label. */}
+        {/* Three lines, each holding one kind of thing: what it is, which one it
+            is, and what it promises. The ID used to lead the badge line behind a
+            separator dot, which made the badges start at a different x on every
+            row — so nothing lined up down a column of nine hundred. On its own
+            line it is scannable, and the badges all begin at the same edge. */}
         <div className="text-[13px] md:text-sm font-semibold truncate" style={{ color: t.text }}>{row.label}</div>
+        <div className="m text-[10.5px] mt-[3px] leading-none" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>#{row.id}</div>
         <div className="flex items-center gap-1 flex-wrap mt-[5px]">
-          <span className="m text-[10.5px] shrink-0" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>#{row.id}</span>
-          <span className="text-[10.5px] opacity-40" style={{ color: t.textMuted }}>·</span>
           <Chip kind={row.refill ? "refill" : "neutral"} dark={dark}>{refillText}</Chip>
           {rest.map(a => <Chip key={a} kind={chipKind(a)} dark={dark}>{a}</Chip>)}
           {/* Bought before, which on a list with no Nitro guarantee is the only

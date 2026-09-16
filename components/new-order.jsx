@@ -594,7 +594,7 @@ export function OrderForm(props) {
 // already take it from this module keep working.
 export { NotSureHelp, OrderForMeCard } from "./order-help";
 
-export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrders, onNavigate, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, tourActive, activePromotion, rewards, socialLinks, refreshRewards }) {
+export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, user, onOrderSuccess, onViewOrders, onNavigate, onTopUp, platform, setPlatform, selSvc, setSelSvc, selTier, setSelTier, qty, setQty, link, setLink, comments, setComments, tourActive, activePromotion, rewards, socialLinks, refreshRewards }) {
   const tr = useT();
   const money = useMoney();
   const toast = useToast();
@@ -876,6 +876,17 @@ export default function NewOrderPage({ dark, t, user, onOrderSuccess, onViewOrde
     setSelSvc(null); setSelTier(null); setFullRow(null);
     setOrderModal(false); setOrderSuccess(null); setSearch(""); setLink(""); setComments(""); setQty("");
   };
+
+  /* "Show me" on the full-list notice lands here.
+     It used to only call setActive("services"), which is a no-op for anyone
+     already on New Order — so the modal closed and nothing else happened, and
+     it never selected the full list in the first place. The notice is about
+     that list, so it has to arrive on it. */
+  useEffect(() => {
+    if (!openFullList) return;
+    switchView("full");
+    onOpenedFullList?.();
+  }, [openFullList]);
 
   /* A full-list row, dressed as the service/tier pair the order form and the
      submit path already speak. There is no tier — that is the whole point of
