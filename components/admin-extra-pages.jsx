@@ -1264,8 +1264,19 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
     );
   }
 
-  const convRate = analytics.totalClicks > 0 ? ((link.signups / analytics.totalClicks) * 100).toFixed(1) : "0";
-  const orderRate = link.signups > 0 ? ((link.orders / link.signups) * 100).toFixed(1) : "0";
+  // Every figure in the card row comes from the same window. Mixing the list
+  // row's all-time signups with this panel's windowed clicks is what printed
+  // "145.3% conversion" — a rate above 100% is two different questions sharing
+  // a percentage sign, not a rounding error.
+  //
+  // ?? and not ||, because a real zero in a quiet week is an answer. || treated
+  // it as missing and silently substituted the all-time number, which is the
+  // same class of bug one level down.
+  const periodSignups = analytics.periodSignups ?? link.signups ?? 0;
+  const periodOrders = analytics.periodOrders ?? link.orders ?? 0;
+  const periodRevenue = analytics.periodRevenue ?? (link.revenue || 0) / 100;
+  const convRate = analytics.totalClicks > 0 ? ((periodSignups / analytics.totalClicks) * 100).toFixed(1) : "0";
+  const orderRate = periodSignups > 0 ? ((periodOrders / periodSignups) * 100).toFixed(1) : "0";
 
   const timelineData = range === "24h"
     ? Array.from({ length: 24 }, (_, h) => { const m = analytics.timeline.find(t => t.bucket === h); return m ? m.clicks : 0; })
@@ -1286,9 +1297,9 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         {[
           ["Total Clicks", analytics.totalClicks.toLocaleString(), `${analytics.uniqueClicks.toLocaleString()} unique`, t.accent],
-          ["Signups", (link.signups || 0).toLocaleString(), `${convRate}% conversion`, dark ? "#a5b4fc" : "#6366f1"],
-          ["Orders", (link.orders || 0).toLocaleString(), `${orderRate}% of signups`, dark ? "#6ee7b7" : "#059669"],
-          ["Revenue", fN(analytics.periodRevenue || (link.revenue || 0) / 100), `${fN(analytics.periodProfit || 0)} profit`, dark ? "#fcd34d" : "#d97706"],
+          ["Signups", periodSignups.toLocaleString(), `${convRate}% conversion`, dark ? "#a5b4fc" : "#6366f1"],
+          ["Orders", periodOrders.toLocaleString(), `${orderRate}% of signups`, dark ? "#6ee7b7" : "#059669"],
+          ["Revenue", fN(periodRevenue), `${fN(analytics.periodProfit ?? 0)} profit`, dark ? "#fcd34d" : "#d97706"],
         ].map(([label, val, sub, color]) => (
           <div key={label} className="rounded-xl p-3.5 relative overflow-hidden" style={cardStyle}>
             <div className="text-[10px] font-semibold uppercase tracking-[1.5px] mb-1.5" style={{ color: t.textMuted }}>{label}</div>
@@ -1304,7 +1315,7 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
           <div className="flex items-center justify-between mb-4">
             <div>
               <div className="text-sm font-semibold" style={{ color: t.text }}>Click Timeline</div>
-              <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{range === "24h" ? "Today, by hour" : range === "7d" ? "Last 7 days" : "Last 30 days"}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: t.textMuted }}>{range === "24h" ? "Today, by hour" : range === "7d" ? "Last 7 days" : range === "all" ? "All time" : "Last 30 days"}</div>
             </div>
             <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
               {["24h", "7d", "30d"].map(p => (
