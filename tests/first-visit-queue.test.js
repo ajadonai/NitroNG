@@ -51,7 +51,11 @@ describe('the first-visit queue', () => {
     expect(notice).toMatch(/localStorage\.setItem\(FULL_LIST_SEEN_KEY, "1"\)/);
     // Both buttons record it — dismissing is still being told.
     expect(dash).toMatch(/onClose=\{\(\) => \{ markFullListSeen\(\); setNoticeClosed\(true\); \}\}/);
-    expect(dash).toMatch(/onShowMe=\{\(\) => \{ markFullListSeen\(\); setNoticeClosed\(true\); setActive\("services"\); \}\}/);
+    // "Show me" has to arrive ON the full list, not merely on New Order —
+    // setActive("services") alone is a no-op for anyone already there, which is
+    // why the button appeared to do nothing.
+    expect(dash).toMatch(/onShowMe=\{\(\) => \{ markFullListSeen\(\); setNoticeClosed\(true\); setActive\("services"\); setOpenFullList\(true\); \}\}/);
+    expect(dash).toMatch(/openFullList=\{openFullList\}/);
   });
 
   it('owns the screen while it is up, like every other overlay here', () => {

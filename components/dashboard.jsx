@@ -508,6 +508,8 @@ function DashboardInner({ initialData }) {
   // Dismissed this session. The stored flag answers for every later visit; this
   // only stops the card reappearing the moment it is closed.
   const [noticeClosed, setNoticeClosed] = useState(false);
+  // Set by "Show me" on the full-list notice; NewOrder consumes it once and clears it.
+  const [openFullList, setOpenFullList] = useState(false);
 
   /* Is a page change still settling?
      True the moment `active` changes, false once the new page has had two
@@ -1410,7 +1412,7 @@ function DashboardInner({ initialData }) {
       case "overview":
         return <OverviewPage user={user} orders={orders} activeOrders={activeOrders} orderSummary={orderSummary} isReseller={isReseller} dark={dark} t={t} setActive={setActive} socialLinks={socialLinks} rewards={rewards} />;
       case "services":
-        return <NewOrderPage dark={dark} t={t} user={user} onOrderSuccess={refreshDashboard} onViewOrders={() => setActive("orders")} onNavigate={(id) => setActive(id)} onTopUp={() => setActive("add-funds")} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} comments={noComments} setComments={setNoComments} catModal={noCatModal} setCatModal={setNoCatModal} tourActive={showOrderTour} activePromotion={activePromotion} rewards={rewards} socialLinks={socialLinks} refreshRewards={refreshRewards} />;
+        return <NewOrderPage openFullList={openFullList} onOpenedFullList={() => setOpenFullList(false)} dark={dark} t={t} user={user} onOrderSuccess={refreshDashboard} onViewOrders={() => setActive("orders")} onNavigate={(id) => setActive(id)} onTopUp={() => setActive("add-funds")} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} comments={noComments} setComments={setNoComments} catModal={noCatModal} setCatModal={setNoCatModal} tourActive={showOrderTour} activePromotion={activePromotion} rewards={rewards} socialLinks={socialLinks} refreshRewards={refreshRewards} />;
       case "orders":
         return <OrdersPage orders={orders} initialTotal={ordersTotal} orderSummary={orderSummary} txs={enrichedTxs} dark={dark} t={t} onNavigate={setActive} onRefresh={refreshDashboard} waNum={socialLinks.social_whatsapp_support?.replace(/\D/g, "")} email={user?.email} initialSearch={ordersFocus || ""} />;
       case "referrals":
@@ -1888,7 +1890,7 @@ function DashboardInner({ initialData }) {
       {/* Phone number prompt for existing users */}
       {noticeDue && (
         <FullListNotice dark={dark} onClose={() => { markFullListSeen(); setNoticeClosed(true); }}
-          onShowMe={() => { markFullListSeen(); setNoticeClosed(true); setActive("services"); }} />
+          onShowMe={() => { markFullListSeen(); setNoticeClosed(true); setActive("services"); setOpenFullList(true); }} />
       )}
 
       {(phonePromptDone || shouldShowPhonePrompt({ phoneKnown, phone: phoneForPrompt, user, currentTosVersion })) && (
