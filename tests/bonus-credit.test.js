@@ -53,7 +53,14 @@ function makeTx() {
       return 1;
     }),
     bonusCredit: {
-      findMany: vi.fn(async () => state.bonusCredits.filter(c => c.amountRemaining > 0 && !c.expiredAt).sort((a, b) => a.expiresAt - b.expiresAt)),
+      // Postgres puts NULLs last on an ASC sort, and a null expiry is now a
+      // real case — so the stub has to order the same way or the spend order
+      // it reports is fiction.
+      findMany: vi.fn(async () => state.bonusCredits.filter(c => c.amountRemaining > 0 && !c.expiredAt).sort((a, b) => {
+        if (!a.expiresAt) return b.expiresAt ? 1 : 0;
+        if (!b.expiresAt) return -1;
+        return a.expiresAt - b.expiresAt;
+      })),
       create: vi.fn(async ({ data }) => { const row = { id: `bc_${Date.now()}`, ...data }; state.bonusCredits.push(row); return row; }),
       update: vi.fn(async ({ where, data }) => {
         const c = state.bonusCredits.find(x => x.id === where.id);
@@ -111,6 +118,9 @@ function makeWelcomeBonusDb() {
       count: vi.fn(),
     },
     transaction: { create: vi.fn(), count: vi.fn().mockResolvedValue(1) },
+    // The welcome bonus writes a spend-only credit alongside the balance now,
+    // the way the top-up bonus and the win-back credit always have.
+    bonusCredit: { create: vi.fn() },
     alert: { create: vi.fn() },
     setting: { findMany: vi.fn() },
   };
@@ -163,6 +173,22 @@ describe('trackBonusConsumption', () => {
     expect(state.creditUsages).toHaveLength(2);
     expect(state.creditUsages[0]).toEqual(expect.objectContaining({ bonusCreditId: 'bc2', amount: 3000 }));
     expect(state.creditUsages[1]).toEqual(expect.objectContaining({ bonusCreditId: 'bc1', amount: 1000 }));
+  });
+
+  it('spends the credit with a deadline before the one without', async () => {
+    // A win-back credit dies in seven days; a welcome bonus never does. Spend
+    // the permanent one first and the perishable one expires unused, which is
+    // money taken back from somebody who was given it.
+    const { tx, state } = makeTx();
+    state.bonusCredits = [
+      { id: 'welcome', userId: 'u1', amountRemaining: 3000, expiresAt: null, expiredAt: null },
+      { id: 'winback', userId: 'u1', amountRemaining: 2000, expiresAt: new Date(Date.now() + 7 * 86400000), expiredAt: null },
+    ];
+
+    await trackBonusConsumption(tx, 'u1', 'order1', 4000);
+
+    expect(state.creditUsages[0]).toEqual(expect.objectContaining({ bonusCreditId: 'winback', amount: 2000 }));
+    expect(state.creditUsages[1]).toEqual(expect.objectContaining({ bonusCreditId: 'welcome', amount: 2000 }));
   });
 
   it('does nothing when no bonus credits exist', async () => {
@@ -387,6 +413,25 @@ describe('getBonusInfo', () => {
     expect(result.amount).toBe(5000);
     expect(result.expiresAt).toBe(soon.toISOString());
   });
+
+  it('counts a credit that never expires, and reports no deadline for it', async () => {
+    // The wallet line reads "₦250 of this is bonus" with a deadline when there
+    // is one. A null has to survive as a null: coercing it to a date invents a
+    // deadline the user was never given.
+    const db = { bonusCredit: { findMany: vi.fn(async () => [{ amountRemaining: 25000, expiresAt: null }]) } };
+    const result = await getBonusInfo(db, 'u1');
+    expect(result.amount).toBe(25000);
+    expect(result.expiresAt).toBeNull();
+  });
+
+  it('asks for live credit by both meanings of live', async () => {
+    // `expiresAt: { gt: now }` alone never matches NULL, so the permanent
+    // welcome bonus would vanish from the wallet the moment it was granted.
+    const db = { bonusCredit: { findMany: vi.fn(async () => []) } };
+    await getBonusInfo(db, 'u1');
+    const { where } = db.bonusCredit.findMany.mock.calls[0][0];
+    expect(where.OR).toEqual([{ expiresAt: null }, { expiresAt: { gt: expect.any(Date) } }]);
+  });
 });
 
 describe('applyWelcomeBonus', () => {
@@ -408,6 +453,40 @@ describe('applyWelcomeBonus', () => {
     }));
     expect(db.transaction.create).toHaveBeenCalled();
     expect(db.alert.create).not.toHaveBeenCalled();
+  });
+
+  it('records the bonus as spend-only credit, with no deadline on it', async () => {
+    // For 1,349 grants this went in as plain balance and nothing else, so
+    // ₦1,293,050 of promotional money was indistinguishable from a real
+    // deposit — over half of every naira sitting in a wallet. The row is what
+    // makes "bonus cannot be withdrawn" true rather than merely unreachable.
+    const db = makeWelcomeBonusDb();
+    db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: false, referredBy: null, signupIp: '1.2.3.4' });
+    db.user.updateMany.mockResolvedValue({ count: 1 });
+    db.setting.findMany.mockResolvedValue([]);
+    db.user.count.mockResolvedValue(1);
+    db.user.update.mockResolvedValue({});
+    db.transaction.create.mockResolvedValue({});
+
+    await applyWelcomeBonus(db, 'user1', 250000);
+
+    expect(db.bonusCredit.create).toHaveBeenCalledWith({
+      data: { userId: 'user1', source: 'welcome_bonus', amountGranted: 25000, amountRemaining: 25000, expiresAt: null },
+    });
+  });
+
+  it('writes no credit for a bonus that was never paid', async () => {
+    const db = makeWelcomeBonusDb();
+    db.user.findUnique.mockResolvedValue({ firstDepositBonusPaid: false, referredBy: null, signupIp: '1.2.3.4' });
+    db.user.updateMany.mockResolvedValue({ count: 1 });
+    db.setting.findMany.mockResolvedValue([]);
+    db.user.count.mockResolvedValue(1);
+
+    // Under the ₦2,500 floor: the flag burns, no money moves.
+    const result = await applyWelcomeBonus(db, 'user1', 100000);
+
+    expect(result).toBe(0);
+    expect(db.bonusCredit.create).not.toHaveBeenCalled();
   });
 
   it('withholds bonus when at IP cap (no alert record)', async () => {

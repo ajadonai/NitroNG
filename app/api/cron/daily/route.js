@@ -235,7 +235,9 @@ export async function GET(req) {
             orderBy: { grantedAt: 'desc' },
             select: { expiresAt: true, amountGranted: true },
           });
-          const msLeft = bc ? bc.expiresAt.getTime() - Date.now() : 0;
+          // Winback credit always carries an expiry; guarded anyway, since
+          // the column is nullable now and a crash here kills the whole run.
+          const msLeft = bc?.expiresAt ? bc.expiresAt.getTime() - Date.now() : 0;
           if (!bc || msLeft < STALE_CUTOFF_MS) {
             await prisma.user.update({ where: { id: user.id }, data: { winback30SentAt: new Date(0) } });
             continue;
@@ -315,7 +317,9 @@ export async function GET(req) {
             orderBy: { grantedAt: 'desc' },
             select: { expiresAt: true, amountGranted: true },
           });
-          const msLeft = bc ? bc.expiresAt.getTime() - Date.now() : 0;
+          // Winback credit always carries an expiry; guarded anyway, since
+          // the column is nullable now and a crash here kills the whole run.
+          const msLeft = bc?.expiresAt ? bc.expiresAt.getTime() - Date.now() : 0;
           if (!bc || msLeft < STALE_CUTOFF_MS) {
             await prisma.user.update({ where: { id: user.id }, data: { winback60SentAt: new Date(0) } });
             continue;
@@ -410,7 +414,10 @@ export async function GET(req) {
         nudgeIdleBalanceSentAt: null,
         balance: { gte: 50000 },
         // Reverse guard: exclude users in an active Play 7 window
-        bonusCredits: { none: { amountRemaining: { gt: 0 }, expiredAt: null, expiresAt: { gt: new Date() } } },
+        // A null expiry is credit that never runs out, so it is live and the
+        // guard must exclude it too — otherwise somebody holding an unspent
+        // welcome bonus gets an "idle balance" nudge about their own bonus.
+        bonusCredits: { none: { amountRemaining: { gt: 0 }, expiredAt: null, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] } },
         orders: {
           some: { deletedAt: null },
           none: { createdAt: { gt: sevenDaysAgo }, deletedAt: null },

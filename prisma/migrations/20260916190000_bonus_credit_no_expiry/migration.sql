@@ -1,0 +1,20 @@
+-- Some bonus credit does not expire, and now it can say so.
+--
+-- The welcome bonus went into user.balance as plain money — no BonusCredit row,
+-- nothing marking it spend-only. NGN1,293,050 across 1,349 grants, more than
+-- half of every naira held in a wallet, sitting in the same field as deposits
+-- and indistinguishable from them. Everything we tell customers says it cannot
+-- be withdrawn, and that held only because no payout path reads user.balance.
+--
+-- Granting it as a BonusCredit fixes that, and a BonusCredit needed an expiry.
+-- The welcome bonus has never had one, and the data says it should not get one:
+-- 91.0% of recipients place an order within 24 hours and 94.5% within 30 days.
+-- A 30-day expiry would touch 5.4% — of whom 5.3 points never ordered at all,
+-- so it would motivate nobody — and recover NGN51,250 from people who were not
+-- coming back, in exchange for putting a deadline on 1,277 people's money.
+--
+-- So NULL means never. Nullable rather than a far-future date, because a date
+-- we do not mean is a lie the code then has to work around, and because
+-- Postgres sorts NULLS LAST on an ASC order — which makes trackBonusConsumption
+-- spend the perishable credit first, for free and in the right order.
+ALTER TABLE "bonus_credits" ALTER COLUMN "expiresAt" DROP NOT NULL;

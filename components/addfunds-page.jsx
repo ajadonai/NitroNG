@@ -872,11 +872,15 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         {lastFunded && <div className="text-[11px] mt-1.5 text-t-text-muted">{tr("Last funded")} {fD(lastFunded.date, true)}</div>}
         <div className="px-0">
             {user?.bonusCredit?.amount > 0 && (() => {
-              const daysLeft = Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000));
+              // No expiry is the welcome bonus, which never runs out. The line
+              // states the figure and stops rather than inventing a deadline.
+              const daysLeft = user.bonusCredit.expiresAt
+                ? Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))
+                : null;
               return (
                 <div className="flex items-center gap-1.5 mt-2 py-2 px-2.5 rounded-lg text-[11px]" style={{ background: dark ? "rgba(240,171,252,.06)" : "rgba(168,85,247,.04)", border: `1px solid ${dark ? "rgba(240,171,252,.14)" : "rgba(168,85,247,.1)"}`, color: dark ? "#f0abfc" : "#a855f7" }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>
-                  <span>{money(user.bonusCredit.amount / 100, { round: "down" })} {tr("bonus credit — expires in")} {daysLeft}d</span>
+                  <span>{money(user.bonusCredit.amount / 100, { round: "down" })} {daysLeft ? <>{tr("bonus credit — expires in")} {daysLeft}d</> : tr("bonus credit")}</span>
                 </div>
               );
             })()}
