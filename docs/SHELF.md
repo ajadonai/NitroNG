@@ -150,9 +150,29 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   case exactly 10.00%. It also closes the rate box for free — 40% can still be
   typed in and simply stops biting where it would cost money.
 
-  **Still to build: the ladder itself** — the five tiers, the nightly promotion,
-  month-end demotion after a grace month, and the Auto / pinned / custom
-  dropdown. **Mockup: artifact `02ba676e`.**
+  **Still to build: the ladder itself and the admin page.** Trip's call on
+  shape, 17 Sep: reseller pricing gets **the same band structure as the retail
+  pricing page** — a per-band cap on the discount, read from the same
+  `markup_brackets` so the two cannot drift, with the floor becoming the
+  validation on the input rather than a silent clamp at charge time. Chosen
+  shape is **A: one rate per tier plus one cap per band** (11 numbers),
+  effective = `min(tierPct, bandCap)`, over B, a full 5×6 matrix. **The cap
+  must bind every tier**, not only the top — cap only Wholesale and Scale on 25%
+  pays less than Wholesale held at 22%, so climbing a tier raises the price.
+  Only Ultra binds on today's brackets; five of six rows read "no cap".
+  **Tier thresholds are editable on the page** (Trip: "we need to be able to
+  change tier amount"). Mockups: ladder `02ba676e`, admin page `4eb3b4ca`.
+
+  **Profitability, measured 17 Sep on 90 days of real orders** (₦12.56M
+  revenue, 63.4% blended margin, repriced as if every buyer were a reseller):
+  every tier is profitable on every order — worst single service 10%, blended
+  never under 48.1%. But a 30% discount on a 63% margin business is a **46.4%
+  cut in profit**, so the thresholds are the profitability lever, not the
+  floor. Break-even volume — how many retail customers' spend a reseller must
+  bring to earn the same profit: Starter 1.19×, Trade 1.31×, Bulk 1.46×, Scale
+  1.64×, **Wholesale 1.87×**. Below that a tier is a discount to somebody who
+  would have paid retail; above it, new money. Set thresholds against this.
+  Nothing to cannibalise today: the three resellers on file are all tiny.
 
   **Open for Trip.** (1) The five thresholds — ₦50k/₦250k/₦750k/₦2M are proposed
   rather than measured; there is no reseller volume to fit a curve to. (2) What
