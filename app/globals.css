@@ -305,8 +305,60 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .nav-brand:hover { opacity: .85; }
 .nav-logo { transition: transform .2s ease, box-shadow .2s ease; }
 .nav-brand:hover .nav-logo { transform: scale(1.05); }
-.nav-link-pill { transition: background .15s ease, color .15s ease !important; }
-.nav-link-pill:hover { background: rgba(255,255,255,.08) !important; color: rgba(255,255,255,.9) !important; }
+/* Landing nav links: a hairline that draws under the word.
+   
+   They used to take a flat rgba(255,255,255,.08) wash — barely a shade over the
+   rose bar — and climb from 75% to 90% white. That reads as "clickable" and
+   nothing more, on a bar that also holds a ringed Log in, a solid Get started
+   and a working sky toggle.
+   
+   An underline under a word in a bar is the oldest signal on the web and it is
+   the one treatment here that says navigation rather than button. The rose is
+   the brand accent, so the bar uses the palette instead of diluting it.
+   
+   inset-inline rather than left+right, so the logical-properties plugin
+   generates no [dir] rules for it — and transform-origin is flipped for RTL by
+   hand, because the plugin does not rewrite it and a rule that draws away from
+   the reader is worse than one that does not move. */
+/* The wide-screen nav centring, and why Arabic opts out of it.
+   
+   At 1560px+ the links are viewport-centred with `left-1/2` plus
+   `-translate-x-1/2`. Two things went wrong under [dir=rtl]. The
+   logical-properties plugin rewrites `left: 50%` into `inset-inline-start` —
+   correctly — but does not touch the translate, so the pair stopped cancelling
+   and started compounding: the block landed at -45..505 with the currency
+   pills, the sky toggle and Log in sitting at 32..532, and the links were
+   drawn straight through them.
+   
+   Mirroring the translate fixes that and centres the block properly. It does
+   not fix the second half, which is the fault the 1560 threshold was invented
+   for in the first place: viewport-centring ignores the right cluster, so the
+   number has to be tuned to that cluster's width. Arabic's is 500px against
+   English's 448 — "تسجيل الدخول" and "مرحبا" are simply wider — so 1560 is too
+   low and the links still clipped the NGN pill by 27px at 1560 and 7px at 1600.
+   
+   A second hand-tuned breakpoint would be wrong the next time a label or a font
+   changes. So Arabic keeps the links in the flex row at every width, centred in
+   the space that is actually free — which is what both languages already do
+   below 1560, and which cannot overlap because the groups stay in flow. */
+@media (min-width: 1560px) {
+  [dir="rtl"] .nav-centre { position: static; translate: none; }
+}
+
+.nav-link-pill { position: relative; transition: color .22s ease !important; }
+.nav-link-pill::after {
+  content: ""; position: absolute; inset-inline: 16px; bottom: 2px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, #f6d9e1, #c47d8e);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .34s cubic-bezier(.22, 1, .36, 1);
+}
+[dir="rtl"] .nav-link-pill::after { transform-origin: right; }
+.nav-link-pill:hover { color: #fff !important; }
+.nav-link-pill:hover::after { transform: scaleX(1); }
+.nav-link-pill:focus-visible { outline: 2px solid rgba(255,255,255,.9); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .nav-link-pill::after { transition-duration: .01s; }
+}
 /* Nav buttons wear the sky toggle's two-tone ring — a white hug plus a dark
    hairline outside it — so the three controls in the bar read as one set. A
    single-colour ring cannot do this: white alone vanishes where the hero is
@@ -493,21 +545,19 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .dash-av-name, .dash-av-chev { display: none; }
 .dash-avatar-btn { flex-shrink: 0; }
 @media (min-width: 1400px) {
-  /* 6px on the left, so the face is seated INSIDE the border rather than
-     filling the cap.
-     2px made the avatar concentric with the 17px cap, which reads as a photo
-     pressed into a ring — the two circles share a centre and the gap between
-     them is uniform and thin. Pushing it in gives the button a left margin the
-     way a chip has one, and the cap stops being a frame for the avatar and
-     starts being the edge of a control that contains it. */
-  /* 10px each side, and the avatar comes down to 26 to make room for it.
-     The gap could only ever be so wide while the avatar was 30px in a 34px
-     pill — 6px on the left still left it 2px from the top and bottom, so it
-     read as a large face shoved right rather than a small one sitting inside
-     a control. Shrinking it gives 4px above and below to go with the 10px
-     beside, and the spacing finally reads as spacing rather than as an offset.
-     34px stays: it is the height the bell and the balance pill share. */
-  .dash-avatar-btn { width: auto; padding: 4px 10px; max-width: 190px; }
+  /* 6px lead, 12px trail — the geometry the whole right cluster already uses.
+     .loc-pill sets `padding-inline: 6px 12px` for currency and language, and
+     the balance pill sets `pl-1.5 pr-3`, which is the same two numbers. This
+     one was on 10px each side, so its face started four pixels further in
+     than every icon beside it and the row lost its left edge.
+
+     The shrink to 26px is the other half, and it was described here long
+     before it was written: 30px in a 34px pill leaves 2px above and below, so
+     the avatar read as a large face shoved sideways rather than a small one
+     seated in a control. At 26 it clears 4px top and bottom and matches the
+     24px coin and flag next to it. 34px stays — it is the height the bell,
+     the balance pill and both locale pills share. */
+  .dash-avatar-btn { width: auto; padding-block: 0; padding-inline: 6px 12px; max-width: 190px; }
   /* Its own colour, from the token. It had none and inherited — and what it
      inherited from is not theme-aware, so the name came out black on the dark
      nav. A label on a themed control has to name its own ink. */
@@ -516,7 +566,6 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   .dash-av-chev { display: block; width: 13px; height: 13px; flex-shrink: 0; color: var(--t-text-muted); }
 }
 .dash-avatar { width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; }
-
 /* Left sidebar */
 .dash-left { width: 220px; display: flex; flex-direction: column; padding: 16px 12px; flex-shrink: 0; overflow: auto; }
 .dash-nav-item { display: flex; align-items: center; gap: 11px; padding: 9px 14px; border-radius: 10px; font-size: 14px; margin-bottom: 1px; text-align: left; width: 100%; background: none; letter-spacing: 0.01em; }
@@ -1560,26 +1609,123 @@ body:has(.dash-main) .nitro-atmo::before { content: none; }
   ::view-transition-new(root) { animation: none; }
 }
 
-/* ── Theme pill: the three-mode (Auto / Light / Dark) control, styled like the
-   sky toggle. A highlight springs under the active mode, the active icon glows
-   in its own colour, and the rose ring wraps it on any surface. ── */
-.theme-pill { position: relative; display: inline-flex; padding: 3px; border-radius: 99px; background: rgba(0,0,0,.05); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.4), 0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(0,0,0,.18), 0 3px 9px rgba(0,0,0,.12); }
-.dark .theme-pill { background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3), 0 0 0 1.5px rgba(232,180,196,.5), 0 3px 10px rgba(0,0,0,.3); }
-.theme-pill .tp-hl { position: absolute; top: 3px; left: 3px; width: 32px; height: 28px; border-radius: 99px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.14); transition: transform .42s cubic-bezier(.34,1.42,.5,1); z-index: 1; }
-/* The active highlight must read against the dark menu, so it is a distinctly
-   lighter plum with its own soft edge. */
-.dark .theme-pill .tp-hl { background: #3d2c4d; box-shadow: 0 1px 6px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.14); }
-.theme-pill[data-m="auto"] .tp-hl { transform: translateX(0); }
-.theme-pill[data-m="day"] .tp-hl { transform: translateX(32px); }
-.theme-pill[data-m="night"] .tp-hl { transform: translateX(64px); }
-.theme-pill .tp-seg { position: relative; z-index: 2; width: 32px; height: 28px; border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #9a938f; transition: color .3s; padding: 0; }
-.dark .theme-pill .tp-seg { color: #8a8397; }
-.theme-pill .tp-seg svg { width: 15px; height: 15px; }
-.theme-pill[data-m="auto"] .tp-auto { color: #c97f92; filter: drop-shadow(0 0 4px rgba(201,127,146,.55)); }
-.theme-pill[data-m="day"] .tp-day { color: #eaa32e; filter: drop-shadow(0 0 5px rgba(248,180,60,.7)); }
-.theme-pill[data-m="night"] .tp-night { color: #8ea2e8; filter: drop-shadow(0 0 5px rgba(150,170,240,.7)); }
-.dark .theme-pill[data-m="night"] .tp-night { color: #aab8f2; }
-@media (prefers-reduced-motion: reduce) { .theme-pill .tp-hl { transition: none; } }
+/* ── Theme sky: the three-mode control, which is the sky toggle with a third
+   stop. ──────────────────────────────────────────────────────────────────────
+
+   It was three grey glyphs on a plain capsule sitting six pixels from a working
+   sky in the same menu. It is that sky now. The gradient runs day on the left
+   to night on the right; clouds sit over the day end and stars over the night
+   end; the knob is the sun or the moon depending on where it stopped.
+
+   Day, Auto, Night, in the order the sky is painted. Auto lands in the middle,
+   which is exactly where the gradient turns, and its knob is drawn half sun and
+   half moon — the horizon, which is what auto means and what no icon managed
+   to say.
+
+   Every colour, cloud, star and easing is the one .nitro-sky already uses. The
+   ring is the same two-tone ring the whole nav cluster wears. ── */
+.theme-sky { position: relative; width: 102px; height: 34px; border-radius: 99px; overflow: hidden; flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2), inset 0 0 0 1.5px rgba(255,255,255,.4),
+              0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(0,0,0,.2); }
+.dark .theme-sky { box-shadow: 0 4px 14px rgba(0,0,0,.4), inset 0 0 0 1.5px rgba(255,255,255,.3),
+              0 0 0 1.5px rgba(232,180,196,.5), 0 0 0 3px rgba(0,0,0,.35); }
+.theme-sky .ts-d, .theme-sky .ts-n { position: absolute; inset: 0; }
+.theme-sky .ts-d { background: linear-gradient(180deg, #8ec9ef, #d9ecf7); }
+.theme-sky .ts-n { background: linear-gradient(180deg, #191642, #0d0b26); opacity: 0; transition: opacity .55s ease; }
+/* Night covers everything on Dark, and only the right-hand end on Auto — which
+   is what makes the middle stop read as a horizon rather than as a third icon. */
+.theme-sky[data-m="night"] .ts-n { opacity: 1; }
+.theme-sky[data-m="auto"] .ts-n { opacity: 1;
+  -webkit-mask-image: linear-gradient(90deg, transparent 30%, #000 74%);
+          mask-image: linear-gradient(90deg, transparent 30%, #000 74%); }
+
+.theme-sky .cl { position: absolute; border-radius: 99px; background: rgba(255,255,255,.85);
+  transition: opacity .5s, transform .7s ease; }
+.theme-sky .cl::before { content: ""; position: absolute; border-radius: 50%; background: inherit; }
+.theme-sky .c1 { width: 15px; height: 5px; top: 21px; left: 10px; }
+.theme-sky .c1::before { width: 7px; height: 7px; top: -3.5px; left: 4px; }
+.theme-sky .c2 { width: 10px; height: 4px; top: 7px; left: 24px; opacity: .7; }
+.theme-sky .c2::before { width: 5px; height: 5px; top: -2.5px; left: 3px; }
+/* The weather moves out of the knob's way.
+   Base positions are the Auto layout: clouds in the day half on the left,
+   stars in the night half on the right, with the knob parked between them. In
+   Day the knob takes the left end, so the clouds slide right into the empty
+   half; in Night it takes the right end and the stars slide left. Without this
+   the sun sat on top of both clouds and the moon on top of two of the stars. */
+.theme-sky[data-m="day"] .cl { transform: translateX(46px); }
+.theme-sky[data-m="night"] .cl { opacity: 0; transform: translateX(-8px); }
+
+.theme-sky .st { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff;
+  opacity: 0; transition: opacity .5s; animation: nitroTwinkle 2.1s ease-in-out infinite; }
+.theme-sky .s1 { top: 8px; left: 78px; }
+.theme-sky .s2 { top: 22px; left: 88px; animation-delay: .5s; }
+.theme-sky .s3 { top: 13px; left: 94px; animation-delay: 1.1s; }
+.theme-sky .st { transition: opacity .5s, transform .7s ease; }
+.theme-sky[data-m="night"] .st, .theme-sky[data-m="auto"] .st { opacity: 1; }
+.theme-sky[data-m="night"] .st { transform: translateX(-38px); }
+
+.theme-sky .knob { position: absolute; top: 5px; left: 5px; width: 24px; height: 24px; border-radius: 50%;
+  z-index: 2; transition: transform .55s cubic-bezier(.34,1.46,.54,1); }
+.theme-sky[data-m="day"] .knob { transform: translateX(0); }
+.theme-sky[data-m="auto"] .knob { transform: translateX(34px); }
+.theme-sky[data-m="night"] .knob { transform: translateX(68px); }
+.theme-sky .sun, .theme-sky .moon { position: absolute; inset: 0; border-radius: 50%;
+  transition: opacity .45s ease, transform .55s ease; }
+.theme-sky .sun { background: radial-gradient(circle at 38% 34%, #ffe9a8, #f8c145 62%, #eda63a);
+  box-shadow: 0 0 10px rgba(248,193,69,.75); }
+.theme-sky .moon { background: transparent; opacity: 0;
+  box-shadow: inset -7px -2px 0 0 #f4efe2, 0 0 8px rgba(244,240,225,.45);
+  transform: rotate(-70deg) scale(.6); }
+.theme-sky[data-m="night"] .sun { opacity: 0; transform: rotate(70deg) scale(.6); }
+.theme-sky[data-m="night"] .moon { opacity: 1; transform: none; }
+/* Auto parks at the horizon: the knob is half lit and half carved, split down
+   the middle, so the middle stop states its own meaning. */
+.theme-sky[data-m="auto"] .sun { opacity: 1; transform: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 50%, transparent 50%);
+          mask-image: linear-gradient(90deg, #000 50%, transparent 50%); }
+.theme-sky[data-m="auto"] .moon { opacity: 1; transform: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 50%, #000 50%);
+          mask-image: linear-gradient(90deg, transparent 50%, #000 50%); }
+
+/* Three invisible thirds over the top. The knob is the only thing that moves,
+   so the targets are plain hit areas rather than styled segments — and they are
+   34px wide, which clears the 24px minimum on a phone. */
+.theme-sky .ts-seg { position: absolute; top: 0; width: 34px; height: 100%; z-index: 3;
+  border: none; background: transparent; cursor: pointer; padding: 0; }
+.theme-sky .ts-day { left: 0; }
+.theme-sky .ts-auto { left: 34px; }
+.theme-sky .ts-night { left: 68px; }
+.theme-sky .ts-seg:focus-visible { outline: 2px solid #fff; outline-offset: -4px; border-radius: 99px; }
+@media (prefers-reduced-motion: reduce) {
+  .theme-sky * { transition-duration: .01s !important; animation: none !important; }
+}
+
+/* "Ask us anything" — the WhatsApp button on the closing band.
+
+   Day and night need different fills, not two opacities of one fill. A 20%
+   green wash reads as green over the near-black night band and composites to
+   rgb(138,113,106) — a muddy brown with no green left — over the day band's
+   rose gradient. So day is the green solid with dark ink at 7.3:1, and night
+   keeps the translucent outline at 13.3:1. White on WhatsApp green is 1.98:1
+   and was never available.
+
+   Written here rather than inline because a hover state cannot beat an inline
+   style: the element carried `transition-colors` with nothing to transition,
+   and the property it would have animated was being set on the element itself.
+   The lift matches the signup button beside it, which is already on scale 1.04. */
+.lv3-wa { background: #25d366; border: 1px solid rgba(255,255,255,.45); color: #06301f;
+  box-shadow: 0 6px 18px rgba(0,0,0,.18);
+  transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+.lv3-wa:hover { background: #1fc25e; box-shadow: 0 10px 26px rgba(0,0,0,.26); transform: scale(1.04); }
+.lv3-wa:active { transform: scale(.98); }
+.dark .lv3-wa { background: rgba(37,211,102,.2); border-color: rgba(37,211,102,.5); color: #fff;
+  box-shadow: none; }
+.dark .lv3-wa:hover { background: rgba(37,211,102,.34); border-color: rgba(37,211,102,.85);
+  box-shadow: 0 8px 22px rgba(37,211,102,.2); }
+.lv3-wa:focus-visible { outline: 2px solid #25d366; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .lv3-wa, .lv3-wa:hover, .lv3-wa:active { transform: none; }
+}
 
 /* The install moment: slides up over the dock when a second order completes. */
 .dash-install-moment { animation: dimUp .5s cubic-bezier(.3,1.3,.5,1) both; }

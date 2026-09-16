@@ -552,6 +552,55 @@ as the work. (Formerly docs/BACKLOG.md.)
   Next session: either iterate on the branch or restart the design; the current
   production landing is untouched.
 
+- **Tracking-link analytics, items 01–07 — approved, mockup exists, never
+  built** (16 Sep 2026). Trip said "Go ahead" a long while back and the build
+  never happened. What shipped in `v2.5.74` is only the two faults Trip pointed
+  at on 16 Sep: "All" silently serving seven days, and the 145.3% conversion
+  from mixing an all-time numerator with a windowed denominator. The other
+  diagnosed faults — the ones the original mockup covers — are still open. Find
+  the mockup and the 9-fault write-up from the earlier session before starting;
+  do not re-diagnose from scratch.
+
+- **19 of 31 platforms have no `/services/<slug>` page** (16 Sep 2026). Landing
+  section 03 now claims 31 platforms and only 12 are crawlable, so the claim
+  has no evidence behind it. `lib/platform-pages.js` is the one list and
+  `tests/platform-page-parity` asserts both directions, so adding a slug there
+  without writing its page is worse than leaving it out — a sitemap entry that
+  404s is crawl budget spent on nothing. Scope this as its own piece.
+
+- **The i18n detector cannot see array-literal labels** (16 Sep 2026). An
+  Arabic reader saw "Orders", "Accounts" and "Delivery" in English on the hero
+  stats while the drift guard stayed green, because `scanRepo` finds nothing at
+  all in `components/landing-v3.jsx` — it knows JSX text nodes, quoted values on
+  prose-ish keys and a few attributes, but not `[value, "Label"]` inside a map.
+  Six strings were wrapped by hand in `v2.5.79`. Teaching the detector that
+  shape is the durable fix; check the blast radius first, since widening it will
+  surface hits across the app that then need either wrapping or a
+  DELIBERATELY_ENGLISH entry.
+
+- **The `[dir="ltr"]` specificity trap — worth writing down properly** (16 Sep
+  2026). It has now caused three separate live bugs. The RTL build plugin
+  rewrites asymmetric physical properties into `[dir="ltr"] .sel`, which is
+  (0,2,0), and a media query adds no specificity of its own — so any
+  `@media ... { .sel }` written to override it silently loses. It cost the
+  locale pills a night, it left `max-desktop:text-center` on the hero column
+  never applying at any width, and it compounded rather than cancelled the nav's
+  `left-1/2` + `-translate-x-1/2` so the Arabic links drew straight through the
+  currency pills. The fixes that work: logical properties (`padding-inline`,
+  `text-start`) so no `[dir]` rule is generated, or a selector that out-specifies
+  it. Worth a short section in CLAUDE.md rather than a shelf note, and worth a
+  guardrail test if one can be written cheaply.
+
+- **`ResellerProfile.catalog` is now unread** (16 Sep 2026, `v2.5.77`). The
+  column still exists and nothing reads or writes it. Dropping it is a
+  migration and a separate decision; it was left in place to keep the history
+  of who was on which catalogue.
+
+- **The full list has no guide of its own** (16 Sep 2026). The main tour
+  deliberately forces the curated view, so it cannot teach the full list. If
+  the full list is going to carry a landing section pointing at it, it probably
+  wants a short separate guide — not started, not scoped.
+
 - **Reseller API follow-ups** (v2 of the API, not started): drip-feed and
   multi-day parameters, webhooks, per-key IP allowlists. Brief:
   `docs/v2/reseller_api_brief.md`.
@@ -566,6 +615,18 @@ as the work. (Formerly docs/BACKLOG.md.)
   protected routes in CLAUDE.md).
 
 ## Closed
+
+- **The tracking panel, the full list's words, the landing catalogue section,
+  one reseller catalogue, the sky theme control and the Arabic nav**
+  (16 Sep 2026, `d969c76b`..`a3471b96`, `v2.5.74`–`v2.5.79`). Six issues in one
+  push: the All range serving seven days and the 145.3% conversion; the
+  traffic-source classifier plus Instant / 0-24 hours / UHQ / HQ and the facet
+  menus that offered what they did not have; landing section 03 with counts read
+  live from `buildAll`; the reseller API dropping the curated tiers and the
+  per-account flag, and the provider's own category stopping at the door; the
+  three-stop sky replacing the grey theme pill; and the nav hairline hover with
+  the two RTL faults behind it. Follow-ups from the same push are in Open above.
+
 
 - **Currency switch — every money figure in the user dashboard follows the
   picker** (7–8 Sep 2026, ending `9aecd275` — the range start was squashed away, all under `v2.4.104`).
