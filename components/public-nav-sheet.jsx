@@ -18,6 +18,10 @@ export const PUBLIC_LINKS = [
 export const SHEET_LINKS = [
   { label: msg("Tiers"), href: "/#tiers", hint: msg("Budget · Standard · Premium") },
   { label: msg("Why curated"), href: "/#curated", hint: msg("what we filter out"), em: "curated" },
+  // The section right below it on the page, and the half of the catalogue
+  // story the sheet never told. No count in the hint: it would be a number in
+  // a fifth place, drifting away from the four that are measured.
+  { label: msg("Full catalogue"), href: "/#catalogue", hint: msg("everything else we carry") },
   { label: msg("How it works"), href: "/#how", hint: msg("3 steps") },
   { label: msg("Reviews"), href: "/#reviews", hint: msg("4.9★") },
   { label: msg("Resellers"), href: "/resellers", hint: msg("wholesale"), sub: true },
