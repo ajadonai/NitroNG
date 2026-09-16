@@ -93,9 +93,21 @@ const STEPS = [
 // hidden, falling silently back to the anchor. That silence is what let four
 // dead platform selectors survive for months: the tour went on pointing at the
 // category tabs and nothing ever said it could not find a tile.
+/**
+ * An element is only a usable target if it actually occupies space.
+ *
+ * This used to accept anything with a client rect, then fall back to plain
+ * querySelector when nothing matched — which happily returned a display:none
+ * element. A hidden element measures 0x0 at 0,0, so the spotlight jumped to the
+ * top-left corner of the screen and the tour appeared to point at nothing. On a
+ * phone that is most steps, because the desktop copy of a control is the one
+ * that is hidden and it is usually first in the DOM.
+ */
 function firstVisible(sel) {
   for (const el of document.querySelectorAll(sel)) {
-    if (el.offsetParent !== null || el.getClientRects().length) return el;
+    if (el.offsetParent === null) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) return el;
   }
   return null;
 }
@@ -105,8 +117,9 @@ function findTarget(s) {
     const el = firstVisible(s.findFirst);
     if (el) return el;
   }
-  const anchor = `[data-tour="${s.target}"]`;
-  return firstVisible(anchor) || document.querySelector(anchor);
+  // No querySelector fallback: a target that cannot be seen cannot be pointed
+  // at, and returning a hidden one is worse than returning nothing.
+  return firstVisible(`[data-tour="${s.target}"]`);
 }
 
 function waitForEl(selector, cb, onTimeout, maxWait = 3000) {
@@ -248,16 +261,30 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
         : { x: r.left, y: r.top, w: r.width, h: r.height });
     };
 
-    // While the step's scrollIntoView animates, follow it; then stop.
-    let settleUntil = Date.now() + 900;
+    // Follow until the box stops moving, not until a timer says it should have.
+    // The old version measured for a fixed 900ms starting 300ms in, while the
+    // scroll below did not even begin until 400ms — so on a phone, where a
+    // smooth scroll routinely runs past a second, the spotlight locked onto
+    // where the target had been and stayed there. Now it tracks until the rect
+    // has held still for a few frames, with a ceiling so a page that never
+    // settles cannot pin a rAF loop open.
+    let lastKey = "";
+    let stillFor = 0;
+    const deadline = Date.now() + 4000;
     const follow = () => {
       measure();
-      rafRef.current = Date.now() < settleUntil ? requestAnimationFrame(follow) : null;
+      const el = findTarget(STEPS[step]);
+      const r = el?.getBoundingClientRect();
+      const key = r ? `${Math.round(r.top)},${Math.round(r.left)},${Math.round(r.width)}` : "";
+      stillFor = key && key === lastKey ? stillFor + 1 : 0;
+      lastKey = key;
+      const settled = stillFor >= 6 && key !== "";
+      rafRef.current = (settled || Date.now() > deadline) ? null : requestAnimationFrame(follow);
     };
-    const timer = setTimeout(follow, 300);
+    const timer = setTimeout(follow, 0);
 
     const onMove = () => {
-      settleUntil = Date.now() + 250;
+      stillFor = 0;
       if (!rafRef.current) rafRef.current = requestAnimationFrame(follow);
     };
     window.addEventListener("scroll", onMove, true);
@@ -289,18 +316,44 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
     return () => window.removeEventListener("keydown", onKey);
   }, [visible, phase, step, finish]);
 
-  // Scroll target into view
+  /**
+   * Bring the step's target into view before pointing at it.
+   *
+   * Three things were wrong on a phone. It waited 400ms before even looking,
+   * by which time the spotlight had already measured and stopped following.
+   * It gave up if the element was not in the DOM on that single attempt —
+   * common when the previous step's tap is still rendering. And "in view"
+   * demanded the whole element sit inside a window shrunk by 240px, which a
+   * tall control on a small screen can never satisfy, so it scrolled on every
+   * step and fought the user.
+   *
+   * Now it retries until the target exists, centres it whenever any part of it
+   * is outside a comfortable band, and honours reduced-motion by jumping.
+   */
   useEffect(() => {
-    if (phase !== "touring" || !visible || STEPS[step].noScroll) return;
-    const timer = setTimeout(() => {
+    if (phase !== "touring" || !visible || STEPS[step].noScroll) return undefined;
+    let cancelled = false;
+    let tries = 0;
+    const smooth = !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    const attempt = () => {
+      if (cancelled) return;
       const el = findTarget(STEPS[step]);
-      if (el) {
-        const r = el.getBoundingClientRect();
-        const inView = r.top >= 60 && r.bottom <= window.innerHeight - 180;
-        if (!inView) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (!el) {
+        // The target may still be rendering from the previous step's tap.
+        if (tries++ < 20) setTimeout(attempt, 100);
+        return;
       }
-    }, 400);
-    return () => clearTimeout(timer);
+      const r = el.getBoundingClientRect();
+      const top = 70;
+      // Leave room for the tooltip, but never demand more space than exists.
+      const bottom = window.innerHeight - Math.min(200, window.innerHeight * 0.32);
+      const inView = r.top >= top && r.bottom <= bottom;
+      if (!inView) el.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "center", inline: "nearest" });
+    };
+
+    attempt();
+    return () => { cancelled = true; };
   }, [step, phase, visible]);
 
   // Highlight "Order" tab on bottom nav
