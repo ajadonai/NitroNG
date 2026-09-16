@@ -538,6 +538,24 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       });
       const data = await res.json();
       if (data.authorization_url) {
+        // Mark the handoff before leaving. 60% of initiations end funded, and
+        // the rows say only "initiated" and "finished" — so somebody who closed
+        // the tab before the gateway loaded looks exactly like somebody who saw
+        // it and walked away. Those are different problems: the first is a slow
+        // handoff and ours, the second is a pricing or trust question.
+        //
+        // sendBeacon rather than fetch, because the navigation on the next line
+        // cancels an in-flight request. The browser owns this one and delivers
+        // it after the page is gone. Nothing is awaited and nothing is checked:
+        // a failed beacon must never keep somebody from paying.
+        if (data.reference) {
+          try {
+            const blob = new Blob([JSON.stringify({ reference: data.reference })], { type: "application/json" });
+            if (!navigator.sendBeacon?.("/api/telemetry/checkout", blob)) {
+              fetch("/api/telemetry/checkout", { method: "POST", body: blob, keepalive: true }).catch(() => {});
+            }
+          } catch {}
+        }
         window.location.href = data.authorization_url;
       } else {
         toast.error(tr("Payment failed"), data.error ? tr(data.error) : tr("Initialization failed"));

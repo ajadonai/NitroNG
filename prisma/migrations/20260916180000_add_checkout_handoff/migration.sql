@@ -1,0 +1,20 @@
+-- Where a deposit actually stopped.
+--
+-- 60.0% of deposit initiations end in a funded wallet. Netting the 58% who
+-- finish within seven days, true leakage is about 16.6% — roughly NGN20k a day
+-- of deposits and NGN13k of gross profit. Worth working, and impossible to work
+-- blind: the rows today say "initiated" (Pending written) and "finished"
+-- (Completed), and nothing in between.
+--
+-- Two very different failures look identical in that gap. Somebody who closed
+-- the tab before the gateway page even loaded has a broken or slow handoff.
+-- Somebody who saw the gateway and walked away has a pricing, trust or method
+-- problem. The first is ours to fix in a day; the second is a product question.
+--
+-- One timestamp separates them: set immediately before the redirect, by a
+-- beacon that fires whether or not the page survives the navigation. Null means
+-- they never got that far.
+--
+-- Deliberately not a table. This is one fact per deposit, read in aggregate a
+-- fortnight from now, and a join for it would be three columns of ceremony.
+ALTER TABLE "transactions" ADD COLUMN "gatewayHandoffAt" TIMESTAMP(3);
