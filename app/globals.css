@@ -1553,6 +1553,35 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
    broken one. */
 body:has(.dash-main) .nitro-atmo::before { content: none; }
 
+/* ── Constrained connection: the ambient layer stands down. ──
+   Stamped on <html> by useDataSaver when the browser reports saveData or a 2g/3g
+   effective type. CSS and not a prop because the atmosphere is mounted at the
+   root as a sibling of the page, so nothing on the page can reach it.
+
+   The aurora and the grain go, and every ambient loop stops. These cost CPU
+   rather than bytes — on the phones that report a slow connection those are
+   usually the same phone — so this is about the device as much as the network.
+
+   Deliberately narrow: only decoration that runs on its own with nobody
+   watching. Transitions a person triggers by tapping something are untouched,
+   because a control that stops responding reads as broken, and the whole point
+   is to be quieter rather than worse. */
+:root[data-saver] .nitro-atmo { background-image: none; }
+:root[data-saver] .nitro-atmo::before { content: none; }
+:root[data-saver] .nitro-sky .st,
+:root[data-saver] .shimmer-btn::after,
+:root[data-saver] .hero-cta-btn::after,
+:root[data-saver] .s6-btn-primary::after,
+:root[data-saver] .hero-cta-pulse,
+:root[data-saver] .carousel-track { animation: none; }
+
+/* What is NOT in that list, on purpose. Every `animate-pulse` in the app is a
+   status indicator — a deposit pending, a crypto payment confirming, a batch
+   processing, a promotion running — and a live state drawn as a dead one is a
+   worse bug than a warm phone. Skeleton shimmer stays too: it says the page is
+   loading, which is precisely what somebody on a slow connection needs to be
+   told. The tour ring stays because it is pointing at something. */
+
 /* ── The theme toggle is a tiny sky: sun and clouds by day, moon and stars by night. ── */
 /* A two-tone ring so the pill is always outlined on ANY background — a white
    hug (visible on the rose hero and on dark pages) plus a dark hairline just

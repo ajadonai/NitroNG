@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo, createContext, useContext } from "react";
+import { useDataSaver } from "./use-data-saver";
 import { NitroWordmark } from "./nitro-logo";
 import { PublicNavSheet, PUBLIC_LINKS } from "./public-nav-sheet";
 import { SWITCHER_LIVE, useT } from "./locale";
@@ -162,6 +163,12 @@ export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
   // LocaleProvider used to be nested here. It now sits in app/layout.jsx so it
   // also covers the chrome mounted at the root — a second one here would give
   // those components their own state, and the picker would stop reaching them.
+  // Stamps <html data-saver> on a constrained connection. Called here because
+  // this provider wraps every page, public and signed-in alike — the ambient
+  // layer it renders below is the main thing the stamp turns off, and somebody
+  // on 3g meets the landing page before they ever meet a dashboard.
+  useDataSaver();
+
   return (
     <ThemeCtx.Provider value={{ dark, setDark, toggleTheme, t, loaded, themeMode, setThemeMode }}>
       {children}

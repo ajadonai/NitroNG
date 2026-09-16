@@ -6,6 +6,7 @@ import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
 import { useMoney, useT, useNairaAside } from "./locale";
+import { useDataSaver, pollEvery } from "./use-data-saver";
 import FullListNotice, { fullListIsNewsTo, fullListAlreadySeen, markFullListSeen } from "./full-list-notice";
 import NavProgress, { NAV_BAR_MIN_MS } from "./nav-progress";
 import { msg } from "../lib/i18n";
@@ -519,6 +520,8 @@ function DashboardInner({ initialData }) {
       window.history.replaceState({}, "", "/dashboard");
     }
   }, []);
+  // Weak connection? Poll less. See components/use-data-saver.
+  const saving = useDataSaver();
   const [leftOpen, setLeftOpen] = useState(false);
   const [avOpen, setAvOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false); // the concierge panel: a sheet on a phone, a docked window on a desktop
@@ -1051,9 +1054,9 @@ function DashboardInner({ initialData }) {
   /* Auto-poll when on orders page (every 45s) */
   useEffect(() => {
     if (active !== "orders") return;
-    const interval = setInterval(refreshDashboard, 45000);
+    const interval = setInterval(refreshDashboard, pollEvery(45000, saving));
     return () => clearInterval(interval);
-  }, [active]);
+  }, [active, saving]);
 
   /* Data fetch */
   useEffect(() => {
@@ -1248,13 +1251,13 @@ function DashboardInner({ initialData }) {
         }
       } catch {}
     };
-    const start = () => { interval = setInterval(poll, 60000); };
+    const start = () => { interval = setInterval(poll, pollEvery(60000, saving)); };
     const stop = () => { clearInterval(interval); interval = null; };
     const onVisibility = () => { document.hidden ? stop() : (poll(), start()); };
     start();
     document.addEventListener("visibilitychange", onVisibility);
     return () => { stop(); document.removeEventListener("visibilitychange", onVisibility); };
-  }, []);
+  }, [saving]);
 
   /* Verify payment return from gateway */
   useEffect(() => {
