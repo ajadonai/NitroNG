@@ -519,7 +519,7 @@ function LandingInner({ initialAuthQuery }){
             <div className="text-sm font-semibold mb-0.5" style={{color:dark?"#eae7e2":"#1c1b19"}}>{copy.t}</div>
             <div className="text-[13px] leading-[1.5]" style={{color:dark?"#a09b95":"#555250"}}>{copy.b}</div>
           </div>
-          <button onClick={()=>setSessionExpired(false)} aria-label={tr("Dismiss")} className="bg-transparent border-none text-base cursor-pointer p-0 leading-none shrink-0 self-start" style={{color:dark?"#8a8580":"#757170"}}>×</button>
+          <button onClick={()=>setSessionExpired(false)} aria-label={tr("Dismiss")} className="nitro-x self-start"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </div>
         {!blocked&&<>
           <button onClick={()=>{setSessionExpired(false);setModal("login");}} className="w-full mt-3 py-[9px] rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{background:"linear-gradient(135deg,#c47d8e,#a3586b)",color:"#fff"}}>{tr("Sign in")}</button>

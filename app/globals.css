@@ -447,6 +447,32 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 /* Theme toggle */
 
 /* Bell */
+/* ── The close button, once ──────────────────────────────────────────────
+   Every dismiss on the site was drawing its own: a bare glyph with no hit
+   area on the signed-out notice, a 50%-opacity one in the notification head,
+   a bordered 32px square on the order form, a bordered 28px one in rewards,
+   and a surfaced 26px one on the install prompt. Five answers to one
+   question, and the bare ones are the problem — a naked x on a busy card
+   reads as decoration, and there is nothing to aim at with a thumb.
+
+   The install prompt had it closest, so this is that: a faint surface the
+   glyph sits on, so the control is visible as a control on any background.
+   The ::before pushes the tap target out to 44px without moving the box, so
+   a 28px button is still a thumb-sized one. */
+.nitro-x {
+  width: 28px; height: 28px; flex-shrink: 0; padding: 0; border: none;
+  border-radius: 9px; cursor: pointer; position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  line-height: 1; font-family: inherit;
+  color: var(--t-text-muted); background: rgba(0,0,0,.05);
+  transition: background .15s ease, color .15s ease;
+}
+.nitro-x::before { content: ""; position: absolute; inset: -8px; }
+.dark .nitro-x { background: rgba(255,255,255,.08); }
+.nitro-x:hover { background: rgba(0,0,0,.09); color: var(--t-text); }
+.dark .nitro-x:hover { background: rgba(255,255,255,.15); color: var(--t-text); }
+.nitro-x:focus-visible { outline: 2px solid var(--t-accent); outline-offset: 2px; }
+
 .dash-bell { background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; width: 34px; height: 34px; border-radius: 10px; }
 .dash-bell-badge { position: absolute; top: 2px; inset-inline-end: 2px; min-width: 15px; height: 15px; border-radius: 8px; background: #dc2626; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 3px; font-family: 'JetBrains Mono', monospace; line-height: 1; }
 

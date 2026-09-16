@@ -281,7 +281,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             </div>
           )}
         </div>
-        {onClose && <button onClick={onClose} aria-label={tr("Close")} className="bg-transparent border border-solid rounded-[10px] w-8 h-8 flex items-center justify-center cursor-pointer shrink-0" style={{ borderColor: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textSoft }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
+        {onClose && <button onClick={onClose} aria-label={tr("Close")} className="nitro-x"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>}
       </div>
       )}
 

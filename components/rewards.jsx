@@ -386,7 +386,7 @@ function ModalShell({ open, onClose, dark, t, title, children }) {
     <Modal open={open} onClose={onClose} dark={dark} maxWidth={420} title={title} bare>
       <div className="py-4 px-5 flex items-center justify-between shrink-0" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
         <div className="serif text-[21px] font-semibold leading-none" style={{ color: t.text }}>{title}</div>
-        <button onClick={onClose} aria-label={tr("Close")} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent" style={{ borderColor: dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)', color: t.textSoft }}>
+        <button onClick={onClose} aria-label={tr("Close")} className="nitro-x">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       </div>
