@@ -781,7 +781,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
             <div className="adm-title" style={{ color: t.text }}>Users</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Every account, what they hold, what they have done.</div>
           </div>
-          <button type="button" className="nb" onClick={exportAll}><ExportIcon /> Export CSV</button>
+          <button type="button" className="nb sec" onClick={exportAll}><ExportIcon /> Export CSV</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>

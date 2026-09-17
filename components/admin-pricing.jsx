@@ -191,7 +191,7 @@ export default function AdminPricingPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Pricing</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>How what we pay a provider becomes what a customer pays. Tap a card to change it.</div>
           </div>
-          <button type="button" className="nb ghost" onClick={reset}>Reset to defaults</button>
+          <button type="button" className="nb sec" onClick={reset}>Reset to defaults</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
