@@ -1130,6 +1130,17 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .wa-btn.sm > svg { width: 13px; height: 13px; }
 .wa-btn.round { width: 52px; height: 52px; padding: 0; border-radius: 999px; }
 .wa-btn.round > svg { width: 25px; height: 25px; }
+/* Shape is the page's, colour is the brand's. The marketing pages build their
+   CTAs as full pills; this lets them keep that without keeping their own green. */
+.wa-btn.pill { border-radius: 999px; }
+/* The floating bubble shrinks on a phone. A Tailwind `max-md:w-12` is (0,1,0)
+   and a media query adds no specificity, so it loses to `.wa-btn.round` at
+   (0,2,0) at every width — the same trap that cost us the locale pills. The
+   shrink has to be written at matching specificity, which means here. */
+@media (max-width: 767px) {
+  .wa-btn.round { width: 46px; height: 46px; }
+  .wa-btn.round > svg { width: 22px; height: 22px; }
+}
 
 /* The shared admin buttons, on the same standard the rebuilt pages set for
    themselves (re-pri, tk-b): 9px radius, heavier primary with the soft accent
@@ -1948,33 +1959,6 @@ body:has(.dash-main) .nitro-atmo::before { content: none; }
 .theme-sky .ts-seg:focus-visible { outline: 2px solid #fff; outline-offset: -4px; border-radius: 99px; }
 @media (prefers-reduced-motion: reduce) {
   .theme-sky * { transition-duration: .01s !important; animation: none !important; }
-}
-
-/* "Ask us anything" — the WhatsApp button on the closing band.
-
-   Day and night need different fills, not two opacities of one fill. A 20%
-   green wash reads as green over the near-black night band and composites to
-   rgb(138,113,106) — a muddy brown with no green left — over the day band's
-   rose gradient. So day is the green solid with dark ink at 7.3:1, and night
-   keeps the translucent outline at 13.3:1. White on WhatsApp green is 1.98:1
-   and was never available.
-
-   Written here rather than inline because a hover state cannot beat an inline
-   style: the element carried `transition-colors` with nothing to transition,
-   and the property it would have animated was being set on the element itself.
-   The lift matches the signup button beside it, which is already on scale 1.04. */
-.lv3-wa { background: #25d366; border: 1px solid rgba(255,255,255,.45); color: #06301f;
-  box-shadow: 0 6px 18px rgba(0,0,0,.18);
-  transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
-.lv3-wa:hover { background: #1fc25e; box-shadow: 0 10px 26px rgba(0,0,0,.26); transform: scale(1.04); }
-.lv3-wa:active { transform: scale(.98); }
-.dark .lv3-wa { background: rgba(37,211,102,.2); border-color: rgba(37,211,102,.5); color: #fff;
-  box-shadow: none; }
-.dark .lv3-wa:hover { background: rgba(37,211,102,.34); border-color: rgba(37,211,102,.85);
-  box-shadow: 0 8px 22px rgba(37,211,102,.2); }
-.lv3-wa:focus-visible { outline: 2px solid #25d366; outline-offset: 3px; }
-@media (prefers-reduced-motion: reduce) {
-  .lv3-wa, .lv3-wa:hover, .lv3-wa:active { transform: none; }
 }
 
 /* The install moment: slides up over the dock when a second order completes. */

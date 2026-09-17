@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { SITE } from '@/lib/site';
 import { useMoney, useLocale, useT } from './locale';
 import { MAX_BONUS_NAIRA } from '@/lib/welcome-bonus';
+import { WaButton } from "./wa-button";
 
 // Tier colours are the ones the order form uses (components/new-order.jsx), so the landing and the app agree.
 const TIER_STYLE = {
@@ -387,10 +388,7 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
               <p data-reveal="2" className="text-[16.5px] leading-[1.7] max-w-[480px] mt-[18px] mb-[26px]" style={{ color: "rgba(255,255,255,.82)" }}>{tr("Every minute you wait, someone with worse content and better numbers is getting the deal, the booking, the follow. Fund a wallet, pick a tier, watch it move.")}</p>
               <div data-reveal="3" className="flex gap-3 flex-wrap items-center max-md:flex-col max-md:items-stretch">
                 <a href="/signup" onClick={e => { e.preventDefault(); setModal("signup"); }} className="py-4 px-[34px] rounded-full text-[15.5px] font-extrabold no-underline text-center transition-transform duration-200 hover:scale-[1.04]" style={{ background: "#fff", color: "#1a1a1a", boxShadow: "0 10px 32px rgba(0,0,0,.2)" }}>{tr("Start Growing Now →")}</a>
-                {/* Colours, both themes and the hover live in .lv3-wa — an inline
-                    style cannot be beaten by a :hover rule, which is why this
-                    button carried a transition and never moved. */}
-                {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="lv3-wa inline-flex items-center justify-center gap-2 py-[15px] px-6 rounded-full text-[14.5px] font-bold no-underline"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d={WA_PATH}/></svg>{tr("Ask us anything")}</a>}
+                {wa && <WaButton href={wa} size="lg" className="pill">{tr("Ask us anything")}</WaButton>}
               </div>
               <div data-reveal="3" className="flex items-center gap-3 mt-[26px] text-[13px]" style={{ color: "rgba(255,255,255,.8)" }}>
                 <div className="flex">{[["TM","#e0a458"],["AB","#6ee7b7"],["EN","#a5b4fc"],["BI","#f472b6"],["KD","#fbbf24"]].map(([a, c], i) => <i key={a} className="not-italic w-[30px] h-[30px] rounded-full text-[10px] font-extrabold flex items-center justify-center text-white" style={{ background: c, border: "2px solid rgba(255,255,255,.9)", marginLeft: i ? -9 : 0 }}>{a}</i>)}</div>
