@@ -10,6 +10,7 @@ import { tgFreeOrder, tgNewOrder } from '@/lib/telegram';
 import { getNitroStatus, getEligibleSpendKoboTx } from '@/lib/nitro-rewards';
 import { lockOrderSettlementAccount } from '@/lib/account-deletion';
 import { checkFirstOrder } from '@/lib/first-order';
+import { effectiveOrderMinimum } from '@/lib/order-minimums';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -107,7 +108,7 @@ export async function POST(req) {
         }
 
         const qty = Number(it.quantity) || 0;
-        const min = tier.min || tier.service.min || 100;
+        const min = effectiveOrderMinimum(tier.group.type, tier.service.min, tier.service.max);
         const max = tier.max || tier.service.max || 50000;
         if (qty < min || qty > max) return Response.json({ error: `Quantity ${qty} out of range (${min}–${max}) for ${tier.group.name} ${tier.tier}` }, { status: 400 });
 
@@ -261,7 +262,7 @@ export async function POST(req) {
     }
 
     const qty = Number(quantity) || 0;
-    const min = tier.min || tier.service.min || 100;
+    const min = effectiveOrderMinimum(tier.group.type, tier.service.min, tier.service.max);
     const max = tier.max || tier.service.max || 50000;
     if (qty < min || qty > max) return Response.json({ error: `Quantity ${qty} out of range (${min}–${max})` }, { status: 400 });
 

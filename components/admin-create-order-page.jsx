@@ -11,6 +11,7 @@ import { cleanLink } from "@/lib/clean-link";
 import { copyText } from '@/lib/clipboard';
 import { PlatformIcon } from "./platform-icon";
 import { SegPill } from "./seg-pill";
+import { effectiveOrderMinimum } from '@/lib/order-minimums';
 
 const TIER_CLR_ORDER = { Budget: "#f59e0b", Standard: "#3b82f6", Premium: "#a855f7" };
 const DRIP_DAILY_CAP = { followers: 5000, likes: 10000, views: 75000, plays: 75000, comments: 1000, reviews: 100, engagement: 15000 };
@@ -110,7 +111,7 @@ export function AdminCreateOrderPage({ dark, t }) {
   const selectedTier = tiers.find(ti => ti.id === tierId);
 
   const tierService = selectedTier?.service;
-  const minQty = tierService?.min || 0;
+  const minQty = tierService ? effectiveOrderMinimum(selectedGroup?.type, tierService.min, tierService.max) : 0;
   const maxQty = tierService?.max || 0;
   const sellPer1k = selectedTier ? Number(selectedTier.sellPer1k) / 100 : 0;
   const costPer1kNgn = tierService ? Number(tierService.costPer1k) * 1600 / 100 : 0;
