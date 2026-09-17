@@ -910,6 +910,179 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .adm-filters select, select[style*="appearance"] { text-align: center; text-align-last: center; }
 .adm-filter-pill { padding: 5px 14px; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; background: none; font-family: inherit; }
 .adm-search { width: 100%; padding: 10px 14px; border-radius: 10px; border-width: 1px; border-style: solid; font-size: 14px; font-family: inherit; outline: none; margin-bottom: 16px; box-sizing: border-box; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE CONTROL LAYER — buttons, row actions, WhatsApp, dropdowns.
+   ══════════════════════════════════════════════════════════════════════════
+
+   Every admin page used to write its own. Thirteen button classes, six copies
+   of the segmented control, eight ways to dress a <select>, and eighteen
+   hand-typed action pills in which the same amber appeared at five different
+   opacities. None of them had a press state, so on a phone the entire admin was
+   inert to the touch.
+
+   Three rules hold the whole thing together:
+
+     1. Sized by HEIGHT, never padding — 44 / 34 / 28. A row of controls lines
+        up regardless of what the labels say, which is the one thing the old
+        classes could never manage between them.
+     2. A RING means pressable. Buttons and dropdown triggers are ringed; chips,
+        badges and SegPill segments are not. It is the only cue separating a
+        rounded button from a rounded label, so nothing else may borrow it.
+     3. Every colour here was MEASURED. The filled primary used to be white on
+        #c47d8e — 3.15:1 in light, 2.05:1 in dark. Both failed WCAG AA, as did
+        five of the six action colours on their own tints.
+   ────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Primary fill. #96626f is the lightest rose that still carries white ink at
+     4.5:1; anything brighter and the label goes soft. */
+  --ctl-fill: linear-gradient(165deg, #96626f 0%, #7a4f5c 100%);
+  --ctl-fill-hover: linear-gradient(165deg, #a06b78 0%, #845765 100%);
+  --ctl-on-fill: #fff;
+  --ctl-crown: rgba(255,255,255,.20);
+  --ctl-cast: rgba(104,58,71,.26);
+  --ctl-cast-deep: rgba(104,58,71,.20);
+  --ctl-ring: rgba(139,74,94,.30);
+  --ctl-field: #fff;
+
+  /* Row actions, each darkened only until its label passes on its own tint. */
+  --act-amber:  #a55a05; --act-amber-t:  rgba(165,90,5,.08);   --act-amber-r:  rgba(165,90,5,.22);
+  --act-indigo: #4f46e5; --act-indigo-t: rgba(79,70,229,.08);  --act-indigo-r: rgba(79,70,229,.22);
+  --act-red:    #d12424; --act-red-t:    rgba(209,36,36,.08);  --act-red-r:    rgba(209,36,36,.22);
+  --act-green:  #047c57; --act-green-t:  rgba(4,124,87,.08);   --act-green-r:  rgba(4,124,87,.22);
+  /* Refill moved off the accent: it was the same rose as the primary button, so
+     in a row of six it read as "the main one". Purple sits 71 away from every
+     other action colour, where under ~60 reads as the same hue. */
+  --act-purple: #9333ea; --act-purple-t: rgba(147,51,234,.08); --act-purple-r: rgba(147,51,234,.22);
+}
+.dark {
+  /* Inverted: a lit face with dark ink. White on the dark accent is 2.05:1. */
+  --ctl-fill: linear-gradient(165deg, #e9b0bf 0%, #d492a6 100%);
+  --ctl-fill-hover: linear-gradient(165deg, #f0bdc9 0%, #dc9cae 100%);
+  --ctl-on-fill: #241019;
+  --ctl-crown: rgba(255,255,255,.34);
+  --ctl-cast: rgba(0,0,0,.55);
+  --ctl-cast-deep: rgba(0,0,0,.42);
+  --ctl-ring: rgba(232,180,196,.28);
+  --ctl-field: #160f22;
+
+  --act-amber:  #fcd34d; --act-amber-t:  rgba(252,211,77,.12);  --act-amber-r:  rgba(252,211,77,.26);
+  --act-indigo: #a5b4fc; --act-indigo-t: rgba(165,180,252,.12); --act-indigo-r: rgba(165,180,252,.26);
+  --act-red:    #fca5a5; --act-red-t:    rgba(252,165,165,.12); --act-red-r:    rgba(252,165,165,.26);
+  --act-green:  #6ee7b7; --act-green-t:  rgba(110,231,183,.12); --act-green-r:  rgba(110,231,183,.26);
+  --act-purple: #c77dff; --act-purple-t: rgba(199,125,255,.12); --act-purple-r: rgba(199,125,255,.26);
+}
+
+/* ── Button ───────────────────────────────────────────────────────────────
+   Resting at 0, hover at -1, press at +1. Two pixels of travel: enough to
+   feel, not enough to notice — and the only state that exists on a phone. */
+.nb {
+  font: inherit; font-weight: 650; font-size: 12.5px; letter-spacing: .012em;
+  height: 34px; padding: 0 15px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  white-space: nowrap; cursor: pointer; text-decoration: none;
+  border: 1px solid transparent; background: transparent; color: var(--t-text);
+  transition: transform .14s cubic-bezier(.2,.8,.3,1), box-shadow .14s ease, background .14s, border-color .14s;
+}
+.nb > svg { width: 14px; height: 14px; flex-shrink: 0; }
+.nb:focus-visible { outline: 2px solid var(--t-accent); outline-offset: 3px; }
+
+.nb.pri {
+  background: var(--ctl-fill); color: var(--ctl-on-fill); font-weight: 700;
+  box-shadow: inset 0 1px 0 var(--ctl-crown), 0 1px 1px var(--ctl-cast-deep),
+              0 3px 6px -2px var(--ctl-cast), 0 10px 20px -8px var(--ctl-cast);
+}
+.nb.pri:hover { background: var(--ctl-fill-hover); transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 var(--ctl-crown), 0 2px 2px var(--ctl-cast-deep),
+              0 6px 12px -3px var(--ctl-cast), 0 18px 34px -10px var(--ctl-cast); }
+.nb.pri:active { transform: translateY(1px); box-shadow: inset 0 2px 5px rgba(0,0,0,.28), 0 1px 1px var(--ctl-cast-deep); }
+
+/* The hairline is rose, the same call this file already made for card edges. */
+.nb.sec { background: var(--t-card-bg); border-color: var(--ctl-ring); box-shadow: 0 1px 1.5px rgba(0,0,0,.05); }
+.nb.sec:hover { transform: translateY(-1px); border-color: var(--t-accent); background: var(--t-accent-light); box-shadow: 0 3px 8px -2px var(--ctl-cast); }
+.nb.sec:active { transform: translateY(1px); background: var(--t-nav-active); box-shadow: inset 0 2px 4px rgba(0,0,0,.07); }
+
+.nb.ghost { color: var(--t-text-muted); }
+.nb.ghost:hover { background: var(--t-accent-light); color: var(--t-accent-ink); }
+.nb.ghost:active { background: var(--t-nav-active); transform: translateY(1px); }
+
+/* Ringed, never filled: a red slab beside the primary competes for the eye. */
+.nb.bad { background: var(--t-card-bg); color: var(--t-red); border-color: color-mix(in srgb, var(--t-red) 30%, transparent); }
+.nb.bad:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--t-red) 7%, transparent); }
+.nb.bad:active { transform: translateY(1px); box-shadow: none; }
+
+.nb.lg { height: 44px; padding: 0 22px; font-size: 14px; font-weight: 750; border-radius: 12px; }
+.nb.sm { height: 28px; padding: 0 11px; font-size: 11.5px; border-radius: 8px; }
+.nb.sm > svg { width: 12px; height: 12px; }
+
+/* A lifted thing that cannot be pressed is a lie, so it sits flat. */
+.nb:disabled, .nb[aria-disabled="true"] {
+  opacity: .5; cursor: not-allowed; transform: none !important; box-shadow: none !important;
+  background: var(--t-card-bg); color: var(--t-text-muted); border-color: var(--t-card-border);
+}
+.nb.pri:disabled { background: var(--t-nav-active); border-color: transparent; }
+
+/* ── Row action ───────────────────────────────────────────────────────────
+   The June rule: a filled pill tinted in the action's own colour, so an admin
+   scanning a long list finds Cancel by its red without reading the word. The
+   ring is what stops six of them reading as a smear. */
+.act {
+  font: inherit; font-weight: 650; font-size: 11.5px; letter-spacing: .012em;
+  height: 28px; padding: 0 10px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  white-space: nowrap; cursor: pointer; text-decoration: none;
+  background: var(--act-t); color: var(--act-c); border: 1px solid var(--act-r);
+  transition: transform .13s cubic-bezier(.2,.8,.3,1), box-shadow .13s, background .13s, border-color .13s;
+}
+.act > svg { width: 12px; height: 12px; flex-shrink: 0; }
+.act:focus-visible { outline: 2px solid var(--act-c); outline-offset: 2px; }
+.act:hover { transform: translateY(-1px); border-color: var(--act-c); box-shadow: 0 3px 7px -2px var(--ctl-cast); }
+.act:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(0,0,0,.14); }
+.act:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
+.act.amber  { --act-c: var(--act-amber);  --act-t: var(--act-amber-t);  --act-r: var(--act-amber-r); }
+.act.indigo { --act-c: var(--act-indigo); --act-t: var(--act-indigo-t); --act-r: var(--act-indigo-r); }
+.act.red    { --act-c: var(--act-red);    --act-t: var(--act-red-t);    --act-r: var(--act-red-r); }
+.act.green  { --act-c: var(--act-green);  --act-t: var(--act-green-t);  --act-r: var(--act-green-r); }
+.act.purple { --act-c: var(--act-purple); --act-t: var(--act-purple-t); --act-r: var(--act-purple-r); }
+
+/* ── WhatsApp ─────────────────────────────────────────────────────────────
+   A brand mark, not one of the action colours — which is also what stopped it
+   colliding with Refund, two dark greens 23 apart. Identical in both themes,
+   because a brand does not change colour because the page did. Dark ink: white
+   on #25D366 is 1.98:1, which most of the web ships and nobody can read. */
+.wa-btn {
+  --wa: #25d366; --wa-deep: #1fb855; --wa-ink: #0b2016;
+  --wa-tint: rgba(37,211,102,.12); --wa-ring: rgba(37,211,102,.35);
+  --wa-cast: rgba(21,128,61,.30);
+  font: inherit; font-weight: 700; font-size: 12.5px; letter-spacing: .012em;
+  height: 34px; padding: 0 15px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  white-space: nowrap; cursor: pointer; text-decoration: none;
+  background: var(--wa); color: var(--wa-ink); border: 1px solid transparent;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 1px 1px var(--wa-cast),
+              0 3px 6px -2px var(--wa-cast), 0 10px 20px -8px var(--wa-cast);
+  transition: transform .14s cubic-bezier(.2,.8,.3,1), box-shadow .14s, background .14s, border-color .14s;
+}
+.dark .wa-btn { --wa-tint: rgba(37,211,102,.15); --wa-ring: rgba(37,211,102,.4); --wa-cast: rgba(0,0,0,.5); }
+.wa-btn > svg { width: 15px; height: 15px; flex-shrink: 0; }
+.wa-btn:focus-visible { outline: 2px solid var(--wa); outline-offset: 3px; }
+.wa-btn:hover { background: var(--wa-deep); transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 2px 2px var(--wa-cast),
+              0 6px 12px -3px var(--wa-cast), 0 18px 34px -10px var(--wa-cast); }
+.wa-btn:active { transform: translateY(1px); box-shadow: inset 0 2px 5px rgba(0,0,0,.25); }
+/* Quiet: for a row where WhatsApp is one of several. The fill goes, the glyph
+   keeps the brand green, so it is still found at a glance. */
+.wa-btn.quiet { background: var(--wa-tint); color: var(--t-text); border-color: var(--wa-ring); box-shadow: none; font-weight: 650; }
+.wa-btn.quiet > svg { color: var(--wa); }
+.wa-btn.quiet:hover { background: var(--wa-tint); border-color: var(--wa); box-shadow: 0 3px 7px -2px var(--ctl-cast); }
+.wa-btn.quiet:active { box-shadow: inset 0 1px 3px rgba(0,0,0,.14); }
+.wa-btn.lg { height: 44px; padding: 0 22px; font-size: 14px; font-weight: 750; border-radius: 12px; }
+.wa-btn.lg > svg { width: 18px; height: 18px; }
+.wa-btn.sm { height: 28px; padding: 0 11px; font-size: 11.5px; border-radius: 8px; }
+.wa-btn.sm > svg { width: 13px; height: 13px; }
+.wa-btn.round { width: 52px; height: 52px; padding: 0; border-radius: 999px; }
+.wa-btn.round > svg { width: 25px; height: 25px; }
+
 /* The shared admin buttons, on the same standard the rebuilt pages set for
    themselves (re-pri, tk-b): 9px radius, heavier primary with the soft accent
    shadow. Menu Builder's header wore the old flat 6/8px-radius versions long
