@@ -33,11 +33,8 @@ describe('bulk accepts a full-list row', () => {
     expect(loop).toMatch(/if \(!map\?\.serviceId \|\| map\.retiredAt\)/);
   });
 
-  it('applies the Nitro floor only where there is a tier to carry it', () => {
-    // That minimum is a property of a curated tier's GROUP. A full-list row has
-    // no group, so the provider's own min is the only one there is — which is
-    // exactly what calculateCreateOrderPricing does for single orders.
-    expect(loop).toMatch(/const effectiveMin = tier \? effectiveOrderMinimum\(tier\.group\.type, service\.min, service\.max\) : service\.min;/);
+  it('applies the shared Nitro floor to both curated and full-list rows', () => {
+    expect(loop).toMatch(/effectiveOrderMinimum\(typeOf\(service\.name\), service\.min, service\.max\)/);
   });
 
   it('prices a tier-less row off the service', () => {

@@ -20,6 +20,7 @@ import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer
 import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 import { lockOrderSettlementAccount } from '@/lib/account-deletion';
 import { effectiveOrderMinimum } from '@/lib/order-minimums';
+import { typeOf } from '@/lib/full-catalogue';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -907,10 +908,11 @@ export async function POST(req) {
         return Response.json({ error: `Row ${i + 1}: backing service not available` }, { status: 400 });
       }
 
-      // The Nitro floor is a property of a curated tier's group. A full-list
-      // row has no group, so the provider's own minimum is the only one there
-      // is — which is what calculateCreateOrderPricing does for single orders.
-      const effectiveMin = tier ? effectiveOrderMinimum(tier.group.type, service.min, service.max) : service.min;
+      // Curated rows carry their Menu Builder type. Full-list rows use the
+      // same customer-facing classifier that grouped them in the first place.
+      const effectiveMin = tier
+        ? effectiveOrderMinimum(tier.group.type, service.min, service.max)
+        : effectiveOrderMinimum(typeOf(service.name), service.min, service.max);
       const qty = Math.floor(Number(row.quantity));
       if (!qty || isNaN(qty) || qty <= 0 || !Number.isFinite(qty)) {
         return Response.json({ error: `Row ${i + 1}: invalid quantity` }, { status: 400 });

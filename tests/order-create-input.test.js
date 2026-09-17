@@ -217,16 +217,16 @@ describe('create-order pricing', () => {
     });
   });
 
-  it('uses the legacy service minimum when no tier is selected', () => {
+  it('applies the same default floor to a full-list service', () => {
     const result = calculateCreateOrderPricing({
-      service: service({ min: 20, sellPer1k: 10_000n }),
-      quantity: 25,
+      service: service({ name: 'Instagram Followers', min: 20, sellPer1k: 10_000n }),
+      quantity: 100,
       usdRate: 1600,
     });
 
     expect(result).toMatchObject({
       ok: true,
-      value: { qty: 25, chargeKobo: 300, costKobo: 5_000 },
+      value: { qty: 100, chargeKobo: 1000, costKobo: 20_000 },
     });
   });
 
