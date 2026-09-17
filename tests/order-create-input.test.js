@@ -168,6 +168,30 @@ describe('create-order request parsing', () => {
 });
 
 describe('create-order pricing', () => {
+  it.each([
+    ['followers', 100],
+    ['channel-members', 100],
+    ['reposts', 50],
+    ['shorts-views', 500],
+    ['monthly-listeners', 1000],
+  ])('applies the %s floor even when a provider permits less', (type, minimum) => {
+    expect(calculateCreateOrderPricing({
+      tier: tier(type),
+      service: service({ min: 1 }),
+      quantity: minimum - 1,
+      usdRate: 1600,
+    })).toEqual({ ok: false, error: `Quantity must be between ${minimum.toLocaleString()} and 100,000` });
+  });
+
+  it('caps a floor at a provider maximum instead of making the tier impossible to order', () => {
+    expect(calculateCreateOrderPricing({
+      tier: tier('followers'),
+      service: service({ min: 1, max: 50 }),
+      quantity: 50,
+      usdRate: 1600,
+    })).toMatchObject({ ok: true, value: { qty: 50 } });
+  });
+
   it('applies Nitro quantity floors, floors quantity, and keeps amounts in kobo', () => {
     const result = calculateCreateOrderPricing({
       tier: tier('views'),

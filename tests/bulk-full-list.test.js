@@ -37,8 +37,7 @@ describe('bulk accepts a full-list row', () => {
     // That minimum is a property of a curated tier's GROUP. A full-list row has
     // no group, so the provider's own min is the only one there is — which is
     // exactly what calculateCreateOrderPricing does for single orders.
-    expect(loop).toMatch(/const nitroMin = tier \? \(NITRO_MINS\[tier\.group\.type\?\.toLowerCase\(\)\] \|\| 50\) : 0;/);
-    expect(loop).toMatch(/const effectiveMin = tier \? Math\.max\(service\.min, nitroMin\) : service\.min;/);
+    expect(loop).toMatch(/const effectiveMin = tier \? effectiveOrderMinimum\(tier\.group\.type, service\.min, service\.max\) : service\.min;/);
   });
 
   it('prices a tier-less row off the service', () => {

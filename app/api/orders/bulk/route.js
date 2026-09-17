@@ -19,6 +19,7 @@ import { isReservedProviderQueryLeaseKey } from '@/lib/provider-query-lease';
 import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 import { lockOrderSettlementAccount } from '@/lib/account-deletion';
+import { effectiveOrderMinimum } from '@/lib/order-minimums';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -75,7 +76,6 @@ function triggerPurchaseDelivery(eventId) {
 }
 export const dynamic = 'force-dynamic';
 
-const NITRO_MINS = { followers: 100, likes: 100, views: 500, comments: 10, engagement: 50, plays: 500, reviews: 10 };
 
 function providerExtras(order, quantity) {
   const extra = {};
@@ -910,8 +910,7 @@ export async function POST(req) {
       // The Nitro floor is a property of a curated tier's group. A full-list
       // row has no group, so the provider's own minimum is the only one there
       // is — which is what calculateCreateOrderPricing does for single orders.
-      const nitroMin = tier ? (NITRO_MINS[tier.group.type?.toLowerCase()] || 50) : 0;
-      const effectiveMin = tier ? Math.max(service.min, nitroMin) : service.min;
+      const effectiveMin = tier ? effectiveOrderMinimum(tier.group.type, service.min, service.max) : service.min;
       const qty = Math.floor(Number(row.quantity));
       if (!qty || isNaN(qty) || qty <= 0 || !Number.isFinite(qty)) {
         return Response.json({ error: `Row ${i + 1}: invalid quantity` }, { status: 400 });
