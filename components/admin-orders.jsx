@@ -731,9 +731,10 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                           </div>
                           <div className="min-w-0 flex-1">
                             <div title={o.service} className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
-                            {(o.tierLabel || o.offerDisabled) && (
+                            {(o.tierLabel || o.fullList || o.offerDisabled) && (
                               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                {o.tierLabel && <span className="text-[10px] desktop:text-[11px] font-medium" style={{ color: t.accentInk }}>{o.tierLabel}</span>}
+                              {o.tierLabel && <span className="text-[10px] desktop:text-[11px] font-medium" style={{ color: t.accentInk }}>{o.tierLabel}</span>}
+                                {o.fullList && <span className="inline-flex items-center rounded-full py-px px-1.5 text-[9px] desktop:text-[10px] font-semibold uppercase tracking-[0.4px]" style={{ background: dark ? "rgba(165,180,252,.14)" : "rgba(79,70,229,.07)", color: dark ? "#a5b4fc" : "#4f46e5", border: `1px solid ${dark ? "rgba(165,180,252,.24)" : "rgba(79,70,229,.14)"}` }}>Full List</span>}
                                 {o.offerDisabled && <span className="inline-flex items-center rounded-full py-px px-1.5 text-[9px] desktop:text-[10px] font-semibold uppercase tracking-[0.4px]" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.07)", color: dark ? "#fca5a5" : "#dc2626", border: `1px solid ${dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.12)"}` }}>Disabled</span>}
                               </div>
                             )}
@@ -861,9 +862,10 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div title={o.service} className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical]" style={{ color: t.text }}>{o.service}</div>
-                  {(o.tierLabel || o.offerDisabled) && (
+                  {(o.tierLabel || o.fullList || o.offerDisabled) && (
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       {o.tierLabel && <span className="text-[11px] desktop:text-xs font-medium" style={{ color: t.accentInk }}>{o.tierLabel}</span>}
+                      {o.fullList && <span className="inline-flex items-center rounded-full py-px px-1.5 text-[9px] desktop:text-[10px] font-semibold uppercase tracking-[0.4px]" style={{ background: dark ? "rgba(165,180,252,.14)" : "rgba(79,70,229,.07)", color: dark ? "#a5b4fc" : "#4f46e5", border: `1px solid ${dark ? "rgba(165,180,252,.24)" : "rgba(79,70,229,.14)"}` }}>Full List</span>}
                       {o.offerDisabled && <span className="inline-flex items-center rounded-full py-px px-1.5 text-[9px] desktop:text-[10px] font-semibold uppercase tracking-[0.4px]" style={{ background: dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.07)", color: dark ? "#fca5a5" : "#dc2626", border: `1px solid ${dark ? "rgba(252,165,165,.2)" : "rgba(220,38,38,.12)"}` }}>Disabled</span>}
                     </div>
                   )}

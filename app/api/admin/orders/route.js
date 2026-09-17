@@ -172,6 +172,7 @@ export async function GET(req) {
         service: offer.serviceName,
         tier: offer.tierLabel,
         tierLabel: offer.tierLabel,
+        fullList: offer.fullList,
         offerDisabled: offer.offerDisabled,
         platform: offer.platform,
         category: o.service?.category || 'unknown',

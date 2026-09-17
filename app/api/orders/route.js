@@ -199,6 +199,7 @@ export async function GET(req) {
         internalId: o.id,
         service: offer.serviceName,
         tier: offer.tierLabel,
+        fullList: offer.fullList,
         offerDisabled: offer.offerDisabled,
         speed: o.tier?.speed || null,
         platform: offer.platform,

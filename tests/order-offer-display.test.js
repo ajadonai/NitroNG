@@ -46,6 +46,7 @@ describe('order offer display', () => {
       tierLabel: 'Budget',
       platform: 'instagram',
       serviceType: 'followers',
+      fullList: false,
       offerDisabled: false,
     });
   });
@@ -56,7 +57,20 @@ describe('order offer display', () => {
     expect(result.serviceName).toBe('Instagram Followers');
     expect(result.tierLabel).toBeNull();
     expect(result.offerDisabled).toBe(true);
+    expect(result.fullList).toBe(false);
     expect(result.serviceName).not.toMatch(/refill|max|quality|real/i);
+  });
+
+  it('labels a tierless full-list order without marking it disabled', () => {
+    const result = getOrderOfferDisplay(activeOrder({
+      tierId: null,
+      tier: null,
+      serviceNameAtPurchase: 'Instagram Followers',
+      tierNameAtPurchase: null,
+    }));
+
+    expect(result.fullList).toBe(true);
+    expect(result.offerDisabled).toBe(false);
   });
 
   it.each([
