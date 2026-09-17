@@ -171,7 +171,13 @@ describe('GET /api/dashboard — bounded rows with exact summaries', () => {
     await GET();
 
     const query = prisma.$queryRaw.mock.calls[0][0].join(' ');
-    expect(query).toContain('COALESCE(o."platformAtPurchase", sg.platform, s.category, \'unknown\')');
+    // s.category is deliberately absent. It is the provider's own category, so
+    // on a full-list order with no group it put "Cheap", "Vip" or "Private"
+    // onto a customer's dashboard — twenty-eight orders in ninety days.
+    expect(query).toContain('COALESCE(o."platformAtPurchase", sg.platform, \'unknown\')');
+    // Checked on the expression, not the file: the SQL comment above it names
+    // s.category precisely to say why it is absent.
+    expect(query, 'the provider category must never be a platform fallback').not.toMatch(/COALESCE\([^)]*s\.category/);
   });
 
   it('limits visible transaction rows to the 180-day window while preserving its count', async () => {

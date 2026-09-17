@@ -69,7 +69,15 @@ describe('every platform tile has its own colour', () => {
     for (const id of ['snapchat', 'kick', 'clubhouse']) {
       expect(new RegExp(`${id}: "`).test(inkBlock), `${id} cannot carry text on the light ground`).toBe(true);
     }
-    expect(brandBlock).toMatch(/snapchat: "#FFFC00"/);
+    // Snapchat is the one exception, and it is a luminance problem rather than
+    // a contrast one. #FFFC00 measures 0.909 against 0.223 for Instagram, so on
+    // the picker it flared — worst on the active tile, which stacks the brand
+    // five times over. It is toned to the middle of the pack, not darkened for
+    // legibility, which is why it lives in BRAND and not in INK_ON_LIGHT.
+    expect(brandBlock).toMatch(/snapchat: "#D0BC00"/);
+    // On the assignment, not the file: the comment above it names #FFFC00 to
+    // record what it used to be and why it moved.
+    expect(brandBlock, 'the raw yellow flares on the active tile').not.toMatch(/snapchat: "#FFFC00"/);
     expect(brandBlock).toMatch(/kick: "#53FC19"/);
   });
 
