@@ -41,7 +41,7 @@ export function SkelList({ dark, rows = 5, header = true, avatar = true, title, 
   return (
     <div style={bare ? {} : { background: card(dark), border: `1px solid ${line(dark)}`, borderRadius: 14, overflow: "hidden" }}>
       {title && <div style={{ padding: "11px 16px", borderBottom: `1px solid ${line(dark)}` }}><Bone dark={dark} w={120} h={10} /></div>}
-      {header && !title && !bare && <div style={{ height: 34, padding: "0 14px", display: "flex", alignItems: "center", gap: 12, background: dark ? "#111634" : "#faf9f7", borderBottom: `1px solid ${line(dark)}` }}><Bone dark={dark} w={60} h={8} /><Bone dark={dark} w={80} h={8} /><Bone dark={dark} w={50} h={8} /></div>}
+      {header && !title && !bare && <div style={{ height: 34, padding: "0 14px", display: "flex", alignItems: "center", gap: 12, background: dark ? "#120c1e" : "#faf9f7", borderBottom: `1px solid ${line(dark)}` }}><Bone dark={dark} w={60} h={8} /><Bone dark={dark} w={80} h={8} /><Bone dark={dark} w={50} h={8} /></div>}
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 16px", height: rowH, borderTop: i ? `1px solid ${dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)"}` : 0 }}>
           {avatar && <Bone dark={dark} w={34} h={34} r={avatar === "square" ? 10 : 17} style={{ flexShrink: 0 }} />}

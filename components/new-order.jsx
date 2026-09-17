@@ -306,8 +306,6 @@ const RCP_CSS = `
 .rcp-fill{position:absolute;inset:0;border-radius:3px;background:var(--ac);transform-origin:left}
 .rcp-acts{display:flex;gap:10px;margin-top:16px}
 @media (min-width:768px){.rcp-acts{margin-top:18px}}
-.rcp-btn{flex:1;text-align:center;padding:13px 14px;border-radius:13px;font-size:14px;font-weight:700;border:1px solid var(--line);color:var(--ink);background:var(--card);cursor:pointer;font-family:inherit}
-.rcp-pri{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:800;box-shadow:0 8px 22px rgba(196,125,142,.28)}
 `;
 
 const TX_CSS = `
@@ -356,7 +354,7 @@ function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick }) {
   const tr = useT();
   const wide = !narrow;
   const vars = {
-    "--card": dark ? "#171126" : "#ffffff", "--soft": dark ? "#111634" : "#faf9f7",
+    "--card": "var(--t-card-bg)", "--soft": dark ? "#120c1e" : "#faf9f7",
     "--ink": t.text, "--mut": t.textMuted, "--line": t.cardBorder,
     "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
   };
@@ -1461,7 +1459,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
           </button>
         )}
         {platExpanded && (
-          <div className="border border-solid rounded-xl p-2 mb-2" style={{ borderColor: t.cardBorder, background: dark ? "#111634" : "#faf9f7" }}>
+          <div className="border border-solid rounded-xl p-2 mb-2" style={{ borderColor: t.cardBorder, background: dark ? "#120c1e" : "#faf9f7" }}>
             <div className="grid grid-cols-5 gap-[5px]">
               {visiblePlatforms.map((p, i) => {
                 const isActive = platform === p.id;
@@ -1524,7 +1522,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
         <div className="no-modal-overlay flex fixed inset-0 z-[200] items-end justify-center desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); setRedeemPoints(false); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null);setRedeemPoints(false);}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
           <div role="dialog" aria-modal="true" aria-label={tr("Order summary")} className={`w-full overflow-y-auto border border-solid max-h-[calc(100dvh-84px)] desktop:max-h-[90vh] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] ${orderSuccess ? "rounded-t-[26px] desktop:rounded-[26px] desktop:max-w-[460px]" : "rounded-t-[22px] desktop:rounded-[22px] desktop:max-w-[440px]"}`} onClick={e => e.stopPropagation()} style={{ background: orderSuccess ? successChrome.card : (dark ? "#140d1e" : "#fff"), borderColor: orderSuccess ? "transparent" : (dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"), boxShadow: orderSuccess ? "0 30px 80px rgba(20,10,14,.35)" : (dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)") }}>
             {orderSuccess ? (
-              <div className="rcp" style={{ "--card": successChrome.card, "--ink": successChrome.text, "--mut": successChrome.muted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": successChrome.hair, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7", "--ac": t.accent, "--ok": successChrome.money }}>
+              <div className="rcp" style={{ "--card": successChrome.card, "--ink": successChrome.text, "--mut": successChrome.muted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": successChrome.hair, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#120c1e" : "#faf9f7", "--ac": t.accent, "--ok": successChrome.money }}>
                 <style>{RCP_CSS}</style>
                 <div className="rcp-hd">
                   <span className="rcp-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
@@ -1587,8 +1585,8 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
                   </div>
                 </div>
                 <div className="rcp-acts">
-                  <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="rcp-btn">{tr("Order again")}</button>
-                  {onViewOrders && <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="rcp-btn rcp-pri">{tr("Track this order")}</button>}
+                  <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="nb">{tr("Order again")}</button>
+                  {onViewOrders && <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="nb rcp-pri">{tr("Track this order")}</button>}
                 </div>
               </div>
             ) : (

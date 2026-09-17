@@ -245,8 +245,8 @@ export default function AdminResellerPricingPage({ t }) {
         </section>
 
         <div className="rp-foot">
-          <button type="button" className="rp-b" onClick={() => setS(DEFAULTS)} disabled={saving}>Reset to defaults</button>
-          <button type="button" className="rp-pri" onClick={() => save(s)} disabled={saving || !!ladderFault || !!overCap}>
+          <button type="button" className="nb" onClick={() => setS(DEFAULTS)} disabled={saving}>Reset to defaults</button>
+          <button type="button" className="nb pri" onClick={() => save(s)} disabled={saving || !!ladderFault || !!overCap}>
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -317,9 +317,6 @@ const CSS = `
 .rp-sw.on{background:var(--t-accent)}
 .rp-sw.on i{transform:translateX(18px)}
 .rp-foot{display:flex;justify-content:flex-end;gap:9px}
-.rp-b{font:inherit;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:9px;border:1px solid var(--t-card-border);background:var(--t-card-bg);color:var(--t-text);cursor:pointer}
-.rp-pri{font:inherit;font-size:12.5px;font-weight:800;padding:9px 20px;border-radius:9px;border:0;background:var(--t-accent);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(196,125,142,.28)}
-.rp-pri:disabled,.rp-b:disabled{opacity:.55;cursor:default;box-shadow:none}
 @media (max-width:640px){
   .rp-row{grid-template-columns:30px 1fr auto;gap:8px}
   .rp-row .rp-f:first-of-type{grid-column:2/-1;justify-content:flex-end}

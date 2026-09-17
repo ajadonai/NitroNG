@@ -92,7 +92,7 @@ export default function GuidePage({ dark, t }) {
           <div className="gp-title">{tr("Guide")}</div>
           <div className="gp-sub">{tr("How to get the most out of Nitro.")}</div>
         </div>
-        <a className="gp-btn" href="/blog" target="_blank" rel="noopener noreferrer">{tr("Open the blog")}</a>
+        <a className="nb" href="/blog" target="_blank" rel="noopener noreferrer">{tr("Open the blog")}</a>
       </div>
 
       {loading ? (
@@ -169,7 +169,7 @@ export default function GuidePage({ dark, t }) {
 
       <div className="gp-ask">
         <span className="gp-rt"><b>{tr("Still stuck?")}</b><i>{tr("WhatsApp us — faster than reading, most of the time.")}</i></span>
-        <a className="gp-btn pri" href={waLink || "/contact"} target={waLink ? "_blank" : undefined} rel={waLink ? "noopener noreferrer" : undefined}>{tr("WhatsApp us")}</a>
+        <a className="nb pri" href={waLink || "/contact"} target={waLink ? "_blank" : undefined} rel={waLink ? "noopener noreferrer" : undefined}>{tr("WhatsApp us")}</a>
       </div>
     </div>
   );
@@ -181,9 +181,6 @@ const GUIDE_CSS = `
 .gp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .gp-title{font-size:22px;font-weight:600;margin-bottom:2px}
 .gp-sub{font-size:15px;color:var(--mut)}
-.gp-btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:13px;font-weight:650;white-space:nowrap;text-decoration:none;transition:transform .15s}
-.gp-btn:hover{transform:translateY(-1px)}
-.gp-btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
 .gp-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .gp-srch{flex:1;min-width:240px;display:flex;align-items:center;gap:9px;height:42px;padding:0 15px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
 .gp-srch:focus-within{border-color:var(--ac)}
@@ -223,12 +220,10 @@ const GUIDE_CSS = `
 .gp-empty span{font-size:13px;color:var(--mut);line-height:1.5}
 .gp-ask{display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:18px;background:var(--card);border:1px solid var(--line)}
 @media (max-width:900px){
-  .gp-head{flex-direction:column}.gp-head .gp-btn{width:100%}
-  .gp-srch{min-width:0;width:100%}
+  .gp-head{flex-direction:column}.gp-head   .gp-srch{min-width:0;width:100%}
   .gp-chips{width:100%}.gp-chip{flex:1;text-align:center}
   .gp-gg{grid-template-columns:1fr}
-  .gp-ask{flex-direction:column;align-items:stretch}.gp-ask .gp-btn{width:100%}
-}
+  .gp-ask{flex-direction:column;align-items:stretch}.gp-ask }
 `;
 
 // Right sidebar for Guide

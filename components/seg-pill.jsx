@@ -4,7 +4,7 @@ export function SegPill({ value, options, onChange, label, dark, t, fill, compac
   return (
     <div className={`flex items-center gap-2.5 ${fill ? "w-full" : "shrink-0"}`}>
       {label && <span className="text-[11px] uppercase tracking-[1.5px] font-medium hidden desktop:inline whitespace-nowrap" style={{ color: t.textMuted }}>{label}</span>}
-      <div className={`flex rounded-full p-[3px] border border-solid gap-[3px] ${fill ? "w-full" : ""}`} style={{ background: dark ? "#111634" : "#faf9f7", borderColor: t.cardBorder }}>
+      <div className={`flex rounded-full p-[3px] border border-solid gap-[3px] ${fill ? "w-full" : ""}`} style={{ background: dark ? "#120c1e" : "#faf9f7", borderColor: t.cardBorder }}>
         {options.map(opt => {
           const v = typeof opt === "string" ? opt : opt.value;
           const display = typeof opt === "string" ? opt : opt.label;

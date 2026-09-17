@@ -559,8 +559,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   /* ── Render ───────────────────────────────────── */
 
   const vars = {
-    "--card": dark ? "#171126" : "#fffdfb", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
-    "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--card": "var(--t-card-bg)", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
+    "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#120c1e" : "#faf9f7",
     "--ac": t.accent, "--acbg": dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)", "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)",
     "--ok": dark ? "#6ee7b7" : "#086e4f", "--okbg": dark ? "rgba(110,231,183,.12)" : "rgba(8,110,79,.08)", "--warn": dark ? "#fcd34d" : "#935004", "--bad": dark ? "#fca5a5" : "#bc2121",
     "--bg": dark ? "#0c0814" : "#efe8e0", "--bluetxt": "#60a5fa",
@@ -645,8 +645,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
               </label>
             </div>
             <div className="us-row">
-              <button type="button" className="us-pri" disabled={actionLoading} onClick={saveEdit}>{actionLoading ? 'Saving...' : 'Save changes'}</button>
-              <button type="button" className="us-b" onClick={() => setEditing(false)}>Cancel</button>
+              <button type="button" className="nb pri" disabled={actionLoading} onClick={saveEdit}>{actionLoading ? 'Saving...' : 'Save changes'}</button>
+              <button type="button" className="nb" onClick={() => setEditing(false)}>Cancel</button>
             </div>
           </div>
         </section>
@@ -689,10 +689,10 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
           </div>
 
           <div className="us-acts">
-            {!isMutationLocked(drawerUser) && <button type="button" className="us-pri" onClick={() => setDrawerCreditOpen(!drawerCreditOpen)}>Credit wallet</button>}
-            {canEdit && !isMutationLocked(drawerUser) && <button type="button" className="us-b" onClick={startEditing}>Edit</button>}
+            {!isMutationLocked(drawerUser) && <button type="button" className="nb pri" onClick={() => setDrawerCreditOpen(!drawerCreditOpen)}>Credit wallet</button>}
+            {canEdit && !isMutationLocked(drawerUser) && <button type="button" className="nb" onClick={startEditing}>Edit</button>}
             {(drawerUser.canReinstate || ['Active', 'Suspended'].includes(drawerUser.status)) && (
-              <button type="button" className={"us-b" + (drawerUser.status === 'Active' ? " danger" : "")} disabled={actionLoading} onClick={() => handleStatusAction(drawerUser)}>
+              <button type="button" className={"nb" + (drawerUser.status === 'Active' ? " danger" : "")} disabled={actionLoading} onClick={() => handleStatusAction(drawerUser)}>
                 {drawerUser.canReinstate ? 'Restore' : drawerUser.status === 'Active' ? 'Ban' : 'Activate'}
               </button>
             )}
@@ -702,14 +702,14 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
             <section className="us-dsec">
               <header><h4>Credit or debit</h4><span className="us-cnt">The reason is shown to the customer</span></header>
               <div className="us-cred">
-                <div className="us-segs">
-                  {[['credit', 'Credit'], ['gift', 'Gift'], ['debit', 'Debit']].map(([v, l]) => <button key={v} type="button" className={"us-seg" + (creditType === v ? " on" : "")} onClick={() => setCreditType(v)}>{l}</button>)}
+                <div className="segs">
+                  {[['credit', 'Credit'], ['gift', 'Gift'], ['debit', 'Debit']].map(([v, l]) => <button key={v} type="button" className={"seg" + (creditType === v ? " on" : "")} onClick={() => setCreditType(v)}>{l}</button>)}
                 </div>
                 <input type="number" placeholder="₦ 0" value={creditAmt} onChange={e => setCreditAmt(e.target.value)} className="us-in m" />
                 <input type="text" placeholder={creditType === 'debit' ? 'Reason' : 'Reason (optional)'} value={creditReason} onChange={e => setCreditReason(e.target.value)} className="us-in" />
-                <button type="button" className="us-b" disabled={actionLoading || Number(creditAmt) <= 0 || (creditType === 'debit' && !creditReason.trim())} onClick={() => handleCredit(drawerUser)}>Apply</button>
+                <button type="button" className="nb" disabled={actionLoading || Number(creditAmt) <= 0 || (creditType === 'debit' && !creditReason.trim())} onClick={() => handleCredit(drawerUser)}>Apply</button>
               </div>
-              <div className="us-quick">{[1000, 2000, 5000, 10000].map(p => <button key={p} type="button" className="us-b sm" onClick={() => setCreditAmt(String(p))}>{fN(p)}</button>)}</div>
+              <div className="us-quick">{[1000, 2000, 5000, 10000].map(p => <button key={p} type="button" className="nb sm" onClick={() => setCreditAmt(String(p))}>{fN(p)}</button>)}</div>
               {creditType === 'debit' && (
                 <label className="us-cashref">
                   <input type="checkbox" checked={cashRefund} onChange={e => setCashRefund(e.target.checked)} />
@@ -724,14 +724,14 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
               <header><h4>Points</h4><span className="us-cnt">{fPts(rewards.points.balance || 0)} pts · ₦{(rewards.points.valueNaira || 0).toLocaleString()} value{ptsAdjOpen ? '' : <> · <button type="button" className="us-link" onClick={() => setPtsAdjOpen(true)}>adjust</button></>}</span></header>
               {ptsAdjOpen && (
                 <div className="us-cred">
-                  <div className="us-segs">
-                    {[['manual_credit', 'Credit'], ['manual_debit', 'Debit']].map(([v, l]) => <button key={v} type="button" className={"us-seg" + (ptsAdjType === v ? " on" : "")} onClick={() => setPtsAdjType(v)}>{l}</button>)}
+                  <div className="segs">
+                    {[['manual_credit', 'Credit'], ['manual_debit', 'Debit']].map(([v, l]) => <button key={v} type="button" className={"seg" + (ptsAdjType === v ? " on" : "")} onClick={() => setPtsAdjType(v)}>{l}</button>)}
                   </div>
                   <input type="number" placeholder="Points" value={ptsAdjAmt} onChange={e => setPtsAdjAmt(e.target.value)} className="us-in m" />
                   <input type="text" placeholder="Reason" value={ptsAdjReason} onChange={e => setPtsAdjReason(e.target.value)} className="us-in" />
                   <div className="us-row">
-                    <button type="button" className="us-b" disabled={ptsAdjLoading || !Number(ptsAdjAmt) || !ptsAdjReason.trim()} onClick={submitPointsAdj}>{ptsAdjLoading ? '…' : 'Apply'}</button>
-                    <button type="button" className="us-b ghost" onClick={() => { setPtsAdjOpen(false); setPtsAdjAmt(''); setPtsAdjReason(''); }}>Cancel</button>
+                    <button type="button" className="nb" disabled={ptsAdjLoading || !Number(ptsAdjAmt) || !ptsAdjReason.trim()} onClick={submitPointsAdj}>{ptsAdjLoading ? '…' : 'Apply'}</button>
+                    <button type="button" className="nb ghost" onClick={() => { setPtsAdjOpen(false); setPtsAdjAmt(''); setPtsAdjReason(''); }}>Cancel</button>
                   </div>
                 </div>
               )}
@@ -760,9 +760,9 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
               ))}
               {txAll && txTotalPages > 1 && (
                 <div className="us-tr us-txpg">
-                  <button type="button" className="us-b sm" disabled={txPage === 1} onClick={() => setTxPage(p => Math.max(1, p - 1))}>Prev</button>
+                  <button type="button" className="nb sm" disabled={txPage === 1} onClick={() => setTxPage(p => Math.max(1, p - 1))}>Prev</button>
                   <span className="us-cnt">{txPage} of {txTotalPages}</span>
-                  <button type="button" className="us-b sm" disabled={txPage >= txTotalPages} onClick={() => setTxPage(p => Math.min(txTotalPages, p + 1))}>Next</button>
+                  <button type="button" className="nb sm" disabled={txPage >= txTotalPages} onClick={() => setTxPage(p => Math.min(txTotalPages, p + 1))}>Next</button>
                 </div>
               )}
             </div>
@@ -781,7 +781,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
             <div className="adm-title" style={{ color: t.text }}>Users</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Every account, what they hold, what they have done.</div>
           </div>
-          <button type="button" className="us-b" onClick={exportAll}><ExportIcon /> Export CSV</button>
+          <button type="button" className="nb" onClick={exportAll}><ExportIcon /> Export CSV</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -809,11 +809,11 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
       {selected.size > 0 && (
         <div className="us-bb">
           <b>{selected.size} selected</b>
-          <button type="button" className="us-b sm" onClick={() => { if (selected.size === 1) { const u = users.find(x => x.id === [...selected][0]); if (u) openDrawer(u, true); } else toast.info('Coming soon', 'Bulk credit coming soon'); }}>Credit</button>
-          <button type="button" className="us-b sm" onClick={() => toast.info('Coming soon', 'Bulk message coming soon')}>Email</button>
-          <button type="button" className="us-b sm" onClick={exportSelected}>Export</button>
-          <button type="button" className="us-b sm danger" onClick={bulkBan}>Ban</button>
-          <button type="button" className="us-b sm ghost" onClick={() => setSelected(new Set())}>Clear</button>
+          <button type="button" className="nb sm" onClick={() => { if (selected.size === 1) { const u = users.find(x => x.id === [...selected][0]); if (u) openDrawer(u, true); } else toast.info('Coming soon', 'Bulk credit coming soon'); }}>Credit</button>
+          <button type="button" className="nb sm" onClick={() => toast.info('Coming soon', 'Bulk message coming soon')}>Email</button>
+          <button type="button" className="nb sm" onClick={exportSelected}>Export</button>
+          <button type="button" className="nb sm danger" onClick={bulkBan}>Ban</button>
+          <button type="button" className="nb sm ghost" onClick={() => setSelected(new Set())}>Clear</button>
         </div>
       )}
 
@@ -902,11 +902,7 @@ const US_CSS = `
 .us{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
 .us *{box-sizing:border-box}
 .us .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.us-b{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:transform .15s}
-.us-b:hover{transform:translateY(-1px)}.us-b.sm{padding:5px 9px;font-size:11.5px}.us-b.danger{color:var(--bad)}.us-b.ghost{background:transparent;color:var(--mut)}
-.us-b:disabled{opacity:.5;cursor:not-allowed;transform:none}.us-b svg{width:13px;height:13px}
-.us-pri{font:inherit;font-size:13px;font-weight:800;padding:9px 14px;border-radius:10px;border:0;background:var(--ac);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(196,125,142,.28);white-space:nowrap;transition:transform .15s}
-.us-pri:hover{transform:translateY(-1px)}.us-pri:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+.us-b svg{width:13px;height:13px}
 .us-link{font:inherit;font-size:inherit;font-weight:600;color:var(--ac);background:none;border:0;cursor:pointer;padding:0}
 .us-cnt{font-size:11.5px;color:var(--dim)}
 .us-row{display:flex;gap:8px}.us-row>*{flex:1}
@@ -964,15 +960,12 @@ const US_CSS = `
 .us-f:nth-child(-n+2){border-top:0}.us-f:nth-child(odd){border-left:0}
 .us-f span{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
 .us-f b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.us-f b.good{color:var(--ok)}.us-tier{color:var(--acink);font-weight:800}
-.us-acts{display:flex;gap:6px;flex-wrap:wrap}.us-acts .us-pri{flex:1;text-align:center}
-.us-dsec{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.us-acts{display:flex;gap:6px;flex-wrap:wrap}.us-acts .us-dsec{border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .us-dsec>header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--soft)}
 .us-dsec h4{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);font-weight:700;margin:0;white-space:nowrap}
 .us-cred{display:grid;grid-template-columns:130px 1fr 1fr auto;gap:8px;padding:10px 12px;align-items:center}
 .us-quick{display:flex;gap:6px;padding:0 12px 10px;flex-wrap:wrap}
 .us-cashref{display:flex;align-items:flex-start;gap:10px;margin:0 12px 12px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--soft);cursor:pointer;font-size:12.5px}.us-cashref input{margin-top:2px;accent-color:var(--ac)}.us-cashref span{display:flex;flex-direction:column;gap:2px}.us-cashref b{font-weight:600;color:var(--ink)}.us-cashref i{font-style:normal;font-size:11.5px;color:var(--mut)}
-.us-segs{display:flex;gap:3px;padding:3px;border-radius:9px;background:var(--soft);border:1px solid var(--line)}
-.us-seg{flex:1;text-align:center;font:inherit;font-size:12px;font-weight:600;padding:6px;border-radius:6px;color:var(--mut);background:none;border:0;cursor:pointer}.us-seg.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .us-in{width:100%;height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:inherit;font-size:13px;color:var(--ink);outline:none;min-width:0}.us-in:focus{border-color:var(--acln)}
 .us-edit{display:flex;flex-direction:column;gap:10px;padding:12px}
 .us-fld{display:flex;flex-direction:column;gap:5px}.us-fld span{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
@@ -1011,6 +1004,5 @@ const US_CSS = `
   .us-ur>span:first-child,.us-ord,.us-jn,.us-ra,.us-st{display:none}.us-un{flex:1}.us-bal{flex-shrink:0;font-size:13px}
   .us-unt i{display:flex;align-items:center;gap:6px}
   .us-unt i::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);flex-shrink:0}.us-ur.banned .us-unt i::before{background:var(--bad)}
-  .us-cred{grid-template-columns:1fr 1fr}.us-cred .us-segs{grid-column:1/-1}.us-cred .us-b{grid-column:1/-1}
-}
+  .us-cred{grid-template-columns:1fr 1fr}.us-cred .us-cred }
 `;

@@ -40,7 +40,7 @@ export default function AdminRefillsPage({ dark, t }) {
   // Oldest ask first: the queue is ordered by how long someone has waited.
   const queue = [...refills].sort((a, b) => new Date(a.refillRequestedAt || a.createdAt) - new Date(b.refillRequestedAt || b.createdAt));
   const vars = {
-    "--card": dark ? "#171126" : "#ffffff", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--card": "var(--t-card-bg)", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#120c1e" : "#faf9f7",
     "--ac": t.accent, "--ok": dark ? "#6ee7b7" : "#0a7d54", "--warn": dark ? "#fcd34d" : "#b45309", "--blue": dark ? "#a5b4fc" : "#4c62c4",
   };
   return (
@@ -75,8 +75,8 @@ export default function AdminRefillsPage({ dark, t }) {
                 <span className="rf-st"><i className={"rf-dot " + (r.status === "Completed" ? "ok" : "warn")} />{r.status}</span>
                 <span className="rf-w">asked {ago(r.refillRequestedAt)}</span>
                 <span className="rf-a">
-                  <button type="button" className="rf-b sm pri" disabled={!!actionLoading} onClick={() => doAction(r, "refill")}>{actionLoading === r.orderId + "refill" ? "Sending…" : "Send refill"}</button>
-                  <button type="button" className="rf-b sm" disabled={!!actionLoading} onClick={() => doAction(r, "reset_refill")}>{actionLoading === r.orderId + "reset_refill" ? "…" : "Reset"}</button>
+                  <button type="button" className="nb sm pri" disabled={!!actionLoading} onClick={() => doAction(r, "refill")}>{actionLoading === r.orderId + "refill" ? "Sending…" : "Send refill"}</button>
+                  <button type="button" className="nb sm" disabled={!!actionLoading} onClick={() => doAction(r, "reset_refill")}>{actionLoading === r.orderId + "reset_refill" ? "…" : "Reset"}</button>
                 </span>
               </div>
             ))}
@@ -100,8 +100,6 @@ const RF_CSS = `
 .rf{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
 .rf *{box-sizing:border-box}
 .rf .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.rf-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.rf-b:hover{transform:translateY(-1px)}.rf-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.rf-b.sm{height:30px;padding:0 10px;font-size:12px}.rf-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
 .rf-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .rf-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.rf-stt:first-child{border-left:0}
 .rf-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rf-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.rf-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rf-stt.warn b{color:var(--warn)}
@@ -119,7 +117,6 @@ const RF_CSS = `
   .rf-stats{grid-template-columns:1fr 1fr}.rf-stt:nth-child(3){border-left:0}.rf-stt:nth-child(n+3){border-top:1px solid var(--line)}.rf-stt b{font-size:17px}
   .rf-list{background:none}.rf-r{grid-template-columns:1fr auto;grid-template-areas:"o st" "s s" "l l" "w w" "a a";gap:8px 10px;padding:12px 14px}
   .rf-o{grid-area:o}.rf-st{grid-area:st;align-self:start}.rf-s{grid-area:s;padding-top:10px;border-top:1px solid var(--rail)}.rf-s b,.rf-s i{white-space:normal}.rf-l{grid-area:l}.rf-l a{white-space:normal;word-break:break-all}
-  .rf-w{grid-area:w;font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;color:var(--mut)}.rf-a{grid-area:a;justify-content:stretch;margin-top:2px}.rf-a .rf-b{flex:1;height:36px}
-  .rf-hr{grid-template-columns:1fr auto;grid-template-areas:"o w" "b b" "i i";gap:2px 10px}.rf-hr .m{grid-area:o}.rf-hr .rf-cnt{grid-area:w}.rf-hr b{grid-area:b}.rf-hr i{grid-area:i;white-space:normal}
+  .rf-w{grid-area:w;font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;color:var(--mut)}.rf-a{grid-area:a;justify-content:stretch;margin-top:2px}.rf-a   .rf-hr{grid-template-columns:1fr auto;grid-template-areas:"o w" "b b" "i i";gap:2px 10px}.rf-hr .m{grid-area:o}.rf-hr .rf-cnt{grid-area:w}.rf-hr b{grid-area:b}.rf-hr i{grid-area:i;white-space:normal}
 }
 `;
