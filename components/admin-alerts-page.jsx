@@ -148,8 +148,8 @@ export function AdminAlertsPage({ dark, t }) {
           </header>
           {(composeOpen || editing) && <div className="aa-cb">
             <div className="aa-row2">
-              <div className="aa-fld"><label>Who sees it</label><div className="aa-segs">{Object.entries(AUD).map(([k, v]) => <button type="button" key={k} className={`aa-seg${form.target === k ? " on" : ""}`} onClick={() => set("target", k)}>{v}</button>)}</div></div>
-              <div className="aa-fld"><label>What kind</label><div className="aa-segs aa-types">{TYPES.map(([k, v]) => <button type="button" key={k} className={`aa-seg ${tcls[k]}${form.type === k ? " on" : ""}`} onClick={() => set("type", k)}><i />{v}</button>)}</div></div>
+              <div className="aa-fld"><label>Who sees it</label><div className="segs">{Object.entries(AUD).map(([k, v]) => <button type="button" key={k} className={`seg${form.target === k ? " on" : ""}`} onClick={() => set("target", k)}>{v}</button>)}</div></div>
+              <div className="aa-fld"><label>What kind</label><div className="segs aa-types">{TYPES.map(([k, v]) => <button type="button" key={k} className={`seg ${tcls[k]}${form.type === k ? " on" : ""}`} onClick={() => set("type", k)}><i />{v}</button>)}</div></div>
             </div>
             <div className="aa-fld">
               <label>Message</label>
@@ -158,7 +158,7 @@ export function AdminAlertsPage({ dark, t }) {
             </div>
             <div className="aa-row2">
               <div className="aa-fld"><label>Link <em>optional</em></label><div className="aa-inl"><input className="aa-in" value={form.actionLabel} onChange={e => set("actionLabel", e.target.value)} placeholder="Link text" /><input className="aa-in wide" value={form.actionHref} onChange={e => set("actionHref", e.target.value)} placeholder="https://nitro.ng/…" /></div></div>
-              <div className="aa-fld"><label>Comes down</label><div className="aa-segs">{EXPIRY.map(([k, v]) => <button type="button" key={k} className={`aa-seg${form.expiry === k ? " on" : ""}`} onClick={() => set("expiry", k)}>{v}</button>)}</div></div>
+              <div className="aa-fld"><label>Comes down</label><div className="segs">{EXPIRY.map(([k, v]) => <button type="button" key={k} className={`seg${form.expiry === k ? " on" : ""}`} onClick={() => set("expiry", k)}>{v}</button>)}</div></div>
             </div>
             <div className="aa-fld"><label>How it will look</label><AnnouncementBanner alerts={previewAlerts} dark={dark} mode="dashboard" preview /></div>
             <div className="aa-foot">
@@ -203,11 +203,10 @@ const CSS = `
 .aa-cb{padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px}
 .aa-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .aa-fld{display:flex;flex-direction:column;gap:6px;min-width:0}.aa-fld label{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}.aa-fld label em{font-style:normal;font-weight:500;letter-spacing:0;text-transform:none;color:var(--dim);margin-left:4px}
-.aa-segs{display:flex;gap:4px;padding:3px;border-radius:11px;background:var(--soft);border:1px solid var(--line)}
-.aa-seg{flex:1;font:inherit;font-size:12.5px;font-weight:600;padding:7px 8px;border-radius:8px;border:0;background:transparent;color:var(--mut);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
-.aa-seg.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.aa-types .aa-seg i{width:7px;height:7px;border-radius:50%;background:var(--c)}.aa-types .aa-seg.on{color:var(--c)}
-.aa-ta{width:100%;min-height:150px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;line-height:1.5;resize:vertical;outline:none}.aa-ta:focus{border-color:var(--pri)}
+/* The type dot takes the alert type's own colour. The shared .seg > i
+   paints currentColor, which is the label colour, not the type. */
+.aa-types .seg i{background:var(--c)}
+.aa-types .aa-ta{width:100%;min-height:150px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13.5px;line-height:1.5;resize:vertical;outline:none}.aa-ta:focus{border-color:var(--pri)}
 .aa-hint{font-size:11.5px;color:var(--dim);line-height:1.45}
 .aa-hintw{display:inline-flex;align-items:center;position:relative}.aa-i{display:none}
 .aa-pop{display:none}
@@ -217,6 +216,5 @@ const CSS = `
   .aa-hint{display:none}.aa-i{display:inline-flex;width:18px;height:18px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--mut);font:inherit;font-size:11px;font-weight:700;font-style:italic;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
   .aa-iback{position:fixed;inset:0;z-index:19}.aa-pop{display:block;position:absolute;right:0;top:24px;z-index:20;width:min(280px,78vw);padding:10px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.18);font-size:12.5px;color:var(--ink);line-height:1.5;text-align:left;font-style:normal;font-weight:400}
   .aa-row2{grid-template-columns:1fr}
-  .aa-seg{font-size:12px;padding:7px 5px}
-}
+  }
 `;

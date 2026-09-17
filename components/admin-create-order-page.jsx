@@ -318,8 +318,8 @@ export function AdminCreateOrderPage({ dark, t }) {
     <button type="button" className={"co-tog" + (on ? "" : " o")} onClick={onClick} aria-pressed={on}><i /></button>
   );
   const segs = (value, options, onChange, cls) => (
-    <div className={"co-segs" + (cls ? ` ${cls}` : "")}>
-      {options.map(([v, l]) => <button key={v} type="button" className={"co-seg" + (value === v ? " on" : "")} onClick={() => onChange(v)}>{l}</button>)}
+    <div className={"segs" + (cls ? ` ${cls}` : "")}>
+      {options.map(([v, l]) => <button key={v} type="button" className={"seg" + (value === v ? " on" : "")} onClick={() => onChange(v)}>{l}</button>)}
     </div>
   );
   const chevron = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>;
@@ -814,9 +814,6 @@ const CO_CSS = `
 .co-pre{display:flex;align-items:center;height:38px;border-radius:10px;background:var(--card);border:1px solid var(--line);padding:0 12px;gap:8px}
 .co-pre>span{color:var(--dim);font-size:13.5px;padding-right:8px;border-right:1px solid var(--line);flex-shrink:0}
 .co-pre>input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:13.5px;color:var(--ink);outline:none}
-.co-segs{display:flex;gap:3px;padding:3px;border-radius:10px;background:var(--soft);border:1px solid var(--line)}
-.co-seg{flex:1;text-align:center;font:inherit;font-size:12.5px;font-weight:600;padding:7px 8px;border-radius:7px;color:var(--mut);white-space:nowrap;background:none;border:0;cursor:pointer}
-.co-seg.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .co-modes{width:180px}
 .co-cust{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--soft);border:1px solid var(--line)}
 .co-av{width:34px;height:34px;border-radius:50%;background:var(--ac);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}

@@ -702,8 +702,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
             <section className="us-dsec">
               <header><h4>Credit or debit</h4><span className="us-cnt">The reason is shown to the customer</span></header>
               <div className="us-cred">
-                <div className="us-segs">
-                  {[['credit', 'Credit'], ['gift', 'Gift'], ['debit', 'Debit']].map(([v, l]) => <button key={v} type="button" className={"us-seg" + (creditType === v ? " on" : "")} onClick={() => setCreditType(v)}>{l}</button>)}
+                <div className="segs">
+                  {[['credit', 'Credit'], ['gift', 'Gift'], ['debit', 'Debit']].map(([v, l]) => <button key={v} type="button" className={"seg" + (creditType === v ? " on" : "")} onClick={() => setCreditType(v)}>{l}</button>)}
                 </div>
                 <input type="number" placeholder="₦ 0" value={creditAmt} onChange={e => setCreditAmt(e.target.value)} className="us-in m" />
                 <input type="text" placeholder={creditType === 'debit' ? 'Reason' : 'Reason (optional)'} value={creditReason} onChange={e => setCreditReason(e.target.value)} className="us-in" />
@@ -724,8 +724,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
               <header><h4>Points</h4><span className="us-cnt">{fPts(rewards.points.balance || 0)} pts · ₦{(rewards.points.valueNaira || 0).toLocaleString()} value{ptsAdjOpen ? '' : <> · <button type="button" className="us-link" onClick={() => setPtsAdjOpen(true)}>adjust</button></>}</span></header>
               {ptsAdjOpen && (
                 <div className="us-cred">
-                  <div className="us-segs">
-                    {[['manual_credit', 'Credit'], ['manual_debit', 'Debit']].map(([v, l]) => <button key={v} type="button" className={"us-seg" + (ptsAdjType === v ? " on" : "")} onClick={() => setPtsAdjType(v)}>{l}</button>)}
+                  <div className="segs">
+                    {[['manual_credit', 'Credit'], ['manual_debit', 'Debit']].map(([v, l]) => <button key={v} type="button" className={"seg" + (ptsAdjType === v ? " on" : "")} onClick={() => setPtsAdjType(v)}>{l}</button>)}
                   </div>
                   <input type="number" placeholder="Points" value={ptsAdjAmt} onChange={e => setPtsAdjAmt(e.target.value)} className="us-in m" />
                   <input type="text" placeholder="Reason" value={ptsAdjReason} onChange={e => setPtsAdjReason(e.target.value)} className="us-in" />
@@ -966,8 +966,6 @@ const US_CSS = `
 .us-cred{display:grid;grid-template-columns:130px 1fr 1fr auto;gap:8px;padding:10px 12px;align-items:center}
 .us-quick{display:flex;gap:6px;padding:0 12px 10px;flex-wrap:wrap}
 .us-cashref{display:flex;align-items:flex-start;gap:10px;margin:0 12px 12px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--soft);cursor:pointer;font-size:12.5px}.us-cashref input{margin-top:2px;accent-color:var(--ac)}.us-cashref span{display:flex;flex-direction:column;gap:2px}.us-cashref b{font-weight:600;color:var(--ink)}.us-cashref i{font-style:normal;font-size:11.5px;color:var(--mut)}
-.us-segs{display:flex;gap:3px;padding:3px;border-radius:9px;background:var(--soft);border:1px solid var(--line)}
-.us-seg{flex:1;text-align:center;font:inherit;font-size:12px;font-weight:600;padding:6px;border-radius:6px;color:var(--mut);background:none;border:0;cursor:pointer}.us-seg.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .us-in{width:100%;height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--card);font:inherit;font-size:13px;color:var(--ink);outline:none;min-width:0}.us-in:focus{border-color:var(--acln)}
 .us-edit{display:flex;flex-direction:column;gap:10px;padding:12px}
 .us-fld{display:flex;flex-direction:column;gap:5px}.us-fld span{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
@@ -1006,5 +1004,5 @@ const US_CSS = `
   .us-ur>span:first-child,.us-ord,.us-jn,.us-ra,.us-st{display:none}.us-un{flex:1}.us-bal{flex-shrink:0;font-size:13px}
   .us-unt i{display:flex;align-items:center;gap:6px}
   .us-unt i::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);flex-shrink:0}.us-ur.banned .us-unt i::before{background:var(--bad)}
-  .us-cred{grid-template-columns:1fr 1fr}.us-cred .us-segs{grid-column:1/-1}.us-cred }
+  .us-cred{grid-template-columns:1fr 1fr}.us-cred .us-cred }
 `;

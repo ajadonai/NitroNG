@@ -1033,6 +1033,40 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 }
 .nb.pri:disabled { background: var(--t-nav-active); border-color: transparent; }
 
+/* ── Segmented ────────────────────────────────────────────────────────────
+   A choice that is always showing its current state — which list am I looking
+   at, which tier am I pricing. Two buttons side by side are two different
+   actions; this is one control with two faces, and several pages had been
+   faking the first with the second.
+
+   The shape is SegPill's, because promotions had it right: a pill track with
+   the live segment lifted onto a card. Six pages had written their own as a
+   rounded rectangle at 9px, 10px and 11px — three radii for one control, none
+   of them the pill.
+
+   Note the track is ringed and the segments are not. A segment is a label
+   inside a control, not a button in its own right, so it does not get the cue
+   that means pressable. */
+.segs { display: inline-flex; gap: 3px; padding: 3px; border-radius: 999px;
+  background: var(--t-accent-light); border: 1px solid var(--t-card-border); }
+.segs.fill { width: 100%; }
+.segs.fill .seg { flex: 1; }
+.seg {
+  font: inherit; font-size: 11.5px; font-weight: 600; letter-spacing: .012em;
+  padding: 5px 14px; border-radius: 999px; border: 0; background: transparent;
+  color: var(--t-text-muted); white-space: nowrap; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  transition: background .18s, color .18s, box-shadow .18s;
+}
+.seg:hover { color: var(--t-text); }
+.seg:focus-visible { outline: 2px solid var(--t-accent); outline-offset: 2px; }
+.seg.on { background: var(--t-card-bg); color: var(--t-text); box-shadow: 0 1px 3px rgba(0,0,0,.14); }
+/* In the dark the selected chip was #171126 on a #111634 track — 1.04:1, which
+   is no difference at all. A lighter face does the work, as SegPill already
+   worked out. */
+.dark .seg.on { background: rgba(255,255,255,.16); }
+.seg > i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
 /* ── Row action ───────────────────────────────────────────────────────────
    The June rule: a filled pill tinted in the action's own colour, so an admin
    scanning a long list finds Cancel by its red without reading the word. The

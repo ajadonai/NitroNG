@@ -145,8 +145,8 @@ export function AdminPriceChangesPage({ dark, t }) {
         </div>
 
         <div className="pc-tools">
-          <div className="pc-segs">{RANGES.map(([v, l]) => <button type="button" key={v} className={`pc-seg${days === v ? " on" : ""}`} onClick={() => setDays(v)}>{l}</button>)}</div>
-          <div className="pc-segs">{[["all", "All"], ["up", "Up ▲"], ["down", "Down ▼"]].map(([v, l]) => <button type="button" key={v} className={`pc-seg${dir === v ? " on" : ""}`} onClick={() => setDir(v)}>{l}</button>)}</div>
+          <div className="segs">{RANGES.map(([v, l]) => <button type="button" key={v} className={`pc-seg${days === v ? " on" : ""}`} onClick={() => setDays(v)}>{l}</button>)}</div>
+          <div className="segs">{[["all", "All"], ["up", "Up ▲"], ["down", "Down ▼"]].map(([v, l]) => <button type="button" key={v} className={`pc-seg${dir === v ? " on" : ""}`} onClick={() => setDir(v)}>{l}</button>)}</div>
           <select className="pc-sel" value={platform} onChange={e => setPlatform(e.target.value)}>
             <option value="all">All platforms</option>
             {platforms.map(p => <option key={p} value={p}>{p}</option>)}
@@ -211,9 +211,6 @@ const CSS = `
 .pc-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px}
 .pc .up{color:var(--warn)}.pc .dn{color:var(--ok)}
 .pc-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.pc-segs{display:flex;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
-.pc-seg{font:inherit;font-size:12px;font-weight:600;padding:6px 12px;border-radius:7px;border:0;background:transparent;color:var(--mut);cursor:pointer;white-space:nowrap}
-.pc-seg.on{background:var(--soft);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .pc-sel{font:inherit;font-size:12.5px;font-weight:600;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:0 10px;outline:none;max-width:170px}
 .pc-search{font:inherit;font-size:12.5px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:0 12px;outline:none;flex:1;min-width:140px}
 .pc-search:focus,.pc-sel:focus{border-color:var(--ink)}

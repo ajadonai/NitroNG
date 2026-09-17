@@ -250,7 +250,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
               <div className="mb-panel mb-add">
                 <div className="mb-ph">Add a tier to <b>{g.name}</b>. Leave the price blank and it is set from the markup rules.</div>
                 <div className="mb-addrow">
-                  <span className="mb-segs">{missing.length ? missing.map(x => <button type="button" key={x} className={`mb-seg${addForm.tier === x ? " on" : ""}`} onClick={() => setAddForm(f => ({ ...f, tier: x }))}>{x}</button>) : TIERS.map(x => <button type="button" key={x} className={`mb-seg${addForm.tier === x ? " on" : ""}`} onClick={() => setAddForm(f => ({ ...f, tier: x }))}>{x}</button>)}</span>
+                  <span className="segs">{missing.length ? missing.map(x => <button type="button" key={x} className={`mb-seg${addForm.tier === x ? " on" : ""}`} onClick={() => setAddForm(f => ({ ...f, tier: x }))}>{x}</button>) : TIERS.map(x => <button type="button" key={x} className={`mb-seg${addForm.tier === x ? " on" : ""}`} onClick={() => setAddForm(f => ({ ...f, tier: x }))}>{x}</button>)}</span>
                   <input className="mb-in m" value={addForm.price} onChange={e => setAddForm(f => ({ ...f, price: e.target.value.replace(/[^0-9.]/g, "") }))} placeholder="Price ₦/1k (auto)" />
                 </div>
                 {addForm.serviceId
@@ -375,7 +375,6 @@ const CSS = `
 .mb-svcl{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
 .mb-svc{display:grid;grid-template-columns:auto auto 1fr auto auto;gap:8px;align-items:center;width:100%;text-align:left;padding:8px 10px;border:0;border-top:1px solid var(--rail);background:transparent;color:var(--ink);font:inherit;font-size:12.5px;cursor:pointer}.mb-svc:first-child{border-top:0}.mb-svc:hover{background:var(--soft)}
 .mb-add .mb-addrow{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}.mb-add .mb-in{width:170px;height:34px}
-.mb-segs{display:inline-flex;gap:3px;padding:3px;border-radius:9px;background:var(--card);border:1px solid var(--line)}.mb-seg{font:inherit;font-size:12px;font-weight:600;padding:6px 10px;border-radius:6px;border:0;background:transparent;color:var(--mut);cursor:pointer}.mb-seg.on{background:var(--acbg);color:var(--ink)}
 .mb-picked{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:12.5px;margin-bottom:10px}.mb-picked .mb-acts-r{display:flex;justify-content:flex-end;gap:6px}
 .mb-gfoot{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--rail);background:var(--soft)}
 .mb-addt{font:inherit;font-size:12.5px;font-weight:700;color:var(--ac);background:transparent;border:1px dashed var(--acln);border-radius:9px;padding:6px 11px;cursor:pointer}.mb-gacts{display:flex;gap:4px}

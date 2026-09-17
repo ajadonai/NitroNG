@@ -343,10 +343,6 @@ const CSS = `
 .re-av.lg{width:40px;height:40px;font-size:14px}
 .re-fld{display:flex;flex-direction:column;gap:6px}.re-fld>label{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
 .re-inl{display:flex;align-items:center;gap:10px}
-.re-segs{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
-.re-seg{flex:1;font:inherit;font-size:12px;font-weight:600;padding:7px 10px;border-radius:7px;border:0;background:transparent;color:var(--mut);cursor:pointer;white-space:nowrap}
-.re-seg.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.re-seg:disabled{cursor:not-allowed;opacity:.6}.re-seg.on:disabled{opacity:1}
 .re-facts{border-top:1px solid var(--line)}
 .re-fact{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px solid var(--rail);font-size:13px}
 .re-fact span{color:var(--mut)}.re-fact b{font-weight:700;text-align:right}

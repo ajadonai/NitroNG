@@ -184,3 +184,33 @@ describe('nobody writes their own button again', () => {
     }
   });
 });
+
+describe('one segmented control', () => {
+  const files = fs.readdirSync(path.join(process.cwd(), 'components'))
+    .filter(f => f.endsWith('.jsx'))
+    .map(f => [f, fs.readFileSync(path.join(process.cwd(), 'components', f), 'utf8')]);
+
+  it('leaves no page-private copy', () => {
+    // Six pages had written their own at 9px, 10px and 11px — three radii for
+    // one control, and none of them the pill that promotions already had right.
+    const found = [];
+    for (const [name, src] of files) {
+      for (const m of src.matchAll(/\.([a-z]{2,4}-segs?)\b[^{]*\{/g)) found.push(`${name}: .${m[1]}`);
+    }
+    expect(found, found.join('\n')).toEqual([]);
+  });
+
+  it('rings the track and not the segments', () => {
+    // A segment is a label inside a control, not a button, so it must not carry
+    // the cue that means pressable.
+    const track = css.slice(css.indexOf('\n.segs {'), css.indexOf('\n.segs {') + 260);
+    expect(track).toMatch(/border: 1px solid var\(--t-card-border\)/);
+    const seg = css.slice(css.indexOf('\n.seg {'), css.indexOf('\n.seg {') + 420);
+    expect(seg).toMatch(/border: 0/);
+  });
+
+  it('keeps the dark-mode fix SegPill already worked out', () => {
+    // The selected chip used to be #171126 on a #111634 track: 1.04:1.
+    expect(css).toMatch(/\.dark \.seg\.on \{ background: rgba\(255,255,255,\.16\)/);
+  });
+});
