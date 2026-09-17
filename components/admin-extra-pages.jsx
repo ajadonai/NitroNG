@@ -1105,7 +1105,7 @@ export function AdminAPIPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Providers</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>The upstream panels the catalogue comes from. Their names never reach a user.</div>
           </div>
-          <button type="button" className="nb" onClick={syncAll} disabled={!!syncing || loading}>{syncing ? "Syncing…" : "Sync all catalogues"}</button>
+          <button type="button" className="nb sec" onClick={syncAll} disabled={!!syncing || loading}>{syncing ? "Syncing…" : "Sync all catalogues"}</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -1878,7 +1878,7 @@ export function AdminIssuesPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Issues</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>What needs a person today, and what the checks found.</div>
           </div>
-          <button type="button" className="nb" onClick={runChecks} disabled={firingCrons}>{firingCrons ? "Running…" : "Run all checks now"}</button>
+          <button type="button" className="nb sec" onClick={runChecks} disabled={firingCrons}>{firingCrons ? "Running…" : "Run all checks now"}</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -2144,4 +2144,3 @@ const CL_CSS = `
 /* ═══════════════════════════════════════════ */
 
 export { AdminCreateOrderPage } from "./admin-create-order-page";
-

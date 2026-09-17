@@ -281,8 +281,8 @@ export default function AdminServiceGroupsPage({ dark, t }) {
             <div className="adm-subtitle" style={{ color: t.textMuted }}>{groups.length} groups · {totalTiers} tiers · {services.length} services available</div>
           </div>
           <div className="flex gap-2">
-            <button type="button" className="adm-btn-sm" style={{ borderColor: t.cardBorder, color: t.textSoft }} disabled={busy} onClick={async () => { if (await confirm({ title: "Recalculate prices", message: "Recalculate every unpinned tier from the markup rules?", confirmLabel: "Recalculate" })) act({ action: "recalculate-prices" }); }}>Recalculate prices</button>
-            <button type="button" className="adm-btn-primary" onClick={() => setShowNew(v => !v)}>{showNew ? "Cancel" : "+ New group"}</button>
+            <button type="button" className="nb sec" disabled={busy} onClick={async () => { if (await confirm({ title: "Recalculate prices", message: "Recalculate every unpinned tier from the markup rules?", confirmLabel: "Recalculate" })) act({ action: "recalculate-prices" }); }}>Recalculate prices</button>
+            <button type="button" className="nb pri" onClick={() => setShowNew(v => !v)}>{showNew ? "Cancel" : "+ New group"}</button>
           </div>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />

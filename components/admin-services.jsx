@@ -163,7 +163,7 @@ export default function AdminServicesPage({ dark, t }) {
           </div>
           <div className="rs-hb">
             {inUseDisabledCount > 0 && <button type="button" className="nb warn" disabled={syncing} onClick={syncEnable}>{syncing ? "Working…" : `Switch on ${inUseDisabledCount} in use`}</button>}
-            <button type="button" className="nb" disabled={syncingPrices} onClick={syncPrices}>{syncingPrices ? "Syncing…" : "Sync prices"}</button>
+            <button type="button" className="nb sec" disabled={syncingPrices} onClick={syncPrices}>{syncingPrices ? "Syncing…" : "Sync prices"}</button>
           </div>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />

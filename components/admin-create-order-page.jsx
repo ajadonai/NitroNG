@@ -10,6 +10,7 @@ import { distributeByCurve } from "../lib/drip-feed";
 import { cleanLink } from "@/lib/clean-link";
 import { copyText } from '@/lib/clipboard';
 import { PlatformIcon } from "./platform-icon";
+import { SegPill } from "./seg-pill";
 
 const TIER_CLR_ORDER = { Budget: "#f59e0b", Standard: "#3b82f6", Premium: "#a855f7" };
 const DRIP_DAILY_CAP = { followers: 5000, likes: 10000, views: 75000, plays: 75000, comments: 1000, reviews: 100, engagement: 15000 };
@@ -456,7 +457,7 @@ export function AdminCreateOrderPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Create order</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Place an order on a customer's account, at retail or free.</div>
           </div>
-          {segs(mode, [["single", "Single"], ["bulk", "Bulk"]], m => { setMode(m); setBatchItems([]); }, "co-modes")}
+          <div className="co-modes"><SegPill value={mode} options={[{ value: "single", label: "Single" }, { value: "bulk", label: "Bulk" }]} onChange={m => { setMode(m); setBatchItems([]); }} dark={dark} t={t} fill /></div>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
