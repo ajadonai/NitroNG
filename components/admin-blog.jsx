@@ -100,7 +100,7 @@ export default function AdminBlogPage({ dark, t }) {
               <div className="adm-title" style={{ color: t.text }}>{editing === "new" ? "New post" : "Edit post"}</div>
               <div className="adm-subtitle" style={{ color: t.textMuted }}>{editing === "new" ? "Write a post, guide or research piece." : editing.title}</div>
             </div>
-            <button type="button" className="bl-b" onClick={() => { setEditing(null); resetForm(); }}>Back to posts</button>
+            <button type="button" className="nb" onClick={() => { setEditing(null); resetForm(); }}>Back to posts</button>
           </div>
           <div className="page-divider" style={{ background: t.cardBorder }} />
         </div>
@@ -179,8 +179,8 @@ export default function AdminBlogPage({ dark, t }) {
                   </label>
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" onClick={savePost} disabled={saving} className="bl-b pri flex-1" style={{ opacity: title && content && !saving ? 1 : .4 }}>{saving ? "Saving…" : editing === "new" ? "Create post" : "Save changes"}</button>
-                  {editing !== "new" && <button type="button" onClick={() => deletePost(editing)} disabled={saving} className="bl-b bad">Delete</button>}
+                  <button type="button" onClick={savePost} disabled={saving} className="nb pri flex-1" style={{ opacity: title && content && !saving ? 1 : .4 }}>{saving ? "Saving…" : editing === "new" ? "Create post" : "Save changes"}</button>
+                  {editing !== "new" && <button type="button" onClick={() => deletePost(editing)} disabled={saving} className="nb bad">Delete</button>}
                 </div>
               </div>
             </div>
@@ -244,7 +244,7 @@ export default function AdminBlogPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Blog</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Posts, guides and research.</div>
           </div>
-          <button type="button" className="bl-b pri" onClick={startNew}>+ New post</button>
+          <button type="button" className="nb pri" onClick={startNew}>+ New post</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -275,8 +275,8 @@ export default function AdminBlogPage({ dark, t }) {
                 <span className="m bl-mid">{(p.views || 0).toLocaleString()} views</span>
                 <span className="bl-st"><i className={"bl-dot " + (p.published ? "ok" : "dim")} />{p.published ? "Live" : "Draft"}</span>
                 <span className="bl-a">
-                  <button type="button" className="bl-b sm" disabled={saving} onClick={() => startEdit(p)}>Edit</button>
-                  <button type="button" className="bl-b sm" disabled={saving} onClick={() => quickToggle(p, "published")}>{p.published ? "Unpublish" : "Publish"}</button>
+                  <button type="button" className="nb sm" disabled={saving} onClick={() => startEdit(p)}>Edit</button>
+                  <button type="button" className="nb sm" disabled={saving} onClick={() => quickToggle(p, "published")}>{p.published ? "Unpublish" : "Publish"}</button>
                 </span>
               </div>
             ))}
@@ -303,8 +303,6 @@ const BL_CSS = `
 .bl{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
 .bl *{box-sizing:border-box}
 .bl .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.bl-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.bl-b:hover{transform:translateY(-1px)}.bl-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.bl-b.sm{height:30px;padding:0 10px;font-size:12px}.bl-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.bl-b.bad{color:var(--bad)}
 .bl-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .bl-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.bl-stt:first-child{border-left:0}
 .bl-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bl-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.bl-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -332,7 +330,6 @@ const BL_CSS = `
   .bl-r{grid-template-columns:44px 1fr;grid-template-areas:"th tt" "th meta" "acts acts";gap:6px 10px;padding:12px 14px}
   .bl-thumb{grid-area:th;align-self:start}.bl-tt{grid-area:tt}.bl-tt b{white-space:normal}.bl-tt i{white-space:normal}
   .bl-mid{grid-area:meta}.bl-st{grid-area:meta;justify-self:end}
-  .bl-a{grid-area:acts;justify-content:stretch;margin-top:4px}.bl-a .bl-b{flex:1;height:36px}
-  .bl-pg{flex-wrap:wrap}
+  .bl-a{grid-area:acts;justify-content:stretch;margin-top:4px}.bl-a   .bl-pg{flex-wrap:wrap}
 }
 `;

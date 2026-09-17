@@ -180,7 +180,7 @@ export default function AdminPricingPage({ dark, t }) {
         : `Switched off: dollars still credit at the pricing rate, ${naira(usdRate)}. A ${s.premium}% premium is set and waiting for you to turn it on.` },
     { id: "rc", title: "Reprice the menu", sub: "Work every menu price out again with these settings. Prices you have pinned are left as they are.", danger: true },
   ];
-  const foot = (onSave) => <><button type="button" className="pr-b ghost" onClick={close}>Cancel</button><button type="button" className="pr-pri" disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save"}</button></>;
+  const foot = (onSave) => <><button type="button" className="nb ghost" onClick={close}>Cancel</button><button type="button" className="nb pri" disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save"}</button></>;
 
   return (
     <div className="pr" style={vars}>
@@ -191,7 +191,7 @@ export default function AdminPricingPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Pricing</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>How what we pay a provider becomes what a customer pays. Tap a card to change it.</div>
           </div>
-          <button type="button" className="pr-b ghost" onClick={reset}>Reset to defaults</button>
+          <button type="button" className="nb ghost" onClick={reset}>Reset to defaults</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -310,9 +310,6 @@ const CSS = `
 .pr *{box-sizing:border-box}
 .pr .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .pr .r{text-align:right}
-.pr-b{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;transition:transform .15s}
-.pr-b:hover{transform:translateY(-1px)}.pr-b.ghost{background:transparent;color:var(--mut)}
-.pr-pri{font:inherit;font-size:12.5px;font-weight:800;padding:8px 16px;border-radius:9px;border:0;background:var(--ac);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(196,125,142,.28);white-space:nowrap}.pr-pri:disabled{opacity:.5;cursor:not-allowed}
 .pr-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .pr-sc{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:var(--card);border:1px solid var(--line);cursor:pointer;outline:none;transition:transform .15s}
 .pr-sc:hover{background:var(--soft);transform:translateY(-1px)}.pr-sc.on{background:var(--acbg)}.pr-sc:focus-visible{box-shadow:0 0 0 2px var(--acln)}

@@ -115,8 +115,8 @@ export function AdminAlertsPage({ dark, t }) {
         <span className="aa-when">{a.created ? fD(a.created) : ""}{a.expiresAt ? ` · comes down ${fD(a.expiresAt)}` : ""}</span>
         <span className="aa-acts">
         {livePane
-          ? <><button type="button" className="aa-b" onClick={() => setActive(a.id, false)}>Take down</button><button type="button" className="aa-b" onClick={() => edit(a)}>Edit</button></>
-          : <><button type="button" className="aa-b sm" onClick={() => setActive(a.id, true)}>Restore</button><button type="button" className="aa-b sm danger" onClick={() => remove(a)}>Remove</button></>}
+          ? <><button type="button" className="nb" onClick={() => setActive(a.id, false)}>Take down</button><button type="button" className="nb" onClick={() => edit(a)}>Edit</button></>
+          : <><button type="button" className="nb sm" onClick={() => setActive(a.id, true)}>Restore</button><button type="button" className="nb sm danger" onClick={() => remove(a)}>Remove</button></>}
         </span>
       </div>
     </div>
@@ -162,8 +162,8 @@ export function AdminAlertsPage({ dark, t }) {
             </div>
             <div className="aa-fld"><label>How it will look</label><AnnouncementBanner alerts={previewAlerts} dark={dark} mode="dashboard" preview /></div>
             <div className="aa-foot">
-              <button type="button" className="aa-pri" disabled={!form.message.trim() || saving} onClick={submit}>{saving ? "Saving…" : editing ? "Save changes" : "Post notice"}</button>
-              {editing && <button type="button" className="aa-b" onClick={() => { setEditing(null); setForm(blank); setComposeOpen(false); }}>Cancel</button>}
+              <button type="button" className="nb pri" disabled={!form.message.trim() || saving} onClick={submit}>{saving ? "Saving…" : editing ? "Save changes" : "Post notice"}</button>
+              {editing && <button type="button" className="nb" onClick={() => { setEditing(null); setForm(blank); setComposeOpen(false); }}>Cancel</button>}
               <Hint text="It goes live the moment you post. When more than one is live, the newest shows first." />
             </div>
           </div>}
@@ -199,7 +199,6 @@ const CSS = `
 .aa-msg{font-size:13.5px;line-height:1.45;padding-left:16px}.aa-msg b{font-weight:700}
 .aa-act{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;font-weight:700;color:var(--c);white-space:nowrap;text-decoration:none;margin-left:8px}.aa-act svg{width:12px;height:12px}
 .aa-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-left:16px}.aa-when{font-size:11.5px;color:var(--dim);white-space:nowrap}.aa-acts{display:flex;gap:6px;flex-shrink:0}
-.aa-b{font:inherit;font-size:12px;font-weight:600;padding:6px 11px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}.aa-b.danger{color:var(--bad)}.aa-b.sm{padding:4px 9px;font-size:11.5px}
 .aa-more{display:block;width:100%;padding:10px;border:0;border-top:1px solid var(--rail);background:transparent;color:var(--mut);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
 .aa-cb{padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px}
 .aa-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -214,7 +213,6 @@ const CSS = `
 .aa-pop{display:none}
 .aa-inl{display:flex;gap:8px}.aa-in{flex:1;min-width:0;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:13px;outline:none}.aa-in.wide{flex:2}.aa-in:focus{border-color:var(--pri)}
 .aa-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.aa-pri{font:inherit;font-size:13.5px;font-weight:800;padding:11px 18px;border-radius:11px;border:0;background:var(--pri);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(196,125,142,.28)}.aa-pri:disabled{opacity:.45;cursor:default;box-shadow:none}
 @media (max-width:767px){
   .aa-hint{display:none}.aa-i{display:inline-flex;width:18px;height:18px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--mut);font:inherit;font-size:11px;font-weight:700;font-style:italic;align-items:center;justify-content:center;cursor:pointer;padding:0;flex-shrink:0}
   .aa-iback{position:fixed;inset:0;z-index:19}.aa-pop{display:block;position:absolute;right:0;top:24px;z-index:20;width:min(280px,78vw);padding:10px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.18);font-size:12.5px;color:var(--ink);line-height:1.5;text-align:left;font-style:normal;font-weight:400}

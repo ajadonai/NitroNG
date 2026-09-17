@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 
@@ -135,5 +137,50 @@ describe('the rules that hold it together', () => {
     const bad = css.slice(css.indexOf('.nb.bad {'), css.indexOf('.nb.bad {') + 220);
     expect(bad).toMatch(/background: var\(--t-card-bg\)/);
     expect(bad).not.toMatch(/background: var\(--t-red\)/);
+  });
+});
+
+/**
+ * The ratchet. Thirteen private button classes took about a year to accumulate,
+ * one reasonable local decision at a time, and every one of them was defensible
+ * on the day it was written. This is what stops the fourteenth.
+ */
+describe('nobody writes their own button again', () => {
+  const files = fs.readdirSync(path.join(process.cwd(), 'components'))
+    .filter(f => f.endsWith('.jsx'))
+    .map(f => [f, fs.readFileSync(path.join(process.cwd(), 'components', f), 'utf8')]);
+
+  it('has no page-private button class left', () => {
+    // A two-or-three letter page prefix plus -b or -pri: bl-b, co-pri, us-b.
+    // Matched on the CSS definition, since that is where one is born.
+    const found = [];
+    for (const [name, src] of files) {
+      for (const m of src.matchAll(/\.([a-z]{2,4}-(?:b|pri|btn))(?:\.[a-z-]+)*(?::[a-z-]+)?\s*\{/g)) {
+        if (['nb', 'act', 'wa-btn'].includes(m[1])) continue;
+        if (/^(adm|nitro)-/.test(m[1])) continue;   // the shared ones
+        found.push(`${name}: .${m[1]}`);
+      }
+    }
+    expect(found, `private button classes:\n${found.join('\n')}`).toEqual([]);
+  });
+
+  it('uses the shared class in every admin header', () => {
+    const headers = files.filter(([, s]) => s.includes('adm-header-row'));
+    expect(headers.length).toBeGreaterThan(4);
+    for (const [name, src] of headers) {
+      const i = src.indexOf('adm-header-row');
+      const seg = src.slice(i, i + 1200);
+      for (const m of seg.matchAll(/<button[^>]*className=\{?["'`]([a-z][a-z0-9-]*)/g)) {
+        expect(['nb', 'wa-btn', 'act'], `${name} header uses .${m[1]}`).toContain(m[1]);
+      }
+    }
+  });
+
+  it('never puts white ink on WhatsApp green again', () => {
+    // .ou-b.wa was #fff on #25d366 — 1.98:1.
+    for (const [name, src] of files) {
+      const bad = /#25d366[^}]{0,60}color:\s*#fff|color:\s*#fff[^}]{0,60}#25d366/i.test(src);
+      expect(bad, `${name} puts white on WhatsApp green`).toBe(false);
+    }
   });
 });

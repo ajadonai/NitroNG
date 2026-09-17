@@ -329,8 +329,8 @@ export function AdminCreateOrderPage({ dark, t }) {
       <div className="co-between"><span className="co-tu-h">Top up · {first}</span><button type="button" className="co-link" onClick={resetTopUp}>Close</button></div>
       {!topUpChannel ? (
         <div className="co-row">
-          <button type="button" className="co-b" onClick={() => setTopUpChannel("flutterwave")}>Payment link</button>
-          <button type="button" className="co-b" onClick={handleSelectManual}>Bank transfer</button>
+          <button type="button" className="nb" onClick={() => setTopUpChannel("flutterwave")}>Payment link</button>
+          <button type="button" className="nb" onClick={handleSelectManual}>Bank transfer</button>
         </div>
       ) : topUpDone === "pending" ? (
         <div>
@@ -342,7 +342,7 @@ export function AdminCreateOrderPage({ dark, t }) {
           <div className="co-hint">Payment link ready. Copy it and send it to {first}.</div>
           <div className="co-row">
             <input readOnly value={topUpLink} className="co-in m" style={{ fontSize: 12 }} />
-            <button type="button" className="co-b" style={{ flex: "0 0 auto" }} onClick={() => { copyText(topUpLink); toast.success("Copied", "Payment link copied"); }}>Copy</button>
+            <button type="button" className="nb" style={{ flex: "0 0 auto" }} onClick={() => { copyText(topUpLink); toast.success("Copied", "Payment link copied"); }}>Copy</button>
           </div>
         </>
       ) : topUpChannel === "manual" && !topUpBank ? (
@@ -364,8 +364,8 @@ export function AdminCreateOrderPage({ dark, t }) {
           <input value={topUpSender} onChange={e => setTopUpSender(e.target.value)} placeholder="Sender or account name" className="co-in" />
           {!topUpBank.canCreditDirectly && <div className="co-note">This deposit will need superadmin approval</div>}
           <div className="co-row">
-            <button type="button" className="co-b ghost" onClick={() => { setTopUpChannel(null); setTopUpBank(null); setTopUpSender(""); }}>Back</button>
-            <button type="button" className="co-pri" disabled={topUpLoading || !Number(topUpAmount) || topUpSender.trim().length < 3} onClick={handleTopUp}>
+            <button type="button" className="nb ghost" onClick={() => { setTopUpChannel(null); setTopUpBank(null); setTopUpSender(""); }}>Back</button>
+            <button type="button" className="nb lg pri" disabled={topUpLoading || !Number(topUpAmount) || topUpSender.trim().length < 3} onClick={handleTopUp}>
               {topUpLoading ? "Processing..." : topUpBank.canCreditDirectly ? "Credit now" : "Submit for approval"}
             </button>
           </div>
@@ -375,8 +375,8 @@ export function AdminCreateOrderPage({ dark, t }) {
           <div className="co-amt"><b>₦</b><input type="number" value={topUpAmount} onChange={e => setTopUpAmount(e.target.value)} placeholder="Amount" className="co-in m" /></div>
           {Number(topUpAmount) > 0 && Number(topUpAmount) < 1000 && <div className="co-note bad">Flutterwave minimum is ₦1,000</div>}
           <div className="co-row">
-            <button type="button" className="co-b ghost" onClick={() => { setTopUpChannel(null); setTopUpLink(null); }}>Back</button>
-            <button type="button" className="co-pri" disabled={topUpLoading || !Number(topUpAmount) || Number(topUpAmount) < 1000} onClick={handleTopUp}>
+            <button type="button" className="nb ghost" onClick={() => { setTopUpChannel(null); setTopUpLink(null); }}>Back</button>
+            <button type="button" className="nb lg pri" disabled={topUpLoading || !Number(topUpAmount) || Number(topUpAmount) < 1000} onClick={handleTopUp}>
               {topUpLoading ? "Processing..." : "Generate link"}
             </button>
           </div>
@@ -388,11 +388,11 @@ export function AdminCreateOrderPage({ dark, t }) {
   const submitLabel = submitting ? "Creating..." : mode === "bulk" ? `Create ${batchTotalOrders} order${batchTotalOrders !== 1 ? "s" : ""}` : hasDripSchedule ? `Create drip order · ${effectiveDripDays}d` : "Create order";
   const submitBlock = insufficientBal ? (
     <>
-      <button type="button" className="co-pri wide" disabled>Insufficient balance · {fN(user.balance)}</button>
-      <button type="button" className="co-b full" style={{ marginTop: 8 }} onClick={openTopUp}>Top up {first}</button>
+      <button type="button" className="nb lg pri wide" disabled>Insufficient balance · {fN(user.balance)}</button>
+      <button type="button" className="nb full" style={{ marginTop: 8 }} onClick={openTopUp}>Top up {first}</button>
     </>
   ) : (
-    <button type="button" className="co-pri wide" disabled={!ready || !typedOk} onClick={handleSubmit}>{submitLabel}</button>
+    <button type="button" className="nb lg pri wide" disabled={!ready || !typedOk} onClick={handleSubmit}>{submitLabel}</button>
   );
 
   const summary = (
@@ -488,8 +488,8 @@ export function AdminCreateOrderPage({ dark, t }) {
                 <span className="co-av">{initials(user.name)}</span>
                 <span className="co-cn"><b>{user.name}</b><i>{user.email}</i></span>
                 <span className="co-bal m">{fN(user.balance)}</span>
-                <button type="button" className="co-b sm" onClick={topUpOpen ? resetTopUp : openTopUp}>Top up</button>
-                <button type="button" className="co-b sm ghost" onClick={() => { setUser(null); resetTopUp(); }}>Change</button>
+                <button type="button" className="nb sm" onClick={topUpOpen ? resetTopUp : openTopUp}>Top up</button>
+                <button type="button" className="nb sm ghost" onClick={() => { setUser(null); resetTopUp(); }}>Change</button>
               </div>
             )}
             {topUpPanel}
@@ -651,7 +651,7 @@ export function AdminCreateOrderPage({ dark, t }) {
             )}
             {mode === "bulk" && (
               <>
-                <button type="button" className="co-b full" disabled={!canAddToBatch || !!typedInput} onClick={addToBatch}>+ Add to batch</button>
+                <button type="button" className="nb full" disabled={!canAddToBatch || !!typedInput} onClick={addToBatch}>+ Add to batch</button>
                 {typedInput && <div className="co-hint">{selectedGroup?.name} needs {typedLabel ? typedLabel[0].toLowerCase() : "typed input"} — switch to Single to place it.</div>}
                 {batchItems.length > 0 && (
                   <div className="co-batch">
@@ -773,10 +773,10 @@ export function AdminCreateOrderPage({ dark, t }) {
               ? <b className="co-sbar-hint">{selectedGroup ? "Pick a tier" : "Pick a service"}</b>
               : <b className="m">{fN(charge ? activeCharge : activeValue)}</b>}
           </span>
-          <button type="button" className="co-b" onClick={() => setMobileReview(true)}>Review</button>
+          <button type="button" className="nb" onClick={() => setMobileReview(true)}>Review</button>
           {insufficientBal
-            ? <button type="button" className="co-pri" onClick={openTopUp}>Top up</button>
-            : <button type="button" className="co-pri" disabled={!ready || !typedOk} onClick={handleSubmit}>{submitting ? "Creating..." : "Create"}</button>}
+            ? <button type="button" className="nb lg pri" onClick={openTopUp}>Top up</button>
+            : <button type="button" className="nb lg pri" disabled={!ready || !typedOk} onClick={handleSubmit}>{submitting ? "Creating..." : "Create"}</button>}
         </div>
       )}
 
@@ -824,11 +824,6 @@ const CO_CSS = `
 .co-cn b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .co-cn i{font-style:normal;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .co-bal{font-size:13px;font-weight:700;color:var(--ok);background:var(--okbg);padding:4px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
-.co-b{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;transition:transform .15s}
-.co-b:hover{transform:translateY(-1px)}.co-b.sm{padding:6px 10px;font-size:12px}.co-b.ghost{background:transparent;color:var(--mut)}.co-b.full{width:100%}
-.co-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.co-pri{font:inherit;font-size:13.5px;font-weight:800;padding:11px 16px;border-radius:11px;border:0;background:var(--ac);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(196,125,142,.28);white-space:nowrap;transition:transform .15s}
-.co-pri:hover{transform:translateY(-1px)}.co-pri:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}.co-pri.wide{width:100%;margin-top:4px}
 .co-link{font:inherit;font-size:12px;font-weight:600;color:var(--ac);background:none;border:0;cursor:pointer;padding:0}
 .co-dd-list{position:absolute;left:0;right:0;top:calc(100% + 5px);background:var(--card);border:1px solid var(--line);border-radius:11px;z-index:40;box-shadow:0 12px 30px rgba(0,0,0,.14);max-height:240px;overflow-y:auto}
 .co-dd-row{display:flex;align-items:center;gap:10px;padding:9px 12px;width:100%;background:none;border:0;border-bottom:1px solid var(--rail);font:inherit;color:var(--ink);cursor:pointer}

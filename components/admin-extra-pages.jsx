@@ -351,7 +351,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Team</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Who can sign in to the panel, and what each person can touch.</div>
           </div>
-          {canManage && <button type="button" className="tm-b pri" onClick={() => setShowAdd(true)}>Add a person</button>}
+          {canManage && <button type="button" className="nb pri" onClick={() => setShowAdd(true)}>Add a person</button>}
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -392,7 +392,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
             <div className="tm-dh">
               <span className="tm-av" style={{ background: roleColor(open.role) }}>{initialsOf(open.name)}</span>
               <div className="tm-dht"><b>{open.name}</b><i>{open.role} · since {new Date(open.joined || open.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long" })} · last seen {when(open.lastActive)}</i></div>
-              <button type="button" className="tm-b sm" onClick={closeDrawer}>Close</button>
+              <button type="button" className="nb sm" onClick={closeDrawer}>Close</button>
             </div>
             {editable && (
               <div className="tm-drow">
@@ -400,7 +400,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
                 <select className="tm-sel" value={open.role} onChange={async e => { const r = e.target.value; const ok = await act({ action: "updateRole", adminId: open.id, role: r }); if (ok) toast.success("Role changed", `${open.name} is now ${r}`); }}>
                   {[...new Set([open.role, ...ASSIGNABLE_ROLES])].map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
-                <button type="button" className="tm-b sm" onClick={async () => { const ok = await act({ action: "toggleStatus", adminId: open.id }); if (ok) toast.success(open.status === "suspended" ? "Reinstated" : "Suspended", open.name); }}>{open.status === "suspended" ? "Reinstate" : "Suspend"}</button>
+                <button type="button" className="nb sm" onClick={async () => { const ok = await act({ action: "toggleStatus", adminId: open.id }); if (ok) toast.success(open.status === "suspended" ? "Reinstated" : "Suspended", open.name); }}>{open.status === "suspended" ? "Reinstate" : "Suspend"}</button>
               </div>
             )}
             <div className="tm-tabs"><SegPill value={permTab} options={[{ value: "pages", label: "Pages" }, { value: "abilities", label: "Abilities" }, ...(editable ? [{ value: "password", label: "Password" }] : [])]} onChange={setPermTab} dark={dark} t={t} /></div>
@@ -429,16 +429,16 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
                 <div>
                   <div className="tm-sub">Set a new password for {open.name}. Tell them in person, not in a message.</div>
                   <input type="password" className="tm-in" placeholder="At least 6 characters" value={resetPw} onChange={e => setResetPw(e.target.value)} />
-                  <button type="button" className="tm-b" style={{ marginTop: 10 }} disabled={resetPw.length < 6 || saving} onClick={async () => { const ok = await act({ action: "resetPassword", adminId: open.id, newPassword: resetPw }); if (ok) { toast.success("Password set", open.name); setResetPw(""); } }}>Set password</button>
+                  <button type="button" className="nb" style={{ marginTop: 10 }} disabled={resetPw.length < 6 || saving} onClick={async () => { const ok = await act({ action: "resetPassword", adminId: open.id, newPassword: resetPw }); if (ok) { toast.success("Password set", open.name); setResetPw(""); } }}>Set password</button>
                 </div>
               )}
             </div>
             {editable && (
               <div className="tm-df">
-                <button type="button" className="tm-b sm" style={{ color: "var(--bad)" }} onClick={async () => { const ok = await confirm({ title: `Remove ${open.name}?`, message: "They will not be able to sign in. Their past actions stay in the logs.", confirmText: "Remove", danger: true }); if (!ok) return; const r = await act({ action: "delete", adminId: open.id }); if (r) { toast.success("Removed", open.name); closeDrawer(); } }}>Remove from team</button>
+                <button type="button" className="nb sm" style={{ color: "var(--bad)" }} onClick={async () => { const ok = await confirm({ title: `Remove ${open.name}?`, message: "They will not be able to sign in. Their past actions stay in the logs.", confirmText: "Remove", danger: true }); if (!ok) return; const r = await act({ action: "delete", adminId: open.id }); if (r) { toast.success("Removed", open.name); closeDrawer(); } }}>Remove from team</button>
                 <span className="tm-dfr">
-                  {!fullAccess(open) && open.customPages && <button type="button" className="tm-b sm" onClick={async () => { const ok = await act({ action: "updatePermissions", adminId: open.id, pages: null }); if (ok) { toast.success("Back to default", `${open.role} pages`); setLocalPages(null); } }}>Back to role default</button>}
-                  {!fullAccess(open) && <button type="button" className="tm-b sm pri" disabled={!dirty || saving} onClick={saveDrawer}>{saving ? "Saving…" : "Save"}</button>}
+                  {!fullAccess(open) && open.customPages && <button type="button" className="nb sm" onClick={async () => { const ok = await act({ action: "updatePermissions", adminId: open.id, pages: null }); if (ok) { toast.success("Back to default", `${open.role} pages`); setLocalPages(null); } }}>Back to role default</button>}
+                  {!fullAccess(open) && <button type="button" className="nb sm pri" disabled={!dirty || saving} onClick={saveDrawer}>{saving ? "Saving…" : "Save"}</button>}
                 </span>
               </div>
             )}
@@ -449,13 +449,13 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
       {showAdd && (
         <div className="tm-bd center" onClick={() => setShowAdd(false)}>
           <div className="tm-md" role="dialog" aria-modal="true" aria-label="Add a person" onClick={e => e.stopPropagation()}>
-            <div className="tm-mdh"><b>Add a person</b><button type="button" className="tm-b sm" onClick={() => setShowAdd(false)}>Close</button></div>
+            <div className="tm-mdh"><b>Add a person</b><button type="button" className="nb sm" onClick={() => setShowAdd(false)}>Close</button></div>
             <label className="tm-lbl">Name</label><input className="tm-in" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Their name" />
             <label className="tm-lbl">Email</label><input className="tm-in" type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="name@nitro.ng" />
             <label className="tm-lbl">Password</label><input className="tm-in" type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="At least 6 characters" />
             <label className="tm-lbl">Role</label><select className="tm-sel" value={newRole} onChange={e => setNewRole(e.target.value)}>{ASSIGNABLE_ROLES.map(r => <option key={r} value={r}>{r}</option>)}</select>
             <div className="tm-sub" style={{ marginTop: 6 }}>{ROLE_LINE[newRole]}</div>
-            <div className="tm-mdf"><button type="button" className="tm-b" onClick={() => setShowAdd(false)}>Cancel</button><button type="button" className="tm-b pri" disabled={saving || !newName.trim() || !newEmail.trim() || newPw.length < 6} onClick={createAdmin}>{saving ? "Adding…" : "Add"}</button></div>
+            <div className="tm-mdf"><button type="button" className="nb" onClick={() => setShowAdd(false)}>Cancel</button><button type="button" className="nb pri" disabled={saving || !newName.trim() || !newEmail.trim() || newPw.length < 6} onClick={createAdmin}>{saving ? "Adding…" : "Add"}</button></div>
           </div>
         </div>
       )}
@@ -467,8 +467,6 @@ const TM_CSS = `
 .tm{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
 .tm *{box-sizing:border-box}
 .tm .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.tm-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.tm-b:hover{transform:translateY(-1px)}.tm-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.tm-b.sm{height:30px;padding:0 10px;font-size:12px}.tm-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
 .tm-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .tm-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.tm-stt:first-child{border-left:0}
 .tm-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}.tm-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tm-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tm-stt.warn b{color:var(--warn)}
@@ -651,7 +649,7 @@ export function AdminCouponsPage({ dark, t }) {
         <div className="rw-bar">
           <div className="rw-srch"><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search codes" /></div>
           <span className="rw-cnt">{shown.length} {shown.length === 1 ? "coupon" : "coupons"}</span>
-          <button type="button" className={"rw-b" + (showAdd ? "" : " pri")} onClick={() => setShowAdd(v => !v)}>{showAdd ? "Cancel" : "+ New coupon"}</button>
+          <button type="button" className={"nb" + (showAdd ? "" : " pri")} onClick={() => setShowAdd(v => !v)}>{showAdd ? "Cancel" : "+ New coupon"}</button>
         </div>
         {showAdd && (
           <section className="rw-card">
@@ -664,7 +662,7 @@ export function AdminCouponsPage({ dark, t }) {
               <label>How many uses<input type="number" value={form.maxUses} onChange={e => setForm({ ...form, maxUses: e.target.value })} placeholder="no limit" /></label>
               <label>Ends on<input type="date" value={form.expires} onChange={e => setForm({ ...form, expires: e.target.value })} /></label>
               <label className="rw-chk"><input type="checkbox" checked={form.newUsersOnly} onChange={e => setForm({ ...form, newUsersOnly: e.target.checked })} /> New customers only</label>
-              <div className="rw-ff"><button type="button" className="rw-b pri" disabled={!form.code.trim() || !form.value} onClick={createCoupon}>Make coupon</button></div>
+              <div className="rw-ff"><button type="button" className="nb pri" disabled={!form.code.trim() || !form.value} onClick={createCoupon}>Make coupon</button></div>
             </div>
           </section>
         )}
@@ -677,7 +675,7 @@ export function AdminCouponsPage({ dark, t }) {
                 <span className="rw-tt"><b>{givesOf(c)}</b><i>{whenOf(c)}</i></span>
                 <span className="rw-mid m">{c.used || 0} of {c.maxUses || "∞"}</span>
                 <span className="rw-st"><i className={"rw-dot " + cls} />{st}</span>
-                <span className="rw-acts"><button type="button" className="rw-b sm" onClick={() => toggleCoupon(c)}>{c.enabled ? "Turn off" : "Turn on"}</button><button type="button" className="rw-b sm bad" onClick={() => deleteCoupon(c)}>Delete</button></span>
+                <span className="rw-acts"><button type="button" className="nb sm" onClick={() => toggleCoupon(c)}>{c.enabled ? "Turn off" : "Turn on"}</button><button type="button" className="nb sm bad" onClick={() => deleteCoupon(c)}>Delete</button></span>
               </div>
             ); })}
           </div>
@@ -692,7 +690,7 @@ export function AdminCouponsPage({ dark, t }) {
             <div className="rw-sr"><span className="rw-tt"><b>The person who shared</b><i>Credited when their friend qualifies</i></span><span className="rw-money">₦<input value={refReferrer} onChange={e => setRefReferrer(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" /></span></div>
             <div className="rw-sr"><span className="rw-tt"><b>The person who joined</b><i>Their welcome credit</i></span><span className="rw-money">₦<input value={refInvitee} onChange={e => setRefInvitee(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" /></span></div>
             <div className="rw-sr"><span className="rw-tt"><b>Deposit needed first</b><i>0 means the credit lands as soon as the email is verified</i></span><span className="rw-money">₦<input value={refMinDeposit} onChange={e => setRefMinDeposit(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" /></span></div>
-            <div className="rw-ff"><button type="button" className="rw-b pri" disabled={refSaving} onClick={saveReferral}>{refSaving ? "Saving…" : "Save"}</button></div>
+            <div className="rw-ff"><button type="button" className="nb pri" disabled={refSaving} onClick={saveReferral}>{refSaving ? "Saving…" : "Save"}</button></div>
           </div>
         </section>
       )}
@@ -742,8 +740,6 @@ const RW_CSS = `
 .rw{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
 .rw *{box-sizing:border-box}
 .rw .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}.rw .r{text-align:right}
-.rw-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.rw-b:hover{transform:translateY(-1px)}.rw-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.rw-b.sm{height:30px;padding:0 10px;font-size:12px}.rw-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.rw-b.bad{color:var(--bad)}
 .rw-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .rw-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.rw-stt:first-child{border-left:0}
 .rw-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rw-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.rw-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rw-stt.warn b{color:var(--warn)}
@@ -772,9 +768,8 @@ const RW_CSS = `
 .rw-pg{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}.rw-pg .rw-cnt{margin:0}.rw-pgn{display:inline-flex;gap:6px}.rw-ib{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:14px;cursor:pointer;padding:0}.rw-ib:disabled{opacity:.35;cursor:not-allowed}
 @media (max-width:900px){
   .rw-stats{grid-template-columns:1fr 1fr}.rw-stt:nth-child(3){border-left:0}.rw-stt:nth-child(n+3){border-top:1px solid var(--line)}.rw-stt b{font-size:17px}
-  .rw-srch{width:100%;min-width:0}.rw-bar .rw-cnt{display:none}.rw-bar .rw-b{width:100%}.rw-date{flex:1}
-  .rw-cr{grid-template-columns:1fr auto;grid-template-areas:"code st" "tt tt" "mid mid" "acts acts";gap:6px 10px;padding:12px 14px}.rw-cr .rw-code{grid-area:code}.rw-cr .rw-st{grid-area:st}.rw-cr .rw-tt{grid-area:tt}.rw-cr .rw-tt b,.rw-cr .rw-tt i{white-space:normal}.rw-cr .rw-mid{grid-area:mid}.rw-cr .rw-acts{grid-area:acts;justify-content:stretch}.rw-cr .rw-acts .rw-b{flex:1}
-  .rw-form{grid-template-columns:1fr}
+  .rw-srch{width:100%;min-width:0}.rw-bar .rw-cnt{display:none}.rw-bar .rw-date{flex:1}
+  .rw-cr{grid-template-columns:1fr auto;grid-template-areas:"code st" "tt tt" "mid mid" "acts acts";gap:6px 10px;padding:12px 14px}.rw-cr .rw-code{grid-area:code}.rw-cr .rw-st{grid-area:st}.rw-cr .rw-tt{grid-area:tt}.rw-cr .rw-tt b,.rw-cr .rw-tt i{white-space:normal}.rw-cr .rw-mid{grid-area:mid}.rw-cr .rw-acts{grid-area:acts;justify-content:stretch}.rw-cr .rw-acts   .rw-form{grid-template-columns:1fr}
   .rw-lh{display:none}.rw-lr{grid-template-columns:1fr auto;grid-template-areas:"who pts" "ty when" "why why";gap:4px 10px}.rw-lr .rw-who{grid-area:who}.rw-lr .rw-pts{grid-area:pts}.rw-lr .rw-ty{grid-area:ty}.rw-lr .rw-mid:first-child{grid-area:when;justify-self:end}.rw-lr .rw-mid.m{display:none}.rw-lr .rw-why{grid-area:why;white-space:normal}
   .rw-lr.tiers{grid-template-columns:1fr auto auto auto;grid-template-areas:none}
 }
@@ -875,7 +870,7 @@ export function AdminNotificationsPage({ dark, t }) {
             <label className="eb-lbl">To</label>
             <div className="eb-chips">{Object.entries(TARGET).map(([v, l]) => <button key={v} type="button" className={"eb-tg" + (target === v ? " on" : "")} onClick={() => setTarget(v)}>{l}{v === "all" ? ` · ${promoCount.toLocaleString()}` : ""}</button>)}</div>
             <div className="eb-note">{(totalCount - promoCount).toLocaleString()} people have turned promo email off and will not get it. Sends go out over a few minutes.</div>
-            <div className="eb-ff"><button type="button" className="eb-b pri" disabled={sending || !message.trim()} onClick={send}>{sending ? "Sending…" : target === "all" ? `Send to ${promoCount.toLocaleString()} people` : "Send"}</button></div>
+            <div className="eb-ff"><button type="button" className="nb pri" disabled={sending || !message.trim()} onClick={send}>{sending ? "Sending…" : target === "all" ? `Send to ${promoCount.toLocaleString()} people` : "Send"}</button></div>
           </div>
         </section>
         <section className="eb-card">
@@ -900,7 +895,6 @@ const EB_CSS = `
 .eb{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
 .eb *{box-sizing:border-box}
 .eb .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.eb-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.eb-b:hover{transform:translateY(-1px)}.eb-b:disabled{opacity:.5;cursor:not-allowed;transform:none}.eb-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
 .eb-link{font:inherit;font-size:inherit;font-weight:600;color:var(--ac);background:none;border:0;padding:0;cursor:pointer}
 .eb-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .eb-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.eb-stt:first-child{border-left:0}
@@ -917,7 +911,7 @@ const EB_CSS = `
 .eb-mid{font-size:12px;color:var(--mut);white-space:nowrap}.eb-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.eb-dot{width:8px;height:8px;border-radius:50%;display:inline-block}.eb-dot.ok{background:var(--ok)}.eb-dot.warn{background:var(--warn)}.eb-dot.bad{background:var(--bad)}
 @media (max-width:900px){
   .eb-stats{grid-template-columns:1fr 1fr}.eb-stt:nth-child(3){border-left:0}.eb-stt:nth-child(n+3){border-top:1px solid var(--line)}.eb-stt b{font-size:17px}
-  .eb-ff .eb-b{width:100%}.eb-chips .eb-tg{flex:1;text-align:center}
+  .eb-ff .eb-chips .eb-tg{flex:1;text-align:center}
   .eb-hr{grid-template-columns:1fr auto;grid-template-areas:"tt st" "mid when";gap:4px 10px}.eb-hr .eb-tt{grid-area:tt}.eb-hr .eb-st{grid-area:st}.eb-hr .eb-mid:nth-of-type(1){grid-area:mid}.eb-hr .eb-mid:last-child{grid-area:when;justify-self:end}
 }
 `;
@@ -986,7 +980,7 @@ export function AdminMaintenancePage({ dark, t }) {
           <div className="mt-body">
             <div className="mt-now">
               <div className="mt-nl"><span className={"mt-big" + (enabled ? " off" : "")}>{enabled ? "Offline" : "Online"}</span><span className="mt-sub">{enabled ? "Customers see the maintenance page. Orders and payments are paused." : "Everything is open. Customers can order and pay."}</span></div>
-              <button type="button" className={"mt-b" + (enabled ? " pri" : "")} disabled={saving} onClick={flip}>{enabled ? "Bring it back" : "Take it offline"}</button>
+              <button type="button" className={"nb" + (enabled ? " pri" : "")} disabled={saving} onClick={flip}>{enabled ? "Bring it back" : "Take it offline"}</button>
             </div>
             {enabled && since && <div className="mt-note"><i className="mt-dot" />Offline since {fmt(since)} · you said {formatDuration(mins).replace("~", "~")} · {left > 0 ? `${left} min left` : `${-left} min over`}</div>}
           </div>
@@ -1005,7 +999,7 @@ export function AdminMaintenancePage({ dark, t }) {
             <textarea className="mt-ta" value={msg} onChange={e => setMsg(e.target.value)} rows={3} />
             <div className="mt-lbl">Preview</div>
             <div className="mt-pv"><div className="mt-pvl">NITRO</div><div className="mt-pvh">{headline}</div><div className="mt-pvp">{msg}</div><div className="mt-pvf">Your wallet and orders are safe. Nothing is lost.</div></div>
-            <div className="mt-save"><button type="button" className="mt-b" disabled={saving} onClick={() => save()}>Save</button></div>
+            <div className="mt-save"><button type="button" className="nb" disabled={saving} onClick={() => save()}>Save</button></div>
           </div>
         </section>
 
@@ -1026,7 +1020,6 @@ const MT_CSS = `
 .mt{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
 .mt *{box-sizing:border-box}
 .mt .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.mt-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.mt-b:hover{transform:translateY(-1px)}.mt-b:disabled{opacity:.5;cursor:not-allowed;transform:none}.mt-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
 .mt-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .mt-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.mt-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.mt-cnt{font-size:11.5px;color:var(--dim)}
 .mt-body{padding:14px 16px 16px}
@@ -1041,8 +1034,7 @@ const MT_CSS = `
 .mt-save{display:flex;justify-content:flex-end;margin-top:12px}
 .mt-hl{padding:4px 16px 8px}.mt-empty{padding:20px 0;text-align:center;font-size:13px;color:var(--mut)}.mt-hr{display:grid;grid-template-columns:70px 150px 1fr;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--rail);font-size:13px}.mt-hr:first-child{border-top:0}.mt-hr .m{font-size:12px;color:var(--mut)}.mt-hr b{font-weight:600}.mt-hr i{font-style:normal;color:var(--mut)}
 @media (max-width:900px){
-  .mt-now{flex-direction:column;align-items:stretch}.mt-now .mt-b{width:100%}.mt-big{font-size:22px}.mt-presets .mt-tg{flex:1;text-align:center}.mt-save .mt-b{width:100%}
-  .mt-hr{grid-template-columns:70px 1fr;grid-template-areas:"d b" ". i"}.mt-hr .m{grid-area:d}.mt-hr b{grid-area:b}.mt-hr i{grid-area:i}
+  .mt-now{flex-direction:column;align-items:stretch}.mt-now .mt-big{font-size:22px}.mt-presets .mt-tg{flex:1;text-align:center}.mt-save   .mt-hr{grid-template-columns:70px 1fr;grid-template-areas:"d b" ". i"}.mt-hr .m{grid-area:d}.mt-hr b{grid-area:b}.mt-hr i{grid-area:i}
 }
 `;
 
@@ -1113,7 +1105,7 @@ export function AdminAPIPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Providers</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>The upstream panels the catalogue comes from. Their names never reach a user.</div>
           </div>
-          <button type="button" className="pv-b" onClick={syncAll} disabled={!!syncing || loading}>{syncing ? "Syncing…" : "Sync all catalogues"}</button>
+          <button type="button" className="nb" onClick={syncAll} disabled={!!syncing || loading}>{syncing ? "Syncing…" : "Sync all catalogues"}</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -1136,7 +1128,7 @@ export function AdminAPIPage({ dark, t }) {
                 <span className="pv-c"><b>{(x.menu || 0).toLocaleString()} on the menu</b><i>{(x.catalogue || 0).toLocaleString()} in the catalogue</i></span>
                 <span className="pv-c"><b>{(x.orders || 0).toLocaleString()}</b><i>orders to date</i></span>
                 <span className="pv-c"><b><i className={"pv-dot " + (x.configured ? "ok" : "dim")} />{x.configured ? "Connected" : "No key"}</b><i>{x.lastSync?.at ? `synced ${ago(x.lastSync.at)}` : "never synced"}</i></span>
-                <span className="pv-a"><button type="button" className="pv-b sm" disabled={!x.configured || testing === p.id} onClick={() => testConnection(p)}>{testing === p.id ? "Testing…" : "Test"}</button><button type="button" className="pv-b sm" disabled={!x.configured || syncing === p.id} onClick={() => syncServices(p)}>{syncing === p.id ? "Syncing…" : "Sync catalogue"}</button></span>
+                <span className="pv-a"><button type="button" className="nb sm" disabled={!x.configured || testing === p.id} onClick={() => testConnection(p)}>{testing === p.id ? "Testing…" : "Test"}</button><button type="button" className="nb sm" disabled={!x.configured || syncing === p.id} onClick={() => syncServices(p)}>{syncing === p.id ? "Syncing…" : "Sync catalogue"}</button></span>
                 {r && <span className={"pv-res " + (r.ok ? "ok" : "bad")}>{r.message}</span>}
               </div>
             ); })}
@@ -1160,7 +1152,6 @@ const PV_CSS = `
 .pv{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
 .pv *{box-sizing:border-box}
 .pv .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.pv-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.pv-b:hover{transform:translateY(-1px)}.pv-b:disabled{opacity:.5;cursor:not-allowed;transform:none}.pv-b.sm{height:30px;padding:0 10px;font-size:12px}
 .pv-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .pv-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.pv-stt:first-child{border-left:0}
 .pv-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}.pv-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pv-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1177,8 +1168,7 @@ const PV_CSS = `
 .pv-sl{padding:4px 16px 8px}.pv-sr{display:grid;grid-template-columns:8px 150px 1fr auto;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--rail);font-size:13px}.pv-sr:first-child{border-top:0}.pv-sr b{font-weight:600}.pv-sr i{font-style:normal;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:900px){
   .pv-stats{grid-template-columns:1fr 1fr}.pv-stt:nth-child(3){border-left:0}.pv-stt:nth-child(n+3){border-top:1px solid var(--line)}.pv-stt b{font-size:17px}
-  .pv-r{grid-template-columns:1fr 1fr;padding:12px;gap:8px 10px}.pv-n{grid-column:1 / -1}.pv-a{grid-column:1 / -1;justify-content:stretch}.pv-a .pv-b{flex:1}
-  .pv-sr{grid-template-columns:8px 1fr auto;grid-template-areas:"d b t" ". i i"}.pv-sr .pv-dot{grid-area:d}.pv-sr b{grid-area:b}.pv-sr i{grid-area:i;white-space:normal}.pv-sr .pv-cnt{grid-area:t}
+  .pv-r{grid-template-columns:1fr 1fr;padding:12px;gap:8px 10px}.pv-n{grid-column:1 / -1}.pv-a{grid-column:1 / -1;justify-content:stretch}.pv-a   .pv-sr{grid-template-columns:8px 1fr auto;grid-template-areas:"d b t" ". i i"}.pv-sr .pv-dot{grid-area:d}.pv-sr b{grid-area:b}.pv-sr i{grid-area:i;white-space:normal}.pv-sr .pv-cnt{grid-area:t}
 }
 `;
 
@@ -1722,7 +1712,7 @@ export function AdminAcquisitionPage({ dark, t }) {
         <div className="tl-bar">
           <div className="tl-srch"><input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search links" /></div>
           <span className="tl-cnt">{displayLinks.length} {displayLinks.length === 1 ? "link" : "links"}</span>
-          {canManage && <button type="button" className={"tl-b" + (showAdd ? "" : " pri")} onClick={() => setShowAdd(v => !v)}>{showAdd ? "Cancel" : "+ New link"}</button>}
+          {canManage && <button type="button" className={"nb" + (showAdd ? "" : " pri")} onClick={() => setShowAdd(v => !v)}>{showAdd ? "Cancel" : "+ New link"}</button>}
         </div>
         {showAdd && (
           <section className="tl-card">
@@ -1730,7 +1720,7 @@ export function AdminAcquisitionPage({ dark, t }) {
             <div className="tl-form">
               <label>Campaign name<input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Lagos flyers, September" /></label>
               <label>Short name<input value={newSlug} onChange={e => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder="e.g. lagos-sept" /></label>
-              <div className="tl-ff"><button type="button" className="tl-b pri" disabled={saving || !newName.trim() || !newSlug.trim()} onClick={handleCreate}>{saving ? "Making…" : "Make link"}</button></div>
+              <div className="tl-ff"><button type="button" className="nb pri" disabled={saving || !newName.trim() || !newSlug.trim()} onClick={handleCreate}>{saving ? "Making…" : "Make link"}</button></div>
             </div>
           </section>
         )}
@@ -1746,7 +1736,7 @@ export function AdminAcquisitionPage({ dark, t }) {
                   <b className="m r">{(l.signups || 0).toLocaleString()}</b>
                   <b className="m r">{(l.orders || 0).toLocaleString()}</b>
                   <span className="tl-mid">{l.createdAt ? dateOf(l.createdAt) : ""}</span>
-                  <span className="tl-acts"><button type="button" className="tl-b sm" onClick={() => openAnalytics(l)}>Analytics</button>{canManage && <button type="button" className="tl-b sm" onClick={() => handleArchive(l)}>{l.archivedAt ? "Bring back" : "Archive"}</button>}{canManage && l.archivedAt && <button type="button" className="tl-b sm bad" onClick={() => handleDelete(l)}>Delete</button>}</span>
+                  <span className="tl-acts"><button type="button" className="nb sm" onClick={() => openAnalytics(l)}>Analytics</button>{canManage && <button type="button" className="nb sm" onClick={() => handleArchive(l)}>{l.archivedAt ? "Bring back" : "Archive"}</button>}{canManage && l.archivedAt && <button type="button" className="nb sm bad" onClick={() => handleDelete(l)}>Delete</button>}</span>
                 </div>
               ))}
             </>}
@@ -1761,7 +1751,7 @@ export function AdminAcquisitionPage({ dark, t }) {
             <div className="tl-dh">
               <div className="tl-dht"><b>{detailLink.name}</b><i className="m">{baseUrl.replace(/^https?:\/\//, "")}/go/{detailLink.slug}</i></div>
               <SegPill value={range} options={[{ value: "7d", label: "7 days" }, { value: "30d", label: "30 days" }, { value: "all", label: "All" }]} onChange={setRange} dark={dark} t={t} />
-              <button type="button" className="tl-b sm" onClick={closeDetail}>Close</button>
+              <button type="button" className="nb sm" onClick={closeDetail}>Close</button>
             </div>
             <div className="tl-dbody">
               <LinkAnalyticsDetail link={detailLink} analytics={analytics} analyticsLoading={analyticsLoading} range={range} setRange={setRange} dark={dark} t={t} />
@@ -1777,8 +1767,6 @@ const TL_CSS = `
 .tl{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
 .tl *{box-sizing:border-box}
 .tl .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}.tl .r{text-align:right}
-.tl-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.tl-b:hover{transform:translateY(-1px)}.tl-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.tl-b.sm{height:30px;padding:0 10px;font-size:12px}.tl-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.tl-b.bad{color:var(--bad)}
 .tl-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .tl-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.tl-stt:first-child{border-left:0}
 .tl-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.tl-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1800,9 +1788,8 @@ const TL_CSS = `
 .tl-dbody{flex:1;overflow:auto;padding:14px 18px 20px}
 @media (max-width:900px){
   .tl-stats{grid-template-columns:1fr 1fr}.tl-stt:nth-child(3){border-left:0}.tl-stt:nth-child(n+3){border-top:1px solid var(--line)}.tl-stt b{font-size:17px}
-  .tl-srch{width:100%;min-width:0}.tl-bar .tl-cnt{display:none}.tl-bar .tl-b{width:100%}.tl-form{grid-template-columns:1fr}
-  .tl-lh{display:none}.tl-r{grid-template-columns:1fr 1fr 1fr;grid-template-areas:"tt tt tt" "c s o" "acts acts acts";gap:6px 10px;padding:12px 14px}.tl-r .tl-tt{grid-area:tt}.tl-r b.r{text-align:left;font-size:14px}.tl-r b.r::after{display:block;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);font-family:Outfit,system-ui,sans-serif}.tl-r b.r:nth-of-type(1)::after{content:"clicks"}.tl-r b.r:nth-of-type(2)::after{content:"sign-ups"}.tl-r b.r:nth-of-type(3)::after{content:"orders"}.tl-r .tl-mid{display:none}.tl-r .tl-acts{grid-area:acts;justify-content:stretch}.tl-r .tl-acts .tl-b{flex:1}
-  .tl-dw{width:100%;top:6vh;border-left:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0}
+  .tl-srch{width:100%;min-width:0}.tl-bar .tl-cnt{display:none}.tl-bar .tl-form{grid-template-columns:1fr}
+  .tl-lh{display:none}.tl-r{grid-template-columns:1fr 1fr 1fr;grid-template-areas:"tt tt tt" "c s o" "acts acts acts";gap:6px 10px;padding:12px 14px}.tl-r .tl-tt{grid-area:tt}.tl-r b.r{text-align:left;font-size:14px}.tl-r b.r::after{display:block;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);font-family:Outfit,system-ui,sans-serif}.tl-r b.r:nth-of-type(1)::after{content:"clicks"}.tl-r b.r:nth-of-type(2)::after{content:"sign-ups"}.tl-r b.r:nth-of-type(3)::after{content:"orders"}.tl-r .tl-mid{display:none}.tl-r .tl-acts{grid-area:acts;justify-content:stretch}.tl-r .tl-acts   .tl-dw{width:100%;top:6vh;border-left:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0}
 }
 `;
 /* ═══════════════════════════════════════════ */
@@ -1891,7 +1878,7 @@ export function AdminIssuesPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Issues</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>What needs a person today, and what the checks found.</div>
           </div>
-          <button type="button" className="is-b" onClick={runChecks} disabled={firingCrons}>{firingCrons ? "Running…" : "Run all checks now"}</button>
+          <button type="button" className="nb" onClick={runChecks} disabled={firingCrons}>{firingCrons ? "Running…" : "Run all checks now"}</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -1920,7 +1907,7 @@ export function AdminIssuesPage({ dark, t }) {
                   <span className="is-ty">{kindOf(i)}</span>
                   <span className="is-when">{when(i.createdAt)}</span>
                   <span className="is-acts">
-                    {canAct(i) ? <><button type="button" className="is-b sm pri" disabled={resolving === i.id} onClick={() => act(i.id, "resolve")}>{resolving === i.id ? "…" : yes}</button><button type="button" className={`is-b sm${no === "Reject" ? " bad" : ""}`} disabled={resolving === i.id} onClick={() => act(i.id, "ignore")}>{no}</button></> : <span className="is-dimc">owner decides</span>}
+                    {canAct(i) ? <><button type="button" className="nb sm pri" disabled={resolving === i.id} onClick={() => act(i.id, "resolve")}>{resolving === i.id ? "…" : yes}</button><button type="button" className={`nb sm${no === "Reject" ? " bad" : ""}`} disabled={resolving === i.id} onClick={() => act(i.id, "ignore")}>{no}</button></> : <span className="is-dimc">owner decides</span>}
                   </span>
                 </div>
               );
@@ -1974,12 +1961,8 @@ const IS_CSS = `
 .is{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
 .is *{box-sizing:border-box}
 .is .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.is-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.is-b:hover{transform:translateY(-1px)}.is-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.is-b.sm{height:30px;padding:0 10px;font-size:12px}
 /* Resolve/Approve is the good outcome — green, never the accent, which sits
  * next to red on this page and made the safe action read dangerous. */
-.is-b.pri{background:var(--ok);color:var(--card);border-color:var(--ok)}
-.is-b.bad{color:var(--bad)}
 .is-link{font:inherit;font-size:inherit;font-weight:600;color:var(--ac);background:none;border:0;cursor:pointer;padding:0}
 .is-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .is-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.is-stt:first-child{border-left:0}
@@ -2005,8 +1988,7 @@ const IS_CSS = `
 .is-dw{font-size:11.5px;color:var(--dim);white-space:nowrap}.is-dt{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--mut)}.is-dtt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mut)}.is-ds{font-size:11.5px;text-align:right;font-weight:600;color:var(--ok)}.is-ds.ignored{color:var(--dim)}
 @media (max-width:900px){
   .is-stats{grid-template-columns:1fr 1fr}.is-stt:nth-child(3){border-left:0}.is-stt:nth-child(n+3){border-top:1px solid var(--line)}.is-stt b{font-size:17px}
-  .is-ir{grid-template-columns:4px 1fr auto;grid-template-areas:"bar it ty" "bar when when" "bar acts acts";gap:6px 10px}.is-bar{grid-area:bar}.is-it{grid-area:it}.is-it i{white-space:normal}.is-ty{grid-area:ty;align-self:start}.is-when{grid-area:when}.is-acts{grid-area:acts;justify-content:stretch}.is-acts .is-b{flex:1}
-  .is-cols{grid-template-columns:1fr}
+  .is-ir{grid-template-columns:4px 1fr auto;grid-template-areas:"bar it ty" "bar when when" "bar acts acts";gap:6px 10px}.is-bar{grid-area:bar}.is-it{grid-area:it}.is-it i{white-space:normal}.is-ty{grid-area:ty;align-self:start}.is-when{grid-area:when}.is-acts{grid-area:acts;justify-content:stretch}.is-acts   .is-cols{grid-template-columns:1fr}
   .is-ck{grid-template-columns:8px 1fr auto;grid-template-areas:"d n s" ". w w"}.is-ck .is-dot{grid-area:d}.is-ckn{grid-area:n}.is-ckw{grid-area:w;white-space:normal}.is-cks{grid-area:s}
   .is-dr{grid-template-columns:64px 1fr 60px;grid-template-areas:"w t s" "w tt tt"}.is-dw{grid-area:w}.is-dt{grid-area:t}.is-dtt{grid-area:tt;white-space:normal}.is-ds{grid-area:s}
 }
@@ -2073,7 +2055,7 @@ export function AdminChangelogPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Changelog</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>What customers read on nitro.ng/changelog.</div>
           </div>
-          <span className="cl-hb"><a href="/changelog" target="_blank" rel="noopener noreferrer" className="cl-b">View the page</a><button type="button" className="cl-b pri" onClick={() => setShowAdd(true)}>+ New entry</button></span>
+          <span className="cl-hb"><a href="/changelog" target="_blank" rel="noopener noreferrer" className="nb">View the page</a><button type="button" className="nb pri" onClick={() => setShowAdd(true)}>+ New entry</button></span>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -2103,7 +2085,7 @@ export function AdminChangelogPage({ dark, t }) {
               </div>
               <label>Title<input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="One line a customer would understand" /></label>
               <label>What changed<textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={6} placeholder="Say what they can do now, or what stopped being annoying. No jargon." /></label>
-              <div className="cl-ff"><button type="button" className="cl-b" onClick={() => setShowAdd(false)}>Cancel</button><button type="button" className="cl-b pri" disabled={saving || !form.title.trim() || !form.description.trim()} onClick={add}>{saving ? "Publishing…" : "Publish"}</button></div>
+              <div className="cl-ff"><button type="button" className="nb" onClick={() => setShowAdd(false)}>Cancel</button><button type="button" className="nb pri" disabled={saving || !form.title.trim() || !form.description.trim()} onClick={add}>{saving ? "Publishing…" : "Publish"}</button></div>
             </div>
           )}
         </section>
@@ -2116,7 +2098,7 @@ export function AdminChangelogPage({ dark, t }) {
                 <span className={"cl-ty tag-" + (e.tag || "new")}>{TAG[e.tag] || e.tag}</span>
                 <span className="cl-tt"><b>{e.title}</b><i>{e.description}</i></span>
                 <span className="cl-mid m">{dateOf(e.date)}</span>
-                <span className="cl-acts"><button type="button" className="cl-b sm bad" onClick={() => remove(e.id, e.title)}>Delete</button></span>
+                <span className="cl-acts"><button type="button" className="nb sm bad" onClick={() => remove(e.id, e.title)}>Delete</button></span>
               </div>
             ))}
             {pages > 1 && <div className="cl-pg"><span className="cl-cnt">{page + 1} of {pages}</span><span className="cl-pgn"><button type="button" className="cl-ib" disabled={page === 0} onClick={() => setPage(p => p - 1)} aria-label="Previous">‹</button><button type="button" className="cl-ib" disabled={page >= pages - 1} onClick={() => setPage(p => p + 1)} aria-label="Next">›</button></span></div>}
@@ -2132,8 +2114,6 @@ const CL_CSS = `
 .cl *{box-sizing:border-box}
 .cl .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .cl-hb{display:flex;gap:8px}
-.cl-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;transition:transform .15s}.cl-b:hover{transform:translateY(-1px)}.cl-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.cl-b.sm{height:30px;padding:0 10px;font-size:12px}.cl-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.cl-b.bad{color:var(--bad)}
 .cl-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .cl-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.cl-stt:first-child{border-left:0}
 .cl-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cl-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.cl-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -2155,11 +2135,9 @@ const CL_CSS = `
 .cl-mid{font-size:12px;color:var(--mut);white-space:nowrap;margin-top:3px}.cl-acts{display:flex;gap:6px;justify-content:flex-end}
 .cl-pg{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}.cl-pgn{display:inline-flex;gap:6px}.cl-ib{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:14px;cursor:pointer;padding:0}.cl-ib:disabled{opacity:.35;cursor:not-allowed}
 @media (max-width:900px){
-  .cl-hb{width:100%;flex-direction:column}.cl-hb .cl-b{width:100%}
-  .cl-stats{grid-template-columns:1fr 1fr}.cl-stt:nth-child(3){border-left:0}.cl-stt:nth-child(n+3){border-top:1px solid var(--line)}.cl-stt b{font-size:17px}
+  .cl-hb{width:100%;flex-direction:column}.cl-hb   .cl-stats{grid-template-columns:1fr 1fr}.cl-stt:nth-child(3){border-left:0}.cl-stt:nth-child(n+3){border-top:1px solid var(--line)}.cl-stt b{font-size:17px}
   .cl-srch{width:100%;min-width:0}.cl-bar .cl-tg{flex:1;text-align:center;padding:8px 6px}.cl-two{grid-template-columns:1fr}
-  .cl-r{grid-template-columns:1fr auto;grid-template-areas:"ty d" "tt tt" "acts acts";gap:6px 10px;padding:12px 14px}.cl-r .cl-ty{grid-area:ty}.cl-r .cl-mid{grid-area:d}.cl-r .cl-tt{grid-area:tt}.cl-r .cl-acts{grid-area:acts;justify-content:stretch}.cl-r .cl-acts .cl-b{flex:1}
-}
+  .cl-r{grid-template-columns:1fr auto;grid-template-areas:"ty d" "tt tt" "acts acts";gap:6px 10px;padding:12px 14px}.cl-r .cl-ty{grid-area:ty}.cl-r .cl-mid{grid-area:d}.cl-r .cl-tt{grid-area:tt}.cl-r .cl-acts{grid-area:acts;justify-content:stretch}.cl-r .cl-acts }
 `;
 /* ═══════════════════════════════════════════ */
 /* ═══ CREATE ORDER                        ═══ */

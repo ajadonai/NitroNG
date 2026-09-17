@@ -38,7 +38,7 @@ function MemberRow({ m, busy, onOpen, onAct }) {
       <span className="cw-chips"><span className={`cw-ty ${tier}`}>{tier}</span><span className={`cw-ty ${st}`}>{st}</span></span>
       <span className="cw-figs"><span className="cw-f m" data-l="Rate">{m.commissionRate}%</span><span className={"cw-f earn m" + ((m.totalEarned || 0) > 0 ? " pos" : "")} data-l="Earned">{fN(m.totalEarned || 0)}</span></span>
       <span className="cw-a">
-        {buttons.map(([action, label, tone]) => <button key={action} type="button" className={`cw-b sm ${tone}`} disabled={busy === m.id} onClick={e => run(e, action)}>{label}</button>)}
+        {buttons.map(([action, label, tone]) => <button key={action} type="button" className={`nb sm ${tone}`} disabled={busy === m.id} onClick={e => run(e, action)}>{label}</button>)}
         <span className="cw-ch">›</span>
       </span>
     </div>
@@ -347,9 +347,9 @@ export function AdminCrewPage({ dark, t }) {
                       {(p.status === "pending" || p.status === "processing") && (
                         <div className="cw-pa">
                           <input className="cw-in" value={refInput[p.id] || ""} onChange={e => setRefInput(prev => ({ ...prev, [p.id]: e.target.value }))} placeholder="Transfer reference (optional)" />
-                          {p.status === "pending" && <button type="button" className="cw-b sm" disabled={busy === p.id} onClick={() => payoutAct("process", p.id)}>Mark processing</button>}
-                          <button type="button" className="cw-b sm pri" disabled={busy === p.id} onClick={() => payoutAct("complete", p.id)}>Mark paid</button>
-                          <button type="button" className="cw-b sm bad" disabled={busy === p.id} onClick={() => payoutAct("reject", p.id)}>Reject</button>
+                          {p.status === "pending" && <button type="button" className="nb sm" disabled={busy === p.id} onClick={() => payoutAct("process", p.id)}>Mark processing</button>}
+                          <button type="button" className="nb sm pri" disabled={busy === p.id} onClick={() => payoutAct("complete", p.id)}>Mark paid</button>
+                          <button type="button" className="nb sm bad" disabled={busy === p.id} onClick={() => payoutAct("reject", p.id)}>Reject</button>
                         </div>
                       )}
                     </div>
@@ -408,7 +408,7 @@ export function AdminCrewPage({ dark, t }) {
             <SettingRow label="Minimum order to earn" hint="Orders below this earn no commission."><SettingField k="affiliate_min_order" pre="₦" tierCfg={tierCfg} setTierCfg={setTierCfg} /></SettingRow>
           </section>
 
-          <div className="cw-save"><button type="button" className="cw-b pri" onClick={saveTierCfg} disabled={tierCfgSaving}>{tierCfgSaving ? "Saving…" : "Save settings"}</button></div>
+          <div className="cw-save"><button type="button" className="nb pri" onClick={saveTierCfg} disabled={tierCfgSaving}>{tierCfgSaving ? "Saving…" : "Save settings"}</button></div>
         </div>
       ))}
 
@@ -483,7 +483,7 @@ export function AdminCrewPage({ dark, t }) {
                   <i>{dm.email}{dm.phone ? ` · ${dm.phone}` : ""}</i>
                   <span className="cw-chips"><span className={`cw-ty ${tier}`}>{tier}</span><span className={`cw-ty ${dm.status}`}>{dm.status}</span><span className="cw-ty m">{dm.commissionRate}%</span></span>
                 </div>
-                <button type="button" className="cw-b sm" onClick={closeDrawer}>Close</button>
+                <button type="button" className="nb sm" onClick={closeDrawer}>Close</button>
               </div>
 
               <div className="cw-body">
@@ -504,8 +504,8 @@ export function AdminCrewPage({ dark, t }) {
                     <label className="cw-lbl">Team name</label>
                     <input className="cw-in" value={promoteTeamName} onChange={e => setPromoteTeamName(e.target.value)} placeholder="e.g. Alpha squad" maxLength={40} />
                     <div className="cw-row">
-                      <button type="button" className="cw-b sm pri" disabled={busy === dm.id || !promoteTeamName.trim()} onClick={() => drawerAct("promote-chief", { teamName: promoteTeamName.trim() })}>{busy === dm.id ? "Promoting…" : "Promote to chief"}</button>
-                      <button type="button" className="cw-b sm" onClick={() => { setShowPromoteForm(false); setPromoteTeamName(""); }}>Cancel</button>
+                      <button type="button" className="nb sm pri" disabled={busy === dm.id || !promoteTeamName.trim()} onClick={() => drawerAct("promote-chief", { teamName: promoteTeamName.trim() })}>{busy === dm.id ? "Promoting…" : "Promote to chief"}</button>
+                      <button type="button" className="nb sm" onClick={() => { setShowPromoteForm(false); setPromoteTeamName(""); }}>Cancel</button>
                     </div>
                   </div>
                 )}
@@ -516,11 +516,11 @@ export function AdminCrewPage({ dark, t }) {
                     {editingTeamName ? (
                       <div className="cw-row">
                         <input className="cw-in" value={editTeamName} onChange={e => setEditTeamName(e.target.value)} maxLength={40} />
-                        <button type="button" className="cw-b sm pri" disabled={busy === dm.id || !editTeamName.trim()} onClick={saveTeamName}>Save</button>
-                        <button type="button" className="cw-b sm" onClick={() => setEditingTeamName(false)}>Cancel</button>
+                        <button type="button" className="nb sm pri" disabled={busy === dm.id || !editTeamName.trim()} onClick={saveTeamName}>Save</button>
+                        <button type="button" className="nb sm" onClick={() => setEditingTeamName(false)}>Cancel</button>
                       </div>
                     ) : (
-                      <div className="cw-row"><b className="cw-val">{dm.teamName || `${dm.name}'s team`}</b><button type="button" className="cw-b sm" onClick={() => { setEditingTeamName(true); setEditTeamName(dm.teamName || `${dm.name}'s team`); }}>Rename</button></div>
+                      <div className="cw-row"><b className="cw-val">{dm.teamName || `${dm.name}'s team`}</b><button type="button" className="nb sm" onClick={() => { setEditingTeamName(true); setEditTeamName(dm.teamName || `${dm.name}'s team`); }}>Rename</button></div>
                     )}
                   </div>
                 )}
@@ -532,11 +532,11 @@ export function AdminCrewPage({ dark, t }) {
                       <div className="cw-team">
                         <span className="cw-av chief">{initials(currentChief.name)}</span>
                         <span className="cw-nt"><b>{currentChief.teamName || `${currentChief.name}'s team`}</b><i>{plural(currentChief.crewCount, "crew member")}</i></span>
-                        <button type="button" className="cw-b sm bad" disabled={busy === dm.id} onClick={() => drawerAct("unassign-team")}>Remove</button>
+                        <button type="button" className="nb sm bad" disabled={busy === dm.id} onClick={() => drawerAct("unassign-team")}>Remove</button>
                       </div>
                     ) : <div className="cw-sub" style={{ marginTop: 0 }}>Not on any team.</div>}
                     {otherChiefs.length > 0 && (!showTeamPicker ? (
-                      <button type="button" className="cw-b sm" style={{ marginTop: 8 }} onClick={() => setShowTeamPicker(true)}>{currentChief ? "Move to another team" : "Put on a team"}</button>
+                      <button type="button" className="nb sm" style={{ marginTop: 8 }} onClick={() => setShowTeamPicker(true)}>{currentChief ? "Move to another team" : "Put on a team"}</button>
                     ) : (
                       <div className="cw-pick">
                         <input value={teamSearch} onChange={e => setTeamSearch(e.target.value)} placeholder="Search chiefs" />
@@ -562,15 +562,15 @@ export function AdminCrewPage({ dark, t }) {
 
               <div className="cw-df">
                 {isPending && <>
-                  <button type="button" className="cw-b sm ok" disabled={busy === dm.id} onClick={() => confirmAct("approve")}>Approve</button>
-                  <button type="button" className="cw-b sm bad" disabled={busy === dm.id} onClick={() => confirmAct("reject")}>Reject</button>
+                  <button type="button" className="nb sm ok" disabled={busy === dm.id} onClick={() => confirmAct("approve")}>Approve</button>
+                  <button type="button" className="nb sm bad" disabled={busy === dm.id} onClick={() => confirmAct("reject")}>Reject</button>
                 </>}
-                {!isPending && whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="cw-b sm">WhatsApp</a>}
-                {dm.status === "approved" && isChief && <button type="button" className="cw-b sm" disabled={busy === dm.id} onClick={() => confirmAct("demote-crew")}>Demote to crew</button>}
-                {dm.status === "approved" && !isChief && !showPromoteForm && <button type="button" className="cw-b sm" onClick={() => { setShowPromoteForm(true); setPromoteTeamName(`${dm.name}'s team`); }}>Promote to chief</button>}
-                {dm.status === "approved" && <button type="button" className="cw-b sm bad" disabled={busy === dm.id} onClick={() => confirmAct("suspend")}>Suspend</button>}
-                {isSuspended && <button type="button" className="cw-b sm ok" disabled={busy === dm.id} onClick={() => confirmAct("reinstate")}>Reinstate</button>}
-                {!isPending && <button type="button" className="cw-b sm bad" style={{ marginLeft: "auto" }} disabled={busy === dm.id} onClick={() => confirmAct("delete")}>Delete</button>}
+                {!isPending && whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="nb sm">WhatsApp</a>}
+                {dm.status === "approved" && isChief && <button type="button" className="nb sm" disabled={busy === dm.id} onClick={() => confirmAct("demote-crew")}>Demote to crew</button>}
+                {dm.status === "approved" && !isChief && !showPromoteForm && <button type="button" className="nb sm" onClick={() => { setShowPromoteForm(true); setPromoteTeamName(`${dm.name}'s team`); }}>Promote to chief</button>}
+                {dm.status === "approved" && <button type="button" className="nb sm bad" disabled={busy === dm.id} onClick={() => confirmAct("suspend")}>Suspend</button>}
+                {isSuspended && <button type="button" className="nb sm ok" disabled={busy === dm.id} onClick={() => confirmAct("reinstate")}>Reinstate</button>}
+                {!isPending && <button type="button" className="nb sm bad" style={{ marginLeft: "auto" }} disabled={busy === dm.id} onClick={() => confirmAct("delete")}>Delete</button>}
               </div>
             </aside>
           </div>
@@ -584,8 +584,6 @@ const CW_CSS = `
 .cw{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
 .cw *{box-sizing:border-box}
 .cw .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.cw-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;transition:transform .15s}.cw-b:hover{transform:translateY(-1px)}.cw-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.cw-b.sm{height:30px;padding:0 10px;font-size:12px}.cw-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.cw-b.bad{color:var(--bad)}.cw-b.ok{color:var(--ok)}
 .cw-note{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:11px 16px;border-radius:12px;border:1px solid;font-size:12.5px;color:var(--mut)}.cw-note b{font-size:13px;font-weight:600}
 .cw-note.warn{border-color:color-mix(in srgb,var(--warn) 35%,transparent);background:color-mix(in srgb,var(--warn) 8%,transparent)}.cw-note.warn b{color:var(--warn)}
 .cw-note.bad{border-color:color-mix(in srgb,var(--bad) 35%,transparent);background:color-mix(in srgb,var(--bad) 8%,transparent)}.cw-note.bad b{color:var(--bad)}
@@ -642,7 +640,7 @@ const CW_CSS = `
   .cw-r{grid-template-columns:1fr;grid-template-areas:"n" "c" "f" "a";gap:8px;padding:12px 14px}.cw-r .cw-n{grid-area:n}
   .cw-r .cw-chips{grid-area:c;display:flex;gap:6px;flex-wrap:wrap;padding-left:44px}
   .cw-figs{grid-area:f;display:flex;gap:18px;padding-top:8px;border-top:1px solid var(--rail)}.cw-f::before{content:attr(data-l) " ";font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--mut)}.cw-f.earn{text-align:left}
-  .cw-a{grid-area:a;justify-content:stretch}.cw-a .cw-b{flex:1;height:36px}.cw-r .cw-ch{display:none}
+  .cw-a{grid-area:a;justify-content:stretch}.cw-a .cw-r .cw-ch{display:none}
   .cw-pr{grid-template-columns:1fr auto;grid-template-areas:"n amt" "st st";gap:6px 10px;padding:12px 14px}.cw-pr .cw-n{grid-area:n}.cw-pr .cw-ty{grid-area:st;justify-self:start;margin-left:44px}.cw-pr .cw-f{grid-area:amt}.cw-pr .cw-ch{display:none}
   .cw-grid{grid-template-columns:1fr 1fr}
   .cw-sr{flex-direction:column;align-items:stretch;gap:8px}.cw-fld{width:100%}.cw-sr .cw-sw{align-self:flex-start}

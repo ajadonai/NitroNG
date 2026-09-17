@@ -251,10 +251,10 @@ export function AdminPaymentsPage({ dark, t }) {
                   <span className="pm-acts">
                     {canApprove ? <>
                       {r.creditableKobo != null
-                        ? <button type="button" className="pm-b sm ok" onClick={() => creditReview(r, r.creditableKobo)}>Credit {fN(r.creditableKobo / 100)}</button>
-                        : <button type="button" className="pm-b sm ok" onClick={() => creditTyped(r)}>Credit…</button>}
-                      {r.creditableKobo != null && <button type="button" className="pm-b sm" onClick={() => creditTyped(r)}>Other amount</button>}
-                      <button type="button" className="pm-b sm bad" onClick={() => rejectReview(r)}>Reject</button>
+                        ? <button type="button" className="nb sm ok" onClick={() => creditReview(r, r.creditableKobo)}>Credit {fN(r.creditableKobo / 100)}</button>
+                        : <button type="button" className="nb sm ok" onClick={() => creditTyped(r)}>Credit…</button>}
+                      {r.creditableKobo != null && <button type="button" className="nb sm" onClick={() => creditTyped(r)}>Other amount</button>}
+                      <button type="button" className="nb sm bad" onClick={() => rejectReview(r)}>Reject</button>
                     </> : <span className="pm-dimc">view only</span>}
                   </span>
                   <div className="pm-rv-why">
@@ -279,7 +279,7 @@ export function AdminPaymentsPage({ dark, t }) {
             <FilterDropdown dark={dark} t={t} value={statusFilter} onChange={changeStatus} options={[{ value: "all", label: "All statuses" }, { value: "Pending", label: "Waiting" }, { value: "Completed", label: "Cleared" }, { value: "Failed", label: "Failed" }, { value: "Rejected", label: "Rejected" }]} />
             <button type="button" className={"pm-tg" + (statusFilter === "Pending" ? " on" : "")} onClick={() => changeStatus(statusFilter === "Pending" ? "all" : "Pending")}>Needs approval</button>
             <span className="pm-cnt">{loading ? "" : `${deposits.length} deposit${deposits.length === 1 ? "" : "s"}`}</span>
-            <button type="button" className="pm-b" onClick={downloadCSV} disabled={!deposits.length}>CSV</button>
+            <button type="button" className="nb" onClick={downloadCSV} disabled={!deposits.length}>CSV</button>
           </div>
           <div className="pm-list">
             <div className="pm-lh"><span>Person</span><span>Reference</span><span>Method</span><span>Status</span><span>Time</span><span className="r">Amount</span><span /></div>
@@ -297,7 +297,7 @@ export function AdminPaymentsPage({ dark, t }) {
                   <span className="pm-tm">{timeOf(tx.date)}</span>
                   <b className="pm-amt m">{fN(tx.amount)}</b>
                   <span className="pm-acts">
-                    {isPending && canApprove && <><button type="button" className="pm-b sm ok" onClick={() => approveManual(tx)}>Approve</button><button type="button" className="pm-b sm bad" onClick={() => rejectManual(tx)}>Reject</button></>}
+                    {isPending && canApprove && <><button type="button" className="nb sm ok" onClick={() => approveManual(tx)}>Approve</button><button type="button" className="nb sm bad" onClick={() => rejectManual(tx)}>Reject</button></>}
                     {isPending && !canApprove && <span className="pm-dimc">view only</span>}
                     {!isPending && tx.actionBy && <span className="pm-dimc">by {tx.actionBy}</span>}
                   </span>
@@ -314,7 +314,7 @@ export function AdminPaymentsPage({ dark, t }) {
               <div key={m.method} className="pm-stt"><b className="m">{Math.round(m.amount / methodTotal * 100)}%</b><span>By {methodWord(m.method).toLowerCase()}</span><i>this month · {short(m.amount)}</i></div>
             ))}
           </div>
-          <div className="pm-bar"><span className="pm-cnt" style={{ marginLeft: 0 }}>Customers see them in this order</span><button type="button" className="pm-b" style={{ marginLeft: "auto" }} onClick={() => setAddModal(true)}>+ Add a gateway</button></div>
+          <div className="pm-bar"><span className="pm-cnt" style={{ marginLeft: 0 }}>Customers see them in this order</span><button type="button" className="nb" style={{ marginLeft: "auto" }} onClick={() => setAddModal(true)}>+ Add a gateway</button></div>
           <div className="pm-list">
             {loading ? Array.from({ length: 3 }, (_, i) => <div key={i} className="pm-gr sk">{bone(34)}</div>) : gateways.map((g, i) => (
               <div key={g.id} className={"pm-gr" + (g.enabled ? "" : " off")}>
@@ -323,7 +323,7 @@ export function AdminPaymentsPage({ dark, t }) {
                 <span className="pm-st"><i className={`pm-dot ${g.enabled ? "ok" : "dim"}`} />{g.enabled ? "Live" : "Off"}</span>
                 <span className="pm-keys">{g.hasKeys ? "Keys set" : "No keys"}</span>
                 <button type="button" className={"pm-tog" + (g.enabled ? "" : " o")} onClick={() => toggle(g.id, !g.enabled)} aria-label={g.enabled ? "Switch off" : "Switch on"}><i /></button>
-                <button type="button" className="pm-b sm" onClick={() => openConfig(g)}>Configure</button>
+                <button type="button" className="nb sm" onClick={() => openConfig(g)}>Configure</button>
               </div>
             ))}
           </div>
@@ -421,8 +421,6 @@ const PM_CSS = `
 .pm-x{width:18px;height:18px;border-radius:50%;border:0;background:var(--rail);color:var(--mut);font-size:10px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .pm-tg{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mut);cursor:pointer}.pm-tg.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
 .pm-cnt{font-size:12px;color:var(--dim);margin-left:auto}
-.pm-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.pm-b:hover{transform:translateY(-1px)}.pm-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.pm-b.sm{height:30px;padding:0 10px;font-size:12px}.pm-b.ok{color:var(--ok);border-color:var(--ok);background:var(--okbg)}.pm-b.bad{color:var(--bad)}
 .pm-list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow-x:auto}
 /* Paid, but not as quoted. Carries the bad colour rather than the warn one:
    waiting-for-approval is routine, this is money sitting uncredited. */
@@ -461,9 +459,8 @@ const PM_CSS = `
   .pm-lh{display:none}.pm-list{background:none;border:0;display:flex;flex-direction:column;gap:10px;overflow:visible;overflow-x:visible}
   .pm-dr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"un amt" "mth st" "ref ref" "acts acts";gap:6px 10px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;min-width:0}.pm-dr.pend{border-color:var(--warn)}
   .pm-un{grid-area:un}.pm-amt{grid-area:amt;align-self:start}.pm-mth{grid-area:mth}.pm-st{grid-area:st;justify-self:end}.pm-ref{grid-area:ref;font-size:11.5px}.pm-tm{display:none}
-  .pm-acts{grid-area:acts;justify-content:stretch}.pm-acts .pm-b{flex:1}.pm-acts:empty{display:none}
-  .pm-gr{grid-template-columns:52px 1fr 44px;grid-template-areas:"ord gt tog" ". st keys" ". b b";gap:6px 10px;background:var(--card);border:1px solid var(--line);border-radius:14px}.pm-ord{grid-area:ord}.pm-gt{grid-area:gt}.pm-gr .pm-st{grid-area:st}.pm-keys{grid-area:keys;justify-self:end}.pm-tog{grid-area:tog}.pm-gr .pm-b{grid-area:b;justify-self:start}
-}
+  .pm-acts{grid-area:acts;justify-content:stretch}.pm-acts .pm-acts:empty{display:none}
+  .pm-gr{grid-template-columns:52px 1fr 44px;grid-template-areas:"ord gt tog" ". st keys" ". b b";gap:6px 10px;background:var(--card);border:1px solid var(--line);border-radius:14px}.pm-ord{grid-area:ord}.pm-gt{grid-area:gt}.pm-gr .pm-st{grid-area:st}.pm-keys{grid-area:keys;justify-self:end}.pm-tog{grid-area:tog}.pm-gr }
 `;
 
 export function AdminFinancePage({ dark, t, admin }) {
@@ -798,14 +795,14 @@ function FinanceBreakdownTab({ dark, t, admin }) {
         <FilterDropdown dark={dark} t={t} value={tier} onChange={setTier} options={[{ value: "all", label: "All tiers" }, { value: "budget", label: "Budget" }, { value: "standard", label: "Standard" }, { value: "premium", label: "Premium" }, { value: "fulllist", label: "Full list" }]} />
         <FilterDropdown dark={dark} t={t} value={provider} onChange={setProvider} options={[{ value: "all", label: "All providers" }, { value: "mtp", label: "MTP" }, { value: "dao", label: "DaoSMM" }]} />
         <div className="fb-export" ref={csvMenuRef}>
-          <button type="button" className="fb-b" onClick={() => setCsvMenuOpen(v => !v)} disabled={reportLoading}>{reportLoading ? "Preparing…" : "Export report"}</button>
+          <button type="button" className="nb" onClick={() => setCsvMenuOpen(v => !v)} disabled={reportLoading}>{reportLoading ? "Preparing…" : "Export report"}</button>
           {csvMenuOpen && (
             <div className="fb-menu">
               <div className="fb-mh">Sections</div>
               {[["wallet", "Wallet"], ["orders", "Orders"], ["points", "Nitro Points"], ["provider", "Provider top-ups"], ["affiliate", "Affiliate"], ["liabilities", "Liabilities"]].map(([key, label]) => (
                 <label key={key} className="fb-mi"><input type="checkbox" checked={csvSections[key]} onChange={() => setCsvSections(c => ({ ...c, [key]: !c[key] }))} />{label}</label>
               ))}
-              <button type="button" className="fb-pri" onClick={downloadReport}>Download CSV</button>
+              <button type="button" className="nb pri" onClick={downloadReport}>Download CSV</button>
             </div>
           )}
         </div>
@@ -865,7 +862,7 @@ function FinanceBreakdownTab({ dark, t, admin }) {
                 <input type="number" min="0" value={topupAmount} onChange={e => setTopupAmount(e.target.value)} placeholder="₦ amount" className="fb-in m" />
                 <input value={topupNote} onChange={e => setTopupNote(e.target.value)} placeholder="Note (optional)" className="fb-in" />
               </div>
-              <button type="button" className="fb-pri" disabled={topupSaving || !parseFloat(topupAmount)} onClick={handleTopup}>{topupSaving ? "Saving…" : "Record top-up"}</button>
+              <button type="button" className="nb pri" disabled={topupSaving || !parseFloat(topupAmount)} onClick={handleTopup}>{topupSaving ? "Saving…" : "Record top-up"}</button>
             </div>
           </section>
         )}
@@ -881,17 +878,13 @@ const FB_CSS = `
 .fb-lr.tot{border-top:1px solid var(--line);margin-top:2px;padding-top:10px}.fb-lr.tot>span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}.fb-lr.tot b{font-size:18px;font-weight:800;color:var(--ac)}.fb-lr.tot b.ok{color:var(--ok)}.fb-lr.tot b.bad{color:var(--bad)}
 .fb-tc.bud{color:var(--bud)}.fb-tc.std{color:var(--std)}.fb-tc.prm{color:var(--prm)}
 .fb-export{position:relative;margin-left:auto}
-.fb-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap}.fb-b:disabled{opacity:.5;cursor:not-allowed}
-.fb-pri{font:inherit;font-size:12.5px;font-weight:800;height:36px;padding:0 16px;border-radius:9px;border:0;background:var(--ac);color:#fff;cursor:pointer;white-space:nowrap}.fb-pri:disabled{opacity:.5;cursor:not-allowed}
 .fb-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;width:220px;padding:8px;border-radius:12px;background:var(--card);border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.14);display:flex;flex-direction:column;gap:2px}
 .fb-mh{font-size:10.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--mut);padding:4px 6px 6px}
 .fb-mi{display:flex;align-items:center;gap:8px;padding:6px;border-radius:8px;font-size:13px;cursor:pointer}.fb-mi:hover{background:var(--soft)}.fb-mi input{accent-color:var(--ac)}
-.fb-menu .fb-pri{margin-top:6px;width:100%}
-.fb-ladder{grid-template-columns:96px 1fr 74px 60px}
+.fb-menu .fb-ladder{grid-template-columns:96px 1fr 74px 60px}
 .fb-row3{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px}
 .fb-in{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);font:inherit;font-size:13px;color:var(--ink);outline:none;min-width:0;width:100%}.fb-in:focus{border-color:var(--ac)}
-.fb .fb-pri{align-self:flex-start}
-@media (max-width:900px){.fb-export{margin-left:0;width:100%}.fb-export .fb-b{width:100%}.fb-menu{left:0;right:auto;width:100%}.fb-row3{grid-template-columns:1fr}.fb .fb-pri{align-self:stretch}}
+.fb @media (max-width:900px){.fb-export{margin-left:0;width:100%}.fb-export .fb-menu{left:0;right:auto;width:100%}.fb-row3{grid-template-columns:1fr}.fb }
 `;
 
 

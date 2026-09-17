@@ -125,7 +125,7 @@ export default function AdminResellersPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Resellers</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Who buys at wholesale, what they do with it, and why they have it.</div>
           </div>
-          <button type="button" className="re-pri" onClick={() => setGrantOpen(true)}>Grant access</button>
+          <button type="button" className="nb pri" onClick={() => setGrantOpen(true)}>Grant access</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -183,7 +183,7 @@ export default function AdminResellersPage({ dark, t }) {
                     <div key={u.userId} className="re-gr">
                       <span className="re-un"><span className="re-av">{initials(u.name || u.email)}</span><span className="re-unt"><b><span>{u.name || "(no name)"}</span></b><i>{u.email}</i></span></span>
                       <span className="m re-cnt re-gact">{u.orders} · {naira(u.spend)}</span>
-                      {u.alreadyReseller ? <span className="re-cnt">already a reseller</span> : <button type="button" className="re-b sm" disabled={!!busy} onClick={() => grant(u)}>{busy === u.userId + "approve" ? "…" : "Grant"}</button>}
+                      {u.alreadyReseller ? <span className="re-cnt">already a reseller</span> : <button type="button" className="nb sm" disabled={!!busy} onClick={() => grant(u)}>{busy === u.userId + "approve" ? "…" : "Grant"}</button>}
                     </div>
                   ))}
                 </div>
@@ -275,8 +275,8 @@ export default function AdminResellersPage({ dark, t }) {
             </div>
             <div className="re-dra">
               {openR.enabled
-                ? <button type="button" className="re-b danger" disabled={!!busy} onClick={() => revoke(openR)}>{busy === openR.userId + "revoke" ? "…" : "Revoke access"}</button>
-                : <button type="button" className="re-b ok" disabled={!!busy} onClick={() => restore(openR)}>{busy === openR.userId + "approve" ? "…" : "Restore access"}</button>}
+                ? <button type="button" className="nb bad" disabled={!!busy} onClick={() => revoke(openR)}>{busy === openR.userId + "revoke" ? "…" : "Revoke access"}</button>
+                : <button type="button" className="nb ok" disabled={!!busy} onClick={() => restore(openR)}>{busy === openR.userId + "approve" ? "…" : "Restore access"}</button>}
             </div>
           </div>
         </div>
@@ -290,9 +290,6 @@ const CSS = `
 .re *{box-sizing:border-box}
 .re .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .re .r{text-align:right}
-.re-b{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;transition:transform .15s}
-.re-b:hover{transform:translateY(-1px)}.re-b.sm{padding:5px 9px;font-size:11.5px}.re-b.danger{color:var(--bad)}.re-b.ok{color:var(--ok)}.re-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.re-pri{font:inherit;font-size:12.5px;font-weight:800;padding:8px 16px;border-radius:9px;border:0;background:var(--ac);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(196,125,142,.28);white-space:nowrap;flex-shrink:0;transition:transform .15s}.re-pri:hover{transform:translateY(-1px)}
 .re-cnt{font-size:11.5px;color:var(--dim);white-space:nowrap}
 .re-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .re-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:3px;min-width:0}.re-stt:first-child{border-left:0}
@@ -353,8 +350,7 @@ const CSS = `
 .re-facts{border-top:1px solid var(--line)}
 .re-fact{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px solid var(--rail);font-size:13px}
 .re-fact span{color:var(--mut)}.re-fact b{font-weight:700;text-align:right}
-.re-dra{margin-top:auto;display:flex;gap:8px;padding-top:6px}.re-dra .re-b{flex:1}
-@media (max-width:900px){
+.re-dra{margin-top:auto;display:flex;gap:8px;padding-top:6px}.re-dra @media (max-width:900px){
   .re-stats{grid-template-columns:1fr 1fr}.re-stt:nth-child(3){border-left:0}.re-stt:nth-child(n+3){border-top:1px solid var(--line)}.re-stt b{font-size:17px}
   .re-rh{display:none}
   .re-list{background:none;border:0;border-radius:0;display:flex;flex-direction:column;gap:10px}

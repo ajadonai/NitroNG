@@ -306,8 +306,6 @@ const RCP_CSS = `
 .rcp-fill{position:absolute;inset:0;border-radius:3px;background:var(--ac);transform-origin:left}
 .rcp-acts{display:flex;gap:10px;margin-top:16px}
 @media (min-width:768px){.rcp-acts{margin-top:18px}}
-.rcp-btn{flex:1;text-align:center;padding:13px 14px;border-radius:13px;font-size:14px;font-weight:700;border:1px solid var(--line);color:var(--ink);background:var(--card);cursor:pointer;font-family:inherit}
-.rcp-pri{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:800;box-shadow:0 8px 22px rgba(196,125,142,.28)}
 `;
 
 const TX_CSS = `
@@ -1587,8 +1585,8 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
                   </div>
                 </div>
                 <div className="rcp-acts">
-                  <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="rcp-btn">{tr("Order again")}</button>
-                  {onViewOrders && <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="rcp-btn rcp-pri">{tr("Track this order")}</button>}
+                  <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="nb">{tr("Order again")}</button>
+                  {onViewOrders && <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="nb rcp-pri">{tr("Track this order")}</button>}
                 </div>
               </div>
             ) : (

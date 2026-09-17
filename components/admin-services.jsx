@@ -162,8 +162,8 @@ export default function AdminServicesPage({ dark, t }) {
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Everything the providers list. The menu picks from here.</div>
           </div>
           <div className="rs-hb">
-            {inUseDisabledCount > 0 && <button type="button" className="rs-b warn" disabled={syncing} onClick={syncEnable}>{syncing ? "Working…" : `Switch on ${inUseDisabledCount} in use`}</button>}
-            <button type="button" className="rs-b" disabled={syncingPrices} onClick={syncPrices}>{syncingPrices ? "Syncing…" : "Sync prices"}</button>
+            {inUseDisabledCount > 0 && <button type="button" className="nb warn" disabled={syncing} onClick={syncEnable}>{syncing ? "Working…" : `Switch on ${inUseDisabledCount} in use`}</button>}
+            <button type="button" className="nb" disabled={syncingPrices} onClick={syncPrices}>{syncingPrices ? "Syncing…" : "Sync prices"}</button>
           </div>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
@@ -239,8 +239,8 @@ export default function AdminServicesPage({ dark, t }) {
                         <label className="rs-fld rs-chk"><span>Refill</span><span className="rs-chkrow"><input type="checkbox" checked={!!editData.refill} onChange={e => setEditData(p => ({ ...p, refill: e.target.checked }))} /> Provider refills drops</span></label>
                       </div>
                       <div className="rs-acts">
-                        <button type="button" className="rs-pri" disabled={saving} onClick={() => saveEdit(s.id)}>{saving ? "Saving…" : "Save changes"}</button>
-                        <button type="button" className="rs-b" onClick={() => setEditMode(null)}>Cancel</button>
+                        <button type="button" className="nb pri" disabled={saving} onClick={() => saveEdit(s.id)}>{saving ? "Saving…" : "Save changes"}</button>
+                        <button type="button" className="nb" onClick={() => setEditMode(null)}>Cancel</button>
                       </div>
                     </div>
                   ) : (
@@ -255,9 +255,9 @@ export default function AdminServicesPage({ dark, t }) {
                         <div className="rs-f rs-raw"><span>Provider's name</span><b>{s.name}</b></div>
                       </div>
                       <div className="rs-acts">
-                        <button type="button" className="rs-b" onClick={() => startEdit(s)}>Edit</button>
-                        <button type="button" className="rs-b" onClick={() => toggleEnabled(s)}>{s.enabled ? "Switch off" : "Switch on"}</button>
-                        <button type="button" className="rs-b danger rs-right" onClick={() => deleteService(s)}>Delete</button>
+                        <button type="button" className="nb" onClick={() => startEdit(s)}>Edit</button>
+                        <button type="button" className="nb" onClick={() => toggleEnabled(s)}>{s.enabled ? "Switch off" : "Switch on"}</button>
+                        <button type="button" className="nb danger rs-right" onClick={() => deleteService(s)}>Delete</button>
                       </div>
                     </>
                   )}
@@ -290,9 +290,7 @@ const CSS = `
 .rs *{box-sizing:border-box}
 .rs .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .rs-hb{display:flex;gap:6px;flex-shrink:0}
-.rs-b{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;transition:transform .15s}
-.rs-b:hover{transform:translateY(-1px)}.rs-b:disabled{opacity:.5;cursor:not-allowed;transform:none}.rs-b.danger{color:var(--bad)}.rs-b.warn{color:var(--warn)}.rs-right{margin-left:auto}
-.rs-pri{font:inherit;font-size:12.5px;font-weight:800;padding:8px 16px;border-radius:9px;border:0;background:var(--ac);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(196,125,142,.28);white-space:nowrap}.rs-pri:disabled{opacity:.5;cursor:not-allowed}
+.rs-right{margin-left:auto}
 .rs-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .rs-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.rs-stt:first-child{border-left:0}
 .rs-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}.rs-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px}.rs-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;min-height:15px}
@@ -334,8 +332,7 @@ const CSS = `
 .rs-empty{padding:40px 14px;text-align:center;font-size:13px;color:var(--mut)}
 .rs-bone{display:block;margin:3px 0}
 @media (max-width:900px){
-  .rs-hb{width:100%}.rs-hb .rs-b{flex:1}
-  .rs-stats{grid-template-columns:1fr 1fr}.rs-stt:nth-child(3){border-left:0}.rs-stt:nth-child(n+3){border-top:1px solid var(--line)}.rs-stt b{font-size:17px}
+  .rs-hb{width:100%}.rs-hb   .rs-stats{grid-template-columns:1fr 1fr}.rs-stt:nth-child(3){border-left:0}.rs-stt:nth-child(n+3){border-top:1px solid var(--line)}.rs-stt b{font-size:17px}
   .rs-srch{width:100%;min-width:0}.rs-count{display:none}
   .rs-sh{display:none}
   .rs-sr{display:grid;grid-template-columns:1fr auto auto;grid-template-areas:"sn sn sn" "cost ord tg";gap:8px 10px;padding:10px 12px}
@@ -346,7 +343,7 @@ const CSS = `
   .rs-sr.sk{grid-template-areas:"sn sn sn" "cost ord tg"}
   .rs-facts-g{grid-template-columns:1fr 1fr}.rs-f:nth-child(-n+3){border-top:1px solid var(--rail)}.rs-f:nth-child(-n+2){border-top:0}.rs-f:nth-child(3n+1){border-left:1px solid var(--rail)}.rs-f:nth-child(odd){border-left:0}.rs-raw{grid-column:1/-1}
   .rs-grid{grid-template-columns:1fr 1fr}
-  .rs-acts .rs-b{flex:1;text-align:center}.rs-right{margin-left:0}
+  .rs-acts .rs-right{margin-left:0}
   .rs-pg{flex-wrap:wrap}
 }
 `;

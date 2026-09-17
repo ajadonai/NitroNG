@@ -362,8 +362,8 @@ export default function AdminTasksPage({ dark, t }) {
                       <span className="tk-mid">{whenWord(s.createdAt)}</span>
                       {s.status === 'pending' ? (
                         <span className="tk-acts">
-                          <button type="button" className="tk-b sm ok" disabled={busy === s.id} onClick={() => reviewSub(s.id, 'approve')}>{busy === s.id ? 'Working…' : 'Approve'}</button>
-                          <button type="button" className="tk-b sm danger" disabled={busy === s.id} onClick={() => setReject({ sub: s, reason: '' })}>Reject</button>
+                          <button type="button" className="nb sm ok" disabled={busy === s.id} onClick={() => reviewSub(s.id, 'approve')}>{busy === s.id ? 'Working…' : 'Approve'}</button>
+                          <button type="button" className="nb sm danger" disabled={busy === s.id} onClick={() => setReject({ sub: s, reason: '' })}>Reject</button>
                         </span>
                       ) : (
                         <span className="tk-acts tk-rev">
@@ -396,7 +396,7 @@ export default function AdminTasksPage({ dark, t }) {
             <FilterDropdown dark={dark} t={t} value={tPlat} onChange={setTPlat} options={platformOptions} />
             <FilterDropdown dark={dark} t={t} value={tSt} onChange={setTSt} options={[{ value: 'all', label: 'Live and off' }, { value: '1', label: 'Live' }, { value: '0', label: 'Off' }]} />
             <span className="tk-sp" />
-            <button type="button" className="tk-b pri" onClick={openCreate}>+ New task</button>
+            <button type="button" className="nb pri" onClick={openCreate}>+ New task</button>
           </div>
 
           <section className="tk-card">
@@ -410,8 +410,8 @@ export default function AdminTasksPage({ dark, t }) {
                   <span className="m tk-mid">{(x._count?.submissions ?? x.doneCount ?? 0).toLocaleString()} done</span>
                   <span className="tk-st"><i className={'tk-dot ' + (x.active ? 'ok' : 'dim')} />{x.active ? 'Live' : 'Off'}</span>
                   <span className="tk-acts">
-                    <button type="button" className="tk-b sm" onClick={() => openEdit(x)}>Edit</button>
-                    <button type="button" className={`tk-b sm ${x.active ? 'warn' : 'ok'}`} onClick={() => toggleTask(x.id, !x.active)}>{x.active ? 'Turn off' : 'Turn on'}</button>
+                    <button type="button" className="nb sm" onClick={() => openEdit(x)}>Edit</button>
+                    <button type="button" className={`nb sm ${x.active ? 'warn' : 'ok'}`} onClick={() => toggleTask(x.id, !x.active)}>{x.active ? 'Turn off' : 'Turn on'}</button>
                   </span>
                 </div>
               ))}
@@ -423,11 +423,11 @@ export default function AdminTasksPage({ dark, t }) {
       {reject && (
         <div className="tk-bd" onClick={() => setReject(null)}>
           <div className="tk-md sm" role="dialog" aria-modal="true" aria-label="Reject this proof" onClick={e => e.stopPropagation()}>
-            <div className="tk-mdh"><b>Reject this proof?</b><button type="button" className="tk-b sm" onClick={() => setReject(null)}>Close</button></div>
+            <div className="tk-mdh"><b>Reject this proof?</b><button type="button" className="nb sm" onClick={() => setReject(null)}>Close</button></div>
             <p className="tk-mds">{reject.sub.user?.name || 'This customer'} gets nothing for “{reject.sub.task?.title}”. A short reason helps them do it right next time.</p>
             <label className="tk-lbl" htmlFor="tk-reason">Reason (optional)</label>
             <textarea id="tk-reason" className="tk-in ta" rows={3} value={reject.reason} onChange={e => setReject(r => ({ ...r, reason: e.target.value }))} placeholder="e.g. the link goes to a different account" autoFocus />
-            <div className="tk-mdf"><button type="button" className="tk-b" onClick={() => setReject(null)}>Cancel</button><button type="button" className="tk-b danger" onClick={sendReject}>Reject</button></div>
+            <div className="tk-mdf"><button type="button" className="nb" onClick={() => setReject(null)}>Cancel</button><button type="button" className="nb bad" onClick={sendReject}>Reject</button></div>
           </div>
         </div>
       )}
@@ -584,9 +584,9 @@ export default function AdminTasksPage({ dark, t }) {
             </div>
 
             <div className="tk-emf">
-              <button type="button" className="tk-b" onClick={() => setModal(null)}>Cancel</button>
-              {modal.mode === 'edit' && <button type="button" className="tk-b danger tk-left" onClick={deleteTask}>Delete</button>}
-              <button type="button" className="tk-b pri" disabled={saving || !form.title.trim()} onClick={saveTask}>{saving ? 'Saving…' : modal.mode === 'create' ? 'Create task' : 'Save changes'}</button>
+              <button type="button" className="nb" onClick={() => setModal(null)}>Cancel</button>
+              {modal.mode === 'edit' && <button type="button" className="nb danger tk-left" onClick={deleteTask}>Delete</button>}
+              <button type="button" className="nb pri" disabled={saving || !form.title.trim()} onClick={saveTask}>{saving ? 'Saving…' : modal.mode === 'create' ? 'Create task' : 'Save changes'}</button>
             </div>
           </div>
         </div>
@@ -600,12 +600,10 @@ const TK_CSS = `
 .tk *{box-sizing:border-box}
 .tk .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .tk-hr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.tk-b{font:inherit;font-size:12.5px;font-weight:600;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}.tk-b:hover{transform:translateY(-1px)}.tk-b:disabled{opacity:.5;cursor:not-allowed;transform:none}
 /* Actions say what they do: turning a task on is the good outcome, turning it
  * off withdraws something customers can see (consequential but reversible, so
  * amber rather than red), and red stays for Delete and Reject. Edit is neutral
  * because it decides nothing on its own. */
-.tk-b.sm{height:30px;padding:0 10px;font-size:12px}.tk-b.pri{background:var(--ac);color:#fff;border-color:var(--ac)}.tk-b.danger{color:var(--bad)}.tk-b.ok{color:var(--ok)}.tk-b.warn{color:var(--warn)}
 .tk-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .tk-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0}.tk-stt:first-child{border-left:0}
 .tk-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tk-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap}.tk-stt i{font-style:normal;font-size:11.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tk-stt.warn b{color:var(--warn)}
@@ -690,14 +688,13 @@ const TK_CSS = `
 @media (max-width:900px){
   .tk-hr{width:100%}.tk-hr>*{flex:1}
   .tk-stats{grid-template-columns:1fr 1fr}.tk-stt:nth-child(3){border-left:0}.tk-stt:nth-child(n+3){border-top:1px solid var(--line)}.tk-stt b{font-size:17px}
-  .tk-bar .tk-tg{flex:1;text-align:center;padding:8px 6px}.tk-srch{width:100%;min-width:0}.tk-bar .tk-b.pri{width:100%}.tk-sp{display:none}
+  .tk-bar .tk-tg{flex:1;text-align:center;padding:8px 6px}.tk-srch{width:100%;min-width:0}.tk-bar .tk-sp{display:none}
   .tk-r.sb{grid-template-columns:36px 1fr auto;grid-template-areas:"av u r" "av t t" "acts acts acts";gap:6px 10px;padding:12px 14px}
   .tk-r.sb .tk-oav{grid-area:av;align-self:start}.tk-r.sb .tk-tt:nth-of-type(1){grid-area:u}.tk-r.sb .tk-tt:nth-of-type(2){grid-area:t}.tk-r.sb .tk-tt b,.tk-r.sb .tk-tt i{white-space:normal;word-break:break-word}.tk-r.sb .tk-num{grid-area:r}.tk-r.sb .tk-mid{display:none}
-  .tk-r.sb .tk-acts{grid-area:acts;justify-content:stretch;margin-top:2px}.tk-r.sb .tk-acts .tk-b{flex:1;height:36px}.tk-r.sb .tk-rev{flex-direction:row;align-items:center;justify-content:space-between}
+  .tk-r.sb .tk-acts{grid-area:acts;justify-content:stretch;margin-top:2px}.tk-r.sb .tk-acts .tk-r.sb .tk-rev{flex-direction:row;align-items:center;justify-content:space-between}
   .tk-r.ts{grid-template-columns:34px 1fr auto;grid-template-areas:"pav tt r" "pav n st" "acts acts acts";gap:6px 10px;padding:12px 14px}
   .tk-r.ts .tk-pav{grid-area:pav;align-self:start}.tk-r.ts .tk-tt{grid-area:tt}.tk-r.ts .tk-tt b,.tk-r.ts .tk-tt i{white-space:normal}.tk-r.ts .tk-num{grid-area:r}.tk-r.ts .tk-mid{grid-area:n}.tk-r.ts .tk-st{grid-area:st;justify-self:end}
-  .tk-r.ts .tk-acts{grid-area:acts;justify-content:stretch;margin-top:2px}.tk-r.ts .tk-acts .tk-b{flex:1;height:36px}
-  .tk-pg{flex-wrap:wrap;gap:8px}
+  .tk-r.ts .tk-acts{grid-area:acts;justify-content:stretch;margin-top:2px}.tk-r.ts .tk-acts   .tk-pg{flex-wrap:wrap;gap:8px}
   .tk-bd{padding:12px 10px}.tk-md{padding:14px 14px 16px}
   .tk-bd.tk-sheet{padding:0;align-items:flex-end}
   .tk-md.tk-em{width:100%;max-height:92vh;border-radius:20px 20px 0 0}
@@ -705,6 +702,6 @@ const TK_CSS = `
   .tk-emb{grid-template-columns:1fr;grid-template-areas:"form" "more" "pv"}
   .tk-pv{position:static}
   .tk-r2,.tk-r3{grid-template-columns:1fr}
-  .tk-emf{flex-direction:column-reverse}.tk-emf .tk-b{width:100%;height:42px}.tk-emf .tk-left{margin-right:0}
+  .tk-emf{flex-direction:column-reverse}.tk-emf .tk-emf .tk-left{margin-right:0}
 }
 `;

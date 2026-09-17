@@ -645,8 +645,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
               </label>
             </div>
             <div className="us-row">
-              <button type="button" className="us-pri" disabled={actionLoading} onClick={saveEdit}>{actionLoading ? 'Saving...' : 'Save changes'}</button>
-              <button type="button" className="us-b" onClick={() => setEditing(false)}>Cancel</button>
+              <button type="button" className="nb pri" disabled={actionLoading} onClick={saveEdit}>{actionLoading ? 'Saving...' : 'Save changes'}</button>
+              <button type="button" className="nb" onClick={() => setEditing(false)}>Cancel</button>
             </div>
           </div>
         </section>
@@ -689,10 +689,10 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
           </div>
 
           <div className="us-acts">
-            {!isMutationLocked(drawerUser) && <button type="button" className="us-pri" onClick={() => setDrawerCreditOpen(!drawerCreditOpen)}>Credit wallet</button>}
-            {canEdit && !isMutationLocked(drawerUser) && <button type="button" className="us-b" onClick={startEditing}>Edit</button>}
+            {!isMutationLocked(drawerUser) && <button type="button" className="nb pri" onClick={() => setDrawerCreditOpen(!drawerCreditOpen)}>Credit wallet</button>}
+            {canEdit && !isMutationLocked(drawerUser) && <button type="button" className="nb" onClick={startEditing}>Edit</button>}
             {(drawerUser.canReinstate || ['Active', 'Suspended'].includes(drawerUser.status)) && (
-              <button type="button" className={"us-b" + (drawerUser.status === 'Active' ? " danger" : "")} disabled={actionLoading} onClick={() => handleStatusAction(drawerUser)}>
+              <button type="button" className={"nb" + (drawerUser.status === 'Active' ? " danger" : "")} disabled={actionLoading} onClick={() => handleStatusAction(drawerUser)}>
                 {drawerUser.canReinstate ? 'Restore' : drawerUser.status === 'Active' ? 'Ban' : 'Activate'}
               </button>
             )}
@@ -707,9 +707,9 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                 </div>
                 <input type="number" placeholder="₦ 0" value={creditAmt} onChange={e => setCreditAmt(e.target.value)} className="us-in m" />
                 <input type="text" placeholder={creditType === 'debit' ? 'Reason' : 'Reason (optional)'} value={creditReason} onChange={e => setCreditReason(e.target.value)} className="us-in" />
-                <button type="button" className="us-b" disabled={actionLoading || Number(creditAmt) <= 0 || (creditType === 'debit' && !creditReason.trim())} onClick={() => handleCredit(drawerUser)}>Apply</button>
+                <button type="button" className="nb" disabled={actionLoading || Number(creditAmt) <= 0 || (creditType === 'debit' && !creditReason.trim())} onClick={() => handleCredit(drawerUser)}>Apply</button>
               </div>
-              <div className="us-quick">{[1000, 2000, 5000, 10000].map(p => <button key={p} type="button" className="us-b sm" onClick={() => setCreditAmt(String(p))}>{fN(p)}</button>)}</div>
+              <div className="us-quick">{[1000, 2000, 5000, 10000].map(p => <button key={p} type="button" className="nb sm" onClick={() => setCreditAmt(String(p))}>{fN(p)}</button>)}</div>
               {creditType === 'debit' && (
                 <label className="us-cashref">
                   <input type="checkbox" checked={cashRefund} onChange={e => setCashRefund(e.target.checked)} />
@@ -730,8 +730,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                   <input type="number" placeholder="Points" value={ptsAdjAmt} onChange={e => setPtsAdjAmt(e.target.value)} className="us-in m" />
                   <input type="text" placeholder="Reason" value={ptsAdjReason} onChange={e => setPtsAdjReason(e.target.value)} className="us-in" />
                   <div className="us-row">
-                    <button type="button" className="us-b" disabled={ptsAdjLoading || !Number(ptsAdjAmt) || !ptsAdjReason.trim()} onClick={submitPointsAdj}>{ptsAdjLoading ? '…' : 'Apply'}</button>
-                    <button type="button" className="us-b ghost" onClick={() => { setPtsAdjOpen(false); setPtsAdjAmt(''); setPtsAdjReason(''); }}>Cancel</button>
+                    <button type="button" className="nb" disabled={ptsAdjLoading || !Number(ptsAdjAmt) || !ptsAdjReason.trim()} onClick={submitPointsAdj}>{ptsAdjLoading ? '…' : 'Apply'}</button>
+                    <button type="button" className="nb ghost" onClick={() => { setPtsAdjOpen(false); setPtsAdjAmt(''); setPtsAdjReason(''); }}>Cancel</button>
                   </div>
                 </div>
               )}
@@ -760,9 +760,9 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
               ))}
               {txAll && txTotalPages > 1 && (
                 <div className="us-tr us-txpg">
-                  <button type="button" className="us-b sm" disabled={txPage === 1} onClick={() => setTxPage(p => Math.max(1, p - 1))}>Prev</button>
+                  <button type="button" className="nb sm" disabled={txPage === 1} onClick={() => setTxPage(p => Math.max(1, p - 1))}>Prev</button>
                   <span className="us-cnt">{txPage} of {txTotalPages}</span>
-                  <button type="button" className="us-b sm" disabled={txPage >= txTotalPages} onClick={() => setTxPage(p => Math.min(txTotalPages, p + 1))}>Next</button>
+                  <button type="button" className="nb sm" disabled={txPage >= txTotalPages} onClick={() => setTxPage(p => Math.min(txTotalPages, p + 1))}>Next</button>
                 </div>
               )}
             </div>
@@ -781,7 +781,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
             <div className="adm-title" style={{ color: t.text }}>Users</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Every account, what they hold, what they have done.</div>
           </div>
-          <button type="button" className="us-b" onClick={exportAll}><ExportIcon /> Export CSV</button>
+          <button type="button" className="nb" onClick={exportAll}><ExportIcon /> Export CSV</button>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -809,11 +809,11 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
       {selected.size > 0 && (
         <div className="us-bb">
           <b>{selected.size} selected</b>
-          <button type="button" className="us-b sm" onClick={() => { if (selected.size === 1) { const u = users.find(x => x.id === [...selected][0]); if (u) openDrawer(u, true); } else toast.info('Coming soon', 'Bulk credit coming soon'); }}>Credit</button>
-          <button type="button" className="us-b sm" onClick={() => toast.info('Coming soon', 'Bulk message coming soon')}>Email</button>
-          <button type="button" className="us-b sm" onClick={exportSelected}>Export</button>
-          <button type="button" className="us-b sm danger" onClick={bulkBan}>Ban</button>
-          <button type="button" className="us-b sm ghost" onClick={() => setSelected(new Set())}>Clear</button>
+          <button type="button" className="nb sm" onClick={() => { if (selected.size === 1) { const u = users.find(x => x.id === [...selected][0]); if (u) openDrawer(u, true); } else toast.info('Coming soon', 'Bulk credit coming soon'); }}>Credit</button>
+          <button type="button" className="nb sm" onClick={() => toast.info('Coming soon', 'Bulk message coming soon')}>Email</button>
+          <button type="button" className="nb sm" onClick={exportSelected}>Export</button>
+          <button type="button" className="nb sm danger" onClick={bulkBan}>Ban</button>
+          <button type="button" className="nb sm ghost" onClick={() => setSelected(new Set())}>Clear</button>
         </div>
       )}
 
@@ -902,11 +902,7 @@ const US_CSS = `
 .us{display:flex;flex-direction:column;gap:14px;color:var(--ink)}
 .us *{box-sizing:border-box}
 .us .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.us-b{font:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:transform .15s}
-.us-b:hover{transform:translateY(-1px)}.us-b.sm{padding:5px 9px;font-size:11.5px}.us-b.danger{color:var(--bad)}.us-b.ghost{background:transparent;color:var(--mut)}
-.us-b:disabled{opacity:.5;cursor:not-allowed;transform:none}.us-b svg{width:13px;height:13px}
-.us-pri{font:inherit;font-size:13px;font-weight:800;padding:9px 14px;border-radius:10px;border:0;background:var(--ac);color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(196,125,142,.28);white-space:nowrap;transition:transform .15s}
-.us-pri:hover{transform:translateY(-1px)}.us-pri:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+.us-b svg{width:13px;height:13px}
 .us-link{font:inherit;font-size:inherit;font-weight:600;color:var(--ac);background:none;border:0;cursor:pointer;padding:0}
 .us-cnt{font-size:11.5px;color:var(--dim)}
 .us-row{display:flex;gap:8px}.us-row>*{flex:1}
@@ -964,8 +960,7 @@ const US_CSS = `
 .us-f:nth-child(-n+2){border-top:0}.us-f:nth-child(odd){border-left:0}
 .us-f span{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}
 .us-f b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.us-f b.good{color:var(--ok)}.us-tier{color:var(--acink);font-weight:800}
-.us-acts{display:flex;gap:6px;flex-wrap:wrap}.us-acts .us-pri{flex:1;text-align:center}
-.us-dsec{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.us-acts{display:flex;gap:6px;flex-wrap:wrap}.us-acts .us-dsec{border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .us-dsec>header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--soft)}
 .us-dsec h4{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);font-weight:700;margin:0;white-space:nowrap}
 .us-cred{display:grid;grid-template-columns:130px 1fr 1fr auto;gap:8px;padding:10px 12px;align-items:center}
@@ -1011,6 +1006,5 @@ const US_CSS = `
   .us-ur>span:first-child,.us-ord,.us-jn,.us-ra,.us-st{display:none}.us-un{flex:1}.us-bal{flex-shrink:0;font-size:13px}
   .us-unt i{display:flex;align-items:center;gap:6px}
   .us-unt i::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);flex-shrink:0}.us-ur.banned .us-unt i::before{background:var(--bad)}
-  .us-cred{grid-template-columns:1fr 1fr}.us-cred .us-segs{grid-column:1/-1}.us-cred .us-b{grid-column:1/-1}
-}
+  .us-cred{grid-template-columns:1fr 1fr}.us-cred .us-segs{grid-column:1/-1}.us-cred }
 `;
