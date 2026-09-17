@@ -13,19 +13,8 @@ const DEF_BRACKETS = [
   { min: 5000, max: 20000, multiplier: 1.5, label: "Premium" },
   { min: 20000, max: 999999999, multiplier: 1.35, label: "Ultra" },
 ];
-// The drawn ladder, in kobo. Mirrors lib/reseller-tiers DEFAULT_TIERS — the
-// server is the authority, this is what an unconfigured page offers.
-const DEF_RS_TIERS = [
-  { id: "T1", name: "Starter", threshold: 10000000, pct: 10 },
-  { id: "T2", name: "Trade", threshold: 25000000, pct: 15 },
-  { id: "T3", name: "Bulk", threshold: 50000000, pct: 20 },
-  { id: "T4", name: "Scale", threshold: 100000000, pct: 25 },
-  { id: "T5", name: "Wholesale", threshold: 200000000, pct: 30 },
-];
-const DEFAULTS = { brackets: DEF_BRACKETS, floorPct: 50, floorCeiling: 5000, ngBonus: 25, resellerDiscount: 20, usdBuffer: 200, fxThreshold: 20, premium: 15, premiumLive: false, tierMults: { Budget: 1, Standard: 1.15, Premium: 1.35 }, provBonuses: { mtp: 0, dao: 0 }, rsTiers: DEF_RS_TIERS, rsCaps: { Ultra: 22 }, rsSeat: 100000000, rsFloor: 10, rsLive: false };
+const DEFAULTS = { brackets: DEF_BRACKETS, floorPct: 50, floorCeiling: 5000, ngBonus: 25, resellerDiscount: 20, usdBuffer: 200, fxThreshold: 20, premium: 15, premiumLive: false, tierMults: { Budget: 1, Standard: 1.15, Premium: 1.35 }, provBonuses: { mtp: 0, dao: 0 }, rsLive: false };
 
-/** The most a band can be discounted before it breaks the reseller floor. */
-const bandCeiling = (mult, floorPct) => (1 - (1 / (1 - floorPct / 100)) / mult) * 100;
 const COLORS = ["#34d399", "#6ee7b7", "#60a5fa", "#a78bfa", "#e0a458", "#c47d8e"];
 const PROV = [["mtp", "MoreThanPanel"], ["dao", "DaoSMM"]];
 
@@ -84,7 +73,6 @@ const ICONS = {
   ng: <><circle cx="12" cy="12" r="9" /><path d="M12 3a15 15 0 010 18M3 12h18" /></>,
   pv: <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />,
   rs: <><path d="M20 7h-9M14 17H5" /><circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" /></>,
-  rb: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 10h18M9 10v10" /></>,
   fx: <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />,
   rc: <><path d="M23 4v6h-6M1 20v-6h6" /><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" /></>,
 };
@@ -115,11 +103,9 @@ export default function AdminPricingPage({ dark, t }) {
       next.premiumLive = v.fx_premium_live === "1";
       try { if (v.markup_tier_multipliers) next.tierMults = JSON.parse(v.markup_tier_multipliers); } catch {}
       next.provBonuses = { mtp: Number(v.markup_provider_bonus_mtp || 0), dao: Number(v.markup_provider_bonus_dao || 0) };
-      // ── the reseller ladder ──
-      try { if (v.reseller_tiers) next.rsTiers = JSON.parse(v.reseller_tiers); } catch {}
-      try { if (v.reseller_band_caps) next.rsCaps = JSON.parse(v.reseller_band_caps); } catch {}
-      if (v.reseller_seat_lifetime) next.rsSeat = Number(v.reseller_seat_lifetime);
-      if (v.markup_reseller_margin_floor) next.rsFloor = Number(v.markup_reseller_margin_floor);
+      // Read-only here. The ladder is set up on its own page; this one only
+      // needs to know whether it has taken over, so the card does not claim a
+      // flat rate is in force when the rungs are deciding.
       next.rsLive = v.reseller_tiers_live === "true";
       if (v.markup_usd_market) setUsdMarket(Number(v.markup_usd_market));
       setS(next); setLoaded(true);
@@ -132,9 +118,6 @@ export default function AdminPricingPage({ dark, t }) {
     fx_premium_percent: String(v.premium ?? 15), fx_premium_live: v.premiumLive ? "1" : "0",
     markup_tier_multipliers: JSON.stringify(v.tierMults),
     markup_provider_bonus_mtp: String(v.provBonuses.mtp || 0), markup_provider_bonus_dao: String(v.provBonuses.dao || 0),
-    reseller_tiers: JSON.stringify(v.rsTiers), reseller_band_caps: JSON.stringify(v.rsCaps),
-    reseller_seat_lifetime: String(v.rsSeat), markup_reseller_margin_floor: String(v.rsFloor),
-    reseller_tiers_live: v.rsLive ? "true" : "false",
   });
   const persist = async (next) => {
     setSaving(true);
@@ -190,13 +173,7 @@ export default function AdminPricingPage({ dark, t }) {
     { id: "ti", title: "Tier prices", sub: `Standard costs ${pct(s.tierMults.Standard || 1)} more than Budget. Premium costs ${pct(s.tierMults.Premium || 1)} more.` },
     { id: "ng", title: "Nigerian services", sub: `Priced ${s.ngBonus}% higher than the same service worldwide.` },
     { id: "pv", title: "Provider discounts", sub: PROV.filter(([k]) => s.provBonuses[k]).length ? `Extra ${PROV.filter(([k]) => s.provBonuses[k]).map(([k, n]) => `${s.provBonuses[k]}% kept on ${n}`).join(", ")}.` : "Nothing extra kept on any provider." },
-    { id: "rs", title: "Reseller discount", sub: s.rsLive
-        ? `The ladder is on: ${s.rsTiers.length} tiers, ${s.rsTiers[0]?.pct}% to ${s.rsTiers[s.rsTiers.length - 1]?.pct}%. ${s.rsTiers[0]?.name} from ${naira(s.rsTiers[0]?.threshold / 100)} a month.`
-        : `Every reseller pays ${s.resellerDiscount}% less than the site price. The tier ladder is set up but switched off.` },
-    { id: "rb", title: "Reseller band caps", sub: (() => {
-        const bound = s.brackets.filter(b => { const c = s.rsCaps[b.label]; return c != null && c !== "" && Number(c) < (s.rsTiers[s.rsTiers.length - 1]?.pct ?? 100); }).length;
-        return bound ? `Capped on ${bound} of ${s.brackets.length} bands, so the dearest services keep their margin.` : "No band capped — every tier's own rate applies everywhere.";
-      })() },
+    { id: "rs", title: "Reseller discount", sub: `Resellers pay ${s.resellerDiscount}% less than the site price on every order.${s.rsLive ? " The tier ladder is on, and it decides the rate instead." : ""} Tiers and band caps live on Reseller pricing.` },
     { id: "fx", title: "Dollar rate", sub: usdMarket ? `${naira(usdRate)} to the dollar today: the market rate plus a ${naira(s.usdBuffer)} cushion. Checked every morning.` : `A ${naira(s.usdBuffer)} cushion on the market rate. Checked every morning.` },
     { id: "fd", title: "Foreign deposits", sub: !usdMarket ? `A ${s.premium}% premium on dollar deposits, ${s.premiumLive ? "switched on" : "set but not yet switched on"}.`
         : s.premiumLive ? `Dollars credit at ${naira(Math.round(usdMarket / (1 + (s.premium || 0) / 100)))} to the dollar — ${s.premium}% under the market rate. $100 lands as ${naira(Math.round(100 * usdMarket / (1 + (s.premium || 0) / 100)))}.`
@@ -301,58 +278,8 @@ export default function AdminPricingPage({ dark, t }) {
             <p className="pr-hint">Taken off the finished price, after everything else, so it can only ever remove this much and never gets near cost. Applies to the curated and the full catalogue.</p>
             <Row label="Resellers pay less by" hint={`Standard on the cost you are trying: ${naira(Math.ceil(std * (1 - (draft.resellerDiscount || 0) / 100)))}`}><NumInput value={draft.resellerDiscount} onChange={v => d({ resellerDiscount: v })} min={0} max={90} fallback={20} /><em className="pr-u">%</em></Row>
 
-            {/* The ladder. While it is off, the flat rate above is what every
-                reseller pays and these rows change nothing — which is what makes
-                it safe to set the rungs up and check them before switching on. */}
-            <div className="pr-sec">The tier ladder</div>
-            <p className="pr-hint">Each tier is what a reseller must spend in a rolling 30 days, at the site price, and what they get for it. Below the first rung is normal pricing.</p>
-            {draft.rsTiers.map((t, i) => (
-              <Row key={t.id} label={`${t.id} · ${t.name}`} hint={i === 0 ? "The price of admission. Under it, a reseller is a retail customer with a badge." : `Was ${naira(draft.rsTiers[i - 1].threshold / 100)} at ${draft.rsTiers[i - 1].pct}%`}>
-                <em className="pr-u">₦</em>
-                <NumInput value={Math.round(t.threshold / 100)} width={92} min={0} max={99999999} fallback={0}
-                  onChange={v => { const n = [...draft.rsTiers]; n[i] = { ...t, threshold: Math.round(v * 100) }; d({ rsTiers: n }); }} />
-                <NumInput value={t.pct} width={56} min={0} max={99} fallback={0}
-                  onChange={v => { const n = [...draft.rsTiers]; n[i] = { ...t, pct: v }; d({ rsTiers: n }); }} />
-                <em className="pr-u">%</em>
-              </Row>
-            ))}
-            <Row label="Seat for life after" hint="Lifetime spend that keeps the bottom rung for good. The seat, not the tier.">
-              <em className="pr-u">₦</em>
-              <NumInput value={Math.round(draft.rsSeat / 100)} width={92} min={0} max={99999999} fallback={1000000} onChange={v => d({ rsSeat: Math.round(v * 100) })} />
-            </Row>
-            <Row label="Never below this margin" hint="The backstop. No tier, cap or custom rate may take a service under it.">
-              <NumInput value={draft.rsFloor} width={56} min={0} max={90} fallback={10} onChange={v => d({ rsFloor: v })} /><em className="pr-u">%</em>
-            </Row>
-            <Row label="Ladder is live" hint={draft.rsLive ? "Tiers decide every reseller's rate. The flat rate above is ignored." : "Set up but switched off. Every reseller pays the flat rate above."}>
-              <button type="button" className={"pr-sw" + (draft.rsLive ? " on" : "")} onClick={() => d({ rsLive: !draft.rsLive })} aria-pressed={draft.rsLive}><i /></button>
-            </Row>
           </Modal>
 
-          <Modal open={open === "rb"} onClose={close} title="Reseller band caps" footer={foot(() => persist(draft))}>
-            <p className="pr-hint">A flat discount off retail is not a flat margin, because retail is not a flat markup. The same 30% that leaves plenty on a cheap service leaves almost nothing on the dearest. A cap is the most any tier may take off a band — leave it empty and the tier&rsquo;s own rate applies.</p>
-            {draft.brackets.map((b, i) => {
-              const ceiling = bandCeiling(b.multiplier, draft.rsFloor);
-              const val = draft.rsCaps[b.label];
-              const over = val != null && val !== "" && Number(val) > ceiling;
-              return (
-                <Row key={b.label || i} label={`${b.label} · ×${b.multiplier}`} hint={over
-                  ? `Too high — above ${ceiling.toFixed(1)}% this band cannot clear the ${draft.rsFloor}% floor`
-                  : `${range(b)} · safe to ${Math.max(0, ceiling).toFixed(1)}%`}>
-                  <input className={"pr-in m" + (over ? " bad" : "")} style={{ width: 62, textAlign: "right" }} inputMode="numeric"
-                    value={val ?? ""} placeholder="no cap" aria-label={`${b.label} cap`}
-                    onChange={e => {
-                      const raw = e.target.value.replace(/[^0-9]/g, "");
-                      const next = { ...draft.rsCaps };
-                      // Empty is "no cap" and not a cap of zero, which would put
-                      // every tier on retail for the band.
-                      if (raw === "") delete next[b.label]; else next[b.label] = Number(raw);
-                      d({ rsCaps: next });
-                    }} />
-                  <em className="pr-u">%</em>
-                </Row>
-              );
-            })}
-          </Modal>
           <Modal open={open === "fx"} onClose={close} title="Dollar rate" footer={foot(() => persist(draft))}>
             <Row label="Market rate this morning" hint="Fetched automatically"><b className="m">{usdMarket ? naira(usdMarket) : "—"}</b></Row>
             <Row label="Cushion on top" hint="Covers the rate moving between checks"><em className="pr-u">₦</em><NumInput value={draft.usdBuffer} onChange={v => d({ usdBuffer: v })} min={0} max={1000} fallback={200} width={76} /></Row>

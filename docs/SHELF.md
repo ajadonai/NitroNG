@@ -159,6 +159,14 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   15% and 10%" were reading the recorded rate on a revoked profile. Their spend
   would put all three on normal pricing anyway.
 
+  **Two pages, not one** (corrected 17 Sep — Trip caught it). The ladder settings
+  were first built as two cards inside Admin → Pricing, which was a quiet
+  deviation from the agreed mockup and the wrong shape besides: Pricing answers
+  "what does a service cost a customer", Reseller pricing answers "what is a
+  reseller to us". They are separate pages now, sharing `markup_brackets` so the
+  bands are one definition. Both behind `settings.save`, which is owner and
+  superadmin only, the same gate as `reseller.approve`.
+
   Mockups: ladder `02ba676e`, pricing page `4eb3b4ca`, resellers page `ac056a0a`.
 
 - **Subscription — shape undecided, 12 Sep 2026.** Recommendation on record:
