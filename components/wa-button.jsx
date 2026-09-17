@@ -51,7 +51,14 @@ export function WaButton({
 
   if (href) {
     return (
-      <a className={cls} href={href} target="_blank" rel="noopener noreferrer" {...a11y} {...rest}>
+      <a
+        className={cls}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        {...a11y}
+        {...rest}
+      >
         {inner}
       </a>
     );
