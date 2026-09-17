@@ -214,3 +214,40 @@ describe('one segmented control', () => {
     expect(css).toMatch(/\.dark \.seg\.on \{ background: rgba\(255,255,255,\.16\)/);
   });
 });
+
+/**
+ * The surfaces underneath. Trip: "some of them have different colors."
+ *
+ * The cause was not the controls — it was that twenty admin pages each declared
+ * their own surface tokens, so the same menu opened over four different whites
+ * depending on which page it belonged to.
+ */
+describe('one surface, not four', () => {
+  const files = fs.readdirSync(path.join(process.cwd(), 'components'))
+    .filter(f => f.endsWith('.jsx'))
+    .map(f => [f, fs.readFileSync(path.join(process.cwd(), 'components', f), 'utf8')]);
+
+  it('reads the card colour from the token rather than retyping it', () => {
+    // #ffffff appeared 28 times against the app's actual #fffdfb, a warm white
+    // chosen to sit on the cream page.
+    const bad = files.filter(([, s]) => /"--card":\s*dark \?/.test(s)).map(([n]) => n);
+    expect(bad, `hardcoded card colour: ${bad.join(', ')}`).toEqual([]);
+  });
+
+  it('keeps every dark SURFACE in the plum family', () => {
+    // #111634 was the one surface tone whose green channel exceeded its red,
+    // which is what made it read as indigo on a plum app. It was used 32 times.
+    //
+    // Scoped to the surface variables on purpose: a blue chip background is
+    // meant to be blue — the API badge, the info pill — and an earlier version
+    // of this test flagged fourteen of those as faults.
+    const bad = [];
+    for (const [name, src] of files) {
+      for (const m of src.matchAll(/["']--(card|soft|in|bg|panel)["']\s*:\s*[^,}]*?#([0-9a-f]{6})/gi)) {
+        const [r, g, b] = [0, 2, 4].map(i => parseInt(m[2].slice(i, i + 2), 16));
+        if (r + g + b < 180 && g > r + 2 && b > g) bad.push(`${name}: --${m[1]} #${m[2]}`);
+      }
+    }
+    expect(bad, `surface tokens leaning blue:\n${bad.join('\n')}`).toEqual([]);
+  });
+});

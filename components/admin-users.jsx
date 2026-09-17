@@ -559,8 +559,8 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
   /* ── Render ───────────────────────────────────── */
 
   const vars = {
-    "--card": dark ? "#171126" : "#fffdfb", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
-    "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7",
+    "--card": "var(--t-card-bg)", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
+    "--line": t.cardBorder, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#120c1e" : "#faf9f7",
     "--ac": t.accent, "--acbg": dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)", "--acln": dark ? "rgba(196,125,142,.7)" : "rgba(196,125,142,.55)",
     "--ok": dark ? "#6ee7b7" : "#086e4f", "--okbg": dark ? "rgba(110,231,183,.12)" : "rgba(8,110,79,.08)", "--warn": dark ? "#fcd34d" : "#935004", "--bad": dark ? "#fca5a5" : "#bc2121",
     "--bg": dark ? "#0c0814" : "#efe8e0", "--bluetxt": "#60a5fa",

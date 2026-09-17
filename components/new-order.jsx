@@ -354,7 +354,7 @@ function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick }) {
   const tr = useT();
   const wide = !narrow;
   const vars = {
-    "--card": dark ? "#171126" : "#ffffff", "--soft": dark ? "#111634" : "#faf9f7",
+    "--card": "var(--t-card-bg)", "--soft": dark ? "#120c1e" : "#faf9f7",
     "--ink": t.text, "--mut": t.textMuted, "--line": t.cardBorder,
     "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
   };
@@ -1459,7 +1459,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
           </button>
         )}
         {platExpanded && (
-          <div className="border border-solid rounded-xl p-2 mb-2" style={{ borderColor: t.cardBorder, background: dark ? "#111634" : "#faf9f7" }}>
+          <div className="border border-solid rounded-xl p-2 mb-2" style={{ borderColor: t.cardBorder, background: dark ? "#120c1e" : "#faf9f7" }}>
             <div className="grid grid-cols-5 gap-[5px]">
               {visiblePlatforms.map((p, i) => {
                 const isActive = platform === p.id;
@@ -1522,7 +1522,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
         <div className="no-modal-overlay flex fixed inset-0 z-[200] items-end justify-center desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); setRedeemPoints(false); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null);setRedeemPoints(false);}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
           <div role="dialog" aria-modal="true" aria-label={tr("Order summary")} className={`w-full overflow-y-auto border border-solid max-h-[calc(100dvh-84px)] desktop:max-h-[90vh] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] ${orderSuccess ? "rounded-t-[26px] desktop:rounded-[26px] desktop:max-w-[460px]" : "rounded-t-[22px] desktop:rounded-[22px] desktop:max-w-[440px]"}`} onClick={e => e.stopPropagation()} style={{ background: orderSuccess ? successChrome.card : (dark ? "#140d1e" : "#fff"), borderColor: orderSuccess ? "transparent" : (dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"), boxShadow: orderSuccess ? "0 30px 80px rgba(20,10,14,.35)" : (dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)") }}>
             {orderSuccess ? (
-              <div className="rcp" style={{ "--card": successChrome.card, "--ink": successChrome.text, "--mut": successChrome.muted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": successChrome.hair, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#111634" : "#faf9f7", "--ac": t.accent, "--ok": successChrome.money }}>
+              <div className="rcp" style={{ "--card": successChrome.card, "--ink": successChrome.text, "--mut": successChrome.muted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": successChrome.hair, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#120c1e" : "#faf9f7", "--ac": t.accent, "--ok": successChrome.money }}>
                 <style>{RCP_CSS}</style>
                 <div className="rcp-hd">
                   <span className="rcp-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
