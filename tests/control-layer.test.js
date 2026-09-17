@@ -183,6 +183,34 @@ describe('nobody writes their own button again', () => {
       expect(bad, `${name} puts white on WhatsApp green`).toBe(false);
     }
   });
+
+  /*
+   * The one that actually regressed. The sweep converted the pills and stopped,
+   * and order history kept its own slab — white on #25D366 — until Trip opened
+   * the page and found it. A file can hold the brand green for a reason (the
+   * platform tile, a card's own glyph); what it must not do is draw a link to
+   * wa.me and paint the solid fill itself. That is a WhatsApp button, and there
+   * is a component for it.
+   *
+   * A *tint* is not the same thing and is left alone: the footer social row sets
+   * each of its four icons to 6–8% of its own brand — Instagram, X, TikTok,
+   * WhatsApp — and a solid green pill dropped into that row would be the odd one
+   * out rather than the consistent one. So only an opaque fill fails here.
+   */
+  it('never hand-draws a WhatsApp button again', () => {
+    const found = [];
+    for (const [name, src] of files) {
+      for (const m of src.matchAll(/<a\s[^>]*?>/g)) {
+        const tag = m[0];
+        if (!/wa\.me/.test(tag)) continue;
+        const solidHex = /background[^;]{0,40}#25d366/i.test(tag);
+        const rgba = [...tag.matchAll(/background[^;]{0,30}rgba\(37,\s*211,\s*102,\s*([.\d]+)\)/gi)]
+          .some(a => Number(a[1]) >= 0.5);
+        if (solidHex || rgba) found.push(`${name}: <a href=wa.me> paints its own fill`);
+      }
+    }
+    expect(found, `hand-drawn WhatsApp buttons:\n${found.join('\n')}`).toEqual([]);
+  });
 });
 
 describe('one segmented control', () => {

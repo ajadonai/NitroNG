@@ -271,6 +271,66 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
 
 ## Closed
 
+- **One button, one pill, one WhatsApp** (17 Sep 2026, `v2.5.104`–`v2.5.106`,
+  `4a44b3a6` `9e676a02` `282be8aa` `7b6d746a` `082b43fd` `b3caa58d`). Trip
+  noticed the admin page headers did not share a template and asked whether the
+  user side was the same. It was worse than the headers: **34** private button
+  classes, not the 13 the first survey found, because that survey only read page
+  headers. Six copies of the segmented control, where `SegPill` was already the
+  correct shared one. Five of six row-action colours failing contrast in light
+  mode. Sixteen admin pages each defining their own surface tokens — `#ffffff`
+  26 times, `#faf9f7` 26 times.
+
+  Settled as `.nb` (buttons), `.act` (row actions), `.segs`/`.seg` (segmented),
+  `WaButton` (WhatsApp), sized by height rather than padding, with action
+  colours separated far enough in RGB to be told apart — anything under about 60
+  reads as the same hue, and WhatsApp sat 23 from Refund.
+
+  **The lesson worth keeping:** the sweep converted the pills and stopped, and
+  order history kept a hand-drawn slab — white on `#25D366`, 1.98:1 — until Trip
+  opened the page and found it. A conversion that is "done" per file is not done
+  per surface. `tests/control-layer.test.js` now ratchets both: no new private
+  button class, and no `<a href=wa.me>` painting its own opaque fill. The second
+  was confirmed by reintroducing the original defect and watching it fail.
+
+  Deliberately left hand-drawn, because they are not buttons: the blog share
+  icon, the footer social row (four siblings each tinted 6–8% of their own
+  brand), prose links, the channel card's inner span, and the platform tiles
+  where green means the service rather than support. **Open question for Trip:**
+  `.lv3-wa` on the landing closing band used to flip green by day / translucent
+  outline by night; it is now solid green in both, which is the component's
+  premise but a visible change to a page he has taste-reviewed many times.
+
+- **Nitro Picks descriptions rewritten, and the real gap found** (17 Sep 2026,
+  database only, no commit). Trip asked for the long ones and the hyphens to go,
+  and for descriptions to be dropped where the name already says it — "people
+  know what tiktok followers are". 34 rewritten: longest 127 → 63 chars, over-60
+  count 27 → 1, hyphens 5 → 0, and TikTok Followers/Likes/Video Views cleared.
+
+  He then asked whether 34 was really all of it. It was not. 34 was the count of
+  groups that *had* a description; **132 of 166 enabled groups had none**, and
+  the full-list catalogue cannot have any — `description` exists only on
+  `ServiceGroup`, so the ~9,900 full-list rows have no such column.
+
+  19 added where the name genuinely does not say it. The one that matters: the
+  comments groups **change behaviour by tier** — on `Instagram Comments 🇳🇬`
+  Budget and Standard give random comments while Premium lets you write your
+  own, and the order form only shows the comment box on Premium. Same split on
+  Facebook 🇳🇬/🇺🇸, TikTok 🇳🇬 and YouTube 🇳🇬. A Budget buyer never saw the box
+  and had no way to learn why. Also corrected an assumption that would have been
+  wrong: Telegram Channel Members works for groups too, so "channels only" would
+  have been a lie.
+
+  Revert files (old values by group id) are in the session scratchpad.
+
+  **Still open for Trip:** `Threads Reposts` vs `Threads Reshares` may be the
+  same product under two names; `Threads Reposts 🇳🇬` Budget quotes the post
+  while Standard reposts it plainly — two actions in one group; and
+  `TikTok Comments 🇳🇬` Standard is manually flagged custom while the provider's
+  type is Default, so a buyer may type comments that are then discarded. Two
+  group *names* still carry em dashes (`X/Twitter Tweet Views — Last 10 Posts`),
+  which the description pass did not touch.
+
 - **Auto data-saver — the connection decides, not a settings toggle** (17 Sep
   2026, `v2.5.101`). The audit asked for a Data-Saver switch. That was wrong
   twice: the things it would turn off — aurora, grain, shimmer — cost CPU and

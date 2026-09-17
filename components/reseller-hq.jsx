@@ -14,9 +14,9 @@ import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { useToast } from './toast';
 import { copyText } from '@/lib/clipboard';
 import { useMoney, useT } from "./locale";
+import { WaButton } from "./wa-button";
 
 const FALLBACK_WA = '2347071656156';
-const WA_ICON = <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.1 4.49.71.3 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.76-.72 2-1.42.25-.7.25-1.3.18-1.42-.08-.13-.28-.2-.58-.35zM12.05 21.8h-.01a9.87 9.87 0 01-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.85 9.85 0 01-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88a9.83 9.83 0 016.99 2.9 9.82 9.82 0 012.9 7c0 5.45-4.45 9.87-9.9 9.87z"/></svg>;
 const I = (d, s = 14, w = 2) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
 const P = {
   chk: <path d="M20 6 9 17l-5-5"/>,
@@ -54,7 +54,7 @@ function Styles({ dark, t }) {
       .rhq-lead{font-size:14px;line-height:1.65;color:${muted};margin:0 auto 14px;max-width:52ch}.rhq-lead b{color:${t.textSoft}}
       .rhq-checks{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;font-size:11.5px;color:${muted};margin-bottom:16px}.rhq-checks span{display:inline-flex;align-items:center;gap:5px}.rhq-checks svg{color:#059669}
       .rhq-btn-p{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:800;padding:11px 18px;border-radius:11px;border:none;cursor:pointer;text-decoration:none;color:#fff;background:${grad};box-shadow:0 5px 16px rgba(196,125,142,.3);font-family:inherit;white-space:nowrap}
-      .rhq-btn-p.blue{background:${bgrad};box-shadow:0 5px 16px rgba(37,99,235,.28)}.rhq-btn-p.wa{background:#25d366;box-shadow:0 5px 16px rgba(37,211,102,.3)}.rhq-btn-p.white{background:#fff;color:#8b5e6b;box-shadow:none}.rhq-btn-p svg{width:15px;height:15px}
+      .rhq-btn-p.blue{background:${bgrad};box-shadow:0 5px 16px rgba(37,99,235,.28)}.rhq-btn-p.white{background:#fff;color:#8b5e6b;box-shadow:none}.rhq-btn-p svg{width:15px;height:15px}
       .rhq-btn-g{display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:700;padding:8px 12px;border-radius:11px;border:1px solid ${hair};background:${panel};color:${t.textSoft};cursor:pointer;text-decoration:none;font-family:inherit;white-space:nowrap}
       .rhq-sec-head{display:flex;align-items:center;gap:10px;margin:24px 0 10px}.rhq-sec-label{font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:${muted};white-space:nowrap}.rhq-sec-rule{flex:1;height:1px;background:${hair}}.rhq-sec-sub{font-size:10.5px;color:${muted};white-space:nowrap}
       .rhq-feats{display:grid;grid-template-columns:1fr;gap:6px}.rhq-feat{display:flex;gap:12px;padding:12px 13px;border-radius:13px;background:${panel};border:1px solid ${hair};align-items:center}.rhq-feat>span:last-child{display:flex;flex-direction:column;min-width:0}.rhq-feat h4{font-size:13px;font-weight:800;margin:0;color:${t.text}}.rhq-feat p{font-size:11.5px;color:${muted};line-height:1.55;margin:3px 0 0}
@@ -140,7 +140,7 @@ function ProspectInner() {
     }).catch(() => {});
   }, []);
   const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(WA_TEXT)}`;
-  const Wa = () => <a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-p wa">{WA_ICON}{tr("Message us on WhatsApp")}</a>;
+  const Wa = () => <WaButton href={waLink}>{tr("Message us on WhatsApp")}</WaButton>;
   return (
     <>
       <SharedStyles />
@@ -231,7 +231,7 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
       {!wholesale && <>
         <SecHead label={tr("Wholesale")} sub={tr("By approval, one message")} />
         <div className="rhq-feat"><span className="rhq-feat-ico accent">{I(P.chart, 15)}</span><span><h4>{tr("Lower rates on the same key")}</h4><p>{tr("Tell us about your business on WhatsApp. Once we switch your account, every services call returns wholesale and every add is charged at it. Nothing to re-map.")}</p></span></div>
-        <div className="rhq-acts"><a href={waLink} target="_blank" rel="noopener noreferrer" className="rhq-btn-p wa">{WA_ICON}{tr("Message us for wholesale")}</a></div>
+        <div className="rhq-acts"><WaButton href={waLink}>{tr("Message us for wholesale")}</WaButton></div>
       </>}
       <SecHead label={tr("Quick start")} sub={tr("Three calls and you are selling")} />
       <Steps items={[['Add Nitro as a provider', 'Set the API URL to nitro.ng/api/v2 in your panel and paste your key.'], ['Pull the services', 'Your panel calls services and gets your catalogue, your prices, our IDs.'], ['Place an order', 'add with a service ID, link and quantity. Track it with status.']]} />
