@@ -62,7 +62,12 @@ async function getOrderSummary(userId) {
         o."lastError",
         o."apiOrderId",
         o."queuedBehind",
-        COALESCE(o."platformAtPurchase", sg.platform, s.category, 'unknown') AS platform
+        -- s.category is deliberately NOT in this list. It is the provider's own
+        -- category, and on a full-list order with no group it put "Cheap",
+        -- "Vip" or "Private" straight onto a customer's dashboard. New orders
+        -- carry a mapped platform; the handful of old ones read "unknown",
+        -- which is the honest answer and not the provider's word for it.
+        COALESCE(o."platformAtPurchase", sg.platform, 'unknown') AS platform
       FROM orders o
       JOIN services s ON s.id = o."serviceId"
       LEFT JOIN service_tiers st ON st.id = o."tierId"

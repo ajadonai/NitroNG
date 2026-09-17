@@ -115,7 +115,20 @@ const BRAND = {
   tiktok: "#000000", twitter: "#000000", threads: "#000000",
   telegram: "#26A5E4", whatsapp: "#25D366",
   linkedin: "#0A66C2",   // not in simple-icons; LinkedIn's own brand value
-  snapchat: "#FFFC00", pinterest: "#BD081C", reddit: "#FF4500",
+  // Snapchat's true yellow is #FFFC00 and it was the loudest thing on the
+  // picker by a distance — 0.909 relative luminance against 0.223 for Instagram
+  // and 0.213 for YouTube, four times the light, so the eye went there first
+  // whatever the customer was actually looking for.
+  //
+  // The active tile is where it really told: that state stacks the brand five
+  // times over — border, a 10% wash, a full-strength rail, the icon and an
+  // outer glow — so a colour this bright does not just stand out, it flares. A
+  // first pass to 0.718 was still too much for exactly that reason.
+  //
+  // Now 0.494, which is the middle of the pack beside Spotify (0.497) and
+  // WhatsApp (0.479). Still plainly Snapchat yellow, and it holds 9.5:1 on the
+  // dark card so the mark stays legible in both themes.
+  snapchat: "#D0BC00", pinterest: "#BD081C", reddit: "#FF4500",
   discord: "#5865F2", twitch: "#9146FF", kick: "#53FC19",
   tumblr: "#36465D", quora: "#B92B27", onlyfans: "#00AFF0",
   clubhouse: "#FFE450", kwai: "#FF4906", vimeo: "#1AB7EA", bluesky: "#1185FE",

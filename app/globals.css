@@ -1084,6 +1084,9 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .act:hover { transform: translateY(-1px); border-color: var(--act-c); box-shadow: 0 3px 7px -2px var(--ctl-cast); }
 .act:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(0,0,0,.14); }
 .act:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
+/* Not every row action carries meaning in its colour — "Details", "Copy". They
+   take the page's own ink so the coloured ones keep their signal. */
+.act.neutral { --act-c: var(--t-text-soft); --act-t: var(--t-nav-active); --act-r: var(--t-card-border); }
 .act.amber  { --act-c: var(--act-amber);  --act-t: var(--act-amber-t);  --act-r: var(--act-amber-r); }
 .act.indigo { --act-c: var(--act-indigo); --act-t: var(--act-indigo-t); --act-r: var(--act-indigo-r); }
 .act.red    { --act-c: var(--act-red);    --act-t: var(--act-red-t);    --act-r: var(--act-red-r); }

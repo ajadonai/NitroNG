@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 
@@ -16,7 +18,7 @@ function activeOrder(overrides = {}) {
       serviceId: 'service-1',
       group: {
         name: 'Instagram Followers',
-        platform: 'Instagram',
+        platform: 'instagram',
         type: 'followers',
         enabled: true,
       },
@@ -30,7 +32,7 @@ describe('order offer display', () => {
     const result = getOrderOfferDisplay(activeOrder({
       serviceNameAtPurchase: 'Instagram Followers',
       tierNameAtPurchase: 'Budget',
-      platformAtPurchase: 'Instagram',
+      platformAtPurchase: 'instagram',
       serviceTypeAtPurchase: 'followers',
       tier: {
         ...activeOrder().tier,
@@ -42,7 +44,7 @@ describe('order offer display', () => {
     expect(result).toEqual({
       serviceName: 'Instagram Followers',
       tierLabel: 'Budget',
-      platform: 'Instagram',
+      platform: 'instagram',
       serviceType: 'followers',
       offerDisabled: false,
     });
@@ -71,7 +73,7 @@ describe('order offer display', () => {
     expect(buildOrderOfferSnapshot({ service: activeOrder().service })).toEqual({
       serviceNameAtPurchase: 'Instagram Followers',
       tierNameAtPurchase: null,
-      platformAtPurchase: 'Instagram',
+      platformAtPurchase: 'instagram',
       serviceTypeAtPurchase: null,
     });
   });
@@ -89,5 +91,50 @@ describe('order offer display', () => {
       service: activeOrder().service,
       tier: activeOrder().tier,
     })).toEqual(sourceOrder);
+  });
+});
+
+/**
+ * The provider's own category is not a platform.
+ *
+ * Trip found it in the Telegram feed: an order reading "Instagram Likes" with a
+ * link labelled "Cheap". A curated order carries its group's platform, but a
+ * full-list order has no tier at all, and the fallback was `service.category` —
+ * which is whatever the provider filed it under. Twenty-eight orders in ninety
+ * days went out labelled Cheap, Cheapest, Vip, Private or Other.
+ *
+ * It is the house rule in CLAUDE.md, and the same leak reached customers: the
+ * dashboard's platform grouping had the identical fallback.
+ */
+describe('the provider category never becomes a platform', () => {
+  const svc = (name, category) => ({ id: 's1', name, category, enabled: true });
+
+  it('maps a full-list service to a Nitro tile instead of its provider category', () => {
+    for (const [name, category] of [
+      ['Instagram Likes | Cheap | Fast', 'Cheap'],
+      ['Instagram Followers [Vip]', 'Vip'],
+      ['TikTok Views — private server', 'Private'],
+    ]) {
+      const snap = buildOrderOfferSnapshot({ service: svc(name, category) });
+      expect([category, category.toLowerCase()], `${category} leaked`).not.toContain(snap.platformAtPurchase);
+    }
+  });
+
+  it('answers null rather than inventing one it cannot map', () => {
+    // A missing platform is better than the provider's word for it — tgNewOrder
+    // falls back to the label "Link", which says nothing about where we buy.
+    const snap = buildOrderOfferSnapshot({ service: svc('Something Unrecognisable', 'Cheapest') });
+    expect(snap.platformAtPurchase).toBeNull();
+  });
+
+  it('maps on the way out too, so orders already stored clean up on display', () => {
+    const shown = getOrderOfferDisplay({ service: svc('Instagram Likes | Cheap', 'Cheap') });
+    expect(shown.platform).not.toBe('Cheap');
+  });
+
+  it('keeps the provider category out of the customer dashboard query', () => {
+    const route = fs.readFileSync(path.join(process.cwd(), 'app/api/dashboard/route.js'), 'utf8');
+    expect(route).toMatch(/COALESCE\(o\."platformAtPurchase", sg\.platform, 'unknown'\)/);
+    expect(route, 's.category must not be a platform fallback').not.toMatch(/COALESCE\(o\."platformAtPurchase", sg\.platform, s\.category/);
   });
 });
