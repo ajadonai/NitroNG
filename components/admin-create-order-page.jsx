@@ -39,6 +39,15 @@ export function AdminCreateOrderPage({ dark, t }) {
   const [groupId, setGroupId] = useState("");
   const [tierId, setTierId] = useState("");
 
+  // The wider list. Searched rather than browsed: it is ~9,900 services, and a
+  // desk already knows which one it means — usually because the customer named
+  // it or quoted its id.
+  const [source, setSource] = useState("picks");   // "picks" | "full"
+  const [fullQ, setFullQ] = useState("");
+  const [fullRows, setFullRows] = useState([]);
+  const [fullSearching, setFullSearching] = useState(false);
+  const [fullRow, setFullRow] = useState(null);
+
   const [link, setLink] = useState("");
   const [qty, setQty] = useState("");
   const [dripOn, setDripOn] = useState(false);
@@ -97,6 +106,21 @@ export function AdminCreateOrderPage({ dark, t }) {
     }, 250);
   }, []);
 
+  const fullRef = useRef();
+  const searchFull = useCallback((q) => {
+    setFullQ(q);
+    clearTimeout(fullRef.current);
+    if (q.trim().length < 2) { setFullRows([]); setFullSearching(false); return; }
+    setFullSearching(true);
+    fullRef.current = setTimeout(() => {
+      fetch(`/api/admin/full-list?q=${encodeURIComponent(q.trim())}`)
+        .then(r => r.json())
+        .then(d => setFullRows(d.services || []))
+        .catch(() => setFullRows([]))
+        .finally(() => setFullSearching(false));
+    }, 250);
+  }, []);
+
   const platforms = [...new Set(catalog.filter(g => g.enabled).map(g => g.platform))].sort((a, b) => {
     const P = ["Instagram", "TikTok", "YouTube", "Twitter", "Facebook", "Telegram", "Spotify", "SoundCloud"];
     const ai = P.indexOf(a), bi = P.indexOf(b);
@@ -111,10 +135,15 @@ export function AdminCreateOrderPage({ dark, t }) {
   const selectedTier = tiers.find(ti => ti.id === tierId);
 
   const tierService = selectedTier?.service;
-  const minQty = tierService ? effectiveOrderMinimum(selectedGroup?.type, tierService.min, tierService.max) : 0;
-  const maxQty = tierService?.max || 0;
-  const sellPer1k = selectedTier ? Number(selectedTier.sellPer1k) / 100 : 0;
-  const costPer1kNgn = tierService ? Number(tierService.costPer1k) * 1600 / 100 : 0;
+  // One offer, whichever list it came off, so everything below this line stops
+  // caring which. The full list quotes its own retail price and carries its
+  // minimum already worked out by the same rule the customer list uses.
+  const onFull = source === "full";
+  const picked = onFull ? !!fullRow : !!selectedTier;
+  const minQty = onFull ? (fullRow?.min || 0) : (tierService ? effectiveOrderMinimum(selectedGroup?.type, tierService.min, tierService.max) : 0);
+  const maxQty = onFull ? (fullRow?.max || 0) : (tierService?.max || 0);
+  const sellPer1k = onFull ? (fullRow?.price || 0) : (selectedTier ? Number(selectedTier.sellPer1k) / 100 : 0);
+  const costPer1kNgn = onFull ? 0 : (tierService ? Number(tierService.costPer1k) * 1600 / 100 : 0);
 
   const isValidLink = (v) => {
     const s = v.trim();
@@ -128,8 +157,10 @@ export function AdminCreateOrderPage({ dark, t }) {
 
   const qtyNum = Number(qty) || 0;
   const validQty = qtyNum >= minQty && qtyNum <= maxQty;
-  const svcType = selectedGroup?.type || "";
-  const isDripEligible = !!selectedGroup?.tags?.includes("drip");
+  const svcType = onFull ? (fullRow?.type || "") : (selectedGroup?.type || "");
+  // A curated group states it editorially; a full-list row was told by the
+  // server, which read the same rule the order route enforces.
+  const isDripEligible = onFull ? !!fullRow?.drip : !!selectedGroup?.tags?.includes("drip");
   const dripThreshold = selectedGroup?.dripThreshold || MULTIDAY_THRESHOLD_DEFAULT;
   const showDripPanel = isDripEligible && qtyNum >= dripThreshold;
   const daysMax = dripMaxDays(qtyNum);
@@ -151,12 +182,14 @@ export function AdminCreateOrderPage({ dark, t }) {
   const totalCharge = perOrder * nLinks;
   const totalCost = costPer1kNgn * qtyNum / 1000 * nLinks;
 
-  const showTraffic = !!selectedTier?.trafficTargeting;
+  // A tier flag, so the full list never asks for targeting — the same as the
+  // customer's own full-list order.
+  const showTraffic = !onFull && !!selectedTier?.trafficTargeting;
   // Same rule as the customer form: the provider's API type says what the order needs typed in,
   // and reviews need their text. The customComments flag is a manual override on top.
-  const apiType = (selectedTier?.apiType || tierService?.apiType || "").toLowerCase();
-  const groupName = (selectedGroup?.name || "").toLowerCase();
-  const typedInput = selectedTier?.customComments || apiType.includes("custom comment") || apiType.includes("comment replies") || (groupName.includes("review") && !groupName.includes("review like")) ? "comments"
+  const apiType = (onFull ? (fullRow?.apiType || "") : (selectedTier?.apiType || tierService?.apiType || "")).toLowerCase();
+  const groupName = (onFull ? (fullRow?.label || "") : (selectedGroup?.name || "")).toLowerCase();
+  const typedInput = (!onFull && selectedTier?.customComments) || apiType.includes("custom comment") || apiType.includes("comment replies") || (groupName.includes("review") && !groupName.includes("review like")) ? "comments"
     : apiType.includes("mention") ? "mentions" : apiType === "poll" ? "poll" : apiType === "seo" ? "keywords" : null;
   const typedOk = !typedInput || (typedInput === "comments" ? /[\p{L}\p{N}]/u.test(comments) : comments.trim().length > 0);
   const typedLabel = { comments: ["Comments", "one per line", "One comment per line"], mentions: ["Usernames to mention", "one per line, without @", "username1\nusername2"], poll: ["Poll answer", "the option number", "1"], keywords: ["Keywords", "one per line", "best smm panel nigeria"] }[typedInput] || null;
@@ -175,7 +208,7 @@ export function AdminCreateOrderPage({ dark, t }) {
   // can say what it gives away instead of showing a bare ₦0.
   const activeValue = mode === "bulk" ? batchTotalCharge : perOrder * nLinks;
   // No tier chosen yet, so the ₦0 on screen is "nothing priced", not "free".
-  const quotePending = mode !== "bulk" && !selectedTier;
+  const quotePending = mode !== "bulk" && !picked;
   // A free order needs a reason before it can be created — the server refuses
   // without one, and this keeps the button honest about it.
   const freeReasonOk = charge || freeReason.trim().length >= 3;
@@ -186,7 +219,7 @@ export function AdminCreateOrderPage({ dark, t }) {
   const scheduledDatePast = hasDripSchedule && dripStart === "scheduled" && dripStartDate &&
     new Date(`${dripStartDate}T${dripStartTime || "09:00"}`) < new Date();
   const ready = user && !submitting && freeReasonOk && !scheduledDateMissing && !scheduledDatePast && (
-    mode === "single" ? (selectedTier && validQty && !!link && trafficValid) :
+    mode === "single" ? (picked && validQty && !!link && trafficValid) :
     batchItems.length > 0
   );
 
@@ -216,7 +249,7 @@ export function AdminCreateOrderPage({ dark, t }) {
         mode, userId: user.id, charge, ...(charge ? {} : { freeReason: freeReason.trim() }),
         items: batchItems.map(it => ({ tierId: it.tierId, quantity: it.quantity, links: [it.link] })),
       } : {
-        mode: effectiveDripDays >= 2 ? "drip" : "single", userId: user.id, tierId: selectedTier.id, quantity: qtyNum, charge, link: fullLink(link),
+        mode: effectiveDripDays >= 2 ? "drip" : "single", userId: user.id, ...(onFull ? { catalogueId: fullRow.id } : { tierId: selectedTier.id }), quantity: qtyNum, charge, link: fullLink(link),
         ...(charge ? {} : { freeReason: freeReason.trim() }),
         ...(comments.trim() ? { comments: comments.trim() } : {}),
         ...(showTraffic ? { trafficConfig: {
@@ -306,12 +339,12 @@ export function AdminCreateOrderPage({ dark, t }) {
   const gm = (sell, cost) => cost > 0 ? Math.round((sell - cost) / cost * 100) : 0;
   const first = user?.name?.split(" ")[0] || "";
   const hourLabel = (h) => { const ap = h >= 12 ? "PM" : "AM"; return `${h === 0 ? 12 : h > 12 ? h - 12 : h}${ap}`; };
-  const dayAmounts = hasDripSchedule ? distributeByCurve(qtyNum, effectiveDripDays, dripCurve, dripPause ? dripPauseDay : 0, selectedTier?.service?.min || 50) : [];
+  const dayAmounts = hasDripSchedule ? distributeByCurve(qtyNum, effectiveDripDays, dripCurve, dripPause ? dripPauseDay : 0, (onFull ? fullRow?.min : selectedTier?.service?.min) || 50) : [];
   const maxDay = Math.max(1, ...dayAmounts);
   const curveLabel = dripCurve === "even" ? "even" : dripCurve === "frontload" ? "front-load" : "ramp-up";
   const activeCost = mode === "bulk" ? batchTotalCost : totalCost;
   const gmVal = gm(activeCharge, activeCost);
-  const hasSummary = mode === "bulk" ? batchItems.length > 0 : !!(selectedTier && nLinks && qtyNum);
+  const hasSummary = mode === "bulk" ? batchItems.length > 0 : !!(picked && nLinks && qtyNum);
   const openTopUp = () => {
     setTopUpOpen(true); setTopUpAmount(insufficientBal ? String(shortfall) : ""); setTopUpChannel(null); setTopUpLink(null); setTopUpBank(null); setTopUpSender(""); setTopUpDone(null);
     setMobileReview(false);
@@ -415,7 +448,7 @@ export function AdminCreateOrderPage({ dark, t }) {
       ) : (
         <>
           <div className="co-sr"><span>Customer</span><b>{user ? user.name : "—"}</b></div>
-          <div className="co-sr"><span>Service</span><b>{selectedGroup?.name} · {selectedTier?.tier}</b></div>
+          <div className="co-sr"><span>Service</span><b>{onFull ? fullRow?.label : `${selectedGroup?.name} · ${selectedTier?.tier}`}</b></div>
           <div className="co-sr"><span>Price per 1k</span><b className="m">{fN(sellPer1k)}</b></div>
           <div className="co-sr"><span>Quantity</span><b className="m">{qtyNum.toLocaleString()}</b></div>
           <div className="co-sr"><span>Provider cost</span><b className="m">{fN(totalCost)}</b></div>
@@ -500,8 +533,61 @@ export function AdminCreateOrderPage({ dark, t }) {
 
         {/* service */}
         <section className="co-card">
-          <header><h3>Service</h3>{selectedTier?.service && <span className="co-cnt">min {minQty.toLocaleString()} · max {maxQty.toLocaleString()}</span>}</header>
+          <header><h3>Service</h3>{picked && <span className="co-cnt">min {minQty.toLocaleString()} · max {maxQty.toLocaleString()}</span>}</header>
           <div className="co-cb">
+            {/* Bulk stays on the picks: a batch is built from tiers, and the
+                full list has no tier to build one from. */}
+            {mode !== "bulk" && (
+              <div className="co-fld">
+                <label>Catalogue</label>
+                <SegPill
+                  value={source}
+                  options={[{ value: "picks", label: "Nitro picks" }, { value: "full", label: "Full list" }]}
+                  onChange={v => { setSource(v); setTierId(""); setFullRow(null); }}
+                  dark={dark} t={t} fill
+                />
+              </div>
+            )}
+
+            {onFull && mode !== "bulk" ? (
+              <div className="co-fld">
+                <label>Find a service <em>name or service ID</em></label>
+                <input
+                  value={fullQ}
+                  onChange={e => searchFull(e.target.value)}
+                  placeholder="Instagram followers, or 4821"
+                  className="co-in"
+                />
+                {fullRow ? (
+                  <button type="button" className="co-fpick on" onClick={() => { setFullRow(null); setQty(""); }}>
+                    <span className="co-fl">
+                      <b>{fullRow.label}</b>
+                      <em>#{fullRow.id} · {fullRow.refillLabel || (fullRow.refill ? "Refill" : "No refill")} · min {fullRow.min.toLocaleString()}</em>
+                    </span>
+                    <span className="m co-fp">{fN(fullRow.price)}</span>
+                  </button>
+                ) : fullSearching ? (
+                  <div className="co-hint">Searching…</div>
+                ) : fullQ.trim().length >= 2 && fullRows.length === 0 ? (
+                  <div className="co-hint">Nothing matches that. Try fewer words, or the service ID.</div>
+                ) : fullRows.length > 0 ? (
+                  <div className="co-frows">
+                    {fullRows.map(r => (
+                      <button key={r.id} type="button" className="co-fpick" onClick={() => { setFullRow(r); setQty(String(r.min)); }}>
+                        <span className="co-fl">
+                          <b>{r.label}</b>
+                          <em>#{r.id} · {r.refillLabel || (r.refill ? "Refill" : "No refill")} · min {r.min.toLocaleString()}</em>
+                        </span>
+                        <span className="m co-fp">{fN(r.price)}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="co-hint">Type at least two letters, or paste the service ID the customer quoted.</div>
+                )}
+              </div>
+            ) : (
+            <>
             <div className="co-row2">
               <div className="co-fld">
                 <label>Platform</label>
@@ -544,6 +630,8 @@ export function AdminCreateOrderPage({ dark, t }) {
                 )
               ) : <div className="co-hint">Pick a service to see its tiers.</div>}
             </div>
+            </>
+            )}
           </div>
         </section>
 
@@ -560,7 +648,7 @@ export function AdminCreateOrderPage({ dark, t }) {
             </div>
             <div className="co-row2">
               <div className="co-fld">
-                <label>Quantity {selectedTier?.service && <em>min {minQty.toLocaleString()} · max {maxQty.toLocaleString()}</em>}</label>
+                <label>Quantity {picked && <em>min {minQty.toLocaleString()} · max {maxQty.toLocaleString()}</em>}</label>
                 <input value={qty} onChange={e => setQty(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" placeholder="1000" className={"co-in m" + (qtyNum && selectedTier && !validQty ? " bad" : "")} />
               </div>
               <div className="co-fld">
@@ -685,7 +773,7 @@ export function AdminCreateOrderPage({ dark, t }) {
                   // A tier is a separate choice from the service, and saying
                   // "service" here sent someone hunting for a bug in the
                   // charge toggle when the tier was simply never tapped.
-                  : !selectedTier ? (selectedGroup ? "Pick a tier first." : "Pick a service first.")
+                  : !picked ? (onFull ? "Search the full list and pick a service." : selectedGroup ? "Pick a tier first." : "Pick a service first.")
                   : !isDripEligible ? "This service is delivered in one go."
                   : qtyNum > 0 ? `Drip starts at ${dripThreshold.toLocaleString()}; this order goes out in one go.` : "Enter a quantity."}
               </div>
@@ -853,6 +941,19 @@ const CO_CSS = `
 .co-day{display:flex;flex-direction:column;align-items:center;padding:7px 4px;border-radius:9px;background:var(--soft);border:1px solid var(--line)}
 .co-day b{font-size:13px;font-weight:700}.co-day i{font-style:normal;font-size:10px;color:var(--dim)}.co-day.off{opacity:.45}
 .co-hint{font-size:12.5px;color:var(--mut);line-height:1.5}
+/* Full-list results. A scroll box rather than a growing list, so the card
+   below it does not move as somebody types. */
+.co-frows{max-height:236px;overflow-y:auto;border:1px solid var(--line);border-radius:11px}
+.co-fpick{display:flex;align-items:center;gap:12px;width:100%;text-align:start;padding:9px 12px;
+  border:0;border-top:1px solid var(--rail);background:transparent;cursor:pointer;font:inherit;color:inherit}
+.co-frows .co-fpick:first-child{border-top:0}
+.co-fpick:hover{background:var(--soft)}
+.co-fpick.on{border:1.5px solid var(--ac);border-radius:11px;background:var(--soft)}
+.co-fl{flex:1;min-width:0}
+.co-fl b{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-fl em{display:block;font-style:normal;font-size:11px;color:var(--mut);margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-fp{flex-shrink:0;font-size:13px;font-weight:700;color:var(--ac)}
 .co-traffic{display:flex;flex-direction:column;gap:12px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line)}.co-traffic.need{border-color:var(--ac)}
 .co-batch{border:1px solid var(--line);border-radius:11px;overflow:hidden}
 .co-bi{display:flex;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--rail);font-size:12.5px}.co-bi:first-child{border-top:0}

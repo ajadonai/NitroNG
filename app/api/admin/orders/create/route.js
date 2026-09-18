@@ -3,7 +3,8 @@ import { log } from '@/lib/logger';
 import { requireAdmin, logActivity } from '@/lib/admin';
 import { cleanLink } from '@/lib/clean-link';
 import { validateTrafficConfig, countCommentLines } from '@/lib/order-create-input.server';
-import { validateDripConfig, calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility, validateIntradayDuration } from '@/lib/drip-feed';
+import { validateDripConfig, calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility, isDripEligible, validateIntradayDuration } from '@/lib/drip-feed';
+import { serviceTypeOf, servicePlatformOf } from '@/lib/full-catalogue';
 import { buildOrderOfferSnapshot } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder } from '@/lib/order-queue';
 import { tgFreeOrder, tgNewOrder } from '@/lib/telegram';
@@ -218,7 +219,7 @@ export async function POST(req) {
     }
 
     // single or drip
-    const { tierId, quantity, link: rawLink, dripDays, dripConfig: rawDripConfig, comments: rawComments, trafficConfig: rawTrafficConfig } = body;
+    const { tierId, catalogueId, quantity, link: rawLink, dripDays, dripConfig: rawDripConfig, comments: rawComments, trafficConfig: rawTrafficConfig } = body;
     // Website-traffic tiers carry targeting the provider needs at dispatch. The
     // user order path has always sent it; this door dropped it silently, which is
     // why admin traffic orders went out untargeted.
@@ -228,27 +229,50 @@ export async function POST(req) {
       if (!checked.ok) return Response.json({ error: checked.error }, { status: 400 });
       trafficConfig = checked.value;
     }
-    if (!tierId) return Response.json({ error: 'Tier is required' }, { status: 400 });
+    if (!tierId && catalogueId == null) return Response.json({ error: 'Tier is required' }, { status: 400 });
     if (!rawLink) return Response.json({ error: 'Link is required' }, { status: 400 });
 
     const link = cleanLink(rawLink.trim());
     if (!link) return Response.json({ error: 'Invalid link' }, { status: 400 });
 
-    const tier = await prisma.serviceTier.findUnique({
-      where: { id: tierId },
-      include: { service: true, group: { select: { name: true, platform: true, type: true, enabled: true, tags: true } } },
-    });
-    if (!tier || !tier.enabled) return Response.json({ error: 'Tier not found or disabled' }, { status: 400 });
-    // Traffic tiers cannot ship untargeted: the provider needs country, device
-    // and traffic type at dispatch, exactly as the user order form collects.
-    if (tier.trafficTargeting && !trafficConfig) {
-      return Response.json({ error: 'This service needs traffic targeting \u2014 country, device and traffic type' }, { status: 400 });
+    let tier = null;
+    let service = null;
+    if (tierId) {
+      tier = await prisma.serviceTier.findUnique({
+        where: { id: tierId },
+        include: { service: true, group: { select: { name: true, platform: true, type: true, enabled: true, tags: true } } },
+      });
+      if (!tier || !tier.enabled) return Response.json({ error: 'Tier not found or disabled' }, { status: 400 });
+      // Traffic tiers cannot ship untargeted: the provider needs country, device
+      // and traffic type at dispatch, exactly as the user order form collects.
+      if (tier.trafficTargeting && !trafficConfig) {
+        return Response.json({ error: 'This service needs traffic targeting \u2014 country, device and traffic type' }, { status: 400 });
+      }
+      if (!tier.group?.enabled) return Response.json({ error: 'Service group disabled' }, { status: 400 });
+      if (!tier.service?.enabled) return Response.json({ error: 'Service disabled' }, { status: 400 });
+      service = tier.service;
+    } else {
+      // The full list, by the catalogue id the customer's own order form sends.
+      // Admins could only reach the 325 curated tiers before this, so anything
+      // a customer bought off the wider list could not be placed for them.
+      //
+      // The fence is the one the list is drawn from \u2014 mtp or dao, still listed
+      // by the provider, carrying a real cost \u2014 and not `enabled`, which on a
+      // full-list row means "curated by Nitro" rather than "sold".
+      const map = await prisma.resellerServiceMap.findUnique({
+        where: { apiId: Number(catalogueId) },
+        select: { serviceId: true, retiredAt: true },
+      });
+      if (!map?.serviceId || map.retiredAt) return Response.json({ error: 'Service not available' }, { status: 400 });
+      service = await prisma.service.findUnique({ where: { id: map.serviceId } });
+      const inCatalogue = service && ['mtp', 'dao'].includes(service.provider) && service.providerListedAt && Number(service.costPer1k) > 0;
+      if (!service || (!service.enabled && !inCatalogue)) {
+        return Response.json({ error: 'Service not available' }, { status: 400 });
+      }
     }
-    if (!tier.group?.enabled) return Response.json({ error: 'Service group disabled' }, { status: 400 });
-    if (!tier.service?.enabled) return Response.json({ error: 'Service disabled' }, { status: 400 });
 
     // Same rule as the customer form: some services need typed input, and comments need words.
-    const apiType = (tier.service.apiType || '').toLowerCase();
+    const apiType = (service.apiType || '').toLowerCase();
     const needsCommentText = apiType.includes('custom comment') || apiType.includes('comment replies');
     const needsTyped = needsCommentText || apiType.includes('mention') || apiType === 'poll' || apiType === 'seo';
     if (needsTyped && !rawComments?.trim()) {
@@ -257,20 +281,24 @@ export async function POST(req) {
     }
     if (needsCommentText) {
       const lines = countCommentLines(rawComments);
-      const minLines = Math.max(tier.service.min || 0, 10);
+      const minLines = Math.max(service.min || 0, 10);
       if (lines < minLines) return Response.json({ error: `Comments need words: at least ${minLines} lines with words in them, one per line. You have ${lines} (lines with only emoji do not count).` }, { status: 400 });
     }
 
+    // The type the offer is measured by: a curated group states it, a full-list
+    // row is read for it the same way the list itself was built.
+    const offerType = tier ? (tier.group?.type || '') : serviceTypeOf(service);
+
     const qty = Number(quantity) || 0;
-    const min = effectiveOrderMinimum(tier.group.type, tier.service.min, tier.service.max);
-    const max = tier.max || tier.service.max || 50000;
+    const min = effectiveOrderMinimum(offerType, service.min, service.max);
+    const max = tier?.max || service.max || 50000;
     if (qty < min || qty > max) return Response.json({ error: `Quantity ${qty} out of range (${min}–${max})` }, { status: 400 });
 
-    const sellPer1k = Number(tier.sellPer1k);
+    const sellPer1k = Number(tier ? tier.sellPer1k : service.sellPer1k);
     // See the bulk path: the value stands whether or not it is charged.
     const valueKobo = Math.ceil(sellPer1k * qty / 1000 / 100) * 100;
     const chargeKobo = shouldCharge ? valueKobo : 0;
-    const costKobo = Math.ceil((Number(tier.service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
+    const costKobo = Math.ceil((Number(service.costPer1k) * usdRate / 1000) * qty / 100) * 100;
 
     if (shouldCharge && chargeKobo > 0 && user.balance < chargeKobo) {
       return Response.json({ error: `Insufficient balance: has ₦${(user.balance / 100).toLocaleString()}, needs ₦${(chargeKobo / 100).toLocaleString()}` }, { status: 400 });
@@ -281,10 +309,10 @@ export async function POST(req) {
       return Response.json({ error: 'Drip days must be a whole number between 2 and 60' }, { status: 400 });
     }
 
-    const providerMin = tier.service.min || 50;
-    const groupType = tier.group?.type || '';
-    const platform = (tier.group?.platform || '').toLowerCase();
-    const dripEligible = tier.group?.tags?.includes('drip');
+    const providerMin = service.min || 50;
+    const groupType = offerType;
+    const platform = (tier ? (tier.group?.platform || '') : servicePlatformOf(service)).toLowerCase();
+    const dripEligible = isDripEligible({ tier, type: groupType, platform });
     const dripCfg = getDripConfig(groupType, platform);
 
     let dripConfigObj = null;
@@ -322,8 +350,8 @@ export async function POST(req) {
       }
     }
 
-    const snapshot = buildOrderOfferSnapshot({ tier, service: tier.service });
-    const blocker = await findOpenSameLinkOrder(prisma, { serviceId: tier.serviceId, link });
+    const snapshot = buildOrderOfferSnapshot({ tier, service });
+    const blocker = await findOpenSameLinkOrder(prisma, { serviceId: service.id, link });
 
     const orderId = await prisma.$transaction(async (tx) => {
       if (!await lockOrderSettlementAccount(tx, user.id)) return null;
@@ -343,7 +371,7 @@ export async function POST(req) {
 
       const created = await tx.order.create({
         data: {
-          orderId: id, userId: user.id, serviceId: tier.serviceId, tierId: tier.id,
+          orderId: id, userId: user.id, serviceId: service.id, tierId: tier ? tier.id : null,
           link, quantity: qty, charge: chargeKobo, cost: costKobo,
           status: 'Pending',
           source: 'admin',
