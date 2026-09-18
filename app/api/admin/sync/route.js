@@ -217,7 +217,12 @@ export async function POST(req) {
                 },
                 data: {
                   status: newStatus,
-                  ...(liveRemains != null ? { remains: liveRemains } : {}),
+                  // Cancelled always refunds the full charge below, so the
+                  // record should agree — 100% outstanding — rather than trust
+                  // liveRemains: several panels zero it the moment an order is
+                  // cancelled ("nothing left in our queue"), which reads as
+                  // "fully delivered" to redispatch even though nothing was.
+                  ...(newStatus === 'Cancelled' ? { remains: order.quantity } : liveRemains != null ? { remains: liveRemains } : {}),
                   ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
                   ...(['Cancelled', 'Partial'].includes(newStatus) ? { refundedAt: new Date() } : {}),
                 },

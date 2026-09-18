@@ -927,7 +927,11 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
       price: row.price, pricePer1k: row.price, per: "1K",
       min: row.min, max: row.max, apiType: row.apiType,
       refill: row.refill ? "Yes" : "No", speed: null,
-      tags: row.dripfeed ? ["drip"] : [],
+      // `row.drip` is whether Nitro will batch this; `row.dripfeed` is the
+      // provider's own drip parameter, which this used to read. They are not
+      // the same fact, and reading the wrong one offered a multi-day picker on
+      // rows the server then delivered in a single burst.
+      tags: row.drip ? ["drip"] : [],
     });
     setQty(String(Math.max(row.min, Math.min(1000, row.max))));
     setOrderModal(true);

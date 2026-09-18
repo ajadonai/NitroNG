@@ -68,7 +68,7 @@ export async function GET(req) {
 
     const include = {
       user: { select: { name: true, email: true, phone: true, resellerProfile: { select: { enabled: true } } } },
-      service: { select: { name: true, category: true, provider: true, apiId: true, costPer1k: true, enabled: true } },
+      service: { select: { name: true, category: true, provider: true, apiId: true, costPer1k: true, enabled: true, providerListedAt: true } },
       tier: { select: { tier: true, sellPer1k: true, enabled: true, serviceId: true, group: { select: { name: true, platform: true, type: true, enabled: true } }, service: { select: { apiId: true, costPer1k: true } } } },
       dripDispatches: { select: { id: true, day: true, batch: true, quantity: true, status: true, apiOrderId: true, scheduledAt: true, dispatchedAt: true, completedAt: true, lastError: true }, orderBy: { scheduledAt: 'asc' } },
     };
@@ -173,6 +173,8 @@ export async function GET(req) {
         tier: offer.tierLabel,
         tierLabel: offer.tierLabel,
         fullList: offer.fullList,
+        fullListDisabled: offer.fullListDisabled,
+        retiredFromMenu: offer.retiredFromMenu,
         offerDisabled: offer.offerDisabled,
         platform: offer.platform,
         category: o.service?.category || 'unknown',
@@ -499,7 +501,13 @@ export async function POST(req) {
           const liveRemains = status.remains != null ? Number(status.remains) : null;
           const liveStartCount = status.start_count != null ? Number(status.start_count) : null;
           const remainsUpdate = {};
-          if (!terminal && liveRemains != null && liveRemains !== order.remains) remainsUpdate.remains = liveRemains;
+          // Not on the transition into Cancelled: several panels zero remains
+          // the moment an order is cancelled ("nothing left in our queue"),
+          // which is a different fact from "nothing was delivered" and made a
+          // fully-refunded order look fully delivered to redispatch
+          // (NTR-11133, 18 Sep 2026). The Cancelled branch below sets it to
+          // the full quantity instead, alongside the refund it always issues.
+          if (!terminal && newStatus !== 'Cancelled' && liveRemains != null && liveRemains !== order.remains) remainsUpdate.remains = liveRemains;
           if (liveStartCount != null && !order.startCount) remainsUpdate.startCount = liveStartCount;
           if (Object.keys(remainsUpdate).length > 0) {
             await prisma.order.updateMany({
@@ -528,7 +536,12 @@ export async function POST(req) {
                     apiOrderId: order.apiOrderId,
                     deletedAt: null,
                   },
-                  data: { status: 'Cancelled', queuedBehind: null, refundedAt: new Date() },
+                  // Full quantity, not a preserved partial remains: this
+                  // refunds the full charge below regardless of any progress
+                  // observed before now (Cancelled never gives partial credit,
+                  // only Partial does), so the record should agree that the
+                  // whole thing is available to try again.
+                  data: { status: 'Cancelled', remains: order.quantity, queuedBehind: null, refundedAt: new Date() },
                 });
                 if (claimed.count === 0) return false;
                 const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: order.userId });

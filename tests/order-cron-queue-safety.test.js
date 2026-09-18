@@ -454,3 +454,64 @@ describe('orders cron — queued and drip safety', () => {
     });
   });
 });
+
+describe('orders cron — a provider cancellation records the full quantity, not its own remains', () => {
+  // NTR-11133 (18 Sep 2026): the provider reported "Canceled" with remains: 0
+  // for an order that never delivered anything (startCount stayed 0 too).
+  // Several panels zero remains the instant they cancel — "nothing left in
+  // our queue" — which is a different fact from "nothing was delivered", and
+  // this cron trusted it as the latter. The order was refunded in full (it
+  // always is, on this branch, regardless of remains) but left recorded as
+  // remains: 0, which redispatch reads as "fully delivered" and refuses with
+  // "No remaining quantity to redispatch" — even though nothing was.
+  function processingOrder() {
+    return {
+      id: 'order-11133', orderId: 'NTR-11133', userId: 'user-1',
+      quantity: 20, charge: 6200, cost: 2100, status: 'Processing',
+      apiOrderId: 'provider-abc', remains: null, startCount: null,
+      protected: false, nitroPointsRedeemedKobo: 0,
+      link: 'https://www.instagram.com/p/DdbRQk1CA-9/',
+      service: { provider: 'dao', category: 'Instagram' },
+      tier: { group: { type: null } },
+    };
+  }
+
+  it('sets remains to the full quantity, not the provider\'s cancellation-time remains', async () => {
+    mocks.orderFindMany.mockResolvedValueOnce([processingOrder()]);
+    mocks.checkOrder.mockResolvedValueOnce({ status: 'Canceled', remains: 0, start_count: 0 });
+    mocks.orderUpdateMany.mockResolvedValue({ count: 1 });
+
+    const response = await GET(request());
+
+    expect(response.status).toBe(200);
+    expect(mocks.orderUpdateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: 'order-11133' }),
+      data: expect.objectContaining({ status: 'Cancelled', remains: 20 }),
+    }));
+    // The refund is unconditional and full, independent of the fix above —
+    // pinned here so a future change can't quietly make it partial instead.
+    expect(mocks.transactionCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ type: 'refund', amount: 6200 }),
+    }));
+  });
+
+  it('still refunds in full even when the provider reports genuine partial progress at cancellation', async () => {
+    // A provider that DOES report real progress (remains: 8, not 0) must not
+    // change the outcome: Cancelled never gives partial credit — only an
+    // explicit Partial status does — so the record still becomes the full
+    // quantity and the refund is still 100%.
+    mocks.orderFindMany.mockResolvedValueOnce([processingOrder()]);
+    mocks.checkOrder.mockResolvedValueOnce({ status: 'Canceled', remains: 8, start_count: 3 });
+    mocks.orderUpdateMany.mockResolvedValue({ count: 1 });
+
+    const response = await GET(request());
+
+    expect(response.status).toBe(200);
+    expect(mocks.orderUpdateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'Cancelled', remains: 20 }),
+    }));
+    expect(mocks.transactionCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ type: 'refund', amount: 6200 }),
+    }));
+  });
+});

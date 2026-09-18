@@ -206,7 +206,15 @@ export async function GET(req) {
                 data: {
                   status: 'Cancelled',
                   queuedBehind: null,
-                  ...(liveRemains != null ? { remains: liveRemains } : {}),
+                  // Not liveRemains. A cancelled order refunds the full charge
+                  // unconditionally (below), so the record should agree: 100%
+                  // outstanding, not whatever the provider's status call just
+                  // reported. Several panels zero `remains` the moment an order
+                  // is cancelled — "nothing left in our queue" — which is a
+                  // different fact from "nothing was delivered", and reading it
+                  // as the latter made a fully-refunded, undelivered order look
+                  // fully delivered to redispatch (NTR-11133, 18 Sep 2026).
+                  remains: order.quantity,
                   ...(liveStartCount != null && !order.startCount ? { startCount: liveStartCount } : {}),
                   ...(providerError ? { lastError: String(providerError).slice(0, 500) } : {}),
                   refundedAt: new Date(),

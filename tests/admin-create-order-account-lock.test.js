@@ -54,7 +54,10 @@ vi.mock('@/lib/admin', () => ({
   logActivity: (...args) => mocks.logActivity(...args),
 }));
 vi.mock('@/lib/clean-link', () => ({ cleanLink: value => value }));
-vi.mock('@/lib/drip-feed', () => ({
+vi.mock('@/lib/drip-feed', async (importOriginal) => ({
+  // Spread the real module so a new export cannot silently arrive as undefined:
+  // isDripEligible did exactly that and threw inside the route.
+  ...(await importOriginal()),
   validateDripConfig: (...args) => mocks.validateDripConfig(...args),
   calculateIntradayDrip: vi.fn(() => null),
   calculateMultiDayDrip: (...args) => mocks.calculateMultiDayDrip(...args),

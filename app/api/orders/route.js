@@ -5,14 +5,15 @@ import { getCurrentUser } from '@/lib/auth';
 import { placeOrder, checkOrder } from '@/lib/smm';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
-import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility, validateIntradayDuration } from '@/lib/drip-feed';
+import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility, isDripEligible, validateIntradayDuration } from '@/lib/drip-feed';
+import { serviceTypeOf, servicePlatformOf } from '@/lib/full-catalogue';
 import { cancelQueuedMetaEvent, enqueueMetaEvent, loadStoredCapiIdentity, parseFbCookies, persistFbTouch, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
 import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { checkFirstOrder } from '@/lib/first-order';
 import { voidCommissions } from '@/lib/commissions';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 import { buildOrderDisplayGroups } from '@/lib/order-history';
-import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, reverseOrderPoints, getPointsBalanceKoboTx, computeRefundSplit, MIN_REDEEM_POINTS } from '@/lib/nitro-rewards';
+import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, reverseOrderPoints, getPointsBalanceKoboTx, computeRefundSplit, getTotalRefundedKobo, MIN_REDEEM_POINTS } from '@/lib/nitro-rewards';
 import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 import { calculateCreateOrderPricing, parseCreateOrderInput, validateCreateOrderOfferInput } from '@/lib/order-create-input.server';
@@ -184,7 +185,7 @@ export async function GET(req) {
         ],
       },
       orderBy: { createdAt: 'desc' },
-      include: { service: { select: { name: true, category: true, enabled: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, enabled: true, serviceId: true, group: { select: { name: true, platform: true, type: true, enabled: true } } } }, dripDispatches: { where: { status: { in: ['pending', 'dispatching', 'processing'] } }, select: { scheduledAt: true }, orderBy: { scheduledAt: 'desc' }, take: 1 } },
+      include: { service: { select: { name: true, category: true, enabled: true, providerListedAt: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, enabled: true, serviceId: true, group: { select: { name: true, platform: true, type: true, enabled: true } } } }, dripDispatches: { where: { status: { in: ['pending', 'dispatching', 'processing'] } }, select: { scheduledAt: true }, orderBy: { scheduledAt: 'desc' }, take: 1 } },
     });
 
     return Response.json({
@@ -200,6 +201,8 @@ export async function GET(req) {
         service: offer.serviceName,
         tier: offer.tierLabel,
         fullList: offer.fullList,
+        fullListDisabled: offer.fullListDisabled,
+        retiredFromMenu: offer.retiredFromMenu,
         offerDisabled: offer.offerDisabled,
         speed: o.tier?.speed || null,
         platform: offer.platform,
@@ -266,29 +269,113 @@ export async function patchOrderForSession(session, body, req) {
           const newStatus = terminal ? order.status : providerStatus;
           let effectiveStatus = newStatus;
           const liveStartCount = status.start_count != null ? Number(status.start_count) : null;
-          const updateData = {
-            ...(newStatus !== order.status && { status: newStatus }),
-            ...(!terminal && status.remains != null && { remains: Number(status.remains) }),
-            ...(liveStartCount != null && !order.startCount && { startCount: liveStartCount }),
-          };
-          if (Object.keys(updateData).length > 0) {
-            const transitioned = await prisma.$transaction(async (tx) => {
-              if (!await lockOrderSettlementAccount(tx, session.id)) return false;
+
+          // Cancelled and Partial both move money, so a customer clicking
+          // "Check" has to settle the refund the same way the cron and the
+          // admin check action do — not just record the new status. This used
+          // to fall through to the generic update below, which wrote the
+          // status (and, until the fix beside it, a misleading remains) with
+          // no refund at all: an order the provider cancelled stayed cancelled
+          // forever with the customer's money still spent, since once it's
+          // terminal the cron never looks at it again.
+          if (newStatus === 'Cancelled' && order.status !== 'Cancelled' && order.charge > 0) {
+            const cancellation = await prisma.$transaction(async (tx) => {
+              if (!await lockOrderSettlementAccount(tx, session.id)) return { transitioned: false, refundAmount: 0 };
               const claimed = await tx.order.updateMany({
-                where: {
-                  id: order.id,
-                  userId: session.id,
-                  status: order.status,
-                  apiOrderId: order.apiOrderId,
-                  deletedAt: null,
-                },
-                data: updateData,
+                where: { id: order.id, userId: session.id, status: order.status, apiOrderId: order.apiOrderId, deletedAt: null },
+                // Full quantity, not the provider's live remains: several panels
+                // zero it the moment an order is cancelled ("nothing left in our
+                // queue"), which is a different fact from "nothing was
+                // delivered" and made a fully-refunded order look fully
+                // delivered to redispatch (NTR-11133, 18 Sep 2026).
+                data: { status: 'Cancelled', remains: order.quantity, queuedBehind: null, refundedAt: new Date() },
               });
-              return claimed.count === 1;
+              if (claimed.count === 0) return { transitioned: false, refundAmount: 0 };
+              const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: session.id });
+              const refundAmount = Math.max(0, order.charge - alreadyRefunded);
+              if (refundAmount > 0) {
+                const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
+                if (walletRefund > 0) {
+                  await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${session.id}`;
+                  await tx.transaction.create({
+                    data: {
+                      userId: session.id, type: 'refund', amount: walletRefund,
+                      method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`,
+                      note: `Refund for cancelled order ${order.orderId}${alreadyRefunded > 0 ? ` (₦${(alreadyRefunded / 100).toLocaleString()} already refunded)` : ''}`,
+                    },
+                  });
+                }
+                await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: refundAmount });
+              }
+              return { transitioned: true, refundAmount };
             });
-            if (!transitioned) {
+            if (cancellation.transitioned) {
+              if (cancellation.refundAmount > 0) {
+                tgRefundAlert({ orderId: order.orderId, amount: cancellation.refundAmount, charge: order.charge, qty: order.quantity, status: 'Cancelled', reason: 'provider_cancelled', source: 'check' });
+              }
+            } else {
               const current = await prisma.order.findUnique({ where: { id: order.id }, select: { status: true } });
               effectiveStatus = current?.status || order.status;
+            }
+          } else if (newStatus === 'Partial' && status.remains) {
+            const remains = Number(status.remains) || 0;
+            const refundAmount = remains > 0 && order.charge > 0 && order.quantity > 0
+              ? Math.round((remains / order.quantity) * order.charge / 100) * 100 : 0;
+            const partial = refundAmount > 0 ? await prisma.$transaction(async (tx) => {
+              if (!await lockOrderSettlementAccount(tx, session.id)) return { transitioned: false, refundAmount: 0 };
+              const claimed = await tx.order.updateMany({
+                where: { id: order.id, userId: session.id, status: order.status, apiOrderId: order.apiOrderId, deletedAt: null },
+                data: { status: 'Partial', remains, refundedAt: new Date() },
+              });
+              if (claimed.count === 0) return { transitioned: false, refundAmount: 0 };
+              const alreadyRefunded = await getTotalRefundedKobo(tx, { orderId: order.orderId, orderDbId: order.id, userId: session.id });
+              const cappedRefund = Math.max(0, refundAmount - alreadyRefunded);
+              if (cappedRefund > 0) {
+                const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, cappedRefund);
+                if (walletRefund > 0) {
+                  await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${session.id}`;
+                  await tx.transaction.create({
+                    data: {
+                      userId: session.id, type: 'refund', amount: walletRefund,
+                      method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`,
+                      note: `Partial refund for ${order.orderId} (${remains} undelivered)`,
+                    },
+                  });
+                }
+                await reverseOrderPoints(tx, { orderDbId: order.id, refundAmountKobo: cappedRefund });
+              }
+              return { transitioned: true, refundAmount: cappedRefund };
+            }) : { transitioned: await prisma.order.updateMany({
+                where: { id: order.id, userId: session.id, status: order.status, apiOrderId: order.apiOrderId, deletedAt: null },
+                data: { status: 'Partial', remains },
+              }).then(r => r.count === 1), refundAmount: 0 };
+            if (partial.transitioned) {
+              if (partial.refundAmount > 0) {
+                tgRefundAlert({ orderId: order.orderId, amount: partial.refundAmount, charge: order.charge, qty: order.quantity, remains, status: 'Partial', reason: 'provider_partial', source: 'check' });
+              }
+            } else {
+              const current = await prisma.order.findUnique({ where: { id: order.id }, select: { status: true } });
+              effectiveStatus = current?.status || order.status;
+            }
+          } else {
+            const updateData = {
+              ...(newStatus !== order.status && { status: newStatus }),
+              ...(!terminal && status.remains != null && { remains: Number(status.remains) }),
+              ...(liveStartCount != null && !order.startCount && { startCount: liveStartCount }),
+            };
+            if (Object.keys(updateData).length > 0) {
+              const transitioned = await prisma.$transaction(async (tx) => {
+                if (!await lockOrderSettlementAccount(tx, session.id)) return false;
+                const claimed = await tx.order.updateMany({
+                  where: { id: order.id, userId: session.id, status: order.status, apiOrderId: order.apiOrderId, deletedAt: null },
+                  data: updateData,
+                });
+                return claimed.count === 1;
+              });
+              if (!transitioned) {
+                const current = await prisma.order.findUnique({ where: { id: order.id }, select: { status: true } });
+                effectiveStatus = current?.status || order.status;
+              }
             }
           }
           return Response.json({ success: true, status: effectiveStatus, remains: status.remains, startCount: status.start_count });
@@ -491,11 +578,11 @@ export async function patchOrderForSession(session, body, req) {
 
       // Calculate drip for reorder (Layer 1 only — no multi-day on reorders)
       const reorderProviderMin = order.service.min || 50;
-      const reorderGroupType = order.tier?.group?.type || '';
-      const reorderPlatform = (order.service?.category || '').toLowerCase();
+      const reorderGroupType = order.tier?.group?.type || (order.tier ? '' : serviceTypeOf(order.service));
+      const reorderPlatform = (order.tier ? (order.service?.category || '') : servicePlatformOf(order.service)).toLowerCase();
       const reorderDripCfg = getDripConfig(reorderGroupType, reorderPlatform);
       let reorderDripSchedule = null;
-      if (process.env.NODE_ENV !== 'development' && order.tier?.group?.tags?.includes('drip') && reorderDripCfg && order.quantity >= reorderDripCfg.threshold) {
+      if (process.env.NODE_ENV !== 'development' && isDripEligible({ tier: order.tier, type: reorderGroupType, platform: reorderPlatform }) && reorderDripCfg && order.quantity >= reorderDripCfg.threshold) {
         const intraday = calculateIntradayDrip(order.quantity, reorderProviderMin, new Date(), reorderGroupType, reorderPlatform, { maxSpanHours: 22 });
         if (intraday) {
           const durationErr = validateIntradayDuration(intraday.dispatches);
@@ -950,8 +1037,12 @@ export async function createOrderForSession(session, body, req, { source = 'web'
     // Calculate drip schedule if needed
     const DAILY_CAP = { followers: 5000, likes: 10000, views: 75000, plays: 75000, comments: 1000, reviews: 100, engagement: 15000 };
     const MIN_DAYS_FLOOR = { followers: 3, views: 1, plays: 1, likes: 2, comments: 3, reviews: 3, engagement: 2 };
-    const groupType = (tier?.group?.type || "").toLowerCase();
-    const platform = (service.category || '').toLowerCase();
+    // A full-list purchase has no group to read a type off, so it takes the
+    // one its own row was listed under — and the tile it was listed under
+    // rather than the provider's category, which for 2,655 services is not a
+    // platform at all.
+    const groupType = (tier?.group?.type || (tier ? '' : serviceTypeOf(service))).toLowerCase();
+    const platform = (tier ? (service.category || '') : servicePlatformOf(service)).toLowerCase();
     const dailyCap = DAILY_CAP[groupType] || 15000;
     const daysFloor = MIN_DAYS_FLOOR[groupType] || 3;
     const maxDripDays = qty <= 5000 ? 5 : qty <= 10000 ? 7 : qty <= 25000 ? 12 : qty <= 50000 ? 18 : qty <= 100000 ? 25 : 30;
@@ -960,7 +1051,7 @@ export async function createOrderForSession(session, body, req, { source = 'web'
     const validDripDays = rawDripDays && rawDripDays > 0 ? Math.min(maxDripDays, Math.max(minDripDays, Math.floor(Number(rawDripDays)))) : null;
     const providerMin = service.min || 50;
     let dripSchedule = null;
-    const dripEligible = tier?.group?.tags?.includes('drip');
+    const dripEligible = isDripEligible({ tier, type: groupType, platform });
     const dripCfg = getDripConfig(groupType, platform);
     if (dripEligible && validDripDays && validDripDays >= 2) {
       const safeConfig = { version: 1 };

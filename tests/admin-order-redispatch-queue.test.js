@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   placeOrder: vi.fn(),
   placeWithProvider: vi.fn(),
   checkOrder: vi.fn(),
+  isProviderConfigured: vi.fn(),
   lockOrderSettlementAccount: vi.fn(),
   enqueueMetaEvent: vi.fn(),
   scheduleQueuedMetaEventDelivery: vi.fn(),
@@ -74,7 +75,7 @@ vi.mock('@/lib/smm', () => ({
   placeOrder: (...args) => mocks.placeOrder(...args),
   checkOrder: (...args) => mocks.checkOrder(...args),
   cancelOrder: vi.fn(), refillOrder: vi.fn(),
-  isProviderConfigured: () => false,
+  isProviderConfigured: (...args) => mocks.isProviderConfigured(...args),
   getProviderName: () => 'MoreThanPanel',
 }));
 vi.mock('@/lib/bulk-dispatch', () => ({
@@ -109,7 +110,10 @@ vi.mock('@/lib/order-offer-display', () => ({
   }),
   getOrderOfferDisplay: () => ({ serviceName: 'YouTube Subscribers', tierLabel: 'Standard', platform: 'YouTube' }),
 }));
-vi.mock('@/lib/drip-feed', () => ({
+vi.mock('@/lib/drip-feed', async (importOriginal) => ({
+  // Spread the real module so a new export cannot silently arrive as undefined:
+  // isDripEligible did exactly that and threw inside the route.
+  ...(await importOriginal()),
   calculateMultiDayDrip: vi.fn(),
   calculateIntradayDrip: () => ({
     dispatches: [
@@ -190,6 +194,7 @@ beforeEach(() => {
   }));
   mocks.lockOrderSettlementAccount.mockResolvedValue({ id: 'user-1', status: 'Active' });
   mocks.getTotalRefundedKobo.mockResolvedValue(1_945_900);
+  mocks.isProviderConfigured.mockReturnValue(false);
 });
 
 describe('admin redispatch — same-link queue safety', () => {
