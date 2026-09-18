@@ -2399,5 +2399,12 @@
   "Buyer votes": "Avis des acheteurs",
   "From people who bought it. The only line here we didn't get from the provider.": "De ceux qui l'ont acheté. La seule ligne ici qui ne vient pas du fournisseur.",
   "Keeps it on your Saved tab. Free, no order needed.": "Le garde dans votre onglet Enregistrés. Gratuit, sans commande.",
-  "Nitro hasn't tested these. Every row shows the provider's own terms — here's what they mean.": "Nitro n'a pas testé ces services. Chaque ligne affiche les conditions du fournisseur — voici ce qu'elles signifient."
+  "Nitro hasn't tested these. Every row shows the provider's own terms — here's what they mean.": "Nitro n'a pas testé ces services. Chaque ligne affiche les conditions du fournisseur — voici ce qu'elles signifient.",
+  "Tops your count back up if it drops.": "Recomplète votre compteur s'il baisse.",
+  "Instant means minutes. Otherwise, up to 24 hours.": "Instantané signifie quelques minutes. Sinon, jusqu'à 24 heures.",
+  "How good the accounts are. UHQ is the highest.": "La qualité des comptes. UHQ est la plus élevée.",
+  "The share of buyers who gave it a thumbs up.": "La part des acheteurs qui l'ont recommandé.",
+  "Keeps it on your Saved tab. Free, and no order needed.": "Le garde dans votre onglet Enregistrés. Gratuit, et sans commande.",
+  "What every part of a row tells you.": "Ce que chaque partie d'une ligne vous indique.",
+  "Open Reseller HQ": "Ouvrir l'espace revendeur"
 }

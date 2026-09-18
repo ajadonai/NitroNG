@@ -33,8 +33,30 @@ describe('the full-list guide', () => {
     }
   });
 
-  it('leads with the thing the list is, not with the features', () => {
-    expect(guide).toMatch(/Nitro hasn't tested these/);
+  /**
+   * The sheet explains the row and stops there (18 Sep 2026).
+   *
+   * It used to open with "Nitro has not tested anything here" and then hang
+   * every line off the same idea — the provider's promise, the provider's own
+   * word, the one line not from the provider. A customer does not need to be
+   * told there is somebody behind us; quality grade means quality grade.
+   */
+  it('says what a badge means without naming who stands behind it', () => {
+    const copy = [...guide.matchAll(/tr\("([^"]+)"\)/g)].map(m => m[1]);
+    expect(copy.length).toBeGreaterThan(8);
+    for (const line of copy) {
+      expect(line, line).not.toMatch(/provider/i);
+      expect(line, line).not.toMatch(/tested|our test|we (didn't|did not)/i);
+    }
+  });
+
+  it('keeps dashes out of the copy', () => {
+    // Trip's standing note on catalogue prose: no hyphens or dashes mid
+    // sentence. `30-day refill` is a badge on the row, not a sentence, so the
+    // rule is applied to the lines rather than to the sample data.
+    const sentences = [...guide.matchAll(/tr\("([^"]{20,})"\)/g)].map(m => m[1]);
+    expect(sentences.length).toBeGreaterThan(4);
+    for (const line of sentences) expect(line, line).not.toMatch(/—|–| - /);
   });
 
   /**
