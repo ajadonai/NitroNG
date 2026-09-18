@@ -7,7 +7,7 @@ import { validateDripConfig, calculateIntradayDrip, calculateMultiDayDrip, getDr
 import { serviceTypeOf, servicePlatformOf } from '@/lib/full-catalogue';
 import { buildOrderOfferSnapshot } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder } from '@/lib/order-queue';
-import { tgFreeOrder, tgNewOrder } from '@/lib/telegram';
+import { tgFlush, tgFreeOrder, tgNewOrder } from '@/lib/telegram';
 import { getNitroStatus, getEligibleSpendKoboTx } from '@/lib/nitro-rewards';
 import { lockOrderSettlementAccount } from '@/lib/account-deletion';
 import { checkFirstOrder } from '@/lib/first-order';
@@ -215,6 +215,11 @@ export async function POST(req) {
       }
       logActivity(admin.name, `Created bulk order ${batchId} (${createdIds.length} orders, ${shouldCharge ? `₦${(totalCharge / 100).toLocaleString()} charged` : `free — ${freeReason}`}) for ${user.name}`, 'order').catch(e => log.error('Admin Create Order logActivity', e.message));
 
+      // tgNewOrder fires a fetch and returns; the handler returning here lets
+      // the platform freeze the function before Telegram is ever reached, which
+      // is why admin-created orders arrived in the feed only sometimes. Every
+      // cron route already does this — the order routes never did.
+      await tgFlush();
       return Response.json({ success: true, batchId, count: createdIds.length, orderIds: createdIds });
     }
 
@@ -419,9 +424,13 @@ export async function POST(req) {
       });
     }
 
-    tgNewOrder(orderId, `${snapshot.serviceNameAtPurchase || 'Service'} (${snapshot.tierNameAtPurchase || ''}) by ${admin.name}`, qty, chargeKobo, user.name, link, snapshot.platformAtPurchase).catch(() => {});
+    // A full-list order has no tier, so the parenthesis was coming out empty:
+    // "Instagram Followers () by Soludo".
+    const tgLabel = `${snapshot.serviceNameAtPurchase || 'Service'}${snapshot.tierNameAtPurchase ? ` (${snapshot.tierNameAtPurchase})` : ''} by ${admin.name}`;
+    tgNewOrder(orderId, tgLabel, qty, chargeKobo, user.name, link, snapshot.platformAtPurchase).catch(() => {});
     logActivity(admin.name, `Created order ${orderId} (${snapshot.serviceNameAtPurchase} ${snapshot.tierNameAtPurchase}, ${qty.toLocaleString()} qty${dripNum ? `, ${dripNum}-day drip` : ''}, ${shouldCharge ? `₦${(chargeKobo / 100).toLocaleString()}` : 'free'}) for ${user.name}`, 'order').catch(e => log.error('Admin Create Order logActivity', e.message));
 
+    await tgFlush();
     return Response.json({ success: true, orderIds: [orderId] });
   } catch (err) {
     log.error('Admin Create Order', err.message);

@@ -11,7 +11,7 @@ import { getWhatsAppChannelUrl } from '@/lib/settings';
 import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, getDripConfig, validateIntradayDuration } from '@/lib/drip-feed';
 import { enqueueMetaEvent, loadStoredCapiIdentity, parseFbCookies, persistFbTouch, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
-import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
+import { tgFlush, tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { checkFirstOrder } from '@/lib/first-order';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
 import { getNitroStatus, getEligibleSpendKoboTx, computeNitroDiscount, awardOrderPoints, reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
@@ -756,6 +756,7 @@ export async function PATCH(req) {
       dispatchBatch(result.createdOrders, session.id, newBatchId, result.totalCharge).catch(e => log.error('Reorder dispatch', e.message));
 
       const newBalance = (await prisma.user.findUnique({ where: { id: session.id }, select: { balance: true } }))?.balance || 0;
+      await tgFlush();
       return Response.json({ success: true, placed: completed.length, totalCharge: totalCharge / 100, newBalance: newBalance / 100, newBatchId });
     }
 
@@ -1198,6 +1199,11 @@ export async function POST(req) {
     }
     const svcNames = [...new Set(result.createdOrders.map(o => o.offerSnapshot?.serviceNameAtPurchase || o.tierName).filter(Boolean))];
     checkFirstOrder(session.id, svcNames.join(', ') || 'Bulk order', result.createdOrders.length);
+
+    // tgNewOrder fires a fetch and returns. Without this the handler can return
+    // and the platform freeze the function before Telegram is reached, which is
+    // what the function's own docstring warns about.
+    await tgFlush();
 
     const responseBody = {
       success: true,
