@@ -30,6 +30,11 @@ function serializeOrder(o) {
     service: offer.serviceName,
     platform: offer.platform,
     tier: offer.tierLabel,
+    // The split, not just the verdict: a full-list row the provider dropped and
+    // a curated tier we retired are different states and read differently.
+    fullList: offer.fullList,
+    fullListDisabled: offer.fullListDisabled,
+    retiredFromMenu: offer.retiredFromMenu,
     offerDisabled: offer.offerDisabled,
     speed: o.tier?.speed || null,
     link: o.link,

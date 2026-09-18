@@ -496,7 +496,16 @@ export async function patchOrderForSession(session, body, req) {
     if (action === 'reorder') {
       // Re-place the same order with same service, link, quantity — but at CURRENT price
       const reorderOffer = getOrderOfferDisplay(order);
-      if (!order.service || !order.service.enabled || reorderOffer.offerDisabled) {
+      // Not `service.enabled`: on a full-list row that column records whether
+      // Nitro curated the service, not whether it can be sold, and 9,849 of the
+      // 9,937 orderable rows have it false by design. Gating on it meant every
+      // full-list order showed a Reorder button the server then refused — 523
+      // of them as of 18 Sep 2026.
+      //
+      // `offerDisabled` already asks the right question of each catalogue: a
+      // curated offer is gone when its tier, group or service is switched off;
+      // a full-list row is gone when the daily sweep stops listing it.
+      if (!order.service || reorderOffer.offerDisabled) {
         return Response.json({ error: 'Service no longer available' }, { status: 400 });
       }
       const reorderSnapshot = buildOrderOfferSnapshot({ tier: order.tier, service: order.service });
