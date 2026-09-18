@@ -122,9 +122,8 @@ export default function AdminResellerPricingPage({ t }) {
         <section className="rp-card">
           <header><h3>Tiers</h3><span className="rp-cnt">rolling 30-day spend, at the site price</span></header>
           <p className="rp-hint">
-            What a reseller must spend in any 30 days to sit on a rung, and what they get for it. Spend counts
-            what the orders <b>would have cost at the site price</b>, so earning a discount never makes the next
-            rung harder to reach. Below the first rung is normal pricing.
+            What they spend in 30 days, and what it earns. Counted at the <b>site price</b>, so a discount
+            never slows the climb.
           </p>
           <div className="rp-rows">
             <div className="rp-row head"><span /><span>Tier</span><span>Spend in 30 days</span><span>Discount</span></div>
@@ -140,19 +139,17 @@ export default function AdminResellerPricingPage({ t }) {
             ))}
           </div>
           <p className="rp-note">
-            <b>{s.tiers[0]?.name} is the price of admission.</b> A reseller who does not reach {naira(s.tiers[0]?.threshold / 100)} in a
-            month is put on normal pricing — the account stays, the discount goes, and clearing it again brings it
-            back that night. Nobody is judged before the end of their first full month.
+            <b>Miss {naira(s.tiers[0]?.threshold / 100)} in a month and the discount goes</b> — the account stays, and
+            clearing it again restores it that night. The first full month is free.
           </p>
-          {ladderFault && <div className="rp-bar bad"><span>⚠</span><span>{ladderFault.name} must start above the tier below it and cannot give less. As set, climbing a rung would put a reseller&rsquo;s prices up.</span></div>}
+          {ladderFault && <div className="rp-bar bad"><span>⚠</span><span>{ladderFault.name} must start above the rung below and give more. As set, climbing would raise their prices.</span></div>}
         </section>
 
         <section className="rp-card">
           <header><h3>Band caps</h3><span className="rp-cnt">the same bands the pricing page uses</span></header>
           <p className="rp-hint">
-            A flat discount off retail is not a flat margin, because retail is not a flat markup. The same {top?.pct}% that
-            leaves plenty on a cheap service leaves almost nothing on the dearest. A cap is the most <b>any</b> tier may take
-            off a band. Leave it empty and the tier&rsquo;s own rate applies.
+            Retail isn&rsquo;t a flat markup, so {top?.pct}% leaves plenty on a cheap service and almost nothing on the
+            dearest. A cap is the most <b>any</b> tier may take off a band. Empty means the tier&rsquo;s own rate.
           </p>
           <div className="rp-rows">
             <div className="rp-row head band"><span /><span>Band</span><span>Cost per 1k</span><span>Safe to</span><span>Cap</span></div>
@@ -185,8 +182,8 @@ export default function AdminResellerPricingPage({ t }) {
             })}
           </div>
           {overCap
-            ? <div className="rp-bar bad"><span>⚠</span><span>{overCap.label} cannot carry {s.caps[overCap.label]}%. Above {ceilingOf(overCap.multiplier, s.floor).toFixed(1)}% it breaks the {s.floor}% floor, and at {((1 - 1 / overCap.multiplier) * 100).toFixed(1)}% it sells at what we paid.</span></div>
-            : <p className="rp-note">A cap binds <b>every</b> tier, not only the top. Capping just the top would let a lower tier pay less than a higher one.</p>}
+            ? <div className="rp-bar bad"><span>⚠</span><span>{overCap.label} can&rsquo;t carry {s.caps[overCap.label]}%. Past {ceilingOf(overCap.multiplier, s.floor).toFixed(1)}% it breaks the {s.floor}% floor; at {((1 - 1 / overCap.multiplier) * 100).toFixed(1)}% it sells at cost.</span></div>
+            : <p className="rp-note">A cap binds <b>every</b> tier. Cap only the top and a lower tier could pay less.</p>}
         </section>
 
         <section className="rp-card">
@@ -227,17 +224,17 @@ export default function AdminResellerPricingPage({ t }) {
           <header><h3>The safety net</h3></header>
           <div className="rp-rows">
             <div className="rp-row two">
-              <span><b>Seat for life after</b><small>Lifetime spend that keeps the bottom rung for good. The seat, not the tier — a dormant reseller on {s.tiers[0]?.pct}% of very little is cheap, on {top?.pct}% it would not be.</small></span>
+              <span><b>Seat for life after</b><small>Lifetime spend that keeps the bottom rung for good — the seat, not the tier.</small></span>
               <span className="rp-f"><em>₦</em><Num width={100} value={Math.round(s.seat / 100)} onChange={v => setS({ ...s, seat: Math.round(Number(v || 0) * 100) })} /></span>
             </div>
             <div className="rp-row two">
-              <span><b>Never below this margin</b><small>The backstop under everything. No tier, cap or custom rate may take a service under it, whatever gets typed anywhere else.</small></span>
+              <span><b>Never below this margin</b><small>No tier, cap or custom rate may take a service under this.</small></span>
               <span className="rp-f"><Num width={54} value={s.floor} onChange={v => setS({ ...s, floor: Number(v || 0) })} /><em>%</em></span>
             </div>
             <div className="rp-row two">
               <span><b>Ladder is live</b><small>{s.live
-                ? "Tiers decide every reseller's rate. The flat rate on the Pricing page is ignored."
-                : "Set up but switched off. Every reseller pays the flat rate on the Pricing page, and nothing here changes a price."}</small></span>
+                ? "Tiers decide every rate. The Pricing page's flat rate is ignored."
+                : "Switched off. Everyone pays the flat rate on the Pricing page."}</small></span>
               <button type="button" className={"rp-sw" + (s.live ? " on" : "")} aria-pressed={s.live}
                 onClick={() => setS({ ...s, live: !s.live })}><i /></button>
             </div>
