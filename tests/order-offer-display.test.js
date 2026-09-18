@@ -47,6 +47,8 @@ describe('order offer display', () => {
       platform: 'instagram',
       serviceType: 'followers',
       fullList: false,
+      fullListDisabled: false,
+      retiredFromMenu: false,
       offerDisabled: false,
     });
   });
@@ -58,19 +60,36 @@ describe('order offer display', () => {
     expect(result.tierLabel).toBeNull();
     expect(result.offerDisabled).toBe(true);
     expect(result.fullList).toBe(false);
+    expect(result.retiredFromMenu).toBe(true);
     expect(result.serviceName).not.toMatch(/refill|max|quality|real/i);
   });
 
-  it('labels a tierless full-list order without marking it disabled', () => {
+  it('labels a recently listed tierless full-list order without marking it disabled', () => {
     const result = getOrderOfferDisplay(activeOrder({
       tierId: null,
       tier: null,
       serviceNameAtPurchase: 'Instagram Followers',
       tierNameAtPurchase: null,
+      service: { ...activeOrder().service, providerListedAt: new Date() },
     }));
 
     expect(result.fullList).toBe(true);
     expect(result.offerDisabled).toBe(false);
+    expect(result.fullListDisabled).toBe(false);
+  });
+
+  it('marks a full-list order disabled after the provider sweep stops listing it', () => {
+    const result = getOrderOfferDisplay(activeOrder({
+      tierId: null,
+      tier: null,
+      serviceNameAtPurchase: 'Instagram Followers',
+      tierNameAtPurchase: null,
+      service: { ...activeOrder().service, providerListedAt: new Date(Date.now() - 49 * 60 * 60 * 1000) },
+    }));
+
+    expect(result.fullList).toBe(true);
+    expect(result.fullListDisabled).toBe(true);
+    expect(result.offerDisabled).toBe(true);
   });
 
   it.each([

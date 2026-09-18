@@ -4,6 +4,7 @@ import path from 'node:path';
 import fc from 'fast-check';
 import { calculateCreateOrderPricing } from '@/lib/order-create-input.server';
 import { calculateOrderPrice } from '@/lib/order-form-core';
+import { effectiveOrderMinimum } from '@/lib/order-minimums';
 
 /**
  * The single-order form must display exactly what the endpoint will charge.
@@ -21,6 +22,13 @@ import { calculateOrderPrice } from '@/lib/order-form-core';
 const displayedNaira = (pricePer1kNaira, qty) =>
   calculateOrderPrice({ quantity: qty, tier: { pricePer1k: pricePer1kNaira } }).price;
 
+// The retail floors landed in v2.5.108 and `calculateCreateOrderPricing` now
+// refuses anything under them — correctly, and with its own tests. These three
+// properties are about *rounding*, so they generate quantities the floor allows
+// and leave the minimum to the tests that own it. The fixture carries no
+// service name, so its type falls through to the default floor.
+const FLOOR = effectiveOrderMinimum(undefined, 1, 1_000_000);
+
 const chargedNaira = (sellPer1kKobo, qty) => {
   const pricing = calculateCreateOrderPricing({
     tier: null,
@@ -37,7 +45,7 @@ describe('single-order price display parity', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 1, max: 5_000_000 }), // sellPer1k in kobo
-        fc.integer({ min: 1, max: 100_000 }),   // quantity
+        fc.integer({ min: FLOOR, max: 100_000 }),   // quantity
         (sellPer1kKobo, qty) => {
           // The menu API hands the browser naira: kobo / 100.
           const shown = displayedNaira(sellPer1kKobo / 100, qty);
@@ -61,7 +69,7 @@ describe('single-order price display parity', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 1, max: 5_000_000 }),
-        fc.integer({ min: 1, max: 100_000 }),
+        fc.integer({ min: FLOOR, max: 100_000 }),
         (sellPer1kKobo, qty) => {
           const bulkServerKobo = Math.ceil(sellPer1kKobo * qty / 100_000) * 100;
           const bulkCartNaira = Math.ceil(Math.round((sellPer1kKobo / 100) * 100) * qty / 100_000);
@@ -112,7 +120,7 @@ describe('single-order price display parity', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 1, max: 5_000_000 }),
-        fc.integer({ min: 1, max: 100_000 }),
+        fc.integer({ min: FLOOR, max: 100_000 }),
         (sellPer1kKobo, qty) => {
           expect(adminQuote(sellPer1kKobo / 100, qty)).toBe(adminCharge(sellPer1kKobo, qty));
           // and admin must charge what the customer route would charge
