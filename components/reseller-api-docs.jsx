@@ -77,9 +77,33 @@ function pyCode(params) {
     `\n}).json()`;
 }
 
+/**
+ * A control that moves you somewhere.
+ *
+ * Embedded in the dashboard it switches section through `onNavigate`. On the
+ * public page there is no router to call, and these were written as
+ * `onNavigate ? onNavigate(id) : null` — so all three did nothing at all when
+ * somebody opened /resellers/docs, which is where most people read this.
+ */
+function NavAction({ onNavigate, to, href, className, children }) {
+  if (onNavigate) {
+    return <button type="button" className={className} onClick={() => onNavigate(to)}>{children}</button>;
+  }
+  return <a className={className} href={href}>{children}</a>;
+}
+
 function CodeBlock({ params, lang, setLang, onCopy }) {
   const tr = useT();
   const code = lang === 'curl' ? curlCode(params) : lang === 'php' ? phpCode(params) : pyCode(params);
+  // The button says so itself rather than relying on the toast. Standalone at
+  // /resellers/docs there is no ToastProvider above this, so `toast?.success`
+  // no-opped and a working copy looked like a dead button.
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return undefined;
+    const id = setTimeout(() => setCopied(false), 1600);
+    return () => clearTimeout(id);
+  }, [copied]);
   return (
     <div className="rad-codewrap">
       <div className="rad-codehead">
@@ -88,7 +112,8 @@ function CodeBlock({ params, lang, setLang, onCopy }) {
             <button key={id} onClick={() => setLang(id)} className={lang === id ? 'on' : ''}>{label}</button>
           ))}
         </div>
-        <button className="rad-copybtn" onClick={() => onCopy(code)}>{tr("Copy")}</button>
+        <button className={'rad-copybtn' + (copied ? ' done' : '')}
+          onClick={() => { onCopy(code); setCopied(true); }}>{copied ? tr("Copied") : tr("Copy")}</button>
       </div>
       <pre className="rad-code-pre">{code}</pre>
     </div>
@@ -234,6 +259,7 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
         .rad-langtabs button.on{background:${blueSoft2};color:${blue}}
         .rad-langtabs button:hover:not(.on){color:${t.text}}
         .rad-copybtn{font-size:10.5px;font-weight:700;padding:5px 12px;border-radius:8px;background:${track};color:${muted};border:1px solid ${hair};cursor:pointer;font-family:inherit}
+        .rad-copybtn.done{background:${blueSoft2};color:${blue};border-color:${blue}}
         .rad-copybtn:hover{color:${accent}}
         .rad-code-pre{padding:14px 16px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;line-height:1.75;overflow-x:auto;color:${soft};margin:0;white-space:pre-wrap;word-break:break-all}
         .rad-rlab{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:${muted};margin:14px 0 0}
@@ -250,7 +276,7 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
         .rad-foot{margin-top:40px;padding:20px 22px;border-radius:15px;background:${grad};color:#fff;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
         .rad-foot h3{font-size:15.5px;font-weight:800}
         .rad-foot p{font-size:12px;opacity:.9;margin-top:3px}
-        .rad-foot-btn{background:#fff;color:#8b5e6b;font-size:12.5px;font-weight:800;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-family:inherit}
+        .rad-foot-btn{display:inline-flex;align-items:center;background:#fff;color:#8b5e6b;font-size:12.5px;font-weight:800;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-family:inherit;text-decoration:none;white-space:nowrap}
         .rad-pill-link{font-size:12px;font-weight:700;padding:8px 14px;border-radius:10px;border:1px solid ${border};color:${soft};background:none;cursor:pointer;font-family:inherit;text-decoration:none}
         .rad-pill-link.primary{background:linear-gradient(135deg,#60a5fa,#2563eb);color:#fff;border:none}
         @media(max-width:860px){
@@ -274,8 +300,8 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
             <div className="rad-topbar">
               <span className="rad-wm">nitro<span>{tr("API documentation")}</span></span>
               <div className="flex gap-2.5 items-center">
-                <button className="rad-pill-link" onClick={() => onNavigate ? onNavigate('lab') : null}>{tr("Reseller HQ")}</button>
-                <button className="rad-pill-link primary" onClick={() => onNavigate ? onNavigate('overview') : null}>{tr("Dashboard")}</button>
+                <NavAction onNavigate={onNavigate} to="lab" href="/resellers" className="rad-pill-link">{tr("Reseller HQ")}</NavAction>
+                <NavAction onNavigate={onNavigate} to="overview" href="/dashboard" className="rad-pill-link primary">{tr("Dashboard")}</NavAction>
               </div>
             </div>
 
@@ -492,7 +518,7 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
                     <h3>{tr("Key not generated yet?")}</h3>
                     <p>{tr("Your key is already in Settings. Message support for wholesale; once approved, the same key returns lower rates.")}</p>
                   </div>
-                  <button className="rad-foot-btn" onClick={() => onNavigate ? onNavigate('lab') : null}>Open Reseller HQ</button>
+                  <NavAction onNavigate={onNavigate} to="lab" href="/resellers" className="rad-foot-btn">{tr("Open Reseller HQ")}</NavAction>
                 </div>
               </div>
             </div>
