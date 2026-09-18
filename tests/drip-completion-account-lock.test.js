@@ -4,7 +4,10 @@ const mocks = vi.hoisted(() => ({
   awardPointsOnCompletion: vi.fn(),
 }));
 
-vi.mock('@/lib/drip-feed', () => ({
+vi.mock('@/lib/drip-feed', async (importOriginal) => ({
+  // Spread the real module so a new export cannot silently arrive as undefined:
+  // isDripEligible did exactly that and threw inside the route.
+  ...(await importOriginal()),
   getDripConfig: vi.fn(),
   rescheduleRemaining: vi.fn(),
 }));

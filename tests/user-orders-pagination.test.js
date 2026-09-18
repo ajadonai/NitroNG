@@ -15,7 +15,10 @@ vi.mock('@/lib/rate-limit', () => ({
 }));
 vi.mock('@/lib/promotions', () => ({ getActivePromotion: vi.fn(), applyPromotionDiscount: vi.fn() }));
 vi.mock('@/lib/clean-link', () => ({ cleanLink: value => value }));
-vi.mock('@/lib/drip-feed', () => ({ calculateIntradayDrip: vi.fn(), calculateMultiDayDrip: vi.fn(), getDripConfig: vi.fn(), validateIntradayDuration: () => null }));
+vi.mock('@/lib/drip-feed', async (importOriginal) => ({
+  // Spread the real module so a new export cannot silently arrive as undefined:
+  // isDripEligible did exactly that and threw inside the route.
+  ...(await importOriginal()), calculateIntradayDrip: vi.fn(), calculateMultiDayDrip: vi.fn(), getDripConfig: vi.fn(), validateIntradayDuration: () => null }));
 vi.mock('@/lib/meta-capi', () => ({
   loadStoredCapiIdentity: vi.fn(async () => ({})),
   persistFbTouch: vi.fn(async () => {}),

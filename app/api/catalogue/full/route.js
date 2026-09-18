@@ -139,7 +139,7 @@ export async function GET(req) {
         id: r.id, label: r.label, attrs: r.attrs, type: r.type,
         price: Math.round(priceOf(r.price, r.costPer1k)),
         min: r.min, max: r.max, unlimited: r.unlimited,
-        refill: r.refill, refillLabel: r.refillLabel, dripfeed: r.dripfeed, apiType: r.apiType,
+        refill: r.refill, refillLabel: r.refillLabel, drip: r.drip, dripfeed: r.dripfeed, apiType: r.apiType,
         up: v?.up || 0, down: v?.down || 0,
         ...(myVote.has(r.serviceId) ? { mine: myVote.get(r.serviceId) } : {}),
         ...(canVote.has(r.serviceId) ? { ordered: true } : {}),

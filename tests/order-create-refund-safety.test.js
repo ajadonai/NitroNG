@@ -85,7 +85,10 @@ vi.mock('@/lib/promotions', () => ({
   getActivePromotion: vi.fn(async () => null),
   applyPromotionDiscount: vi.fn(() => 0),
 }));
-vi.mock('@/lib/drip-feed', () => ({
+vi.mock('@/lib/drip-feed', async (importOriginal) => ({
+  // Spread the real module so a new export cannot silently arrive as undefined:
+  // isDripEligible did exactly that and threw inside the route.
+  ...(await importOriginal()),
   getDripConfig: (...args) => mocks.getDripConfig(...args),
   calculateIntradayDrip: vi.fn(() => null),
   calculateMultiDayDrip: (...args) => mocks.calculateMultiDayDrip(...args),

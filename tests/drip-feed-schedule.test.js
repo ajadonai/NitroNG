@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { calculateMultiDayDrip, calculateIntradayDrip, buildDripConfig, validateDripConfig, rescheduleRemaining, distributeByCurve, checkDripFeasibility, validateIntradayDuration, sliceCommentsForBatch } from '@/lib/drip-feed';
+import { calculateMultiDayDrip, calculateIntradayDrip, buildDripConfig, validateDripConfig, rescheduleRemaining, distributeByCurve, checkDripFeasibility, validateIntradayDuration, sliceCommentsForBatch, isDripEligible, getDripConfig } from '@/lib/drip-feed';
 
 const BASE = new Date('2026-07-23T09:00:00.000Z');
 const MIN = 50;
@@ -929,5 +929,46 @@ describe('single-day schedule fits inside a day', () => {
       expect(calls.length, f).toBeGreaterThan(0);
       for (const c of calls) expect(c, f).toContain('maxSpanHours');
     }
+  });
+});
+
+/**
+ * Who batches, and why the two catalogues answer it differently.
+ *
+ * Full-list orders followed no drip rules at all until 18 Sep 2026, because
+ * eligibility was read off the curated group's `drip` tag and a full-list row
+ * has no group. 95 orders shipped in a single burst; 36 had earned a schedule.
+ */
+describe('drip eligibility across both catalogues', () => {
+  const tagged = { group: { type: 'followers', tags: ['drip'] } };
+  const untagged = { group: { type: 'followers', tags: [] } };
+
+  it('asks a curated tier for its editorial tag, not its type', () => {
+    expect(isDripEligible({ tier: tagged, type: 'followers', platform: 'instagram' })).toBe(true);
+    // Same type, same platform — only the tag differs, and only the tag counts.
+    // 14 of 46 follower groups are deliberately untagged.
+    expect(isDripEligible({ tier: untagged, type: 'followers', platform: 'instagram' })).toBe(false);
+  });
+
+  it('asks a full-list row for its type, since it has no tag to carry', () => {
+    expect(isDripEligible({ type: 'followers', platform: 'instagram' })).toBe(true);
+    expect(isDripEligible({ type: 'comments', platform: 'instagram' })).toBe(true);
+  });
+
+  it('keeps plays out of the full list, and off the schedule either way', () => {
+    // No config, so a full-list plays row is not eligible in the first place.
+    expect(isDripEligible({ type: 'plays', platform: 'spotify' })).toBe(false);
+    // A curated tier still answers with its tag — but nothing schedules, because
+    // the callers all gate on a config too and plays has none. Both live plays
+    // groups are untagged anyway; this pins the backstop, not the tag.
+    expect(getDripConfig('plays', 'spotify')).toBeNull();
+    expect(calculateIntradayDrip(10000, 50, BASE, 'plays', 'spotify')).toBeNull();
+  });
+
+  it('cannot cut a full-list order below the provider minimum', () => {
+    // Eligibility says yes; the calculator still refuses rather than send
+    // batches the provider would reject.
+    expect(isDripEligible({ type: 'followers', platform: 'instagram' })).toBe(true);
+    expect(calculateIntradayDrip(400, 500, BASE, 'followers', 'instagram')).toBeNull();
   });
 });
