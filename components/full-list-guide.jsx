@@ -13,10 +13,16 @@ import { useT } from "./locale";
  * three or four badges, a rating and a price, most of which mean something
  * specific that nothing on the page explains.
  *
- * A short sheet rather than a second spotlight tour. There are six facts worth
- * knowing and they are all visible in one row, so an annotated row teaches them
- * faster than six steps walking across the screen — and it can be reopened,
- * which a tour that fires once cannot.
+ * It used to argue for an annotated row and then not draw one — six chips in a
+ * column, each with a paragraph beside it, 1,060 characters of prose about
+ * things sitting three centimetres away on the list behind the sheet. Naming a
+ * badge in the abstract costs a sentence; pointing at it costs four words.
+ *
+ * So the row is the guide. A real one, built from the same pieces the list
+ * draws, with a numbered pin on each part and the six lines below keyed to
+ * those numbers. The pins are children of the elements they mark rather than
+ * absolutely placed against measured geometry, so nothing needs re-measuring
+ * on resize and a translated label cannot drag a pin off its badge.
  *
  * It follows the house modal rules: the page behind does not scroll, the
  * backdrop closes it and nothing else, and the surface is an opaque card.
@@ -37,16 +43,40 @@ export function FullListGuide({ open, onClose, dark, t }) {
 
   const card = dark ? "#171126" : "#ffffff";
   const rail = dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)";
+  const well = dark ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)";
+  const good = dark ? "#6ee7b7" : "#059669";
+  const goodBg = dark ? "rgba(110,231,183,.13)" : "rgba(5,150,105,.10)";
+  const quiet = dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)";
 
-  // Each row: the thing on screen, and the one sentence that makes it useful.
+  // One pin, sitting on the thing it names. `inset-inline-end` rather than
+  // `right`, so the RTL build has no physical rule to mirror and no [dir]
+  // selector to out-specify.
+  const Pin = ({ n }) => (
+    <span
+      aria-hidden="true"
+      className="absolute -top-[7px] inline-flex items-center justify-center rounded-full text-[9.5px] font-bold"
+      style={{
+        insetInlineEnd: -7, width: 15, height: 15,
+        background: t.accent, color: "#fff", boxShadow: `0 0 0 2px ${card}`,
+      }}
+    >{n}</span>
+  );
+
+  // Each line: the number on the row, what it is, and the one sentence that
+  // makes it useful. Six facts, none longer than a breath.
   const POINTS = [
-    ["#4821", tr("The service ID"), tr("Every service keeps the same ID for as long as we carry it, so this is how you find one again — paste it into the search box. It is also the ID a reseller uses through the API.")],
-    [tr("30-day refill"), tr("What happens if it drops"), tr("The provider's own promise, not ours. Some say 30 days, some say lifetime, some say no refill at all — and a service with no refill is a cheaper product, not a broken one.")],
-    [tr("Instant"), tr("When it starts"), tr("Instant means minutes. Anything without it says 0-24 hours, which is the outside edge rather than a prediction. A precise figure like “Starts in 0-3 min” is the provider's own.")],
-    ["UHQ · HQ", tr("What the accounts are like"), tr("The provider's grade: ultra high quality and high quality. It is their word, not a Nitro test — which is what the whole of this list is.")],
-    ["★", tr("Save it for next time"), tr("A list this size is hard to search twice. The star keeps a service on your Saved tab, and unlike the rating it costs nothing and needs no order behind it.")],
-    ["\u{1F44D} 86%", tr("What other buyers said"), tr("The only opinion on this list that is not the provider's. It appears once three people who actually ordered it have voted, and you can only vote on something you have bought.")],
+    [1, tr("Service ID"), tr("Search it to find this one again. Resellers order by it.")],
+    [2, tr("Refill"), tr("The provider's promise if it drops. No refill means cheaper, not broken.")],
+    [3, tr("Start time"), tr("Instant means minutes. Without it, up to 24 hours.")],
+    [4, tr("Quality grade"), tr("The provider's own word, not our test.")],
+    [5, tr("Buyer votes"), tr("From people who bought it. The only line here we didn't get from the provider.")],
+    [6, tr("Save"), tr("Keeps it on your Saved tab. Free, no order needed.")],
   ];
+
+  const badge = (bg, color) => ({
+    background: bg, color,
+    fontSize: "10.5px", fontWeight: 600, padding: "1.5px 6px", borderRadius: 5, whiteSpace: "nowrap",
+  });
 
   return (
     <div
@@ -60,14 +90,14 @@ export function FullListGuide({ open, onClose, dark, t }) {
         aria-modal="true"
         aria-label={tr("How to read this list")}
         onClick={(e) => e.stopPropagation()}
-        className="w-full md:max-w-[520px] max-h-[86vh] overflow-y-auto rounded-t-2xl md:rounded-2xl"
+        className="w-full md:max-w-[500px] max-h-[86vh] overflow-y-auto rounded-t-2xl md:rounded-2xl"
         style={{ background: card, border: `1px solid ${t.cardBorder}`, boxShadow: "0 24px 60px rgba(0,0,0,.4)" }}
       >
-        <div className="flex items-start gap-3 p-5 pb-3">
+        <div className="flex items-start gap-3 p-5 pb-4">
           <div className="min-w-0 flex-1">
             <h2 className="text-[17px] font-bold m-0" style={{ color: t.text }}>{tr("How to read this list")}</h2>
             <p className="text-[12.5px] leading-[1.55] mt-1.5 m-0" style={{ color: t.textMuted }}>
-              {tr("Nitro has not tested anything here. Every row carries the provider's own terms, printed on the row, and these are the six things worth reading before you order.")}
+              {tr("Nitro hasn't tested these. Every row shows the provider's own terms — here's what they mean.")}
             </p>
           </div>
           <button onClick={onClose} aria-label={tr("Close")} className="nitro-x shrink-0" style={{ color: t.textMuted }}>
@@ -75,16 +105,59 @@ export function FullListGuide({ open, onClose, dark, t }) {
           </button>
         </div>
 
+        {/* The row itself — the same shape full-list.jsx draws, one step larger
+            so six pins have room to sit without crowding the badges. */}
+        <div className="mx-5 mb-1 pt-3 pb-3 px-3 rounded-xl" style={{ background: well, border: `1px solid ${rail}` }}>
+          <div className="flex items-center gap-3" aria-hidden="true">
+            <span className="shrink-0 w-[34px] h-[34px] rounded-[10px] inline-flex items-center justify-center"
+              style={{ background: t.accentLight, color: t.accentInk }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6M22 11h-6" /></svg>
+            </span>
+
+            <span className="min-w-0 flex-1">
+              {/* Sample data, like the id and the price beside it — a service
+                  name is a product, not copy, and the list never translates one. */}
+              <span className="block text-[13.5px] font-semibold truncate" style={{ color: t.text }}>
+                Instagram Followers
+              </span>
+              <span className="relative inline-block m text-[10.5px] mt-[3px] leading-none"
+                style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>
+                #4821<Pin n={1} />
+              </span>
+              <span className="flex items-center gap-1.5 flex-wrap mt-[7px]">
+                <span className="relative inline-flex" style={badge(goodBg, good)}>{tr("30-day refill")}<Pin n={2} /></span>
+                <span className="relative inline-flex" style={badge(quiet, t.textSoft)}>{tr("Instant")}<Pin n={3} /></span>
+                <span className="relative inline-flex" style={badge(quiet, t.textSoft)}>UHQ<Pin n={4} /></span>
+                <span className="relative inline-flex items-center gap-1" style={badge(goodBg, good)}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M2 20h2c.55 0 1-.45 1-1v-9c0-.55-.45-1-1-1H2v11zm19.83-7.12c.11-.25.17-.52.17-.8V11c0-1.1-.9-2-2-2h-5.5l.92-4.65c.05-.22.02-.46-.08-.66a4.8 4.8 0 0 0-.79-1.06L14 2 7.59 8.41C7.21 8.79 7 9.3 7 9.83v7.84A2.34 2.34 0 0 0 9.34 20h8.11c.7 0 1.36-.37 1.72-.97l2.66-6.15z" /></svg>
+                  86%<Pin n={5} />
+                </span>
+              </span>
+            </span>
+
+            <span className="relative shrink-0 inline-flex" style={{ color: dark ? "#e0a458" : "#b45309", opacity: .55 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" /></svg>
+              <Pin n={6} />
+            </span>
+
+            <span className="text-end shrink-0">
+              <span className="block m text-[14.5px] font-bold" style={{ color: "var(--t-accent-ink)", fontFamily: "'JetBrains Mono', monospace" }}>₦1,450</span>
+              <span className="block text-[10px] mt-px" style={{ color: t.textMuted }}>{tr("per 1K")}</span>
+            </span>
+          </div>
+        </div>
+
         <div className="px-5 pb-2">
-          {POINTS.map(([chip, title, body]) => (
-            <div key={title} className="flex gap-3 py-3" style={{ borderTop: `1px solid ${rail}` }}>
+          {POINTS.map(([n, title, body]) => (
+            <div key={n} className="flex gap-2.5 py-[9px]" style={{ borderTop: `1px solid ${rail}` }}>
               <span
-                className="m shrink-0 inline-flex items-center justify-center text-[10.5px] font-bold rounded-[6px] px-2 h-[22px] mt-[1px]"
-                style={{ fontFamily: "'JetBrains Mono', monospace", background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.12)", color: t.accentInk, minWidth: 44 }}
-              >{chip}</span>
+                aria-hidden="true"
+                className="shrink-0 inline-flex items-center justify-center rounded-full text-[9.5px] font-bold mt-[2px]"
+                style={{ width: 15, height: 15, background: t.accentLight, color: t.accentInk }}
+              >{n}</span>
               <div className="min-w-0">
-                <b className="block text-[13.5px] font-semibold" style={{ color: t.text }}>{title}</b>
-                <span className="block text-[12.5px] leading-[1.55] mt-0.5" style={{ color: t.textMuted }}>{body}</span>
+                <b className="text-[12.5px] font-semibold" style={{ color: t.text }}>{title}</b>{" "}
+                <span className="text-[12px] leading-[1.5]" style={{ color: t.textMuted }}>{body}</span>
               </div>
             </div>
           ))}

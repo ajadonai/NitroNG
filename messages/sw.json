@@ -2388,5 +2388,16 @@
   "Is Deezer worth it for a Nigerian artist?": "Je, Deezer inafaa kwa msanii wa Nigeria?",
   "It depends where you want to be heard. For Lagos alone, Boomplay and Audiomack are closer to where people are. For a release meant to travel across West Africa, particularly the French-speaking markets, Deezer is the one that gets skipped and should not be.": "Inategemea unataka kusikika wapi. Kwa Lagos pekee, Boomplay na Audiomack ziko karibu zaidi na walipo watu. Kwa kazi inayokusudiwa kusafiri Afrika Magharibi, hasa masoko yanayozungumza Kifaransa, Deezer ndiyo inayorukwa na isiyopaswa kurukwa.",
   "How long does a Deezer order take?": "Agizo la Deezer huchukua muda gani?",
-  "Each service shows its own start time and speed on the row. Most start within the hour and deliver over a day or more.": "Kila huduma huonyesha muda wake wa kuanza na kasi kwenye mstari. Nyingi huanza ndani ya saa moja na kuwasilisha kwa siku moja au zaidi."
+  "Each service shows its own start time and speed on the row. Most start within the hour and deliver over a day or more.": "Kila huduma huonyesha muda wake wa kuanza na kasi kwenye mstari. Nyingi huanza ndani ya saa moja na kuwasilisha kwa siku moja au zaidi.",
+  "Service ID": "Kitambulisho cha huduma",
+  "Search it to find this one again. Resellers order by it.": "Itafute ili kuipata tena. Wauzaji huagiza kwa kutumia hii.",
+  "The provider's promise if it drops. No refill means cheaper, not broken.": "Ahadi ya mtoaji ikishuka. Bila kujaza upya ni rahisi zaidi, si mbovu.",
+  "Start time": "Muda wa kuanza",
+  "Instant means minutes. Without it, up to 24 hours.": "Papo hapo maana yake dakika. Bila hiyo, hadi saa 24.",
+  "Quality grade": "Kiwango cha ubora",
+  "The provider's own word, not our test.": "Ni neno la mtoaji mwenyewe, si jaribio letu.",
+  "Buyer votes": "Maoni ya wanunuzi",
+  "From people who bought it. The only line here we didn't get from the provider.": "Kutoka kwa walioinunua. Ndio mstari pekee hapa ambao haukutoka kwa mtoaji.",
+  "Keeps it on your Saved tab. Free, no order needed.": "Huihifadhi kwenye kichupo chako cha Zilizohifadhiwa. Bure, hakuna agizo linalohitajika.",
+  "Nitro hasn't tested these. Every row shows the provider's own terms — here's what they mean.": "Nitro hajazijaribu hizi. Kila mstari unaonyesha masharti ya mtoaji — haya ndiyo maana yake."
 }
