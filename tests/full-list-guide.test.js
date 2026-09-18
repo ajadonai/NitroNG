@@ -27,14 +27,49 @@ describe('the full-list guide', () => {
   });
 
   it('teaches the six things a row actually carries', () => {
-    for (const p of ['The service ID', 'What happens if it drops', 'When it starts',
-      'What the accounts are like', 'Save it for next time', 'What other buyers said']) {
+    for (const p of ['Service ID', 'Refill', 'Start time',
+      'Quality grade', 'Save', 'Buyer votes']) {
       expect(guide, p).toContain(p);
     }
   });
 
   it('leads with the thing the list is, not with the features', () => {
-    expect(guide).toMatch(/Nitro has not tested anything here/);
+    expect(guide).toMatch(/Nitro hasn't tested these/);
+  });
+
+  /**
+   * The redesign, 18 Sep 2026. The sheet argued for an annotated row and then
+   * drew six chips in a column with a paragraph each — 1,060 characters about
+   * things sitting three centimetres away on the list behind it. Naming a badge
+   * in the abstract costs a sentence; pointing at it costs four words.
+   */
+  it('draws the row it is explaining, and keys the lines to it', () => {
+    // A real row: the id, the badges it carries, the star and the price.
+    expect(guide).toContain('#4821');
+    expect(guide).toContain('UHQ');
+    expect(guide).toContain('₦1,450');
+    // Six numbered pins on the row, six numbered lines under it.
+    expect(guide).toMatch(/<Pin n=\{1\} \/>/);
+    expect(guide).toMatch(/<Pin n=\{6\} \/>/);
+  });
+
+  it('keeps every line short enough to read at a glance', () => {
+    // The old sheet ran to 250 characters a point. Nothing here may.
+    const points = [...guide.matchAll(/tr\("([^"]{25,})"\)/g)].map(m => m[1]);
+    expect(points.length).toBeGreaterThan(5);
+    for (const p of points) expect(p.length, p).toBeLessThanOrEqual(100);
+  });
+
+  it('places its pins without measuring the page', () => {
+    // Pins are children of the elements they mark. Absolute positioning driven
+    // by getBoundingClientRect needs a resize listener, and a translated label
+    // drags the pin off its badge before the listener fires.
+    expect(guide).not.toMatch(/getBoundingClientRect/);
+    expect(guide).not.toMatch(/addEventListener\("resize"/);
+    // And the offset is logical, so the RTL build has no physical rule to
+    // mirror — the [dir] specificity trap in CLAUDE.md.
+    expect(guide).toMatch(/insetInlineEnd/);
+    expect(guide).not.toMatch(/insetInlineEnd[^,}]*\bright:/);
   });
 
   it('follows the house modal rules', () => {

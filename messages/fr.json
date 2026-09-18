@@ -2388,5 +2388,16 @@
   "Is Deezer worth it for a Nigerian artist?": "Deezer en vaut-il la peine pour un artiste nigérian ?",
   "It depends where you want to be heard. For Lagos alone, Boomplay and Audiomack are closer to where people are. For a release meant to travel across West Africa, particularly the French-speaking markets, Deezer is the one that gets skipped and should not be.": "Cela dépend d'où vous voulez être entendu. Pour Lagos seule, Boomplay et Audiomack sont plus proches de là où sont les gens. Pour une sortie destinée à voyager en Afrique de l'Ouest, en particulier sur les marchés francophones, Deezer est celle qu'on saute et qu'il ne faudrait pas sauter.",
   "How long does a Deezer order take?": "Combien de temps prend une commande Deezer ?",
-  "Each service shows its own start time and speed on the row. Most start within the hour and deliver over a day or more.": "Chaque service affiche son propre délai de démarrage et sa vitesse sur la ligne. La plupart démarrent dans l'heure et livrent sur une journée ou plus."
+  "Each service shows its own start time and speed on the row. Most start within the hour and deliver over a day or more.": "Chaque service affiche son propre délai de démarrage et sa vitesse sur la ligne. La plupart démarrent dans l'heure et livrent sur une journée ou plus.",
+  "Service ID": "Identifiant du service",
+  "Search it to find this one again. Resellers order by it.": "Recherchez-le pour retrouver ce service. Les revendeurs commandent avec.",
+  "The provider's promise if it drops. No refill means cheaper, not broken.": "La promesse du fournisseur en cas de baisse. Sans recharge, c'est moins cher, pas défectueux.",
+  "Start time": "Délai de démarrage",
+  "Instant means minutes. Without it, up to 24 hours.": "Instantané signifie quelques minutes. Sinon, jusqu'à 24 heures.",
+  "Quality grade": "Niveau de qualité",
+  "The provider's own word, not our test.": "C'est le fournisseur qui le dit, ce n'est pas notre test.",
+  "Buyer votes": "Avis des acheteurs",
+  "From people who bought it. The only line here we didn't get from the provider.": "De ceux qui l'ont acheté. La seule ligne ici qui ne vient pas du fournisseur.",
+  "Keeps it on your Saved tab. Free, no order needed.": "Le garde dans votre onglet Enregistrés. Gratuit, sans commande.",
+  "Nitro hasn't tested these. Every row shows the provider's own terms — here's what they mean.": "Nitro n'a pas testé ces services. Chaque ligne affiche les conditions du fournisseur — voici ce qu'elles signifient."
 }
