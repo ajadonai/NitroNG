@@ -8,7 +8,7 @@ import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility, isDripEligible, validateIntradayDuration } from '@/lib/drip-feed';
 import { serviceTypeOf, servicePlatformOf } from '@/lib/full-catalogue';
 import { cancelQueuedMetaEvent, enqueueMetaEvent, loadStoredCapiIdentity, parseFbCookies, persistFbTouch, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
-import { tgNewOrder, tgRefundAlert } from '@/lib/telegram';
+import { tgFlush, tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { checkFirstOrder } from '@/lib/first-order';
 import { voidCommissions } from '@/lib/commissions';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
@@ -824,6 +824,10 @@ export async function patchOrderForSession(session, body, req) {
       tgNewOrder(newOrderId, reorderOffer.serviceName, order.quantity, charge, session.email, order.link, reorderSnapshot.platformAtPurchase || reorderOffer.platform);
       checkFirstOrder(session.id, reorderOffer.serviceName);
 
+      // tgNewOrder fires a fetch and returns. Without this the handler can
+      // return and the platform freeze the function before Telegram is reached,
+      // which is what the function's own docstring warns about.
+      await tgFlush();
       return Response.json({
         success: true,
         ...(reorderQueued ? { queued: true, message: 'Order queued — will start when your current order for this link completes.' } : {}),
@@ -1400,6 +1404,10 @@ export async function createOrderForSession(session, body, req, { source = 'web'
     tgNewOrder(orderId, tierName, qty, charge, session.email, trimmedLink, offerSnapshot.platformAtPurchase || '');
     checkFirstOrder(session.id, tierName);
 
+    // tgNewOrder fires a fetch and returns. Without this the handler can
+    // return and the platform freeze the function before Telegram is reached,
+    // which is what the function's own docstring warns about.
+    await tgFlush();
     return Response.json({
       success: true,
       eventId,
