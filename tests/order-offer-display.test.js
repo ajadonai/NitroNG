@@ -171,3 +171,58 @@ describe('the provider category never becomes a platform', () => {
     expect(route, 's.category must not be a platform fallback').not.toMatch(/COALESCE\(o\."platformAtPurchase", sg\.platform, s\.category/);
   });
 });
+
+/**
+ * The two disabled states are different things, and the code that acts on them
+ * has to ask the right one.
+ *
+ * `enabled` on a service row means "curated by Nitro", not "sellable" — 9,849
+ * of the 9,937 orderable full-list rows have it false by design. Reorder gated
+ * on it, so every full-list order offered a button the server then refused:
+ * 523 of them on 18 Sep 2026.
+ */
+describe('reorder asks the catalogue the right question', () => {
+  const src = fs.readFileSync(path.join(process.cwd(), 'app/api/orders/route.js'), 'utf8');
+
+  it('does not gate reorder on a service row being curated', () => {
+    const block = src.slice(src.indexOf("action === 'reorder'"), src.indexOf("action === 'reorder'") + 1800);
+    expect(block).not.toMatch(/!order\.service\.enabled/);
+    expect(block).toContain('reorderOffer.offerDisabled');
+  });
+
+  it('still refuses when the offer really is gone', () => {
+    // A curated tier switched off.
+    const retired = getOrderOfferDisplay(activeOrder({
+      tier: { ...activeOrder().tier, enabled: false },
+    }));
+    expect(retired.offerDisabled).toBe(true);
+    expect(retired.retiredFromMenu).toBe(true);
+
+    // A full-list row the sweep stopped refreshing.
+    const dropped = getOrderOfferDisplay(activeOrder({
+      tierId: null, tier: null,
+      serviceNameAtPurchase: 'Instagram Followers', tierNameAtPurchase: null,
+      service: { ...activeOrder().service, providerListedAt: new Date(Date.now() - 49 * 60 * 60 * 1000) },
+    }));
+    expect(dropped.offerDisabled).toBe(true);
+    expect(dropped.fullListDisabled).toBe(true);
+  });
+
+  it('lets a live full-list order through even though its service is not curated', () => {
+    const live = getOrderOfferDisplay(activeOrder({
+      tierId: null, tier: null,
+      serviceNameAtPurchase: 'Instagram Followers', tierNameAtPurchase: null,
+      service: { ...activeOrder().service, enabled: false, providerListedAt: new Date() },
+    }));
+    expect(live.fullList).toBe(true);
+    expect(live.offerDisabled).toBe(false);
+  });
+
+  it('every surface that shows an order gets the split, not just the verdict', () => {
+    for (const p of ['app/api/admin/orders/route.js', 'app/api/orders/route.js', 'app/api/dashboard/route.js']) {
+      const s = fs.readFileSync(path.join(process.cwd(), p), 'utf8');
+      expect(s, `${p} fullListDisabled`).toContain('fullListDisabled');
+      expect(s, `${p} retiredFromMenu`).toContain('retiredFromMenu');
+    }
+  });
+});
