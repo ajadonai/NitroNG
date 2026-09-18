@@ -131,7 +131,10 @@ describe('Live capacity and aggregate reads', () => {
       by: ['userId'],
       where: {
         userId: { in: ['user-1'] },
-        type: { in: ['deposit', 'admin_credit', 'admin_gift'] },
+        // MONEY_IN, not WALLET_FUNDING: this is "what this customer paid in",
+        // and a gift is money we gave them. The aggregate-instead-of-rows shape
+        // is what this test is about; the list rides along.
+        type: { in: ['deposit', 'admin_credit'] },
         status: 'Completed',
       },
       _sum: { amount: true },

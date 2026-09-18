@@ -7,7 +7,7 @@ import { approveSubmission, rejectSubmission } from '@/lib/task-review';
 import { watBounds } from '@/lib/format';
 import { getRevenue } from '@/lib/revenue';
 import { getBalance, PROVIDER_IDS, getProviderName, isProviderConfigured } from '@/lib/smm';
-import { DEAD_ORDER_STATES, WALLET_FUNDING, partialAdjustment as partialAdj } from '@/lib/ledger';
+import { DEAD_ORDER_STATES, MONEY_IN, partialAdjustment as partialAdj } from '@/lib/ledger';
 import { formatKobo as naira } from '@/lib/money';
 
 export const maxDuration = 60;
@@ -67,8 +67,8 @@ async function handleStats(chatId, threadId) {
     prisma.order.count({ where: { createdAt: { gte: monthStart }, deletedAt: null } }),
     prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
     prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
-    prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true }, _count: true }),
-    prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),
+    prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true }, _count: true }),
+    prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),
     prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
     prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
   ]);
@@ -114,10 +114,10 @@ async function handleRevenue(chatId, threadId) {
   ] = await Promise.all([
     prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
     prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
-    prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true }, _count: true }),
-    prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true }, _count: true }),
-    prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),
-    prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed' }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true }, _count: true }),
+    prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true }, _count: true }),
+    prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),
+    prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed' }, _sum: { amount: true } }),
     prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
     prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
   ]);
@@ -207,7 +207,7 @@ async function handleProfit(chatId, threadId) {
     prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
     prisma.order.aggregate({ where: { deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
     prisma.order.aggregate({ where: { deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
-    prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
     prisma.providerTopup.aggregate({ where: { createdAt: { gte: monthStart } }, _sum: { amount: true } }),
     prisma.transaction.aggregate({ where: { type: 'refund', status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: true }),
     prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),

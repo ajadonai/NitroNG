@@ -3,7 +3,7 @@ import { log } from "@/lib/logger";
 import { requireAdmin } from '@/lib/admin';
 import { reportWindow, snap } from '@/lib/report-window';
 import { getRevenue } from '@/lib/revenue';
-import { DEAD_ORDER_STATES, WALLET_FUNDING } from '@/lib/ledger';
+import { DEAD_ORDER_STATES, MONEY_IN } from '@/lib/ledger';
 
 export async function GET(req) {
   const { error } = await requireAdmin('finance');
@@ -84,7 +84,7 @@ export async function GET(req) {
       }),
       // Chart: daily deposits
       prisma.transaction.findMany({
-        where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: dateFilter },
+        where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: dateFilter },
         select: { createdAt: true, amount: true },
         orderBy: { createdAt: 'asc' },
       }),

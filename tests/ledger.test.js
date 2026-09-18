@@ -85,3 +85,56 @@ describe('an admin-placed order is marked and is not a web conversion', () => {
     }
   });
 });
+
+/**
+ * A gift is not money in — everywhere, not just on Pulse.
+ *
+ * v2.5.44 took `admin_gift` out of the Money in figure and its feed. Only Pulse
+ * was moved to MONEY_IN; the Telegram digest, the bot's stats, the admin
+ * overview, the deposits chart and the per-customer deposit total all kept
+ * reading WALLET_FUNDING, so every gift still made those days look better than
+ * they were. One ₦5,000 gift in the 30 days to 18 Sep 2026 was doing it.
+ *
+ * The two lists answer different questions and both are right for one of them:
+ * MONEY_IN is "what the business took in"; WALLET_FUNDING is "has this account
+ * ever been funded", which is what the nudges and the outreach pool ask.
+ */
+describe('a gift never counts as money in', () => {
+  const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
+
+  const REPORTS_MONEY = [
+    'app/api/pulse/route.js',
+    'app/api/cron/digest/route.js',
+    'app/api/telegram/webhook/route.js',
+    'app/api/admin/overview/route.js',
+    'app/api/admin/analytics/route.js',
+    'app/api/live/route.js',
+  ];
+  // These ask whether an account was ever funded, where a gift counts.
+  const ASKS_IF_FUNDED = [
+    'app/api/cron/daily/route.js',
+    'lib/outreach-pool.js',
+  ];
+
+  for (const p of REPORTS_MONEY) {
+    it(`${p} sums MONEY_IN, not WALLET_FUNDING`, () => {
+      const src = read(p);
+      expect(src).toContain('MONEY_IN');
+      // Allowed in prose explaining the distinction, never in a query.
+      const inQuery = /type:\s*\{\s*in:\s*WALLET_FUNDING\s*\}/.test(src);
+      expect(inQuery, `${p} still aggregates WALLET_FUNDING`).toBe(false);
+    });
+  }
+
+  for (const p of ASKS_IF_FUNDED) {
+    it(`${p} keeps WALLET_FUNDING, because a gift does fund an account`, () => {
+      expect(read(p)).toMatch(/type:\s*\{\s*in:\s*WALLET_FUNDING\s*\}/);
+    });
+  }
+
+  it('the two lists differ by exactly the gift', () => {
+    const src = read('lib/ledger.js');
+    expect(src).toMatch(/WALLET_FUNDING = Object\.freeze\(\['deposit', 'admin_credit', 'admin_gift'\]\)/);
+    expect(src).toMatch(/MONEY_IN = Object\.freeze\(\['deposit', 'admin_credit'\]\)/);
+  });
+});

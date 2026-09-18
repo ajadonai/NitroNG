@@ -4,7 +4,7 @@ import { requireAdmin, getAdminPages, canSeeSensitive, maskEmail } from '@/lib/a
 import { watBounds } from '@/lib/format';
 import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { getRevenue } from '@/lib/revenue';
-import { DEAD_ORDER_STATES, WALLET_FUNDING, partialAdjustment as partialAdj } from '@/lib/ledger';
+import { DEAD_ORDER_STATES, MONEY_IN, partialAdjustment as partialAdj } from '@/lib/ledger';
 
 function humanize(raw) {
   let m;
@@ -96,13 +96,13 @@ export async function GET() {
       prisma.user.count({ where: { emailVerified: true } }),
       prisma.order.count({ where: { deletedAt: null } }),
       prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
-      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed' }, _sum: { amount: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed' }, _sum: { amount: true } }),
       prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
       prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
       prisma.user.count({ where: { createdAt: { gte: todayStart }, emailVerified: true } }),
-      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
       prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
-      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
       prisma.order.findMany({ where: { deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true, createdAt: true } }),
       prisma.transaction.count({ where: { type: 'deposit', method: 'manual', status: 'Pending', NOT: { note: { contains: '[awaiting_confirmation]' } } } }).catch(() => 0),
       prisma.order.count({ where: { status: { in: ['Pending', 'Processing'] }, deletedAt: null, queuedBehind: null } }).catch(() => 0),
