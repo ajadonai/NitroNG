@@ -88,18 +88,18 @@ async function handleStats(chatId, threadId) {
     '',
     '<b>Today</b>',
     `  Revenue: <b>${naira(Math.round(todayRev) * 100)}</b>`,
-    `  Profit: <b>${naira(Math.round(todayRev - todayCost) * 100)}</b> (${margin(todayRev, todayCost)} margin · ${markup(todayRev, todayCost)} on cost)`,
+    `  Profit: <b>${naira(Math.round(todayRev - todayCost) * 100)}</b> (${margin(todayRev, todayCost)} margin | ${markup(todayRev, todayCost)} on cost)`,
     `  Money in: <b>${naira(Math.round(todayDep) * 100)}</b> (${todayDepositsAgg._count} deposits)`,
-    `  Orders: <b>${todayOrderCount}</b>  ·  New users: <b>${todayUsers}</b>`,
+    `  Orders: <b>${todayOrderCount}</b> | New users: <b>${todayUsers}</b>`,
     '',
     '<b>This month</b>',
     `  Revenue: <b>${naira(Math.round(revNet.net) * 100)}</b>`,
     `  Cost: <b>${naira(Math.round(revNet.cost + revNet.costWasted) * 100)}</b>`,
-    `  Profit: <b>${naira(Math.round(revNet.net - revNet.cost - revNet.costWasted) * 100)}</b> (${Math.round(revNet.netMargin)}% margin · ${markup(revNet.net, revNet.cost + revNet.costWasted)} on cost)`,
+    `  Profit: <b>${naira(Math.round(revNet.net - revNet.cost - revNet.costWasted) * 100)}</b> (${Math.round(revNet.netMargin)}% margin | ${markup(revNet.net, revNet.cost + revNet.costWasted)} on cost)`,
     `  Money in: <b>${naira(Math.round(monthDep) * 100)}</b> (${monthDepositsAgg._count} deposits)`,
-    `  Orders: <b>${monthOrderCount.toLocaleString()}</b>  ·  New users: <b>${monthUsers}</b>`,
+    `  Orders: <b>${monthOrderCount.toLocaleString()}</b> | New users: <b>${monthUsers}</b>`,
     '',
-    `👥 Total users: <b>${totalUsers.toLocaleString()}</b>  ·  Processing: <b>${processing}</b>`,
+    `👥 Total users: <b>${totalUsers.toLocaleString()}</b> | Processing: <b>${processing}</b>`,
   ].join('\n'));
 }
 
@@ -173,11 +173,11 @@ async function handleOrders(chatId, threadId) {
     '',
     '<b>Today</b>',
     `  Total: <b>${todayCount}</b>  ${pct(todayCount, yesterdayCount)} vs yesterday`,
-    `  ✅ Completed: ${get(todayByStatus, 'Completed')}  ·  ⏳ Processing: ${get(todayByStatus, 'Processing')}`,
-    `  🔄 Partial: ${get(todayByStatus, 'Partial')}  ·  ❌ Cancelled: ${get(todayByStatus, 'Cancelled')}`,
+    `  ✅ Completed: ${get(todayByStatus, 'Completed')} | ⏳ Processing: ${get(todayByStatus, 'Processing')}`,
+    `  🔄 Partial: ${get(todayByStatus, 'Partial')} | ❌ Cancelled: ${get(todayByStatus, 'Cancelled')}`,
     `  🕐 Pending: ${get(todayByStatus, 'Pending')}`,
     '',
-    `<b>This month:</b> ${monthCount.toLocaleString()} orders  ·  Avg order: <b>${naira(avgOrder * 100)}</b>`,
+    `<b>This month:</b> ${monthCount.toLocaleString()} orders | Avg order: <b>${naira(avgOrder * 100)}</b>`,
     '',
     '<b>Active right now</b>',
     `  ⏳ Processing: <b>${get(statusGroups, 'Processing')}</b>`,
@@ -237,17 +237,17 @@ async function handleProfit(chatId, threadId) {
     '📈 <b>Profit Breakdown</b>',
     '',
     '<b>Today</b>',
-    `  Revenue: ${naira(Math.round(tRev) * 100)}  ·  Cost: ${naira(Math.round(tCost) * 100)}`,
-    `  Profit: <b>${naira(Math.round(tRev - tCost) * 100)}</b> (${margin(tRev, tCost)} margin · ${markup(tRev, tCost)} on cost)`,
+    `  Revenue: ${naira(Math.round(tRev) * 100)} | Cost: ${naira(Math.round(tCost) * 100)}`,
+    `  Profit: <b>${naira(Math.round(tRev - tCost) * 100)}</b> (${margin(tRev, tCost)} margin | ${markup(tRev, tCost)} on cost)`,
     `  ${pct(tRev - tCost, yRev - yCost)} vs yesterday`,
     '',
     '<b>This month</b>',
-    `  Revenue: ${naira(Math.round(mRev) * 100)}  ·  Cost: ${naira(Math.round(mCost) * 100)}`,
-    `  Profit: <b>${naira(Math.round(mRev - mCost) * 100)}</b> (${margin(mRev, mCost)} margin · ${markup(mRev, mCost)} on cost)`,
+    `  Revenue: ${naira(Math.round(mRev) * 100)} | Cost: ${naira(Math.round(mCost) * 100)}`,
+    `  Profit: <b>${naira(Math.round(mRev - mCost) * 100)}</b> (${margin(mRev, mCost)} margin | ${markup(mRev, mCost)} on cost)`,
     '',
     '<b>All time</b>',
-    `  Revenue: ${naira(Math.round(aRev) * 100)}  ·  Cost: ${naira(Math.round(aCost) * 100)}`,
-    `  Profit: <b>${naira(Math.round(aRev - aCost) * 100)}</b> (${margin(aRev, aCost)} margin · ${markup(aRev, aCost)} on cost)`,
+    `  Revenue: ${naira(Math.round(aRev) * 100)} | Cost: ${naira(Math.round(aCost) * 100)}`,
+    `  Profit: <b>${naira(Math.round(aRev - aCost) * 100)}</b> (${margin(aRev, aCost)} margin | ${markup(aRev, aCost)} on cost)`,
     '',
     '<b>Cash flow (month)</b>',
     `  Money in: ${naira(Math.round(monthDep) * 100)}`,
@@ -311,7 +311,7 @@ async function handleUsers(chatId, threadId) {
     '',
     '<b>Growth</b>',
     `  Total: <b>${totalUsers.toLocaleString()}</b>`,
-    `  Today: <b>+${todayUsers}</b>  ·  This month: <b>+${monthUsers}</b>`,
+    `  Today: <b>+${todayUsers}</b> | This month: <b>+${monthUsers}</b>`,
     '',
     '<b>Activity (this month)</b>',
     `  Ordered: <b>${activeOrderers.length}</b> users`,
@@ -415,7 +415,7 @@ async function handlePending(chatId, threadId) {
     const who = tx.user?.name || tx.user?.email || 'Unknown';
     const ago = Math.round((Date.now() - new Date(tx.createdAt).getTime()) / 60000);
     const timeStr = ago < 60 ? `${ago}m ago` : ago < 1440 ? `${Math.round(ago / 60)}h ago` : `${Math.round(ago / 1440)}d ago`;
-    return `  ${who} — <b>${naira(tx.amount)}</b> · ${timeStr}`;
+    return `  ${who} — <b>${naira(tx.amount)}</b> | ${timeStr}`;
   });
   await reply(chatId, threadId, [
     `💳 <b>Pending Manual Deposits</b> (${pending.length})`,
@@ -457,18 +457,18 @@ async function handleCheck(chatId, threadId, orderId) {
   const lines = [
     `🔍 <b>${o.orderId}</b>`,
     div,
-    `👤 ${o.user?.name || 'Unknown'}${o.tier ? ` · ${o.tier.tier}` : ''}`,
+    `👤 ${o.user?.name || 'Unknown'}${o.tier ? ` | ${o.tier.tier}` : ''}`,
     `📦 ${serviceName}`,
     `🔗 <a href="${o.link}">${o.service?.category || 'Link'}</a>`,
     div,
-    `${statusIcon[o.status] || '⚪'} <b>${o.status}</b>  ·  ${deliveredPct}% delivered`,
-    `📊 Qty: <b>${o.quantity.toLocaleString()}</b>  ·  Remains: <b>${(o.remains || 0).toLocaleString()}</b>`,
+    `${statusIcon[o.status] || '⚪'} <b>${o.status}</b> | ${deliveredPct}% delivered`,
+    `📊 Qty: <b>${o.quantity.toLocaleString()}</b> | Remains: <b>${(o.remains || 0).toLocaleString()}</b>`,
   ];
 
   if (o.lastError) { lines.push(div); lines.push(`⚠️ ${o.lastError.slice(0, 120)}`); }
 
   lines.push(div);
-  lines.push(`🏭 <b>${o.service?.provider || '—'}</b>  ·  Ext: <code>${o.apiOrderId || '—'}</code>`);
+  lines.push(`🏭 <b>${o.service?.provider || '—'}</b> | Ext: <code>${o.apiOrderId || '—'}</code>`);
 
   if (o.dripDays) {
     const completed = o.dripDispatches.filter(d => d.status === 'completed').length;
@@ -476,14 +476,14 @@ async function handleCheck(chatId, threadId, orderId) {
     const processing = o.dripDispatches.filter(d => !['completed', 'pending', 'failed'].includes(d.status)).length;
     const failed = o.dripDispatches.filter(d => d.status === 'failed').length;
     lines.push(div);
-    lines.push(`💧 Drip: <b>${o.dripDays} days</b>  ·  ${o.dripDispatches.length} batches`);
+    lines.push(`💧 Drip: <b>${o.dripDays} days</b> | ${o.dripDispatches.length} batches`);
     lines.push(`   ✅ ${completed}  ⏳ ${processing}  🕐 ${pending}${failed ? `  ❌ ${failed}` : ''}`);
     const nextPending = o.dripDispatches.find(d => d.status === 'pending');
     if (nextPending) lines.push(`   Next: ${new Date(nextPending.scheduledAt).toLocaleString('en-GB', { timeZone: 'Africa/Lagos', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`);
   }
 
   lines.push(div);
-  lines.push(`📅 ${ago(o.createdAt)}${o.dispatchedAt ? `  ·  Sent ${ago(o.dispatchedAt)}` : ''}${o.completedAt ? `  ·  Done ${ago(o.completedAt)}` : ''}`);
+  lines.push(`📅 ${ago(o.createdAt)}${o.dispatchedAt ? ` | Sent ${ago(o.dispatchedAt)}` : ''}${o.completedAt ? ` | Done ${ago(o.completedAt)}` : ''}`);
   if (o.retryCount > 0) lines.push(`🔁 Retries: ${o.retryCount}`);
 
   await reply(chatId, threadId, lines.join('\n'));
