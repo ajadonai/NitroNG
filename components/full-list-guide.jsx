@@ -66,11 +66,11 @@ export function FullListGuide({ open, onClose, dark, t }) {
   // makes it useful. Six facts, none longer than a breath.
   const POINTS = [
     [1, tr("Service ID"), tr("Search it to find this one again. Resellers order by it.")],
-    [2, tr("Refill"), tr("The provider's promise if it drops. No refill means cheaper, not broken.")],
-    [3, tr("Start time"), tr("Instant means minutes. Without it, up to 24 hours.")],
-    [4, tr("Quality grade"), tr("The provider's own word, not our test.")],
-    [5, tr("Buyer votes"), tr("From people who bought it. The only line here we didn't get from the provider.")],
-    [6, tr("Save"), tr("Keeps it on your Saved tab. Free, no order needed.")],
+    [2, tr("Refill"), tr("Tops your count back up if it drops.")],
+    [3, tr("Start time"), tr("Instant means minutes. Otherwise, up to 24 hours.")],
+    [4, tr("Quality grade"), tr("How good the accounts are. UHQ is the highest.")],
+    [5, tr("Buyer votes"), tr("The share of buyers who gave it a thumbs up.")],
+    [6, tr("Save"), tr("Keeps it on your Saved tab. Free, and no order needed.")],
   ];
 
   const badge = (bg, color) => ({
@@ -97,7 +97,7 @@ export function FullListGuide({ open, onClose, dark, t }) {
           <div className="min-w-0 flex-1">
             <h2 className="text-[17px] font-bold m-0" style={{ color: t.text }}>{tr("How to read this list")}</h2>
             <p className="text-[12.5px] leading-[1.55] mt-1.5 m-0" style={{ color: t.textMuted }}>
-              {tr("Nitro hasn't tested these. Every row shows the provider's own terms — here's what they mean.")}
+              {tr("What every part of a row tells you.")}
             </p>
           </div>
           <button onClick={onClose} aria-label={tr("Close")} className="nitro-x shrink-0" style={{ color: t.textMuted }}>
