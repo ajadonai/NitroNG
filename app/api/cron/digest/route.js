@@ -6,7 +6,7 @@ import { watBounds } from '@/lib/format';
 import { tgDigest, tgFlush } from '@/lib/telegram';
 import { getBearerToken } from '@/lib/bearer-token';
 import { getRevenue } from '@/lib/revenue';
-import { DEAD_ORDER_STATES, WALLET_FUNDING, partialAdjustment as partialAdj } from '@/lib/ledger';
+import { DEAD_ORDER_STATES, MONEY_IN, partialAdjustment as partialAdj } from '@/lib/ledger';
 
 export async function GET(req) {
   if (!process.env.CRON_SECRET) return Response.json({ error: 'Not configured' }, { status: 503 });
@@ -36,14 +36,14 @@ export async function GET(req) {
       prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
       prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { charge: true } }),
       prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
-      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
-      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { amount: true } }),
       prisma.order.count({ where: { createdAt: { gte: todayStart }, deletedAt: null } }),
       prisma.order.count({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null } }),
       prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
       prisma.order.findMany({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
       prisma.order.findMany({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: 'Partial', remains: { gt: 0 }, quantity: { gt: 0 } }, select: { charge: true, cost: true, quantity: true, remains: true } }),
-      prisma.transaction.aggregate({ where: { type: { in: WALLET_FUNDING }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
+      prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
       prisma.order.count({ where: { createdAt: { gte: monthStart }, deletedAt: null } }),
     ]);
 
@@ -57,7 +57,10 @@ export async function GET(req) {
     const yesterdayDeposits = (yesterdayDepositsAgg._sum.amount || 0) / 100;
     const revNet = await getRevenue({ from: monthStart });
     const mDep = (monthDepAgg._sum.amount || 0) / 100;
-    const marginPct = (rev, cost) => cost > 0 ? `${Math.round(((rev - cost) / cost) * 100)}%` : '—';
+    // How far up we are on what we paid — profit over cost, not over revenue.
+    // The name said margin and the sum was always markup; the month row was the
+    // one genuine margin and read as the same figure beside it.
+    const markupPct = (rev, cost) => cost > 0 ? `${Math.round(((rev - cost) / cost) * 100)}%` : '—';
 
     const pct = (today, yesterday) => {
       if (yesterday === 0) return today > 0 ? null : 0;
@@ -78,17 +81,16 @@ export async function GET(req) {
       revenue: fmtNaira(Math.round(todayRevenue)),
       revenuePct: fmtPct(pct(todayRevenue, yesterdayRevenue)),
       profit: fmtNaira(Math.round(todayProfit)),
-      margin: marginPct(todayRevenue, todayCost),
+      markup: markupPct(todayRevenue, todayCost),
       deposits: fmtNaira(Math.round(todayDeposits)),
       depositsPct: fmtPct(pct(todayDeposits, yesterdayDeposits)),
       orders: todayOrderCount,
       ordersPct: fmtPct(pct(todayOrderCount, yesterdayOrderCount)),
       processing: processingCount,
       monthRevenue: fmtNaira(Math.round(revNet.net)),
-      monthGross: fmtNaira(Math.round(revNet.gross)),
       monthRefunds: fmtNaira(Math.round(revNet.refunds)),
       monthProfit: fmtNaira(Math.round(revNet.net - revNet.cost - revNet.costWasted)),
-      monthMargin: `${Math.round(revNet.netMargin)}%`,
+      monthMarkup: markupPct(revNet.net, revNet.cost + revNet.costWasted),
       monthDeposits: fmtNaira(Math.round(mDep)),
       monthOrders: monthOrderCount.toLocaleString(),
     });
