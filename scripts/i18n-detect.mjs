@@ -179,6 +179,15 @@ export const DELIBERATELY_ENGLISH = new Map([
   ["Surge", "A Nitro Status tier name — see Spark."],
   ["Apex", "A Nitro Status tier name — see Spark."],
   ["Legend", "A Nitro Status tier name — see Spark."],
+  ["Instagram", "A platform's own name. Instagram is called Instagram in Lagos, in Paris and in Nairobi; there is nothing here to translate, and a translator who tried would be inventing a name the app it links to does not answer to."],
+  ["TikTok", "A platform name — see Instagram."],
+  ["Telegram", "A platform name — see Instagram."],
+  ["WhatsApp", "A platform name — see Instagram."],
+  ["YouTube", "A platform name — see Instagram."],
+  ["Facebook", "A platform name — see Instagram."],
+  ["Threads", "A platform name — see Instagram. The English word is also a common noun, which is exactly why it must be pinned: 'Threads' here is the app, not a plural."],
+  ["Spotify", "A platform name — see Instagram."],
+  ["Twitter", "A platform name — see Instagram."],
 ]);
 
 /** Is this a sentence a customer reads, and is it ours to translate? */
@@ -260,6 +269,10 @@ const ARRAY_PROSE = /(?<=[[,]\s*)(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')(?=\
 
 /** Prose rather than an identifier, a class, a colour or a version. */
 function looksLikeProse(v) {
+  // A platform's own name reads as prose to every test below — capitalised,
+  // lowercase letters, no punctuation — and is the one thing in an array that
+  // must never be translated. Same list the prose scanner already honours.
+  if (DELIBERATELY_ENGLISH.has(v)) return false;
   return v.length >= 3 && v.length <= 90
     && /^[A-Z]/.test(v) && /[a-z]/.test(v)
     && !/[/#<>{}$\\]/.test(v)
