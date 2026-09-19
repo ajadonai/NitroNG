@@ -1,11 +1,11 @@
 import LagosView from '@/components/lagos-page';
 
 export const metadata = {
-  title: 'SMM Panel in Lagos, Nigeria | Nitro NG',
+  title: 'SMM Panel in Lagos, Nigeria',
   description: 'A Lagos based SMM panel. Pay in Naira by bank transfer, card or wallet, with WhatsApp support during Lagos hours.',
   alternates: { canonical: 'https://nitro.ng/lagos' },
   openGraph: {
-    title: 'SMM Panel in Lagos, Nigeria | Nitro NG',
+    title: 'SMM Panel in Lagos, Nigeria',
     description: 'Lagos-based SMM panel with Naira pricing, Nigerian bank support and WhatsApp customer service.',
     url: 'https://nitro.ng/lagos',
     type: 'website',
