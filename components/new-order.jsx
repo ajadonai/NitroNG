@@ -235,14 +235,14 @@ function PlatformTile({ p, active, dark, t, onClick, compact }) {
 }
 
 const TS = {
-  Budget: { bg: "#fef7ed", border: "#e8d5b8", text: "#854F0B", textD: "#f0c98a", bgD: "#2d2210", borderD: "#5a4020", grad: "linear-gradient(135deg,#e0a458,#b45309)", label: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
-  Standard: { bg: "#eef4fb", border: "#b8d0e8", text: "#185FA5", textD: "#93c5fd", bgD: "#0f1e30", borderD: "#1e4070", grad: "linear-gradient(135deg,#60a5fa,#2563eb)", label: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
-  Premium: { bg: "#f5eef5", border: "#d4b8d4", text: "#534AB7", textD: "#c4b5fd", bgD: "#221535", borderD: "#3d2060", grad: "linear-gradient(135deg,#a78bfa,#7c3aed)", label: <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg> },
+  Budget: { bg: "#fef7ed", border: "#e8d5b8", text: "#854F0B", textD: "#f0c98a", bgD: "#2d2210", borderD: "#5a4020", grad: "linear-gradient(135deg,#e0a458,#b45309)", label: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
+  Standard: { bg: "#eef4fb", border: "#b8d0e8", text: "#185FA5", textD: "#93c5fd", bgD: "#0f1e30", borderD: "#1e4070", grad: "linear-gradient(135deg,#60a5fa,#2563eb)", label: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
+  Premium: { bg: "#f5eef5", border: "#d4b8d4", text: "#534AB7", textD: "#c4b5fd", bgD: "#221535", borderD: "#3d2060", grad: "linear-gradient(135deg,#a78bfa,#7c3aed)", label: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg> },
 };
 
 
 
-function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, waNumber, userEmail, orderMode, cartCounts }) {
+function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, waNumber, userEmail, orderMode, cartCounts, whichTier }) {
   const tr = useT();
   const money = useMoney();
   const promoOff = activePromotion?.active ? activePromotion.discountPercent / 100 : 0;
@@ -257,19 +257,25 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, wa
           const displayPrice = promoOff > 0 ? Math.round(tier.price * (1 - promoOff)) : tier.price;
           const inCart = bulk ? (cartCounts?.[`${svc.id}:${tier.tier}`] || 0) : 0;
           return (
-            <button key={tier.tier} onClick={e => onPickTier(tier, e)} aria-pressed={isSel} className="no-tier-chip relative flex items-center gap-2 min-w-0 rounded-xl py-2 px-2 md:px-2.5 border-[1.5px] border-solid cursor-pointer font-[inherit] text-left transition-all duration-150 ease-in-out" style={{ background: dark ? s.bgD : s.bg, borderColor: isSel ? (dark ? s.textD : s.text) : (dark ? s.borderD : s.border), color: dark ? s.textD : s.text, boxShadow: isSel ? `0 0 0 2px ${dark ? s.textD : s.text}` : undefined }}>
-              <span className="w-5 h-5 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: s.grad }}>{s.label}</span>
+            <button key={tier.tier} onClick={e => onPickTier(tier, e)} aria-pressed={isSel} className="no-tier-chip relative flex max-md:flex-col max-md:items-start items-center gap-2 max-md:gap-1.5 min-w-0 rounded-xl py-2 px-2 md:px-2.5 border-[1.5px] border-solid cursor-pointer font-[inherit] text-left transition-all duration-150 ease-in-out" style={{ background: dark ? s.bgD : s.bg, borderColor: isSel ? (dark ? s.textD : s.text) : (dark ? s.borderD : s.border), color: dark ? s.textD : s.text, boxShadow: isSel ? `0 0 0 2px ${dark ? s.textD : s.text}` : undefined }}>
+              <span className="w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: s.grad }}>{s.label}</span>
               {inCart > 0 && <span className="absolute -top-[7px] -right-[6px] min-w-[20px] h-5 px-1.5 rounded-full text-[10.5px] font-bold flex items-center justify-center" style={{ background: dark ? "#f4f1ed" : "#1c1b19", color: dark ? "#0b0e1a" : "#fff", border: `2px solid ${dark ? "#1a1329" : "#fff"}` }}>×{inCart}</span>}
-              <span className="flex flex-col items-start gap-[2px] leading-none min-w-0">
+              <span className="flex flex-col items-start gap-[2px] leading-none min-w-0 max-md:w-full">
                 <span className="text-[11px] md:text-[11.5px] font-semibold truncate max-w-full">{tier.tier}</span>
-                <span className="m text-[12px] md:text-[13px] font-bold whitespace-nowrap">{promoOff > 0 && <span className="line-through font-normal opacity-60 mr-1">{money(tier.price)}</span>}{money(displayPrice)}</span>
-                <span className="text-[10px] opacity-75 whitespace-nowrap">per {tier.per || "1K"}</span>
+                <span className="m text-[12px] md:text-[13px] font-bold whitespace-nowrap tabular-nums">{promoOff > 0 && <span className="line-through font-normal opacity-60 mr-1">{money(tier.price)}</span>}{money(displayPrice)}</span>
+                <span className="text-[9.5px] opacity-60 whitespace-nowrap">per {tier.per || "1K"}</span>
               </span>
             </button>
           );
         })}
       </div>
-      <OrderForMeCard waNumber={waNumber} dark={dark} context={svc.name} email={userEmail} />
+      {/* The two ways of being unsure, on one row and at one height: ask us,
+          or read what the tiers mean. They were a round pill and a square
+          button on two separate rows doing the same job. */}
+      <div className="flex items-center gap-2 flex-wrap mt-2.5">
+        <OrderForMeCard waNumber={waNumber} dark={dark} context={svc.name} email={userEmail} />
+        {whichTier}
+      </div>
     </div>
   );
 }
@@ -326,6 +332,10 @@ const TX_CSS = `
 .tx *{box-sizing:border-box}
 .tx-lead{font-size:11.5px;line-height:1.45;color:var(--mut);padding:0 1px 9px;margin:0}
 .tx-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:stretch}
+/* One tier per row under 560px. Three columns there forced the one-word
+   values and the legend under them, so you read a column, went to the legend
+   to learn that "None" meant refill, and came back. */
+@media (max-width:559px){.tx-cols{grid-template-columns:1fr;gap:7px}}
 .tx-col{--bt:#fff;border:1px solid var(--line);border-radius:10px;background:var(--card);display:flex;flex-direction:column;min-width:0;overflow:hidden;padding:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer;transition:transform .13s ease,box-shadow .15s ease}
 .tx-col:hover{transform:translateY(-1px)}
 .tx-col.is-rec{border-color:var(--cln);box-shadow:0 0 0 1px var(--cln)}
@@ -348,6 +358,8 @@ const TX_CSS = `
 .tx-vt{font-size:11px;font-weight:600;color:var(--ink);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tx-pick{font-size:11px;line-height:1.45;color:var(--mut);padding:8px;margin:auto 0 0;border-top:1px solid var(--rail)}
 .tx-legend{display:flex;gap:14px;flex-wrap:wrap;padding:9px 1px 0;font-size:10.5px;color:var(--mut);margin:0}
+.tx-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid var(--rail);font-size:11.5px;color:var(--mut)}
+.tx-close{height:30px;display:inline-flex;align-items:center;padding:0 13px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 12px inherit;cursor:pointer}
 .tx-legend span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .tx-legend svg{width:12px;height:12px}
 .tx.wide{padding:12px}
@@ -363,9 +375,21 @@ const TX_CSS = `
 @media (prefers-reduced-motion:reduce){.tx-col{transition:none}.tx-col:hover{transform:none}}
 `;
 
-function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick }) {
+function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick, onClose }) {
   const tr = useT();
   const wide = !narrow;
+  // Under 560px the columns stack, which buys back the width to print the real
+  // sentences instead of one-word values under a legend. Matched to the media
+  // query in TX_CSS — a boolean cannot read one, and the two must agree.
+  const [stacked, setStacked] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const mq = window.matchMedia("(max-width: 559px)");
+    const sync = () => setStacked(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   const vars = {
     "--card": "var(--t-card-bg)", "--soft": dark ? "#120c1e" : "#faf9f7",
     "--ink": t.text, "--mut": t.textMuted, "--line": t.cardBorder,
@@ -374,13 +398,13 @@ function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick }) {
   return (
     <section className={`tx${wide ? " wide" : ""}`} style={vars} onClick={e => e.stopPropagation()}>
       <style>{TX_CSS}</style>
-      <p className="tx-lead">{tr("All three start about as fast. You are choosing how well the numbers hold, whether we replace drops, and who goes first when we are busy. Tap one to pick it.")}</p>
+      <p className="tx-lead">{tr("All three start about as fast. What changes is how well the numbers hold, whether we replace drops, and who goes first when we are busy.")}</p>
       <div className="tx-cols">
         {TX_TIERS.map(d => {
           const tier = tiers.find(x => x.tier === d.key);
           const sel = selTier?.tier === d.key;
           const c = dark ? { c: d.c.dark, bg: d.c.bgD, ln: d.c.lnD } : { c: d.c.light, bg: d.c.bg, ln: d.c.ln };
-          const vals = wide ? d.long : d.short;
+          const vals = (wide || stacked) ? d.long : d.short;
           return (
             <button key={d.key} type="button" onClick={e => { e.stopPropagation(); if (tier && onPick) onPick(tier, e); }} aria-pressed={sel} aria-disabled={!tier}
               className={`tx-col${d.rec ? " is-rec" : ""}${sel ? " is-sel" : ""}${tier ? "" : " is-off"}`}
@@ -392,12 +416,18 @@ function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick }) {
               <div className="tx-vals">
                 {["people", "refill", "queue"].map((ic, i) => <div className="tx-v" key={ic}><span className="tx-vi">{TX_ICON[ic]}</span><span className="tx-vt">{vals[i]}</span></div>)}
               </div>
-              {wide && <p className="tx-pick">{d.pick}</p>}
+              {(wide || stacked) && <p className="tx-pick">{d.pick}</p>}
             </button>
           );
         })}
       </div>
-      {!wide && <p className="tx-legend"><span>{TX_ICON.people}{tr("Profiles")}</span><span>{TX_ICON.refill}{tr("Refill")}</span><span>{TX_ICON.queue}{tr("Queue")}</span></p>}
+      {!wide && !stacked && <p className="tx-legend"><span>{TX_ICON.people}{tr("Profiles")}</span><span>{TX_ICON.refill}{tr("Refill")}</span><span>{TX_ICON.queue}{tr("Queue")}</span></p>}
+      {/* The instruction that left the lead, and a close of its own — it was
+          dismissed by the same button that opened it, three rows up. */}
+      <div className="tx-foot">
+        <span>{tr("Tap one to pick it")}</span>
+        {onClose && <button type="button" className="tx-close" onClick={e => { e.stopPropagation(); onClose(); }}>{tr("Close")}</button>}
+      </div>
     </section>
   );
 }
@@ -423,6 +453,16 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
   const money = useMoney();
   const isSel = selSvc?.id === svc.id;
   const [explOpen, setExplOpen] = useState(false);
+  // One height and one radius with the WhatsApp pill it now sits beside.
+  const whichTierBtn = (
+    <button onClick={e => { e.stopPropagation(); setExplOpen(!explOpen); }} aria-expanded={explOpen}
+      aria-label={tr("What do the tiers mean?")}
+      className="shrink-0 inline-flex items-center gap-1.5 h-[30px] px-3 rounded-[10px] border border-solid cursor-pointer font-[inherit] text-[11.5px] font-semibold transition-colors duration-200"
+      style={{ borderColor: t.cardBorder, background: "transparent", color: t.textMuted }}>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      {explOpen ? tr("Close") : tr("Which tier?")}
+    </button>
+  );
   const [narrow, setNarrow] = useState(false);
   const cardRef = useRef(null);
   useEffect(() => {
@@ -466,26 +506,20 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
           </div>
         )}
       </div>
-      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={handlePickTier} dark={dark} activePromotion={activePromotion} waNumber={waNumber} userEmail={userEmail} orderMode={orderMode} cartCounts={cartCounts} />}
+      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={handlePickTier} dark={dark} activePromotion={activePromotion} waNumber={waNumber} userEmail={userEmail} orderMode={orderMode} cartCounts={cartCounts} whichTier={whichTierBtn} />}
       {isSel && (
         <>
-          <div className="mt-2.5 flex items-center gap-2 rounded-[9px] py-[7px] px-2.5 border border-solid transition-all duration-200" style={{ borderColor: s ? `${s.text}4d` : t.cardBorder, background: s ? (dark ? `${s.text}0f` : `${s.text}0a`) : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)") }}>
-            {activeTier ? (
+          {/* Only once a tier is chosen, and only to carry its refill promise.
+              It used to render empty but for a "Pick a tier to continue" line,
+              which said what three tappable tiers already said. */}
+          {activeTier && (
+            <div className="mt-2.5 flex items-center gap-2 rounded-[10px] py-[7px] px-2.5 border border-solid transition-all duration-200" style={{ borderColor: s ? `${s.text}4d` : t.cardBorder, background: s ? (dark ? s.bgD : s.bg) : "transparent" }}>
               <div className="flex-1 text-[11px]" style={{ color: dark ? "#8a8580" : "#757170" }}>
                 <strong style={{ color: dark ? "#c9c5c0" : "#4a4744" }}>{tr(refillLabel(activeTier.tier))}</strong>
               </div>
-            ) : (
-              <div className="flex-1 flex items-center gap-1.5 text-[11px]" style={{ color: dark ? "#8a8580" : "#757170" }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                {tr("Pick a tier to continue")}
-              </div>
-            )}
-            <button onClick={e => { e.stopPropagation(); setExplOpen(!explOpen); }} aria-expanded={explOpen} aria-label={tr("What do the tiers mean?")} className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold rounded-full py-[3px] px-[9px] border border-solid cursor-pointer font-[inherit] transition-all duration-150 hover:-translate-y-px" style={{ color: dark ? "#8a8580" : "#757170", background: dark ? "rgba(255,255,255,.06)" : "#fff", borderColor: t.cardBorder }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              {explOpen ? tr("Close") : tr("Which tier?")}
-            </button>
-          </div>
-          {explOpen && <TierExplainer dark={dark} t={t} selTier={selTier} narrow={narrow} tiers={svc.tiers} onPick={handlePickTier} />}
+            </div>
+          )}
+          {explOpen && <TierExplainer dark={dark} t={t} selTier={selTier} narrow={narrow} tiers={svc.tiers} onPick={handlePickTier} onClose={() => setExplOpen(false)} />}
         </>
       )}
     </div>

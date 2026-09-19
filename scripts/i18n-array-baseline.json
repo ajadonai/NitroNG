@@ -16,7 +16,7 @@
     "components/help-article.jsx": 4,
     "components/help-listing.jsx": 25,
     "components/lagos-page.jsx": 35,
-    "components/landing-v3-below-fold.jsx": 20,
+    "components/landing-v3-below-fold.jsx": 19,
     "components/landing-v3.jsx": 10,
     "components/leaderboard-page.jsx": 6,
     "components/manual-transfer-sheet.jsx": 6,
@@ -38,7 +38,7 @@
     "components/service-platform-page.jsx": 5,
     "components/service-type-page.jsx": 5,
     "components/settings-page.jsx": 25,
-    "components/shared-nav.jsx": 15,
+    "components/shared-nav.jsx": 2,
     "components/tasks-page.jsx": 4,
     "components/terms.jsx": 16
   }
