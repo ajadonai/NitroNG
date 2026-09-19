@@ -1,5 +1,6 @@
 'use client';
 import { useT } from "./locale";
+import { WaButton } from "./wa-button";
 
 // The concierge offer — "we can order for you" — in its two shapes. Its own
 // module because both New Order and the Full list need it, and the full list
@@ -48,23 +49,20 @@ export function NotSureHelp({ waNumber, dark, context, email }) {
 /**
  * The same offer as a card, sitting directly under the tier chips of whichever
  * service is open. That is the moment people hesitate, and it costs no scrolling
- * to find.
+ * to find. Standing alone in its own row now that "Which tier?" moved onto the
+ * tier label, it is the thing to do on the card, not one of several actions in
+ * a row — the shared button's `filled` weight, same as everywhere else that's
+ * true, rather than the tinted pill this used to hand-roll.
  */
-export function OrderForMeCard({ waNumber, dark, context, email }) {
+export function OrderForMeCard({ waNumber, context, email }) {
   const tr = useT();
   if (!waNumber) return null;
   return (
-    <a
+    <WaButton
       href={waHelpLink(waNumber, context, email)}
-      target="_blank"
-      rel="noopener noreferrer"
       onClick={e => { e.stopPropagation(); openInPlaceOnPhone(e); }}
-      className="nudge-btn mt-2 inline-flex items-center gap-2 py-1.5 px-3 rounded-full text-[12.5px] no-underline"
-      style={{ color: dark ? "#a8a29a" : "#6b6660", background: dark ? "rgba(37,211,102,.1)" : "rgba(37,211,102,.08)", border: `1px solid ${dark ? "rgba(37,211,102,.26)" : "rgba(22,163,74,.22)"}` }}
     >
-      <span className="shrink-0 flex" style={{ color: "#25d366" }}>{WA_ICON}</span>
-      <span>{tr("Not sure?")} <b className="font-semibold" style={{ color: dark ? "#4ade80" : "#15803d" }}>{tr("We can order for you")}</b></span>
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="dir-flip shrink-0 opacity-60"><polyline points="9 18 15 12 9 6" /></svg>
-    </a>
+      {tr("We can order for you")}
+    </WaButton>
   );
 }

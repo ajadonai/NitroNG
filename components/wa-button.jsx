@@ -56,6 +56,7 @@ export function WaButton({
         href={href}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={onClick}
         {...a11y}
         {...rest}
       >
