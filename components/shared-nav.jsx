@@ -298,15 +298,15 @@ export function SharedFooter() {
 
           <div>
             <div className="lv3-ft-h4">{tr("Product")}</div>
-            {[["Pricing", "/pricing"], ["Services", "/services"], ["Quality", "/quality"], ["Reviews", "/reviews"], ["Resellers", "/resellers"], ["The Pit", "/pit"], ["Blog", "/blog"], ["What's New", "/changelog"]].map(([l, h]) => (
-              <a key={l} href={h} className="lv3-ft-l">{tr(l)}</a>
+            {[[tr("Pricing"), "/pricing"], [tr("Services"), "/services"], [tr("Quality"), "/quality"], [tr("Reviews"), "/reviews"], [tr("Resellers"), "/resellers"], [tr("The Pit"), "/pit"], [tr("Blog"), "/blog"], [tr("What's New"), "/changelog"]].map(([l, h]) => (
+              <a key={l} href={h} className="lv3-ft-l">{l}</a>
             ))}
           </div>
 
           <div>
             <div className="lv3-ft-h4">{tr("Company")}</div>
-            {[["About", "/about"], ["Help", "/help"], ["FAQ", "/faq"], ["Contact", "/contact"], ["Terms", "/terms"], ["Privacy", "/privacy"], ["Refund", "/refund"], ["Cookies", "/cookie"]].map(([l, h]) => (
-              <a key={l} href={h} className="lv3-ft-l">{tr(l)}</a>
+            {[[tr("About"), "/about"], [tr("Help"), "/help"], [tr("FAQ"), "/faq"], [tr("Contact"), "/contact"], [tr("Terms"), "/terms"], [tr("Privacy"), "/privacy"], [tr("Refund"), "/refund"], [tr("Cookies"), "/cookie"]].map(([l, h]) => (
+              <a key={l} href={h} className="lv3-ft-l">{l}</a>
             ))}
             <button onClick={() => window.dispatchEvent(new CustomEvent('nitro-cookie-settings'))} className="lv3-ft-l">{tr("Cookie settings")}</button>
           </div>
