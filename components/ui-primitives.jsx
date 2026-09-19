@@ -75,10 +75,23 @@ export function Modal({ open, onClose, title, subtitle, icon, intent = "accent",
   const panelRef = useRef(null);
   const restoreRef = useRef(null);
 
+  // `onClose` is read through a ref rather than depended on.
+  //
+  // Every one of the 34 callers passes an inline arrow — `onClose={() =>
+  // setCancelPrompt(null)}` — which is a fresh identity on each render of the
+  // parent. With onClose in the dependency array, any parent re-render tore this
+  // effect down and set it up again: the cleanup returned focus to whatever
+  // opened the dialog, and the setup moved it to the panel. Since the field's
+  // state lives in the parent, that was every keystroke — so typing a
+  // cancellation reason, or anything in the menu builder, lost focus one letter
+  // in and had to be clicked again.
+  const closeRef = useRef(onClose);
+  useEffect(() => { closeRef.current = onClose; });
+
   useEffect(() => {
     if (!open) return undefined;
     restoreRef.current = document.activeElement;
-    const onKey = e => { if (e.key === "Escape") onClose?.(); };
+    const onKey = e => { if (e.key === "Escape") closeRef.current?.(); };
     window.addEventListener("keydown", onKey);
     panelRef.current?.focus();
     // The modal owns the screen while it is up.
@@ -91,7 +104,7 @@ export function Modal({ open, onClose, title, subtitle, icon, intent = "accent",
       // dropped back at the top of the document.
       if (restoreRef.current instanceof HTMLElement) restoreRef.current.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   const ink = dark ? "#f2efe9" : "#1c1b19";
