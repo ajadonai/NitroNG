@@ -129,6 +129,36 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
 
 ### Designs agreed, not built
 
+- **Tools: mass order, and bulk order moves in.** Mocked 19 Sep, approved. A
+  **Tools** section with two pages under it.
+
+  *Mass order* is the paste box every panel has: one order per line as
+  `service id | link | quantity`, checked as you type, with the totals and the
+  wallet-after figure moving with it. A bad line never blocks the good ones — it
+  stays behind in the box while the rest go, rather than the whole paste being
+  refused. It needs the service id, which appears on the full list and nowhere
+  else.
+
+  *Bulk order* is the tap-to-build cart that already exists, relocated. Today it
+  is a hidden mode inside New Order that you only find if you already know it is
+  there; under Tools it becomes something support can send a customer to. New
+  Order's bulk toggle then points at Tools instead of carrying its own mode,
+  which takes a branch out of the biggest component on the site.
+
+  Both share the wallet strip and drip settings New Order already has, so
+  neither is rebuilt. Mockup: `scratchpad/three.html`.
+
+- **Contact page revamp.** Mocked 19 Sep, not ruled on. The Instagram and X
+  handles are plain text in a bold tag with nowhere to go, and the dot between
+  them reads as one handle; they become tappable chips with their own logos, and
+  TikTok joins them. The WhatsApp button is the accent pink — the one colour on
+  that page that does not say WhatsApp — and becomes the brand green with dark
+  ink, the button the rest of the site uses. The email is a bare link pretending
+  to be a heading and becomes a button shaped like the WhatsApp one, so the two
+  channels read as two choices rather than one offer and one afterthought. Each
+  card says what it is *for* rather than how fast it is.
+  Mockup: `scratchpad/three.html`.
+
 - **Reseller tier ladder — BUILT 17 Sep, switched off.** Set
   `reseller_tiers_live` to `'true'` in Admin → Pricing → Reseller discount to go
   live. Nothing changes a price until then; verified against production, where a
@@ -270,6 +300,70 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   protected routes in CLAUDE.md.
 
 ## Closed
+
+- **A fortnight of order-path and Watchtower work** (18–19 Sep 2026,
+  `v2.5.110`–`v2.5.125`). Reported one at a time by Trip; grouped here because
+  most of them turned out to be the same few mistakes.
+
+  **`enabled` does not mean "sellable".** On a full-list row that column records
+  whether Nitro curated the service — 9,849 of the 9,937 orderable rows have it
+  false by design. Three separate things gated on it and refused the whole full
+  list: the admin create route, and customer reorder, where 523 completed orders
+  showed a Reorder button the server then answered "Service no longer
+  available". `offerDisabled` asks the right question of each catalogue and is
+  what they ask now.
+
+  **A cancelled order's `remains` is not what the provider says.** Several
+  panels zero it the instant they cancel — "nothing left in our queue", which is
+  a different fact from "nothing was delivered". Four paths trusted it as the
+  latter, so NTR-11133 refused to redispatch on an order that delivered nothing.
+  56 historical rows corrected.
+
+  **Full-list orders never dripped.** Eligibility read the curated group's
+  `drip` tag and a full-list row has no group: 95 orders since the list opened,
+  0 dripped, 36 of which had earned a schedule. New Order was making the mirror
+  mistake, offering the multi-day picker from the provider's own `dripfeed`
+  flag, so a customer could pick five days and get everything at once.
+
+  **An order that is created was not always announced.** `tgNewOrder` fires a
+  fetch and returns; none of the three order-creation routes awaited it, so the
+  platform could freeze the function first. `lib/telegram` says exactly this
+  above `tgFlush`, and every cron route obeyed it. The order routes did not.
+
+  **A gift was still money in, everywhere but Pulse.** `MONEY_IN` was added in
+  v2.5.44 and only one surface moved to it; five others still summed
+  `WALLET_FUNDING`.
+
+  Also: the Watchtower stopped writing in `snake_case` (15 message types), the
+  guide sheet became the annotated row it always claimed to be and then stopped
+  explaining that somebody stands behind us, the reseller pricing panel lost
+  half its words, and admins can now order off the full list.
+
+- **One footer, every page** (19 Sep 2026, `v2.5.121`). The landing v3 redesign
+  built its own footer and never replaced the old one, so the site carried two —
+  and they had drifted where it costs: the landing had 11 internal links against
+  the shared footer's 16, missing Quality, Reviews, The Pit, Help and Contact
+  from the page that most needed them. SharedFooter is the landing's design now,
+  its CSS lives in globals.css, and the landing keeps only its closing pitch.
+
+- **Dialogs stop snatching focus while you type** (19 Sep 2026, `v2.5.122`).
+  Typing a cancellation reason lost focus after one letter. Modal listed
+  `onClose` in its dependency array and all 34 callers pass an inline arrow, so
+  every keystroke tore the effect down and set it up again. Read through a ref
+  now, so callers can keep passing inline arrows.
+
+- **Which tier? becomes a dialog** (19 Sep 2026, `v2.5.123`–`v2.5.124`). It
+  expanded in place and pushed the order form down twice — once opening, again
+  when picking added the refill line. Four goes, three of them the dialog
+  fighting the card it was inside: `overflow: hidden` clipped it, then two
+  different causes of the card collapsing behind it. Modal portals to the body
+  now and carries `data-modal-root`, so every "click outside" guard can see a
+  dialog including its backdrop.
+
+- **Page titles** (19 Sep 2026, `v2.5.125`). Five used an em dash where the rest
+  of the site uses a pipe; fixing that showed five more writing the brand into
+  their own title while the root template appends it, so `/resellers` read
+  "… | Nitro NG | The Nitro NG".
 
 - **One button, one pill, one WhatsApp** (17 Sep 2026, `v2.5.104`–`v2.5.106`,
   `4a44b3a6` `9e676a02` `282be8aa` `7b6d746a` `082b43fd` `b3caa58d`). Trip
