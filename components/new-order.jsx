@@ -291,11 +291,11 @@ const TX_ICON = {
 // whether we replace drops, and who goes first when we are busy. Nothing here
 // calls a tier basic or slow: ten Budget tiers start inside two hours.
 const TX_TIERS = [
-  { key: "Budget", cap: "Trying it out", short: ["Good", "None", "Normal"], long: ["Good profiles", "No refill", "Normal queue"], pick: "Testing a service, or the price matters more than the extras.",
+  { key: "Budget", cap: "Trying it out", short: ["Good", "None", "Normal"], long: ["Good profiles", "No refill", "Normal queue"],
     c: { light: "#b45309", bg: "#fef7ed", ln: "#e8d5b8", dark: "#e0a458", bgD: "#2d2210", lnD: "#5a4020" } },
-  { key: "Standard", cap: "Most pick", rec: true, short: ["Better", "30 days", "Priority"], long: ["Better profiles", "Free for 30 days", "Priority when busy"], pick: "A page you post on, and you want the numbers to stay.",
+  { key: "Standard", cap: "Most pick", rec: true, short: ["Better", "30 days", "Priority"], long: ["Better profiles", "Free for 30 days", "Priority when busy"],
     c: { light: "#1d5fa5", bg: "#eef4fb", ln: "#b8d0e8", dark: "#7aa2f7", bgD: "#0f1e30", lnD: "#1e4070" } },
-  { key: "Premium", cap: "Main page", short: ["Best", "For life", "First"], long: ["Our best profiles", "Free for life", "Front of the queue"], pick: "The account your business runs on.",
+  { key: "Premium", cap: "Main page", short: ["Best", "For life", "First"], long: ["Our best profiles", "Free for life", "Front of the queue"],
     c: { light: "#6d28d9", bg: "#f5eef5", ln: "#d4b8d4", dark: "#a78bfa", bgD: "#221535", lnD: "#3d2060" } },
 ];
 const RCP_CSS = `
@@ -352,13 +352,14 @@ const TX_CSS = `
 .tx-cap{height:17px;display:flex;align-items:center;justify-content:center;margin-top:5px;min-width:0}
 .tx-capt{font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);white-space:nowrap;text-align:center}
 .tx-pill{font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#fff;background:var(--c);border-radius:999px;padding:2px 7px;line-height:1.25;white-space:nowrap}
-.tx-vals{display:flex;flex-direction:column}
-.tx-v{display:flex;align-items:center;min-height:26px;padding:0 8px;border-top:1px solid var(--rail);min-width:0}
-.tx-v:first-child{border-top:none}
-.tx-vi{width:25px;color:var(--mut);flex-shrink:0;display:inline-flex;align-items:center}
-.tx-vi svg{width:12px;height:12px}
-.tx-vt{font-size:11px;font-weight:600;color:var(--ink);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tx-pick{font-size:11px;line-height:1.45;color:var(--mut);padding:8px;margin:auto 0 0;border-top:1px solid var(--rail)}
+/* The three facts as one wrapped line rather than a stacked row each — the
+   phone version of this dialog was tall enough to need real scrolling for
+   what is meant to be a quick reference. Nothing is cut: same three phrases,
+   just no longer paying for a border and a full row height each. The pill
+   already says what the dropped "who it's for" sentence used to restate. */
+.tx-facts{display:flex;flex-wrap:wrap;align-items:center;gap:5px 11px;padding:9px 8px 10px;margin-top:auto;border-top:1px solid var(--rail)}
+.tx-fact{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap}
+.tx-fact svg{width:12px;height:12px;color:var(--mut);flex-shrink:0}
 .tx-legend{display:flex;gap:14px;flex-wrap:wrap;padding:9px 1px 0;font-size:10.5px;color:var(--mut);margin:0}
 .tx-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid var(--rail);font-size:11.5px;color:var(--mut)}
 .tx-close{height:30px;display:inline-flex;align-items:center;padding:0 13px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 12px inherit;cursor:pointer}
@@ -371,9 +372,8 @@ const TX_CSS = `
 .tx.wide .tx-hd b{font-size:13.5px}
 .tx.wide .tx-cap{height:19px;margin-top:6px}
 .tx.wide .tx-capt,.tx.wide .tx-pill{font-size:9.5px}
-.tx.wide .tx-v{min-height:30px;padding:0 11px}
-.tx.wide .tx-vt{font-size:11.5px}
-.tx.wide .tx-pick{padding:10px 11px}
+.tx.wide .tx-facts{font-size:11.5px;padding:10px 11px 11px}
+.tx.wide .tx-fact{font-size:11.5px}
 @media (prefers-reduced-motion:reduce){.tx-col{transition:none}.tx-col:hover{transform:none}}
 `;
 
@@ -405,10 +405,9 @@ function TierExplainer({ dark, t, selTier, tiers = [], onPick, onClose }) {
                 <div className="tx-hd"><span className="tx-chip">{TS[d.key].label}</span><b>{d.key}</b></div>
                 <div className="tx-cap">{d.rec ? <span className="tx-pill">{d.cap}</span> : <span className="tx-capt">{d.cap}</span>}</div>
               </div>
-              <div className="tx-vals">
-                {["people", "refill", "queue"].map((ic, i) => <div className="tx-v" key={ic}><span className="tx-vi">{TX_ICON[ic]}</span><span className="tx-vt">{vals[i]}</span></div>)}
+              <div className="tx-facts">
+                {["people", "refill", "queue"].map((ic, i) => <span className="tx-fact" key={ic}>{TX_ICON[ic]}{vals[i]}</span>)}
               </div>
-              <p className="tx-pick">{d.pick}</p>
             </button>
           );
         })}
@@ -517,7 +516,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
               whole, which is why it comes last rather than paired with a
               tier-specific question. Same full-bleed rule as the refill line. */}
           <div className="mt-3 pt-3 -mx-3.5 px-3.5 md:-mx-4 md:px-4 desktop:-mx-5 desktop:px-5 border-t border-solid" style={{ borderColor: t.cardBorder }}>
-            <OrderForMeCard waNumber={waNumber} dark={dark} context={svc.name} email={userEmail} />
+            <OrderForMeCard waNumber={waNumber} context={svc.name} email={userEmail} />
           </div>
           {/* A dialog rather than an inline panel. Expanding in place pushed
               the order form down the screen, and picking a tier adds a refill
