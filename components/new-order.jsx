@@ -242,14 +242,20 @@ const TS = {
 
 
 
-function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, waNumber, userEmail, orderMode, cartCounts, whichTier }) {
+function TierChips({ svc, selTier, selSvc, onPickTier, dark, t, activePromotion, orderMode, cartCounts }) {
   const tr = useT();
   const money = useMoney();
   const promoOff = activePromotion?.active ? activePromotion.discountPercent / 100 : 0;
   const bulk = orderMode === "bulk";
   return (
     <div className="mt-3" data-tour="no-tier-select">
-      <div className="text-[10.5px] font-semibold uppercase tracking-[1px] mb-1.5" style={{ color: "#8a8580" }}>{bulk ? tr("Tier · tap to add") : tr("Tier")}</div>
+      {/* The label doubles as the divider between the service header above it
+          and the tiers below: the rule after the word does the separating, so
+          this section needs no border-top of its own. */}
+      <div className="flex items-center gap-2.5 mb-2">
+        <span className="text-[10.5px] font-semibold uppercase tracking-[1px] whitespace-nowrap" style={{ color: "#8a8580" }}>{bulk ? tr("Tier · tap to add") : tr("Tier")}</span>
+        <span className="flex-1 h-px" style={{ background: t.cardBorder }} />
+      </div>
       <div className="grid grid-cols-3 gap-1.5 md:gap-2">
         {svc.tiers.map(tier => {
           const s = TS[tier.tier];
@@ -268,13 +274,6 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, wa
             </button>
           );
         })}
-      </div>
-      {/* The two ways of being unsure, on one row and at one height: ask us,
-          or read what the tiers mean. They were a round pill and a square
-          button on two separate rows doing the same job. */}
-      <div className="flex items-center gap-2 flex-wrap max-md:flex-col max-md:items-start mt-2.5">
-        <OrderForMeCard waNumber={waNumber} dark={dark} context={svc.name} email={userEmail} />
-        {whichTier}
       </div>
     </div>
   );
@@ -490,19 +489,31 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
           </div>
         )}
       </div>
-      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={handlePickTier} dark={dark} activePromotion={activePromotion} waNumber={waNumber} userEmail={userEmail} orderMode={orderMode} cartCounts={cartCounts} whichTier={whichTierBtn} />}
+      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={handlePickTier} dark={dark} t={t} activePromotion={activePromotion} orderMode={orderMode} cartCounts={cartCounts} />}
       {isSel && (
         <>
           {/* Only once a tier is chosen, and only to carry its refill promise.
               It used to render empty but for a "Pick a tier to continue" line,
-              which said what three tappable tiers already said. */}
+              which said what three tappable tiers already said. A rule full
+              width of the card — not just the content column — marks it as a
+              new block rather than a continuation of the tier grid above it. */}
           {activeTier && (
-            <div className="mt-2.5 flex items-center gap-2 rounded-[10px] py-[7px] px-2.5 border border-solid transition-all duration-200" style={{ borderColor: s ? `${s.text}4d` : t.cardBorder, background: s ? (dark ? s.bgD : s.bg) : "transparent" }}>
+            <div className="mt-3 pt-3 -mx-3.5 px-3.5 md:-mx-4 md:px-4 desktop:-mx-5 desktop:px-5 flex items-center gap-2.5 border-t border-solid" style={{ borderColor: t.cardBorder }}>
+              <span className="w-[22px] h-[22px] rounded-[7px] flex items-center justify-center shrink-0" style={{ background: s ? (dark ? s.bgD : s.bg) : "transparent", border: `1px solid ${s ? (dark ? s.borderD : s.border) : t.cardBorder}`, color: s ? (dark ? s.textD : s.text) : t.textMuted }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              </span>
               <div className="flex-1 text-[11px]" style={{ color: dark ? "#8a8580" : "#757170" }}>
                 <strong style={{ color: dark ? "#c9c5c0" : "#4a4744" }}>{tr(refillLabel(activeTier.tier))}</strong>
               </div>
             </div>
           )}
+          {/* The two ways of being unsure, on one row and at one height: ask
+              us, or read what the tiers mean. Same full-bleed rule as the
+              refill line above, so the card reads as stacked bands. */}
+          <div className="mt-3 pt-3 -mx-3.5 px-3.5 md:-mx-4 md:px-4 desktop:-mx-5 desktop:px-5 flex items-center gap-2 flex-wrap max-md:flex-col max-md:items-start border-t border-solid" style={{ borderColor: t.cardBorder }}>
+            <OrderForMeCard waNumber={waNumber} dark={dark} context={svc.name} email={userEmail} />
+            {whichTierBtn}
+          </div>
           {/* A dialog rather than an inline panel. Expanding in place pushed
               the order form down the screen, and picking a tier adds a refill
               line above it, so the thing you were reading moved twice. */}
