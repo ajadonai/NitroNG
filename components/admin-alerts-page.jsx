@@ -116,7 +116,7 @@ export function AdminAlertsPage({ dark, t }) {
         <span className="aa-acts">
         {livePane
           ? <><button type="button" className="nb" onClick={() => setActive(a.id, false)}>Take down</button><button type="button" className="nb" onClick={() => edit(a)}>Edit</button></>
-          : <><button type="button" className="nb sm" onClick={() => setActive(a.id, true)}>Restore</button><button type="button" className="nb sm danger" onClick={() => remove(a)}>Remove</button></>}
+          : <><button type="button" className="nb sm" onClick={() => setActive(a.id, true)}>Restore</button><button type="button" className="nb sm bad" onClick={() => remove(a)}>Remove</button></>}
         </span>
       </div>
     </div>

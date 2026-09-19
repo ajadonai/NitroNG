@@ -1651,7 +1651,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
                 </div>
                 <div className="rcp-acts">
                   <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="nb">{tr("Order again")}</button>
-                  {onViewOrders && <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="nb rcp-pri">{tr("Track this order")}</button>}
+                  {onViewOrders && <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="nb pri">{tr("Track this order")}</button>}
                 </div>
               </div>
             ) : (

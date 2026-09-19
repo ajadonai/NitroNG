@@ -363,7 +363,7 @@ export default function AdminTasksPage({ dark, t }) {
                       {s.status === 'pending' ? (
                         <span className="tk-acts">
                           <button type="button" className="nb sm ok" disabled={busy === s.id} onClick={() => reviewSub(s.id, 'approve')}>{busy === s.id ? 'Working…' : 'Approve'}</button>
-                          <button type="button" className="nb sm danger" disabled={busy === s.id} onClick={() => setReject({ sub: s, reason: '' })}>Reject</button>
+                          <button type="button" className="nb sm bad" disabled={busy === s.id} onClick={() => setReject({ sub: s, reason: '' })}>Reject</button>
                         </span>
                       ) : (
                         <span className="tk-acts tk-rev">
@@ -585,7 +585,7 @@ export default function AdminTasksPage({ dark, t }) {
 
             <div className="tk-emf">
               <button type="button" className="nb" onClick={() => setModal(null)}>Cancel</button>
-              {modal.mode === 'edit' && <button type="button" className="nb danger tk-left" onClick={deleteTask}>Delete</button>}
+              {modal.mode === 'edit' && <button type="button" className="nb bad tk-left" onClick={deleteTask}>Delete</button>}
               <button type="button" className="nb pri" disabled={saving || !form.title.trim()} onClick={saveTask}>{saving ? 'Saving…' : modal.mode === 'create' ? 'Create task' : 'Save changes'}</button>
             </div>
           </div>

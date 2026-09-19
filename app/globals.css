@@ -1011,6 +1011,14 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .nb.bad:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--t-red) 7%, transparent); }
 .nb.bad:active { transform: translateY(1px); box-shadow: none; }
 
+/* Approve, Credit, Restore access — `.bad`'s mirror. Used across admin since
+   before this file's `.nb` system existed, but the modifier itself was never
+   written, so "Approve" sat on the bare base class: transparent border,
+   transparent background, unreadable as a button next to Reject's ring. */
+.nb.ok { background: var(--t-card-bg); color: var(--t-green); border-color: color-mix(in srgb, var(--t-green) 30%, transparent); }
+.nb.ok:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--t-green) 7%, transparent); }
+.nb.ok:active { transform: translateY(1px); box-shadow: none; }
+
 /* Caution rather than destruction — "Resync all", "Reprice the menu". Amber
    text on a ringed button, using the action amber because it is the one that
    passes. `danger` from the old classes was only ever red text, so it folds

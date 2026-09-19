@@ -205,7 +205,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
             {(g.type || "").toLowerCase().includes("comment") && <label className="mb-chk"><input type="checkbox" checked={e.customComments} onChange={ev => setEdit({ [ti.id]: { ...e, customComments: ev.target.checked } })} /> Custom comments</label>}
             {(g.type || "").toLowerCase().includes("traffic") && <label className="mb-chk"><input type="checkbox" checked={e.trafficTargeting} onChange={ev => setEdit({ [ti.id]: { ...e, trafficTargeting: ev.target.checked } })} /> Traffic targeting</label>}
             <span className="mb-spacer" />
-            <button type="button" className="nb sm danger" onClick={async () => { if (await confirm({ title: "Delete tier", message: `Delete the ${ti.tier} tier from "${g.name}"?`, confirmLabel: "Delete", danger: true })) {
+            <button type="button" className="nb sm bad" onClick={async () => { if (await confirm({ title: "Delete tier", message: `Delete the ${ti.tier} tier from "${g.name}"?`, confirmLabel: "Delete", danger: true })) {
                   let r = await act({ action: "delete-tier", tierIdToDelete: ti.id });
                   // 385 of 393 tiers are pointed at by a live reseller service
                   // id, so this is the normal path rather than the exception.
@@ -263,7 +263,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
               <button type="button" className="mb-addt" onClick={() => { setAddFor(addFor === g.id ? null : g.id); setAddForm({ tier: missing[0] || "Standard", serviceId: "", price: "" }); setSvcQ(""); }}>{missing.length ? `+ Add ${missing[0]} tier` : "+ Add tier"}</button>
               <span className="mb-gacts">
                 <button type="button" className="nb sm" onClick={() => act({ action: "duplicate-group", groupId: g.id })}>Duplicate</button>
-                <button type="button" className="nb sm danger" onClick={async () => { if (await confirm({ title: "Delete group", message: `Delete "${g.name}" and all its tiers?`, confirmLabel: "Delete", danger: true })) act({ action: "delete-group", groupId: g.id }); }}>Delete group</button>
+                <button type="button" className="nb sm bad" onClick={async () => { if (await confirm({ title: "Delete group", message: `Delete "${g.name}" and all its tiers?`, confirmLabel: "Delete", danger: true })) act({ action: "delete-group", groupId: g.id }); }}>Delete group</button>
               </span>
             </div>
           </div>
