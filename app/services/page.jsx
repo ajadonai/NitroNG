@@ -4,7 +4,7 @@ import ServicesHubView from '@/components/services-hub-page';
 export const revalidate = 3600;
 
 export const metadata = {
-  title: 'Social Media Growth Services in Nigeria | The Nitro NG',
+  title: 'Social Media Growth Services in Nigeria',
   description: '29 platforms, 150+ service types, priced in Naira. Instagram, TikTok, YouTube, X, Facebook, Telegram, Spotify and more. Fund your wallet from ₦1,000.',
   alternates: { canonical: 'https://nitro.ng/services' },
   openGraph: {
