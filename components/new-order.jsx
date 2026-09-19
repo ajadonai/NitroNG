@@ -242,7 +242,7 @@ const TS = {
 
 
 
-function TierChips({ svc, selTier, selSvc, onPickTier, dark, t, activePromotion, orderMode, cartCounts }) {
+function TierChips({ svc, selTier, selSvc, onPickTier, dark, t, activePromotion, orderMode, cartCounts, whichTier }) {
   const tr = useT();
   const money = useMoney();
   const promoOff = activePromotion?.active ? activePromotion.discountPercent / 100 : 0;
@@ -251,10 +251,13 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, t, activePromotion,
     <div className="mt-3" data-tour="no-tier-select">
       {/* The label doubles as the divider between the service header above it
           and the tiers below: the rule after the word does the separating, so
-          this section needs no border-top of its own. */}
+          this section needs no border-top of its own. "Which tier?" rides the
+          end of that same rule — the question sits as close to the tier grid
+          as it can, on both a stacked phone and a wide desktop row alike. */}
       <div className="flex items-center gap-2.5 mb-2">
         <span className="text-[10.5px] font-semibold uppercase tracking-[1px] whitespace-nowrap" style={{ color: "#8a8580" }}>{bulk ? tr("Tier · tap to add") : tr("Tier")}</span>
         <span className="flex-1 h-px" style={{ background: t.cardBorder }} />
+        {whichTier}
       </div>
       <div className="grid grid-cols-3 gap-1.5 md:gap-2">
         {svc.tiers.map(tier => {
@@ -441,13 +444,15 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
   const money = useMoney();
   const isSel = selSvc?.id === svc.id;
   const [explOpen, setExplOpen] = useState(false);
-  // One height and one radius with the WhatsApp pill it now sits beside.
+  // A plain text link riding the tier rule rather than a bordered button —
+  // it sits on a hairline now, not on its own row, so it reads as part of
+  // the label rather than a third button competing with the tier grid.
   const whichTierBtn = (
     <button onClick={e => { e.stopPropagation(); setExplOpen(!explOpen); }} aria-expanded={explOpen}
       aria-label={tr("What do the tiers mean?")}
-      className="shrink-0 md:ms-auto inline-flex items-center gap-1.5 h-[30px] px-3 rounded-[10px] border border-solid cursor-pointer font-[inherit] text-[11.5px] font-semibold transition-colors duration-200"
-      style={{ borderColor: t.cardBorder, background: "transparent", color: t.textMuted }}>
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      className="shrink-0 inline-flex items-center gap-1 border-0 bg-transparent cursor-pointer font-[inherit] text-[10.5px] font-bold p-0"
+      style={{ color: isSel ? t.accent : t.accentInk }}>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
       {explOpen ? tr("Close") : tr("Which tier?")}
     </button>
   );
@@ -489,7 +494,7 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
           </div>
         )}
       </div>
-      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={handlePickTier} dark={dark} t={t} activePromotion={activePromotion} orderMode={orderMode} cartCounts={cartCounts} />}
+      {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={handlePickTier} dark={dark} t={t} activePromotion={activePromotion} orderMode={orderMode} cartCounts={cartCounts} whichTier={whichTierBtn} />}
       {isSel && (
         <>
           {/* Only once a tier is chosen, and only to carry its refill promise.
@@ -507,12 +512,12 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
               </div>
             </div>
           )}
-          {/* The two ways of being unsure, on one row and at one height: ask
-              us, or read what the tiers mean. Same full-bleed rule as the
-              refill line above, so the card reads as stacked bands. */}
-          <div className="mt-3 pt-3 -mx-3.5 px-3.5 md:-mx-4 md:px-4 desktop:-mx-5 desktop:px-5 flex items-center gap-2 flex-wrap max-md:flex-col max-md:items-start border-t border-solid" style={{ borderColor: t.cardBorder }}>
+          {/* "Which tier?" moved onto the tier label's own rule above, so this
+              is just the concierge offer now — the fallback for the card as a
+              whole, which is why it comes last rather than paired with a
+              tier-specific question. Same full-bleed rule as the refill line. */}
+          <div className="mt-3 pt-3 -mx-3.5 px-3.5 md:-mx-4 md:px-4 desktop:-mx-5 desktop:px-5 border-t border-solid" style={{ borderColor: t.cardBorder }}>
             <OrderForMeCard waNumber={waNumber} dark={dark} context={svc.name} email={userEmail} />
-            {whichTierBtn}
           </div>
           {/* A dialog rather than an inline panel. Expanding in place pushed
               the order form down the screen, and picking a tier adds a refill
