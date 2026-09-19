@@ -265,67 +265,66 @@ export function SharedFooter() {
   const tkHandle = sl.social_tiktok ? sl.social_tiktok.replace(/^(https?:\/\/)?(www\.)?(tiktok\.com\/@?)?/i, "").replace(/^@/, "").replace(/\/$/, "") : null;
   const waNum = sl.social_whatsapp_support ? sl.social_whatsapp_support.replace(/\D/g, "") : null;
 
-  const socialBtn = "w-10 h-10 rounded-[10px] flex items-center justify-center no-underline transition-transform duration-200 hover:-translate-y-px";
-  const linkCls = "block text-[13px] font-medium py-[5px] no-underline transition-all duration-200 hover:-translate-y-px hover:opacity-80";
-  const linkColor = dark ? "rgba(244,241,237,.6)" : "rgba(28,27,25,.6)";
-  const headingColor = dark ? "rgba(244,241,237,.4)" : "rgba(28,27,25,.45)";
+
+  const WA_PATH = "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z";
+  const soc = (href, label, d) => (
+    <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="lv3-ft-soc">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d={d} /></svg>
+    </a>
+  );
 
   return (
-    <footer className="py-10 px-12 max-md:py-8 max-md:px-5 pb-6 relative" style={{ background: dark ? "#030508" : "#dedad4" }}>
-      <div className="grid grid-cols-[1.8fr_1fr_1fr_1fr] md:grid-cols-[1.8fr_1fr_1fr_1fr] max-md:grid-cols-2 gap-8 max-md:gap-x-4 max-md:gap-y-7 mb-8 max-w-[1100px] mx-auto">
-        {/* Brand */}
-        <div className="max-md:col-span-full">
-          <div className="mb-3">
-            {/* inline-flex, not flex: a flex span is block-level and stretched to
-                the whole brand column — the full footer width on a phone. */}
-            <span className="nitro-mark h-7 px-3 inline-flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span>
+    <footer className="lv3-ft" style={{ background: dark ? "#050710" : "#2a1a22" }}>
+      <div className="lv3-grain" />
+      <div className="absolute rounded-full pointer-events-none" style={{ width: 520, height: 400, top: "-40%", left: "18%", background: "rgba(196,125,142,.14)", filter: "blur(110px)" }} />
+      <div className="lv3-ft-ghost" aria-hidden="true">NITRO</div>
+      <div className="lv3-ft-in">
+
+        <div className="lv3-ft-cols">
+          <div className="lv3-ft-brand">
+            <span className="nitro-mark h-[30px] px-3 inline-flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>
+              <NitroWordmark height={13} color="#fff" />
+            </span>
+            <p>{tr("We handle the numbers so you can handle the content.")} {platformCount ? `${platformCount}+` : "28+"} {tr("platforms, naira pricing, fast delivery.")}</p>
+            <a className="lv3-ft-status" href="https://stats.uptimerobot.com/PvHE3u4psX" target="_blank" rel="noopener noreferrer"><i />{tr("All systems live")}</a>
+            <div className="flex gap-2 mt-[18px]">
+              {soc(`https://x.com/${xHandle}`, "X (Twitter)", "M18.9 1.2h3.7l-8.1 9.2 9.5 12.5h-7.4l-5.8-7.6-6.7 7.6H.4l8.6-9.8L0 1.2h7.6l5.2 6.9 6.1-6.9zm-1.3 19.5h2L6.5 3.2H4.4l13.2 17.5z")}
+              {soc(`https://instagram.com/${igHandle}`, "Instagram", "M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.2 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.2-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.2-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4C8.4 2.2 8.8 2.2 12 2.2zm0 5.8a4 4 0 100 8 4 4 0 000-8zm0 6.6a2.6 2.6 0 110-5.2 2.6 2.6 0 010 5.2zm5.1-6.8a.94.94 0 11-1.9 0 .94.94 0 011.9 0z")}
+              {tkHandle && soc(`https://tiktok.com/@${tkHandle}`, "TikTok", "M16.6 5.8a4.3 4.3 0 01-1-2.6h-3v11.6a2.5 2.5 0 11-1.8-2.4V9.3a5.5 5.5 0 103.5 5.1V8.8a7.2 7.2 0 004.2 1.4V7.2a4.3 4.3 0 01-1.9-1.4z")}
+              {waNum && soc(`https://wa.me/${waNum}`, "WhatsApp", WA_PATH)}
+            </div>
           </div>
-          <p className="text-[13px] leading-[1.7] max-w-[260px] mb-5" style={{ color: dark ? "rgba(244,241,237,.45)" : "rgba(28,27,25,.5)" }}>{tr("We handle the numbers so you can handle the content.")} {platformCount?`${platformCount}+`:"140+"} {tr("service types, Naira pricing, fast delivery.")}</p>
-          <div className="flex gap-2.5">
-            <a href={`https://instagram.com/${igHandle}`} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={socialBtn} style={{ background: dark ? "rgba(225,48,108,.08)" : "rgba(225,48,108,.06)", border: `1px solid ${dark ? "rgba(225,48,108,.18)" : "rgba(225,48,108,.14)"}` }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
-            <a href={`https://x.com/${xHandle}`} target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className={socialBtn} style={{ background: dark ? "rgba(255,255,255,.10)" : "rgba(0,0,0,.06)", border: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: dark ? "rgba(244,241,237,.5)" : "rgba(28,27,25,.45)" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
-            {tkHandle && <a href={`https://tiktok.com/@${tkHandle}`} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className={socialBtn} style={{ background: dark ? "rgba(255,255,255,.10)" : "rgba(0,0,0,.06)", border: `1px solid ${dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"}`, color: dark ? "rgba(244,241,237,.5)" : "rgba(28,27,25,.45)" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.41a8.16 8.16 0 004.77 1.52V7.48a4.85 4.85 0 01-1-.79z"/></svg></a>}
-            {waNum && <a href={`https://wa.me/${waNum}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className={socialBtn} style={{ background: dark ? "rgba(37,211,102,.08)" : "rgba(37,211,102,.06)", border: `1px solid ${dark ? "rgba(37,211,102,.18)" : "rgba(37,211,102,.14)"}` }}><svg width="14" height="14" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>}
+
+          <div>
+            <div className="lv3-ft-h4">{tr("Product")}</div>
+            {[["Pricing", "/pricing"], ["Services", "/services"], ["Quality", "/quality"], ["Reviews", "/reviews"], ["Resellers", "/resellers"], ["The Pit", "/pit"], ["Blog", "/blog"], ["What's New", "/changelog"]].map(([l, h]) => (
+              <a key={l} href={h} className="lv3-ft-l">{tr(l)}</a>
+            ))}
+          </div>
+
+          <div>
+            <div className="lv3-ft-h4">{tr("Company")}</div>
+            {[["About", "/about"], ["Help", "/help"], ["FAQ", "/faq"], ["Contact", "/contact"], ["Terms", "/terms"], ["Privacy", "/privacy"], ["Refund", "/refund"], ["Cookies", "/cookie"]].map(([l, h]) => (
+              <a key={l} href={h} className="lv3-ft-l">{tr(l)}</a>
+            ))}
+            <button onClick={() => window.dispatchEvent(new CustomEvent('nitro-cookie-settings'))} className="lv3-ft-l">{tr("Cookie settings")}</button>
+          </div>
+
+          <div className="lv3-ft-contact">
+            <div className="lv3-ft-h4">{tr("Get in touch")}</div>
+            <a href="mailto:support@nitro.ng" className="lv3-ft-l">support@nitro.ng</a>
+            {waNum && <a href={`https://wa.me/${waNum}`} target="_blank" rel="noopener noreferrer" className="lv3-ft-l">{tr("WhatsApp support")}</a>}
+            <a href="https://stats.uptimerobot.com/PvHE3u4psX" target="_blank" rel="noopener noreferrer" className="lv3-ft-l">{tr("Status page")}</a>
           </div>
         </div>
 
-        {/* Product */}
-        <div>
-          <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{ color: headingColor }}>{tr("Product")}</div>
-          {[["Pricing", "/pricing"], ["Services", "/services"], ["Quality", "/quality"], ["Reviews", "/reviews"], ["Resellers", "/resellers"], ["The Pit", "/pit"], ["About", "/about"], ["Blog", "/blog"], ["What's New", "/changelog"]].map(([l, h]) => (
-            <a key={l} href={h} className={linkCls} style={{ color: linkColor }}>{l}</a>
-          ))}
-        </div>
-
-        {/* Company */}
-        <div>
-          <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{ color: headingColor }}>{tr("Company")}</div>
-          {[["Help", "/help"], ["FAQ", "/faq"], ["Contact", "/contact"], ["Terms", "/terms"], ["Privacy", "/privacy"], ["Refund", "/refund"], ["Cookies", "/cookie"]].map(([l, h]) => (
-            <a key={l} href={h} className={linkCls} style={{ color: linkColor }}>{l}</a>
-          ))}
-          <button onClick={() => window.dispatchEvent(new CustomEvent('nitro-cookie-settings'))} className={`${linkCls} bg-transparent border-0 cursor-pointer p-0 text-left`} style={{ color: linkColor }}>{tr("Cookie settings")}</button>
-        </div>
-
-        {/* Get in touch */}
-        <div>
-          <div className="text-[11px] font-semibold tracking-[1.5px] uppercase mb-4" style={{ color: headingColor }}>{tr("Get in touch")}</div>
-          <a href="mailto:support@nitro.ng" className={linkCls} style={{ color: linkColor }}>support@nitro.ng</a>
-          {waNum && <a href={`https://wa.me/${waNum}`} target="_blank" rel="noopener noreferrer" className={linkCls} style={{ color: linkColor }}>{tr("WhatsApp Support")}</a>}
-          <a href="https://stats.uptimerobot.com/PvHE3u4psX" target="_blank" rel="noopener noreferrer" className={`${linkCls} flex items-center gap-1.5`} style={{ color: linkColor }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            {tr("Status Page")}
-          </a>
+        <div className="lv3-ft-base">
+          <span className="m">© {new Date().getFullYear() > 2025 ? `2025–${new Date().getFullYear()}` : "2025"} The Nitro NG · RC 9514845</span>
+          <span>{tr("Built in Lagos 🇳🇬")}</span>
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="h-px mb-5 max-w-[1100px] mx-auto" style={{ background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.06)" }} />
-
-      {/* Bottom bar */}
-      <div className="flex justify-between items-center max-md:flex-col max-md:gap-2 max-md:text-center max-w-[1100px] mx-auto">
-        <span className="text-xs" style={{ color: dark ? "rgba(244,241,237,.35)" : "rgba(28,27,25,.4)" }}>© {new Date().getFullYear() > 2025 ? `2025–${new Date().getFullYear()}` : "2025"} The Nitro NG. All rights reserved. RC 9514845</span>
-        <span className="text-xs" style={{ color: dark ? "rgba(244,241,237,.3)" : "rgba(28,27,25,.35)" }}>{tr("Built in Lagos 🇳🇬")}</span>
-      </div>
       {/* Floating WhatsApp button */}
       {waNum && (
         <WaButton
