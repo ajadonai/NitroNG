@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useT } from "./locale";
 
 /**
@@ -106,12 +107,37 @@ export function Modal({ open, onClose, title, subtitle, icon, intent = "accent",
     };
   }, [open]);
 
-  if (!open) return null;
+  // The dialog leaves the tree it was written in.
+  //
+  // It is `position: fixed`, which is usually enough — but a caller's ancestor
+  // only has to set `overflow: hidden`, a transform or a filter for the dialog
+  // to be clipped or re-anchored to that ancestor instead of the viewport. The
+  // opened service card does exactly that (lib/expandable-card sets
+  // overflow: hidden on the frame), so "Which tier?" rendered inside a box that
+  // cut it off. Portalling to the body puts every one of the 34 callers out of
+  // reach of whatever their surroundings do.
+  const [host, setHost] = useState(null);
+  useEffect(() => { setHost(document.body); }, []);
+
+  if (!open || !host) return null;
   const ink = dark ? "#f2efe9" : "#1c1b19";
   const mut = dark ? "#8b90a0" : "#757170";
   const line = dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)";
-  return (
-    <div className={sheet ? "fixed inset-0 z-[300] backdrop-blur-[6px]" : "fixed inset-0 z-[300] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-[6px]"}>
+  return createPortal(
+    <div
+      // A portal moves the DOM but not the React tree, so a click in here
+      // still bubbles to whatever rendered the dialog. Clicking the backdrop
+      // of "Which tier?" reached the service card underneath and collapsed
+      // the card you had open. The backdrop's own onClose has already run by
+      // the time this stops it.
+      onClick={e => e.stopPropagation()}
+      // Marks the backdrop as well as the panel. `[role="dialog"]` is only the
+      // panel, so a "click outside" guard listening on document saw a backdrop
+      // click as outside everything and closed whatever was open behind —
+      // which is how dismissing "Which tier?" collapsed the service card you
+      // were reading.
+      data-modal-root=""
+      className={sheet ? "fixed inset-0 z-[300] backdrop-blur-[6px]" : "fixed inset-0 z-[300] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-[6px]"}>
       <button type="button" aria-label={tr("Close dialog")} onClick={onClose}
         className="absolute inset-0 border-none cursor-default" style={{ background: "rgba(0,0,0,.55)" }} />
       <div
@@ -155,7 +181,7 @@ export function Modal({ open, onClose, title, subtitle, icon, intent = "accent",
         ) : children}
       </div>
     </div>
-  );
+    , host);
 }
 
 let fieldSeq = 0;

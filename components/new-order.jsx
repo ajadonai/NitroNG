@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useMemo, useCallback, forwardRef } from "react";
 import { RailSec, RailCard, RailStep, RailNote, RailLink } from "./rail";
-import { useBodyScrollLock, Emph } from "./ui-primitives";
+import { useBodyScrollLock, Emph, Modal } from "./ui-primitives";
 import { trackViewContent } from "./capi-tracker";
 import { formatOrderQuantity as fQty, isValidLink, getLinkPlaceholder } from "../lib/order-form-core";
 import { useToast } from "./toast";
@@ -272,7 +272,7 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, activePromotion, wa
       {/* The two ways of being unsure, on one row and at one height: ask us,
           or read what the tiers mean. They were a round pill and a square
           button on two separate rows doing the same job. */}
-      <div className="flex items-center gap-2 flex-wrap mt-2.5">
+      <div className="flex items-center gap-2 flex-wrap max-md:flex-col max-md:items-start mt-2.5">
         <OrderForMeCard waNumber={waNumber} dark={dark} context={svc.name} email={userEmail} />
         {whichTier}
       </div>
@@ -375,28 +375,18 @@ const TX_CSS = `
 @media (prefers-reduced-motion:reduce){.tx-col{transition:none}.tx-col:hover{transform:none}}
 `;
 
-function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick, onClose }) {
+function TierExplainer({ dark, t, selTier, tiers = [], onPick, onClose }) {
   const tr = useT();
-  const wide = !narrow;
-  // Under 560px the columns stack, which buys back the width to print the real
-  // sentences instead of one-word values under a legend. Matched to the media
-  // query in TX_CSS — a boolean cannot read one, and the two must agree.
-  const [stacked, setStacked] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-    const mq = window.matchMedia("(max-width: 559px)");
-    const sync = () => setStacked(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
+  // No width watching here any more: the dialog is one width, and the phone is
+  // stacked by the media query on .tx-cols. The values are always the full
+  // sentences, so the legend that explained one-word values is gone with them.
   const vars = {
     "--card": "var(--t-card-bg)", "--soft": dark ? "#120c1e" : "#faf9f7",
     "--ink": t.text, "--mut": t.textMuted, "--line": t.cardBorder,
     "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
   };
   return (
-    <section className={`tx${wide ? " wide" : ""}`} style={vars} onClick={e => e.stopPropagation()}>
+    <section className="tx wide" style={vars} onClick={e => e.stopPropagation()}>
       <style>{TX_CSS}</style>
       <p className="tx-lead">{tr("All three start about as fast. What changes is how well the numbers hold, whether we replace drops, and who goes first when we are busy.")}</p>
       <div className="tx-cols">
@@ -404,7 +394,7 @@ function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick, onClose }
           const tier = tiers.find(x => x.tier === d.key);
           const sel = selTier?.tier === d.key;
           const c = dark ? { c: d.c.dark, bg: d.c.bgD, ln: d.c.lnD } : { c: d.c.light, bg: d.c.bg, ln: d.c.ln };
-          const vals = (wide || stacked) ? d.long : d.short;
+          const vals = d.long;
           return (
             <button key={d.key} type="button" onClick={e => { e.stopPropagation(); if (tier && onPick) onPick(tier, e); }} aria-pressed={sel} aria-disabled={!tier}
               className={`tx-col${d.rec ? " is-rec" : ""}${sel ? " is-sel" : ""}${tier ? "" : " is-off"}`}
@@ -416,12 +406,11 @@ function TierExplainer({ dark, t, selTier, narrow, tiers = [], onPick, onClose }
               <div className="tx-vals">
                 {["people", "refill", "queue"].map((ic, i) => <div className="tx-v" key={ic}><span className="tx-vi">{TX_ICON[ic]}</span><span className="tx-vt">{vals[i]}</span></div>)}
               </div>
-              {(wide || stacked) && <p className="tx-pick">{d.pick}</p>}
+              <p className="tx-pick">{d.pick}</p>
             </button>
           );
         })}
       </div>
-      {!wide && !stacked && <p className="tx-legend"><span>{TX_ICON.people}{tr("Profiles")}</span><span>{TX_ICON.refill}{tr("Refill")}</span><span>{TX_ICON.queue}{tr("Queue")}</span></p>}
       {/* The instruction that left the lead, and a close of its own — it was
           dismissed by the same button that opened it, three rows up. */}
       <div className="tx-foot">
@@ -457,21 +446,16 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
   const whichTierBtn = (
     <button onClick={e => { e.stopPropagation(); setExplOpen(!explOpen); }} aria-expanded={explOpen}
       aria-label={tr("What do the tiers mean?")}
-      className="shrink-0 inline-flex items-center gap-1.5 h-[30px] px-3 rounded-[10px] border border-solid cursor-pointer font-[inherit] text-[11.5px] font-semibold transition-colors duration-200"
+      className="shrink-0 md:ms-auto inline-flex items-center gap-1.5 h-[30px] px-3 rounded-[10px] border border-solid cursor-pointer font-[inherit] text-[11.5px] font-semibold transition-colors duration-200"
       style={{ borderColor: t.cardBorder, background: "transparent", color: t.textMuted }}>
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
       {explOpen ? tr("Close") : tr("Which tier?")}
     </button>
   );
-  const [narrow, setNarrow] = useState(false);
+  // `narrow` and its ResizeObserver went with the inline explainer: they existed
+  // to tell it how wide the *card* was, and it is a 640px dialog now. cardRef
+  // stays — the card itself still uses it.
   const cardRef = useRef(null);
-  useEffect(() => {
-    const el = cardRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => setNarrow(entry.contentRect.width <= 380));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
   useEffect(() => { if (!isSel) setExplOpen(false); }, [isSel]);
   const lowestPrice = Math.min(...svc.tiers.map(ti => ti.price));
   const activeTier = isSel && selTier ? selTier : null;
@@ -519,7 +503,22 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
               </div>
             </div>
           )}
-          {explOpen && <TierExplainer dark={dark} t={t} selTier={selTier} narrow={narrow} tiers={svc.tiers} onPick={handlePickTier} onClose={() => setExplOpen(false)} />}
+          {/* A dialog rather than an inline panel. Expanding in place pushed
+              the order form down the screen, and picking a tier adds a refill
+              line above it, so the thing you were reading moved twice. */}
+          <Modal
+            open={explOpen}
+            onClose={() => setExplOpen(false)}
+            dark={dark}
+            maxWidth={640}
+            title={tr("Which tier?")}
+            icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>}
+          >
+            {/* The dialog is 640 wide whatever the card was, so the columns
+                get the full sentences; the phone still stacks them below 560. */}
+            <TierExplainer dark={dark} t={t} selTier={selTier} tiers={svc.tiers}
+              onPick={(tier, e) => { handlePickTier(tier, e); setExplOpen(false); }} />
+          </Modal>
         </>
       )}
     </div>
@@ -1016,7 +1015,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
       // If click is outside the service list entirely, collapse
       if (listRef.current && !listRef.current.contains(e.target)) {
         // Don't collapse if clicking inside order form, modal, bottom bar, or tour overlay
-        if (e.target.closest('.no-modal-overlay') || e.target.closest('.no-bottom-bar') || e.target.closest('.no-form-wrap') || e.target.closest('[data-tour-tooltip]')) return;
+        if (e.target.closest('.no-modal-overlay') || e.target.closest('.no-bottom-bar') || e.target.closest('.no-form-wrap') || e.target.closest('[data-tour-tooltip]') || e.target.closest('[data-modal-root]')) return;
         setSelSvc(null); setSelTier(null); setLink(""); setComments(""); setQty("");
       }
     };
