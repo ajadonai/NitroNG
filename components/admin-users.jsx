@@ -812,7 +812,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
           <button type="button" className="nb sm" onClick={() => { if (selected.size === 1) { const u = users.find(x => x.id === [...selected][0]); if (u) openDrawer(u, true); } else toast.info('Coming soon', 'Bulk credit coming soon'); }}>Credit</button>
           <button type="button" className="nb sm" onClick={() => toast.info('Coming soon', 'Bulk message coming soon')}>Email</button>
           <button type="button" className="nb sm" onClick={exportSelected}>Export</button>
-          <button type="button" className="nb sm danger" onClick={bulkBan}>Ban</button>
+          <button type="button" className="nb sm bad" onClick={bulkBan}>Ban</button>
           <button type="button" className="nb sm ghost" onClick={() => setSelected(new Set())}>Clear</button>
         </div>
       )}

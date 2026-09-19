@@ -257,7 +257,7 @@ export default function AdminServicesPage({ dark, t }) {
                       <div className="rs-acts">
                         <button type="button" className="nb" onClick={() => startEdit(s)}>Edit</button>
                         <button type="button" className="nb" onClick={() => toggleEnabled(s)}>{s.enabled ? "Switch off" : "Switch on"}</button>
-                        <button type="button" className="nb danger rs-right" onClick={() => deleteService(s)}>Delete</button>
+                        <button type="button" className="nb bad rs-right" onClick={() => deleteService(s)}>Delete</button>
                       </div>
                     </>
                   )}
