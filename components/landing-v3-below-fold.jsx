@@ -1,10 +1,9 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { SITE } from '@/lib/site';
 import { useMoney, useLocale, useT } from './locale';
 import { MAX_BONUS_NAIRA } from '@/lib/welcome-bonus';
 import { WaButton } from "./wa-button";
-import { NitroWordmark } from "./nitro-logo";
+import { SharedFooter } from "./shared-nav";
 
 // Tier colours are the ones the order form uses (components/new-order.jsx), so the landing and the app agree.
 const TIER_STYLE = {
@@ -49,49 +48,6 @@ const BF_CSS = `
 @keyframes lv3eq{0%,100%{height:5px}50%{height:14px}}
 .lv3-qdot{width:6px;height:6px;border-radius:99px;opacity:.4;padding:0;transition:.3s;border:none}
 .lv3-qdot.on{opacity:1;background:#c47d8e!important;width:22px}
-/* ── footer: statement, channel card, columns, ghost wordmark ── */
-.lv3-ft{position:relative;overflow:hidden;color:#f6ecee}
-.lv3-ft-ghost{position:absolute;left:50%;bottom:-.34em;transform:translateX(-50%);font-size:290px;font-weight:800;letter-spacing:-.04em;line-height:1;color:transparent;-webkit-text-stroke:1px rgba(246,217,222,.09);pointer-events:none;user-select:none;white-space:nowrap}
-.lv3-ft-in{position:relative;z-index:2;max-width:1200px;margin:0 auto;padding:0 60px}
-.lv3-ft-head{display:flex;align-items:center;justify-content:space-between;gap:48px;padding:56px 0 44px;border-bottom:1px solid rgba(246,217,222,.12)}
-.lv3-ft-stmt{font-size:38px;font-weight:600;letter-spacing:-.02em;line-height:1.12;max-width:15ch}
-.lv3-ft-stmt em{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;color:#e8a0b2}
-.lv3-chan{flex-shrink:0;display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(246,217,222,.14);max-width:400px;text-decoration:none;color:inherit;transition:transform .2s,border-color .2s}
-.lv3-chan:hover{transform:translateY(-2px);border-color:rgba(246,217,222,.3)}
-.lv3-chan-i{width:42px;height:42px;border-radius:13px;background:rgba(37,211,102,.14);border:1px solid rgba(37,211,102,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#4be284}
-.lv3-chan b{display:block;font-size:14px;font-weight:700}
-.lv3-chan i{display:block;font-style:normal;font-size:12px;color:rgba(246,236,238,.55);margin-top:2px;line-height:1.5}
-.lv3-chan-btn{flex-shrink:0;background:#25d366;color:#06220f;font-size:12.5px;font-weight:800;padding:10px 16px;border-radius:10px;white-space:nowrap}
-.lv3-ft-cols{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:48px;padding:44px 0 52px}
-.lv3-ft-brand p{font-size:13px;line-height:1.7;color:rgba(246,236,238,.5);max-width:26ch;margin:14px 0 0}
-.lv3-ft-status{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:7px 12px;border-radius:999px;background:rgba(75,226,132,.08);border:1px solid rgba(75,226,132,.22);font-size:11.5px;font-weight:700;color:#4be284;text-decoration:none}
-.lv3-ft-status i{width:7px;height:7px;border-radius:50%;background:#4be284;animation:lv3pulse 2.2s ease-out infinite}
-@keyframes lv3pulse{0%{box-shadow:0 0 0 0 rgba(75,226,132,.35)}80%,100%{box-shadow:0 0 0 6px rgba(75,226,132,0)}}
-.lv3-ft-soc{width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.06);border:1px solid rgba(246,217,222,.16);display:flex;align-items:center;justify-content:center;color:rgba(246,236,238,.75);text-decoration:none;transition:transform .2s,color .2s}
-.lv3-ft-soc:hover{transform:translateY(-2px);color:#fff}
-.lv3-ft-h4{font-size:10.5px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:rgba(246,236,238,.4);margin:4px 0 16px}
-.lv3-ft-l{display:block;font-size:13.5px;font-weight:500;color:rgba(246,236,238,.72);text-decoration:none;padding:5px 0;transition:color .2s;cursor:pointer;background:none;border:none;text-align:left;font-family:inherit}
-.lv3-ft-l:hover{color:#fff}
-.lv3-ft-base{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0 26px;border-top:1px solid rgba(246,217,222,.12);font-size:11.5px;color:rgba(246,236,238,.4)}
-@media (max-width:1199px){
-  .lv3-ft-in{padding:0 40px}
-  .lv3-ft-head{flex-wrap:wrap;padding:46px 0 36px}
-  .lv3-ft-stmt{font-size:32px}
-  .lv3-ft-cols{grid-template-columns:1fr 1fr 1fr;gap:36px;padding:36px 0 44px}
-  .lv3-ft-brand{grid-column:1/-1}
-  .lv3-ft-ghost{font-size:190px}
-}
-@media (max-width:767px){
-  .lv3-ft-in{padding:0 20px}
-  .lv3-ft-head{flex-direction:column;align-items:stretch;gap:22px;padding:40px 0 30px}
-  .lv3-ft-stmt{font-size:27px;max-width:none;text-align:center;margin:0 auto}
-  .lv3-chan{max-width:none}
-  .lv3-chan-btn{padding:10px 13px}
-  .lv3-ft-cols{grid-template-columns:1fr 1fr;gap:28px 20px;padding:32px 0 40px}
-  .lv3-ft-contact{grid-column:1/-1}
-  .lv3-ft-ghost{font-size:120px;bottom:-.3em}
-  .lv3-ft-base{flex-direction:column;gap:8px;text-align:center;padding-bottom:22px}
-}
 @media (prefers-reduced-motion:reduce){.lv3-veq i{animation:none}.lv3-ft-status i{animation:none}}
 `;
 
@@ -409,10 +365,12 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
           </div>
         </div>
 
-          <footer className="lv3-ft" style={{background:dark?"#050710":"#2a1a22"}}>
+          {/* The closing pitch. Not a <footer> any more, and no ghost wordmark
+              of its own: the shared footer sits directly beneath and carries
+              both, so keeping them here drew NITRO twice down one screen. */}
+          <section className="lv3-ft lv3-closer" style={{background:dark?"#050710":"#2a1a22"}}>
             <div className="lv3-grain"/>
             <div className="absolute rounded-full pointer-events-none" style={{width:520,height:400,top:"-40%",left:"18%",background:"rgba(196,125,142,.14)",filter:"blur(110px)"}}/>
-            <div className="lv3-ft-ghost" aria-hidden="true">NITRO</div>
             <div className="lv3-ft-in">
 
               {/* Row 1: the statement + the channel card */}
@@ -425,51 +383,11 @@ export default function LandingV3BelowFold({ t, dark, setModal, siteStats, socia
                 </a>
               </div>
 
-              {/* Row 2: brand + link columns */}
-              <div className="lv3-ft-cols">
-                <div className="lv3-ft-brand">
-                  <div className="flex items-center gap-2.5">
-                    {/* The wordmark itself, not the N plus the word set
-                        beside it. Same lockup the shared footer uses. */}
-                    <span className="nitro-mark h-[30px] px-3 inline-flex items-center justify-center"
-                      style={{background:"linear-gradient(135deg,#c47d8e,#8b5e6b)"}}>
-                      <NitroWordmark height={13} color="#fff" />
-                    </span>
-                  </div>
-                  <p>{tr("We handle the promotion so you can focus on content.")} {siteStats.uniquePlatforms?`${siteStats.uniquePlatforms}+`:"28+"} {currency === "NGN" ? tr("platforms, naira pricing, fast delivery.") : tr("platforms, fast delivery.")}</p>
-                  <a className="lv3-ft-status" href={SITE.status} target="_blank" rel="noopener noreferrer"><i/>{tr("All systems live")}</a>
-                  <div className="flex gap-2 mt-[18px]">
-                    <a href={`https://x.com/${(socialLinks.social_twitter||"TheNitroNG").replace(/^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="lv3-ft-soc"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
-                    <a href={`https://instagram.com/${(socialLinks.social_instagram||"Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="lv3-ft-soc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4.5"/><circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none"/></svg></a>
-                    {wa&&<a href={wa} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="lv3-ft-soc"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d={WA_PATH}/></svg></a>}
-                    {socialLinks.social_telegram_support&&<a href={`https://t.me/${socialLinks.social_telegram_support.replace(/^(https?:\/\/)?(t\.me\/)?@?/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="Telegram" className="lv3-ft-soc"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></a>}
-                  </div>
-                </div>
-                <div>
-                  <div className="lv3-ft-h4">{tr("Product")}</div>
-                  {[[tr("Pricing"),"/pricing","tiers"],[tr("Services"),"/services"],[tr("Resellers"),"/resellers"],["Blog","/blog"],[tr("What's New"),"/changelog"]].map(([l,h,scrollId])=><a key={l} href={h} className="lv3-ft-l" {...(scrollId?{onClick:e=>{e.preventDefault();document.getElementById(scrollId)?.scrollIntoView({behavior:"smooth",block:"start"})}}:{})}>{l}</a>)}
-                </div>
-                <div>
-                  <div className="lv3-ft-h4">{tr("Company")}</div>
-                  {[[tr("About"),"/about"],[tr("FAQ"),"/faq"],[tr("Terms"),"/terms"],[tr("Privacy"),"/privacy"],[tr("Refund"),"/refund"],[tr("Cookies"),"/cookie"]].map(([l,h])=><a key={l} href={h} className="lv3-ft-l">{l}</a>)}
-                  <button type="button" className="lv3-ft-l" onClick={()=>window.dispatchEvent(new Event('nitro-cookie-reset'))}>{tr("Cookie settings")}</button>
-                </div>
-                <div className="lv3-ft-contact">
-                  <div className="lv3-ft-h4">{tr("Get in touch")}</div>
-                  <a href={`mailto:${SITE.email.general}`} className="lv3-ft-l">{SITE.email.general}</a>
-                  <a href={wa||"#"} target="_blank" rel="noopener noreferrer" className="lv3-ft-l">{tr("WhatsApp support")}</a>
-                  <a href={SITE.status} target="_blank" rel="noopener noreferrer" className="lv3-ft-l">{tr("Status page")}</a>
-                </div>
-              </div>
-
-              {/* Row 3: baseline */}
-              <div className="lv3-ft-base">
-                <span className="m">{"©"} {new Date().getFullYear()>2025?`2025–${new Date().getFullYear()}`:"2025"} The Nitro NG · RC 9514845</span>
-                <span>{tr("Built in Lagos 🇳🇬")}</span>
-              </div>
-
             </div>
-          </footer>
+          </section>
+
+          {/* The same footer the other nineteen pages render. */}
+          <SharedFooter />
         </div>{/* end cta */}
     </div>
   );
