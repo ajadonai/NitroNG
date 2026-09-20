@@ -38,6 +38,7 @@ const searchSql = (term, apiId) => Prisma.sql`
   WHERE s.provider IN ('mtp', 'dao')
     AND s."providerListedAt" IS NOT NULL
     AND s."costPer1k" > 0
+    AND NOT s.blacklisted
     AND NOT EXISTS (SELECT 1 FROM service_tiers t WHERE t."serviceId" = s.id)
     AND s.max > 20
     AND NOT (s.min = s.max AND s.max <= 1000)
