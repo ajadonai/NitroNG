@@ -805,8 +805,17 @@ function AdminDashboardInner({ initialData }) {
           <div ref={avRef} className="relative">
             <button
               onClick={() => { if (window.matchMedia("(min-width: 1200px)").matches) setAvOpen(o => !o); else { setActive("settings"); setLeftOpen(false); } }}
-              className="dash-avatar-btn" aria-label="Account menu" aria-haspopup="menu" aria-expanded={avOpen}>
-              <Avatar size={30} />
+              className="dash-avatar-btn adm" aria-label="Account menu" aria-haspopup="menu" aria-expanded={avOpen}>
+              {/* 26 rather than 30, the same call the customer nav made: at 30
+                  there is 2px above and below it inside a 34px button, which
+                  looks like a big face pushed off-centre the moment anything
+                  sits beside it. */}
+              <Avatar size={26} />
+              {/* It is a dropdown, and a bare face reads as a link to a
+                  profile. Hidden below 1200px by the shared rule, which is
+                  right: under that width this button does not open a menu at
+                  all, it goes straight to Settings. */}
+              <svg className="dash-av-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             {avOpen && (
               <div role="menu" aria-label="Account" className="dash-av-menu" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"}` }}>
