@@ -1369,7 +1369,9 @@ model ResellerTierEvent {
 
   fromTier String?
   toTier   String?
-  /// promoted | demoted | dropped | restored | pinned | unpinned | custom | seat
+  /// granted | promoted | demoted | dropped | restored | pinned | unpinned | custom | seat
+  /// `granted` is an admin choosing the rung an account opens on, which the
+  /// ladder then governs — distinct from `pinned`, which it cannot leave.
   reason   String
   /// Retail-equivalent spend over the rolling window, at decision time.
   spendKobo Int?

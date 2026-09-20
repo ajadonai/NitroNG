@@ -41,7 +41,13 @@ export async function GET(req) {
     const q = req.nextUrl.searchParams.get('q')?.trim() || '';
 
     const profiles = await prisma.resellerProfile.findMany({
-      include: { user: { select: { id: true, name: true, email: true, status: true } } },
+      include: {
+        user: { select: { id: true, name: true, email: true, status: true } },
+        // Only so Remove can say how much history it is about to delete. A
+        // dialog that says "this cannot be undone" and leaves you to guess
+        // what goes with it is not a warning, it is a shrug.
+        _count: { select: { tierEvents: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
     const activity = await activityFor(profiles.map(p => p.userId));
@@ -148,6 +154,7 @@ export async function GET(req) {
         rate: resolveRate(p, settings),
         rollingSpend: Math.round(spend.get(p.userId)?.rolling || 0),
         lifetimeSpend: Math.round(spend.get(p.userId)?.lifetime || 0),
+        tierEvents: p._count.tierEvents,
       })),
       ladder: { live: ladderLive(settings), tiers, bandCaps: bandCapsFrom(settings), seatLifetime: seatAt },
     });
@@ -191,6 +198,36 @@ export async function POST(req) {
     const who = user.name || user.email || userId;
 
     if (action === 'approve') {
+      // Where they start. Granting used to always land on `auto` with no rung,
+      // which reads as "Normal pricing" the moment you approve somebody — right
+      // by the ladder's rules and surprising if you meant to hand them a rate.
+      //
+      //   auto  the ladder decides from their spend, as before
+      //   seed  begin on a rung and let the ladder take over from there
+      //   pin   hold that rung whatever they spend, until it is unpinned
+      //
+      // `seed` is not `pin`: it sets the starting position and steps back. It
+      // survives a while on its own because demotion only fires at a month end
+      // and never inside the first full calendar month, so a seeded rung is
+      // theirs for at least that long.
+      const start = ['auto', 'seed', 'pin'].includes(body.start) ? body.start : 'auto';
+      const ladderData = {};
+      let startedOn = '';
+      if (start !== 'auto') {
+        const settings = await getMarkupSettings();
+        const t = tiersFrom(settings).find(x => x.id === String(body.startTier || ''));
+        if (!t) return Response.json({ error: 'Unknown tier' }, { status: 400 });
+        if (start === 'pin') {
+          ladderData.tierMode = 'pinned';
+          ladderData.pinnedTier = t.id;
+        } else {
+          ladderData.tierMode = 'auto';
+        }
+        ladderData.tier = t.id;
+        ladderData.tierSince = new Date();
+        startedOn = `${start === 'pin' ? 'pinned to' : 'starting on'} ${t.name} (${t.pct}%)`;
+      }
+
       const profile = await prisma.resellerProfile.upsert({
         where: { userId },
         create: {
@@ -200,6 +237,7 @@ export async function POST(req) {
           approvedBy: admin.name,
           approvedAt: new Date(),
           notes: notes || null,
+          ...ladderData,
         },
         // Re-approving someone previously revoked keeps their key, so an
         // integration that was already built does not have to be rewired.
@@ -208,9 +246,24 @@ export async function POST(req) {
           approvedBy: admin.name,
           approvedAt: new Date(),
           ...(notes !== undefined ? { notes: notes || null } : {}),
+          ...ladderData,
         },
       });
-      await logActivity(admin.name, `Approved reseller ${who}`);
+      // A rung an admin chose needs the same trail as one the cron awarded —
+      // "why did this account open on Trade" is the question this table exists
+      // to answer, and nobody is going to remember the grant modal in March.
+      if (start !== 'auto') {
+        await prisma.resellerTierEvent.create({
+          data: {
+            userId,
+            fromTier: null,
+            toTier: ladderData.tier,
+            reason: start === 'pin' ? 'pinned' : 'granted',
+            actor: admin.name,
+          },
+        });
+      }
+      await logActivity(admin.name, `Approved reseller ${who}${startedOn ? `, ${startedOn}` : ''}`);
       return Response.json({ success: true, profile: { enabled: profile.enabled } });
     }
 
@@ -222,6 +275,28 @@ export async function POST(req) {
       await prisma.resellerProfile.update({ where: { userId }, data: { enabled: false } });
       await logActivity(admin.name, `Revoked reseller ${who}`);
       return Response.json({ success: true });
+    }
+
+    if (action === 'remove') {
+      // The other half of revoke, and the reason both exist.
+      //
+      // Revoking keeps the row, so the key still works the day they come back
+      // and the ladder history is still there to explain a rate. Removing
+      // deletes the profile: the key is gone for good — a rebuild, not the
+      // rewire a restore gives them — and `ResellerTierEvent` cascades on the
+      // profile, so every promotion, demotion and pin goes with it. That is
+      // the record the schema keeps so "why was this account on 30%" has an
+      // answer in three months, which is why this is a separate, louder verb
+      // rather than a tidier revoke.
+      //
+      // Orders are untouched. They carry their own charge and retailCharge and
+      // do not reference the profile, so what anybody actually paid survives.
+      const profile = await prisma.resellerProfile.findUnique({ where: { userId } });
+      if (!profile) return Response.json({ error: 'Not a reseller' }, { status: 404 });
+      const events = await prisma.resellerTierEvent.count({ where: { userId } });
+      await prisma.resellerProfile.delete({ where: { userId } });
+      await logActivity(admin.name, `Removed reseller ${who} — profile, API key and ${events} ladder event(s) deleted`);
+      return Response.json({ success: true, removed: true });
     }
 
     if (action === 'rate') {

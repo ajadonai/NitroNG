@@ -565,6 +565,17 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--t-text); }
   .dash-av-chev { display: block; width: 13px; height: 13px; flex-shrink: 0; color: var(--t-text-muted); }
 }
+/* The admin nav gets the chevron 200px earlier than the customer one, because
+   it has the room: four controls in its right cluster against the customer
+   nav's seven, which is what 1400 was protecting. It matters more here too —
+   both buttons open a menu from 1200px up, so between 1200 and 1400 the
+   customer nav is a face that opens a menu and does not say so. Admin, at
+   least, now says so. No name beside it: there are a handful of admins and
+   the menu underneath carries it. */
+@media (min-width: 1200px) {
+  .dash-avatar-btn.adm { width: auto; padding-block: 0; padding-inline: 6px 12px; }
+  .dash-avatar-btn.adm .dash-av-chev { display: block; width: 13px; height: 13px; flex-shrink: 0; color: var(--t-text-muted); }
+}
 .dash-avatar { width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; }
 /* Left sidebar */
 .dash-left { width: 220px; display: flex; flex-direction: column; padding: 16px 12px; flex-shrink: 0; overflow: auto; }

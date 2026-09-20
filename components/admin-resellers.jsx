@@ -19,6 +19,10 @@ export default function AdminResellersPage({ dark, t }) {
   const [rateDraft, setRateDraft] = useState({});
   const [modeDraft, setModeDraft] = useState({});
   const [grantOpen, setGrantOpen] = useState(false);
+  // "auto", or "seed:T2" / "pin:T2". One control rather than a mode and a
+  // rung, because the two are never chosen independently.
+  const [start, setStart] = useState("auto");
+  const [startMode, startTier] = start === "auto" ? ["auto", null] : start.split(":");
   const [openId, setOpenId] = useState(null); // userId whose drawer is open
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
@@ -76,8 +80,8 @@ export default function AdminResellersPage({ dark, t }) {
     </div>
   );
   const grant = async (u) => {
-    const ok = await confirm({ title: `Make ${u.name || u.email} a reseller?`, body: confirmBody("They pay wholesale on every order from now on.", u.orders, u.spend), confirmLabel: "Grant access" });
-    if (ok) act(u.userId, "approve");
+    const ok = await confirm({ title: `Make ${u.name || u.email} a reseller?`, body: confirmBody(startLead, u.orders, u.spend), confirmLabel: "Grant access" });
+    if (ok) act(u.userId, "approve", { start: startMode, startTier });
   };
   const restore = async (r) => {
     const ok = await confirm({ title: `Restore ${r.name || r.email}?`, body: confirmBody("Wholesale pricing resumes on their next order.", r.recentOrders, r.recentSpend), confirmLabel: "Restore" });
@@ -87,7 +91,29 @@ export default function AdminResellersPage({ dark, t }) {
     const ok = await confirm({ title: `Revoke ${r.name || r.email}?`, message: "They go back to retail on their next order. Their record and API key are kept, so this can be undone.", confirmLabel: "Revoke", danger: true });
     if (ok) act(r.userId, "revoke");
   };
-  const closeGrant = () => { setGrantOpen(false); setQuery(""); if (data?.query) load(); };
+  // The other half of revoke. Named for what it destroys rather than left to
+  // "this cannot be undone", which tells you nothing about what you are losing.
+  const remove = async (r) => {
+    const ok = await confirm({
+      title: `Remove ${r.name || r.email}?`,
+      body: (
+        <div className="mb-5 text-sm leading-[1.65]" style={{ color: dark ? "#a09b95" : "#555250" }}>
+          <p className="mt-0 mb-2">This deletes the reseller profile and cannot be undone.</p>
+          <ul className="m-0 pl-4">
+            <li className="mb-1.5"><b style={{ color: dark ? "#fca5a5" : "#c62828" }}>Their API key is destroyed.</b> Anything built on it stops working, and coming back later means a new key and a rebuild — not the rewire that revoking and restoring gives them.</li>
+            <li><b style={{ color: dark ? "#fca5a5" : "#c62828" }}>Their ladder history goes with it.</b> {r.tierEvents === 1 ? "The one move" : `All ${r.tierEvents || 0} moves`} on the rungs, with the spend behind {r.tierEvents === 1 ? "it" : "them"}, deleted.</li>
+          </ul>
+          <p className="mb-0 mt-2.5">Their orders, and what they paid, are untouched.</p>
+        </div>
+      ),
+      confirmLabel: "Remove",
+      danger: true,
+    });
+    if (!ok) return;
+    setOpenId(null);
+    act(r.userId, "remove");
+  };
+  const closeGrant = () => { setGrantOpen(false); setQuery(""); setStart("auto"); if (data?.query) load(); };
 
   const vars = {
     "--card": "var(--t-card-bg)", "--ink": t.text, "--mut": t.textMuted, "--dim": dark ? "#5c6170" : "#a19b93",
@@ -111,6 +137,29 @@ export default function AdminResellersPage({ dark, t }) {
   // stored tier so it is not lost if they come back, but they pay retail in
   // the meantime, so they never count toward a rung's headcount.
   const rungCount = (tierId) => rows.filter(r => r.enabled && r.rate?.tier === tierId).length;
+  // Built once and drawn twice — as a strip on a wide screen and a list on a
+  // narrow one. The two layouts are genuinely different shapes, but neither
+  // should be able to disagree with the other about the numbers.
+  const rungs = ladder.tiers.map(tier => ({
+    ...tier,
+    n: rungCount(tier.id),
+    cap: ladder.bandCaps?.Ultra != null && ladder.bandCaps.Ultra < tier.pct ? ladder.bandCaps.Ultra : null,
+  }));
+  // The chosen start, explained under the control rather than all three
+  // explained at once. Seeding is not pinning: it sets the opening rung and
+  // steps back, and it holds for a while on its own because demotion only
+  // fires at a month end and is skipped inside the first full month.
+  const startT = ladder.tiers.find(t => t.id === startTier);
+  const startHint = startMode === "auto"
+    ? `Normal pricing until their 30-day spend clears ${naira((ladder.tiers[0]?.threshold || 0) / 100)}.`
+    : startMode === "pin"
+      ? `Held at ${startT?.name}, ${startT?.pct}%, whatever they spend — until you unpin them.`
+      : `Opens on ${startT?.name} at ${startT?.pct}%. The ladder can promote them any night, but only demotes at a month end, and never inside their first full calendar month.`;
+  const startLead = startMode === "auto"
+    ? "They pay wholesale from their next order, at whatever rung their spend earns."
+    : startMode === "pin"
+      ? `They pay wholesale from their next order, pinned to ${startT?.name} at ${startT?.pct}%.`
+      : `They pay wholesale from their next order, opening on ${startT?.name} at ${startT?.pct}%.`;
   // Pinned and custom are a fixed rate, not a climb - there is no bar to draw
   // for a rung that spend does not move you off. Auto gets the track, since
   // that is the one mode where "how close" is the number that matters.
@@ -123,7 +172,14 @@ export default function AdminResellersPage({ dark, t }) {
     const pct = next ? Math.max(0, Math.min(100, Math.round(((r.rollingSpend - floor) / span) * 100))) : 100;
     return (
       <span className="re-track">
-        <span className="re-tl"><b>{cur ? `${cur.name} · ${cur.pct}%` : "Normal pricing"}</b>{next ? ` → ${next.name}` : cur ? "top rung" : ""}</span>
+        <span className="re-tl">
+          <b>{cur ? `${cur.name} · ${cur.pct}%` : "Normal pricing"}</b>
+          {/* The figures behind the bar, on the phone only. A bar with no
+              scale is decoration, and the card there is the full width of the
+              screen; the desktop column is 160px and the drawer carries the
+              same two numbers in full. */}
+          <span>{next ? <>→ {next.name}<i className="re-scale"> · {naira(r.rollingSpend / 100)} of {naira(next.threshold / 100)}</i></> : cur ? "top rung" : ""}</span>
+        </span>
         <span className="re-bar"><i style={{ width: `${pct}%` }} /></span>
       </span>
     );
@@ -156,23 +212,38 @@ export default function AdminResellersPage({ dark, t }) {
           off the Reseller Pricing page. The Ultra cap sits on Wholesale's
           own segment, since that is the one rung where the number here can
           differ from what a Wholesale reseller actually gets charged. */}
-      {ladder.live && !loading && (
+      {ladder.live && !loading && <>
+        {/* Wide: five across, each rung a card. The count sits in the same
+            flex row as the threshold rather than floating over it — absolutely
+            positioned, it landed on top of the threshold at every width narrow
+            enough for the two to meet, which on a phone was all of them. */}
         <div className="re-rungs">
-          {ladder.tiers.map(tier => {
-            const cap = ladder.bandCaps?.Ultra;
-            const capped = cap != null && cap < tier.pct;
-            const n = rungCount(tier.id);
-            return (
-              <div key={tier.id} className="re-rung">
-                <span className="re-rc">{n} reseller{n === 1 ? "" : "s"}</span>
-                <div className="re-rn">{tier.id} · {naira(tier.threshold / 100)}</div>
-                <div className="re-rt">{tier.name}</div>
-                <div className="re-rp">{tier.pct}%{capped && <span className="re-rcap"> · Ultra {cap}%</span>}</div>
+          {rungs.map(r => (
+            <div key={r.id} className="re-rung">
+              <div className="re-rtop">
+                <span className="re-rn">{r.id} · {naira(r.threshold / 100)}</span>
+                <span className={"re-rc" + (r.n ? "" : " zero")}>{r.n}</span>
               </div>
-            );
-          })}
+              <div className="re-rt">{r.name}</div>
+              <div className="re-rp">{r.pct}%{r.cap != null && <span className="re-rcap">Ultra caps this at {r.cap}%</span>}</div>
+            </div>
+          ))}
         </div>
-      )}
+        {/* Narrow: the same ladder as a list. Five rungs in a 132px scroller
+            showed two and a half of them, and the half read as breakage rather
+            than an invitation to swipe. */}
+        <div className="re-lad">
+          {rungs.map(r => (
+            <div key={r.id} className="re-lr">
+              <span className="re-lid">{r.id}</span>
+              <span className="re-lnm">{r.name}<i>{naira(r.threshold / 100)} / 30 days</i></span>
+              <span className="re-lp">{r.pct}%</span>
+              <span className={"re-rc" + (r.n ? "" : " zero")}>{r.n}</span>
+              {r.cap != null && <span className="re-lcap">Ultra caps this at {r.cap}%</span>}
+            </div>
+          ))}
+        </div>
+      </>}
 
       <div className="re-stats">
         {loading || !sum ? Array.from({ length: 4 }, (_, i) => <div key={i} className="re-stt">{bone(64, 20)}{bone(80, 10)}{bone(100, 10)}</div>) : <>
@@ -203,7 +274,11 @@ export default function AdminResellersPage({ dark, t }) {
                 </span>
               </span>
               {ladder.live && <span className="re-tier">{rungTrack(r)}</span>}
-              <span className="r m re-act"><b>{r.recentOrders}</b> · {naira(r.recentSpend)}</span>
+              {/* A row of zeroes is the one thing the eye cannot read at a
+                  glance, and it is the state every new reseller starts in. */}
+              <span className="r re-act">{r.recentOrders
+                ? <><b className="m">{r.recentOrders}</b> orders · <b className="m">{naira(r.recentSpend)}</b></>
+                : "No orders"}</span>
               <span className="re-st"><i className={`re-dot ${on ? "ok" : "bad"}`} />{on ? "Active" : "Revoked"}</span>
               <svg className="re-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
             </button>
@@ -218,6 +293,25 @@ export default function AdminResellersPage({ dark, t }) {
             <div className="re-mb">
               <p className="re-hint">Resellers ask on WhatsApp. Find the account; they pay wholesale from their next order.</p>
               <div className="re-srch"><span className="re-si">{SEARCH}</span><input autoFocus value={query} onChange={e => setQuery(e.target.value)} placeholder="Name or email" />{searching && <span className="re-cnt">Searching…</span>}</div>
+              {/* Granting used to always land on `auto` with no rung, which
+                  reads as "Normal pricing" the moment you approve somebody —
+                  right by the ladder's rules, and a surprise if you meant to
+                  hand them a rate. Set once, applies to whoever you grant. */}
+              {ladder.live && (
+                <div className="re-fld">
+                  <label htmlFor="re-start">Where they start</label>
+                  <select id="re-start" className="re-in" value={start} onChange={e => setStart(e.target.value)}>
+                    <option value="auto">Earn it — normal pricing until they qualify</option>
+                    <optgroup label="Start on a rung — the ladder takes over">
+                      {ladder.tiers.map(t => <option key={`seed:${t.id}`} value={`seed:${t.id}`}>{t.name} · {t.pct}%</option>)}
+                    </optgroup>
+                    <optgroup label="Pin to a rung — held whatever they spend">
+                      {ladder.tiers.map(t => <option key={`pin:${t.id}`} value={`pin:${t.id}`}>{t.name} · {t.pct}%</option>)}
+                    </optgroup>
+                  </select>
+                  <p className="re-hint">{startHint}</p>
+                </div>
+              )}
               {data?.query && (
                 <div className="re-grs">
                   {data.results.length === 0 ? <div className="re-empty" style={{ padding: 20 }}>No active account matches “{data.query}”.</div> : data.results.map(u => (
@@ -334,11 +428,19 @@ export default function AdminResellersPage({ dark, t }) {
               <div className="re-fact"><span>Through the API</span><b className="m">{openR.apiOrders || 0} of {openR.recentOrders}</b></div>
               <div className="re-fact"><span>Granted</span><b>{fmtDate(openR.approvedAt)}{openR.approvedBy ? ` by ${openR.approvedBy}` : ""}</b></div>
             </div>
+            {/* Revoke is amber and Remove is red because they are not the same
+                weight of decision: one is a restriction you can lift, the
+                other deletes the key and the history. Two red buttons side by
+                side would have said they were. */}
             <div className="re-dra">
               {openR.enabled
-                ? <button type="button" className="nb bad" disabled={!!busy} onClick={() => revoke(openR)}>{busy === openR.userId + "revoke" ? "…" : "Revoke access"}</button>
+                ? <button type="button" className="nb warn" disabled={!!busy} onClick={() => revoke(openR)}>{busy === openR.userId + "revoke" ? "…" : "Revoke access"}</button>
                 : <button type="button" className="nb ok" disabled={!!busy} onClick={() => restore(openR)}>{busy === openR.userId + "approve" ? "…" : "Restore access"}</button>}
+              <button type="button" className="nb bad re-right" disabled={!!busy} onClick={() => remove(openR)}>{busy === openR.userId + "remove" ? "…" : "Remove"}</button>
             </div>
+            <p className="re-cnt" style={{ whiteSpace: "normal", lineHeight: 1.5 }}>
+              Revoking is reversible — they go back to retail and keep their key and history. Removing deletes the profile.
+            </p>
           </div>
         </div>
       )}
@@ -353,12 +455,23 @@ const CSS = `
 .re .r{text-align:right}
 .re-cnt{font-size:11.5px;color:var(--dim);white-space:nowrap}
 .re-rungs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:14px}
-.re-rung{position:relative;padding:12px 14px;border-left:1px solid var(--line);min-width:0}.re-rung:first-child{border-left:0}
-.re-rc{position:absolute;top:11px;right:12px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;background:var(--acbg);color:var(--ac);white-space:nowrap}
-.re-rn{font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--mut)}
-.re-rt{font-size:13.5px;font-weight:800;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.re-rung{padding:11px 13px;border-left:1px solid var(--line);min-width:0}.re-rung:first-child{border-left:0}
+.re-rtop{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.re-rn{font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.re-rc{font-size:10px;font-weight:800;padding:1px 7px;border-radius:99px;background:var(--acbg);color:var(--ac);white-space:nowrap;flex-shrink:0;min-width:22px;text-align:center}
+.re-rc.zero{background:var(--soft);color:var(--dim);border:1px solid var(--line)}
+.re-rt{font-size:13.5px;font-weight:800;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .re-rp{font-size:15px;font-weight:800;margin-top:1px;color:var(--ac)}
-.re-rcap{font-size:10.5px;font-weight:700;color:var(--dim)}
+.re-rcap{display:block;font-size:10px;font-weight:700;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* The same ladder as a list, for a phone. Hidden until the media query. */
+.re-lad{display:none}
+.re-lr{display:grid;grid-template-columns:24px 1fr auto auto;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--rail)}
+.re-lr:first-child{border-top:0}
+.re-lid{font-size:9.5px;font-weight:800;color:var(--dim);font-family:'JetBrains Mono',ui-monospace,monospace}
+.re-lnm{font-size:13px;font-weight:700;min-width:0}
+.re-lnm i{display:block;font-style:normal;font-size:10.5px;font-weight:600;color:var(--mut);font-family:'JetBrains Mono',ui-monospace,monospace}
+.re-lp{font-size:13.5px;font-weight:800;color:var(--ac);font-variant-numeric:tabular-nums}
+.re-lcap{grid-column:2/-1;font-size:10.5px;font-weight:700;color:var(--dim)}
 .re-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .re-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:3px;min-width:0}.re-stt:first-child{border-left:0}
 .re-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.re-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}.re-stt i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -427,10 +540,12 @@ const CSS = `
 .re-facts{border-top:1px solid var(--line)}
 .re-fact{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px solid var(--rail);font-size:13px}
 .re-fact span{color:var(--mut)}.re-fact b{font-weight:700;text-align:right}
-.re-dra{margin-top:auto;display:flex;gap:8px;padding-top:6px}
+.re-dra{margin-top:auto;display:flex;gap:8px;padding-top:6px;flex-wrap:wrap}
+.re-right{margin-left:auto}
 @media (max-width:900px){
-  .re-rungs{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .re-rung{flex:0 0 132px;border-left:0;border-right:1px solid var(--line)}.re-rung:last-child{border-right:0}
+  .re-rungs{display:none}
+  .re-lad{display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden}
+  .re-scale{display:inline;font-style:normal}
   .re-stats{grid-template-columns:1fr 1fr}.re-stt:nth-child(3){border-left:0}.re-stt:nth-child(n+3){border-top:1px solid var(--line)}.re-stt b{font-size:17px}
   .re-rh{display:none}
   .re-list{background:none;border:0;border-radius:0;display:flex;flex-direction:column;gap:10px}
@@ -438,7 +553,12 @@ const CSS = `
   .re-list.ladder .re-rr{grid-template-columns:1fr auto 18px;grid-template-areas:"un st chev" "tier tier tier" "act act act"}
   .re-tier{grid-area:tier}.re-rr:hover{background:var(--card)}
   .re-un{grid-area:un}.re-st{grid-area:st;justify-self:end;align-self:center}.re-chev{grid-area:chev;align-self:center}
-  .re-act{grid-area:act;text-align:left;font-size:12.5px;padding-left:44px}.re-act::after{content:" · last 90 days";color:var(--dim)}
+  /* The .re .r rule is (0,2,0) and this element carries .r too, so a bare
+     .re-act at (0,1,0) never won: the line has been sitting right-aligned
+     with a dead 44px indent under it. Same shape as the [dir] trap in
+     CLAUDE.md, in our own stylesheet this time. */
+  .re-list .re-rr .re-act{grid-area:act;text-align:left;font-size:12px;padding-left:0}
+  .re-act::after{content:" · last 90 days";color:var(--dim)}
   .re-rr.sk{grid-template-areas:"un st chev" "act act act"}
   .re-empty{background:var(--card);border:1px solid var(--line);border-radius:14px}
   .re-ov{padding:0;align-items:flex-end}.re-md{border-radius:20px 20px 0 0;max-height:92%}
