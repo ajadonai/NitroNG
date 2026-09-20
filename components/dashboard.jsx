@@ -525,6 +525,26 @@ function DashboardInner({ initialData }) {
   const [leftOpen, setLeftOpen] = useState(false);
   const [avOpen, setAvOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false); // the concierge panel: a sheet on a phone, a docked window on a desktop
+  // Back to top, shared by every tab rather than something each page has to
+  // wire up for itself. Lives here because it needs the actual .dash-main
+  // node, which only the shell holds directly - a page nested inside it had
+  // to reach out with .closest(".dash-main") for the same thing New Order
+  // used to do alone. `suppressBackToTop` exists for the one page that has
+  // its own full-width bar in the same corner: New Order's bulk cart bar.
+  const mainRef = useRef(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [suppressBackToTop, setSuppressBackToTop] = useState(false);
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return undefined;
+    const onScroll = () => setShowBackToTop(el.scrollTop > el.clientHeight);
+    onScroll();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [active]);
+  // A suppression left on from New Order's bulk mode should not survive a
+  // switch to a tab that has no cart bar to collide with.
+  useEffect(() => { if (active !== "services") setSuppressBackToTop(false); }, [active]);
   // Onboarding funnel. The effect itself lives further down, because the
   // new_order signal now depends on the lifted service selection.
   const seenSurfaces = useRef(new Set());
@@ -1476,7 +1496,7 @@ function DashboardInner({ initialData }) {
       case "overview":
         return <OverviewPage user={user} orders={orders} activeOrders={activeOrders} orderSummary={orderSummary} isReseller={isReseller} dark={dark} t={t} setActive={setActive} socialLinks={socialLinks} rewards={rewards} />;
       case "services":
-        return <NewOrderPage openFullList={openFullList} onOpenedFullList={() => setOpenFullList(false)} dark={dark} t={t} user={user} onOrderSuccess={refreshDashboard} onViewOrders={() => setActive("orders")} onNavigate={(id) => setActive(id)} onTopUp={() => setActive("add-funds")} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} comments={noComments} setComments={setNoComments} catModal={noCatModal} setCatModal={setNoCatModal} tourActive={showOrderTour} activePromotion={activePromotion} rewards={rewards} socialLinks={socialLinks} refreshRewards={refreshRewards} />;
+        return <NewOrderPage openFullList={openFullList} onOpenedFullList={() => setOpenFullList(false)} dark={dark} t={t} user={user} onOrderSuccess={refreshDashboard} onViewOrders={() => setActive("orders")} onNavigate={(id) => setActive(id)} onTopUp={() => setActive("add-funds")} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} comments={noComments} setComments={setNoComments} catModal={noCatModal} setCatModal={setNoCatModal} tourActive={showOrderTour} activePromotion={activePromotion} rewards={rewards} socialLinks={socialLinks} refreshRewards={refreshRewards} onSuppressBackToTop={setSuppressBackToTop} />;
       case "orders":
         return <OrdersPage orders={orders} initialTotal={ordersTotal} orderSummary={orderSummary} txs={enrichedTxs} dark={dark} t={t} onNavigate={setActive} onRefresh={refreshDashboard} waNum={socialLinks.social_whatsapp_support?.replace(/\D/g, "")} email={user?.email} initialSearch={ordersFocus || ""} />;
       case "referrals":
@@ -1685,7 +1705,7 @@ function DashboardInner({ initialData }) {
         {leftOpen && <div className="dash-overlay" onClick={() => setLeftOpen(false)} />}
 
         {/* ── MAIN ── */}
-        <main className="dash-main bg-t-bg" style={isSupport ? { overflow: "hidden" } : undefined}>
+        <main ref={mainRef} className="dash-main bg-t-bg" style={isSupport ? { overflow: "hidden" } : undefined}>
           <AnnouncementBanner alerts={alerts} dark={dark} mode="dashboard" />
           {activePromotion && (
             <div className="mb-3 rounded-xl px-4 py-2.5 flex items-center gap-2.5" style={{ background: activePromotion.bannerColor ? `${activePromotion.bannerColor}22` : (dark ? 'rgba(16,185,129,.12)' : 'rgba(16,185,129,.08)'), border: `1px solid ${activePromotion.bannerColor || '#10b981'}44` }}>
@@ -1921,6 +1941,21 @@ function DashboardInner({ initialData }) {
       {socialLinks.social_whatsapp_support && !chatOpen && !moreOpen && !leftOpen && (
         <button type="button" className="dash-chat-fab" onClick={() => setChatOpen(true)} aria-label={tr("We can order for you. Message us on WhatsApp")}><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></button>
       )}
+
+      {/* Stacked directly above the WhatsApp float at the same right inset on
+          both breakpoints. Shared by every tab — New Order is the one page
+          with a full-width bar (the bulk cart bar) that can sit in this exact
+          corner, so it is the only page that ever calls onSuppressBackToTop. */}
+      <button
+        type="button"
+        onClick={() => mainRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+        aria-label={tr("Back to top")}
+        tabIndex={showBackToTop && !suppressBackToTop && !chatOpen && !moreOpen && !leftOpen ? 0 : -1}
+        className={`fixed right-[18px] bottom-[148px] desktop:right-[22px] desktop:bottom-[82px] w-11 h-11 rounded-full border border-solid flex items-center justify-center z-[70] transition-all duration-200 cursor-pointer ${showBackToTop && !suppressBackToTop && !chatOpen && !moreOpen && !leftOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"}`}
+        style={{ background: t.cardBg, borderColor: t.cardBorder, color: t.text, boxShadow: "0 8px 20px rgba(0,0,0,.16)" }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5" /><polyline points="6 11 12 5 18 11" /></svg>
+      </button>
       {chatOpen && (
         <>
           <div className="dash-chat-back" onClick={() => setChatOpen(false)} />
