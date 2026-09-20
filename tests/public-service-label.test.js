@@ -42,6 +42,13 @@ describe('getPublicServiceLabel', () => {
       'YouTube Live Stream Views',
     ],
     [
+      // NTR-11384: no "stream" between "live" and "viewers", so this fell
+      // through to the generic Views catch-all and read as "YouTube Views".
+      '🔵 Youtube Live Viewers | With Views | Stable | Pause 1 Sec. | 5 Min. |',
+      'YouTube',
+      'YouTube Live Viewers',
+    ],
+    [
       '🔵 Facebook Page Likes + Followers | 60 Day Refill | Speed 5-10K/Day | Max 1M',
       'Facebook',
       'Facebook Page Likes + Followers',
