@@ -766,6 +766,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
   const toastCoalesceRef = useRef({ count: 0, timer: null });
   const mainRef = useRef(null);
   const [cartBounds, setCartBounds] = useState(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     const el = mainRef.current?.closest(".dash-main");
@@ -779,6 +780,18 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  // Back to top rides the same scroll container the cart bounds measure
+  // against. One screen's worth of scroll before it appears, so it never
+  // shows on a service list short enough to have nowhere useful to jump from.
+  useEffect(() => {
+    const el = mainRef.current?.closest(".dash-main");
+    if (!el) return;
+    const onScroll = () => setShowBackToTop(el.scrollTop > el.clientHeight);
+    onScroll();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
@@ -1875,6 +1888,22 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
       {orderMode === "bulk" && cartBounds && <BulkCartBar ref={cartBarRef} rows={cartRows} dark={dark} t={t} menuData={menuData} bounds={cartBounds} cartOpen={cartOpen} onClick={() => setCartOpen(true)} hint={view === "full" ? msg("Tap + on any service to add it") : msg("Tap a tier to add an order")} />}
       {orderMode === "bulk" && cartOpen && cartBounds && <BulkCartExpanded rows={cartRows} setRows={setCartRows} dark={dark} t={t} menuData={menuData} bounds={cartBounds} onClose={() => setCartOpen(false)} onClear={() => { setCartRows([]); setCartOpen(false); }} onPlace={submitBulk} loading={bulkLoading} rowsScrollRef={cartRowsRef} bulkError={bulkError} setBulkError={setBulkError} bulkSuccess={bulkSuccess} setBulkSuccess={setBulkSuccess} onViewOrders={onViewOrders} onTopUp={onTopUp} waChannelUrl={waChannelUrl} />}
       </>}
+      {/* Stacked directly above the floating WhatsApp button (.dash-chat-fab
+          in dashboard.jsx) at the same right inset on both breakpoints, one
+          screen's worth of scroll before it shows. Bulk mode's cart bar spans
+          almost the full content width right where this would sit, so it
+          stays hidden there rather than dodge to a spot that then has to move
+          again once the bar closes. */}
+      <button
+        type="button"
+        onClick={() => mainRef.current?.closest(".dash-main")?.scrollTo({ top: 0, behavior: "smooth" })}
+        aria-label={tr("Back to top")}
+        tabIndex={showBackToTop && orderMode !== "bulk" ? 0 : -1}
+        className={`fixed right-[18px] bottom-[148px] desktop:right-[22px] desktop:bottom-[82px] w-11 h-11 rounded-full border border-solid flex items-center justify-center z-[70] transition-all duration-200 cursor-pointer ${showBackToTop && orderMode !== "bulk" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"}`}
+        style={{ background: t.cardBg, borderColor: t.cardBorder, color: t.text, boxShadow: "0 8px 20px rgba(0,0,0,.16)" }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5" /><polyline points="6 11 12 5 18 11" /></svg>
+      </button>
     </div>
   );
 }
