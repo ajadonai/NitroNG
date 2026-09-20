@@ -967,7 +967,10 @@ export async function createOrderForSession(session, body, req, { source = 'web'
       // mtp or dao, still listed by the provider, carrying a real cost.
       service = await prisma.service.findUnique({ where: { id: serviceId } });
       const inCatalogue = service && ['mtp', 'dao'].includes(service.provider) && service.providerListedAt && Number(service.costPer1k) > 0;
-      if (!service || (!service.enabled && !inCatalogue)) {
+      // A blacklisted service is refused here outright, whether or not it is
+      // also `enabled` — hiding it from the list a customer picks from is
+      // pointless if the id can still be posted straight to this route.
+      if (!service || service.blacklisted || (!service.enabled && !inCatalogue)) {
         return Response.json({ error: 'Service not available' }, { status: 400 });
       }
     }

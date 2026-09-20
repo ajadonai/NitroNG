@@ -37,6 +37,7 @@ export async function GET() {
         refill: s.refill,
         avgTime: s.avgTime,
         enabled: s.enabled,
+        blacklisted: s.blacklisted,
         ...(sensitive ? { provider: s.provider || 'mtp' } : {}),
         tags: s.tags || [],
         orders: s._count.orders,
@@ -126,6 +127,13 @@ export async function POST(req) {
       await logActivity(admin.name, `${service.enabled ? 'Disabled' : 'Enabled'} service: ${service.name}`, 'service');
       invalidateServiceCatalogue();
       return Response.json({ success: true, enabled: newEnabled });
+    }
+
+    if (action === 'blacklist') {
+      const newBlacklisted = !service.blacklisted;
+      await prisma.service.update({ where: { id: serviceId }, data: { blacklisted: newBlacklisted } });
+      await logActivity(admin.name, `${newBlacklisted ? 'Blacklisted' : 'Restored'} service ${newBlacklisted ? 'from' : 'to'} the full list: ${service.name}`, 'service');
+      return Response.json({ success: true, blacklisted: newBlacklisted });
     }
 
 

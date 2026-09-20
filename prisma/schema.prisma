@@ -250,6 +250,14 @@ model Service {
   apiType   String   @default("Default")
   avgTime   String   @default("0-2 hrs")
   enabled   Boolean  @default(true)
+
+  // Barred from the full list specifically — never surfaced to a customer,
+  // a reseller, or the admin order desk, however it prices or syncs. Separate
+  // from `enabled`, which is about curation, not eligibility: a service can be
+  // switched on and blacklisted at once, staying priced and synced while
+  // unreachable, which is the point of this flag rather than a bug in it.
+  blacklisted Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

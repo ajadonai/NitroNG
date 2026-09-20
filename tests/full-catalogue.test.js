@@ -42,14 +42,16 @@ describe('the full list fence', () => {
   it('only admits services Nitro could actually place', () => {
     // Every clause earns its place: a jap row has no working supply line, an
     // unlisted one is gone from the provider, a zero cost is an unpriced
-    // import, a row with tiers is already on the curated menu, and one with no
-    // reseller map has no public ID to order by.
+    // import, a row with tiers is already on the curated menu, one with no
+    // reseller map has no public ID to order by, and a blacklisted one is
+    // barred regardless of what else about it is true.
     expect(FULL_WHERE).toEqual({
       provider: { in: ['mtp', 'dao'] },
       providerListedAt: { not: null },
       costPer1k: { gt: 0 },
       tiers: { none: {} },
       resellerMap: { isNot: null },
+      blacklisted: false,
     });
   });
 
@@ -631,12 +633,13 @@ describe('the raw catalogue query stays honest', () => {
     expect(sql).toMatch(/s\.platform = /);            // provider
     expect(sql).toMatch(/s\."providerListedAt" IS NOT NULL/);          // providerListedAt
     expect(sql).toMatch(/s\."costPer1k" > 0/);                         // costPer1k
+    expect(sql).toMatch(/NOT s\.blacklisted/);                         // blacklisted: false
     expect(sql).toMatch(/NOT EXISTS \(SELECT 1 FROM service_tiers/);   // tiers: none
     expect(sql).toMatch(/JOIN reseller_service_map/);                  // resellerMap
     expect(sql).toMatch(/m\."retiredAt" IS NULL/);
     // And the fence it mirrors is still the one the reseller route shares.
     expect(Object.keys(FULL_WHERE).sort()).toEqual(
-      ['costPer1k', 'providerListedAt', 'provider', 'resellerMap', 'tiers'].sort(),
+      ['blacklisted', 'costPer1k', 'providerListedAt', 'provider', 'resellerMap', 'tiers'].sort(),
     );
   });
 

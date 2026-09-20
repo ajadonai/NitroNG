@@ -57,6 +57,7 @@ export default function AdminServicesPage({ dark, t }) {
   const activeCount = services.filter(s => s.enabled).length;
   const inUseCount = services.filter(s => s.tiers > 0).length;
   const inUseDisabledCount = services.filter(s => s.tiers > 0 && !s.enabled).length;
+  const blacklistedCount = services.filter(s => s.blacklisted).length;
 
   const filtered = services.filter(s => {
     if (providerFilter !== "all" && (s.provider || "mtp") !== providerFilter) return false;
@@ -64,6 +65,7 @@ export default function AdminServicesPage({ dark, t }) {
     if (statusFilter === "inactive" && s.enabled) return false;
     if (statusFilter === "in-use" && s.tiers === 0) return false;
     if (statusFilter === "in-use-disabled" && !(s.tiers > 0 && !s.enabled)) return false;
+    if (statusFilter === "blacklisted" && !s.blacklisted) return false;
     if (catFilter !== "all" && s.category !== catFilter) return false;
     if (search) {
       const q = search.toLowerCase().replace(/^#/, "");
@@ -118,6 +120,23 @@ export default function AdminServicesPage({ dark, t }) {
       const { ok: fine, data } = await post({ action: "toggle", serviceId: s.id });
       if (fine) { setServices(prev => prev.map(x => x.id === s.id ? { ...x, enabled: data.enabled } : x)); if (data.cascaded) toast.success("Done", data.message); }
     } catch {}
+  };
+
+  const toggleBlacklist = async (s) => {
+    const ok = await confirm({
+      title: s.blacklisted ? "Restore to the full list?" : "Blacklist this service?",
+      message: s.blacklisted
+        ? `"${serviceDisplay(s.name).title}" becomes pickable from the full list again.`
+        : `"${serviceDisplay(s.name).title}" stops appearing in the full list for customers, resellers and the full-list order tool. It stays priced and synced — this only removes it from what can be picked.`,
+      confirmLabel: s.blacklisted ? "Restore" : "Blacklist",
+      danger: !s.blacklisted,
+    });
+    if (!ok) return;
+    try {
+      const { ok: fine, data } = await post({ action: "blacklist", serviceId: s.id });
+      if (fine) setServices(prev => prev.map(x => x.id === s.id ? { ...x, blacklisted: data.blacklisted } : x));
+      else toast.error("Failed", data.error || "Failed to save");
+    } catch { toast.error("Request failed", "Check your connection"); }
   };
 
   const startEdit = (s) => { setEditMode(s.id); setEditData({ name: s.name, category: s.category, min: s.min, max: s.max, refill: s.refill, avgTime: s.avgTime || "" }); };
@@ -185,7 +204,7 @@ export default function AdminServicesPage({ dark, t }) {
         {providers.length > 1 && (
           <FilterDropdown dark={dark} t={t} value={providerFilter} onChange={setFilter(setProviderFilter)} options={[{ value: "all", label: "All providers" }, ...providers.map(p => ({ value: p, label: PROV[p] || p.toUpperCase() }))]} />
         )}
-        <FilterDropdown dark={dark} t={t} value={statusFilter} onChange={setFilter(setStatusFilter)} options={[["all", "On and off"], ["active", "Switched on"], ["inactive", "Switched off"], ["in-use", "In the menu"], ...(inUseDisabledCount > 0 ? [["in-use-disabled", "In use but off"]] : [])].map(([value, label]) => ({ value, label }))} />
+        <FilterDropdown dark={dark} t={t} value={statusFilter} onChange={setFilter(setStatusFilter)} options={[["all", "On and off"], ["active", "Switched on"], ["inactive", "Switched off"], ["in-use", "In the menu"], ...(inUseDisabledCount > 0 ? [["in-use-disabled", "In use but off"]] : []), ...(blacklistedCount > 0 ? [["blacklisted", "Blacklisted"]] : [])].map(([value, label]) => ({ value, label }))} />
         <FilterDropdown dark={dark} t={t} value={catFilter} onChange={setFilter(setCatFilter)} options={[{ value: "all", label: "All platforms" }, ...categories.map(c => ({ value: c, label: c }))]} />
         <span className="rs-cnt rs-count">{loading ? "" : `${filtered.length.toLocaleString()} service${filtered.length === 1 ? "" : "s"}${totalPages > 1 ? ` · page ${page} of ${totalPages}` : ""}`}</span>
       </div>
@@ -214,6 +233,7 @@ export default function AdminServicesPage({ dark, t }) {
                     <button type="button" className="rs-sid m" title="Copy the id" onClick={e => { e.stopPropagation(); copyText(String(s.apiId)); toast.success("Copied", `#${s.apiId}`); }}>#{s.apiId}</button>
                     {s.tiers > 0 && <span className="rs-use">In use · {s.tiers}</span>}
                     {!s.enabled && <span className="rs-offc">Off</span>}
+                    {s.blacklisted && <span className="rs-blkc">Blacklisted</span>}
                     {d.facts.length > 0 && <span className="rs-facts">{d.facts.join(" · ")}</span>}
                   </i>
                 </span>
@@ -240,7 +260,7 @@ export default function AdminServicesPage({ dark, t }) {
                       </div>
                       <div className="rs-acts">
                         <button type="button" className="nb pri" disabled={saving} onClick={() => saveEdit(s.id)}>{saving ? "Saving…" : "Save changes"}</button>
-                        <button type="button" className="nb" onClick={() => setEditMode(null)}>Cancel</button>
+                        <button type="button" className="nb sec" onClick={() => setEditMode(null)}>Cancel</button>
                       </div>
                     </div>
                   ) : (
@@ -255,8 +275,9 @@ export default function AdminServicesPage({ dark, t }) {
                         <div className="rs-f rs-raw"><span>Provider's name</span><b>{s.name}</b></div>
                       </div>
                       <div className="rs-acts">
-                        <button type="button" className="nb" onClick={() => startEdit(s)}>Edit</button>
-                        <button type="button" className="nb" onClick={() => toggleEnabled(s)}>{s.enabled ? "Switch off" : "Switch on"}</button>
+                        <button type="button" className="nb sec" onClick={() => startEdit(s)}>Edit</button>
+                        <button type="button" className="nb sec" onClick={() => toggleEnabled(s)}>{s.enabled ? "Switch off" : "Switch on"}</button>
+                        <button type="button" className="nb warn" onClick={() => toggleBlacklist(s)}>{s.blacklisted ? "Restore to full list" : "Blacklist from full list"}</button>
                         <button type="button" className="nb bad rs-right" onClick={() => deleteService(s)}>Delete</button>
                       </div>
                     </>
@@ -312,6 +333,7 @@ const CSS = `
 .rs-facts{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .rs-pv{font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:2px 5px;border-radius:5px;background:var(--soft);border:1px solid var(--line);color:var(--mut);flex-shrink:0}.rs-pv.dao{color:var(--blue);background:var(--bluebg);border-color:transparent}.rs-pv.jap{color:var(--warn)}
 .rs-sid{color:var(--dim);flex-shrink:0;font:inherit;background:none;border:0;padding:0 3px;margin:0 -3px;border-radius:4px;cursor:copy}.rs-sid:hover{background:var(--rail);color:var(--ink)}.rs-use{font-size:10.5px;font-weight:700;color:var(--ok);background:var(--okbg);padding:1px 6px;border-radius:6px;flex-shrink:0;white-space:nowrap}.rs-offc{font-size:10.5px;font-weight:700;color:var(--bad);background:var(--badbg);padding:1px 6px;border-radius:6px;flex-shrink:0}
+.rs-blkc{font-size:10.5px;font-weight:700;color:#fff;background:#7c2d2d;padding:1px 6px;border-radius:6px;flex-shrink:0;white-space:nowrap}
 .rs-cat{font-size:12.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rs-cost{font-weight:700}.rs-ord{font-weight:600}.rs-rng{font-size:12px;color:var(--mut);white-space:nowrap}
 .rs-tog{width:34px;height:20px;border-radius:10px;background:var(--ac);position:relative;display:inline-block;border:0;padding:0;cursor:pointer}.rs-tog i{position:absolute;top:2px;left:16px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}.rs-tog.o{background:var(--line)}.rs-tog.o i{left:2px}
 .rs-chev{width:12px;height:12px;color:var(--dim);display:inline-flex;transition:transform .15s}.rs-chev svg{width:12px;height:12px}.rs-chev.up{transform:rotate(180deg)}
