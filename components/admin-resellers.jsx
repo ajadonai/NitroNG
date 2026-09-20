@@ -107,10 +107,31 @@ export default function AdminResellersPage({ dark, t }) {
     const cur = tierOf(r);
     return ladder.tiers.find(t => t.threshold > (cur?.threshold ?? -1)) || null;
   };
+  // Who is actually paying each rate today — revoked accounts keep their
+  // stored tier so it is not lost if they come back, but they pay retail in
+  // the meantime, so they never count toward a rung's headcount.
+  const rungCount = (tierId) => rows.filter(r => r.enabled && r.rate?.tier === tierId).length;
+  // Pinned and custom are a fixed rate, not a climb - there is no bar to draw
+  // for a rung that spend does not move you off. Auto gets the track, since
+  // that is the one mode where "how close" is the number that matters.
+  const rungTrack = (r) => {
+    if (mode(r) !== "auto") return <span className={`re-ch ${mode(r)}`}>{mode(r) === "pinned" ? `Pinned · ${r.rate.tierName}` : `Custom · ${r.rate.pct}%`}</span>;
+    const cur = tierOf(r);
+    const next = nextRung(r);
+    const floor = cur ? cur.threshold : 0;
+    const span = next ? next.threshold - floor : 1;
+    const pct = next ? Math.max(0, Math.min(100, Math.round(((r.rollingSpend - floor) / span) * 100))) : 100;
+    return (
+      <span className="re-track">
+        <span className="re-tl"><b>{cur ? `${cur.name} · ${cur.pct}%` : "Normal pricing"}</b>{next ? ` → ${next.name}` : cur ? "top rung" : ""}</span>
+        <span className="re-bar"><i style={{ width: `${pct}%` }} /></span>
+      </span>
+    );
+  };
   const header = (
     <div className="re-rh">
       <span>Reseller</span>
-      {ladder.live && <span>Tier</span>}
+      {ladder.live && <span>Toward next rung</span>}
       <span className="r">Orders · spend, {data?.windowDays || 90}d</span>
       <span>Status</span><span />
     </div>
@@ -129,6 +150,29 @@ export default function AdminResellersPage({ dark, t }) {
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
+
+      {/* The ladder itself, drawn — five rungs and a headcount on each,
+          rather than something you have to already know about and go read
+          off the Reseller Pricing page. The Ultra cap sits on Wholesale's
+          own segment, since that is the one rung where the number here can
+          differ from what a Wholesale reseller actually gets charged. */}
+      {ladder.live && !loading && (
+        <div className="re-rungs">
+          {ladder.tiers.map(tier => {
+            const cap = ladder.bandCaps?.Ultra;
+            const capped = cap != null && cap < tier.pct;
+            const n = rungCount(tier.id);
+            return (
+              <div key={tier.id} className="re-rung">
+                <span className="re-rc">{n} reseller{n === 1 ? "" : "s"}</span>
+                <div className="re-rn">{tier.id} · {naira(tier.threshold / 100)}</div>
+                <div className="re-rt">{tier.name}</div>
+                <div className="re-rp">{tier.pct}%{capped && <span className="re-rcap"> · Ultra {cap}%</span>}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="re-stats">
         {loading || !sum ? Array.from({ length: 4 }, (_, i) => <div key={i} className="re-stt">{bone(64, 20)}{bone(80, 10)}{bone(100, 10)}</div>) : <>
@@ -158,10 +202,7 @@ export default function AdminResellersPage({ dark, t }) {
                   <b><span>{r.name || r.email}</span>{r.apiOrders > 0 && <span className="re-ch api">API · {r.apiOrders}</span>}</b>
                 </span>
               </span>
-              {ladder.live && <span className="re-tier">{r.rate?.tier
-                ? <span className="re-ch tier">{r.rate.tier} {r.rate.tierName}</span>
-                : <span className="re-ch retail">Normal pricing</span>}
-                {r.tierMode !== "auto" && <span className={`re-ch ${r.tierMode}`}>{r.tierMode === "pinned" ? "Pinned" : "Custom"}</span>}</span>}
+              {ladder.live && <span className="re-tier">{rungTrack(r)}</span>}
               <span className="r m re-act"><b>{r.recentOrders}</b> · {naira(r.recentSpend)}</span>
               <span className="re-st"><i className={`re-dot ${on ? "ok" : "bad"}`} />{on ? "Active" : "Revoked"}</span>
               <svg className="re-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
@@ -205,13 +246,33 @@ export default function AdminResellersPage({ dark, t }) {
             {ladder.live ? (
               <div className="re-fld">
                 <label>Rate</label>
+                {/* Where they actually sit among the five rungs, since "Auto —
+                    Trade, 15%" three lines down means little without the
+                    structure it is a position on. Pinned and custom still
+                    mark a step — a pin holds a real rung, and a custom rate is
+                    drawn at whichever rung its percentage happens to land on,
+                    or before Starter if it undercuts even that. */}
+                <div className="re-stepper">
+                  {ladder.tiers.map((t, i) => {
+                    const at = mode(openR) === "custom"
+                      ? [...ladder.tiers].reverse().find(x => (openR.rate?.pct ?? 0) >= x.pct)?.id
+                      : tierOf(openR)?.id;
+                    const atIdx = ladder.tiers.findIndex(x => x.id === at);
+                    return (
+                      <span key={t.id} className={"re-step" + (i < atIdx ? " done" : i === atIdx ? " now" : "")}>
+                        <i className="re-sd">{i < atIdx ? "✓" : `${t.pct}%`}</i>
+                        <b>{t.name}</b>
+                      </span>
+                    );
+                  })}
+                </div>
                 {/* Auto, pinned or custom. The free-text box this replaced took
                     any number under 100 and had no idea what a tier was, so
                     "why is this account on 35%" had no answer but memory. */}
                 <div className="re-modes">
                   {[
                     { id: "auto", title: `Auto${tierOf(openR) ? ` — ${tierOf(openR).name}, ${tierOf(openR).pct}%` : " — normal pricing"}`,
-                      sub: nextRung(openR) ? `Follows 30-day spend. Next: ${naira(nextRung(openR).threshold)} for ${nextRung(openR).name}, ${nextRung(openR).pct}%.` : "Follows 30-day spend, re-checked nightly." },
+                      sub: nextRung(openR) ? `Follows 30-day spend. Next: ${naira(nextRung(openR).threshold / 100)} for ${nextRung(openR).name}, ${nextRung(openR).pct}%.` : "Follows 30-day spend, re-checked nightly." },
                     { id: "pinned", title: "Pin a tier", sub: "Holds a tier whatever they spend. For a reseller you have made a deal with." },
                     { id: "custom", title: "Custom rate", sub: "An explicit percentage. Band caps and the margin floor still apply." },
                   ].map(m => (
@@ -262,8 +323,8 @@ export default function AdminResellersPage({ dark, t }) {
             </div>
             {ladder.live && (
               <div className="re-facts">
-                <div className="re-fact"><span>Toward {ladder.tiers[0]?.name}</span><b className="m">{naira(openR.rollingSpend)} of {naira(ladder.tiers[0]?.threshold || 0)}</b></div>
-                <div className="re-fact"><span>Toward a seat for life</span><b className="m">{openR.seatForLife ? "Earned" : `${naira(openR.lifetimeSpend)} of ${naira(ladder.seatLifetime)}`}</b></div>
+                <div className="re-fact"><span>Toward {ladder.tiers[0]?.name}</span><b className="m">{naira(openR.rollingSpend / 100)} of {naira((ladder.tiers[0]?.threshold || 0) / 100)}</b></div>
+                <div className="re-fact"><span>Toward a seat for life</span><b className="m">{openR.seatForLife ? "Earned" : `${naira(openR.lifetimeSpend / 100)} of ${naira(ladder.seatLifetime / 100)}`}</b></div>
                 {openR.firstMonthEndsAt && new Date(openR.firstMonthEndsAt) > new Date() &&
                   <div className="re-fact"><span>First judged</span><b>{fmtDate(openR.firstMonthEndsAt)}</b></div>}
               </div>
@@ -291,6 +352,13 @@ const CSS = `
 .re .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .re .r{text-align:right}
 .re-cnt{font-size:11.5px;color:var(--dim);white-space:nowrap}
+.re-rungs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:14px}
+.re-rung{position:relative;padding:12px 14px;border-left:1px solid var(--line);min-width:0}.re-rung:first-child{border-left:0}
+.re-rc{position:absolute;top:11px;right:12px;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;background:var(--acbg);color:var(--ac);white-space:nowrap}
+.re-rn{font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--mut)}
+.re-rt{font-size:13.5px;font-weight:800;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.re-rp{font-size:15px;font-weight:800;margin-top:1px;color:var(--ac)}
+.re-rcap{font-size:10.5px;font-weight:700;color:var(--dim)}
 .re-stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border:1px solid var(--line);border-radius:14px}
 .re-stt{padding:12px 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:3px;min-width:0}.re-stt:first-child{border-left:0}
 .re-stt b{font-size:20px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.re-stt span{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mut)}.re-stt i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -298,7 +366,7 @@ const CSS = `
 .re-rh,.re-rr{display:grid;grid-template-columns:minmax(160px,1fr) minmax(120px,auto) 84px 18px;align-items:center;gap:10px;padding:0 14px}
 /* The ladder adds a tier column. Scoped to .ladder so the pre-ladder page
    keeps the four-column grid it has always had. */
-.re-list.ladder .re-rh,.re-list.ladder .re-rr{grid-template-columns:minmax(150px,1fr) minmax(120px,auto) minmax(110px,auto) 84px 18px}
+.re-list.ladder .re-rh,.re-list.ladder .re-rr{grid-template-columns:minmax(150px,1fr) minmax(160px,auto) minmax(110px,auto) 84px 18px}
 .re-rh{height:34px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line);white-space:nowrap}
 .re-rr{width:100%;padding-top:10px;padding-bottom:10px;border:0;border-top:1px solid var(--rail);background:transparent;color:var(--ink);font:inherit;font-size:13px;text-align:left;cursor:pointer;min-width:0}.re-rr:hover{background:var(--soft)}.re-rr.sk:hover{background:none}.re-rr.sk{cursor:default}
 .re-rr.off .re-un,.re-rr.off .re-act{opacity:.5;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -310,10 +378,23 @@ const CSS = `
 .re-ch{font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 6px;border-radius:6px;flex-shrink:0;white-space:nowrap}.re-ch.full{background:var(--acbg);color:var(--ac)}.re-ch.cur{background:var(--soft);color:var(--mut);border:1px solid var(--line)}.re-ch.api{background:var(--bluebg);color:var(--blue)}
 .re-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.re-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
 .re-tier{display:flex;gap:5px;flex-wrap:wrap;min-width:0}
-.re-ch.tier{background:var(--acbg,rgba(196,125,142,.1));color:var(--ac)}
-.re-ch.retail{background:rgba(0,0,0,.05);color:var(--muted)}
+.re-track{display:flex;flex-direction:column;gap:4px;min-width:0;width:100%}
+.re-tl{display:flex;justify-content:space-between;gap:6px;font-size:10.5px;color:var(--mut);white-space:nowrap;overflow:hidden}
+.re-tl b{color:var(--ink);font-weight:700;font-size:11.5px;overflow:hidden;text-overflow:ellipsis}
+.re-bar{height:5px;border-radius:3px;background:var(--rail);overflow:hidden}
+.re-bar i{display:block;height:100%;border-radius:3px;background:var(--ac)}
 .re-ch.pinned{background:var(--bluebg);color:var(--blue)}
 .re-ch.custom{background:rgba(133,79,11,.1);color:#854F0B}
+.re-stepper{display:flex;align-items:flex-start;margin-bottom:10px}
+.re-step{flex:1;text-align:center;position:relative;min-width:0}
+.re-step::before{content:"";position:absolute;top:12px;left:-50%;width:100%;height:2px;background:var(--rail);z-index:0}
+.re-step:first-child::before{display:none}
+.re-step.done::before,.re-step.now::before{background:var(--ac)}
+.re-sd{position:relative;z-index:1;display:block;width:25px;height:25px;line-height:21px;border-radius:50%;margin:0 auto 4px;font-size:9px;font-weight:800;border:2px solid var(--line);background:var(--card);color:var(--mut)}
+.re-step.done .re-sd{border-color:var(--ac);background:var(--ac);color:#fff}
+.re-step.now .re-sd{border-color:var(--ac);color:var(--ac);box-shadow:0 0 0 3px var(--acbg)}
+.re-step b{display:block;font-size:9px;font-weight:700;letter-spacing:.2px;text-transform:uppercase;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.re-step.now b,.re-step.done b{color:var(--ink)}
 .re-modes{display:flex;flex-direction:column;gap:6px}
 .re-mode{display:grid;grid-template-columns:14px 1fr;gap:10px;align-items:start;width:100%;text-align:left;
   padding:10px 12px;border-radius:10px;border:1.5px solid var(--rail);background:var(--card);color:var(--ink);font:inherit;cursor:pointer}
@@ -346,7 +427,10 @@ const CSS = `
 .re-facts{border-top:1px solid var(--line)}
 .re-fact{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px solid var(--rail);font-size:13px}
 .re-fact span{color:var(--mut)}.re-fact b{font-weight:700;text-align:right}
-.re-dra{margin-top:auto;display:flex;gap:8px;padding-top:6px}.re-dra @media (max-width:900px){
+.re-dra{margin-top:auto;display:flex;gap:8px;padding-top:6px}
+@media (max-width:900px){
+  .re-rungs{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .re-rung{flex:0 0 132px;border-left:0;border-right:1px solid var(--line)}.re-rung:last-child{border-right:0}
   .re-stats{grid-template-columns:1fr 1fr}.re-stt:nth-child(3){border-left:0}.re-stt:nth-child(n+3){border-top:1px solid var(--line)}.re-stt b{font-size:17px}
   .re-rh{display:none}
   .re-list{background:none;border:0;border-radius:0;display:flex;flex-direction:column;gap:10px}
