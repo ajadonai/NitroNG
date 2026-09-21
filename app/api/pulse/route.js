@@ -57,7 +57,6 @@ export async function GET(req) {
       yesterdayRevenueAgg, yesterdayDepositsAgg, yesterdayOrderCount,
       processingCount,
       monthRevenueAgg, monthOrderCount, monthDepositsAgg, monthNewUsers,
-      monthCostAgg,
       todayCostAgg, yesterdayCostAgg,
       ordersByStatus,
       allOrdersForPlatforms,
@@ -86,7 +85,6 @@ export async function GET(req) {
       prisma.order.count({ where: { createdAt: { gte: monthStart }, deletedAt: null } }),
       prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
       prisma.user.count({ where: { createdAt: { gte: monthStart }, emailVerified: true } }),
-      prisma.order.aggregate({ where: { createdAt: { gte: monthStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
       prisma.order.aggregate({ where: { createdAt: { gte: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
       prisma.order.aggregate({ where: { createdAt: { gte: yesterdayStart, lt: todayStart }, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } }, _sum: { cost: true } }),
       prisma.order.groupBy({ by: ['status'], where: { createdAt: { gte: thirtyDaysAgo }, deletedAt: null }, _count: true }),
@@ -334,8 +332,15 @@ export async function GET(req) {
         yesterdayRevenue - ((yesterdayCostAgg._sum.cost || 0) - adjYesterday.cost) / 100
       ),
       monthRevenue: ((monthRevenueAgg._sum.charge || 0) - adjMonth.charge) / 100,
-      monthCost: ((monthCostAgg._sum.cost || 0) - adjMonth.cost) / 100,
-      monthProfit: (((monthRevenueAgg._sum.charge || 0) - adjMonth.charge) - ((monthCostAgg._sum.cost || 0) - adjMonth.cost)) / 100,
+      // Cost and profit stopped at the raw aggregate, which is what /stats on
+      // Telegram caught: it goes through getRevenue() and counts costWasted —
+      // money already spent on orders that died after the provider had them —
+      // which this never did. monthNetRevenue a few lines down had already
+      // moved to getRevenue(); cost and profit were the half of that move
+      // that never finished, so the two surfaces disagreed by exactly the
+      // month's wasted spend.
+      monthCost: monthRevenueNet.cost + monthRevenueNet.costWasted,
+      monthProfit: monthRevenueNet.net - monthRevenueNet.cost - monthRevenueNet.costWasted,
       monthOrders: monthOrderCount,
       monthDeposits: (monthDepositsAgg._sum.amount || 0) / 100,
       monthNewUsers,
