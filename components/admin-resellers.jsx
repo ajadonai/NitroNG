@@ -93,21 +93,16 @@ export default function AdminResellersPage({ dark, t }) {
   };
   // The other half of revoke. Named for what it destroys rather than left to
   // "this cannot be undone", which tells you nothing about what you are losing.
+  // Takes them off this list — nothing more. Revoke already covers "not a
+  // reseller for now, might come back easily"; Remove is for a row that
+  // should not be here at all. It deletes ResellerProfile, so coming back
+  // needs a fresh Grant access rather than a Restore — but their ladder
+  // history and their orders are untouched either way.
   const remove = async (r) => {
     const ok = await confirm({
       title: `Remove ${r.name || r.email}?`,
-      body: (
-        <div className="mb-5 text-sm leading-[1.65]" style={{ color: dark ? "#a09b95" : "#555250" }}>
-          <p className="mt-0 mb-2">This deletes the reseller profile and cannot be undone.</p>
-          <ul className="m-0 pl-4">
-            <li className="mb-1.5"><b style={{ color: dark ? "#fca5a5" : "#c62828" }}>Their API key is destroyed.</b> Anything built on it stops working, and coming back later means a new key and a rebuild — not the rewire that revoking and restoring gives them.</li>
-            <li><b style={{ color: dark ? "#fca5a5" : "#c62828" }}>Their ladder history goes with it.</b> {r.tierEvents === 1 ? "The one move" : `All ${r.tierEvents || 0} moves`} on the rungs, with the spend behind {r.tierEvents === 1 ? "it" : "them"}, deleted.</li>
-          </ul>
-          <p className="mb-0 mt-2.5">Their orders, and what they paid, are untouched.</p>
-        </div>
-      ),
+      message: "They come off the resellers list. Their ladder history and their orders are untouched; if they come back, grant access again rather than restore.",
       confirmLabel: "Remove",
-      danger: true,
     });
     if (!ok) return;
     setOpenId(null);
@@ -362,11 +357,15 @@ export default function AdminResellersPage({ dark, t }) {
                 </div>
                 {/* Auto, pinned or custom. The free-text box this replaced took
                     any number under 100 and had no idea what a tier was, so
-                    "why is this account on 35%" had no answer but memory. */}
+                    "why is this account on 35%" had no answer but memory.
+                    These three describe the rule, not the current numbers —
+                    the stepper above and the facts below already say where
+                    this account actually is, so saying it a third time here
+                    was the exact duplication the drawer was flagged for. */}
                 <div className="re-modes">
                   {[
-                    { id: "auto", title: `Auto${tierOf(openR) ? ` — ${tierOf(openR).name}, ${tierOf(openR).pct}%` : " — normal pricing"}`,
-                      sub: nextRung(openR) ? `Follows 30-day spend. Next: ${naira(nextRung(openR).threshold / 100)} for ${nextRung(openR).name}, ${nextRung(openR).pct}%.` : "Follows 30-day spend, re-checked nightly." },
+                    { id: "auto", title: "Auto",
+                      sub: "Follows 30-day spend, checked nightly. A promotion lands at once; a demotion waits for a month end." },
                     { id: "pinned", title: "Pin a tier", sub: "Holds a tier whatever they spend. For a reseller you have made a deal with." },
                     { id: "custom", title: "Custom rate", sub: "An explicit percentage. Band caps and the margin floor still apply." },
                   ].map(m => (
@@ -411,35 +410,45 @@ export default function AdminResellersPage({ dark, t }) {
             )}
             <div className="re-fld">
               <label>Why they have it</label>
-              <input className="re-in re-why" value={noteDraft[openR.userId] ?? openR.notes ?? ""} placeholder="Why they have it…" disabled={!!busy} aria-label="Reason"
+              <input className="re-in re-why" value={noteDraft[openR.userId] ?? openR.notes ?? ""} placeholder="e.g. high-volume Discord bot" disabled={!!busy} aria-label="Reason"
                 onChange={e => setNoteDraft(p => ({ ...p, [openR.userId]: e.target.value }))}
                 onBlur={() => { const v = noteDraft[openR.userId]; if (v === undefined || v === (openR.notes ?? "")) return; act(openR.userId, "notes", { notes: v }, "notes"); }} />
             </div>
-            {ladder.live && (
-              <div className="re-facts">
-                <div className="re-fact"><span>Toward {ladder.tiers[0]?.name}</span><b className="m">{naira(openR.rollingSpend / 100)} of {naira((ladder.tiers[0]?.threshold || 0) / 100)}</b></div>
-                <div className="re-fact"><span>Toward a seat for life</span><b className="m">{openR.seatForLife ? "Earned" : `${naira(openR.lifetimeSpend / 100)} of ${naira(ladder.seatLifetime / 100)}`}</b></div>
-                {openR.firstMonthEndsAt && new Date(openR.firstMonthEndsAt) > new Date() &&
-                  <div className="re-fact"><span>First judged</span><b>{fmtDate(openR.firstMonthEndsAt)}</b></div>}
-              </div>
-            )}
+            {/* One list. It was two — the ladder's own facts, then activity —
+                which drew a second header rule for no reason; nothing here
+                needs the two kept apart. "Granted" is gone from it: the
+                status line at the top already says who and when, and having
+                it twice was the exact complaint. Toward-a-rung used to be
+                hardcoded to Starter regardless of where the account actually
+                was — a Trade reseller's drawer said "Toward Starter" — so it
+                is the same nextRung() the row list and the Auto subtitle
+                already share. */}
             <div className="re-facts">
-              <div className="re-fact"><span>Orders · {data?.windowDays || 90} days</span><b className="m">{openR.recentOrders} · {naira(openR.recentSpend)}</b></div>
-              <div className="re-fact"><span>Through the API</span><b className="m">{openR.apiOrders || 0} of {openR.recentOrders}</b></div>
-              <div className="re-fact"><span>Granted</span><b>{fmtDate(openR.approvedAt)}{openR.approvedBy ? ` by ${openR.approvedBy}` : ""}</b></div>
+              {ladder.live && nextRung(openR) && (
+                <div className="re-fact"><span>Toward {nextRung(openR).name}</span><b className="m">{naira(openR.rollingSpend / 100)} of {naira(nextRung(openR).threshold / 100)}</b></div>
+              )}
+              {ladder.live && (
+                <div className="re-fact"><span>Toward a seat for life</span><b className="m">{openR.seatForLife ? "Earned" : `${naira(openR.lifetimeSpend / 100)} of ${naira(ladder.seatLifetime / 100)}`}</b></div>
+              )}
+              {ladder.live && openR.firstMonthEndsAt && new Date(openR.firstMonthEndsAt) > new Date() &&
+                <div className="re-fact"><span>First judged</span><b>{fmtDate(openR.firstMonthEndsAt)}</b></div>}
+              <div className="re-fact">
+                <span>Last {data?.windowDays || 90} days</span>
+                <b className="m">{openR.recentOrders ? `${openR.recentOrders} orders · ${naira(openR.recentSpend)}${openR.apiOrders ? ` · ${openR.apiOrders} via API` : ""}` : "No orders"}</b>
+              </div>
             </div>
-            {/* Revoke is amber and Remove is red because they are not the same
-                weight of decision: one is a restriction you can lift, the
-                other deletes the key and the history. Two red buttons side by
-                side would have said they were. */}
+            {/* Revoke is the amber one — it has the real day-to-day weight,
+                since it changes what somebody is charged. Remove is a plain
+                secondary action: it just takes a row off this list, so it
+                does not need to look like the more severe choice. */}
             <div className="re-dra">
               {openR.enabled
                 ? <button type="button" className="nb warn" disabled={!!busy} onClick={() => revoke(openR)}>{busy === openR.userId + "revoke" ? "…" : "Revoke access"}</button>
                 : <button type="button" className="nb ok" disabled={!!busy} onClick={() => restore(openR)}>{busy === openR.userId + "approve" ? "…" : "Restore access"}</button>}
-              <button type="button" className="nb bad re-right" disabled={!!busy} onClick={() => remove(openR)}>{busy === openR.userId + "remove" ? "…" : "Remove"}</button>
+              <button type="button" className="nb sec re-right" disabled={!!busy} onClick={() => remove(openR)}>{busy === openR.userId + "remove" ? "…" : "Remove"}</button>
             </div>
             <p className="re-cnt" style={{ whiteSpace: "normal", lineHeight: 1.5 }}>
-              Revoking is reversible — they go back to retail and keep their key and history. Removing deletes the profile.
+              Revoke reverts them to retail; their key and history stay. Remove just takes them off this list — history and orders are untouched either way.
             </p>
           </div>
         </div>
