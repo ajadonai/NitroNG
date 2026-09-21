@@ -362,11 +362,15 @@ export default function AdminResellersPage({ dark, t }) {
                 </div>
                 {/* Auto, pinned or custom. The free-text box this replaced took
                     any number under 100 and had no idea what a tier was, so
-                    "why is this account on 35%" had no answer but memory. */}
+                    "why is this account on 35%" had no answer but memory.
+                    These three describe the rule, not the current numbers —
+                    the stepper above and the facts below already say where
+                    this account actually is, so saying it a third time here
+                    was the exact duplication the drawer was flagged for. */}
                 <div className="re-modes">
                   {[
-                    { id: "auto", title: `Auto${tierOf(openR) ? ` — ${tierOf(openR).name}, ${tierOf(openR).pct}%` : " — normal pricing"}`,
-                      sub: nextRung(openR) ? `Follows 30-day spend. Next: ${naira(nextRung(openR).threshold / 100)} for ${nextRung(openR).name}, ${nextRung(openR).pct}%.` : "Follows 30-day spend, re-checked nightly." },
+                    { id: "auto", title: "Auto",
+                      sub: "Follows 30-day spend, checked nightly. A promotion lands at once; a demotion waits for a month end." },
                     { id: "pinned", title: "Pin a tier", sub: "Holds a tier whatever they spend. For a reseller you have made a deal with." },
                     { id: "custom", title: "Custom rate", sub: "An explicit percentage. Band caps and the margin floor still apply." },
                   ].map(m => (
@@ -411,22 +415,32 @@ export default function AdminResellersPage({ dark, t }) {
             )}
             <div className="re-fld">
               <label>Why they have it</label>
-              <input className="re-in re-why" value={noteDraft[openR.userId] ?? openR.notes ?? ""} placeholder="Why they have it…" disabled={!!busy} aria-label="Reason"
+              <input className="re-in re-why" value={noteDraft[openR.userId] ?? openR.notes ?? ""} placeholder="e.g. high-volume Discord bot" disabled={!!busy} aria-label="Reason"
                 onChange={e => setNoteDraft(p => ({ ...p, [openR.userId]: e.target.value }))}
                 onBlur={() => { const v = noteDraft[openR.userId]; if (v === undefined || v === (openR.notes ?? "")) return; act(openR.userId, "notes", { notes: v }, "notes"); }} />
             </div>
-            {ladder.live && (
-              <div className="re-facts">
-                <div className="re-fact"><span>Toward {ladder.tiers[0]?.name}</span><b className="m">{naira(openR.rollingSpend / 100)} of {naira((ladder.tiers[0]?.threshold || 0) / 100)}</b></div>
-                <div className="re-fact"><span>Toward a seat for life</span><b className="m">{openR.seatForLife ? "Earned" : `${naira(openR.lifetimeSpend / 100)} of ${naira(ladder.seatLifetime / 100)}`}</b></div>
-                {openR.firstMonthEndsAt && new Date(openR.firstMonthEndsAt) > new Date() &&
-                  <div className="re-fact"><span>First judged</span><b>{fmtDate(openR.firstMonthEndsAt)}</b></div>}
-              </div>
-            )}
+            {/* One list. It was two — the ladder's own facts, then activity —
+                which drew a second header rule for no reason; nothing here
+                needs the two kept apart. "Granted" is gone from it: the
+                status line at the top already says who and when, and having
+                it twice was the exact complaint. Toward-a-rung used to be
+                hardcoded to Starter regardless of where the account actually
+                was — a Trade reseller's drawer said "Toward Starter" — so it
+                is the same nextRung() the row list and the Auto subtitle
+                already share. */}
             <div className="re-facts">
-              <div className="re-fact"><span>Orders · {data?.windowDays || 90} days</span><b className="m">{openR.recentOrders} · {naira(openR.recentSpend)}</b></div>
-              <div className="re-fact"><span>Through the API</span><b className="m">{openR.apiOrders || 0} of {openR.recentOrders}</b></div>
-              <div className="re-fact"><span>Granted</span><b>{fmtDate(openR.approvedAt)}{openR.approvedBy ? ` by ${openR.approvedBy}` : ""}</b></div>
+              {ladder.live && nextRung(openR) && (
+                <div className="re-fact"><span>Toward {nextRung(openR).name}</span><b className="m">{naira(openR.rollingSpend / 100)} of {naira(nextRung(openR).threshold / 100)}</b></div>
+              )}
+              {ladder.live && (
+                <div className="re-fact"><span>Toward a seat for life</span><b className="m">{openR.seatForLife ? "Earned" : `${naira(openR.lifetimeSpend / 100)} of ${naira(ladder.seatLifetime / 100)}`}</b></div>
+              )}
+              {ladder.live && openR.firstMonthEndsAt && new Date(openR.firstMonthEndsAt) > new Date() &&
+                <div className="re-fact"><span>First judged</span><b>{fmtDate(openR.firstMonthEndsAt)}</b></div>}
+              <div className="re-fact">
+                <span>Last {data?.windowDays || 90} days</span>
+                <b className="m">{openR.recentOrders ? `${openR.recentOrders} orders · ${naira(openR.recentSpend)}${openR.apiOrders ? ` · ${openR.apiOrders} via API` : ""}` : "No orders"}</b>
+              </div>
             </div>
             {/* Revoke is amber and Remove is red because they are not the same
                 weight of decision: one is a restriction you can lift, the
