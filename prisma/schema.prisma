@@ -1350,8 +1350,6 @@ model ResellerProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tierEvents ResellerTierEvent[]
-
   @@map("reseller_profiles")
 }
 
@@ -1362,10 +1360,16 @@ model ResellerProfile {
 /// only an answer if September wrote it down. Rolling spend is recorded at the
 /// moment of the decision because the 30-day window has moved by the time
 /// anybody reads the row.
+///
+/// Not a Prisma relation to ResellerProfile, on purpose. It was one, with
+/// onDelete: Cascade, until Remove — a plain admin action, not a purge — was
+/// found deleting a reseller's entire ladder history as a side effect of
+/// tidying them off the list. userId outlives the profile now: the events
+/// are the receipts, and removing someone from the resellers page is not a
+/// reason to burn the record of why they were ever on a rate.
 model ResellerTierEvent {
-  id      String          @id @default(cuid())
-  userId  String
-  profile ResellerProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
 
   fromTier String?
   toTier   String?

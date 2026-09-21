@@ -41,13 +41,7 @@ export async function GET(req) {
     const q = req.nextUrl.searchParams.get('q')?.trim() || '';
 
     const profiles = await prisma.resellerProfile.findMany({
-      include: {
-        user: { select: { id: true, name: true, email: true, status: true } },
-        // Only so Remove can say how much history it is about to delete. A
-        // dialog that says "this cannot be undone" and leaves you to guess
-        // what goes with it is not a warning, it is a shrug.
-        _count: { select: { tierEvents: true } },
-      },
+      include: { user: { select: { id: true, name: true, email: true, status: true } } },
       orderBy: { createdAt: 'desc' },
     });
     const activity = await activityFor(profiles.map(p => p.userId));
@@ -154,7 +148,6 @@ export async function GET(req) {
         rate: resolveRate(p, settings),
         rollingSpend: Math.round(spend.get(p.userId)?.rolling || 0),
         lifetimeSpend: Math.round(spend.get(p.userId)?.lifetime || 0),
-        tierEvents: p._count.tierEvents,
       })),
       ladder: { live: ladderLive(settings), tiers, bandCaps: bandCapsFrom(settings), seatLifetime: seatAt },
     });
@@ -280,22 +273,23 @@ export async function POST(req) {
     if (action === 'remove') {
       // The other half of revoke, and the reason both exist.
       //
-      // Revoking keeps the row, so the key still works the day they come back
-      // and the ladder history is still there to explain a rate. Removing
-      // deletes the profile: the key is gone for good — a rebuild, not the
-      // rewire a restore gives them — and `ResellerTierEvent` cascades on the
-      // profile, so every promotion, demotion and pin goes with it. That is
-      // the record the schema keeps so "why was this account on 30%" has an
-      // answer in three months, which is why this is a separate, louder verb
-      // rather than a tidier revoke.
+      // Revoking keeps the profile visible as "Revoked" — deliberately, since
+      // it may come back. Remove is for a row that should not be on the list
+      // at all: granted by mistake, or a reseller who is fully done, not
+      // pausing. It deletes ResellerProfile, so it disappears from this page
+      // and would need a fresh "Grant access" to return.
       //
-      // Orders are untouched. They carry their own charge and retailCharge and
-      // do not reference the profile, so what anybody actually paid survives.
+      // It does not touch history or billing. ResellerTierEvent keys on
+      // userId without a foreign key to this table specifically so it can
+      // outlive the profile - every promotion, demotion and pin, with the
+      // spend behind it, is still there if anyone ever asks "why was this
+      // account on 30%". And orders carry their own charge and retailCharge
+      // rather than referencing the profile, so what anybody actually paid
+      // is untouched either way.
       const profile = await prisma.resellerProfile.findUnique({ where: { userId } });
       if (!profile) return Response.json({ error: 'Not a reseller' }, { status: 404 });
-      const events = await prisma.resellerTierEvent.count({ where: { userId } });
       await prisma.resellerProfile.delete({ where: { userId } });
-      await logActivity(admin.name, `Removed reseller ${who} — profile, API key and ${events} ladder event(s) deleted`);
+      await logActivity(admin.name, `Removed reseller ${who} from the resellers list`);
       return Response.json({ success: true, removed: true });
     }
 

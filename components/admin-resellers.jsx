@@ -93,21 +93,16 @@ export default function AdminResellersPage({ dark, t }) {
   };
   // The other half of revoke. Named for what it destroys rather than left to
   // "this cannot be undone", which tells you nothing about what you are losing.
+  // Takes them off this list — nothing more. Revoke already covers "not a
+  // reseller for now, might come back easily"; Remove is for a row that
+  // should not be here at all. It deletes ResellerProfile, so coming back
+  // needs a fresh Grant access rather than a Restore — but their ladder
+  // history and their orders are untouched either way.
   const remove = async (r) => {
     const ok = await confirm({
       title: `Remove ${r.name || r.email}?`,
-      body: (
-        <div className="mb-5 text-sm leading-[1.65]" style={{ color: dark ? "#a09b95" : "#555250" }}>
-          <p className="mt-0 mb-2">This deletes the reseller profile and cannot be undone.</p>
-          <ul className="m-0 pl-4">
-            <li className="mb-1.5"><b style={{ color: dark ? "#fca5a5" : "#c62828" }}>Their API key is destroyed.</b> Anything built on it stops working, and coming back later means a new key and a rebuild — not the rewire that revoking and restoring gives them.</li>
-            <li><b style={{ color: dark ? "#fca5a5" : "#c62828" }}>Their ladder history goes with it.</b> {r.tierEvents === 1 ? "The one move" : `All ${r.tierEvents || 0} moves`} on the rungs, with the spend behind {r.tierEvents === 1 ? "it" : "them"}, deleted.</li>
-          </ul>
-          <p className="mb-0 mt-2.5">Their orders, and what they paid, are untouched.</p>
-        </div>
-      ),
+      message: "They come off the resellers list. Their ladder history and their orders are untouched; if they come back, grant access again rather than restore.",
       confirmLabel: "Remove",
-      danger: true,
     });
     if (!ok) return;
     setOpenId(null);
@@ -442,18 +437,18 @@ export default function AdminResellersPage({ dark, t }) {
                 <b className="m">{openR.recentOrders ? `${openR.recentOrders} orders · ${naira(openR.recentSpend)}${openR.apiOrders ? ` · ${openR.apiOrders} via API` : ""}` : "No orders"}</b>
               </div>
             </div>
-            {/* Revoke is amber and Remove is red because they are not the same
-                weight of decision: one is a restriction you can lift, the
-                other deletes the key and the history. Two red buttons side by
-                side would have said they were. */}
+            {/* Revoke is the amber one — it has the real day-to-day weight,
+                since it changes what somebody is charged. Remove is a plain
+                secondary action: it just takes a row off this list, so it
+                does not need to look like the more severe choice. */}
             <div className="re-dra">
               {openR.enabled
                 ? <button type="button" className="nb warn" disabled={!!busy} onClick={() => revoke(openR)}>{busy === openR.userId + "revoke" ? "…" : "Revoke access"}</button>
                 : <button type="button" className="nb ok" disabled={!!busy} onClick={() => restore(openR)}>{busy === openR.userId + "approve" ? "…" : "Restore access"}</button>}
-              <button type="button" className="nb bad re-right" disabled={!!busy} onClick={() => remove(openR)}>{busy === openR.userId + "remove" ? "…" : "Remove"}</button>
+              <button type="button" className="nb sec re-right" disabled={!!busy} onClick={() => remove(openR)}>{busy === openR.userId + "remove" ? "…" : "Remove"}</button>
             </div>
             <p className="re-cnt" style={{ whiteSpace: "normal", lineHeight: 1.5 }}>
-              Revoking is reversible — they go back to retail and keep their key and history. Removing deletes the profile.
+              Revoke reverts them to retail; their key and history stay. Remove just takes them off this list — history and orders are untouched either way.
             </p>
           </div>
         </div>
