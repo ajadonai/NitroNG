@@ -68,7 +68,7 @@ export async function GET(req) {
 
     const include = {
       user: { select: { name: true, email: true, phone: true, resellerProfile: { select: { enabled: true } } } },
-      service: { select: { name: true, category: true, provider: true, apiId: true, costPer1k: true, enabled: true, providerListedAt: true } },
+      service: { select: { name: true, category: true, provider: true, apiId: true, costPer1k: true, enabled: true, providerListedAt: true, blacklisted: true, nitroId: true } },
       tier: { select: { tier: true, sellPer1k: true, enabled: true, serviceId: true, group: { select: { name: true, platform: true, type: true, enabled: true } }, service: { select: { apiId: true, costPer1k: true } } } },
       dripDispatches: { select: { id: true, day: true, batch: true, quantity: true, status: true, apiOrderId: true, scheduledAt: true, dispatchedAt: true, completedAt: true, lastError: true }, orderBy: { scheduledAt: 'asc' } },
     };
@@ -178,14 +178,15 @@ export async function GET(req) {
         offerDisabled: offer.offerDisabled,
         platform: offer.platform,
         category: o.service?.category || 'unknown',
-        // Our own Service.id, not the provider's — unlike serviceApiId below,
-        // this identifies nothing about the provider, so it is not gated
-        // behind `sensitive`. Full-list orders are the case this exists for:
-        // a curated order is already pinned down by its tier and group name,
-        // but a full-list row has no name of its own worth memorising, and an
-        // admin chasing down "which of the ~8,000 rows was this" needs the
-        // exact id, not a description that could match several rows.
-        nitroServiceId: o.serviceId,
+        // Service.nitroId, not Service.id — the earlier version of this
+        // shipped the raw cuid, which is a database key, not a number a
+        // customer or an admin without database access can read out over
+        // WhatsApp. Not gated behind `sensitive`: unlike serviceApiId below,
+        // this identifies nothing about the provider, only which of our own
+        // catalogue rows it is. Full-list orders are the case this exists
+        // for — a curated order is already pinned down by its tier and group
+        // name, but a full-list row has no name of its own worth memorising.
+        nitroServiceId: o.service?.nitroId ?? null,
         ...(sensitive ? { provider: o.service?.provider || 'mtp', serviceApiId: o.service?.apiId || null } : {}),
         link: o.link,
         quantity: o.quantity,

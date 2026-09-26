@@ -92,6 +92,26 @@ describe('order offer display', () => {
     expect(result.offerDisabled).toBe(true);
   });
 
+  it('marks a full-list order disabled when its service is blacklisted, even with a fresh provider listing', () => {
+    // The bug this guards: the daily sweep keeps providerListedAt fresh on a
+    // blacklisted row exactly as it does on any other live one, since
+    // blacklisting bars a sale and says nothing about whether the provider
+    // still carries it. Missing this let a blacklisted order's Reorder button
+    // show, and the reorder handler trusts this same flag with no separate
+    // check of its own.
+    const result = getOrderOfferDisplay(activeOrder({
+      tierId: null,
+      tier: null,
+      serviceNameAtPurchase: 'Instagram Followers',
+      tierNameAtPurchase: null,
+      service: { ...activeOrder().service, providerListedAt: new Date(), blacklisted: true },
+    }));
+
+    expect(result.fullList).toBe(true);
+    expect(result.fullListDisabled).toBe(true);
+    expect(result.offerDisabled).toBe(true);
+  });
+
   it.each([
     ['missing tier', { tier: null }],
     ['disabled tier', { tier: { ...activeOrder().tier, enabled: false } }],

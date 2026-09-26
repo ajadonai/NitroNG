@@ -212,6 +212,15 @@ model AdminSession {
 
 model Service {
   id        String  @id @default(cuid())
+  // The number an order history card actually shows as "Nitro ID" — `id`
+  // above is a cuid, meant to be a database key rather than something a
+  // customer or an admin without database access reads and quotes back to
+  // support. Sequential, assigned once at creation, permanent forever: a
+  // service being blacklisted or dropped by a provider never changes its
+  // number, only whether it currently shows a "Retired from catalogue" tag
+  // next to it. Backfilled for existing rows in creation order, so a service
+  // imported last year has a lower number than one synced this morning.
+  nitroId   Int     @unique @default(autoincrement())
   apiId     Int
   name      String
   category  String

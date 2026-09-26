@@ -185,7 +185,7 @@ export async function GET(req) {
         ],
       },
       orderBy: { createdAt: 'desc' },
-      include: { service: { select: { name: true, category: true, enabled: true, providerListedAt: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, enabled: true, serviceId: true, group: { select: { name: true, platform: true, type: true, enabled: true } } } }, dripDispatches: { where: { status: { in: ['pending', 'dispatching', 'processing'] } }, select: { scheduledAt: true }, orderBy: { scheduledAt: 'desc' }, take: 1 } },
+      include: { service: { select: { name: true, category: true, enabled: true, providerListedAt: true, blacklisted: true, nitroId: true } }, tier: { select: { tier: true, speed: true, refill: true, refillDays: true, enabled: true, serviceId: true, group: { select: { name: true, platform: true, type: true, enabled: true } } } }, dripDispatches: { where: { status: { in: ['pending', 'dispatching', 'processing'] } }, select: { scheduledAt: true }, orderBy: { scheduledAt: 'desc' }, take: 1 } },
     });
 
     return Response.json({
@@ -204,11 +204,13 @@ export async function GET(req) {
         fullListDisabled: offer.fullListDisabled,
         retiredFromMenu: offer.retiredFromMenu,
         offerDisabled: offer.offerDisabled,
-        // Our own Service.id — reveals nothing about the provider, so no
-        // reason to withhold it the way apiOrderId already isn't withheld.
-        // Shown on full-list orders, which have no tier/group name pinning
-        // down exactly which of the ~8,000 rows was bought.
-        nitroServiceId: o.serviceId,
+        // Service.nitroId, a real sequential number — the earlier version of
+        // this shipped Service.id, a cuid meant for the database rather than
+        // something read out over WhatsApp. Reveals nothing about the
+        // provider, so no reason to withhold it the way apiOrderId already
+        // isn't withheld. Shown on full-list orders, which have no tier/group
+        // name pinning down exactly which of the ~8,000 rows was bought.
+        nitroServiceId: o.service?.nitroId ?? null,
         speed: o.tier?.speed || null,
         platform: offer.platform,
         link: o.link,
