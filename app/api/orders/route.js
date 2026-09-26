@@ -204,6 +204,11 @@ export async function GET(req) {
         fullListDisabled: offer.fullListDisabled,
         retiredFromMenu: offer.retiredFromMenu,
         offerDisabled: offer.offerDisabled,
+        // Our own Service.id — reveals nothing about the provider, so no
+        // reason to withhold it the way apiOrderId already isn't withheld.
+        // Shown on full-list orders, which have no tier/group name pinning
+        // down exactly which of the ~8,000 rows was bought.
+        nitroServiceId: o.serviceId,
         speed: o.tier?.speed || null,
         platform: offer.platform,
         link: o.link,

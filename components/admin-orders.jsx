@@ -326,6 +326,13 @@ function AdminFacts({ o, dark, t, isSensitive, setSearch }) {
         isPartial ? ["Delivered", <span key="d" className="m text-[13px] text-t-text-muted"><B>{delivered.toLocaleString()}</B> of {(o.quantity || 0).toLocaleString()}</span>] : ["Quantity", <B key="q">{(o.quantity || 0).toLocaleString()}</B>],
         ["Start count", o.startCount != null ? <B key="s">{o.startCount.toLocaleString()}</B> : <span key="s" className="text-t-text-muted">Not yet</span>],
         ["Placed from", <B key="src">{o.source === "api" ? "API" : "Website"}</B>],
+        // Full-list orders have no tier or group name to pin them down — a
+        // curated order is already identified by "Standard" under "Instagram
+        // Followers"; a full-list row is just one of ~8,000 near-identical
+        // entries, so the exact Service id is what actually distinguishes it.
+        // Visible to every admin, not just sensitive ones: it names nothing
+        // about the provider, only which of our own catalogue rows this is.
+        o.fullList && o.nitroServiceId ? ["Nitro ID", <CopyId key="nid" value={o.nitroServiceId} dark={dark} />] : null,
         est && !cancelled && o.status !== "Completed" ? ["Est. time", <B key="e" color={t.accent}>{est}</B>] : null,
       ]} />
       <FactRows dark={dark} title="Money" rows={[

@@ -178,6 +178,14 @@ export async function GET(req) {
         offerDisabled: offer.offerDisabled,
         platform: offer.platform,
         category: o.service?.category || 'unknown',
+        // Our own Service.id, not the provider's — unlike serviceApiId below,
+        // this identifies nothing about the provider, so it is not gated
+        // behind `sensitive`. Full-list orders are the case this exists for:
+        // a curated order is already pinned down by its tier and group name,
+        // but a full-list row has no name of its own worth memorising, and an
+        // admin chasing down "which of the ~8,000 rows was this" needs the
+        // exact id, not a description that could match several rows.
+        nitroServiceId: o.serviceId,
         ...(sensitive ? { provider: o.service?.provider || 'mtp', serviceApiId: o.service?.apiId || null } : {}),
         link: o.link,
         quantity: o.quantity,
