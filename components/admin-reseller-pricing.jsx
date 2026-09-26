@@ -242,7 +242,7 @@ export default function AdminResellerPricingPage({ t }) {
         </section>
 
         <div className="rp-foot">
-          <button type="button" className="nb" onClick={() => setS(DEFAULTS)} disabled={saving}>Reset to defaults</button>
+          <button type="button" className="nb sec" onClick={() => setS(DEFAULTS)} disabled={saving}>Reset to defaults</button>
           <button type="button" className="nb pri" onClick={() => save(s)} disabled={saving || !!ladderFault || !!overCap}>
             {saving ? "Saving…" : "Save"}
           </button>

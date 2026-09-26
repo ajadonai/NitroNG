@@ -364,8 +364,8 @@ export function AdminCreateOrderPage({ dark, t }) {
       <div className="co-between"><span className="co-tu-h">Top up · {first}</span><button type="button" className="co-link" onClick={resetTopUp}>Close</button></div>
       {!topUpChannel ? (
         <div className="co-row">
-          <button type="button" className="nb" onClick={() => setTopUpChannel("flutterwave")}>Payment link</button>
-          <button type="button" className="nb" onClick={handleSelectManual}>Bank transfer</button>
+          <button type="button" className="nb sec" onClick={() => setTopUpChannel("flutterwave")}>Payment link</button>
+          <button type="button" className="nb sec" onClick={handleSelectManual}>Bank transfer</button>
         </div>
       ) : topUpDone === "pending" ? (
         <div>
@@ -377,7 +377,7 @@ export function AdminCreateOrderPage({ dark, t }) {
           <div className="co-hint">Payment link ready. Copy it and send it to {first}.</div>
           <div className="co-row">
             <input readOnly value={topUpLink} className="co-in m" style={{ fontSize: 12 }} />
-            <button type="button" className="nb" style={{ flex: "0 0 auto" }} onClick={() => { copyText(topUpLink); toast.success("Copied", "Payment link copied"); }}>Copy</button>
+            <button type="button" className="nb sec" style={{ flex: "0 0 auto" }} onClick={() => { copyText(topUpLink); toast.success("Copied", "Payment link copied"); }}>Copy</button>
           </div>
         </>
       ) : topUpChannel === "manual" && !topUpBank ? (
@@ -424,7 +424,7 @@ export function AdminCreateOrderPage({ dark, t }) {
   const submitBlock = insufficientBal ? (
     <>
       <button type="button" className="nb lg pri wide" disabled>Insufficient balance · {fN(user.balance)}</button>
-      <button type="button" className="nb full" style={{ marginTop: 8 }} onClick={openTopUp}>Top up {first}</button>
+      <button type="button" className="nb full sec" style={{ marginTop: 8 }} onClick={openTopUp}>Top up {first}</button>
     </>
   ) : (
     <button type="button" className="nb lg pri wide" disabled={!ready || !typedOk} onClick={handleSubmit}>{submitLabel}</button>
@@ -523,7 +523,7 @@ export function AdminCreateOrderPage({ dark, t }) {
                 <span className="co-av">{initials(user.name)}</span>
                 <span className="co-cn"><b>{user.name}</b><i>{user.email}</i></span>
                 <span className="co-bal m">{fN(user.balance)}</span>
-                <button type="button" className="nb sm" onClick={topUpOpen ? resetTopUp : openTopUp}>Top up</button>
+                <button type="button" className="nb sm sec" onClick={topUpOpen ? resetTopUp : openTopUp}>Top up</button>
                 <button type="button" className="nb sm ghost" onClick={() => { setUser(null); resetTopUp(); }}>Change</button>
               </div>
             )}
@@ -741,7 +741,7 @@ export function AdminCreateOrderPage({ dark, t }) {
             )}
             {mode === "bulk" && (
               <>
-                <button type="button" className="nb full" disabled={!canAddToBatch || !!typedInput} onClick={addToBatch}>+ Add to batch</button>
+                <button type="button" className="nb full sec" disabled={!canAddToBatch || !!typedInput} onClick={addToBatch}>+ Add to batch</button>
                 {typedInput && <div className="co-hint">{selectedGroup?.name} needs {typedLabel ? typedLabel[0].toLowerCase() : "typed input"} — switch to Single to place it.</div>}
                 {batchItems.length > 0 && (
                   <div className="co-batch">
@@ -863,7 +863,7 @@ export function AdminCreateOrderPage({ dark, t }) {
               ? <b className="co-sbar-hint">{selectedGroup ? "Pick a tier" : "Pick a service"}</b>
               : <b className="m">{fN(charge ? activeCharge : activeValue)}</b>}
           </span>
-          <button type="button" className="nb" onClick={() => setMobileReview(true)}>Review</button>
+          <button type="button" className="nb sec" onClick={() => setMobileReview(true)}>Review</button>
           {insufficientBal
             ? <button type="button" className="nb lg pri" onClick={openTopUp}>Top up</button>
             : <button type="button" className="nb lg pri" disabled={!ready || !typedOk} onClick={handleSubmit}>{submitting ? "Creating..." : "Create"}</button>}

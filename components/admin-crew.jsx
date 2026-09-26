@@ -347,7 +347,7 @@ export function AdminCrewPage({ dark, t }) {
                       {(p.status === "pending" || p.status === "processing") && (
                         <div className="cw-pa">
                           <input className="cw-in" value={refInput[p.id] || ""} onChange={e => setRefInput(prev => ({ ...prev, [p.id]: e.target.value }))} placeholder="Transfer reference (optional)" />
-                          {p.status === "pending" && <button type="button" className="nb sm" disabled={busy === p.id} onClick={() => payoutAct("process", p.id)}>Mark processing</button>}
+                          {p.status === "pending" && <button type="button" className="nb sm sec" disabled={busy === p.id} onClick={() => payoutAct("process", p.id)}>Mark processing</button>}
                           <button type="button" className="nb sm pri" disabled={busy === p.id} onClick={() => payoutAct("complete", p.id)}>Mark paid</button>
                           <button type="button" className="nb sm bad" disabled={busy === p.id} onClick={() => payoutAct("reject", p.id)}>Reject</button>
                         </div>
@@ -483,7 +483,7 @@ export function AdminCrewPage({ dark, t }) {
                   <i>{dm.email}{dm.phone ? ` · ${dm.phone}` : ""}</i>
                   <span className="cw-chips"><span className={`cw-ty ${tier}`}>{tier}</span><span className={`cw-ty ${dm.status}`}>{dm.status}</span><span className="cw-ty m">{dm.commissionRate}%</span></span>
                 </div>
-                <button type="button" className="nb sm" onClick={closeDrawer}>Close</button>
+                <button type="button" className="nb sm sec" onClick={closeDrawer}>Close</button>
               </div>
 
               <div className="cw-body">
@@ -505,7 +505,7 @@ export function AdminCrewPage({ dark, t }) {
                     <input className="cw-in" value={promoteTeamName} onChange={e => setPromoteTeamName(e.target.value)} placeholder="e.g. Alpha squad" maxLength={40} />
                     <div className="cw-row">
                       <button type="button" className="nb sm pri" disabled={busy === dm.id || !promoteTeamName.trim()} onClick={() => drawerAct("promote-chief", { teamName: promoteTeamName.trim() })}>{busy === dm.id ? "Promoting…" : "Promote to chief"}</button>
-                      <button type="button" className="nb sm" onClick={() => { setShowPromoteForm(false); setPromoteTeamName(""); }}>Cancel</button>
+                      <button type="button" className="nb sm sec" onClick={() => { setShowPromoteForm(false); setPromoteTeamName(""); }}>Cancel</button>
                     </div>
                   </div>
                 )}
@@ -517,10 +517,10 @@ export function AdminCrewPage({ dark, t }) {
                       <div className="cw-row">
                         <input className="cw-in" value={editTeamName} onChange={e => setEditTeamName(e.target.value)} maxLength={40} />
                         <button type="button" className="nb sm pri" disabled={busy === dm.id || !editTeamName.trim()} onClick={saveTeamName}>Save</button>
-                        <button type="button" className="nb sm" onClick={() => setEditingTeamName(false)}>Cancel</button>
+                        <button type="button" className="nb sm sec" onClick={() => setEditingTeamName(false)}>Cancel</button>
                       </div>
                     ) : (
-                      <div className="cw-row"><b className="cw-val">{dm.teamName || `${dm.name}'s team`}</b><button type="button" className="nb sm" onClick={() => { setEditingTeamName(true); setEditTeamName(dm.teamName || `${dm.name}'s team`); }}>Rename</button></div>
+                      <div className="cw-row"><b className="cw-val">{dm.teamName || `${dm.name}'s team`}</b><button type="button" className="nb sm sec" onClick={() => { setEditingTeamName(true); setEditTeamName(dm.teamName || `${dm.name}'s team`); }}>Rename</button></div>
                     )}
                   </div>
                 )}
@@ -536,7 +536,7 @@ export function AdminCrewPage({ dark, t }) {
                       </div>
                     ) : <div className="cw-sub" style={{ marginTop: 0 }}>Not on any team.</div>}
                     {otherChiefs.length > 0 && (!showTeamPicker ? (
-                      <button type="button" className="nb sm" style={{ marginTop: 8 }} onClick={() => setShowTeamPicker(true)}>{currentChief ? "Move to another team" : "Put on a team"}</button>
+                      <button type="button" className="nb sm sec" style={{ marginTop: 8 }} onClick={() => setShowTeamPicker(true)}>{currentChief ? "Move to another team" : "Put on a team"}</button>
                     ) : (
                       <div className="cw-pick">
                         <input value={teamSearch} onChange={e => setTeamSearch(e.target.value)} placeholder="Search chiefs" />
@@ -565,9 +565,9 @@ export function AdminCrewPage({ dark, t }) {
                   <button type="button" className="nb sm ok" disabled={busy === dm.id} onClick={() => confirmAct("approve")}>Approve</button>
                   <button type="button" className="nb sm bad" disabled={busy === dm.id} onClick={() => confirmAct("reject")}>Reject</button>
                 </>}
-                {!isPending && whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="nb sm">WhatsApp</a>}
-                {dm.status === "approved" && isChief && <button type="button" className="nb sm" disabled={busy === dm.id} onClick={() => confirmAct("demote-crew")}>Demote to crew</button>}
-                {dm.status === "approved" && !isChief && !showPromoteForm && <button type="button" className="nb sm" onClick={() => { setShowPromoteForm(true); setPromoteTeamName(`${dm.name}'s team`); }}>Promote to chief</button>}
+                {!isPending && whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="nb sm sec">WhatsApp</a>}
+                {dm.status === "approved" && isChief && <button type="button" className="nb sm sec" disabled={busy === dm.id} onClick={() => confirmAct("demote-crew")}>Demote to crew</button>}
+                {dm.status === "approved" && !isChief && !showPromoteForm && <button type="button" className="nb sm sec" onClick={() => { setShowPromoteForm(true); setPromoteTeamName(`${dm.name}'s team`); }}>Promote to chief</button>}
                 {dm.status === "approved" && <button type="button" className="nb sm bad" disabled={busy === dm.id} onClick={() => confirmAct("suspend")}>Suspend</button>}
                 {isSuspended && <button type="button" className="nb sm ok" disabled={busy === dm.id} onClick={() => confirmAct("reinstate")}>Reinstate</button>}
                 {!isPending && <button type="button" className="nb sm bad" style={{ marginLeft: "auto" }} disabled={busy === dm.id} onClick={() => confirmAct("delete")}>Delete</button>}

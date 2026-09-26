@@ -184,7 +184,7 @@ function PromotionForm({ dark, type, initial, onSave, onCancel }) {
       <label className="pro-fld"><span>Internal notes</span><input className="pro-in" value={form.description || ''} onChange={e => set('description', e.target.value)} placeholder="Optional, only admins see this" /></label>
 
       <div className="pro-ff">
-        <button type="button" className="nb" onClick={onCancel} disabled={saving}>Cancel</button>
+        <button type="button" className="nb sec" onClick={onCancel} disabled={saving}>Cancel</button>
         <button type="button" className="nb pri" onClick={submit} disabled={saving}>{saving ? 'Saving…' : initial ? 'Save changes' : 'Create promotion'}</button>
       </div>
     </div>
@@ -308,9 +308,9 @@ export default function AdminPromotionsPage({ dark, t }) {
                   <span className="pro-tt"><b>{c.name}</b><i>{isRecurring ? `Every ${dayWord(c.dayOfWeek)} · ${c.startTimeLocal}–${c.endTimeLocal}` : `${fmtRange(c.startAt, c.endAt)} · Lagos time`}{c.maxDiscountPerOrder > 0 ? ` · max ${naira(c.maxDiscountPerOrder)}` : ''}</i></span>
                   <span className="pro-st"><i className={'pro-dot ' + dot} />{word}</span>
                   {canManage && <span className="pro-a">
-                    <button type="button" className="nb sm" disabled={!!busy} onClick={() => { setEditing(c); setShowAdd(false); }}>Edit</button>
+                    <button type="button" className="nb sm sec" disabled={!!busy} onClick={() => { setEditing(c); setShowAdd(false); }}>Edit</button>
                     {canActivate && <button type="button" className="nb sm pri" disabled={!!busy} onClick={() => doAction('activate', c.id, type)}>{busy === c.id + 'activate' ? '…' : 'Activate'}</button>}
-                    {canPause && <button type="button" className="nb sm" disabled={!!busy} onClick={() => doAction('pause', c.id, type)}>{busy === c.id + 'pause' ? '…' : 'Pause'}</button>}
+                    {canPause && <button type="button" className="nb sm sec" disabled={!!busy} onClick={() => doAction('pause', c.id, type)}>{busy === c.id + 'pause' ? '…' : 'Pause'}</button>}
                     <button type="button" className="nb sm bad" disabled={!!busy} onClick={() => askDelete(c, type)}>Delete</button>
                   </span>}
                 </div>
@@ -353,6 +353,10 @@ select.pro-in{appearance:none;-webkit-appearance:none;background-image:url("data
 .pro-ff{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}
 @media (max-width:900px){
   .pro-stats{grid-template-columns:1fr 1fr}.pro-stt:nth-child(3){border-left:0}.pro-stt:nth-child(n+3){border-top:1px solid var(--line)}.pro-stt b{font-size:17px}
-  .pro-bar   .pro-r{grid-template-columns:72px 1fr;grid-template-areas:"pct tt" "pct st" "acts acts";gap:4px 10px;padding:12px 14px}.pro-pct{grid-area:pct;align-self:start}.pro-tt{grid-area:tt}.pro-tt b,.pro-tt i{white-space:normal}.pro-st{grid-area:st}.pro-a{grid-area:acts;justify-content:stretch;margin-top:4px}.pro-a   .pro-grid.c2,.pro-grid.c3,.pro-grid.c4{grid-template-columns:1fr 1fr}
-  .pro-ff{flex-direction:column-reverse}.pro-ff }
+  /* A card per promotion. On a phone the title and its dates wrap, so a 1px
+     hairline between two wrapped rows left one promotion's words running
+     straight into the next one's. */
+  .pro-list{gap:8px;padding:10px;background:var(--soft)}
+  .pro-r{grid-template-columns:72px 1fr;grid-template-areas:"pct tt" "pct st" "acts acts";gap:6px 10px;padding:12px 14px;border-top:0;background:var(--card);border:1px solid var(--line);border-radius:12px}.pro-pct{grid-area:pct;align-self:start}.pro-tt{grid-area:tt}.pro-tt b,.pro-tt i{white-space:normal}.pro-st{grid-area:st}.pro-a{grid-area:acts;justify-content:stretch;margin-top:4px}.pro-grid.c2,.pro-grid.c3,.pro-grid.c4{grid-template-columns:1fr 1fr}
+  .pro-ff{flex-direction:column-reverse}}
 `;

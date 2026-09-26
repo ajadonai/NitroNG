@@ -253,7 +253,7 @@ export function AdminPaymentsPage({ dark, t }) {
                       {r.creditableKobo != null
                         ? <button type="button" className="nb sm ok" onClick={() => creditReview(r, r.creditableKobo)}>Credit {fN(r.creditableKobo / 100)}</button>
                         : <button type="button" className="nb sm ok" onClick={() => creditTyped(r)}>Credit…</button>}
-                      {r.creditableKobo != null && <button type="button" className="nb sm" onClick={() => creditTyped(r)}>Other amount</button>}
+                      {r.creditableKobo != null && <button type="button" className="nb sm sec" onClick={() => creditTyped(r)}>Other amount</button>}
                       <button type="button" className="nb sm bad" onClick={() => rejectReview(r)}>Reject</button>
                     </> : <span className="pm-dimc">view only</span>}
                   </span>
@@ -279,7 +279,7 @@ export function AdminPaymentsPage({ dark, t }) {
             <FilterDropdown dark={dark} t={t} value={statusFilter} onChange={changeStatus} options={[{ value: "all", label: "All statuses" }, { value: "Pending", label: "Waiting" }, { value: "Completed", label: "Cleared" }, { value: "Failed", label: "Failed" }, { value: "Rejected", label: "Rejected" }]} />
             <button type="button" className={"pm-tg" + (statusFilter === "Pending" ? " on" : "")} onClick={() => changeStatus(statusFilter === "Pending" ? "all" : "Pending")}>Needs approval</button>
             <span className="pm-cnt">{loading ? "" : `${deposits.length} deposit${deposits.length === 1 ? "" : "s"}`}</span>
-            <button type="button" className="nb" onClick={downloadCSV} disabled={!deposits.length}>CSV</button>
+            <button type="button" className="nb sec" onClick={downloadCSV} disabled={!deposits.length}>CSV</button>
           </div>
           <div className="pm-list">
             <div className="pm-lh"><span>Person</span><span>Reference</span><span>Method</span><span>Status</span><span>Time</span><span className="r">Amount</span><span /></div>
@@ -314,7 +314,7 @@ export function AdminPaymentsPage({ dark, t }) {
               <div key={m.method} className="pm-stt"><b className="m">{Math.round(m.amount / methodTotal * 100)}%</b><span>By {methodWord(m.method).toLowerCase()}</span><i>this month · {short(m.amount)}</i></div>
             ))}
           </div>
-          <div className="pm-bar"><span className="pm-cnt" style={{ marginLeft: 0 }}>Customers see them in this order</span><button type="button" className="nb" style={{ marginLeft: "auto" }} onClick={() => setAddModal(true)}>+ Add a gateway</button></div>
+          <div className="pm-bar"><span className="pm-cnt" style={{ marginLeft: 0 }}>Customers see them in this order</span><button type="button" className="nb sec" style={{ marginLeft: "auto" }} onClick={() => setAddModal(true)}>+ Add a gateway</button></div>
           <div className="pm-list">
             {loading ? Array.from({ length: 3 }, (_, i) => <div key={i} className="pm-gr sk">{bone(34)}</div>) : gateways.map((g, i) => (
               <div key={g.id} className={"pm-gr" + (g.enabled ? "" : " off")}>
@@ -323,7 +323,7 @@ export function AdminPaymentsPage({ dark, t }) {
                 <span className="pm-st"><i className={`pm-dot ${g.enabled ? "ok" : "dim"}`} />{g.enabled ? "Live" : "Off"}</span>
                 <span className="pm-keys">{g.hasKeys ? "Keys set" : "No keys"}</span>
                 <button type="button" className={"pm-tog" + (g.enabled ? "" : " o")} onClick={() => toggle(g.id, !g.enabled)} aria-label={g.enabled ? "Switch off" : "Switch on"}><i /></button>
-                <button type="button" className="nb sm" onClick={() => openConfig(g)}>Configure</button>
+                <button type="button" className="nb sm sec" onClick={() => openConfig(g)}>Configure</button>
               </div>
             ))}
           </div>
@@ -460,7 +460,7 @@ const PM_CSS = `
   .pm-dr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"un amt" "mth st" "ref ref" "acts acts";gap:6px 10px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;min-width:0}.pm-dr.pend{border-color:var(--warn)}
   .pm-un{grid-area:un}.pm-amt{grid-area:amt;align-self:start}.pm-mth{grid-area:mth}.pm-st{grid-area:st;justify-self:end}.pm-ref{grid-area:ref;font-size:11.5px}.pm-tm{display:none}
   .pm-acts{grid-area:acts;justify-content:stretch}.pm-acts .pm-acts:empty{display:none}
-  .pm-gr{grid-template-columns:52px 1fr 44px;grid-template-areas:"ord gt tog" ". st keys" ". b b";gap:6px 10px;background:var(--card);border:1px solid var(--line);border-radius:14px}.pm-ord{grid-area:ord}.pm-gt{grid-area:gt}.pm-gr .pm-st{grid-area:st}.pm-keys{grid-area:keys;justify-self:end}.pm-tog{grid-area:tog}.pm-gr }
+  .pm-gr{grid-template-columns:52px 1fr 44px;grid-template-areas:"ord gt tog" ". st keys" ". b b";gap:6px 10px;background:var(--card);border:1px solid var(--line);border-radius:14px}.pm-ord{grid-area:ord}.pm-gt{grid-area:gt}.pm-gr .pm-st{grid-area:st}.pm-keys{grid-area:keys;justify-self:end}.pm-tog{grid-area:tog}}
 `;
 
 export function AdminFinancePage({ dark, t, admin }) {
@@ -795,7 +795,7 @@ function FinanceBreakdownTab({ dark, t, admin }) {
         <FilterDropdown dark={dark} t={t} value={tier} onChange={setTier} options={[{ value: "all", label: "All tiers" }, { value: "budget", label: "Budget" }, { value: "standard", label: "Standard" }, { value: "premium", label: "Premium" }, { value: "fulllist", label: "Full list" }]} />
         <FilterDropdown dark={dark} t={t} value={provider} onChange={setProvider} options={[{ value: "all", label: "All providers" }, { value: "mtp", label: "MTP" }, { value: "dao", label: "DaoSMM" }]} />
         <div className="fb-export" ref={csvMenuRef}>
-          <button type="button" className="nb" onClick={() => setCsvMenuOpen(v => !v)} disabled={reportLoading}>{reportLoading ? "Preparing…" : "Export report"}</button>
+          <button type="button" className="nb sec" onClick={() => setCsvMenuOpen(v => !v)} disabled={reportLoading}>{reportLoading ? "Preparing…" : "Export report"}</button>
           {csvMenuOpen && (
             <div className="fb-menu">
               <div className="fb-mh">Sections</div>
@@ -884,7 +884,7 @@ const FB_CSS = `
 .fb-menu .fb-ladder{grid-template-columns:96px 1fr 74px 60px}
 .fb-row3{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px}
 .fb-in{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);font:inherit;font-size:13px;color:var(--ink);outline:none;min-width:0;width:100%}.fb-in:focus{border-color:var(--ac)}
-.fb @media (max-width:900px){.fb-export{margin-left:0;width:100%}.fb-export .fb-menu{left:0;right:auto;width:100%}.fb-row3{grid-template-columns:1fr}.fb }
+@media (max-width:900px){.fb-export{margin-left:0;width:100%}.fb-export .fb-menu{left:0;right:auto;width:100%}.fb-row3{grid-template-columns:1fr}.fb }
 `;
 
 

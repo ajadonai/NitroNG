@@ -115,8 +115,8 @@ export function AdminAlertsPage({ dark, t }) {
         <span className="aa-when">{a.created ? fD(a.created) : ""}{a.expiresAt ? ` · comes down ${fD(a.expiresAt)}` : ""}</span>
         <span className="aa-acts">
         {livePane
-          ? <><button type="button" className="nb" onClick={() => setActive(a.id, false)}>Take down</button><button type="button" className="nb" onClick={() => edit(a)}>Edit</button></>
-          : <><button type="button" className="nb sm" onClick={() => setActive(a.id, true)}>Restore</button><button type="button" className="nb sm bad" onClick={() => remove(a)}>Remove</button></>}
+          ? <><button type="button" className="nb sec" onClick={() => setActive(a.id, false)}>Take down</button><button type="button" className="nb sec" onClick={() => edit(a)}>Edit</button></>
+          : <><button type="button" className="nb sm sec" onClick={() => setActive(a.id, true)}>Restore</button><button type="button" className="nb sm bad" onClick={() => remove(a)}>Remove</button></>}
         </span>
       </div>
     </div>
@@ -163,7 +163,7 @@ export function AdminAlertsPage({ dark, t }) {
             <div className="aa-fld"><label>How it will look</label><AnnouncementBanner alerts={previewAlerts} dark={dark} mode="dashboard" preview /></div>
             <div className="aa-foot">
               <button type="button" className="nb pri" disabled={!form.message.trim() || saving} onClick={submit}>{saving ? "Saving…" : editing ? "Save changes" : "Post notice"}</button>
-              {editing && <button type="button" className="nb" onClick={() => { setEditing(null); setForm(blank); setComposeOpen(false); }}>Cancel</button>}
+              {editing && <button type="button" className="nb sec" onClick={() => { setEditing(null); setForm(blank); setComposeOpen(false); }}>Cancel</button>}
               <Hint text="It goes live the moment you post. When more than one is live, the newest shows first." />
             </div>
           </div>}

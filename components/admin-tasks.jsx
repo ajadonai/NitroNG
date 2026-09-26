@@ -410,7 +410,7 @@ export default function AdminTasksPage({ dark, t }) {
                   <span className="m tk-mid">{(x._count?.submissions ?? x.doneCount ?? 0).toLocaleString()} done</span>
                   <span className="tk-st"><i className={'tk-dot ' + (x.active ? 'ok' : 'dim')} />{x.active ? 'Live' : 'Off'}</span>
                   <span className="tk-acts">
-                    <button type="button" className="nb sm" onClick={() => openEdit(x)}>Edit</button>
+                    <button type="button" className="nb sm sec" onClick={() => openEdit(x)}>Edit</button>
                     <button type="button" className={`nb sm ${x.active ? 'warn' : 'ok'}`} onClick={() => toggleTask(x.id, !x.active)}>{x.active ? 'Turn off' : 'Turn on'}</button>
                   </span>
                 </div>
@@ -423,11 +423,11 @@ export default function AdminTasksPage({ dark, t }) {
       {reject && (
         <div className="tk-bd" onClick={() => setReject(null)}>
           <div className="tk-md sm" role="dialog" aria-modal="true" aria-label="Reject this proof" onClick={e => e.stopPropagation()}>
-            <div className="tk-mdh"><b>Reject this proof?</b><button type="button" className="nb sm" onClick={() => setReject(null)}>Close</button></div>
+            <div className="tk-mdh"><b>Reject this proof?</b><button type="button" className="nb sm sec" onClick={() => setReject(null)}>Close</button></div>
             <p className="tk-mds">{reject.sub.user?.name || 'This customer'} gets nothing for “{reject.sub.task?.title}”. A short reason helps them do it right next time.</p>
             <label className="tk-lbl" htmlFor="tk-reason">Reason (optional)</label>
             <textarea id="tk-reason" className="tk-in ta" rows={3} value={reject.reason} onChange={e => setReject(r => ({ ...r, reason: e.target.value }))} placeholder="e.g. the link goes to a different account" autoFocus />
-            <div className="tk-mdf"><button type="button" className="nb" onClick={() => setReject(null)}>Cancel</button><button type="button" className="nb bad" onClick={sendReject}>Reject</button></div>
+            <div className="tk-mdf"><button type="button" className="nb sec" onClick={() => setReject(null)}>Cancel</button><button type="button" className="nb bad" onClick={sendReject}>Reject</button></div>
           </div>
         </div>
       )}
@@ -584,7 +584,7 @@ export default function AdminTasksPage({ dark, t }) {
             </div>
 
             <div className="tk-emf">
-              <button type="button" className="nb" onClick={() => setModal(null)}>Cancel</button>
+              <button type="button" className="nb sec" onClick={() => setModal(null)}>Cancel</button>
               {modal.mode === 'edit' && <button type="button" className="nb bad tk-left" onClick={deleteTask}>Delete</button>}
               <button type="button" className="nb pri" disabled={saving || !form.title.trim()} onClick={saveTask}>{saving ? 'Saving…' : modal.mode === 'create' ? 'Create task' : 'Save changes'}</button>
             </div>
@@ -694,7 +694,7 @@ const TK_CSS = `
   .tk-r.sb .tk-acts{grid-area:acts;justify-content:stretch;margin-top:2px}.tk-r.sb .tk-acts .tk-r.sb .tk-rev{flex-direction:row;align-items:center;justify-content:space-between}
   .tk-r.ts{grid-template-columns:34px 1fr auto;grid-template-areas:"pav tt r" "pav n st" "acts acts acts";gap:6px 10px;padding:12px 14px}
   .tk-r.ts .tk-pav{grid-area:pav;align-self:start}.tk-r.ts .tk-tt{grid-area:tt}.tk-r.ts .tk-tt b,.tk-r.ts .tk-tt i{white-space:normal}.tk-r.ts .tk-num{grid-area:r}.tk-r.ts .tk-mid{grid-area:n}.tk-r.ts .tk-st{grid-area:st;justify-self:end}
-  .tk-r.ts .tk-acts{grid-area:acts;justify-content:stretch;margin-top:2px}.tk-r.ts .tk-acts   .tk-pg{flex-wrap:wrap;gap:8px}
+  .tk-r.ts .tk-acts{grid-area:acts;justify-content:stretch;margin-top:2px}.tk-r.tk-pg{flex-wrap:wrap;gap:8px}
   .tk-bd{padding:12px 10px}.tk-md{padding:14px 14px 16px}
   .tk-bd.tk-sheet{padding:0;align-items:flex-end}
   .tk-md.tk-em{width:100%;max-height:92vh;border-radius:20px 20px 0 0}
