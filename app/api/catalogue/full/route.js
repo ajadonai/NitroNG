@@ -4,6 +4,7 @@ import { log } from '@/lib/logger';
 import { getCurrentUser } from '@/lib/auth';
 import { getResellerTerms, getMarkupSettings, wholesaleOf, costKoboPer1k } from '@/lib/reseller';
 import { isKnownPlatform, buildAll } from '@/lib/full-catalogue';
+import { staleCutoffs } from '@/lib/provider-listing';
 
 // The customer-facing full list, one platform at a time.
 //
@@ -57,7 +58,13 @@ const cache = new Map(); // platform → { at, built }
  * buildAll still applies the real rule to everything that arrives, so a drift
  * between them costs bandwidth and can never change what a customer sees.
  */
-const sqlFor = (platform) => Prisma.sql`
+// `providerListedAt IS NOT NULL` only ever meant "a provider listed this once",
+// and it is never cleared when one drops a service, so a dropped row passed
+// this fence forever. The clause below asks whether the row is still being
+// confirmed, measured against its own provider's most recent successful sync —
+// see lib/provider-listing. A null cutoff means we have no sync to measure
+// against, and filters nothing rather than emptying the list.
+const sqlFor = (platform, cutoffs = {}) => Prisma.sql`
   SELECT s.id, s.name, s.category, s.platform,
          s."sellPer1k"::text AS "sellPer1k", s."costPer1k"::text AS "costPer1k",
          s.min, s.max, s.refill, s.dripfeed, s."apiType", m."apiId"
@@ -66,6 +73,11 @@ const sqlFor = (platform) => Prisma.sql`
   WHERE s.platform = ${platform}
     AND s.provider IN ('mtp', 'dao')
     AND s."providerListedAt" IS NOT NULL
+    AND (
+      (s.provider = 'mtp' AND (${cutoffs.mtp ?? null}::timestamp IS NULL OR s."providerListedAt" >= ${cutoffs.mtp ?? null}::timestamp))
+      OR
+      (s.provider = 'dao' AND (${cutoffs.dao ?? null}::timestamp IS NULL OR s."providerListedAt" >= ${cutoffs.dao ?? null}::timestamp))
+    )
     AND s."costPer1k" > 0
     AND NOT s.blacklisted
     AND NOT EXISTS (SELECT 1 FROM service_tiers t WHERE t."serviceId" = s.id)
@@ -81,7 +93,7 @@ const nest = (r) => ({ ...r, resellerMap: { apiId: r.apiId, retiredAt: null } })
 async function catalogue(platform, usdRate) {
   const hit = cache.get(platform);
   if (hit && Date.now() - hit.at < CACHE_TTL) return hit.built;
-  const rows = await prisma.$queryRaw(sqlFor(platform));
+  const rows = await prisma.$queryRaw(sqlFor(platform, await staleCutoffs()));
   const built = buildAll(rows.map(nest), { usdRate });
   cache.set(platform, { at: Date.now(), built });
   return built;

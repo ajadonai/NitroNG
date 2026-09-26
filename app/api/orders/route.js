@@ -7,6 +7,7 @@ import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-lim
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripFeasibility, isDripEligible, validateIntradayDuration } from '@/lib/drip-feed';
 import { serviceTypeOf, servicePlatformOf } from '@/lib/full-catalogue';
+import { isListedRecently, staleCutoffs } from '@/lib/provider-listing';
 import { cancelQueuedMetaEvent, enqueueMetaEvent, loadStoredCapiIdentity, parseFbCookies, persistFbTouch, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
 import { tgFlush, tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { checkFirstOrder } from '@/lib/first-order';
@@ -973,7 +974,16 @@ export async function createOrderForSession(session, body, req, { source = 'web'
       // the same one the list is drawn from, lib/full-catalogue FULL_WHERE:
       // mtp or dao, still listed by the provider, carrying a real cost.
       service = await prisma.service.findUnique({ where: { id: serviceId } });
-      const inCatalogue = service && ['mtp', 'dao'].includes(service.provider) && service.providerListedAt && Number(service.costPer1k) > 0;
+      // "Still listed by the provider" was `providerListedAt` being set at all,
+      // which a dropped service satisfies forever — the stamp is refreshed for
+      // what a provider still carries and never cleared for what it drops. So
+      // this asks whether the provider is still confirming it, against that
+      // provider's own newest sync (lib/provider-listing). Full-list orders
+      // placed on dropped rows ran 17 for 17 cancelled over 30 days; refusing
+      // here is what stops the next one taking a customer's money first.
+      const inCatalogue = service && ['mtp', 'dao'].includes(service.provider)
+        && service.providerListedAt && Number(service.costPer1k) > 0
+        && isListedRecently(service, await staleCutoffs());
       // A blacklisted service is refused here outright, whether or not it is
       // also `enabled` — hiding it from the list a customer picks from is
       // pointless if the id can still be posted straight to this route.

@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { getResellerTerms, getMarkupSettings, wholesaleOf, resellerFloorKobo } from '@/lib/reseller';
 import { formatResellerService, dedupeCategoryLabels } from '@/lib/reseller-format';
 import { FULL_WHERE } from '@/lib/full-catalogue';
+import { listedRecentlyWhere } from '@/lib/provider-listing';
 
 // Read-only browse for granted resellers. Ordering happens on the order page or
 // through the API; this page exists so a reseller can see what an ID means.
@@ -30,6 +31,14 @@ const byPlatform = (a, b) => platformRank(a) - platformRank(b) || String(a).loca
 // One definition of the full list, shared with the customer-facing view at
 // app/api/catalogue/full so the two can never disagree about what it holds.
 const fullWhere = FULL_WHERE;
+
+// FULL_WHERE only asks whether a provider EVER listed a service, which a row
+// the provider has since dropped satisfies forever. This narrows it to rows
+// still being confirmed by their own provider's syncs — see lib/provider-listing
+// for why the cutoff is measured against the provider rather than the clock.
+// Wrapped in AND rather than spread, so it cannot collide with a search branch
+// that wants an OR of its own.
+const stillListed = async () => ({ AND: [await listedRecentlyWhere()] });
 
 export async function GET(req) {
   try {
@@ -61,7 +70,7 @@ export async function GET(req) {
     if (!category && !q) {
       const cats = await prisma.service.groupBy({
         by: ['platform'],
-        where: { ...fullWhere, platform: { not: null } },
+        where: { ...fullWhere, ...(await stillListed()), platform: { not: null } },
         _count: true,
       });
       cats.sort((a, b) => byPlatform(a.platform, b.platform));
@@ -71,6 +80,7 @@ export async function GET(req) {
     const offset = Math.max(0, Number(url.searchParams.get('offset')) || 0);
     const where = {
       ...fullWhere,
+      ...(await stillListed()),
       ...(category ? { platform: category } : {}),
       ...(q ? (/^\d+$/.test(q)
         ? { resellerMap: { is: { apiId: Number(q), retiredAt: null } } }
