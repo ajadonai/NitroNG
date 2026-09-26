@@ -90,6 +90,27 @@ describe('catalogue counts have one source', () => {
     }
   });
 
+  it('serves the stats route dynamically, not baked into the build', () => {
+    // `export const revalidate = 300` made the build classify this route as
+    // "○ Static — prerendered as static content, Revalidate 5m, Expire 1y". The
+    // response shipped inside the deployment and every edge region then served
+    // it stale for as long as it had no traffic, so the public order count sat a
+    // couple of hundred orders behind the database — it moved when a region got
+    // round to refreshing, not when the number changed. Nothing in the source
+    // said so; it was only visible in the build output, which is why this is
+    // pinned here.
+    const route = readFileSync('app/api/site-info/route.js', 'utf8');
+    expect(route).toContain("export const dynamic = 'force-dynamic'");
+    // Comments stripped, because the one above that export quotes the very line
+    // it is warning about.
+    expect(stripComments(route)).not.toMatch(/export\s+const\s+revalidate\s*=/);
+
+    // A short CDN window is fine and wanted; a long one reintroduces the bug.
+    const header = route.match(/s-maxage=(\d+)/);
+    expect(header, 'the route should set an explicit Cache-Control').not.toBeNull();
+    expect(Number(header[1])).toBeLessThanOrEqual(120);
+  });
+
   it('keeps the two user counts named apart so they cannot be confused', () => {
     // /about says "verified accounts" and must keep counting verified accounts;
     // the landing strip says "accounts created" and counts every live one. The
