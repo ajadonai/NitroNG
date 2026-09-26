@@ -1,53 +1,45 @@
 import prisma from '@/lib/prisma';
-import { ok } from '@/lib/utils';
-import { publicOrderCount } from '@/lib/public-counts';
-import { fullListSize } from '@/lib/full-list-size';
-import { getMarkupSettings } from '@/lib/reseller';
+import { getSiteStats } from '@/lib/site-stats';
 
-export const revalidate = 300;
+// ── Why this is dynamic and not ISR ──
+// It was `export const revalidate = 300`, which made the build classify it as
+// "○ Static — prerendered as static content, Revalidate 5m, Expire 1y". Two
+// consequences, and together they are why the order counter visibly lagged
+// reality by a couple of hundred orders rather than by five minutes:
+//
+//   1. The response was baked into the build. Every region began serving the
+//      figures as they were at build time, so a fresh deploy started life
+//      already showing whatever was true when the deploy was cut.
+//   2. Expire was a year. Stale-while-revalidate means a request is answered
+//      from the stale entry and the refresh happens behind it, per edge region
+//      and only where there is traffic. A region could sit on an old count for
+//      as long as it liked, and nothing forced it forward.
+//
+// So the counter did not creep from 13K+ to 14K+ at 14,001. It crept when some
+// region got round to refreshing, which is why it looked like it needed 14,200
+// or 14,300 first.
+//
+// Dynamic with an explicit sixty-second CDN window instead: never baked into a
+// build, never a year stale, and the counts behind it are four indexed queries.
+// The one expensive figure, the full-list size, carries its own ten-minute
+// memo and an eight-second budget, so the work does not land on a reader.
+export const dynamic = 'force-dynamic';
+
+const CACHE_HEADER = 'public, s-maxage=60, stale-while-revalidate=120';
+
+/** Same JSON `ok()` would send, plus the CDN window this route wants. */
+const json = (data) =>
+  Response.json(data, { status: 200, headers: { 'Cache-Control': CACHE_HEADER } });
 
 export async function GET() {
   try {
-    let userCount = 0, orderCount = 0, platformCount = 0, serviceCount = 0, uniquePlatforms = 0;
-    try { userCount = await prisma.user.count({ where: { status: { not: 'Deleted' } } }); } catch {}
-    try { orderCount = await prisma.order.count(); } catch {}
-    try {
-      const [groups, tiers, distinctPlatforms] = await Promise.all([
-        prisma.serviceGroup.count({ where: { enabled: true, tiers: { some: { enabled: true } } } }),
-        prisma.serviceTier.count({ where: { enabled: true, group: { enabled: true } } }),
-        prisma.serviceGroup.findMany({ where: { enabled: true, tiers: { some: { enabled: true } } }, select: { platform: true }, distinct: ['platform'] }),
-      ]);
-      platformCount = groups;
-      serviceCount = tiers;
-      uniquePlatforms = distinctPlatforms.length;
-    } catch {}
-
-    // The full list, counted rather than written down. The landing page says
-    // how many services sit behind the curated menu, and that number moves
-    // every time the sync adds or drops one — a constant in the markup would
-    // be stale within a week and nobody would notice.
-    let fullList = { services: 0, platforms: 0 };
-    try {
-      const settings = await getMarkupSettings();
-      fullList = await fullListSize(Number(settings.markup_usd_rate) || 1600);
-    } catch {}
-
-    const PROCESSING_BASE = 20;
-    const displayUsers = userCount;
-    const displayOrders = publicOrderCount(orderCount);
-
-    let deliveryRate, processingCount;
-    try {
-      const [statusBreakdown, liveProcessing] = await Promise.all([
-        prisma.order.groupBy({ by: ['status'], where: { deletedAt: null, status: { in: ['Completed', 'Partial', 'Cancelled'] } }, _count: true }),
-        prisma.order.count({ where: { status: 'Processing', deletedAt: null } }),
-      ]);
-      const counts = {};
-      statusBreakdown.forEach(s => { counts[s.status] = s._count; });
-      const denom = (counts.Completed || 0) + (counts.Partial || 0) + (counts.Cancelled || 0);
-      if (denom > 0) deliveryRate = Math.max(90, Math.round(((counts.Completed || 0) / denom) * 100));
-      processingCount = liveProcessing + PROCESSING_BASE;
-    } catch {}
+    // Every number here comes from lib/site-stats so this route and the pages
+    // that server-render the same figures cannot drift apart. The promo and
+    // the alerts are this route's own business and stay here.
+    //
+    // This is the one caller that pays for the full-list count, because the
+    // landing page's below-fold prints it.
+    const stats = await getSiteStats({ includeFullList: true });
 
     let promo = null;
     try {
@@ -76,22 +68,11 @@ export async function GET() {
       }));
     } catch {}
 
-    return ok({
-      stats: {
-        users: displayUsers >= 1000000 ? `${(displayUsers / 1000000).toFixed(1)}M` : displayUsers >= 1000 ? `${(displayUsers / 1000).toFixed(1)}K` : `${displayUsers}`,
-        orders: displayOrders >= 1000000 ? `${(displayOrders / 1000000).toFixed(1)}M+` : displayOrders >= 1000 ? `${Math.floor(displayOrders / 1000)}K+` : `${displayOrders}+`,
-        platforms: platformCount || 0,
-        services: serviceCount || 0,
-        uniquePlatforms: uniquePlatforms || 0,
-        fullList: fullList.services || 0,
-        fullPlatforms: fullList.platforms || 0,
-        ...(deliveryRate != null ? { deliveryRate } : {}),
-        ...(processingCount != null ? { processing: processingCount } : {}),
-      },
-      promo,
-      alerts,
-    });
+    return json({ stats: stats.display, promo, alerts });
   } catch {
-    return ok({ stats: { users: '0', orders: '0' }, promo: null, alerts: [] });
+    // Null rather than "0": the landing page renders a missing figure away and
+    // prints a zero, and a zero next to "15,000 orders" elsewhere on the site
+    // is the contradiction a visitor actually notices.
+    return json({ stats: { users: null, orders: null }, promo: null, alerts: [] });
   }
 }

@@ -4,6 +4,7 @@ import BlogPostView from '@/components/blog-post';
 import BlogCategoryView from '@/components/blog-category-page';
 import { getLiveValues, injectLiveValues } from '@/lib/blog-values';
 import { renderBlogContent, serializeJsonLd } from '@/lib/blog-rendering';
+import { linkifyPlatformMentions } from '@/lib/blog-internal-links';
 import BLOG_CATEGORIES, { getTopicsForSlug } from '@/lib/blog-categories';
 
 async function q(fn) {
@@ -264,7 +265,15 @@ async function renderPost(slug) {
   ]);
   if (!post) notFound();
 
-  post.content = renderBlogContent(injectLiveValues(post.content, liveValues));
+  // This query is not filtered by category, so a Help post reached directly
+  // by its own slug still renders here rather than 404ing — pre-existing
+  // behaviour, unrelated to this change. Guarded the same way as the API
+  // route: no sales link belongs in a support article.
+  post.content = post.category === 'Help'
+    ? renderBlogContent(injectLiveValues(post.content, liveValues))
+    : linkifyPlatformMentions(renderBlogContent(injectLiveValues(post.content, liveValues)), { currentUrl: `/blog/${slug}` });
+
+  // Related posts: find posts sharing the same topics
 
   // Related posts: find posts sharing the same topics
   const topics = getTopicsForSlug(slug);
@@ -311,7 +320,11 @@ async function renderPost(slug) {
     datePublished: post.createdAt.toISOString(),
     dateModified: post.updatedAt.toISOString(),
     author: { "@type": "Person", name: post.authorName || "Nitro Team" },
-    publisher: { "@type": "Organization", name: "The Nitro NG", url: "https://nitro.ng" },
+    // logo is what Google's rich-result validator actually checks for on
+    // publisher — its absence was the one thing keeping this BlogPosting from
+    // being a complete Article per Google's own guidelines, even though
+    // BlogPosting already is Article's subtype and needed no separate @type.
+    publisher: { "@type": "Organization", name: "The Nitro NG", url: "https://nitro.ng", logo: { "@type": "ImageObject", url: "https://nitro.ng/icon-512.png" } },
     mainEntityOfPage: { "@type": "WebPage", "@id": `https://nitro.ng/blog/${slug}` },
   };
 

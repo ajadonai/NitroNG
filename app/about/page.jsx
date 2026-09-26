@@ -1,6 +1,5 @@
-import prisma from '@/lib/prisma';
-import { publicOrderCount } from '@/lib/public-counts';
 import AboutView from '@/components/about-page';
+import { getSiteStats } from '@/lib/site-stats';
 
 export const revalidate = 3600;
 
@@ -17,16 +16,25 @@ export const metadata = {
 };
 
 export default async function AboutPage() {
+  // This page used to run its own four counts, fenced differently from the ones
+  // behind the landing page — a different definition of a customer, and a
+  // platform count that did not require the platform to have a live tier. Two
+  // pages, two answers, same question. It reads lib/site-stats now.
+  //
+  // "Customers" stays the verified count, which is the smaller and harder of
+  // the two the module exposes, because the label on this page says "verified
+  // accounts" and that has to be the number under it.
   let stats = null;
   try {
-    const [customers, orders, services, platforms, first] = await Promise.all([
-      prisma.user.count({ where: { emailVerified: true } }),
-      prisma.order.count({ where: { deletedAt: null } }),
-      prisma.serviceGroup.count({ where: { enabled: true } }),
-      prisma.serviceGroup.findMany({ where: { enabled: true }, select: { platform: true }, distinct: ['platform'] }),
-      prisma.order.findFirst({ where: { deletedAt: null }, orderBy: { createdAt: 'asc' }, select: { createdAt: true } }),
-    ]);
-    stats = { customers, orders: publicOrderCount(orders), services, platforms: platforms.length, since: first ? first.createdAt.toISOString() : null };
+    const s = await getSiteStats();
+    stats = {
+      customers: s.verifiedUsers,
+      orders: s.orders,
+      services: s.curatedGroups,
+      platforms: s.curatedPlatforms,
+      serviceTypes: s.curatedServices,
+      since: s.since,
+    };
   } catch (err) {
     console.error('[About] Failed to load stats:', err.message);
   }

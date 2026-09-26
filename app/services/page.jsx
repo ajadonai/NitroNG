@@ -1,19 +1,29 @@
 import prisma from '@/lib/prisma';
 import ServicesHubView from '@/components/services-hub-page';
+import { getSiteStats } from '@/lib/site-stats';
 
 export const revalidate = 3600;
 
-export const metadata = {
-  title: 'Social Media Growth Services in Nigeria',
-  description: '29 platforms, 150+ service types, priced in Naira. Instagram, TikTok, YouTube, X, Facebook, Telegram, Spotify and more. Fund your wallet from ₦1,000.',
-  alternates: { canonical: 'https://nitro.ng/services' },
-  openGraph: {
+// The counts were typed here as "29 platforms, 150+ service types" and both
+// were wrong — 27 platforms carry a tested tier, and there are 269 of them.
+// Read from lib/site-stats so this page and the homepage quote one catalogue.
+export async function generateMetadata() {
+  const s = await getSiteStats();
+  const lead = s.curatedServices
+    ? `${s.curatedServices.toLocaleString()} tested services across ${s.curatedPlatforms} platforms, priced in Naira.`
+    : 'Tested growth services priced in Naira.';
+  return {
     title: 'Social Media Growth Services in Nigeria',
-    description: '29 platforms, 150+ service types, priced in Naira. Instagram, TikTok, YouTube, X, Facebook, Telegram, Spotify and more.',
-    url: 'https://nitro.ng/services',
-    type: 'website',
-  },
-};
+    description: `${lead} Instagram, TikTok, YouTube, X, Facebook, Telegram, Spotify and more. Fund your wallet from ₦1,000.`,
+    alternates: { canonical: 'https://nitro.ng/services' },
+    openGraph: {
+      title: 'Social Media Growth Services in Nigeria',
+      description: `${lead} Instagram, TikTok, YouTube, X, Facebook, Telegram, Spotify and more.`,
+      url: 'https://nitro.ng/services',
+      type: 'website',
+    },
+  };
+}
 
 const PLATFORM_ORDER = [
   { slug: 'instagram', name: 'Instagram', group: 'social' },

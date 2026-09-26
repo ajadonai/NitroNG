@@ -299,6 +299,66 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
 - **Cohort / ops** — anything the nightly cohort check surfaces. See the
   protected routes in CLAUDE.md.
 
+### From the 26 Sep 2026 SEO/trust audit
+
+Trip and ChatGPT's site audit, cut down from 15 numbered items to 9 after the
+zeros, the number drift and the h1 fixed in v2.5.140 closed the other four.
+Two items the audit raised are explicitly not on this list: a public team page
+(Trip: not putting that information out) and the Creator Economy Index becoming
+a recurring quarterly property (already decided, tracked as a real one, not a
+backlog maybe). Three more shipped in v2.5.140 (`79b64ba4`) and moved to
+Closed: internal linking, the two new service-type pages, and Product/Article
+schema. Ordered low to high priority.
+
+- **Backlinks from Nigerian creator, marketing and tech publications.** Outreach,
+  not a build — pitching journalists and bloggers on the Creator Economy Index
+  and the honest-comparison articles as citable sources. Only worth spending
+  time on once there is more than one Index to point at.
+
+- **Original case studies from real Nitro customers.** Needs their permission
+  before anything else, which makes it a conversation to have rather than a
+  page to build. Shelve until someone volunteers.
+
+- **Three topical clusters instead of scattered publishing.** Restructure the
+  ~70 existing blog posts into pillar pages with real internal hierarchy —
+  SMM Panel Nigeria, Instagram Growth Nigeria, Nigerian Creator Economy —
+  instead of one more article added to a flat list every week. Editorial
+  time, not dev time; the audit's own caution applies (don't let "Nitro vs
+  Everyone" become the brand's whole voice). Posts live in the `BlogPost`
+  model (`content` as markdown, rendered by `lib/blog-rendering.js`) and are
+  written/edited through `components/admin-blog.jsx`; `lib/blog-categories.js`
+  is the existing category list a pillar structure would sit alongside or
+  replace.
+
+- **Trust & Safety hub.** One URL pulling together what is presently spread
+  across `app/quality`, `app/reviews`, `app/about`, `app/faq`, `app/refund`
+  and `app/privacy`. Pure scope question — which pages fold in as sections
+  versus stay standalone and get linked — needs Trip's call before a mockup
+  is worth making.
+
+- **The 4.9★ / 320+ reviews number has no source.** Checked 26 Sep: there is no
+  `Review` model in the schema at all. It is a hardcoded string in
+  `landing-v3-below-fold.jsx`, sitting on the same site as a Reviews page that
+  says outright "our third-party review footprint is thin" — the sharpest
+  self-contradiction on the site, on a brand whose whole positioning is
+  candour. Either back it with a real internal table (has to say where the
+  reviews are from — Nitro-collected vs. independent — the audit was right
+  about that distinction) or take the number down. Trip's call, not a default
+  to build toward. **`AggregateRating` schema is the concrete deliverable once
+  this is settled** — Product and Article are already live (v2.5.140), and
+  this is the only schema type still deliberately withheld, because marking
+  up a rating the site cannot substantiate is the kind of thing that draws a
+  manual action.
+
+- **Google reviews, worked systematically.** Highest of the nine because it
+  unlocks the two above it: a real review pipeline is what would let the
+  homepage rating claim become true, and a true rating claim is what
+  `AggregateRating` schema needs to exist safely. Checked 26 Sep: no Google
+  review link exists anywhere in the codebase today, so this needs the actual
+  Business Profile review URL from Trip before anything can be built — a
+  WhatsApp post-support nudge with the link, tracked as served → reviews
+  generated, is the whole build once that exists.
+
 ## Closed
 
 - **A fortnight of order-path and Watchtower work** (18–19 Sep 2026,
@@ -801,6 +861,7 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
 
 | Date | Item | Commit |
 | --- | --- | --- |
+| 2026-09-26 | Blog posts auto-link a platform's first mention to the page that sells it, capped at four per post and never touching an existing link or a heading; two new service-type pages (Instagram Saves, Facebook Reviews) after auditing the rest of the audit's suggestions turned out to already exist or already be handled inline; Product schema on every service page (AggregateOffer per type or per platform tile) and the publisher.logo BlogPosting was missing. Caught before shipping: an early linker version double-linked a URL a post had already hand-linked elsewhere, and a first draft of the Facebook Reviews copy quoted a per-review price the page's own table would never show below ₦100k/1k — both fixed against the rendered page, not just the draft | `79b64ba4` v2.5.140 |
 | 2026-09-26 | Twenty-three CSS rules across eleven admin files had a stray copy of the preceding selector glued to their front (`.pro-bar   .pro-r{`), so they matched nothing and the page kept its desktop layout on a phone — which is most of Trip's eight-item list in one fault: promotions rows never collapsing, the issues page's Handled column never fitting, raw-services stats, the outreach and changelog headers, blog and tasks pagination, refills and providers rows, the guide's search box, the tracking-links drawer. Six more were a selector dangling in front of a media query's closing brace, which it then ate. Adding a tier on a phone was impossible because the Budget/Standard/Premium control used `mb-seg`, defined nowhere; it uses the shared `.seg` now. Then the sweep the first plain-button report should have got: 71 `.nb` buttons with no colour modifier — base `.nb` is transparent on transparent, so with Preflight gone they render as bare text — plus the Ban button in the user drawer, which emitted a `danger` class that exists nowhere. Tracking links and phone promotions rows become cards with a border each | `517f59ef` `3dd2d5b7` v2.5.139 |
 | 2026-09-15 | Full list types re-sorted across all 28 platforms, not the seven first sampled: Members split out of Followers (472 services needing a channel link, not a profile), Shares made its own type (307 that sat in two places — Instagram Reposts as likes, X Retweets as engagement, the same action), and the catch-all read end to end, 300 labels down to 223. Every move was a real mis-bin: "Follow" rather than "Followers" (Deezer, Quora, Spotify page follows, LinkedIn connects, friend requests), star ratings as reviews, up/downvotes that a word boundary stopped reading as votes, profile visits as views. Spotify restored: 13 tiers and their services re-enabled, 3 jap-backed ones left off | `4f9159de` v2.5.5 |
 | 2026-09-15 | New Order gains a second catalogue. Nitro picks is untouched — the only addition on that side is the two-tab selector; everything new is the Full list: the 9,748 provider services that were imported, priced and refreshed nightly but invisible, now orderable by anyone. Instagram's 1,060 become 599 (per-item packages out, exact twins out), labelled in Nitro's words with a test that no provider tell survives, priced above cost or hidden, grouped by type read off the Nitro label, and carrying a like/dislike only someone who has ordered it can cast. Open: which platforms show it — drawn as the ones we sell, and Twitch, Kick and Discord have provider services but no tested tier, so an admin switch per platform would let them in | `445a0b8d` v2.5 |
