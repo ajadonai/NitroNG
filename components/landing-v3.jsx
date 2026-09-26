@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
 import { safeReturnTo } from "../lib/safe-return";
@@ -152,19 +152,29 @@ function PwStrength({ pw, dark }) {
 }
 
 
-/* Seeded with the real figure instead of "0".
+/* useLayoutEffect on the client, useEffect on the server, because the former
+   warns during server rendering and does nothing there anyway. */
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+/* The count-up, still a count-up — seeded with the real figure instead of "0".
  *
- * This is where the homepage's zeros actually came from. The count-up started
- * at "0" and climbed inside a requestAnimationFrame, so the markup said
- * "0 Orders, 0 Accounts" to every reader that does not run animation frames —
- * a crawler on its first pass, anything scraping textContent, a phone that
- * painted before the frame budget arrived. Server-rendering the stats was only
- * half the fix; the number had to survive into the first frame too.
+ * This is where the homepage's zeros actually came from, and the client fetch
+ * was only half of it. Display state started at "0" and climbed inside a
+ * requestAnimationFrame, so the markup said "0 Orders, 0 Accounts" whatever the
+ * props held: a crawler's first pass, a textContent scrape and a phone that
+ * painted before the frame budget arrived all read zero. Server-rendering the
+ * stats could not fix that on its own — the number had to survive into the
+ * first frame.
  *
- * Seeding from the prop keeps the server and the hydrating client agreed on the
- * same string, and the sweep still runs afterwards for anyone watching. Someone
- * who asked for less motion simply gets the number. */
-function CountUp({value,duration=1500}){const[display,setDisplay]=useState(()=>value==null?"0":String(value));const rafRef=useRef(null);useEffect(()=>{if(value==null)return;if(rafRef.current)cancelAnimationFrame(rafRef.current);const str=String(value);const m=str.match(/^([\d.]+)(.*)$/);if(!m){setDisplay(str);return;}const target=parseFloat(m[1]);const suffix=m[2];const dec=m[1].includes(".");if(target===0){setDisplay("0"+suffix);return;}if(typeof matchMedia!=="undefined"&&matchMedia("(prefers-reduced-motion: reduce)").matches){setDisplay(str);return;}const start=performance.now();const step=now=>{const p=Math.min((now-start)/duration,1);const e=1-Math.pow(1-p,3);const n=e*target;setDisplay((dec?n.toFixed(1):String(Math.round(n)))+suffix);if(p<1)rafRef.current=requestAnimationFrame(step);};rafRef.current=requestAnimationFrame(step);return()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);};},[value,duration]);return display;}
+ * So the seed is the real value, which is what the server emits and what the
+ * client hydrates against. The sweep then runs exactly as before, but off a
+ * layout effect rather than a passive one: it has to reset to zero *before* the
+ * browser paints, or the seeded figure flashes up for a frame and snaps back to
+ * 0 to start climbing. Layout effects run after hydration and before paint,
+ * which is precisely the gap this needs.
+ *
+ * Someone who asked for less motion keeps the figure and skips the sweep. */
+function CountUp({value,duration=1500}){const[display,setDisplay]=useState(()=>value==null?"0":String(value));const rafRef=useRef(null);useIsoLayoutEffect(()=>{if(value==null)return;if(rafRef.current)cancelAnimationFrame(rafRef.current);const str=String(value);const m=str.match(/^([\d.]+)(.*)$/);if(!m){setDisplay(str);return;}const target=parseFloat(m[1]);const suffix=m[2];const dec=m[1].includes(".");if(target===0){setDisplay("0"+suffix);return;}if(typeof matchMedia!=="undefined"&&matchMedia("(prefers-reduced-motion: reduce)").matches){setDisplay(str);return;}setDisplay((dec?"0.0":"0")+suffix);const start=performance.now();const step=now=>{const p=Math.min((now-start)/duration,1);const e=1-Math.pow(1-p,3);const n=e*target;setDisplay((dec?n.toFixed(1):String(Math.round(n)))+suffix);if(p<1)rafRef.current=requestAnimationFrame(step);};rafRef.current=requestAnimationFrame(step);return()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);};},[value,duration]);return display;}
 
 function LandingInner({ initialAuthQuery, initialStats }){
   const money = useMoney();
