@@ -21,6 +21,7 @@ import { platformOf } from '@/lib/full-catalogue';
 import { standardType, describeService, extraOrderFields } from '@/lib/reseller-instructions';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { FULL_CATALOGUE_WHERE } from '@/lib/reseller-ids';
+import { listedRecentlyWhere, staleCutoffs, isListedRecently } from '@/lib/provider-listing';
 import { createOrderForSession, patchOrderForSession } from '@/app/api/orders/route';
 import { refillOrderForSession } from '@/app/api/orders/refill/route';
 
@@ -93,6 +94,12 @@ async function resolveVisible(apiId) {
     // catalogue is every listed, priced provider service, exactly as `services`
     // lists it. Orderable if the provider still lists it at a real cost.
     if (!s.providerListedAt || !['mtp', 'dao'].includes(s.provider) || !(Number(s.costPer1k) > 0)) return { error: 'Service not available' };
+    // A stamp alone is not enough: it is never cleared when a provider drops a
+    // service, so this asks whether the provider is still confirming it. Orders
+    // placed against dropped rows were 17 for 17 cancelled over 30 days —
+    // refusing here is what stops a reseller's panel booking a guaranteed
+    // failure and waiting on a refund.
+    if (!isListedRecently(s, await staleCutoffs())) return { error: 'Service not available' };
     return { serviceId: s.id };
   }
   return { error: 'Incorrect service ID' };
@@ -103,7 +110,7 @@ async function listServices(terms) {
   const usdSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
   const usdRate = Number(usdSetting?.value || 1600);
   const services = await prisma.service.findMany({
-    where: FULL_WHERE,
+    where: { ...FULL_WHERE, AND: [await listedRecentlyWhere()] },
     select: {
       name: true, category: true, platform: true, sellPer1k: true, costPer1k: true, min: true, max: true,
       refill: true, cancel: true, dripfeed: true, apiType: true,

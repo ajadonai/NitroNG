@@ -651,14 +651,26 @@ describe('the raw catalogue query stays honest', () => {
     expect(rows[0].price).toBe(3501);
   });
 
-  it('parameterises the one value it interpolates', () => {
+  it('parameterises every value it interpolates', () => {
     const sql = src().slice(src().indexOf('const sqlFor'), src().indexOf('const nest'));
-    // Prisma.sql turns ${} into a bind parameter, so the platform never reaches
-    // Postgres as text. It is the only interpolation, and it has already been
-    // checked against the tile list before it gets here.
+    // Prisma.sql turns ${} into a bind parameter, so none of these reach
+    // Postgres as text. The platform has already been checked against the tile
+    // list before it gets here; the two staleness cutoffs are Dates computed in
+    // lib/provider-listing and never touched by a request.
     expect(sql).toMatch(/Prisma\.sql`/);
-    expect([...sql.matchAll(/\$\{/g)]).toHaveLength(1);
     expect(sql).toMatch(/WHERE s\.platform = \$\{platform\}/);
+
+    // The invariant is that every interpolation is a bind parameter and nothing
+    // is concatenated in — not that there is exactly one of them. Each ${…}
+    // must be a bare identifier or property read, never an expression that
+    // could carry request text.
+    const interpolations = [...sql.matchAll(/\$\{([^}]*)\}/g)].map(m => m[1].trim());
+    expect(interpolations.length).toBeGreaterThan(0);
+    for (const expr of interpolations) {
+      expect(expr, `interpolated expression: ${expr}`).toMatch(/^[A-Za-z_$][\w$.]*(\s*\?\?\s*null)?$/);
+    }
+    // No string concatenation anywhere in the statement.
+    expect(sql).not.toMatch(/`\s*\+|\+\s*`/);
   });
 
   it('filters on the stored platform, and groups by the same value', () => {
