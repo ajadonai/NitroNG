@@ -324,12 +324,17 @@ schema. Ordered low to high priority.
   SMM Panel Nigeria, Instagram Growth Nigeria, Nigerian Creator Economy —
   instead of one more article added to a flat list every week. Editorial
   time, not dev time; the audit's own caution applies (don't let "Nitro vs
-  Everyone" become the brand's whole voice).
+  Everyone" become the brand's whole voice). Posts live in the `BlogPost`
+  model (`content` as markdown, rendered by `lib/blog-rendering.js`) and are
+  written/edited through `components/admin-blog.jsx`; `lib/blog-categories.js`
+  is the existing category list a pillar structure would sit alongside or
+  replace.
 
 - **Trust & Safety hub.** One URL pulling together what is presently spread
-  across Quality, Reviews, About, FAQ and the refund/privacy pages. Pure scope
-  question — which pages fold in as sections versus stay standalone and get
-  linked — needs Trip's call before a mockup is worth making.
+  across `app/quality`, `app/reviews`, `app/about`, `app/faq`, `app/refund`
+  and `app/privacy`. Pure scope question — which pages fold in as sections
+  versus stay standalone and get linked — needs Trip's call before a mockup
+  is worth making.
 
 - **The 4.9★ / 320+ reviews number has no source.** Checked 26 Sep: there is no
   `Review` model in the schema at all. It is a hardcoded string in
