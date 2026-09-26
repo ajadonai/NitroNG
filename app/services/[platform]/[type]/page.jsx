@@ -95,9 +95,38 @@ export default async function ServiceTypePage({ params }) {
     })),
   } : null;
 
+  // A type page sells a family of tiers, not one SKU — "Instagram Followers"
+  // covers Budget and Standard at minimum, often a Nigerian and a US variant
+  // too. AggregateOffer is the shape Google documents for exactly that: one
+  // Product, a price range rather than a single figure. No aggregateRating —
+  // there is no honest rating to attach yet (see the shelf), and Google's own
+  // Product guidelines do not require one.
+  //
+  // The price is per 1,000, matching what the page's own h1 and copy already
+  // promise ("from around ₦X per 1,000") — schema has to agree with what a
+  // visitor reads, not state a number nobody sees.
+  const allPrices = services.flatMap(s => s.tiers.map(t => t.price)).filter(p => p > 0);
+  const productSchema = allPrices.length ? {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: `${meta.platformName} ${meta.typeLabel}`,
+    description: meta.metaDesc,
+    brand: { '@type': 'Brand', name: 'The Nitro NG' },
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'NGN',
+      lowPrice: Math.min(...allPrices).toFixed(2),
+      highPrice: Math.max(...allPrices).toFixed(2),
+      offerCount: allPrices.length,
+      availability: 'https://schema.org/InStock',
+      url: `https://nitro.ng/services/${platform}/${type}`,
+    },
+  } : null;
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumb) }} />
+      {productSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(productSchema) }} />}
       {faqSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqSchema) }} />}
       <ServiceTypeView
         platform={meta.platformName}

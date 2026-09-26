@@ -678,9 +678,31 @@ export default async function PlatformPage({ params }) {
     { href: '/pricing', label: 'Full pricing across all platforms' },
   ];
 
+  // One Product per distinct type on the page — Followers, Likes, Views are
+  // priced nothing alike, so one blended price range across all of them would
+  // misstate every one of them. Each keeps its own tier ladder as an
+  // AggregateOffer. No aggregateRating: there is no honest rating to attach to
+  // it yet (see the shelf), and it is not required for valid Product markup.
+  const productSchemas = services.map(s => ({
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: `${meta.name} ${s.type}`,
+    brand: { '@type': 'Brand', name: 'The Nitro NG' },
+    offers: {
+      '@type': 'AggregateOffer',
+      priceCurrency: 'NGN',
+      lowPrice: s.minPrice.toFixed(2),
+      highPrice: s.maxPrice.toFixed(2),
+      offerCount: s.tiers,
+      availability: 'https://schema.org/InStock',
+      url: `https://nitro.ng/services/${platform}`,
+    },
+  }));
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+      {productSchemas.map(p => <script key={p.name} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(p) }} />)}
       {faqSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />}
       <ServicePlatformView
         platform={meta.name}

@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getLiveValues, injectLiveValues } from '@/lib/blog-values';
 import { renderBlogContent } from '@/lib/blog-rendering';
+import { linkifyPlatformMentions } from '@/lib/blog-internal-links';
 
 const PER_PAGE = 9;
 
@@ -29,7 +30,11 @@ export async function GET(req) {
         post: {
           ...post,
           excerpt: post.excerpt ? injectLiveValues(post.excerpt, liveValues) : post.excerpt,
-          content: renderBlogContent(injectLiveValues(post.content, liveValues)),
+          // Not for Help posts — someone reading how to find their profile
+          // link is not the audience for a mid-sentence sales link.
+          content: post.category === 'Help'
+            ? renderBlogContent(injectLiveValues(post.content, liveValues))
+            : linkifyPlatformMentions(renderBlogContent(injectLiveValues(post.content, liveValues)), { currentUrl: `/blog/${slug}` }),
           createdAt: post.createdAt.toISOString(),
           updatedAt: post.updatedAt.toISOString(),
         },
