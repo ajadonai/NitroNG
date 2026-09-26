@@ -41,6 +41,11 @@ export default async function Page({ searchParams }) {
   // so every cold load — and the first pass of anything that does not wait for
   // that fetch — painted "0 Orders, 0 Accounts". Handing the numbers down from
   // the server means the first frame is already true.
-  const stats = await getSiteStats();
+  //
+  // The full list is included because section 03 below the fold quotes it in
+  // prose and in tiles, and without it that section renders its own hardcoded
+  // constants until the client fetch lands. Shares generateMetadata's work: the
+  // counts are request-memoised and the size carries its own ten-minute memo.
+  const stats = await getSiteStats({ includeFullList: true });
   return <HomeClient initialAuthQuery={initialAuthQuery} initialStats={stats.display} />;
 }

@@ -82,6 +82,8 @@ function Styles({ dark, t }) {
       .rhq-stt i{font-style:normal;font-size:10.5px;color:${muted};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
       @media (min-width:768px){.rhq-stats{grid-template-columns:repeat(4,1fr)}.rhq-stt{border-top:0}.rhq-stt:nth-child(even){border-left:0}.rhq-stt+.rhq-stt{border-left:1px solid ${hair}}}
       .rhq-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+      /* The hero is centred text, so its action row has to centre too. */
+      .rhq-acts.ctr{justify-content:center;align-items:center}
       .rhq-rates{border:1px solid ${hair};border-radius:14px;overflow:hidden;background:${panel}}.rhq-rate{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid ${hair};font-size:12.5px;color:${t.text}}.rhq-rate:first-child{border-top:none}.rhq-rate b{font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700;white-space:nowrap}.rhq-rate s{color:${muted};font-weight:500;margin-right:8px;font-size:11px}
       .rhq-faq{border:1px solid ${hair};border-radius:14px;overflow:hidden;background:${panel}}.rhq-faq-item{border-top:1px solid ${hair}}.rhq-faq-item:first-child{border-top:none}.rhq-faq-btn{padding:13px 16px;font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;list-style:none;color:${t.text}}.rhq-faq-btn::-webkit-details-marker{display:none}.rhq-faq-chev{color:${muted};transform:rotate(90deg);transition:.2s;flex-shrink:0}details[open] .rhq-faq-chev{transform:rotate(-90deg)}.rhq-faq-ans{padding:0 16px 13px;font-size:12px;color:${muted};line-height:1.65}
       @media (min-width:768px){.rhq-feats{grid-template-columns:1fr 1fr}.rhq-grid2{grid-template-columns:1fr 1fr}.rhq-steps{grid-template-columns:1fr 1fr 1fr}.rhq-step{border-top:none;border-left:1px solid ${hair}}.rhq-step:first-child{border-left:none}.rhq-hero{padding:44px 24px 40px}}
@@ -148,7 +150,13 @@ function ProspectInner() {
       <div className="min-h-dvh flex flex-col" style={{ background: t.bg, color: t.text }}>
         <SharedNav />
         <main className="flex-1 w-full max-w-[960px] mx-auto px-4 sm:px-6 pb-16">
-          <div className="rhq-hero"><div className="rhq-glow" /><span className="rhq-pill">{tr("Reseller HQ")}</span><h1 className="rhq-h1">{tr("Build your business on Nitro")}</h1><p className="rhq-lead">{tr("Every account gets an")} <b>{tr("API key")}</b> {tr("and the same catalogue at retail, today. Message us on WhatsApp and we switch your account to")} <b>wholesale</b>.</p><div className="rhq-checks"><span>{I(P.chk, 12, 2.5)}{tr("Wholesale on the whole catalogue")}</span><span>{I(P.chk, 12, 2.5)}{tr("A key for every account, in Settings")}</span><span>{I(P.chk, 12, 2.5)}{tr("Everything settles in naira")}</span></div><Wa /></div>
+          <div className="rhq-hero"><div className="rhq-glow" /><span className="rhq-pill">{tr("Reseller HQ")}</span><h1 className="rhq-h1">{tr("Build your business on Nitro")}</h1><p className="rhq-lead">{tr("Every account gets an")} <b>{tr("API key")}</b> {tr("and the same catalogue at retail, today. Message us on WhatsApp and we switch your account to")} <b>wholesale</b>.</p><div className="rhq-checks"><span>{I(P.chk, 12, 2.5)}{tr("Wholesale on the whole catalogue")}</span><span>{I(P.chk, 12, 2.5)}{tr("A key for every account, in Settings")}</span><span>{I(P.chk, 12, 2.5)}{tr("Everything settles in naira")}</span></div>
+            {/* The docs were reachable only from inside the dashboard, so a
+                visitor deciding whether to build on the API had no way to read
+                it first — on the one public page whose whole job is to convince
+                them to. Same treatment the member view gives it. */}
+            <div className="rhq-acts ctr"><Wa /><a href="/resellers/docs" className="rhq-btn-p blue">{I(P.book, 13)} {tr("Read the API docs")}</a></div>
+          </div>
           <SecHead label={tr("What you get")} sub={tr("The same shop, lower prices")} />
           <div className="rhq-feats">
             <Feat icon={P.naira} tone="accent" title={tr("Naira in, naira out")} body={tr("Opay, PalmPay, Kuda or bank transfer. No dollar cards, no FX to watch.")} />
@@ -163,7 +171,7 @@ function ProspectInner() {
           <SecHead label={tr("How to join")} sub={tr("Three steps, no forms")} />
           <Steps items={[['Grab your key in Settings', 'Every verified account has one. Point your panel at nitro.ng/api/v2 and order the whole catalogue at the price you already see.'], ['Message us for wholesale', 'Tell us about your business: your panel, your clients, or the volume you push. The list does not change — the same key simply starts returning lower rates.'], ['Order like you always did', 'Same order page, same wallet, same history. Only the price changes.']]} />
           <div className="rhq-honest"><span className="rhq-sec-label">{tr("The honest bit")}</span><p>{tr("Reseller pricing replaces retail perks: loyalty discounts, promo codes and Nitro Points do not stack on top. Wholesale is the deal. Full-catalogue services carry the provider's own terms, shown on every row.")}</p></div>
-          <div className="rhq-closer"><div><h3>{tr("Start where you are.")}</h3><p>{tr("Your key is already in Settings. Wholesale is one message away.")}</p></div><Wa /></div>
+          <div className="rhq-closer"><div><h3>{tr("Start where you are.")}</h3><p>{tr("Your key is already in Settings. Wholesale is one message away.")}</p></div><div className="rhq-acts" style={{ marginTop: 0 }}><a href="/resellers/docs" className="rhq-btn-p white">{tr("Read the API docs")}</a><Wa /></div></div>
         </main>
         <SharedFooter />
       </div>
