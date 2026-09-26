@@ -378,7 +378,9 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
             : ["Quantity", <b key="q" className="m text-[13px] font-semibold text-t-text">{qty.toLocaleString()}</b>],
           [isCancelled ? "Refunded" : "Charge", <b key="c" className="m text-[13px] font-semibold" style={{ color: isCancelled ? (dark ? "#6ee7b7" : "#059669") : t.text }}>{money(o.charge)}</b>],
           ["Start count", o.startCount != null ? <b key="s" className="m text-[13px] font-semibold text-t-text">{o.startCount.toLocaleString()}</b> : <span key="s" className="text-[12.5px] text-t-text-muted">{tr("Not yet")}</span>],
-          o.link ? ["Link", <a key="l" href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="text-[12.5px] font-medium no-underline truncate max-w-[200px] desktop:max-w-[420px] text-t-text-soft">{o.link.replace(/^https?:\/\/(www\.)?/, "")}</a>] : null,
+          // The link already has its own bordered row with an icon above this
+          // block — this was a second, truncated copy of the same URL further
+          // down the same card.
         ].filter(Boolean).map(([label, val], i) => (
           <div key={label} className="flex items-center justify-between gap-3 py-2 text-[12.5px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
             <span>{label}</span>

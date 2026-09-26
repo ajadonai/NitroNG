@@ -18,7 +18,7 @@
     "components/landing-v3.jsx": 5,
     "components/manual-transfer-sheet.jsx": 6,
     "components/new-order.jsx": 26,
-    "components/orders-page.jsx": 11,
+    "components/orders-page.jsx": 10,
     "components/platform-card.jsx": 8,
     "components/privacy.jsx": 17,
     "components/pulse-dashboard.jsx": 23,
