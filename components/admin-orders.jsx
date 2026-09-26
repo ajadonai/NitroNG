@@ -326,6 +326,18 @@ function AdminFacts({ o, dark, t, isSensitive, setSearch }) {
         isPartial ? ["Delivered", <span key="d" className="m text-[13px] text-t-text-muted"><B>{delivered.toLocaleString()}</B> of {(o.quantity || 0).toLocaleString()}</span>] : ["Quantity", <B key="q">{(o.quantity || 0).toLocaleString()}</B>],
         ["Start count", o.startCount != null ? <B key="s">{o.startCount.toLocaleString()}</B> : <span key="s" className="text-t-text-muted">Not yet</span>],
         ["Placed from", <B key="src">{o.source === "api" ? "API" : "Website"}</B>],
+        // Full-list orders have no tier or group name to pin them down — a
+        // curated order is already identified by "Standard" under "Instagram
+        // Followers"; a full-list row is just one of ~8,000 near-identical
+        // entries, so the exact Service id is what actually distinguishes it.
+        // Visible to every admin, not just sensitive ones: it names nothing
+        // about the provider, only which of our own catalogue rows this is.
+        // fullListDisabled already accounts for the service being blacklisted
+        // or dropped by its provider — the number itself never changes either
+        // way, only whether this tag shows next to it.
+        // The value slot below is already a flex row (see FactRows), so this
+        // is a bare fragment rather than another flex wrapper around it.
+        o.fullList && o.nitroServiceId ? ["Nitro ID", <><CopyId key="nid" value={o.nitroServiceId} dark={dark} />{o.fullListDisabled && <span key="ret" className="text-[10px] font-semibold py-[1px] px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>Retired from catalogue</span>}</>] : null,
         est && !cancelled && o.status !== "Completed" ? ["Est. time", <B key="e" color={t.accent}>{est}</B>] : null,
       ]} />
       <FactRows dark={dark} title="Money" rows={[

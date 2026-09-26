@@ -365,6 +365,14 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
       <div className="rounded-xl mb-3 px-3" style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.07)"}` }}>
         {[
           ["Order ID", <CopyId key="id" value={o.id} dark={dark} />],
+          // Full-list orders don't carry a tier name the way a curated order
+          // does ("Standard" under "Instagram Followers"), so quoting this
+          // exact id is the fastest way to tell WhatsApp support precisely
+          // which of the full list's ~8,000 rows was ordered.
+          // fullListDisabled already accounts for the service being blacklisted
+          // or dropped by its provider — the number itself never changes
+          // either way, only whether this tag shows next to it.
+          o.fullList && o.nitroServiceId ? [tr("Nitro ID"), <><CopyId key="nsid" value={o.nitroServiceId} dark={dark} />{o.fullListDisabled && <span key="ret" className="text-[10px] font-semibold py-[1px] px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>{tr("Retired from catalogue")}</span>}</>] : null,
           isCancelled ? ["Quantity", <b key="q" className="m text-[13px] font-semibold text-t-text">{qty.toLocaleString()}</b>]
             : (hasData && !isComplete) ? ["Delivered", <span key="d" className="m text-[13px] text-t-text-muted"><b className="font-semibold text-t-text">{delivered.toLocaleString()}</b> of {qty.toLocaleString()}</span>]
             : ["Quantity", <b key="q" className="m text-[13px] font-semibold text-t-text">{qty.toLocaleString()}</b>],
