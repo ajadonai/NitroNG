@@ -184,7 +184,7 @@ function PromotionForm({ dark, type, initial, onSave, onCancel }) {
       <label className="pro-fld"><span>Internal notes</span><input className="pro-in" value={form.description || ''} onChange={e => set('description', e.target.value)} placeholder="Optional, only admins see this" /></label>
 
       <div className="pro-ff">
-        <button type="button" className="nb" onClick={onCancel} disabled={saving}>Cancel</button>
+        <button type="button" className="nb sec" onClick={onCancel} disabled={saving}>Cancel</button>
         <button type="button" className="nb pri" onClick={submit} disabled={saving}>{saving ? 'Saving…' : initial ? 'Save changes' : 'Create promotion'}</button>
       </div>
     </div>
@@ -308,9 +308,9 @@ export default function AdminPromotionsPage({ dark, t }) {
                   <span className="pro-tt"><b>{c.name}</b><i>{isRecurring ? `Every ${dayWord(c.dayOfWeek)} · ${c.startTimeLocal}–${c.endTimeLocal}` : `${fmtRange(c.startAt, c.endAt)} · Lagos time`}{c.maxDiscountPerOrder > 0 ? ` · max ${naira(c.maxDiscountPerOrder)}` : ''}</i></span>
                   <span className="pro-st"><i className={'pro-dot ' + dot} />{word}</span>
                   {canManage && <span className="pro-a">
-                    <button type="button" className="nb sm" disabled={!!busy} onClick={() => { setEditing(c); setShowAdd(false); }}>Edit</button>
+                    <button type="button" className="nb sm sec" disabled={!!busy} onClick={() => { setEditing(c); setShowAdd(false); }}>Edit</button>
                     {canActivate && <button type="button" className="nb sm pri" disabled={!!busy} onClick={() => doAction('activate', c.id, type)}>{busy === c.id + 'activate' ? '…' : 'Activate'}</button>}
-                    {canPause && <button type="button" className="nb sm" disabled={!!busy} onClick={() => doAction('pause', c.id, type)}>{busy === c.id + 'pause' ? '…' : 'Pause'}</button>}
+                    {canPause && <button type="button" className="nb sm sec" disabled={!!busy} onClick={() => doAction('pause', c.id, type)}>{busy === c.id + 'pause' ? '…' : 'Pause'}</button>}
                     <button type="button" className="nb sm bad" disabled={!!busy} onClick={() => askDelete(c, type)}>Delete</button>
                   </span>}
                 </div>

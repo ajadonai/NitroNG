@@ -646,7 +646,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
             </div>
             <div className="us-row">
               <button type="button" className="nb pri" disabled={actionLoading} onClick={saveEdit}>{actionLoading ? 'Saving...' : 'Save changes'}</button>
-              <button type="button" className="nb" onClick={() => setEditing(false)}>Cancel</button>
+              <button type="button" className="nb sec" onClick={() => setEditing(false)}>Cancel</button>
             </div>
           </div>
         </section>
@@ -690,9 +690,9 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
 
           <div className="us-acts">
             {!isMutationLocked(drawerUser) && <button type="button" className="nb pri" onClick={() => setDrawerCreditOpen(!drawerCreditOpen)}>Credit wallet</button>}
-            {canEdit && !isMutationLocked(drawerUser) && <button type="button" className="nb" onClick={startEditing}>Edit</button>}
+            {canEdit && !isMutationLocked(drawerUser) && <button type="button" className="nb sec" onClick={startEditing}>Edit</button>}
             {(drawerUser.canReinstate || ['Active', 'Suspended'].includes(drawerUser.status)) && (
-              <button type="button" className={"nb" + (drawerUser.status === 'Active' ? " danger" : "")} disabled={actionLoading} onClick={() => handleStatusAction(drawerUser)}>
+              <button type="button" className={"nb" + (drawerUser.status === 'Active' ? " bad" : " sec")} disabled={actionLoading} onClick={() => handleStatusAction(drawerUser)}>
                 {drawerUser.canReinstate ? 'Restore' : drawerUser.status === 'Active' ? 'Ban' : 'Activate'}
               </button>
             )}
@@ -707,9 +707,9 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                 </div>
                 <input type="number" placeholder="₦ 0" value={creditAmt} onChange={e => setCreditAmt(e.target.value)} className="us-in m" />
                 <input type="text" placeholder={creditType === 'debit' ? 'Reason' : 'Reason (optional)'} value={creditReason} onChange={e => setCreditReason(e.target.value)} className="us-in" />
-                <button type="button" className="nb" disabled={actionLoading || Number(creditAmt) <= 0 || (creditType === 'debit' && !creditReason.trim())} onClick={() => handleCredit(drawerUser)}>Apply</button>
+                <button type="button" className="nb sec" disabled={actionLoading || Number(creditAmt) <= 0 || (creditType === 'debit' && !creditReason.trim())} onClick={() => handleCredit(drawerUser)}>Apply</button>
               </div>
-              <div className="us-quick">{[1000, 2000, 5000, 10000].map(p => <button key={p} type="button" className="nb sm" onClick={() => setCreditAmt(String(p))}>{fN(p)}</button>)}</div>
+              <div className="us-quick">{[1000, 2000, 5000, 10000].map(p => <button key={p} type="button" className="nb sm sec" onClick={() => setCreditAmt(String(p))}>{fN(p)}</button>)}</div>
               {creditType === 'debit' && (
                 <label className="us-cashref">
                   <input type="checkbox" checked={cashRefund} onChange={e => setCashRefund(e.target.checked)} />
@@ -730,7 +730,7 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
                   <input type="number" placeholder="Points" value={ptsAdjAmt} onChange={e => setPtsAdjAmt(e.target.value)} className="us-in m" />
                   <input type="text" placeholder="Reason" value={ptsAdjReason} onChange={e => setPtsAdjReason(e.target.value)} className="us-in" />
                   <div className="us-row">
-                    <button type="button" className="nb" disabled={ptsAdjLoading || !Number(ptsAdjAmt) || !ptsAdjReason.trim()} onClick={submitPointsAdj}>{ptsAdjLoading ? '…' : 'Apply'}</button>
+                    <button type="button" className="nb sec" disabled={ptsAdjLoading || !Number(ptsAdjAmt) || !ptsAdjReason.trim()} onClick={submitPointsAdj}>{ptsAdjLoading ? '…' : 'Apply'}</button>
                     <button type="button" className="nb ghost" onClick={() => { setPtsAdjOpen(false); setPtsAdjAmt(''); setPtsAdjReason(''); }}>Cancel</button>
                   </div>
                 </div>
@@ -760,9 +760,9 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
               ))}
               {txAll && txTotalPages > 1 && (
                 <div className="us-tr us-txpg">
-                  <button type="button" className="nb sm" disabled={txPage === 1} onClick={() => setTxPage(p => Math.max(1, p - 1))}>Prev</button>
+                  <button type="button" className="nb sm sec" disabled={txPage === 1} onClick={() => setTxPage(p => Math.max(1, p - 1))}>Prev</button>
                   <span className="us-cnt">{txPage} of {txTotalPages}</span>
-                  <button type="button" className="nb sm" disabled={txPage >= txTotalPages} onClick={() => setTxPage(p => Math.min(txTotalPages, p + 1))}>Next</button>
+                  <button type="button" className="nb sm sec" disabled={txPage >= txTotalPages} onClick={() => setTxPage(p => Math.min(txTotalPages, p + 1))}>Next</button>
                 </div>
               )}
             </div>
@@ -809,9 +809,9 @@ export default function AdminUsersPage({ dark, t, admin: currentAdmin }) {
       {selected.size > 0 && (
         <div className="us-bb">
           <b>{selected.size} selected</b>
-          <button type="button" className="nb sm" onClick={() => { if (selected.size === 1) { const u = users.find(x => x.id === [...selected][0]); if (u) openDrawer(u, true); } else toast.info('Coming soon', 'Bulk credit coming soon'); }}>Credit</button>
-          <button type="button" className="nb sm" onClick={() => toast.info('Coming soon', 'Bulk message coming soon')}>Email</button>
-          <button type="button" className="nb sm" onClick={exportSelected}>Export</button>
+          <button type="button" className="nb sm sec" onClick={() => { if (selected.size === 1) { const u = users.find(x => x.id === [...selected][0]); if (u) openDrawer(u, true); } else toast.info('Coming soon', 'Bulk credit coming soon'); }}>Credit</button>
+          <button type="button" className="nb sm sec" onClick={() => toast.info('Coming soon', 'Bulk message coming soon')}>Email</button>
+          <button type="button" className="nb sm sec" onClick={exportSelected}>Export</button>
           <button type="button" className="nb sm bad" onClick={bulkBan}>Ban</button>
           <button type="button" className="nb sm ghost" onClick={() => setSelected(new Set())}>Clear</button>
         </div>

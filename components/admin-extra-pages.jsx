@@ -392,7 +392,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
             <div className="tm-dh">
               <span className="tm-av" style={{ background: roleColor(open.role) }}>{initialsOf(open.name)}</span>
               <div className="tm-dht"><b>{open.name}</b><i>{open.role} · since {new Date(open.joined || open.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long" })} · last seen {when(open.lastActive)}</i></div>
-              <button type="button" className="nb sm" onClick={closeDrawer}>Close</button>
+              <button type="button" className="nb sm sec" onClick={closeDrawer}>Close</button>
             </div>
             {editable && (
               <div className="tm-drow">
@@ -400,7 +400,7 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
                 <select className="tm-sel" value={open.role} onChange={async e => { const r = e.target.value; const ok = await act({ action: "updateRole", adminId: open.id, role: r }); if (ok) toast.success("Role changed", `${open.name} is now ${r}`); }}>
                   {[...new Set([open.role, ...ASSIGNABLE_ROLES])].map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
-                <button type="button" className="nb sm" onClick={async () => { const ok = await act({ action: "toggleStatus", adminId: open.id }); if (ok) toast.success(open.status === "suspended" ? "Reinstated" : "Suspended", open.name); }}>{open.status === "suspended" ? "Reinstate" : "Suspend"}</button>
+                <button type="button" className="nb sm sec" onClick={async () => { const ok = await act({ action: "toggleStatus", adminId: open.id }); if (ok) toast.success(open.status === "suspended" ? "Reinstated" : "Suspended", open.name); }}>{open.status === "suspended" ? "Reinstate" : "Suspend"}</button>
               </div>
             )}
             <div className="tm-tabs"><SegPill value={permTab} options={[{ value: "pages", label: "Pages" }, { value: "abilities", label: "Abilities" }, ...(editable ? [{ value: "password", label: "Password" }] : [])]} onChange={setPermTab} dark={dark} t={t} /></div>
@@ -429,15 +429,15 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
                 <div>
                   <div className="tm-sub">Set a new password for {open.name}. Tell them in person, not in a message.</div>
                   <input type="password" className="tm-in" placeholder="At least 6 characters" value={resetPw} onChange={e => setResetPw(e.target.value)} />
-                  <button type="button" className="nb" style={{ marginTop: 10 }} disabled={resetPw.length < 6 || saving} onClick={async () => { const ok = await act({ action: "resetPassword", adminId: open.id, newPassword: resetPw }); if (ok) { toast.success("Password set", open.name); setResetPw(""); } }}>Set password</button>
+                  <button type="button" className="nb sec" style={{ marginTop: 10 }} disabled={resetPw.length < 6 || saving} onClick={async () => { const ok = await act({ action: "resetPassword", adminId: open.id, newPassword: resetPw }); if (ok) { toast.success("Password set", open.name); setResetPw(""); } }}>Set password</button>
                 </div>
               )}
             </div>
             {editable && (
               <div className="tm-df">
-                <button type="button" className="nb sm" style={{ color: "var(--bad)" }} onClick={async () => { const ok = await confirm({ title: `Remove ${open.name}?`, message: "They will not be able to sign in. Their past actions stay in the logs.", confirmText: "Remove", danger: true }); if (!ok) return; const r = await act({ action: "delete", adminId: open.id }); if (r) { toast.success("Removed", open.name); closeDrawer(); } }}>Remove from team</button>
+                <button type="button" className="nb sm sec" style={{ color: "var(--bad)" }} onClick={async () => { const ok = await confirm({ title: `Remove ${open.name}?`, message: "They will not be able to sign in. Their past actions stay in the logs.", confirmText: "Remove", danger: true }); if (!ok) return; const r = await act({ action: "delete", adminId: open.id }); if (r) { toast.success("Removed", open.name); closeDrawer(); } }}>Remove from team</button>
                 <span className="tm-dfr">
-                  {!fullAccess(open) && open.customPages && <button type="button" className="nb sm" onClick={async () => { const ok = await act({ action: "updatePermissions", adminId: open.id, pages: null }); if (ok) { toast.success("Back to default", `${open.role} pages`); setLocalPages(null); } }}>Back to role default</button>}
+                  {!fullAccess(open) && open.customPages && <button type="button" className="nb sm sec" onClick={async () => { const ok = await act({ action: "updatePermissions", adminId: open.id, pages: null }); if (ok) { toast.success("Back to default", `${open.role} pages`); setLocalPages(null); } }}>Back to role default</button>}
                   {!fullAccess(open) && <button type="button" className="nb sm pri" disabled={!dirty || saving} onClick={saveDrawer}>{saving ? "Saving…" : "Save"}</button>}
                 </span>
               </div>
@@ -449,13 +449,13 @@ export function AdminTeamPage({ admin: currentAdmin, dark, t }) {
       {showAdd && (
         <div className="tm-bd center" onClick={() => setShowAdd(false)}>
           <div className="tm-md" role="dialog" aria-modal="true" aria-label="Add a person" onClick={e => e.stopPropagation()}>
-            <div className="tm-mdh"><b>Add a person</b><button type="button" className="nb sm" onClick={() => setShowAdd(false)}>Close</button></div>
+            <div className="tm-mdh"><b>Add a person</b><button type="button" className="nb sm sec" onClick={() => setShowAdd(false)}>Close</button></div>
             <label className="tm-lbl">Name</label><input className="tm-in" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Their name" />
             <label className="tm-lbl">Email</label><input className="tm-in" type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="name@nitro.ng" />
             <label className="tm-lbl">Password</label><input className="tm-in" type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="At least 6 characters" />
             <label className="tm-lbl">Role</label><select className="tm-sel" value={newRole} onChange={e => setNewRole(e.target.value)}>{ASSIGNABLE_ROLES.map(r => <option key={r} value={r}>{r}</option>)}</select>
             <div className="tm-sub" style={{ marginTop: 6 }}>{ROLE_LINE[newRole]}</div>
-            <div className="tm-mdf"><button type="button" className="nb" onClick={() => setShowAdd(false)}>Cancel</button><button type="button" className="nb pri" disabled={saving || !newName.trim() || !newEmail.trim() || newPw.length < 6} onClick={createAdmin}>{saving ? "Adding…" : "Add"}</button></div>
+            <div className="tm-mdf"><button type="button" className="nb sec" onClick={() => setShowAdd(false)}>Cancel</button><button type="button" className="nb pri" disabled={saving || !newName.trim() || !newEmail.trim() || newPw.length < 6} onClick={createAdmin}>{saving ? "Adding…" : "Add"}</button></div>
           </div>
         </div>
       )}
@@ -649,7 +649,7 @@ export function AdminCouponsPage({ dark, t }) {
         <div className="rw-bar">
           <div className="rw-srch"><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search codes" /></div>
           <span className="rw-cnt">{shown.length} {shown.length === 1 ? "coupon" : "coupons"}</span>
-          <button type="button" className={"nb" + (showAdd ? "" : " pri")} onClick={() => setShowAdd(v => !v)}>{showAdd ? "Cancel" : "+ New coupon"}</button>
+          <button type="button" className={"nb" + (showAdd ? " sec" : " pri")} onClick={() => setShowAdd(v => !v)}>{showAdd ? "Cancel" : "+ New coupon"}</button>
         </div>
         {showAdd && (
           <section className="rw-card">
@@ -980,7 +980,7 @@ export function AdminMaintenancePage({ dark, t }) {
           <div className="mt-body">
             <div className="mt-now">
               <div className="mt-nl"><span className={"mt-big" + (enabled ? " off" : "")}>{enabled ? "Offline" : "Online"}</span><span className="mt-sub">{enabled ? "Customers see the maintenance page. Orders and payments are paused." : "Everything is open. Customers can order and pay."}</span></div>
-              <button type="button" className={"nb" + (enabled ? " pri" : "")} disabled={saving} onClick={flip}>{enabled ? "Bring it back" : "Take it offline"}</button>
+              <button type="button" className={"nb" + (enabled ? " pri" : " sec")} disabled={saving} onClick={flip}>{enabled ? "Bring it back" : "Take it offline"}</button>
             </div>
             {enabled && since && <div className="mt-note"><i className="mt-dot" />Offline since {fmt(since)} · you said {formatDuration(mins).replace("~", "~")} · {left > 0 ? `${left} min left` : `${-left} min over`}</div>}
           </div>
@@ -999,7 +999,7 @@ export function AdminMaintenancePage({ dark, t }) {
             <textarea className="mt-ta" value={msg} onChange={e => setMsg(e.target.value)} rows={3} />
             <div className="mt-lbl">Preview</div>
             <div className="mt-pv"><div className="mt-pvl">NITRO</div><div className="mt-pvh">{headline}</div><div className="mt-pvp">{msg}</div><div className="mt-pvf">Your wallet and orders are safe. Nothing is lost.</div></div>
-            <div className="mt-save"><button type="button" className="nb" disabled={saving} onClick={() => save()}>Save</button></div>
+            <div className="mt-save"><button type="button" className="nb sec" disabled={saving} onClick={() => save()}>Save</button></div>
           </div>
         </section>
 
@@ -1128,7 +1128,7 @@ export function AdminAPIPage({ dark, t }) {
                 <span className="pv-c"><b>{(x.menu || 0).toLocaleString()} on the menu</b><i>{(x.catalogue || 0).toLocaleString()} in the catalogue</i></span>
                 <span className="pv-c"><b>{(x.orders || 0).toLocaleString()}</b><i>orders to date</i></span>
                 <span className="pv-c"><b><i className={"pv-dot " + (x.configured ? "ok" : "dim")} />{x.configured ? "Connected" : "No key"}</b><i>{x.lastSync?.at ? `synced ${ago(x.lastSync.at)}` : "never synced"}</i></span>
-                <span className="pv-a"><button type="button" className="nb sm" disabled={!x.configured || testing === p.id} onClick={() => testConnection(p)}>{testing === p.id ? "Testing…" : "Test"}</button><button type="button" className="nb sm" disabled={!x.configured || syncing === p.id} onClick={() => syncServices(p)}>{syncing === p.id ? "Syncing…" : "Sync catalogue"}</button></span>
+                <span className="pv-a"><button type="button" className="nb sm sec" disabled={!x.configured || testing === p.id} onClick={() => testConnection(p)}>{testing === p.id ? "Testing…" : "Test"}</button><button type="button" className="nb sm sec" disabled={!x.configured || syncing === p.id} onClick={() => syncServices(p)}>{syncing === p.id ? "Syncing…" : "Sync catalogue"}</button></span>
                 {r && <span className={"pv-res " + (r.ok ? "ok" : "bad")}>{r.message}</span>}
               </div>
             ); })}
@@ -1712,7 +1712,7 @@ export function AdminAcquisitionPage({ dark, t }) {
         <div className="tl-bar">
           <div className="tl-srch"><input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search links" /></div>
           <span className="tl-cnt">{displayLinks.length} {displayLinks.length === 1 ? "link" : "links"}</span>
-          {canManage && <button type="button" className={"nb" + (showAdd ? "" : " pri")} onClick={() => setShowAdd(v => !v)}>{showAdd ? "Cancel" : "+ New link"}</button>}
+          {canManage && <button type="button" className={"nb" + (showAdd ? " sec" : " pri")} onClick={() => setShowAdd(v => !v)}>{showAdd ? "Cancel" : "+ New link"}</button>}
         </div>
         {showAdd && (
           <section className="tl-card">
@@ -1915,7 +1915,7 @@ export function AdminIssuesPage({ dark, t }) {
                   <span className="is-ty">{kindOf(i)}</span>
                   <span className="is-when">{when(i.createdAt)}</span>
                   <span className="is-acts">
-                    {canAct(i) ? <><button type="button" className="nb sm pri" disabled={resolving === i.id} onClick={() => act(i.id, "resolve")}>{resolving === i.id ? "…" : yes}</button><button type="button" className={`nb sm${no === "Reject" ? " bad" : ""}`} disabled={resolving === i.id} onClick={() => act(i.id, "ignore")}>{no}</button></> : <span className="is-dimc">owner decides</span>}
+                    {canAct(i) ? <><button type="button" className="nb sm pri" disabled={resolving === i.id} onClick={() => act(i.id, "resolve")}>{resolving === i.id ? "…" : yes}</button><button type="button" className={`nb sm${no === "Reject" ? " bad" : " sec"}`} disabled={resolving === i.id} onClick={() => act(i.id, "ignore")}>{no}</button></> : <span className="is-dimc">owner decides</span>}
                   </span>
                 </div>
               );
@@ -2063,7 +2063,7 @@ export function AdminChangelogPage({ dark, t }) {
             <div className="adm-title" style={{ color: t.text }}>Changelog</div>
             <div className="adm-subtitle" style={{ color: t.textMuted }}>What customers read on nitro.ng/changelog.</div>
           </div>
-          <span className="cl-hb"><a href="/changelog" target="_blank" rel="noopener noreferrer" className="nb">View the page</a><button type="button" className="nb pri" onClick={() => setShowAdd(true)}>+ New entry</button></span>
+          <span className="cl-hb"><a href="/changelog" target="_blank" rel="noopener noreferrer" className="nb sec">View the page</a><button type="button" className="nb pri" onClick={() => setShowAdd(true)}>+ New entry</button></span>
         </div>
         <div className="page-divider" style={{ background: t.cardBorder }} />
       </div>
@@ -2093,7 +2093,7 @@ export function AdminChangelogPage({ dark, t }) {
               </div>
               <label>Title<input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="One line a customer would understand" /></label>
               <label>What changed<textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={6} placeholder="Say what they can do now, or what stopped being annoying. No jargon." /></label>
-              <div className="cl-ff"><button type="button" className="nb" onClick={() => setShowAdd(false)}>Cancel</button><button type="button" className="nb pri" disabled={saving || !form.title.trim() || !form.description.trim()} onClick={add}>{saving ? "Publishing…" : "Publish"}</button></div>
+              <div className="cl-ff"><button type="button" className="nb sec" onClick={() => setShowAdd(false)}>Cancel</button><button type="button" className="nb pri" disabled={saving || !form.title.trim() || !form.description.trim()} onClick={add}>{saving ? "Publishing…" : "Publish"}</button></div>
             </div>
           )}
         </section>

@@ -105,7 +105,7 @@ export default function AdminOutreachPage({ dark, t }) {
             <div className="adm-subtitle" style={{ color: t.textMuted }}>Call-first follow-up for people who signed up and never paid.</div>
           </div>
           <div className="ou-hr">
-            {paused === false && <button type="button" className="nb" onClick={togglePause}>Pause</button>}
+            {paused === false && <button type="button" className="nb sec" onClick={togglePause}>Pause</button>}
             <SegPill value={tab} options={[{ value: 'overview', label: 'Overview' }, { value: 'dnc', label: dncLabel }]} onChange={v => { setTab(v); setPage(1); setDncPage(1); }} dark={dark} t={t} />
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function AdminOutreachPage({ dark, t }) {
                   <span className="ou-av">{initials(u.name)}</span>
                   <span className="ou-tt"><b>{u.name || '(no name)'}</b><i className="m">{u.phone || '—'}</i></span>
                   <span className="ou-mid">opted out {fmtDate(u.since)}</span>
-                  <span className="ou-acts"><button type="button" className="nb sm" onClick={() => undnc(u.id)}>Allow again</button></span>
+                  <span className="ou-acts"><button type="button" className="nb sm sec" onClick={() => undnc(u.id)}>Allow again</button></span>
                 </div>
               ))}
             </div>
@@ -206,7 +206,7 @@ function ContactDrawer({ t, row, onClose }) {
             {row.userEmail && <i>{row.userEmail}</i>}
             {row.userPhone && <i className="m">{row.userPhone}</i>}
           </div>
-          <button type="button" className="nb sm" onClick={onClose}>Close</button>
+          <button type="button" className="nb sm sec" onClick={onClose}>Close</button>
         </div>
         <div className="ou-body">
           <div className="ou-dg">
@@ -224,7 +224,7 @@ function ContactDrawer({ t, row, onClose }) {
           </div>
           <div className="ou-da">
             {phone && <WaButton href={`https://wa.me/${phone}`} weight="quiet" size="sm">WhatsApp</WaButton>}
-            {row.userId && <a className="nb" href={`/admin?page=users&user=${row.userId}`} style={{ color: t.text }}>View profile</a>}
+            {row.userId && <a className="nb sec" href={`/admin?page=users&user=${row.userId}`} style={{ color: t.text }}>View profile</a>}
           </div>
         </div>
       </aside>

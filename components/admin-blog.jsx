@@ -100,7 +100,7 @@ export default function AdminBlogPage({ dark, t }) {
               <div className="adm-title" style={{ color: t.text }}>{editing === "new" ? "New post" : "Edit post"}</div>
               <div className="adm-subtitle" style={{ color: t.textMuted }}>{editing === "new" ? "Write a post, guide or research piece." : editing.title}</div>
             </div>
-            <button type="button" className="nb" onClick={() => { setEditing(null); resetForm(); }}>Back to posts</button>
+            <button type="button" className="nb sec" onClick={() => { setEditing(null); resetForm(); }}>Back to posts</button>
           </div>
           <div className="page-divider" style={{ background: t.cardBorder }} />
         </div>
@@ -275,8 +275,8 @@ export default function AdminBlogPage({ dark, t }) {
                 <span className="m bl-mid">{(p.views || 0).toLocaleString()} views</span>
                 <span className="bl-st"><i className={"bl-dot " + (p.published ? "ok" : "dim")} />{p.published ? "Live" : "Draft"}</span>
                 <span className="bl-a">
-                  <button type="button" className="nb sm" disabled={saving} onClick={() => startEdit(p)}>Edit</button>
-                  <button type="button" className="nb sm" disabled={saving} onClick={() => quickToggle(p, "published")}>{p.published ? "Unpublish" : "Publish"}</button>
+                  <button type="button" className="nb sm sec" disabled={saving} onClick={() => startEdit(p)}>Edit</button>
+                  <button type="button" className="nb sm sec" disabled={saving} onClick={() => quickToggle(p, "published")}>{p.published ? "Unpublish" : "Publish"}</button>
                 </span>
               </div>
             ))}

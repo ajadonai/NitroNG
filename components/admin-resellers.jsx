@@ -313,7 +313,7 @@ export default function AdminResellersPage({ dark, t }) {
                     <div key={u.userId} className="re-gr">
                       <span className="re-un"><span className="re-av">{initials(u.name || u.email)}</span><span className="re-unt"><b><span>{u.name || "(no name)"}</span></b><i>{u.email}</i></span></span>
                       <span className="m re-cnt re-gact">{u.orders} · {naira(u.spend)}</span>
-                      {u.alreadyReseller ? <span className="re-cnt">already a reseller</span> : <button type="button" className="nb sm" disabled={!!busy} onClick={() => grant(u)}>{busy === u.userId + "approve" ? "…" : "Grant"}</button>}
+                      {u.alreadyReseller ? <span className="re-cnt">already a reseller</span> : <button type="button" className="nb sm sec" disabled={!!busy} onClick={() => grant(u)}>{busy === u.userId + "approve" ? "…" : "Grant"}</button>}
                     </div>
                   ))}
                 </div>

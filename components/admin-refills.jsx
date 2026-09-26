@@ -76,7 +76,7 @@ export default function AdminRefillsPage({ dark, t }) {
                 <span className="rf-w">asked {ago(r.refillRequestedAt)}</span>
                 <span className="rf-a">
                   <button type="button" className="nb sm pri" disabled={!!actionLoading} onClick={() => doAction(r, "refill")}>{actionLoading === r.orderId + "refill" ? "Sending…" : "Send refill"}</button>
-                  <button type="button" className="nb sm" disabled={!!actionLoading} onClick={() => doAction(r, "reset_refill")}>{actionLoading === r.orderId + "reset_refill" ? "…" : "Reset"}</button>
+                  <button type="button" className="nb sm sec" disabled={!!actionLoading} onClick={() => doAction(r, "reset_refill")}>{actionLoading === r.orderId + "reset_refill" ? "…" : "Reset"}</button>
                 </span>
               </div>
             ))}

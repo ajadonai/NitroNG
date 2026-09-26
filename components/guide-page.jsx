@@ -92,7 +92,7 @@ export default function GuidePage({ dark, t }) {
           <div className="gp-title">{tr("Guide")}</div>
           <div className="gp-sub">{tr("How to get the most out of Nitro.")}</div>
         </div>
-        <a className="nb" href="/blog" target="_blank" rel="noopener noreferrer">{tr("Open the blog")}</a>
+        <a className="nb sec" href="/blog" target="_blank" rel="noopener noreferrer">{tr("Open the blog")}</a>
       </div>
 
       {loading ? (
