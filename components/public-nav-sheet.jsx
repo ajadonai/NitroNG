@@ -6,7 +6,9 @@ import { msg } from "../lib/i18n";
 // The public site's primary links for the desktop top nav, in one place so the
 // landing bar and SharedNav cannot drift apart.
 export const PUBLIC_LINKS = [
-  { label: msg("Services"), href: "/services", hint: msg("30+ platforms") },
+  // Was "30+ platforms". A nav hint is the last place worth threading a live
+  // count into and the easiest place for one to sit wrong for a year.
+  { label: msg("Services"), href: "/services", hint: msg("Every platform we sell") },
   { label: msg("Pricing"), href: "/pricing", hint: msg("per 1,000") },
   { label: msg("Resellers"), href: "/resellers", hint: msg("wholesale") },
   { label: msg("Blog"), href: "/blog" },

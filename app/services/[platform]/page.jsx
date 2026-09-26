@@ -30,7 +30,12 @@ const PLATFORM_META = {
       msg('Reels engagement bundles for pushing a specific piece of content'),
     ],
     whySection: [
-      msg('We test services before we list them. Most panels connect to a supplier API and mirror thousands of listings without checking a single one. We pull from several suppliers, test, and only list what actually delivers. That is why our catalogue sits around 140 services instead of fifteen thousand, and why our delivery rate is 91%.'),
+      // Said "around 140 services" and "delivery rate is 91%". Both were typed
+      // into a static copy table and both had drifted — the tested catalogue is
+      // 269, and the delivery figure is computed live with a floor. The argument
+      // never needed either number to land, so it no longer carries one: a
+      // figure in prose nobody can recompute is a figure that goes quietly stale.
+      msg('We test services before we list them. Most panels connect to a supplier API and mirror thousands of listings without checking a single one. We pull from several suppliers, test, and only list what actually delivers. That is why our tested catalogue runs to a few hundred services instead of fifteen thousand, and why the order you place is one we have already watched deliver.'),
       msg('Gradual delivery is built in. Large Instagram orders can be spread over days instead of dumped at once. A page going from 400 to 40,000 followers overnight is the pattern that attracts attention. A page growing steadily is not. The option is there at checkout and we recommend using it.'),
       msg('Comments from real Nigerian accounts. If you are selling to a Nigerian audience, engagement from foreign accounts looks wrong on your posts and everyone can tell. This is one of the few things on the site you genuinely cannot get from an international panel.'),
     ],

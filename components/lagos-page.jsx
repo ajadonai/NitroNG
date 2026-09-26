@@ -23,7 +23,9 @@ const LAGOS_FAQ = [
 ];
 
 const READ_MORE = [
-  ['/pricing', 'Pricing', 'Every price, all 28 platforms'],
+  // Was "all 28 platforms". A link hint does not need a count, and a count here
+  // is one more place for the real figure to drift away from.
+  ['/pricing', 'Pricing', 'Every price, every platform'],
   ['/quality', 'Service quality', 'How we keep drop rates low'],
   ['/contact', 'Contact', 'WhatsApp, email and hours'],
 ];
@@ -34,12 +36,16 @@ const WHY = [
   'That sounds like a small thing until you need it.',
 ];
 
-const LOCAL = [
+// Takes the live platform count, because the last entry quoted it twice — "28
+// platforms" in the title and "19 more" in the body, the second derived from the
+// first by hand. Both were stale, and a reader who counted the nine named ones
+// could check the arithmetic.
+const LOCAL = (nPlat) => [
   ['Naira pricing, no conversion', 'Every service is priced in Naira. When you deposit ₦5,000, you get ₦5,000 in your wallet. No dollar conversion, no exchange rate markup, no surprises on your bank statement.'],
   ['Your bank, your wallet', 'Pay by bank transfer from any Nigerian bank, debit or credit card, USSD, or wallets like Opay, PalmPay, Kuda, Moniepoint and VBank. All through Flutterwave. Crypto is also accepted.'],
   ['WhatsApp support in your timezone', 'Our support line is on WhatsApp. Response is fastest between 9 AM and 10 PM WAT, seven days a week. You are not waiting for a ticket system to route you to someone in another country.'],
   ['₦1,000 minimum deposit', 'You do not need to convert dollars or meet a high minimum. Deposit ₦1,000 and you can start ordering. First deposit of ₦2,500 or more earns up to ₦1,500 in free promotion credit.'],
-  ['Services across 28 platforms', 'Instagram, TikTok, YouTube, Facebook, X, Telegram, Spotify, Audiomack, Boomplay, and 19 more. Music promotion for Nigerian artists on local platforms is something most international panels do not offer.'],
+  [`Services across ${nPlat} platforms`, `Instagram, TikTok, YouTube, Facebook, X, Telegram, Spotify, Audiomack, Boomplay, and ${Math.max(nPlat - 9, 1)} more. Music promotion for Nigerian artists on local platforms is something most international panels do not offer.`],
 ];
 
 const POPULAR = [
@@ -152,7 +158,7 @@ function LagosInner() {
             <section id="what-local-means" className="scroll-mt-24">
               <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>{SECTIONS[1][2]}</h2>
               <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
-                {LOCAL.map(([title, desc]) => (
+                {LOCAL(stats?.uniquePlatforms || 27).map(([title, desc]) => (
                   <div key={title} className="flex flex-col rounded-xl px-4 py-3.5" style={card}>
                     <b className="text-[14.5px] font-semibold" style={{ color: t.text }}>{title}</b>
                     <span className="text-[13px] leading-[1.45]" style={{ color: t.muted }}>{desc}</span>

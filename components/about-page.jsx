@@ -111,7 +111,11 @@ function AboutInner({ stats }) {
                 {tr("We make social media growth simple. Whether you're a creator trying to hit your first 10,000 followers, a business building credibility online, or a marketer managing multiple brands — Nitro handles the numbers so you can focus on your content.")}
               </p>
               <p className="m-0 text-[15.5px] leading-[1.7]" style={{ color: t.soft }}>
-                {tr("We offer 140+ service types across 28 platforms including Instagram, TikTok, YouTube, X, Facebook, Telegram, and Spotify. Every service is priced in Naira with no dollar conversion, no hidden fees, and no password required — just your public profile link.")}
+                {/* The counts were written into this sentence — "140+ service
+                    types across 28 platforms" — three feet from the stat cards
+                    above, which have always read them from the database. They
+                    disagreed. The sentence takes the same numbers now. */}
+                {tr("We offer")} {stats?.serviceTypes ? stats.serviceTypes.toLocaleString() : "140+"} {tr("tested service types across")} {stats?.platforms || 27} {tr("platforms including Instagram, TikTok, YouTube, X, Facebook, Telegram, and Spotify. Every service is priced in Naira with no dollar conversion, no hidden fees, and no password required — just your public profile link.")}
               </p>
             </section>
 

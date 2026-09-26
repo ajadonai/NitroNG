@@ -93,9 +93,18 @@ describe('landing attribution query state', () => {
     const modal = readFileSync('components/auth-modal.jsx', 'utf8');
 
     expect(page).toContain('resolveLandingAuthQuery(await searchParams)');
-    expect(page).toContain('<HomeClient initialAuthQuery={initialAuthQuery} />');
-    expect(home).toContain('<LandingPage initialAuthQuery={initialAuthQuery} />');
-    expect(landing).toContain('<LandingInner initialAuthQuery={initialAuthQuery} />');
+    // Matched as "this element carries this prop" rather than as the whole tag,
+    // so threading a second piece of server state through does not read as the
+    // first one going missing. initialStats joined it in v2.5.140.
+    expect(page).toMatch(/<HomeClient[^>]*initialAuthQuery=\{initialAuthQuery\}/);
+    expect(home).toMatch(/<LandingPage[^>]*initialAuthQuery=\{initialAuthQuery\}/);
+    expect(landing).toMatch(/<LandingInner[^>]*initialAuthQuery=\{initialAuthQuery\}/);
+    // The stats the hero strip renders are resolved on the server too, so the
+    // first frame cannot paint "0 Orders" while it waits for a fetch.
+    expect(page).toMatch(/<HomeClient[^>]*initialStats=\{stats\.display\}/);
+    expect(home).toMatch(/<LandingPage[^>]*initialStats=\{initialStats\}/);
+    expect(landing).toMatch(/<LandingInner[^>]*initialStats=\{initialStats\}/);
+    expect(landing).toContain('useState(initialStats||');
     expect(landing).not.toContain('typeof window!=="undefined"?new URLSearchParams');
     expect(landing).toContain('referralCode={heroRefCode}');
     expect(modal).not.toMatch(/window\.location\.search[\s\S]{0,100}get\(['"]ref['"]\)/);
@@ -106,7 +115,10 @@ describe('landing attribution query state', () => {
     const landing = readFileSync('components/landing-v3.jsx', 'utf8');
 
     expect(page).toContain('resolveLandingAuthQuery(await searchParams)');
-    expect(page).toContain('<HomeClient initialAuthQuery={initialAuthQuery} />');
+    // Matched as "this element carries this prop" rather than as the whole tag,
+    // so threading a second piece of server state through does not read as the
+    // first one going missing. initialStats joined it in v2.5.140.
+    expect(page).toMatch(/<HomeClient[^>]*initialAuthQuery=\{initialAuthQuery\}/);
     expect(landing).toContain('useState(initialAuthQuery?.initialModal||null)');
     expect(landing).not.toContain('resolveLandingAuthQuery');
     expect(landing).toMatch(
@@ -170,17 +182,26 @@ describe('public statistic labels', () => {
   });
 
   it('preserves calculated public statistics without pinning mutable display values', () => {
+    // The arithmetic moved out of the route into lib/site-stats in v2.5.140, so
+    // that the homepage, /about, /services and /signup quote one set of numbers
+    // instead of four. The invariants are unchanged; only their address is.
     const route = readFileSync('app/api/site-info/route.js', 'utf8');
+    const stats = readFileSync('lib/site-stats.js', 'utf8');
 
-    expect(route).toContain('const PROCESSING_BASE = 20;');
-    // The head start lives in one shared constant now, so the route must not
-    // carry its own number: it imports the helper and applies it to the count.
-    expect(route).toContain("import { publicOrderCount } from '@/lib/public-counts';");
-    expect(route).toContain('const displayOrders = publicOrderCount(orderCount);');
-    expect(route).not.toMatch(/ORDER_BASE\s*=\s*\d+/);
+    expect(route).toContain("import { getSiteStats } from '@/lib/site-stats';");
+    // The route delegates rather than counting again — a second copy of these
+    // fences is the drift this module exists to end.
+    expect(route).not.toMatch(/prisma\.(user|order|serviceTier|serviceGroup)\./);
+
+    expect(stats).toContain('const PROCESSING_BASE = 20;');
+    // The head start lives in one shared constant, so nothing here carries its
+    // own number: it imports the helper and applies it to the count.
+    expect(stats).toContain("import { publicOrderCount } from '@/lib/public-counts';");
+    expect(stats).toContain('publicOrderCount(realOrders)');
+    expect(stats).not.toMatch(/ORDER_BASE\s*=\s*\d+/);
     const counts = readFileSync('lib/public-counts.js', 'utf8');
     expect(counts).toMatch(/export const ORDER_BASE = \d+;/);
-    expect(route).toContain('Math.max(90, Math.round');
-    expect(route).toContain('processingCount = liveProcessing + PROCESSING_BASE;');
+    expect(stats).toContain('Math.max(90, Math.round');
+    expect(stats).toContain('processing = live + PROCESSING_BASE;');
   });
 });

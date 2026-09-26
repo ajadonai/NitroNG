@@ -96,6 +96,12 @@ const LV3_CSS = `
 .lv3-mq:hover{animation-play-state:paused}
 @keyframes lv3mq{to{transform:translateX(-50%)}}
 .lv3-fold{display:flex;flex-direction:column}
+/* The stats strip takes its column count from how many facts survived, via
+   --cols, rather than a fixed four that leaves a blank cell when a figure is
+   missing. A class and not an inline style, so the two-up rule below 1200px
+   still wins — an inline grid-template-columns would outrank it. */
+.lv3-facts{display:grid;grid-template-columns:repeat(var(--cols,4),minmax(0,1fr))}
+@media (max-width:1199px){.lv3-facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (min-width:1200px){
   .lv3-fold{height:calc(100dvh - 56px);overflow:hidden}
   .lv3-fold #hero{flex:1;min-height:0}
@@ -146,9 +152,21 @@ function PwStrength({ pw, dark }) {
 }
 
 
-function CountUp({value,duration=1500}){const[display,setDisplay]=useState("0");const rafRef=useRef(null);useEffect(()=>{if(value==null)return;if(rafRef.current)cancelAnimationFrame(rafRef.current);const str=String(value);const m=str.match(/^([\d.]+)(.*)$/);if(!m){setDisplay(str);return;}const target=parseFloat(m[1]);const suffix=m[2];const dec=m[1].includes(".");if(target===0){setDisplay("0"+suffix);return;}const start=performance.now();const step=now=>{const p=Math.min((now-start)/duration,1);const e=1-Math.pow(1-p,3);const n=e*target;setDisplay((dec?n.toFixed(1):String(Math.round(n)))+suffix);if(p<1)rafRef.current=requestAnimationFrame(step);};rafRef.current=requestAnimationFrame(step);return()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);};},[value,duration]);return display;}
+/* Seeded with the real figure instead of "0".
+ *
+ * This is where the homepage's zeros actually came from. The count-up started
+ * at "0" and climbed inside a requestAnimationFrame, so the markup said
+ * "0 Orders, 0 Accounts" to every reader that does not run animation frames —
+ * a crawler on its first pass, anything scraping textContent, a phone that
+ * painted before the frame budget arrived. Server-rendering the stats was only
+ * half the fix; the number had to survive into the first frame too.
+ *
+ * Seeding from the prop keeps the server and the hydrating client agreed on the
+ * same string, and the sweep still runs afterwards for anyone watching. Someone
+ * who asked for less motion simply gets the number. */
+function CountUp({value,duration=1500}){const[display,setDisplay]=useState(()=>value==null?"0":String(value));const rafRef=useRef(null);useEffect(()=>{if(value==null)return;if(rafRef.current)cancelAnimationFrame(rafRef.current);const str=String(value);const m=str.match(/^([\d.]+)(.*)$/);if(!m){setDisplay(str);return;}const target=parseFloat(m[1]);const suffix=m[2];const dec=m[1].includes(".");if(target===0){setDisplay("0"+suffix);return;}if(typeof matchMedia!=="undefined"&&matchMedia("(prefers-reduced-motion: reduce)").matches){setDisplay(str);return;}const start=performance.now();const step=now=>{const p=Math.min((now-start)/duration,1);const e=1-Math.pow(1-p,3);const n=e*target;setDisplay((dec?n.toFixed(1):String(Math.round(n)))+suffix);if(p<1)rafRef.current=requestAnimationFrame(step);};rafRef.current=requestAnimationFrame(step);return()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);};},[value,duration]);return display;}
 
-function LandingInner({ initialAuthQuery }){
+function LandingInner({ initialAuthQuery, initialStats }){
   const money = useMoney();
   // Named tr, not t: t is the theme object in this file (t.accent, t.cardBg).
   const tr = useT();
@@ -182,7 +200,29 @@ function LandingInner({ initialAuthQuery }){
   const [scrolled,setScrolled]=useState(false);
   const [activeSection,setActiveSection]=useState(0);
   const scrollRef=useRef(null);
-  const [siteStats,setSiteStats]=useState({users:null,orders:null,deliveryRate:0,processing:0});
+  // Seeded from the server, so the first frame carries the real figures. It
+  // used to mount at null and fill in after the fetch below, which meant every
+  // cold load painted "0 Orders, 0 Accounts" first — and kept painting it for
+  // good if the fetch never came back.
+  const [siteStats,setSiteStats]=useState(initialStats||{users:null,orders:null,deliveryRate:null,processing:null});
+  // The desktop strip's columns follow how many facts we actually have. It was
+  // a fixed four, so a missing figure left a blank cell — which was already
+  // possible before, because delivery and "delivering now" have always been
+  // conditional.
+  const deskFacts=useMemo(()=>[
+    ...(siteStats.orders?[[siteStats.orders,tr("Orders placed"),false]]:[]),
+    ...(siteStats.users?[[siteStats.users,tr("Accounts created"),false]]:[]),
+    ...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,tr("Delivery benchmark"),false]]:[]),
+    ...(siteStats.processing!=null?[[siteStats.processing,tr("Delivering right now"),true]]:[]),
+  ],[siteStats,tr]);
+  // The phone card's three shorter labels. "Delivering now" is drawn separately
+  // below because it carries a pulsing dot, so it is counted rather than listed.
+  const cardFacts=useMemo(()=>[
+    ...(siteStats.orders?[[siteStats.orders,tr("Orders")]]:[]),
+    ...(siteStats.users?[[siteStats.users,tr("Accounts")]]:[]),
+    ...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,tr("Delivery")]]:[]),
+  ],[siteStats,tr]);
+  const cardFactCount=cardFacts.length+(siteStats.processing!=null?1:0);
   const [siteAlerts,setSiteAlerts]=useState([]);
   const [socialLinks,setSocialLinks]=useState({});
   const [pricingData,setPricingData]=useState(null);
@@ -330,9 +370,19 @@ function LandingInner({ initialAuthQuery }){
             {/* LEFT */}
             <div className="text-start relative z-[1] max-desktop:text-center max-desktop:flex max-desktop:flex-col max-desktop:items-center">
               <div className="fu text-[11px] font-bold tracking-[3px] uppercase mb-[22px] max-md:mb-3.5" style={{color:dark?t.accent:"rgba(255,255,255,.72)"}}>{tr("Nigeria's social growth engine")}</div>
-              <h1 className="fu fd1 text-[clamp(40px,5vw,66px)] max-md:text-[clamp(34px,9vw,44px)] font-semibold leading-[1.02] -tracking-[2.2px] max-md:-tracking-[1.2px]" style={{color:t.heroText}}>
-                {tr("Your")} <span className="lv3-roller" aria-live="polite" style={{"--bk":dark?t.accent:"#ecc94b"}}>{HERO_WORDS.map((w,i)=><span key={w} className={i===word?"on":i===((word+HERO_WORDS.length-1)%HERO_WORDS.length)?"out":""} style={{color:dark?t.accent:"#fff"}} aria-hidden={i!==word}>{tr(w)}</span>)}</span><br/>{tr("deserves a bigger audience.")}
-              </h1>
+              {/* The heading and the animated line are deliberately two
+                  elements. The roller keeps all six words mounted at once so it
+                  can cross-fade between them, and CSS hiding does not remove
+                  text from the document — so the h1's own text read "Your music
+                  brand page business church content deserves a bigger audience."
+                  to anything taking textContent, which is most of what reads a
+                  page without rendering it. The h1 now carries one clean
+                  sentence nobody sees; the line on screen is the same markup as
+                  before and no longer claims to be the heading. */}
+              <h1 className="sr-only">{tr("Social media growth for Nigerian creators and businesses, with Instagram, TikTok and YouTube followers, likes and views paid in naira.")}</h1>
+              <div aria-hidden="true" className="fu fd1 text-[clamp(40px,5vw,66px)] max-md:text-[clamp(34px,9vw,44px)] font-semibold leading-[1.02] -tracking-[2.2px] max-md:-tracking-[1.2px]" style={{color:t.heroText}}>
+                {tr("Your")} <span className="lv3-roller" style={{"--bk":dark?t.accent:"#ecc94b"}}>{HERO_WORDS.map((w,i)=><span key={w} className={i===word?"on":i===((word+HERO_WORDS.length-1)%HERO_WORDS.length)?"out":""} style={{color:dark?t.accent:"#fff"}}>{tr(w)}</span>)}</span><br/>{tr("deserves a bigger audience.")}
+              </div>
               <p className="fu fd2 text-[clamp(15px,1.3vw,17.5px)] max-md:text-[14px] leading-[1.65] max-w-[520px] max-desktop:mx-auto mt-6 mb-7 max-md:mt-4 max-md:mb-4" style={{color:t.heroSoft}}>{tr("Followers, likes and views for Instagram, TikTok, YouTube and")} {siteStats.uniquePlatforms?`${siteStats.uniquePlatforms}+`:"25+"} {tr("more platforms.")} {/* "Paid in naira" is the line Google ranks this page on, so it
                   survives untouched for anyone reading in naira — which is every
                   crawler, since a crawler has no saved currency. Someone reading
@@ -354,8 +404,15 @@ function LandingInner({ initialAuthQuery }){
               <div className="fu fd4 hidden max-desktop:!flex max-desktop:flex-col max-desktop:items-center max-desktop:mt-4 max-md:mt-3 w-full max-md:max-w-full relative z-[2]">
                 <style>{HC_CSS}</style>
                 <div className="hc w-full max-w-[380px] max-md:max-w-full" style={{"--cbg":dark?"#171126":"#fff","--cink":dark?"#f2efe9":"#1a1a1a","--cmut":dark?"rgba(255,255,255,.5)":"rgba(0,0,0,.45)","--cdim":dark?"rgba(255,255,255,.35)":"rgba(0,0,0,.35)","--cline":dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.08)","--acbg":dark?"rgba(196,125,142,.16)":"rgba(196,125,142,.1)","--shadow":dark?"0 20px 60px rgba(0,0,0,.5)":"0 20px 60px rgba(0,0,0,.16)"}}>
-                  <div className={"hc-facts"+(siteStats.processing==null?" three":"")}>
-                    {[[siteStats.orders||"0",tr("Orders")],[siteStats.users||"0",tr("Accounts")],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,tr("Delivery")]]:[])].map(([num,label])=>
+                  {/* Three-up when there are three, two-up otherwise. The class
+                      used to key off whether "delivering now" existed, which was
+                      the same thing only while the other three were guaranteed —
+                      and they are not, now that a figure we do not have is left
+                      out rather than printed as 0. A zero here reads as "nobody
+                      has ever ordered" beside an About page that says fifteen
+                      thousand people have. */}
+                  <div className={"hc-facts"+(cardFactCount===3?" three":"")}>
+                    {cardFacts.map(([num,label])=>
                       <div key={label} className="hc-f"><b><CountUp value={num}/></b><span>{label}</span></div>
                     )}
                     {siteStats.processing!=null&&<div className="hc-f live"><b><CountUp value={siteStats.processing}/></b><span><i/>{tr("Delivering now")}</span></div>}
@@ -455,8 +512,8 @@ function LandingInner({ initialAuthQuery }){
 
         {/* Stats strip (desktop/tablet — the phone hero card already carries the stats) + platform marquee (all viewports) */}
         <div className="lv3-strip">
-          <div className="max-md:hidden grid grid-cols-4 max-desktop:grid-cols-2" style={{background:dark?"#160f22":"#fff",borderBottom:`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`}}>
-            {[[siteStats.orders||"0",tr("Orders placed"),false],[siteStats.users||"0",tr("Accounts created"),false],...(siteStats.deliveryRate!=null?[[`${siteStats.deliveryRate}%`,tr("Delivery benchmark"),false]]:[]),...(siteStats.processing!=null?[[siteStats.processing,tr("Delivering right now"),true]]:[])].map(([v,l,g],i,arr)=>
+          <div className="max-md:hidden lv3-facts" style={{"--cols":Math.max(deskFacts.length,1),background:dark?"#160f22":"#fff",borderBottom:`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`}}>
+            {deskFacts.map(([v,l,g],i,arr)=>
               <div key={l} className="lv3-stat py-7 px-12 max-desktop:py-[22px] max-desktop:px-8" style={{borderRight:i<arr.length-1?`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`:"none"}}>
                 <div className="m text-[30px] font-bold -tracking-[1px] leading-none" style={{color:g?(dark?"#34d399":"#059669"):t.text}}><CountUp value={v}/></div>
                 <div className="text-[10.5px] font-bold tracking-[2px] uppercase mt-2.5" style={{color:dark?"rgba(244,241,237,.36)":"rgba(28,27,25,.42)"}}>{l}</div>
@@ -540,6 +597,6 @@ function LandingInner({ initialAuthQuery }){
 }
 
 
-export default function LandingV3({ initialAuthQuery }) {
-  return <ThemeProvider><LandingInner initialAuthQuery={initialAuthQuery} /></ThemeProvider>;
+export default function LandingV3({ initialAuthQuery, initialStats }) {
+  return <ThemeProvider><LandingInner initialAuthQuery={initialAuthQuery} initialStats={initialStats} /></ThemeProvider>;
 }
