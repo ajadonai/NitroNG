@@ -337,7 +337,7 @@ function AdminFacts({ o, dark, t, isSensitive, setSearch }) {
         // way, only whether this tag shows next to it.
         // The value slot below is already a flex row (see FactRows), so this
         // is a bare fragment rather than another flex wrapper around it.
-        o.fullList && o.nitroServiceId ? ["Nitro ID", <><CopyId key="nid" value={o.nitroServiceId} dark={dark} />{o.fullListDisabled && <span key="ret" className="text-[10px] font-semibold py-[1px] px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>Retired from catalogue</span>}</>] : null,
+        o.fullList && o.nitroServiceId ? ["Nitro ID", <>{o.fullListDisabled && <span key="ret" className="text-[10px] font-semibold py-[1px] px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>Retired</span>}<CopyId key="nid" value={o.nitroServiceId} dark={dark} /></>] : null,
         est && !cancelled && o.status !== "Completed" ? ["Est. time", <B key="e" color={t.accent}>{est}</B>] : null,
       ]} />
       <FactRows dark={dark} title="Money" rows={[
