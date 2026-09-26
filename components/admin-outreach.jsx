@@ -300,12 +300,12 @@ const OU_CSS = `
 .ou-da{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
 @media (max-width:900px){
   .ou-hr{width:100%}.ou-hr>*:last-child{flex:1}
-  .ou-paused{flex-wrap:wrap}.ou-paused   .ou-stats{grid-template-columns:1fr 1fr}.ou-stt:nth-child(3){border-left:0}.ou-stt:nth-child(n+3){border-top:1px solid var(--line)}.ou-stt b{font-size:17px}
+  .ou-paused{flex-wrap:wrap}.ou-stats{grid-template-columns:1fr 1fr}.ou-stt:nth-child(3){border-left:0}.ou-stt:nth-child(n+3){border-top:1px solid var(--line)}.ou-stt b{font-size:17px}
   .ou-tot{display:none}
   .ou-r.oc{grid-template-columns:36px 1fr auto;grid-template-areas:"av tt dep" "av chips at";gap:6px 10px;padding:12px 14px}
   .ou-r.oc .ou-av{grid-area:av;align-self:start}.ou-r.oc .ou-tt{grid-area:tt}.ou-r.oc .ou-num{grid-area:dep}.ou-r.oc .ou-mid{grid-area:at;justify-self:end;font-size:11px}
   .ou-r.oc .ou-chips{grid-area:chips;display:flex;gap:6px;flex-wrap:wrap}
   .ou-r.dn{grid-template-columns:36px 1fr;grid-template-areas:"av tt" "av mid" "acts acts";gap:4px 10px;padding:12px 14px}
-  .ou-r.dn .ou-av{grid-area:av;align-self:start}.ou-r.dn .ou-tt{grid-area:tt}.ou-r.dn .ou-mid{grid-area:mid}.ou-r.dn .ou-acts{grid-area:acts;justify-content:stretch;margin-top:4px}.ou-r.dn .ou-acts   .ou-dw{width:100%;top:8vh;border-left:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0}
+  .ou-r.dn .ou-av{grid-area:av;align-self:start}.ou-r.dn .ou-tt{grid-area:tt}.ou-r.dn .ou-mid{grid-area:mid}.ou-r.dn .ou-acts{grid-area:acts;justify-content:stretch;margin-top:4px}.ou-r.ou-dw{width:100%;top:8vh;border-left:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0}
 }
 `;

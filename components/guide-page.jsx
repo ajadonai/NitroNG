@@ -220,10 +220,10 @@ const GUIDE_CSS = `
 .gp-empty span{font-size:13px;color:var(--mut);line-height:1.5}
 .gp-ask{display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:18px;background:var(--card);border:1px solid var(--line)}
 @media (max-width:900px){
-  .gp-head{flex-direction:column}.gp-head   .gp-srch{min-width:0;width:100%}
+  .gp-head{flex-direction:column}.gp-srch{min-width:0;width:100%}
   .gp-chips{width:100%}.gp-chip{flex:1;text-align:center}
   .gp-gg{grid-template-columns:1fr}
-  .gp-ask{flex-direction:column;align-items:stretch}.gp-ask }
+  .gp-ask{flex-direction:column;align-items:stretch}}
 `;
 
 // Right sidebar for Guide

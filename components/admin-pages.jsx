@@ -460,7 +460,7 @@ const PM_CSS = `
   .pm-dr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"un amt" "mth st" "ref ref" "acts acts";gap:6px 10px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;min-width:0}.pm-dr.pend{border-color:var(--warn)}
   .pm-un{grid-area:un}.pm-amt{grid-area:amt;align-self:start}.pm-mth{grid-area:mth}.pm-st{grid-area:st;justify-self:end}.pm-ref{grid-area:ref;font-size:11.5px}.pm-tm{display:none}
   .pm-acts{grid-area:acts;justify-content:stretch}.pm-acts .pm-acts:empty{display:none}
-  .pm-gr{grid-template-columns:52px 1fr 44px;grid-template-areas:"ord gt tog" ". st keys" ". b b";gap:6px 10px;background:var(--card);border:1px solid var(--line);border-radius:14px}.pm-ord{grid-area:ord}.pm-gt{grid-area:gt}.pm-gr .pm-st{grid-area:st}.pm-keys{grid-area:keys;justify-self:end}.pm-tog{grid-area:tog}.pm-gr }
+  .pm-gr{grid-template-columns:52px 1fr 44px;grid-template-areas:"ord gt tog" ". st keys" ". b b";gap:6px 10px;background:var(--card);border:1px solid var(--line);border-radius:14px}.pm-ord{grid-area:ord}.pm-gt{grid-area:gt}.pm-gr .pm-st{grid-area:st}.pm-keys{grid-area:keys;justify-self:end}.pm-tog{grid-area:tog}}
 `;
 
 export function AdminFinancePage({ dark, t, admin }) {
@@ -884,7 +884,7 @@ const FB_CSS = `
 .fb-menu .fb-ladder{grid-template-columns:96px 1fr 74px 60px}
 .fb-row3{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px}
 .fb-in{height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);font:inherit;font-size:13px;color:var(--ink);outline:none;min-width:0;width:100%}.fb-in:focus{border-color:var(--ac)}
-.fb @media (max-width:900px){.fb-export{margin-left:0;width:100%}.fb-export .fb-menu{left:0;right:auto;width:100%}.fb-row3{grid-template-columns:1fr}.fb }
+@media (max-width:900px){.fb-export{margin-left:0;width:100%}.fb-export .fb-menu{left:0;right:auto;width:100%}.fb-row3{grid-template-columns:1fr}.fb }
 `;
 
 

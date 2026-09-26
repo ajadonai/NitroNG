@@ -117,6 +117,6 @@ const RF_CSS = `
   .rf-stats{grid-template-columns:1fr 1fr}.rf-stt:nth-child(3){border-left:0}.rf-stt:nth-child(n+3){border-top:1px solid var(--line)}.rf-stt b{font-size:17px}
   .rf-list{background:none}.rf-r{grid-template-columns:1fr auto;grid-template-areas:"o st" "s s" "l l" "w w" "a a";gap:8px 10px;padding:12px 14px}
   .rf-o{grid-area:o}.rf-st{grid-area:st;align-self:start}.rf-s{grid-area:s;padding-top:10px;border-top:1px solid var(--rail)}.rf-s b,.rf-s i{white-space:normal}.rf-l{grid-area:l}.rf-l a{white-space:normal;word-break:break-all}
-  .rf-w{grid-area:w;font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;color:var(--mut)}.rf-a{grid-area:a;justify-content:stretch;margin-top:2px}.rf-a   .rf-hr{grid-template-columns:1fr auto;grid-template-areas:"o w" "b b" "i i";gap:2px 10px}.rf-hr .m{grid-area:o}.rf-hr .rf-cnt{grid-area:w}.rf-hr b{grid-area:b}.rf-hr i{grid-area:i;white-space:normal}
+  .rf-w{grid-area:w;font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;color:var(--mut)}.rf-a{grid-area:a;justify-content:stretch;margin-top:2px}.rf-hr{grid-template-columns:1fr auto;grid-template-areas:"o w" "b b" "i i";gap:2px 10px}.rf-hr .m{grid-area:o}.rf-hr .rf-cnt{grid-area:w}.rf-hr b{grid-area:b}.rf-hr i{grid-area:i;white-space:normal}
 }
 `;

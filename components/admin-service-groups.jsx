@@ -196,7 +196,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
         </span>
         <span className="mb-meta">{refill}<em>{ti.speed || "—"}</em></span>
         <button type="button" className={`mb-tog${ti.enabled ? "" : " o"}`} onClick={() => act({ action: "update-tier", tierIdToUpdate: ti.id, enabled: !ti.enabled })} aria-label={ti.enabled ? "Switch tier off" : "Switch tier on"}><i /></button>
-        <span className="mb-acts"><button type="button" className="nb sm" onClick={() => { setPanel(p === "swap" ? {} : { [ti.id]: "swap" }); setSvcQ(""); }}>Swap</button><button type="button" className="nb sm" onClick={() => p === "edit" ? setPanel({}) : startEdit(ti)}>Edit</button></span>
+        <span className="mb-acts"><button type="button" className="nb sm sec" onClick={() => { setPanel(p === "swap" ? {} : { [ti.id]: "swap" }); setSvcQ(""); }}>Swap</button><button type="button" className="nb sm sec" onClick={() => p === "edit" ? setPanel({}) : startEdit(ti)}>Edit</button></span>
         {p === "swap" && <div className="mb-panel"><div className="mb-ph">Swap the service behind <b>{g.name} · {ti.tier}</b>. Price stays at {naira(ti.sellPer1k)}; the profit beside each candidate is at that price.</div>{SvcList({ onPick: s => swapTo(ti, s), priceKobo: Number(ti.sellPer1k) })}</div>}
         {p === "edit" && e && (
           <div className="mb-panel mb-edit">
@@ -222,7 +222,7 @@ export default function AdminServiceGroupsPage({ dark, t }) {
                   }
                   if (r.ok) { setError(""); setPanel({}); }
                 } }}>Delete tier</button>
-            <button type="button" className="nb sm" onClick={() => setPanel({})}>Cancel</button>
+            <button type="button" className="nb sm sec" onClick={() => setPanel({})}>Cancel</button>
             <button type="button" className="nb pri sm" disabled={busy} onClick={() => saveEdit(ti)}>Save</button>
           </div>
         )}
@@ -250,19 +250,19 @@ export default function AdminServiceGroupsPage({ dark, t }) {
               <div className="mb-panel mb-add">
                 <div className="mb-ph">Add a tier to <b>{g.name}</b>. Leave the price blank and it is set from the markup rules.</div>
                 <div className="mb-addrow">
-                  <span className="segs">{missing.length ? missing.map(x => <button type="button" key={x} className={`mb-seg${addForm.tier === x ? " on" : ""}`} onClick={() => setAddForm(f => ({ ...f, tier: x }))}>{x}</button>) : TIERS.map(x => <button type="button" key={x} className={`mb-seg${addForm.tier === x ? " on" : ""}`} onClick={() => setAddForm(f => ({ ...f, tier: x }))}>{x}</button>)}</span>
+                  <span className="segs">{missing.length ? missing.map(x => <button type="button" key={x} className={`seg${addForm.tier === x ? " on" : ""}`} onClick={() => setAddForm(f => ({ ...f, tier: x }))}>{x}</button>) : TIERS.map(x => <button type="button" key={x} className={`seg${addForm.tier === x ? " on" : ""}`} onClick={() => setAddForm(f => ({ ...f, tier: x }))}>{x}</button>)}</span>
                   <input className="mb-in m" value={addForm.price} onChange={e => setAddForm(f => ({ ...f, price: e.target.value.replace(/[^0-9.]/g, "") }))} placeholder="Price ₦/1k (auto)" />
                 </div>
                 {addForm.serviceId
-                  ? <div className="mb-picked">{(() => { const s = services.find(x => x.id === addForm.serviceId); return s ? <><b className={`mb-prov ${s.provider}`}>{s.provider}</b><span className="mb-sid m">#{s.apiId}</span><span className="mb-sn">{s.name}</span></> : null; })()}<button type="button" className="nb sm" onClick={() => setAddForm(f => ({ ...f, serviceId: "" }))}>Change</button></div>
+                  ? <div className="mb-picked">{(() => { const s = services.find(x => x.id === addForm.serviceId); return s ? <><b className={`mb-prov ${s.provider}`}>{s.provider}</b><span className="mb-sid m">#{s.apiId}</span><span className="mb-sn">{s.name}</span></> : null; })()}<button type="button" className="nb sm sec" onClick={() => setAddForm(f => ({ ...f, serviceId: "" }))}>Change</button></div>
                   : SvcList({ onPick: s => setAddForm(f => ({ ...f, serviceId: s.id })), priceKobo: addForm.price ? Math.round(Number(addForm.price) * 100) : null })}
-                <div className="mb-acts-r"><button type="button" className="nb sm" onClick={() => { setAddFor(null); setSvcQ(""); }}>Cancel</button><button type="button" className="nb pri sm" disabled={busy || !addForm.serviceId} onClick={() => addTier(g)}>Add tier</button></div>
+                <div className="mb-acts-r"><button type="button" className="nb sm sec" onClick={() => { setAddFor(null); setSvcQ(""); }}>Cancel</button><button type="button" className="nb pri sm" disabled={busy || !addForm.serviceId} onClick={() => addTier(g)}>Add tier</button></div>
               </div>
             )}
             <div className="mb-gfoot">
               <button type="button" className="mb-addt" onClick={() => { setAddFor(addFor === g.id ? null : g.id); setAddForm({ tier: missing[0] || "Standard", serviceId: "", price: "" }); setSvcQ(""); }}>{missing.length ? `+ Add ${missing[0]} tier` : "+ Add tier"}</button>
               <span className="mb-gacts">
-                <button type="button" className="nb sm" onClick={() => act({ action: "duplicate-group", groupId: g.id })}>Duplicate</button>
+                <button type="button" className="nb sm sec" onClick={() => act({ action: "duplicate-group", groupId: g.id })}>Duplicate</button>
                 <button type="button" className="nb sm bad" onClick={async () => { if (await confirm({ title: "Delete group", message: `Delete "${g.name}" and all its tiers?`, confirmLabel: "Delete", danger: true })) act({ action: "delete-group", groupId: g.id }); }}>Delete group</button>
               </span>
             </div>
@@ -387,5 +387,5 @@ const CSS = `
   .mb-tr{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"chip price gm" "svc svc svc" "meta meta tog" "ord acts acts" "panel panel panel";gap:8px 10px;padding:11px 12px;border:1px solid var(--line);border-radius:12px}
   .mb-tchip{grid-area:chip}.mb-price{grid-area:price}.mb-gm{grid-area:gm;font-size:13px;text-align:right}.mb-svc-cell{grid-area:svc}.mb-meta{grid-area:meta;flex-direction:row;gap:8px}.mb-tr .mb-tog{grid-area:tog;justify-self:end}.mb-acts{grid-area:acts;padding-top:8px;border-top:1px solid var(--rail);justify-content:flex-end}.mb-panel{grid-area:panel;margin-top:0}
   .mb-ord{grid-area:ord;flex-direction:row;padding-top:8px}
-  .mb-gfoot{flex-wrap:wrap;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--line)}.mb-addt{flex:1;text-align:center}.mb-gacts{width:100%}.mb-gacts }
+  .mb-gfoot{flex-wrap:wrap;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid var(--line)}.mb-addt{flex:1;text-align:center}.mb-gacts{width:100%}}
 `;

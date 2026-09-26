@@ -694,7 +694,7 @@ const TK_CSS = `
   .tk-r.sb .tk-acts{grid-area:acts;justify-content:stretch;margin-top:2px}.tk-r.sb .tk-acts .tk-r.sb .tk-rev{flex-direction:row;align-items:center;justify-content:space-between}
   .tk-r.ts{grid-template-columns:34px 1fr auto;grid-template-areas:"pav tt r" "pav n st" "acts acts acts";gap:6px 10px;padding:12px 14px}
   .tk-r.ts .tk-pav{grid-area:pav;align-self:start}.tk-r.ts .tk-tt{grid-area:tt}.tk-r.ts .tk-tt b,.tk-r.ts .tk-tt i{white-space:normal}.tk-r.ts .tk-num{grid-area:r}.tk-r.ts .tk-mid{grid-area:n}.tk-r.ts .tk-st{grid-area:st;justify-self:end}
-  .tk-r.ts .tk-acts{grid-area:acts;justify-content:stretch;margin-top:2px}.tk-r.ts .tk-acts   .tk-pg{flex-wrap:wrap;gap:8px}
+  .tk-r.ts .tk-acts{grid-area:acts;justify-content:stretch;margin-top:2px}.tk-r.tk-pg{flex-wrap:wrap;gap:8px}
   .tk-bd{padding:12px 10px}.tk-md{padding:14px 14px 16px}
   .tk-bd.tk-sheet{padding:0;align-items:flex-end}
   .tk-md.tk-em{width:100%;max-height:92vh;border-radius:20px 20px 0 0}

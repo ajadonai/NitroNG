@@ -353,6 +353,10 @@ select.pro-in{appearance:none;-webkit-appearance:none;background-image:url("data
 .pro-ff{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}
 @media (max-width:900px){
   .pro-stats{grid-template-columns:1fr 1fr}.pro-stt:nth-child(3){border-left:0}.pro-stt:nth-child(n+3){border-top:1px solid var(--line)}.pro-stt b{font-size:17px}
-  .pro-bar   .pro-r{grid-template-columns:72px 1fr;grid-template-areas:"pct tt" "pct st" "acts acts";gap:4px 10px;padding:12px 14px}.pro-pct{grid-area:pct;align-self:start}.pro-tt{grid-area:tt}.pro-tt b,.pro-tt i{white-space:normal}.pro-st{grid-area:st}.pro-a{grid-area:acts;justify-content:stretch;margin-top:4px}.pro-a   .pro-grid.c2,.pro-grid.c3,.pro-grid.c4{grid-template-columns:1fr 1fr}
-  .pro-ff{flex-direction:column-reverse}.pro-ff }
+  /* A card per promotion. On a phone the title and its dates wrap, so a 1px
+     hairline between two wrapped rows left one promotion's words running
+     straight into the next one's. */
+  .pro-list{gap:8px;padding:10px;background:var(--soft)}
+  .pro-r{grid-template-columns:72px 1fr;grid-template-areas:"pct tt" "pct st" "acts acts";gap:6px 10px;padding:12px 14px;border-top:0;background:var(--card);border:1px solid var(--line);border-radius:12px}.pro-pct{grid-area:pct;align-self:start}.pro-tt{grid-area:tt}.pro-tt b,.pro-tt i{white-space:normal}.pro-st{grid-area:st}.pro-a{grid-area:acts;justify-content:stretch;margin-top:4px}.pro-grid.c2,.pro-grid.c3,.pro-grid.c4{grid-template-columns:1fr 1fr}
+  .pro-ff{flex-direction:column-reverse}}
 `;

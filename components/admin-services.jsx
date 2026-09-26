@@ -354,7 +354,7 @@ const CSS = `
 .rs-empty{padding:40px 14px;text-align:center;font-size:13px;color:var(--mut)}
 .rs-bone{display:block;margin:3px 0}
 @media (max-width:900px){
-  .rs-hb{width:100%}.rs-hb   .rs-stats{grid-template-columns:1fr 1fr}.rs-stt:nth-child(3){border-left:0}.rs-stt:nth-child(n+3){border-top:1px solid var(--line)}.rs-stt b{font-size:17px}
+  .rs-hb{width:100%}.rs-stats{grid-template-columns:1fr 1fr}.rs-stt:nth-child(3){border-left:0}.rs-stt:nth-child(n+3){border-top:1px solid var(--line)}.rs-stt b{font-size:17px}
   .rs-srch{width:100%;min-width:0}.rs-count{display:none}
   .rs-sh{display:none}
   .rs-sr{display:grid;grid-template-columns:1fr auto auto;grid-template-areas:"sn sn sn" "cost ord tg";gap:8px 10px;padding:10px 12px}

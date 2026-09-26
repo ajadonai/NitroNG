@@ -1004,5 +1004,5 @@ const US_CSS = `
   .us-ur>span:first-child,.us-ord,.us-jn,.us-ra,.us-st{display:none}.us-un{flex:1}.us-bal{flex-shrink:0;font-size:13px}
   .us-unt i{display:flex;align-items:center;gap:6px}
   .us-unt i::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);flex-shrink:0}.us-ur.banned .us-unt i::before{background:var(--bad)}
-  .us-cred{grid-template-columns:1fr 1fr}.us-cred .us-cred }
+  .us-cred{grid-template-columns:1fr 1fr}}
 `;

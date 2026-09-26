@@ -675,7 +675,7 @@ export function AdminCouponsPage({ dark, t }) {
                 <span className="rw-tt"><b>{givesOf(c)}</b><i>{whenOf(c)}</i></span>
                 <span className="rw-mid m">{c.used || 0} of {c.maxUses || "∞"}</span>
                 <span className="rw-st"><i className={"rw-dot " + cls} />{st}</span>
-                <span className="rw-acts"><button type="button" className="nb sm" onClick={() => toggleCoupon(c)}>{c.enabled ? "Turn off" : "Turn on"}</button><button type="button" className="nb sm bad" onClick={() => deleteCoupon(c)}>Delete</button></span>
+                <span className="rw-acts"><button type="button" className="nb sm sec" onClick={() => toggleCoupon(c)}>{c.enabled ? "Turn off" : "Turn on"}</button><button type="button" className="nb sm bad" onClick={() => deleteCoupon(c)}>Delete</button></span>
               </div>
             ); })}
           </div>
@@ -769,7 +769,7 @@ const RW_CSS = `
 @media (max-width:900px){
   .rw-stats{grid-template-columns:1fr 1fr}.rw-stt:nth-child(3){border-left:0}.rw-stt:nth-child(n+3){border-top:1px solid var(--line)}.rw-stt b{font-size:17px}
   .rw-srch{width:100%;min-width:0}.rw-bar .rw-cnt{display:none}.rw-bar .rw-date{flex:1}
-  .rw-cr{grid-template-columns:1fr auto;grid-template-areas:"code st" "tt tt" "mid mid" "acts acts";gap:6px 10px;padding:12px 14px}.rw-cr .rw-code{grid-area:code}.rw-cr .rw-st{grid-area:st}.rw-cr .rw-tt{grid-area:tt}.rw-cr .rw-tt b,.rw-cr .rw-tt i{white-space:normal}.rw-cr .rw-mid{grid-area:mid}.rw-cr .rw-acts{grid-area:acts;justify-content:stretch}.rw-cr .rw-acts   .rw-form{grid-template-columns:1fr}
+  .rw-cr{grid-template-columns:1fr auto;grid-template-areas:"code st" "tt tt" "mid mid" "acts acts";gap:6px 10px;padding:12px 14px}.rw-cr .rw-code{grid-area:code}.rw-cr .rw-st{grid-area:st}.rw-cr .rw-tt{grid-area:tt}.rw-cr .rw-tt b,.rw-cr .rw-tt i{white-space:normal}.rw-cr .rw-mid{grid-area:mid}.rw-cr .rw-acts{grid-area:acts;justify-content:stretch}.rw-form{grid-template-columns:1fr}
   .rw-lh{display:none}.rw-lr{grid-template-columns:1fr auto;grid-template-areas:"who pts" "ty when" "why why";gap:4px 10px}.rw-lr .rw-who{grid-area:who}.rw-lr .rw-pts{grid-area:pts}.rw-lr .rw-ty{grid-area:ty}.rw-lr .rw-mid:first-child{grid-area:when;justify-self:end}.rw-lr .rw-mid.m{display:none}.rw-lr .rw-why{grid-area:why;white-space:normal}
   .rw-lr.tiers{grid-template-columns:1fr auto auto auto;grid-template-areas:none}
 }
@@ -1034,7 +1034,7 @@ const MT_CSS = `
 .mt-save{display:flex;justify-content:flex-end;margin-top:12px}
 .mt-hl{padding:4px 16px 8px}.mt-empty{padding:20px 0;text-align:center;font-size:13px;color:var(--mut)}.mt-hr{display:grid;grid-template-columns:70px 150px 1fr;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--rail);font-size:13px}.mt-hr:first-child{border-top:0}.mt-hr .m{font-size:12px;color:var(--mut)}.mt-hr b{font-weight:600}.mt-hr i{font-style:normal;color:var(--mut)}
 @media (max-width:900px){
-  .mt-now{flex-direction:column;align-items:stretch}.mt-now .mt-big{font-size:22px}.mt-presets .mt-tg{flex:1;text-align:center}.mt-save   .mt-hr{grid-template-columns:70px 1fr;grid-template-areas:"d b" ". i"}.mt-hr .m{grid-area:d}.mt-hr b{grid-area:b}.mt-hr i{grid-area:i}
+  .mt-now{flex-direction:column;align-items:stretch}.mt-now .mt-big{font-size:22px}.mt-presets .mt-tg{flex:1;text-align:center}.mt-hr{grid-template-columns:70px 1fr;grid-template-areas:"d b" ". i"}.mt-hr .m{grid-area:d}.mt-hr b{grid-area:b}.mt-hr i{grid-area:i}
 }
 `;
 
@@ -1168,7 +1168,7 @@ const PV_CSS = `
 .pv-sl{padding:4px 16px 8px}.pv-sr{display:grid;grid-template-columns:8px 150px 1fr auto;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--rail);font-size:13px}.pv-sr:first-child{border-top:0}.pv-sr b{font-weight:600}.pv-sr i{font-style:normal;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:900px){
   .pv-stats{grid-template-columns:1fr 1fr}.pv-stt:nth-child(3){border-left:0}.pv-stt:nth-child(n+3){border-top:1px solid var(--line)}.pv-stt b{font-size:17px}
-  .pv-r{grid-template-columns:1fr 1fr;padding:12px;gap:8px 10px}.pv-n{grid-column:1 / -1}.pv-a{grid-column:1 / -1;justify-content:stretch}.pv-a   .pv-sr{grid-template-columns:8px 1fr auto;grid-template-areas:"d b t" ". i i"}.pv-sr .pv-dot{grid-area:d}.pv-sr b{grid-area:b}.pv-sr i{grid-area:i;white-space:normal}.pv-sr .pv-cnt{grid-area:t}
+  .pv-r{grid-template-columns:1fr 1fr;padding:12px;gap:8px 10px}.pv-n{grid-column:1 / -1}.pv-a{grid-column:1 / -1;justify-content:stretch}.pv-sr{grid-template-columns:8px 1fr auto;grid-template-areas:"d b t" ". i i"}.pv-sr .pv-dot{grid-area:d}.pv-sr b{grid-area:b}.pv-sr i{grid-area:i;white-space:normal}.pv-sr .pv-cnt{grid-area:t}
 }
 `;
 
@@ -1736,7 +1736,7 @@ export function AdminAcquisitionPage({ dark, t }) {
                   <b className="m r">{(l.signups || 0).toLocaleString()}</b>
                   <b className="m r">{(l.orders || 0).toLocaleString()}</b>
                   <span className="tl-mid">{l.createdAt ? dateOf(l.createdAt) : ""}</span>
-                  <span className="tl-acts"><button type="button" className="nb sm" onClick={() => openAnalytics(l)}>Analytics</button>{canManage && <button type="button" className="nb sm" onClick={() => handleArchive(l)}>{l.archivedAt ? "Bring back" : "Archive"}</button>}{canManage && l.archivedAt && <button type="button" className="nb sm bad" onClick={() => handleDelete(l)}>Delete</button>}</span>
+                  <span className="tl-acts"><button type="button" className="nb sm sec" onClick={() => openAnalytics(l)}>Analytics</button>{canManage && <button type="button" className="nb sm sec" onClick={() => handleArchive(l)}>{l.archivedAt ? "Bring back" : "Archive"}</button>}{canManage && l.archivedAt && <button type="button" className="nb sm bad" onClick={() => handleDelete(l)}>Delete</button>}</span>
                 </div>
               ))}
             </>}
@@ -1751,7 +1751,7 @@ export function AdminAcquisitionPage({ dark, t }) {
             <div className="tl-dh">
               <div className="tl-dht"><b>{detailLink.name}</b><i className="m">{baseUrl.replace(/^https?:\/\//, "")}/go/{detailLink.slug}</i></div>
               <SegPill value={range} options={[{ value: "7d", label: "7 days" }, { value: "30d", label: "30 days" }, { value: "all", label: "All" }]} onChange={setRange} dark={dark} t={t} />
-              <button type="button" className="nb sm" onClick={closeDetail}>Close</button>
+              <button type="button" className="nb sm sec" onClick={closeDetail}>Close</button>
             </div>
             <div className="tl-dbody">
               <LinkAnalyticsDetail link={detailLink} analytics={analytics} analyticsLoading={analyticsLoading} range={range} setRange={setRange} dark={dark} t={t} />
@@ -1776,9 +1776,17 @@ const TL_CSS = `
 .tl-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .tl-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.tl-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.tl-card>header .tl-cnt{margin:0}
 .tl-form{padding:14px 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}.tl-form label{display:flex;flex-direction:column;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}.tl-form input{height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--in);color:var(--ink);font:inherit;font-size:14px;outline:none;width:100%}.tl-form input:focus{border-color:var(--ac)}.tl-ff{grid-column:1 / -1;display:flex;justify-content:flex-end}
-.tl-list{display:flex;flex-direction:column}.tl-empty{padding:28px 16px;text-align:center;font-size:13px;color:var(--mut)}
-.tl-lh{display:grid;grid-template-columns:1fr 90px 90px 90px 70px 230px;gap:12px;padding:0 16px;height:34px;align-items:center;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);background:var(--soft);border-bottom:1px solid var(--line)}
-.tl-r{display:grid;grid-template-columns:1fr 90px 90px 90px 70px 230px;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--rail);font-size:13px}.tl-r:first-of-type{border-top:0}.tl-r.off .tl-tt{opacity:.6}
+.tl-list{display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--soft)}.tl-empty{padding:28px 16px;text-align:center;font-size:13px;color:var(--mut)}
+/* 16px of padding against the row's 15px plus its 1px border, so the header
+   labels still sit over the columns they name. */
+.tl-lh{display:grid;grid-template-columns:1fr 90px 90px 90px 70px 230px;gap:12px;padding:0 16px;height:30px;align-items:center;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}
+/* A row per link, drawn as its own card. A hairline between six columns of
+   numbers left the eye with nothing to track along — which row a figure
+   belonged to was a guess by the third column. */
+.tl-r{display:grid;grid-template-columns:1fr 90px 90px 90px 70px 230px;align-items:center;gap:12px;padding:11px 15px;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:12px}
+/* Archived keeps the card — a row that dissolved into the ground read as a
+   rendering fault rather than a state. The dashed edge is the state. */
+.tl-r.off{border-style:dashed}.tl-r.off .tl-tt{opacity:.6}
 .tl-tt{display:flex;flex-direction:column;min-width:0;gap:2px}.tl-tt b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-slug{font:inherit;font-size:11.5px;color:var(--mut);background:none;border:0;padding:0;text-align:left;cursor:copy;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-slug:hover{color:var(--ac)}
 .tl-r b.r{font-weight:700}.tl-mid{font-size:12px;color:var(--mut);white-space:nowrap}.tl-acts{display:flex;gap:6px;justify-content:flex-end}
 .tl-pg{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}.tl-pg .tl-cnt{margin:0}.tl-pgn{display:inline-flex;gap:6px}.tl-ib{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:14px;cursor:pointer;padding:0}.tl-ib:disabled{opacity:.35;cursor:not-allowed}
@@ -1789,7 +1797,7 @@ const TL_CSS = `
 @media (max-width:900px){
   .tl-stats{grid-template-columns:1fr 1fr}.tl-stt:nth-child(3){border-left:0}.tl-stt:nth-child(n+3){border-top:1px solid var(--line)}.tl-stt b{font-size:17px}
   .tl-srch{width:100%;min-width:0}.tl-bar .tl-cnt{display:none}.tl-bar .tl-form{grid-template-columns:1fr}
-  .tl-lh{display:none}.tl-r{grid-template-columns:1fr 1fr 1fr;grid-template-areas:"tt tt tt" "c s o" "acts acts acts";gap:6px 10px;padding:12px 14px}.tl-r .tl-tt{grid-area:tt}.tl-r b.r{text-align:left;font-size:14px}.tl-r b.r::after{display:block;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);font-family:Outfit,system-ui,sans-serif}.tl-r b.r:nth-of-type(1)::after{content:"clicks"}.tl-r b.r:nth-of-type(2)::after{content:"sign-ups"}.tl-r b.r:nth-of-type(3)::after{content:"orders"}.tl-r .tl-mid{display:none}.tl-r .tl-acts{grid-area:acts;justify-content:stretch}.tl-r .tl-acts   .tl-dw{width:100%;top:6vh;border-left:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0}
+  .tl-lh{display:none}.tl-r{grid-template-columns:1fr 1fr 1fr;grid-template-areas:"tt tt tt" "c s o" "acts acts acts";gap:6px 10px;padding:12px 14px}.tl-r .tl-tt{grid-area:tt}.tl-r b.r{text-align:left;font-size:14px}.tl-r b.r::after{display:block;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);font-family:Outfit,system-ui,sans-serif}.tl-r b.r:nth-of-type(1)::after{content:"clicks"}.tl-r b.r:nth-of-type(2)::after{content:"sign-ups"}.tl-r b.r:nth-of-type(3)::after{content:"orders"}.tl-r .tl-mid{display:none}.tl-r .tl-acts{grid-area:acts;justify-content:stretch}.tl-dw{width:100%;top:6vh;border-left:0;border-top:1px solid var(--line);border-radius:16px 16px 0 0}
 }
 `;
 /* ═══════════════════════════════════════════ */
@@ -1988,7 +1996,7 @@ const IS_CSS = `
 .is-dw{font-size:11.5px;color:var(--dim);white-space:nowrap}.is-dt{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--mut)}.is-dtt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mut)}.is-ds{font-size:11.5px;text-align:right;font-weight:600;color:var(--ok)}.is-ds.ignored{color:var(--dim)}
 @media (max-width:900px){
   .is-stats{grid-template-columns:1fr 1fr}.is-stt:nth-child(3){border-left:0}.is-stt:nth-child(n+3){border-top:1px solid var(--line)}.is-stt b{font-size:17px}
-  .is-ir{grid-template-columns:4px 1fr auto;grid-template-areas:"bar it ty" "bar when when" "bar acts acts";gap:6px 10px}.is-bar{grid-area:bar}.is-it{grid-area:it}.is-it i{white-space:normal}.is-ty{grid-area:ty;align-self:start}.is-when{grid-area:when}.is-acts{grid-area:acts;justify-content:stretch}.is-acts   .is-cols{grid-template-columns:1fr}
+  .is-ir{grid-template-columns:4px 1fr auto;grid-template-areas:"bar it ty" "bar when when" "bar acts acts";gap:6px 10px}.is-bar{grid-area:bar}.is-it{grid-area:it}.is-it i{white-space:normal}.is-ty{grid-area:ty;align-self:start}.is-when{grid-area:when}.is-acts{grid-area:acts;justify-content:stretch}.is-cols{grid-template-columns:1fr}
   .is-ck{grid-template-columns:8px 1fr auto;grid-template-areas:"d n s" ". w w"}.is-ck .is-dot{grid-area:d}.is-ckn{grid-area:n}.is-ckw{grid-area:w;white-space:normal}.is-cks{grid-area:s}
   .is-dr{grid-template-columns:64px 1fr 60px;grid-template-areas:"w t s" "w tt tt"}.is-dw{grid-area:w}.is-dt{grid-area:t}.is-dtt{grid-area:tt;white-space:normal}.is-ds{grid-area:s}
 }
@@ -2135,9 +2143,9 @@ const CL_CSS = `
 .cl-mid{font-size:12px;color:var(--mut);white-space:nowrap;margin-top:3px}.cl-acts{display:flex;gap:6px;justify-content:flex-end}
 .cl-pg{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--line);background:var(--soft)}.cl-pgn{display:inline-flex;gap:6px}.cl-ib{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--mut);display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:14px;cursor:pointer;padding:0}.cl-ib:disabled{opacity:.35;cursor:not-allowed}
 @media (max-width:900px){
-  .cl-hb{width:100%;flex-direction:column}.cl-hb   .cl-stats{grid-template-columns:1fr 1fr}.cl-stt:nth-child(3){border-left:0}.cl-stt:nth-child(n+3){border-top:1px solid var(--line)}.cl-stt b{font-size:17px}
+  .cl-hb{width:100%;flex-direction:column}.cl-stats{grid-template-columns:1fr 1fr}.cl-stt:nth-child(3){border-left:0}.cl-stt:nth-child(n+3){border-top:1px solid var(--line)}.cl-stt b{font-size:17px}
   .cl-srch{width:100%;min-width:0}.cl-bar .cl-tg{flex:1;text-align:center;padding:8px 6px}.cl-two{grid-template-columns:1fr}
-  .cl-r{grid-template-columns:1fr auto;grid-template-areas:"ty d" "tt tt" "acts acts";gap:6px 10px;padding:12px 14px}.cl-r .cl-ty{grid-area:ty}.cl-r .cl-mid{grid-area:d}.cl-r .cl-tt{grid-area:tt}.cl-r .cl-acts{grid-area:acts;justify-content:stretch}.cl-r .cl-acts }
+  .cl-r{grid-template-columns:1fr auto;grid-template-areas:"ty d" "tt tt" "acts acts";gap:6px 10px;padding:12px 14px}.cl-r .cl-ty{grid-area:ty}.cl-r .cl-mid{grid-area:d}.cl-r .cl-tt{grid-area:tt}.cl-r .cl-acts{grid-area:acts;justify-content:stretch}}
 `;
 /* ═══════════════════════════════════════════ */
 /* ═══ CREATE ORDER                        ═══ */

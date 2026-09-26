@@ -330,6 +330,6 @@ const BL_CSS = `
   .bl-r{grid-template-columns:44px 1fr;grid-template-areas:"th tt" "th meta" "acts acts";gap:6px 10px;padding:12px 14px}
   .bl-thumb{grid-area:th;align-self:start}.bl-tt{grid-area:tt}.bl-tt b{white-space:normal}.bl-tt i{white-space:normal}
   .bl-mid{grid-area:meta}.bl-st{grid-area:meta;justify-self:end}
-  .bl-a{grid-area:acts;justify-content:stretch;margin-top:4px}.bl-a   .bl-pg{flex-wrap:wrap}
+  .bl-a{grid-area:acts;justify-content:stretch;margin-top:4px}.bl-pg{flex-wrap:wrap}
 }
 `;
