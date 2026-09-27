@@ -153,6 +153,10 @@ export async function GET(req) {
         price: Math.round(priceOf(r.price, r.costPer1k)),
         min: r.min, max: r.max, unlimited: r.unlimited,
         refill: r.refill, refillLabel: r.refillLabel, drip: r.drip, dripfeed: r.dripfeed, apiType: r.apiType,
+        // Forwarded explicitly. This response whitelists its fields, so the
+        // "Auto" chip and the Auto filter both read undefined without these —
+        // which is exactly what happened: both shipped and neither worked.
+        auto: r.auto, autoTargetLabel: r.autoTargetLabel,
         up: v?.up || 0, down: v?.down || 0,
         ...(myVote.has(r.serviceId) ? { mine: myVote.get(r.serviceId) } : {}),
         ...(canVote.has(r.serviceId) ? { ordered: true } : {}),

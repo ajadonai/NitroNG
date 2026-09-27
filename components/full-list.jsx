@@ -371,6 +371,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
   const [price, setPrice] = useState("any");
   const [mineOnly, setMineOnly] = useState("any");
   const [likedOnly, setLikedOnly] = useState(false);
+  const [autoOnly, setAutoOnly] = useState(false);
   const [shown, setShown] = useState(PAGE);
   // How far each overview section has been opened, keyed by type.
   const [openCounts, setOpenCounts] = useState({});
@@ -391,7 +392,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
     return () => { cancelled = true; };
   }, [platform]);
 
-  useEffect(() => { setShown(PAGE); setOpenCounts({}); }, [type, sort, refillOnly, qualityOnly, location, price, mineOnly, likedOnly, search]);
+  useEffect(() => { setShown(PAGE); setOpenCounts({}); }, [type, sort, refillOnly, qualityOnly, location, price, mineOnly, likedOnly, autoOnly, search]);
 
   const q = search.trim().toLowerCase();
   const all = data?.services || [];
@@ -405,7 +406,9 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
   // Most platforms carry graded services; a few carry none. Offering the
   // control there would be a filter that can only empty the list.
   const hasQuality = useMemo(() => all.some(r => isGraded(r.attrs)), [all]);
+  const hasAuto = useMemo(() => all.some(r => r.auto), [all]);
   const qualityOn = qualityOnly && hasQuality;
+  const autoOn = autoOnly && hasAuto;
   // Origins present on this platform, commonest first, counted off the same
   // text the filter matches on so the number on the option is the number of
   // rows it will leave.
@@ -465,13 +468,18 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
     if (refillOnly) out.push(["refill", r => r.refill]);
     if (qualityOn) out.push(["quality", r => isGraded(r.attrs)]);
     if (likedOn) out.push(["liked", r => approvalOf(r) >= WELL_LIKED]);
+    if (autoOn) out.push(["auto", r => r.auto]);
     if (activeLocation !== "any") out.push(["location", r => matchesLocation(hay(r), activeLocation)]);
     if (band) out.push(["price", r => r.price >= band.lo && r.price < band.hi]);
     if (activeMine === "saved") out.push(["mine", r => savedSet.has(r.id)]);
     else if (activeMine === "ordered") out.push(["mine", r => history[r.id]?.times > 0]);
-    if (q) out.push(["search", r => String(r.id).includes(q) || r.label.toLowerCase().includes(q) || (r.attrs || []).join(" ").toLowerCase().includes(q)]);
+    // "auto" matches an auto service whether or not its label says so. Some
+    // carry the word in their base name and some had it inside a bracket tag
+    // the public label strips, so searching the label alone found a subset and
+    // read as if the rest did not exist.
+    if (q) out.push(["search", r => String(r.id).includes(q) || r.label.toLowerCase().includes(q) || (r.attrs || []).join(" ").toLowerCase().includes(q) || (r.auto && "auto".includes(q))]);
     return out;
-  }, [refillOnly, qualityOn, likedOn, activeLocation, band, activeMine, savedSet, history, q]);
+  }, [refillOnly, qualityOn, likedOn, autoOn, activeLocation, band, activeMine, savedSet, history, q]);
 
   const beforeType = useMemo(
     () => all.filter(r => NARROW.every(([, f]) => f(r))),
@@ -730,6 +738,22 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
                 <span className="truncate">{tr("High quality")}</span>
               </button>
             )}
+            {/* Auto services subscribe to an account and deliver to its future
+                posts — a different product, not a variation. The chip on the row
+                says which ones, but 116 of them across four platforms is not
+                something anybody finds by scrolling, and the word "Auto" is
+                missing from half their labels because it sat inside a bracket
+                tag the public label strips. Amber, the colour the row chip uses,
+                so the control and the badge it keeps read as one fact. */}
+            {hasAuto && (
+              <button onClick={() => setAutoOnly(v => !v)} aria-pressed={autoOn}
+                className="inline-flex items-center justify-center gap-1 text-[11px] py-[4px] px-2 md:px-2.5 rounded-[8px] cursor-pointer border border-solid font-[inherit] transition-colors duration-150 whitespace-nowrap min-w-0"
+                style={{ color: autoOn ? (dark ? "#fdba74" : "#9a3412") : t.textMuted, fontWeight: autoOn ? 700 : 500, borderColor: autoOn ? (dark ? "rgba(253,186,116,.45)" : "rgba(154,52,18,.4)") : t.cardBorder, background: autoOn ? (dark ? "rgba(253,186,116,.15)" : "#fdeee3") : "transparent" }}>
+                {/* A repeat arrow: it keeps delivering to whatever comes next. */}
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ opacity: autoOn ? 1 : .35 }} aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+                <span className="truncate">{tr("Auto")}</span>
+              </button>
+            )}
             {/* Rated well by the people who bought it. The only endorsement
                 this list carries, so it gets a control — but only once there is
                 one to act on. */}
@@ -797,6 +821,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
             <div className="text-[13px] mb-3" style={{ color: t.textMuted }}>{tr("Try a shorter word, or a service ID.")}</div>
             <div className="flex items-center justify-center gap-2 flex-wrap">
               {refillOnly && <button onClick={() => setRefillOnly(false)} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Show all, refill or not")}</button>}
+              {autoOn && <button onClick={() => setAutoOnly(false)} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Show all, auto or not")}</button>}
               {qualityOn && <button onClick={() => setQualityOnly(false)} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Any quality")}</button>}
               {band && <button onClick={() => setPrice("any")} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Any price")}</button>}
               {likedOn && <button onClick={() => setLikedOnly(false)} className="text-[12.5px] font-semibold py-1.5 px-3 rounded-full border border-solid cursor-pointer font-[inherit]" style={{ borderColor: t.cardBorder, color: t.text, background: "transparent" }}>{tr("Any rating")}</button>}

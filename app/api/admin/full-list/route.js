@@ -79,7 +79,7 @@ export async function GET(req) {
         id: r.id, label: r.label, platform: r.platform, type: r.type,
         price: r.price, min: r.min, max: r.max,
         refill: r.refill, refillLabel: r.refillLabel,
-        drip: r.drip, apiType: r.apiType, attrs: r.attrs,
+        drip: r.drip, apiType: r.apiType, attrs: r.attrs, auto: r.auto,
       })),
     });
   } catch (e) {

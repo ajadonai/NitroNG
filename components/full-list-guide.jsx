@@ -163,6 +163,23 @@ export function FullListGuide({ open, onClose, dark, t }) {
           ))}
         </div>
 
+        {/* Not a seventh pin. The six above decode parts of a row; this is a
+            different kind of service that some rows are, and the sample row has
+            no room for another badge anyway. It sits last because most people
+            will never order one — but the ones who do were ordering them by
+            accident, which is what this paragraph exists to stop. */}
+        <div className="mx-5 mb-3 p-3 rounded-xl" style={{ background: t.accentLight }}>
+          <div className="flex items-center gap-1.5 mb-1">
+            <span style={{ ...badge(dark ? "rgba(253,186,116,.15)" : "#fdeee3", dark ? "#fdba74" : "#9a3412") }}>{tr("Auto")}</span>
+            <b className="text-[12.5px] font-semibold" style={{ color: t.text }}>{tr("Auto services")}</b>
+          </div>
+          <span className="text-[12px] leading-[1.55] block" style={{ color: t.textMuted }}>
+            <span className="block">{tr("Delivers to every post you make from now on, not to one post.")}</span>
+            <span className="block mt-[3px]">{tr("Give it your profile or channel link. Quantity is what each new post gets.")}</span>
+            <span className="block mt-[3px]">{tr("Filter the list by Auto to see them.")}</span>
+          </span>
+        </div>
+
         <div className="p-5 pt-3" style={{ borderTop: `1px solid ${rail}` }}>
           <button
             onClick={onClose}
