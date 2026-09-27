@@ -167,7 +167,14 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
 
   const isMultiPostSvc = /last\s+\d+\s*(tweet|post|video|reel|photo)/i.test(svcName);
   const isChannelSvc = /(channel|group)\s*(member|join|subscriber)/i.test(svcName);
-  const isAutoSvc = /\bauto\b/i.test(svcName);
+  // apiType first, name only as a fallback — the same order this file already
+  // uses for every other type above, and for the same reason. Reading the name
+  // alone is what let the auto services through: the public label deliberately
+  // strips the provider's "[Auto Likes]" tag, so `svcName` for those rows is
+  // "Instagram Nigerian Likes" and /\bauto\b/ never matched. The form then
+  // classified a subscription as a post service and asked for a post link,
+  // which is the one input it cannot work with.
+  const isAutoSvc = apiType === "subscriptions" || /\bauto\b/i.test(svcName);
   // Twitch/Kick live viewers watch the CHANNEL page — the profile link is the
   // right link, matching the server rule in order-create-input.server.js.
   const isLiveChannelSvc = /\blive\b/i.test(svcName) && (platform === "twitch" || platform === "kick");
@@ -175,7 +182,12 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
   const isPostSvc = /view|like|retweet|share|reposts|comment|reaction|vote|save|bookmark|impression|reach|plays|watch.?time/i.test(svcName) && !isProfileSvc && !isChannelSvc;
 
   const linkPlaceholder = getLinkPlaceholder(platform, svcName);
-  const linkLabel = platform === "webtraffic" ? "Website URL" : isPoll ? "Post / Poll URL" : "Link";
+  const linkLabel = platform === "webtraffic" ? "Website URL"
+    : isPoll ? "Post / Poll URL"
+    // An auto service is pointed at an account, not a post, so the field says
+    // so rather than leaving "Link" to be read as the usual post link.
+    : isAutoSvc ? (platform === "telegram" || platform === "youtube" ? "Channel link" : "Profile link")
+    : "Link";
 
   // Saved handles. The list is the customer's last distinct links on this
   // platform, read from their own order history — nothing new is collected.
@@ -382,6 +394,15 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
             <input type="url" inputMode="url" aria-label={linkLabel} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="m w-full py-2 px-3 text-[15px] outline-none box-border font-[inherit] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
           </div>
           {linkError && <div className="text-[11px] mt-[3px]" style={{ color: dark ? "#f87171" : "#dc2626" }}>{linkError}</div>}
+          {/* Said once, where the wrong link would otherwise be typed. Two
+              customers ordered these against a reel and the dispatcher read
+              "reel" out of the URL as the account name, so the order could
+              never have delivered. */}
+          {isAutoSvc && !linkError && (
+            <div className="text-[11px] mt-[5px] leading-[1.5]" style={{ color: t.textMuted }}>
+              {tr("This is an auto service: it delivers to the posts you make from now on, so give it your account link, not a link to one post.")}
+            </div>
+          )}
           {recentLinks.length > 0 && !orderLoading && (() => {
             // Pinned first, so the handle that auto-fills the box is always on
             // page one and never hidden behind a Next the customer has to find.

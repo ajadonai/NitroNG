@@ -19,6 +19,7 @@ import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer
 import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 import { calculateCreateOrderPricing, parseCreateOrderInput, validateCreateOrderOfferInput } from '@/lib/order-create-input.server';
 import { lockOrderSettlementAccount } from '@/lib/account-deletion';
+import { autoTargetFrom, autoTargetError, isAutoService } from '@/lib/auto-services';
 
 export const maxDuration = 60;
 
@@ -721,8 +722,8 @@ export async function patchOrderForSession(session, body, req) {
 
         const reorderApiType = (order.service.apiType || '').toLowerCase();
         if (reorderApiType === 'subscriptions') {
-          const match = order.link.match(/instagram\.com\/([^/?#]+)/);
-          if (match) extra.username = match[1];
+          const handle = autoTargetFrom(order.link, order.service?.platform);
+          if (handle) extra.username = handle;
         }
 
         if (reorderDripSchedule) {
@@ -990,6 +991,16 @@ export async function createOrderForSession(session, body, req, { source = 'web'
       if (!service || service.blacklisted || (!service.enabled && !inCatalogue)) {
         return Response.json({ error: 'Service not available' }, { status: 400 });
       }
+    }
+
+    // An auto service subscribes to an account and delivers to its future
+    // posts, so it needs the account — not one post. Every auto order ever
+    // placed with a post link died: the dispatcher read a username out of the
+    // URL and sent "reel". Refusing here is the point at which that stops
+    // costing somebody money, rather than at the provider after the wallet has
+    // already been debited.
+    if (isAutoService(service) && !autoTargetFrom(trimmedLink, service.platform)) {
+      return Response.json({ error: autoTargetError(service.platform) }, { status: 400 });
     }
 
     const pricing = calculateCreateOrderPricing({ tier, service, quantity, usdRate });
@@ -1260,8 +1271,8 @@ export async function createOrderForSession(session, body, req, { source = 'web'
       }
 
       if (apiType === 'subscriptions') {
-        const match = trimmedLink.match(/instagram\.com\/([^/?#]+)/);
-        if (match) extra.username = match[1];
+        const handle = autoTargetFrom(trimmedLink, service?.platform);
+        if (handle) extra.username = handle;
       }
       if (trafficConfig) {
         if (trafficConfig.country) extra.country = trafficConfig.country;

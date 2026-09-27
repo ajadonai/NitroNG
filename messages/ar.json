@@ -2428,5 +2428,7 @@
   "Read the API docs": "اقرأ توثيق واجهة API",
   "Nitro ID": "معرّف نيترو",
   "Retired from catalogue": "أُزيلت من الكتالوج",
-  "Retired": "أُزيلت"
+  "Retired": "أُزيلت",
+  "Auto": "تلقائي",
+  "This is an auto service: it delivers to the posts you make from now on, so give it your account link, not a link to one post.": "هذه خدمة تلقائية: تُسلّم إلى المنشورات التي تنشرها من الآن، لذا ضع رابط حسابك لا رابط منشور واحد."
 }

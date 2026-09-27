@@ -157,6 +157,11 @@ const CHIP = {
   quality:  { light: { fg: "#6d28d9", bg: "#f3ecfa" },              dark: { fg: "#a78bfa", bg: "rgba(167,139,250,.14)" } },
   location: { light: { fg: "#1d5fa5", bg: "#eaf1fa" },              dark: { fg: "#7aa2f7", bg: "rgba(122,162,247,.14)" } },
   neutral:  { light: { fg: "#6e6a65", bg: "rgba(0,0,0,.055)" },     dark: { fg: "#a09890", bg: "rgba(255,255,255,.08)" } },
+  // Auto services are a different product, not a variation of one: they
+  // subscribe to an account and deliver to its future posts. Its own colour
+  // because the risk here is somebody reading past it, which is exactly what
+  // happened while the badge did not exist.
+  auto:     { light: { fg: "#9a3412", bg: "#fdeee3" },              dark: { fg: "#fdba74", bg: "rgba(253,186,116,.15)" } },
 };
 
 function Chip({ kind = "neutral", dark, mono, children }) {
@@ -292,6 +297,10 @@ function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, time
         <div className="text-[13px] md:text-sm font-semibold truncate" style={{ color: t.text }}>{row.label}</div>
         <div className="m text-[10.5px] mt-[3px] leading-none" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>#{row.id}</div>
         <div className="flex items-center gap-1 flex-wrap mt-[5px]">
+          {/* First, before refill and origin. The provider's own "[Auto Likes]"
+              tag is stripped from the label by design — it is a provider tell —
+              so without this the row read exactly like a one-off. */}
+          {row.auto && <Chip kind="auto" dark={dark}>{tr("Auto")}</Chip>}
           <Chip kind={row.refill ? "refill" : "neutral"} dark={dark}><AttrText attr={refillText} /></Chip>
           {rest.map(a => <Chip key={a} kind={chipKind(a)} dark={dark}><AttrText attr={a} /></Chip>)}
           {/* Bought before, which on a list with no Nitro guarantee is the only
