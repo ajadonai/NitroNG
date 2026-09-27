@@ -40,6 +40,42 @@ describe('sentryBeforeSend', () => {
     expect(sentryBeforeSend(event, hint)).toBeNull();
   });
 
+  // Issue 7705466381, 22 Sep on /. A second wallet-style extension rejects a
+  // bare { code, message } object with no stack at all, so there is nothing in
+  // the exception or the hint to match against — the message text itself never
+  // reaches Sentry. The only surviving evidence is the console trail its own
+  // content script leaves on the page, none of which is ours (checked: zero
+  // matches anywhere in Nitro's source for any of these four lines).
+  it('drops a second extension that rejects with no message and no stack, by its console trail', () => {
+    const event = {
+      exception: { values: [{ type: 'UnhandledRejection', value: 'Object captured as promise rejection with keys: code, message' }] },
+      breadcrumbs: [
+        { category: 'console', level: 'info', message: 'test true' },
+        { category: 'console', level: 'info', message: 'New version detected. Clearing LocalStorage. Old version: None, New version: 1.0.4' },
+        { category: 'console', level: 'info', message: 'Resetting login state' },
+        { category: 'console', level: 'info', message: 'Resetting claim state' },
+      ],
+    };
+    const hint = { originalException: { code: -1, message: undefined } };
+    expect(sentryBeforeSend(event, hint)).toBeNull();
+  });
+
+  it('reads breadcrumbs in either shape Sentry has shipped: a bare array or { values }', () => {
+    const event = {
+      exception: { values: [{ type: 'UnhandledRejection', value: 'Object captured as promise rejection with keys: code, message' }] },
+      breadcrumbs: { values: [{ category: 'console', message: 'Resetting claim state' }] },
+    };
+    expect(sentryBeforeSend(event, {})).toBeNull();
+  });
+
+  it('keeps a real error that merely has breadcrumbs, unrelated ones', () => {
+    const event = {
+      exception: { values: [{ type: 'TypeError', value: 'Cannot read properties of undefined' }] },
+      breadcrumbs: [{ category: 'navigation', message: 'User clicked checkout' }],
+    };
+    expect(sentryBeforeSend(event, {})).toBe(event);
+  });
+
   it('drops anything whose stack is rooted in an extension, whichever browser', () => {
     for (const filename of [
       'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/scripts/inpage.js',
