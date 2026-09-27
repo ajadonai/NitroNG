@@ -21,6 +21,7 @@ import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConfli
 import { lockOrderSettlementAccount } from '@/lib/account-deletion';
 import { effectiveOrderMinimum } from '@/lib/order-minimums';
 import { typeOf } from '@/lib/full-catalogue';
+import { autoTargetFrom, autoTargetError, isAutoService } from '@/lib/auto-services';
 
 async function nextOrderIds(tx, count) {
   const rows = await tx.order.findMany({
@@ -98,8 +99,8 @@ function providerExtras(order, quantity) {
   }
 
   if (apiType === 'subscriptions') {
-    const match = order.link?.match(/instagram\.com\/([^/?#]+)/);
-    if (match) extra.username = match[1];
+    const handle = autoTargetFrom(order.link, order.service?.platform);
+    if (handle) extra.username = handle;
     extra.min = quantity;
     extra.max = quantity;
   }
@@ -907,6 +908,16 @@ export async function POST(req) {
       }
       if (!service || !service.enabled) {
         return Response.json({ error: `Row ${i + 1}: backing service not available` }, { status: 400 });
+      }
+
+      // Unreachable today — the `enabled` check above rejects every full-list
+      // row before this, and no curated tier is backed by a Subscriptions
+      // service. Here so that fixing that check (it is the same
+      // "`enabled` means curated, not sellable" bug already fixed on the reorder
+      // path) cannot quietly hand bulk the ability to create auto orders
+      // pointed at a post link.
+      if (isAutoService(service) && !autoTargetFrom(row.link, service.platform)) {
+        return Response.json({ error: `Row ${i + 1}: ${autoTargetError(service.platform)}` }, { status: 400 });
       }
 
       // Curated rows carry their Menu Builder type. Full-list rows use the

@@ -2428,5 +2428,7 @@
   "Read the API docs": "Lire la documentation de l'API",
   "Nitro ID": "ID Nitro",
   "Retired from catalogue": "Retiré du catalogue",
-  "Retired": "Retiré"
+  "Retired": "Retiré",
+  "Auto": "Auto",
+  "This is an auto service: it delivers to the posts you make from now on, so give it your account link, not a link to one post.": "Ceci est un service automatique : il livre sur les publications que vous ferez à partir de maintenant, donnez donc le lien de votre compte et non le lien d'une seule publication."
 }

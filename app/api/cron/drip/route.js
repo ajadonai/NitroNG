@@ -8,6 +8,7 @@ import { isInWindow, snapToWindow, sliceCommentsForBatch } from '@/lib/drip-feed
 import { computeDripRollup, normalizeProviderStatus, applyDripRollup } from '@/lib/drip-completion';
 import { findSameLinkDispatchBlocker, isActiveOrderConflict, wouldCreateCycle } from '@/lib/order-queue';
 import { getBearerToken } from '@/lib/bearer-token';
+import { autoTargetFrom } from '@/lib/auto-services';
 
 const POSTGRES_INT_MAX = 2_147_483_647;
 
@@ -341,8 +342,8 @@ export async function GET(req) {
         }
 
         if (apiType === 'subscriptions') {
-          const match = order.link.match(/instagram\.com\/([^/?#]+)/);
-          if (match) extra.username = match[1];
+          const handle = autoTargetFrom(order.link, service?.platform);
+          if (handle) extra.username = handle;
           extra.min = dispatch.quantity;
           extra.max = dispatch.quantity;
         }

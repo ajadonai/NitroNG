@@ -11,6 +11,7 @@ import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/
 import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer-display';
 import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 import { lockOrderSettlementAccount, ORDER_SETTLEMENT_ACCOUNT_STATUSES } from '@/lib/account-deletion';
+import { autoTargetFrom } from '@/lib/auto-services';
 
 
 async function renewAdminCancellationLease(orderId, userId) {
@@ -944,8 +945,8 @@ export async function POST(req) {
             }
           }
           if (apiType === 'subscriptions') {
-            const match = fullOrder.link.match(/instagram\.com\/([^/?#]+)/);
-            if (match) extra.username = match[1];
+            const handle = autoTargetFrom(fullOrder.link, service?.platform);
+            if (handle) extra.username = handle;
             extra.min = candidate.quantity;
             extra.max = candidate.quantity;
           }
@@ -1292,8 +1293,8 @@ export async function POST(req) {
         else extra.comments = fullOrder.comments;
       }
       if (apiType === 'subscriptions') {
-        const match = link.match(/instagram\.com\/([^/?#]+)/);
-        if (match) extra.username = match[1];
+        const handle = autoTargetFrom(link, service?.platform);
+        if (handle) extra.username = handle;
       }
       const swapNote = serviceSwapped ? ` (service ${fullOrder.service.apiId}→${service.apiId})` : '';
 

@@ -643,6 +643,25 @@ describe('the raw catalogue query stays honest', () => {
     );
   });
 
+  it('flags an auto service on the row, since its label cannot say so', () => {
+    // The public label strips the provider's "[Auto Likes]" tag by design, so
+    // the row itself has to carry the fact. This is the contract the "Auto"
+    // badge and the order form's Profile-link label both read.
+    const { rows } = one([
+      { ...svcBase(), apiId: 1, name: 'Instagram Auto Likes [HQ Profile] [Refill: 30 Days]', apiType: 'Subscriptions' },
+    ], { usdRate });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].auto).toBe(true);
+    expect(rows[0].autoTargetLabel).toBe('Profile link');
+    expect(rows[0].label).not.toMatch(/\[/);
+  });
+
+  it('leaves an ordinary service unflagged', () => {
+    const { rows } = one([{ ...svcBase(), apiId: 2 }], { usdRate });
+    expect(rows[0].auto).toBe(false);
+    expect(rows[0].autoTargetLabel).toBeNull();
+  });
+
   it('casts the BigInt columns, which cannot be serialised raw', () => {
     expect(src()).toMatch(/s\."sellPer1k"::text AS "sellPer1k"/);
     expect(src()).toMatch(/s\."costPer1k"::text AS "costPer1k"/);
