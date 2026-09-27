@@ -52,6 +52,21 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   monthly cost against the ~₦45k face estimate. Mock `7adc3631`, backend brief
   `5b60a686`.
 
+- **International Nitro adoption is still ~zero, and 42 accounts have no
+  country on record.** Checked 26 Sep 2026 against production: of 9,359 users,
+  4 are confirmed outside Nigeria (3 US, 1 Ghana) — this after currency/language
+  switchers (v2.4.104) and Ghana cedi + mobile money (v2.4.140) both shipped in
+  September. Separately, 42 accounts carry `country: null`, running from 8 Sep
+  to 26 Sep — not a pre-launch legacy batch, still accruing daily. Cause:
+  `app/api/auth/google/callback/route.js` writes `country: null` on purpose,
+  because Google sign-in never collects a phone number and country is inferred
+  from the phone's dial prefix at normal signup. Their emails read Nigerian at
+  a glance but nothing in the DB confirms it, so they cannot honestly be
+  counted either way. Trip: decide whether Google sign-ins should be asked for
+  a country post-signup (a one-field prompt, or infer from IP at first
+  request) — nobody has asked for this since the international build shipped,
+  so it may not be worth doing before something else asks for that data first.
+
 ### Waiting on data or a date
 
 - **Checkout abandonment — instrumented, not yet running.** `gatewayHandoffAt`
