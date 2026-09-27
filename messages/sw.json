@@ -2431,5 +2431,9 @@
   "Retired": "Imeondolewa",
   "Auto": "Otomatiki",
   "This is an auto service: it delivers to the posts you make from now on, so give it your account link, not a link to one post.": "Hii ni huduma ya otomatiki: inawasilisha kwa machapisho utakayoweka kuanzia sasa, kwa hivyo weka kiungo cha akaunti yako, sio kiungo cha chapisho moja.",
-  "Show all, auto or not": "Onyesha zote, otomatiki au sivyo"
+  "Show all, auto or not": "Onyesha zote, otomatiki au sivyo",
+  "Auto services": "Huduma za otomatiki",
+  "Delivers to every post you make from now on, not to one post.": "Inawasilisha kwa kila chapisho utakayoweka kuanzia sasa, sio chapisho moja.",
+  "Give it your profile or channel link. Quantity is what each new post gets.": "Weka kiungo cha wasifu au chaneli yako. Kiasi ni kile kila chapisho jipya linapata.",
+  "Filter the list by Auto to see them.": "Chuja orodha kwa Auto ili kuziona."
 }

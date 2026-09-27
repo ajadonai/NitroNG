@@ -2431,5 +2431,9 @@
   "Retired": "Retired",
   "Auto": "Auto",
   "This is an auto service: it delivers to the posts you make from now on, so give it your account link, not a link to one post.": "This one na auto service: e go deliver to the posts you make from now on, so give am your account link, no be link to one post.",
-  "Show all, auto or not": "Show all, auto or not"
+  "Show all, auto or not": "Show all, auto or not",
+  "Auto services": "Auto services",
+  "Delivers to every post you make from now on, not to one post.": "E dey deliver to every post you make from now on, no be one post.",
+  "Give it your profile or channel link. Quantity is what each new post gets.": "Give am your profile or channel link. Quantity na wetin each new post go get.",
+  "Filter the list by Auto to see them.": "Filter the list by Auto to see them."
 }

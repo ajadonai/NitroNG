@@ -621,6 +621,19 @@ describe('the refill badge and the refill filter agree', () => {
   });
 });
 
+describe('the response carries what the list renders', () => {
+  const src = () => fs.readFileSync(path.join(process.cwd(), 'app/api/catalogue/full/route.js'), 'utf8');
+
+  it('forwards the auto flag, which buildAll computes and the client cannot', () => {
+    // This response whitelists its fields. `auto` was computed on the row,
+    // rendered by an "Auto" chip and filtered by an Auto toggle — and left out
+    // of the whitelist, so both shipped reading undefined and neither did
+    // anything. A field the client depends on has to be named here.
+    expect(src()).toMatch(/auto:\s*r\.auto/);
+    expect(src()).toMatch(/autoTargetLabel:\s*r\.autoTargetLabel/);
+  });
+});
+
 describe('the raw catalogue query stays honest', () => {
   const src = () => fs.readFileSync(path.join(process.cwd(), 'app/api/catalogue/full/route.js'), 'utf8');
 

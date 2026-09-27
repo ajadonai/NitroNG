@@ -2431,5 +2431,9 @@
   "Retired": "Retiré",
   "Auto": "Auto",
   "This is an auto service: it delivers to the posts you make from now on, so give it your account link, not a link to one post.": "Ceci est un service automatique : il livre sur les publications que vous ferez à partir de maintenant, donnez donc le lien de votre compte et non le lien d'une seule publication.",
-  "Show all, auto or not": "Tout afficher, auto ou non"
+  "Show all, auto or not": "Tout afficher, auto ou non",
+  "Auto services": "Services automatiques",
+  "Delivers to every post you make from now on, not to one post.": "Livre sur chaque publication que vous ferez désormais, pas sur une seule.",
+  "Give it your profile or channel link. Quantity is what each new post gets.": "Donnez le lien de votre profil ou chaîne. La quantité est ce que reçoit chaque nouvelle publication.",
+  "Filter the list by Auto to see them.": "Filtrez la liste par Auto pour les voir."
 }

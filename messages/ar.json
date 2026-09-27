@@ -2431,5 +2431,9 @@
   "Retired": "أُزيلت",
   "Auto": "تلقائي",
   "This is an auto service: it delivers to the posts you make from now on, so give it your account link, not a link to one post.": "هذه خدمة تلقائية: تُسلّم إلى المنشورات التي تنشرها من الآن، لذا ضع رابط حسابك لا رابط منشور واحد.",
-  "Show all, auto or not": "أظهر الكل، تلقائي أو لا"
+  "Show all, auto or not": "أظهر الكل، تلقائي أو لا",
+  "Auto services": "الخدمات التلقائية",
+  "Delivers to every post you make from now on, not to one post.": "تُسلّم إلى كل منشور تنشره من الآن، لا إلى منشور واحد.",
+  "Give it your profile or channel link. Quantity is what each new post gets.": "ضع رابط ملفك أو قناتك. الكمية هي ما يحصل عليه كل منشور جديد.",
+  "Filter the list by Auto to see them.": "صفِّ القائمة بـ Auto لرؤيتها."
 }
