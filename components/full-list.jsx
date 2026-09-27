@@ -749,8 +749,13 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
               <button onClick={() => setAutoOnly(v => !v)} aria-pressed={autoOn}
                 className="inline-flex items-center justify-center gap-1 text-[11px] py-[4px] px-2 md:px-2.5 rounded-[8px] cursor-pointer border border-solid font-[inherit] transition-colors duration-150 whitespace-nowrap min-w-0"
                 style={{ color: autoOn ? (dark ? "#fdba74" : "#9a3412") : t.textMuted, fontWeight: autoOn ? 700 : 500, borderColor: autoOn ? (dark ? "rgba(253,186,116,.45)" : "rgba(154,52,18,.4)") : t.cardBorder, background: autoOn ? (dark ? "rgba(253,186,116,.15)" : "#fdeee3") : "transparent" }}>
-                {/* A repeat arrow: it keeps delivering to whatever comes next. */}
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ opacity: autoOn ? 1 : .35 }} aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+                {/* An infinity loop, not a repeat arrow. The first draft used the
+                    looping-arrows glyph and it read as the refill control two
+                    pills along — both are cycle arrows, and at 11px that is the
+                    only thing either of them says. This says "keeps going",
+                    which is the actual difference: it delivers to whatever you
+                    post next, indefinitely, rather than putting back what fell. */}
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ opacity: autoOn ? 1 : .35 }} aria-hidden="true"><path d="M6.5 7.5a4.5 4.5 0 100 9c2.5 0 3.5-2 5.5-4.5s3-4.5 5.5-4.5a4.5 4.5 0 110 9c-2.5 0-3.5-2-5.5-4.5S9 7.5 6.5 7.5z"/></svg>
                 <span className="truncate">{tr("Auto")}</span>
               </button>
             )}
