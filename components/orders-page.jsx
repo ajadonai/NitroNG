@@ -372,7 +372,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
           // fullListDisabled already accounts for the service being blacklisted
           // or dropped by its provider — the number itself never changes
           // either way, only whether this tag shows next to it.
-          o.fullList && o.nitroServiceId ? [tr("Nitro ID"), <>{o.fullListDisabled && <span key="ret" className="text-[10px] font-semibold py-[1px] px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>{tr("Retired")}</span>}<CopyId key="nsid" value={o.nitroServiceId} dark={dark} /></>] : null,
+          o.fullList && o.nitroServiceId ? [tr("Service ID"), <>{o.fullListDisabled && <span key="ret" className="text-[10px] font-semibold py-[1px] px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>{tr("Retired")}</span>}<CopyId key="nsid" value={o.nitroServiceId} dark={dark} /></>] : null,
           isCancelled ? ["Quantity", <b key="q" className="m text-[13px] font-semibold text-t-text">{qty.toLocaleString()}</b>]
             : (hasData && !isComplete) ? ["Delivered", <span key="d" className="m text-[13px] text-t-text-muted"><b className="font-semibold text-t-text">{delivered.toLocaleString()}</b> of {qty.toLocaleString()}</span>]
             : ["Quantity", <b key="q" className="m text-[13px] font-semibold text-t-text">{qty.toLocaleString()}</b>],
