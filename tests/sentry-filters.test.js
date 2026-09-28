@@ -60,12 +60,38 @@ describe('sentryBeforeSend', () => {
     expect(sentryBeforeSend(event, hint)).toBeNull();
   });
 
+  // 28 Sep, /dashboard: same issue ID as the test above, but the first fix
+  // missed it — this is the "versions already match" branch of the same
+  // check, which shares none of the four lines the "clear and reset" branch
+  // logs. Only "test false" is common to both reports, which is why that is
+  // now the anchor rather than a detail of one branch.
+  it('drops the other branch of the same version check, reported four days later', () => {
+    const event = {
+      exception: { values: [{ type: 'UnhandledRejection', value: 'Object captured as promise rejection with keys: code, message' }] },
+      breadcrumbs: [
+        { category: 'console', level: 'info', message: 'test false' },
+        { category: 'console', level: 'info', message: 'Version numbers match. No need to clear. Current version: 1.0.4' },
+      ],
+    };
+    expect(sentryBeforeSend(event, {})).toBeNull();
+  });
+
   it('reads breadcrumbs in either shape Sentry has shipped: a bare array or { values }', () => {
     const event = {
       exception: { values: [{ type: 'UnhandledRejection', value: 'Object captured as promise rejection with keys: code, message' }] },
       breadcrumbs: { values: [{ category: 'console', message: 'Resetting claim state' }] },
     };
     expect(sentryBeforeSend(event, {})).toBeNull();
+  });
+
+  it('does not drop a real breadcrumb merely for containing the word test', () => {
+    // `^test (true|false)$` matches the whole breadcrumb, not a substring —
+    // this proves a legitimate log mentioning "test" in passing survives.
+    const event = {
+      exception: { values: [{ type: 'TypeError', value: 'Cannot read properties of undefined' }] },
+      breadcrumbs: [{ category: 'console', message: 'Running test suite: 12 passed, 0 failed' }],
+    };
+    expect(sentryBeforeSend(event, {})).toBe(event);
   });
 
   it('keeps a real error that merely has breadcrumbs, unrelated ones', () => {
