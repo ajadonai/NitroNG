@@ -376,6 +376,65 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **TikTok Pixel + Events API** (3 Oct 2026, `v2.4.102`, commits `e505cc1b`,
+  `562eacdb`, `9b851524`, `e03d1a56`, `549d23e5`, `214ca4ff`). Browser pixel
+  behind the existing consent gate, server events through `lib/tiktok-events.js`,
+  both halves sharing one `event_id` so each conversion is counted once.
+  Deliberately no durable outbox: Meta earned its queue after it was already
+  carrying volume, and TikTok has had no spend. What stands in for it is three
+  attempts with backoff, retrying only what is TikTok's problem — unreachable,
+  timed out, 5xx, 429 — and never a rejected token or malformed parameters,
+  which fail identically however often they are sent.
+
+  **Canonical pixel is `DB08LFRC77UFPOQ9MKMG`.** A second pixel
+  (`DB06VT3C77U2INVDM2MG`) was created first and is abandoned — TikTok has no
+  delete API, so it is renamed "DO NOT USE" and left dormant. Never install it
+  or attach it to a campaign.
+
+  Four mistakes worth not repeating, all of them mine and all of them quiet:
+
+  **`event_source_id` is the pixel code, not the numeric Pixel ID.** The build
+  spec listed both and gave the numeric one to the server. TikTok answers
+  `40001 "No permission to operate event source id"`, which reads like an auth
+  failure and cost a day spent on tokens and advertiser grants. An empty-batch
+  probe settles it in one command, because an unauthorised identifier is
+  rejected before the payload is read and nothing is created: the code returns
+  `40002` (a validation error, so auth and permission passed) while the numeric
+  id returns `40001` — *including the canonical pixel's own number*, which is
+  the control that makes it conclusive.
+
+  **A test that pinned a document instead of behaviour defended the bug.** It
+  asserted the numeric id was correct and the pixel code was "never" sent, and
+  passed throughout while every server event was rejected in production. Worse
+  than having no test.
+
+  **Fire-and-forget needs `waitUntil`.** `lib/meta-capi.js` has had it since it
+  was written; mirroring that module's shape, I missed its most important line.
+  Without it a serverless instance freezes when the handler returns and thaws
+  with a dead socket, surfacing as "TikTok timed out after 10000ms" three
+  attempts deep and blaming TikTok. The giveaway was a three-minute gap between
+  Meta's success and TikTok's timeout on the same order — work that cannot take
+  more than thirty seconds. Awaited call sites were never affected, which made
+  it look intermittent rather than structural.
+
+  **TikTok validates `properties` where Meta does not.** `content_type` must be
+  `product` or `product_group` and `content_id` must be non-empty; our five
+  surfaces all sent Meta's vocabulary. Events are accepted and then flagged as
+  diagnostics, so nothing throws and the only symptom is degraded match
+  quality. `lib/tiktok-properties.js` translates on the way out and is
+  deliberately free of node builtins, because the browser and the server must
+  describe the same event identically or the pair stops deduplicating.
+
+  Also: both initialisers used to fire their own `PageView`, and because
+  `<CookieBanner />` sits above `<CAPIPageView />` the browser got two — Meta's
+  browser page views had been roughly doubled for as long as both existed.
+  Tracker owns `PageView` now.
+
+  Still open: no persisted `ttclid`, so events raised from payment webhooks
+  carry no click id and that is the ceiling on EMQ. Costs a migration
+  (`User.lastTtclid`/`lastTtp`, mirroring `lastFbp`/`lastFbc`) and buys nothing
+  until a campaign is running — revisit if EMQ will not clear 6.
+
 - **A fortnight of order-path and Watchtower work** (18–19 Sep 2026,
   `v2.5.110`–`v2.5.125`). Reported one at a time by Trip; grouped here because
   most of them turned out to be the same few mistakes.
