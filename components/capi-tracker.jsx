@@ -10,6 +10,16 @@ function fire(eventName, customData) {
   if (typeof window !== 'undefined' && window.fbq && hasConsent('advertising')) {
     window.fbq('track', eventName, customData || {}, { eventID: eventId });
   }
+  // TikTok's own convention: .page() on navigation, .track() for anything else —
+  // not .track('PageView', ...) the way Meta's pixel takes it. The third
+  // argument is where event_id goes (Meta takes it as { eventID } in the
+  // fourth); it must be the SAME id the server event carries or TikTok counts
+  // the pair twice instead of deduplicating it. ttq.page() accepts no event_id
+  // at all, which is why no server-side Pageview is sent for TikTok.
+  if (typeof window !== 'undefined' && window.ttq && hasConsent('advertising')) {
+    if (eventName === 'PageView') window.ttq.page();
+    else window.ttq.track(eventName, customData || {}, { event_id: eventId });
+  }
   fetch('/api/capi/track', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

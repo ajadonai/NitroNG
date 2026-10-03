@@ -56,6 +56,29 @@ export function initPixel() {
   window.fbq('track','PageView');
 }
 
+/**
+ * Same shape as initPixel, one line down: guarded against double-load and
+ * against the internal dashboard, called from the same two places consent is
+ * granted. No click-id capture (fbclid → _fbc has one above it) — TikTok's
+ * equivalent (ttclid) has nothing reading it yet, since there is no
+ * server-side Events API call on this site to hand it to. Add that capture
+ * only alongside building that, not ahead of it.
+ */
+export function initTikTokPixel() {
+  if (typeof window === 'undefined' || window.ttq || isInternalDashboardPath(window.location.pathname)) return;
+  !function (w, d, t) {
+    w.TiktokAnalyticsObject = t; var ttq = w[t] = w[t] || []; ttq.methods = ["page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie", "holdConsent", "revokeConsent", "grantConsent"], ttq.setAndDefer = function (t, e) { t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } }; for (var i = 0; i < ttq.methods.length; i++)ttq.setAndDefer(ttq, ttq.methods[i]); ttq.instance = function (t) {
+      for (
+        var e = ttq._i[t] || [], n = 0; n < ttq.methods.length; n++)ttq.setAndDefer(e, ttq.methods[n]); return e
+    }, ttq.load = function (e, n) {
+      var r = "https://analytics.tiktok.com/i18n/pixel/events.js", o = n && n.partner; ttq._i = ttq._i || {}, ttq._i[e] = [], ttq._i[e]._u = r, ttq._t = ttq._t || {}, ttq._t[e] = +new Date, ttq._o = ttq._o || {}, ttq._o[e] = n || {}; n = document.createElement("script")
+      ; n.type = "text/javascript", n.async = !0, n.src = r + "?sdkid=" + e + "&lib=" + t; e = document.getElementsByTagName("script")[0]; e.parentNode.insertBefore(n, e)
+    };
+    ttq.load('DB06VT3C77U2INVDM2MG');
+    ttq.page();
+  }(window, document, 'ttq');
+}
+
 export default function CookieBanner() {
   const tr = useT();
   const pathname = usePathname();
@@ -70,7 +93,7 @@ export default function CookieBanner() {
     if (internalDashboard) return;
     const consent = readConsent();
     if (consent) {
-      if (consent.advertising) initPixel();
+      if (consent.advertising) { initPixel(); initTikTokPixel(); }
       return;
     }
     const timer = setTimeout(() => setShow(true), 2000);
@@ -97,7 +120,7 @@ export default function CookieBanner() {
   const save = useCallback((choice) => {
     const value = { necessary: true, analytics: !!choice.analytics, advertising: !!choice.advertising, at: new Date().toISOString() };
     try { localStorage.setItem(KEY, JSON.stringify(value)); } catch {}
-    if (value.advertising) initPixel();
+    if (value.advertising) { initPixel(); initTikTokPixel(); }
     window.dispatchEvent(new Event('nitro-consent-changed'));
     setSheet(false);
     if (show) setExiting(true);
