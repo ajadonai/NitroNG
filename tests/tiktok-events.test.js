@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import crypto from 'crypto';
 import { readFileSync } from 'node:fs';
 
+const vercel = vi.hoisted(() => ({ waitUntil: vi.fn() }));
+vi.mock('@vercel/functions', () => ({ waitUntil: (...a) => vercel.waitUntil(...a) }));
 vi.mock('@/lib/monitoring', () => ({ reportOperationalFailure: vi.fn(() => true) }));
 vi.mock('@/lib/logger', () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } }));
 
@@ -17,6 +19,7 @@ const {
   isPermissionTikTokError,
   isTransientTikTokError,
   warnIfTestCodeInProduction,
+  trackTikTokEvent,
   TIKTOK_PIXEL_CODE,
 } = await import('@/lib/tiktok-events');
 const { reportOperationalFailure } = await import('@/lib/monitoring');
@@ -439,5 +442,26 @@ describe('trackTikTokDeposit', () => {
     const a = buildTikTokEvent('AddPaymentInfo', { eventId: 'apinfo_TXN99' });
     const b = buildTikTokEvent('AddPaymentInfo', { eventId: 'apinfo_TXN99' });
     expect(a.event_id).toBe(b.event_id);
+  });
+});
+
+/**
+ * Issue 7770990361: a fire-and-forget send with no waitUntil is frozen the
+ * moment the handler returns and thawed on a later invocation, by which point
+ * the socket is dead and the abort timer fires at once. It reports as "TikTok
+ * timed out after 10000ms" and blames TikTok. The three-minute gap between
+ * Meta's success and TikTok's timeout in that report is work that cannot take
+ * more than ~30s, which is what a freeze looks like from the logs.
+ */
+describe('fire-and-forget sends survive the response returning', () => {
+  it('hands the promise to waitUntil so the function is not frozen mid-flight', () => {
+    trackTikTokEvent('Purchase', { eventId: 'purchase_keepalive' });
+    expect(vercel.waitUntil).toHaveBeenCalledTimes(1);
+    expect(vercel.waitUntil.mock.calls[0][0]).toBeInstanceOf(Promise);
+  });
+
+  it('still does not throw where waitUntil has no request context', () => {
+    vercel.waitUntil.mockImplementationOnce(() => { throw new Error('no request context'); });
+    expect(() => trackTikTokEvent('Purchase', { eventId: 'purchase_nocontext' })).not.toThrow();
   });
 });
