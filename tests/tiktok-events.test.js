@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import crypto from 'crypto';
+import { readFileSync } from 'node:fs';
 
 vi.mock('@/lib/monitoring', () => ({ reportOperationalFailure: vi.fn(() => true) }));
 vi.mock('@/lib/logger', () => ({ log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } }));
@@ -17,7 +18,6 @@ const {
   isTransientTikTokError,
   warnIfTestCodeInProduction,
   TIKTOK_PIXEL_CODE,
-  TIKTOK_PIXEL_ID,
 } = await import('@/lib/tiktok-events');
 const { reportOperationalFailure } = await import('@/lib/monitoring');
 
@@ -26,24 +26,37 @@ const ok = () => ({ ok: true, json: async () => ({ code: 0, message: 'OK', reque
 
 afterEach(() => { vi.clearAllMocks(); delete process.env.TIKTOK_EVENTS_TOKEN; });
 
-describe('the two pixel identifiers', () => {
-  // Swapping these breaks deduplication with no error at all, so they are
-  // pinned apart: the browser's sdkid is alphanumeric, the server's
-  // event_source_id is numeric, and they are not interchangeable.
-  it('are distinct values and not confusable', () => {
-    expect(TIKTOK_PIXEL_CODE).toBe('DB06VT3C77U2INVDM2MG');
-    expect(TIKTOK_PIXEL_ID).toBe('7692263347735117831');
-    expect(TIKTOK_PIXEL_CODE).not.toBe(TIKTOK_PIXEL_ID);
+/**
+ * This block previously asserted the opposite — that event_source_id is a
+ * numeric Pixel ID and "never the browser code" — because the build spec said
+ * so. It was wrong, and pinning a document's claim instead of verified
+ * behaviour made the test actively defend the bug: every server event was
+ * rejected with 40001 "No permission to operate event source id" while the
+ * suite stayed green. Confirmed against the live API with an empty-batch probe
+ * (numeric -> 40001 permission, code -> 40002 validation).
+ */
+describe('the pixel identifier', () => {
+  it('is the pixel code, the same string the browser loads', () => {
+    expect(TIKTOK_PIXEL_CODE).toBe('DB08LFRC77UFPOQ9MKMG');
   });
 
-  it('sends the numeric id as event_source_id, never the browser code', async () => {
+  it('sends the pixel code as event_source_id', async () => {
     process.env.TIKTOK_EVENTS_TOKEN = 'tok';
     const fetchImpl = vi.fn(ok);
     await sendPreparedTikTokEvent({ event: 'CompletePayment', event_id: 'x' }, { fetchImpl });
     const body = JSON.parse(fetchImpl.mock.calls[0][1].body);
-    expect(body.event_source_id).toBe(TIKTOK_PIXEL_ID);
-    expect(JSON.stringify(body)).not.toContain(TIKTOK_PIXEL_CODE);
+    expect(body.event_source_id).toBe(TIKTOK_PIXEL_CODE);
     expect(body.event_source).toBe('web');
+  });
+
+  // The failure that started this: the browser loaded one pixel while the
+  // server sent to another, so no pair could ever deduplicate.
+  it('is the same pixel the browser initialises', () => {
+    const banner = readFileSync(new URL('../components/cookie-banner.jsx', import.meta.url), 'utf8');
+    expect(banner).toMatch(/ttq\.load\(TIKTOK_PIXEL_CODE\)/);
+    expect(banner).toMatch(/from '@\/lib\/tiktok-pixel'/);
+    // No hardcoded pixel string anywhere in the browser half.
+    expect(banner).not.toMatch(/DB0[0-9A-Z]{17}/);
   });
 });
 
@@ -317,7 +330,7 @@ describe('a valid token that cannot reach the pixel', () => {
   it('recommends fixing the permission, not regenerating the token', async () => {
     await sendTikTokEvent('Purchase', { eventId: 'purchase_NTR-13614', critical: true }, { fetchImpl: vi.fn(forbidden), retryDelayMs: 0 });
     const [, payload] = reportOperationalFailure.mock.calls[0];
-    expect(payload.data.fix).toMatch(/not authorised for pixel/);
+    expect(payload.data.fix).toMatch(/not authorised for pixel DB08LFRC77UFPOQ9MKMG/);
     expect(payload.data.fix).toMatch(/Do NOT regenerate/);
     // The original alert sent Trip to regenerate a token that was never broken.
     expect(payload.data.fix).not.toMatch(/Generate a new one/);

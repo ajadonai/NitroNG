@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { isInternalDashboardPath } from '@/lib/internal-dashboard-path';
+import { TIKTOK_PIXEL_CODE } from '@/lib/tiktok-pixel';
 import CookieSettingsSheet from './cookie-settings';
 import { useT } from './locale';
 
@@ -98,7 +99,7 @@ export function initTikTokPixel() {
       var r = "https://analytics.tiktok.com/i18n/pixel/events.js", o = n && n.partner; ttq._i = ttq._i || {}, ttq._i[e] = [], ttq._i[e]._u = r, ttq._t = ttq._t || {}, ttq._t[e] = +new Date, ttq._o = ttq._o || {}, ttq._o[e] = n || {}; n = document.createElement("script")
       ; n.type = "text/javascript", n.async = !0, n.src = r + "?sdkid=" + e + "&lib=" + t; e = document.getElementsByTagName("script")[0]; e.parentNode.insertBefore(n, e)
     };
-    ttq.load('DB06VT3C77U2INVDM2MG');
+    ttq.load(TIKTOK_PIXEL_CODE);
   }(window, document, 'ttq');
 }
 
