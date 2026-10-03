@@ -18,7 +18,15 @@ beforeEach(() => {
 });
 
 describe('isListedRecently', () => {
-  const cutoffs = { mtp: new Date(Date.now() - 48 * HOUR), dao: new Date(Date.now() - 48 * HOUR) };
+  // Built in beforeEach, not at describe level: a describe body runs at
+  // collection time, before the beforeEach above fakes the clock, so a cutoff
+  // computed there sits on the real date while every `new Date()` in a test
+  // body sits on the faked one. That gap is zero on the day this was written
+  // and grows daily — it failed on 3 Oct, a week after. Same clock both sides.
+  let cutoffs;
+  beforeEach(() => {
+    cutoffs = { mtp: new Date(Date.now() - 48 * HOUR), dao: new Date(Date.now() - 48 * HOUR) };
+  });
 
   it('keeps a service the provider confirmed today', () => {
     expect(isListedRecently({ provider: 'mtp', providerListedAt: new Date() }, cutoffs)).toBe(true);
