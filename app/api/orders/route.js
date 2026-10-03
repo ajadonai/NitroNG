@@ -9,6 +9,7 @@ import { calculateIntradayDrip, calculateMultiDayDrip, getDripConfig, checkDripF
 import { serviceTypeOf, servicePlatformOf } from '@/lib/full-catalogue';
 import { isListedRecently, staleCutoffs } from '@/lib/provider-listing';
 import { cancelQueuedMetaEvent, enqueueMetaEvent, loadStoredCapiIdentity, parseFbCookies, persistFbTouch, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
+import { parseTikTokCookies, tiktokOptsFromMeta, trackTikTokEvent } from '@/lib/tiktok-events';
 import { tgFlush, tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { checkFirstOrder } from '@/lib/first-order';
 import { voidCommissions } from '@/lib/commissions';
@@ -41,8 +42,18 @@ function buildPurchaseEvent(req, { eventId, eventTime, email, phone, externalId,
   };
 }
 
-function triggerPurchaseDelivery(eventId) {
+/**
+ * Post-commit delivery for both platforms. Meta goes through its durable
+ * outbox; TikTok sends directly, from the same opts object Meta's event was
+ * built from, so the two cannot describe the same purchase differently.
+ * `purchaseOpts` is optional — a caller that has not captured it still gets
+ * Meta's delivery, which is the behaviour this had before TikTok existed.
+ */
+function triggerPurchaseDelivery(eventId, purchaseOpts, req) {
   scheduleQueuedMetaEventDelivery(eventId);
+  if (!purchaseOpts) return;
+  const cookie = req?.headers?.get('cookie');
+  trackTikTokEvent('Purchase', tiktokOptsFromMeta(purchaseOpts, parseTikTokCookies(cookie)));
 }
 
 async function refundRejectedCreatedOrder({
@@ -593,6 +604,8 @@ export async function patchOrderForSession(session, body, req) {
 
       const newOrderId = await nextOrderId();
       const reorderEventId = `purchase_${newOrderId}`;
+      // Assigned inside the transaction, read after it commits.
+      let reorderPurchaseOpts;
 
       // Calculate drip for reorder (Layer 1 only — no multi-day on reorders)
       const reorderProviderMin = order.service.min || 50;
@@ -660,7 +673,9 @@ export async function patchOrderForSession(session, body, req) {
         });
         const stored = await loadStoredCapiIdentity(tx, session.id);
         await persistFbTouch(tx, session.id, parseFbCookies(req.headers.get('cookie')), stored);
-        await enqueueMetaEvent(tx, 'Purchase', buildPurchaseEvent(req, {
+        // Captured for the post-commit TikTok send below: it must not fire
+        // from inside the transaction, where the order is not yet real.
+        reorderPurchaseOpts = buildPurchaseEvent(req, {
           eventId: reorderEventId,
           eventTime: created.createdAt,
           email: user.email || session.email,
@@ -668,11 +683,12 @@ export async function patchOrderForSession(session, body, req) {
           externalId: session.id,
           valueKobo: charge,
           stored,
-        }));
+        });
+        await enqueueMetaEvent(tx, 'Purchase', reorderPurchaseOpts);
         return created;
       });
 
-      triggerPurchaseDelivery(reorderEventId);
+      triggerPurchaseDelivery(reorderEventId, reorderPurchaseOpts, req);
 
       // Step 2: Place on provider AFTER balance secured (skip in dev / skip if queued)
       let apiOrderId = null;
@@ -1077,6 +1093,10 @@ export async function createOrderForSession(session, body, req, { source = 'web'
     // Generate order ID
     const orderId = await nextOrderId();
     const eventId = `purchase_${orderId}`;
+    // Assigned inside the order transaction, read after it commits. The
+    // transaction runs in a retry loop, so this is overwritten per attempt and
+    // only the committed attempt's value survives to be sent.
+    let purchaseOpts;
 
     // Calculate drip schedule if needed
     const DAILY_CAP = { followers: 5000, likes: 10000, views: 75000, plays: 75000, comments: 1000, reviews: 100, engagement: 15000 };
@@ -1210,16 +1230,22 @@ export async function createOrderForSession(session, body, req, { source = 'web'
           });
           const stored = await loadStoredCapiIdentity(tx, session.id);
           await persistFbTouch(tx, session.id, parseFbCookies(req.headers.get('cookie')), stored);
+          // Captured for the post-commit TikTok send. The provider-rejection
+          // path refunds and returns before triggerPurchaseDelivery is
+          // reached, so by the time this is used the order has survived —
+          // which is why TikTok, having no outbox to cancel, can fire directly
+          // where Meta's durable row needs a notBefore fence.
+          purchaseOpts = buildPurchaseEvent(req, {
+            eventId,
+            eventTime: order.createdAt,
+            email: session.email,
+            phone: stored.phone,
+            externalId: session.id,
+            valueKobo: charge,
+            stored,
+          });
           await enqueueMetaEvent(tx, 'Purchase', {
-            ...buildPurchaseEvent(req, {
-              eventId,
-              eventTime: order.createdAt,
-              email: session.email,
-              phone: stored.phone,
-              externalId: session.id,
-              valueKobo: charge,
-              stored,
-            }),
+            ...purchaseOpts,
             // Provider rejection can still unwind this checkout. Keep the
             // durable row out of cron's lease window until that short path ends.
             notBefore: new Date(Date.now() + 5 * 60 * 1000),
@@ -1440,7 +1466,7 @@ export async function createOrderForSession(session, body, req, { source = 'web'
       }
     }
 
-    triggerPurchaseDelivery(eventId);
+    triggerPurchaseDelivery(eventId, purchaseOpts, req);
     tgNewOrder(orderId, tierName, qty, charge, session.email, trimmedLink, offerSnapshot.platformAtPurchase || '');
     checkFirstOrder(session.id, tierName);
 

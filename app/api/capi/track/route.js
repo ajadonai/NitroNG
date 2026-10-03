@@ -1,4 +1,6 @@
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
+import { parseTikTokCookies, trackTikTokEvent } from '@/lib/tiktok-events';
+import { tiktokProperties } from '@/lib/tiktok-properties';
 import { getCurrentUser } from '@/lib/auth';
 
 const ALLOWED = new Set(['PageView', 'ViewContent']);
@@ -18,16 +20,40 @@ export async function POST(req) {
     if (user) { email = user.email; externalId = user.id; }
   } catch {}
 
+  const clientIp = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip');
+  const userAgent = hdrs.get('user-agent');
+
   sendEvent(event_name, {
     eventId: event_id,
     email,
     externalId,
-    clientIp: hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip'),
-    userAgent: hdrs.get('user-agent'),
+    clientIp,
+    userAgent,
     fbp, fbc,
     sourceUrl: source_url,
     customData: custom_data && Object.keys(custom_data).length ? custom_data : undefined,
   });
+
+  // TikTok gets the same event under the same id, so the pair deduplicates.
+  // PageView is excluded: the browser reports it through ttq.page(), which
+  // carries no event_id, so a server twin could not be matched and would
+  // simply double the count. Not critical — the pixel covers these.
+  if (event_name !== 'PageView') {
+    const { ttclid, ttp } = parseTikTokCookies(hdrs.get('cookie'));
+    trackTikTokEvent(event_name, {
+      eventId: event_id,
+      email,
+      externalId,
+      clientIp,
+      userAgent,
+      ttclid, ttp,
+      sourceUrl: source_url,
+      // Translated, not passed through: TikTok rejects Meta's content_type
+      // values and wants a content_id. Must match what the browser sent under
+      // this same event_id, which imports the same translator.
+      properties: tiktokProperties(custom_data),
+    });
+  }
 
   return Response.json({ ok: true });
 }

@@ -7,6 +7,7 @@ import { sendWelcomeEmail } from '@/lib/email';
 import { isDisposableEmail } from '@/lib/validate';
 import { cookies, headers } from 'next/headers';
 import { enqueueMetaEvent, scheduleQueuedMetaEventDelivery, parseFbCookies } from '@/lib/meta-capi';
+import { parseTikTokCookies, trackTikTokEvent } from '@/lib/tiktok-events';
 import { tgNewUser } from '@/lib/telegram';
 import { notifyCrewSignup } from '@/lib/commissions';
 import { resolveSignupAttribution } from '@/lib/link-ownership';
@@ -228,6 +229,22 @@ export async function GET(req) {
       } catch (err) {
         log.warn('MetaCAPI', `CompleteRegistration could not be queued (${eventId}): ${err?.message || err}`);
       }
+
+      // Parity with the password signup: Google is the other half of
+      // registrations, and tracking only one would halve the count TikTok
+      // optimises against. Same event id anchor, so the two never double up.
+      const { ttclid, ttp } = parseTikTokCookies(hdrs2.get('cookie'));
+      trackTikTokEvent('CompleteRegistration', {
+        eventId,
+        email,
+        externalId: user.id,
+        clientIp: hdrs2.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs2.get('x-real-ip'),
+        userAgent: hdrs2.get('user-agent'),
+        ttclid,
+        ttp,
+        sourceUrl: `${APP_URL}/`,
+        critical: true,
+      });
       return NextResponse.redirect(`${APP_URL}/dashboard?new_user=1&eid=${eventId}`);
     }
     return NextResponse.redirect(`${APP_URL}/dashboard`);
