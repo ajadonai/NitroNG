@@ -9,6 +9,7 @@ import { validatePhone, isSupportedCountry, DEFAULT_COUNTRY } from '@/lib/phone-
 import { headers } from 'next/headers';
 import { sendWelcomeEmail } from '@/lib/email';
 import { enqueueMetaEvent, scheduleQueuedMetaEventDelivery, parseFbCookies } from '@/lib/meta-capi';
+import { parseTikTokCookies, trackTikTokEvent } from '@/lib/tiktok-events';
 import { tgNewUser } from '@/lib/telegram';
 import { notifyCrewSignup } from '@/lib/commissions';
 import { resolveSignupAttribution } from '@/lib/link-ownership';
@@ -188,6 +189,22 @@ export async function POST(req) {
     } catch (err) {
       log.warn('MetaCAPI', `CompleteRegistration could not be queued (${eventId}): ${err?.message || err}`);
     }
+
+    // Same event id, so if a browser CompleteRegistration is ever added it
+    // deduplicates against this one. Server-only today and not durable, hence
+    // critical: there is no browser twin and no outbox to fall back on.
+    const { ttclid, ttp } = parseTikTokCookies(hdrs.get('cookie'));
+    trackTikTokEvent('CompleteRegistration', {
+      eventId,
+      email,
+      externalId: user.id,
+      clientIp: ip,
+      userAgent: ua,
+      ttclid,
+      ttp,
+      sourceUrl: hdrs.get('referer'),
+      critical: true,
+    });
 
     return ok({
       eventId,

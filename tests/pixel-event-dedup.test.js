@@ -41,3 +41,42 @@ describe('browser pixels share one event id with the server', () => {
     expect(src).not.toMatch(/ttq\.track\(\s*['"]Pageview['"]/i);
   });
 });
+
+/**
+ * Both pixel initialisers used to fire a PageView of their own, and because
+ * <CookieBanner /> sits above <CAPIPageView /> in the layout its effect ran
+ * first — so a returning visitor with stored consent got one PageView from the
+ * initialiser and a second from the tracker. Meta's browser page views were
+ * roughly doubled for as long as both existed. The tracker owns PageView now.
+ */
+// Comments stripped: these assert on what the code does, and both the block
+// comment explaining why ttq.page() was dropped and the one naming the old
+// fbq('track','PageView') would otherwise match as if they were still calls.
+const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+const banner = stripComments(readFileSync(new URL('../components/cookie-banner.jsx', import.meta.url), 'utf8'));
+
+describe('only one place fires a page view', () => {
+  it('does not fire a Meta PageView from the initialiser', () => {
+    expect(banner).toMatch(/window\.fbq\('init'/);
+    expect(banner).not.toMatch(/fbq\(\s*['"]track['"]\s*,\s*['"]PageView['"]/);
+  });
+
+  it('does not fire a TikTok page view from the initialiser', () => {
+    expect(banner).toMatch(/ttq\.load\(/);
+    // The vendor snippet ends with ttq.page(); dropping it is deliberate.
+    expect(banner).not.toMatch(/ttq\.page\(\)/);
+  });
+
+  it('announces consent on the stored-consent path too, so order cannot matter', () => {
+    // Two dispatches: one when a choice is saved, one when a stored choice is
+    // replayed on mount. The second is what frees the browser PageView from
+    // depending on sibling order in the layout.
+    const dispatches = banner.match(/nitro-consent-changed/g) || [];
+    expect(dispatches.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('captures the TikTok click id the server side reads back', () => {
+    expect(banner).toMatch(/_ttclid=/);
+    expect(banner).toMatch(/ensureTtclidFromClick\(\)/);
+  });
+});

@@ -48,24 +48,48 @@ function ensureFbcFromClick() {
   } catch {}
 }
 
+/**
+ * TikTok's click id, the analogue of fbclid. Unlike _fbc there is no pixel
+ * writing this cookie for us, so a later click legitimately supersedes an
+ * earlier one and this overwrites rather than returning early.
+ */
+function ensureTtclidFromClick() {
+  try {
+    const ttclid = new URLSearchParams(window.location.search).get('ttclid');
+    if (!ttclid) return;
+    document.cookie = `_ttclid=${encodeURIComponent(ttclid)}; path=/; max-age=${90 * 86400}; SameSite=Lax`;
+  } catch {}
+}
+
+/**
+ * Neither init fires a PageView of its own any more. Both used to, and because
+ * <CookieBanner /> sits above <CAPIPageView /> in the layout its effect ran
+ * first — so a returning visitor with stored consent got the pixel's PageView
+ * here and a second one from the tracker moments later. Browser page views
+ * have been roughly doubled on Meta for as long as both have existed.
+ *
+ * CAPIPageView now owns every PageView, and re-fires the browser half with the
+ * id the server already has once consent arrives mid-visit.
+ */
 export function initPixel() {
   if (typeof window === 'undefined' || window.fbq || isInternalDashboardPath(window.location.pathname)) return;
   ensureFbcFromClick();
   !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
   window.fbq('init','27456534517306114');
-  window.fbq('track','PageView');
 }
 
 /**
- * Same shape as initPixel, one line down: guarded against double-load and
- * against the internal dashboard, called from the same two places consent is
- * granted. No click-id capture (fbclid → _fbc has one above it) — TikTok's
- * equivalent (ttclid) has nothing reading it yet, since there is no
- * server-side Events API call on this site to hand it to. Add that capture
- * only alongside building that, not ahead of it.
+ * Same shape as initPixel: guarded against double-load and against the
+ * internal dashboard, called from the same two places consent is granted.
+ *
+ * The vendor snippet's trailing ttq.page() is deliberately dropped — see the
+ * note on initPixel. CAPIPageView fires it instead, with the event_id the
+ * server half needs. The pixel writes its own _ttp cookie; ttclid is ours to
+ * capture, and lib/tiktok-events.js reads both off the request cookie header.
  */
 export function initTikTokPixel() {
   if (typeof window === 'undefined' || window.ttq || isInternalDashboardPath(window.location.pathname)) return;
+  ensureTtclidFromClick();
   !function (w, d, t) {
     w.TiktokAnalyticsObject = t; var ttq = w[t] = w[t] || []; ttq.methods = ["page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie", "holdConsent", "revokeConsent", "grantConsent"], ttq.setAndDefer = function (t, e) { t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } }; for (var i = 0; i < ttq.methods.length; i++)ttq.setAndDefer(ttq, ttq.methods[i]); ttq.instance = function (t) {
       for (
@@ -75,7 +99,6 @@ export function initTikTokPixel() {
       ; n.type = "text/javascript", n.async = !0, n.src = r + "?sdkid=" + e + "&lib=" + t; e = document.getElementsByTagName("script")[0]; e.parentNode.insertBefore(n, e)
     };
     ttq.load('DB06VT3C77U2INVDM2MG');
-    ttq.page();
   }(window, document, 'ttq');
 }
 
@@ -93,7 +116,17 @@ export default function CookieBanner() {
     if (internalDashboard) return;
     const consent = readConsent();
     if (consent) {
-      if (consent.advertising) { initPixel(); initTikTokPixel(); }
+      if (consent.advertising) {
+        initPixel();
+        initTikTokPixel();
+        // Announced even though no choice was made just now, so CAPIPageView
+        // can fire the browser half of a PageView it had already sent
+        // server-side. Without this, the browser PageView would depend on this
+        // component's effect running before the tracker's — true today only
+        // because of sibling order in the layout, and silently wrong the day
+        // someone reorders it.
+        window.dispatchEvent(new Event('nitro-consent-changed'));
+      }
       return;
     }
     const timer = setTimeout(() => setShow(true), 2000);

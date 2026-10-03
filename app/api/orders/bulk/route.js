@@ -11,6 +11,7 @@ import { getWhatsAppChannelUrl } from '@/lib/settings';
 import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, getDripConfig, validateIntradayDuration } from '@/lib/drip-feed';
 import { enqueueMetaEvent, loadStoredCapiIdentity, parseFbCookies, persistFbTouch, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
+import { parseTikTokCookies, tiktokOptsFromMeta, trackTikTokEvent } from '@/lib/tiktok-events';
 import { tgFlush, tgNewOrder, tgRefundAlert } from '@/lib/telegram';
 import { checkFirstOrder } from '@/lib/first-order';
 import { deductBalance, trackBonusConsumption, restoreBonusForRefund } from '@/lib/bonus-credit';
@@ -73,8 +74,18 @@ function buildPurchaseEvent(req, { eventId, eventTime, email, phone, externalId,
   };
 }
 
-function triggerPurchaseDelivery(eventId) {
+/**
+ * Post-commit delivery for both platforms. Meta goes through its durable
+ * outbox; TikTok sends directly, from the same opts object Meta's event was
+ * built from, so the two cannot describe the same purchase differently.
+ * `purchaseOpts` is optional — without it only Meta is delivered, which is
+ * what this did before TikTok existed.
+ */
+function triggerPurchaseDelivery(eventId, purchaseOpts, req) {
   scheduleQueuedMetaEventDelivery(eventId);
+  if (!purchaseOpts) return;
+  const cookie = req?.headers?.get('cookie');
+  trackTikTokEvent('Purchase', tiktokOptsFromMeta(purchaseOpts, parseTikTokCookies(cookie)));
 }
 export const dynamic = 'force-dynamic';
 
@@ -732,7 +743,8 @@ export async function PATCH(req) {
 
         const stored = await loadStoredCapiIdentity(tx, session.id);
         await persistFbTouch(tx, session.id, parseFbCookies(req.headers.get('cookie')), stored);
-        await enqueueMetaEvent(tx, 'Purchase', buildPurchaseEvent(req, {
+        // Returned so the TikTok send happens after the commit, not inside it.
+        const purchaseOpts = buildPurchaseEvent(req, {
           eventId: `purchase_${newBatchId}`,
           eventTime: createdOrders[0].createdAt,
           email: session.email,
@@ -740,12 +752,13 @@ export async function PATCH(req) {
           externalId: session.id,
           valueKobo: totalCharge,
           stored,
-        }));
+        });
+        await enqueueMetaEvent(tx, 'Purchase', purchaseOpts);
 
-        return { createdOrders, totalCharge };
+        return { createdOrders, totalCharge, purchaseOpts };
       });
 
-      triggerPurchaseDelivery(`purchase_${newBatchId}`);
+      triggerPurchaseDelivery(`purchase_${newBatchId}`, result.purchaseOpts, req);
 
       for (const o of result.createdOrders) {
         const tierName = `${o.offerSnapshot.serviceNameAtPurchase}${o.offerSnapshot.tierNameAtPurchase ? ` — ${o.offerSnapshot.tierNameAtPurchase}` : ''}`;
@@ -1166,7 +1179,8 @@ export async function POST(req) {
         : `purchase_${createdOrders[0].orderId}`;
       const stored = await loadStoredCapiIdentity(tx, session.id);
       await persistFbTouch(tx, session.id, parseFbCookies(req.headers.get('cookie')), stored);
-      await enqueueMetaEvent(tx, 'Purchase', buildPurchaseEvent(req, {
+      // Returned so the TikTok send happens after the commit, not inside it.
+      const purchaseOpts = buildPurchaseEvent(req, {
         eventId,
         eventTime: createdOrders[0].createdAt,
         email: session.email,
@@ -1174,9 +1188,10 @@ export async function POST(req) {
         externalId: session.id,
         valueKobo: totalCharge,
         stored,
-      }));
+      });
+      await enqueueMetaEvent(tx, 'Purchase', purchaseOpts);
 
-      return { createdOrders, totalCharge, nitroTier, eventId };
+      return { createdOrders, totalCharge, nitroTier, eventId, purchaseOpts };
     });
 
     const orderResults = result.createdOrders.map(o => ({
@@ -1202,7 +1217,7 @@ export async function POST(req) {
       }
     }
 
-    triggerPurchaseDelivery(result.eventId);
+    triggerPurchaseDelivery(result.eventId, result.purchaseOpts, req);
     const eventId = result.eventId;
 
     for (const o of result.createdOrders) {

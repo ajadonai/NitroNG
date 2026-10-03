@@ -2,6 +2,7 @@ import { headers as getHeaders } from 'next/headers';
 import { getCurrentUser } from '@/lib/auth';
 import { log } from '@/lib/logger';
 import { parseFbCookies } from '@/lib/meta-capi';
+import { parseTikTokCookies } from '@/lib/tiktok-events';
 import { rateLimit } from '@/lib/rate-limit';
 import {
   isCreditedPaymentResult,
@@ -125,12 +126,19 @@ export async function POST(req) {
         // completed deposit into a retryable response.
         const hdrs = await getHeaders();
         const { fbp, fbc } = parseFbCookies(hdrs.get('cookie'));
+        // This path runs in the user's own browser, so the TikTok click and
+        // browser ids are available here. The webhook paths have no cookies to
+        // read, which is the known gap in TikTok match quality until a
+        // persisted ttclid lands on User.
+        const { ttclid, ttp } = parseTikTokCookies(hdrs.get('cookie'));
         await notifyDepositFinalized(finalization, {
           channel: 'Flutterwave',
           clientIp: hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip'),
           userAgent: hdrs.get('user-agent'),
           fbp,
           fbc,
+          ttclid,
+          ttp,
           sourceUrl: hdrs.get('referer'),
         });
       } catch (notifyError) {
