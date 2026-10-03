@@ -13,7 +13,9 @@ const {
   tiktokEventName,
   trackTikTokDeposit,
   isPermanentTikTokError,
+  isPermissionTikTokError,
   isTransientTikTokError,
+  warnIfTestCodeInProduction,
   TIKTOK_PIXEL_CODE,
   TIKTOK_PIXEL_ID,
 } = await import('@/lib/tiktok-events');
@@ -160,6 +162,15 @@ describe('where TikTok is allowed to deliver', () => {
       .toEqual({ live: true, reason: 'dev_opt_in' });
   });
 
+  it('delivers from a laptop when a test event code makes it safe', () => {
+    expect(tiktokDeliveryMode({ ...base, NODE_ENV: 'development', TIKTOK_EVENTS_TEST_EVENT_CODE: 'TEST123' }))
+      .toEqual({ live: true, reason: 'test_event_code' });
+  });
+
+  it('still needs a token even with a test event code', () => {
+    expect(tiktokDeliveryMode({ NODE_ENV: 'development', TIKTOK_EVENTS_TEST_EVENT_CODE: 'TEST123' }).live).toBe(false);
+  });
+
   it('skips cleanly instead of failing when there is no token', async () => {
     const fetchImpl = vi.fn(ok);
     const result = await sendTikTokEvent('Purchase', { eventId: 'order_1' }, { fetchImpl });
@@ -281,6 +292,111 @@ describe('reading TikTok response', () => {
     expect(isPermanentTikTokError({ code: 'missing_token' })).toBe(true);
     expect(isPermanentTikTokError({ code: 40105 })).toBe(true);
     expect(isPermanentTikTokError({ code: 'timeout' })).toBe(false);
+  });
+});
+
+/**
+ * Reproduced from issue 7769738905, 3 Oct, a real order (NTR-13614): HTTP 401,
+ * body code 40001, "No permission to operate event source id: ...". The token
+ * authenticated — TikTok answered with a structured error, not a transport
+ * failure — but was not authorised for the pixel.
+ */
+describe('a valid token that cannot reach the pixel', () => {
+  const forbidden = () => ({
+    ok: false,
+    status: 401,
+    json: async () => ({ code: 40001, message: 'No permission to operate event source id: 7692263347735117831' }),
+  });
+
+  beforeEach(() => {
+    process.env.TIKTOK_EVENTS_TOKEN = 'tok';
+    process.env.NODE_ENV = 'production';
+  });
+  afterEach(() => { process.env.NODE_ENV = 'test'; });
+
+  it('recommends fixing the permission, not regenerating the token', async () => {
+    await sendTikTokEvent('Purchase', { eventId: 'purchase_NTR-13614', critical: true }, { fetchImpl: vi.fn(forbidden), retryDelayMs: 0 });
+    const [, payload] = reportOperationalFailure.mock.calls[0];
+    expect(payload.data.fix).toMatch(/not authorised for pixel/);
+    expect(payload.data.fix).toMatch(/Do NOT regenerate/);
+    // The original alert sent Trip to regenerate a token that was never broken.
+    expect(payload.data.fix).not.toMatch(/Generate a new one/);
+  });
+
+  it('is its own signal, not collapsed onto a rejected token', async () => {
+    await sendTikTokEvent('Purchase', { eventId: 'purchase_1' }, { fetchImpl: vi.fn(forbidden), retryDelayMs: 0 });
+    expect(reportOperationalFailure.mock.calls[0][1].dedupeKey).toBe('tiktok_events_no_pixel_permission');
+  });
+
+  it('reports the attempts it actually made, not the ceiling', async () => {
+    const fetchImpl = vi.fn(forbidden);
+    await sendTikTokEvent('Purchase', { eventId: 'purchase_2', critical: true }, { fetchImpl, retryDelayMs: 0 });
+    // A permission failure is permanent, so it stops after one try. Reporting
+    // 3 had whoever read the alert looking for a flaky network.
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(reportOperationalFailure.mock.calls[0][1].data.attempts).toBe(1);
+  });
+
+  it('still reports the real attempt count when it does retry', async () => {
+    const fetchImpl = vi.fn(async () => { throw new TypeError('fetch failed'); });
+    await sendTikTokEvent('AddPaymentInfo', { eventId: 'apinfo_2', critical: true }, { fetchImpl, retryDelayMs: 0 });
+    expect(reportOperationalFailure.mock.calls[0][1].data.attempts).toBe(3);
+  });
+
+  it('separates a permission failure from genuinely malformed params', () => {
+    // Both are code 40001; only the message tells them apart.
+    expect(isPermissionTikTokError({ code: 40001, message: 'No permission to operate event source id: 123' })).toBe(true);
+    expect(isPermissionTikTokError({ code: 40001, message: 'Invalid params' })).toBe(false);
+  });
+});
+
+describe('test event code', () => {
+  beforeEach(() => {
+    process.env.TIKTOK_EVENTS_TOKEN = 'tok';
+    process.env.NODE_ENV = 'production';
+  });
+  afterEach(() => {
+    process.env.NODE_ENV = 'test';
+    delete process.env.TIKTOK_EVENTS_TEST_EVENT_CODE;
+  });
+
+  it('sends the code so the event lands in Test Events, not reporting', async () => {
+    process.env.TIKTOK_EVENTS_TEST_EVENT_CODE = 'TEST123';
+    const fetchImpl = vi.fn(ok);
+    await sendTikTokEvent('Purchase', { eventId: 'order_t1' }, { fetchImpl });
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body).test_event_code).toBe('TEST123');
+  });
+
+  // An empty string is not the same as an absent field: TikTok would read it
+  // as a code it cannot match rather than as "no test code".
+  it('omits the field entirely when there is no code', async () => {
+    const fetchImpl = vi.fn(ok);
+    await sendTikTokEvent('Purchase', { eventId: 'order_t2' }, { fetchImpl });
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).not.toHaveProperty('test_event_code');
+  });
+
+  it('lets a caller override the environment code per event', async () => {
+    process.env.TIKTOK_EVENTS_TEST_EVENT_CODE = 'FROM_ENV';
+    const fetchImpl = vi.fn(ok);
+    await sendTikTokEvent('Purchase', { eventId: 'order_t3', testEventCode: 'FROM_CALLER' }, { fetchImpl });
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body).test_event_code).toBe('FROM_CALLER');
+  });
+
+  // The foot-gun: left set in production it silently diverts every real
+  // conversion away from reporting, so ROAS reads zero and looks like broken
+  // tracking rather than a stray variable.
+  it('pages once when a test code is left set in production', () => {
+    expect(warnIfTestCodeInProduction({ VERCEL_ENV: 'production', TIKTOK_EVENTS_TEST_EVENT_CODE: 'TEST123' })).toBe(true);
+    expect(reportOperationalFailure).toHaveBeenCalledTimes(1);
+    const [signal, payload] = reportOperationalFailure.mock.calls[0];
+    expect(signal).toBe('tiktok_events_test_code_in_production');
+    expect(payload.data.fix).toMatch(/Unset TIKTOK_EVENTS_TEST_EVENT_CODE/);
+  });
+
+  it('says nothing when a test code is used where it belongs', () => {
+    expect(warnIfTestCodeInProduction({ NODE_ENV: 'development', TIKTOK_EVENTS_TEST_EVENT_CODE: 'TEST123' })).toBe(false);
+    expect(warnIfTestCodeInProduction({ VERCEL_ENV: 'production' })).toBe(false);
+    expect(reportOperationalFailure).not.toHaveBeenCalled();
   });
 });
 
