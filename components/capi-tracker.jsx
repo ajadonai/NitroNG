@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { hasConsent } from './cookie-banner';
 import { isInternalDashboardPath } from '@/lib/internal-dashboard-path';
+import { tiktokProperties } from '@/lib/tiktok-properties';
 
 /**
  * The browser half of conversion tracking. Every event gets one id, which goes
@@ -23,8 +24,11 @@ function firePixels(eventName, customData, eventId) {
     // else — not .track('PageView', ...) the way Meta's pixel takes it.
     // ttq.page() accepts no event_id, which is why no server-side Pageview is
     // sent for TikTok: there would be nothing for it to be matched against.
+    // Meta's custom_data goes to Meta as-is; TikTok validates content_type
+    // against two allowed values and wants a content_id, so it gets the
+    // translated shape. The server half translates identically.
     if (eventName === 'PageView') window.ttq.page();
-    else window.ttq.track(eventName, customData || {}, { event_id: eventId });
+    else window.ttq.track(eventName, tiktokProperties(customData) || {}, { event_id: eventId });
     fired = true;
   }
   return fired;

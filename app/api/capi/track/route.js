@@ -1,5 +1,6 @@
 import { sendEvent, parseFbCookies } from '@/lib/meta-capi';
 import { parseTikTokCookies, trackTikTokEvent } from '@/lib/tiktok-events';
+import { tiktokProperties } from '@/lib/tiktok-properties';
 import { getCurrentUser } from '@/lib/auth';
 
 const ALLOWED = new Set(['PageView', 'ViewContent']);
@@ -47,7 +48,10 @@ export async function POST(req) {
       userAgent,
       ttclid, ttp,
       sourceUrl: source_url,
-      properties: custom_data && Object.keys(custom_data).length ? custom_data : undefined,
+      // Translated, not passed through: TikTok rejects Meta's content_type
+      // values and wants a content_id. Must match what the browser sent under
+      // this same event_id, which imports the same translator.
+      properties: tiktokProperties(custom_data),
     });
   }
 
