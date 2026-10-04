@@ -1109,7 +1109,14 @@ export async function createOrderForSession(session, body, req, { source = 'web'
     const platform = (tier ? (service.category || '') : servicePlatformOf(service)).toLowerCase();
     const dailyCap = DAILY_CAP[groupType] || 15000;
     const daysFloor = MIN_DAYS_FLOOR[groupType] || 3;
-    const maxDripDays = qty <= 5000 ? 5 : qty <= 10000 ? 7 : qty <= 25000 ? 12 : qty <= 50000 ? 18 : qty <= 100000 ? 25 : 30;
+    // Up to a fortnight on anything up to 25k. The old ladder started at five
+    // days for ≤5k, which made a 1,000-follower order over two weeks
+    // impossible on the customer side — it clamped to five and delivered 200 a
+    // day without saying so. Nothing downstream needed the tighter bound:
+    // daysFloor still sets the minimum, and checkDripFeasibility still refuses
+    // any day that would fall under the provider's own minimum, so a thin
+    // schedule is rejected on its merits rather than pre-empted by quantity.
+    const maxDripDays = qty <= 25000 ? 14 : qty <= 50000 ? 18 : qty <= 100000 ? 25 : 30;
     const minDripDays = Math.min(Math.max(daysFloor, Math.ceil(qty / dailyCap)), maxDripDays);
     const skipDrip = rawDripDays === 0 || process.env.NODE_ENV === 'development';
     const validDripDays = rawDripDays && rawDripDays > 0 ? Math.min(maxDripDays, Math.max(minDripDays, Math.floor(Number(rawDripDays)))) : null;
