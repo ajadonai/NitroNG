@@ -32,6 +32,17 @@ const NO_CACHE = {
   "Vercel-CDN-Cache-Control": "no-store",
 };
 
+/**
+ * `avgFirstDepositNGN` is kept under its original name because the nightly
+ * task and the deposit log have read it for weeks, but it is NOT an average
+ * first deposit: it is total deposited divided by depositors, so a repeat
+ * depositor inflates it. `firstDepositNaira` below is the real figure.
+ *
+ * The money fields exist so deposit return can be divided out against ad
+ * spend. Average times count was the only way to get a money number before,
+ * and it is a proxy — these are summed, and summed per source, which is what
+ * the return calculation needs.
+ */
 function processRow(row) {
   const signups = toNumber(row.signups);
   const depositors = toNumber(row.depositors);
@@ -39,6 +50,8 @@ function processRow(row) {
   const totalDepositedNGN = totalDepositedKobo / 100;
   const depositRate = signups > 0 ? +(depositors / signups).toFixed(4) : 0;
   const avgFirstDepositNGN = depositors > 0 ? +(totalDepositedNGN / depositors).toFixed(2) : 0;
+  const firstDepositNaira = +(toNumber(row.firstDepositKobo) / 100).toFixed(2);
+  const allDepositNaira = +totalDepositedNGN.toFixed(2);
   const bySource = parseJsonArray(row.bySource).map((src) => {
     const srcSignups = toNumber(src.signups);
     const srcDepositors = toNumber(src.depositors);
@@ -47,9 +60,20 @@ function processRow(row) {
       signups: srcSignups,
       depositors: srcDepositors,
       depositRate: srcSignups > 0 ? +(srcDepositors / srcSignups).toFixed(4) : 0,
+      firstDepositNaira: +(toNumber(src.firstDepositKobo) / 100).toFixed(2),
+      allDepositNaira: +(toNumber(src.allDepositKobo) / 100).toFixed(2),
     };
   });
-  return { signups, depositors, depositRate, totalDepositedNGN, avgFirstDepositNGN, bySource };
+  return {
+    signups,
+    depositors,
+    depositRate,
+    totalDepositedNGN,
+    avgFirstDepositNGN,
+    firstDepositNaira,
+    allDepositNaira,
+    bySource,
+  };
 }
 
 async function computeWindow(since) {
@@ -63,19 +87,35 @@ async function computeWindow(since) {
           WHERE "createdAt" >= ${since}
             AND "deletedAt" IS NULL
         ),
-        deposits_by_user AS (
-          SELECT t."userId", SUM(t.amount)::bigint AS "totalDepositedKobo"
+        -- Deposits only: bonus credit is type 'bonus', so real money in is
+        -- already all this counts. rn = 1 is the account's first deposit,
+        -- which is what acquisition return is measured on; the sum over every
+        -- row is total return and picks up repeat deposits.
+        deposits AS (
+          SELECT
+            t."userId",
+            t.amount,
+            ROW_NUMBER() OVER (PARTITION BY t."userId" ORDER BY t."createdAt" ASC, t.id ASC) AS rn
           FROM "transactions" t
           JOIN cohort c ON c.id = t."userId"
           WHERE t.type = 'deposit'
             AND t.status = 'Completed'
-          GROUP BY t."userId"
+        ),
+        deposits_by_user AS (
+          SELECT
+            "userId",
+            SUM(amount)::bigint AS "totalDepositedKobo",
+            SUM(CASE WHEN rn = 1 THEN amount ELSE 0 END)::bigint AS "firstDepositKobo"
+          FROM deposits
+          GROUP BY "userId"
         ),
         source_stats AS (
           SELECT
             c.source,
             COUNT(*)::int AS signups,
-            COUNT(d."userId")::int AS depositors
+            COUNT(d."userId")::int AS depositors,
+            COALESCE(SUM(d."firstDepositKobo"), 0)::bigint AS "firstDepositKobo",
+            COALESCE(SUM(d."totalDepositedKobo"), 0)::bigint AS "allDepositKobo"
           FROM cohort c
           LEFT JOIN deposits_by_user d ON d."userId" = c.id
           GROUP BY c.source
@@ -84,12 +124,15 @@ async function computeWindow(since) {
           (SELECT COUNT(*)::int FROM cohort) AS signups,
           (SELECT COUNT(*)::int FROM deposits_by_user) AS depositors,
           COALESCE((SELECT SUM("totalDepositedKobo") FROM deposits_by_user), 0)::bigint AS "totalDepositedKobo",
+          COALESCE((SELECT SUM("firstDepositKobo") FROM deposits_by_user), 0)::bigint AS "firstDepositKobo",
           COALESCE((
             SELECT json_agg(
               json_build_object(
                 'source', source,
                 'signups', signups,
-                'depositors', depositors
+                'depositors', depositors,
+                'firstDepositKobo', "firstDepositKobo",
+                'allDepositKobo', "allDepositKobo"
               )
               ORDER BY signups DESC, source ASC
             )

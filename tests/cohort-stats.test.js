@@ -41,9 +41,12 @@ function statsRow({ signups = 4, depositors = 2, totalDepositedKobo = 500000 } =
     signups,
     depositors,
     totalDepositedKobo: BigInt(totalDepositedKobo),
+    // First deposits are a subset of the total: 300,000 of the 500,000 kobo
+    // here is first-deposit money, the other 200,000 is repeat deposits.
+    firstDepositKobo: BigInt(300000),
     bySource: [
-      { source: 'organic/direct', signups: 3, depositors: 1 },
-      { source: 'instagram', signups: 1, depositors: 1 },
+      { source: 'organic/direct', signups: 3, depositors: 1, firstDepositKobo: BigInt(100000), allDepositKobo: BigInt(150000) },
+      { source: 'instagram', signups: 1, depositors: 1, firstDepositKobo: BigInt(200000), allDepositKobo: BigInt(350000) },
     ],
   }];
 }
@@ -177,5 +180,80 @@ describe('GET /api/cron/cohort-stats', () => {
     expect(body.generatedAt).toBe(fresh.generatedAt);
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(log.warn).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Deposit return measurement, 5 Oct 2026. Deposit money per source is what
+ * lets ad spend be divided out into a return figure; before this the only
+ * money number was an average times a count, and `bySource` carried no money
+ * at all, so the return could only be worked out by hand.
+ *
+ * This route is protected — the nightly cohort check depends on it — so these
+ * also pin the things that must stay true alongside the new fields.
+ */
+describe('deposit money for the return calculation', () => {
+  async function windows() {
+    process.env.CRON_SECRET = 'cron';
+    prisma.setting.upsert.mockResolvedValue({});
+    const res = await GET(request('cron'));
+    expect(res.status).toBe(200);
+    return JSON.parse(prisma.setting.upsert.mock.calls[0][0].update.value).windows;
+  }
+
+  it('sums first-deposit and all-deposit money per window', async () => {
+    const w = await windows();
+    // 300,000 kobo of first deposits, 500,000 kobo in total.
+    expect(w['7d'].firstDepositNaira).toBe(3000);
+    expect(w['7d'].allDepositNaira).toBe(5000);
+  });
+
+  it('carries both money figures per source, which is where spend divides out', async () => {
+    const w = await windows();
+    const ig = w['7d'].bySource.find((s) => s.source === 'instagram');
+    expect(ig.firstDepositNaira).toBe(2000);
+    expect(ig.allDepositNaira).toBe(3500);
+  });
+
+  it('per-source money sums to the window total, so no source is lost', async () => {
+    const w = await windows();
+    const sum = (k) => w['7d'].bySource.reduce((t, s) => t + s[k], 0);
+    expect(sum('firstDepositNaira')).toBe(w['7d'].firstDepositNaira);
+    expect(sum('allDepositNaira')).toBe(w['7d'].allDepositNaira);
+  });
+
+  it('keeps every field the nightly check and the deposit log already read', async () => {
+    const w = await windows();
+    for (const key of ['signups', 'depositors', 'depositRate', 'totalDepositedNGN', 'avgFirstDepositNGN', 'bySource']) {
+      expect(w['7d'], key).toHaveProperty(key);
+      expect(w['30d'], key).toHaveProperty(key);
+    }
+    for (const key of ['source', 'signups', 'depositors', 'depositRate']) {
+      expect(w['7d'].bySource[0]).toHaveProperty(key);
+    }
+  });
+
+  // avgFirstDepositNGN has never been an average first deposit — it is total
+  // divided by depositors. Left under its old name because the log has read it
+  // for weeks; this pins the difference so nobody "fixes" one into the other.
+  it('leaves the misnamed average alone and reports the real first deposit beside it', async () => {
+    const w = await windows();
+    expect(w['7d'].avgFirstDepositNGN).toBe(2500); // 500,000 kobo / 2 depositors
+    expect(w['7d'].firstDepositNaira).toBe(3000);  // actual first-deposit money
+    expect(w['7d'].firstDepositNaira).not.toBe(w['7d'].avgFirstDepositNGN * w['7d'].depositors);
+  });
+
+  // Bonus credit is type 'bonus', so filtering to 'deposit' is what keeps the
+  // return figure on real money moved. The window function is what isolates a
+  // first deposit; nothing else in the route can.
+  it('counts deposits only, never bonus credit, and ranks them to find the first', async () => {
+    await windows();
+    const sql = mockTx.$queryRaw.mock.calls
+      .map((c) => (Array.isArray(c[0]) ? c[0].join('?') : String(c[0])))
+      .join('\n');
+    expect(sql).toContain("type = 'deposit'");
+    expect(sql).toContain("status = 'Completed'");
+    expect(sql).toContain('ROW_NUMBER() OVER');
+    expect(sql).not.toContain("type = 'bonus'");
   });
 });
