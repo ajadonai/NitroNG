@@ -170,7 +170,13 @@ function toRow(u) {
 const chunk = (arr, n) => Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n));
 
 async function graph(path, { method = 'POST', body, token }) {
-  const res = await fetch(`${GRAPH}${path}`, {
+  // A GET carries no body, so the token has to ride on the query string or the
+  // call comes back 401 — which is how the post-push size read silently
+  // returned null on the first real run.
+  const url = body
+    ? `${GRAPH}${path}`
+    : `${GRAPH}${path}${path.includes('?') ? '&' : '?'}access_token=${encodeURIComponent(token)}`;
+  const res = await fetch(url, {
     method,
     headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify({ ...body, access_token: token }) : undefined,
