@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createNowPaymentsIpnSignature } from '@/lib/nowpayments-verification';
+import { cryptomusSign } from '@/lib/cryptomus-verification';
+
+const API_KEY = 'cryptomus-webhook-key';
 
 const mocks = vi.hoisted(() => ({
-  reconcileNowPaymentsDeposit: vi.fn(),
+  reconcileCryptoDeposit: vi.fn(),
+  getCryptomusCredentials: vi.fn(),
   notifyDepositFinalized: vi.fn(),
   warn: vi.fn(),
   error: vi.fn(),
@@ -10,8 +13,9 @@ const mocks = vi.hoisted(() => ({
   reportOperationalFailure: vi.fn(),
 }));
 
-vi.mock('@/lib/nowpayments-payment', () => ({
-  reconcileNowPaymentsDeposit: mocks.reconcileNowPaymentsDeposit,
+vi.mock('@/lib/crypto-deposit', () => ({
+  reconcileCryptoDeposit: mocks.reconcileCryptoDeposit,
+  getCryptomusCredentials: mocks.getCryptomusCredentials,
 }));
 vi.mock('@/lib/deposit-notifications', () => ({
   notifyDepositFinalized: mocks.notifyDepositFinalized,
@@ -26,26 +30,28 @@ vi.mock('@/lib/monitoring', () => ({
 const { POST } = await import('@/app/api/payments/crypto/webhook/route');
 
 const REFERENCE = 'NTR-CRYPTO-WEBHOOK-1';
-const PAYMENT_ID = '900719925474099312345';
+const PAYMENT_ID = '940c4d31-70fb-4bf3-856b-5eb12a490af4';
 
 function callbackBody(overrides = {}) {
   return {
-    payment_id: PAYMENT_ID,
-    payment_status: 'finished',
+    uuid: PAYMENT_ID,
+    status: 'paid',
     order_id: REFERENCE,
-    actually_paid: '999999',
+    amount: '20000.00',
+    currency: 'NGN',
+    payment_amount: '12.5',
     ...overrides,
   };
 }
 
-function signedRequest(body, secret, signature = createNowPaymentsIpnSignature(body, secret)) {
+function signedRequest(body, key = API_KEY, signature) {
+  // The signature travels inside the payload it covers, so it is appended
+  // after signing rather than attached as a header.
+  const signed = { ...body, sign: signature ?? cryptomusSign(JSON.stringify(body), key) };
   return new Request('https://nitro.ng/api/payments/crypto/webhook', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-nowpayments-sig': signature,
-    },
-    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(signed),
   });
 }
 
@@ -63,7 +69,7 @@ function outcome(overrides = {}) {
     finalization: null,
     newlyFinalized: false,
     reason: 'provider_pending',
-    message: 'NOWPayments has not confirmed this payment yet',
+    message: 'The payment provider has not confirmed this payment yet',
     providerStatus: 'confirming',
     ...overrides,
   };
@@ -71,55 +77,56 @@ function outcome(overrides = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  process.env.NOWPAYMENTS_IPN_SECRET = 'webhook-secret-one';
-  mocks.reconcileNowPaymentsDeposit.mockResolvedValue(outcome());
+  mocks.getCryptomusCredentials.mockResolvedValue({
+    merchantId: 'webhook-merchant', apiKey: API_KEY, ready: true,
+  });
+  mocks.reconcileCryptoDeposit.mockResolvedValue(outcome());
   mocks.notifyDepositFinalized.mockResolvedValue({ attempted: 1, failed: [] });
 });
 
-afterEach(() => {
-  delete process.env.NOWPAYMENTS_IPN_SECRET;
-});
-
 describe('POST /api/payments/crypto/webhook', () => {
-  it('uses recursive HMAC validation and treats callback facts only as a reconciliation trigger', async () => {
+  it('verifies the in-body signature and treats callback facts only as a reconciliation trigger', async () => {
     const body = callbackBody({ nested: { z: 1, a: { y: 2, b: 3 } } });
 
-    const response = await POST(signedRequest(body, 'webhook-secret-one'));
+    const response = await POST(signedRequest(body));
 
     expect(response.status).toBe(200);
-    expect(mocks.reconcileNowPaymentsDeposit).toHaveBeenCalledWith({
+    expect(mocks.reconcileCryptoDeposit).toHaveBeenCalledWith({
       reference: REFERENCE,
       providerPaymentId: PAYMENT_ID,
       timeoutMs: 2_200,
       auditCompleted: true,
       recoveredBy: 'webhook',
     });
-    expect(mocks.reconcileNowPaymentsDeposit.mock.calls[0][0]).not.toHaveProperty('actuallyPaid');
+    expect(mocks.reconcileCryptoDeposit.mock.calls[0][0]).not.toHaveProperty('actuallyPaid');
     expect(mocks.notifyDepositFinalized).not.toHaveBeenCalled();
   });
 
-  it('reads a rotated IPN secret at request time', async () => {
-    const firstBody = callbackBody();
-    const first = await POST(signedRequest(firstBody, 'webhook-secret-one'));
+  it('reads rotated gateway credentials at request time', async () => {
+    const first = await POST(signedRequest(callbackBody()));
 
-    process.env.NOWPAYMENTS_IPN_SECRET = 'webhook-secret-two';
-    const secondBody = callbackBody({ payment_status: 'confirming' });
-    const second = await POST(signedRequest(secondBody, 'webhook-secret-two'));
+    // Rotating the gateway key must take effect on the next callback without a
+    // redeploy, so credentials are resolved per request rather than cached.
+    const rotated = 'cryptomus-webhook-key-two';
+    mocks.getCryptomusCredentials.mockResolvedValue({
+      merchantId: 'webhook-merchant', apiKey: rotated, ready: true,
+    });
+    const second = await POST(signedRequest(callbackBody({ status: 'check' }), rotated));
 
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
-    expect(mocks.reconcileNowPaymentsDeposit).toHaveBeenCalledTimes(2);
+    expect(mocks.reconcileCryptoDeposit).toHaveBeenCalledTimes(2);
   });
 
   it('returns a retryable 5xx when the authoritative provider query is retryable', async () => {
-    mocks.reconcileNowPaymentsDeposit.mockResolvedValue(outcome({
+    mocks.reconcileCryptoDeposit.mockResolvedValue(outcome({
       paymentState: 'retryable',
       retryable: true,
       reason: 'timeout',
       message: 'Payment verification is temporarily unavailable',
     }));
 
-    const response = await POST(signedRequest(callbackBody(), 'webhook-secret-one'));
+    const response = await POST(signedRequest(callbackBody()));
 
     expect(response.status).toBe(503);
     expect(response.headers.get('retry-after')).toBe('15');
@@ -128,15 +135,15 @@ describe('POST /api/payments/crypto/webhook', () => {
       'webhook_processing_failed',
       {
         level: 'warning',
-        data: { provider: 'nowpayments', reason: 'timeout' },
-        dedupeKey: 'webhook_processing_failed:nowpayments',
+        data: { provider: 'cryptomus', reason: 'timeout' },
+        dedupeKey: 'webhook_processing_failed:cryptomus',
       },
     );
   });
 
   it('notifies only when reconciliation newly finalizes the deposit', async () => {
     const finalization = { finalized: true, transaction: { id: 'deposit-1' } };
-    mocks.reconcileNowPaymentsDeposit.mockResolvedValue(outcome({
+    mocks.reconcileCryptoDeposit.mockResolvedValue(outcome({
       success: true,
       paymentState: 'credited',
       transactionStatus: 'Completed',
@@ -153,7 +160,7 @@ describe('POST /api/payments/crypto/webhook', () => {
       providerStatus: 'finished',
     }));
 
-    const response = await POST(signedRequest(callbackBody(), 'webhook-secret-one'));
+    const response = await POST(signedRequest(callbackBody()));
 
     expect(response.status).toBe(200);
     expect(mocks.notifyDepositFinalized).toHaveBeenCalledWith(finalization, { channel: 'Crypto' });
@@ -162,27 +169,26 @@ describe('POST /api/payments/crypto/webhook', () => {
   it('rejects an invalid signature before reconciliation', async () => {
     const response = await POST(signedRequest(
       callbackBody(),
-      'webhook-secret-one',
       '0'.repeat(128),
     ));
 
     expect(response.status).toBe(403);
-    expect(mocks.reconcileNowPaymentsDeposit).not.toHaveBeenCalled();
+    expect(mocks.reconcileCryptoDeposit).not.toHaveBeenCalled();
   });
 
   it('reports unexpected webhook processing failures', async () => {
     const failure = new Error('provider request failed');
-    mocks.reconcileNowPaymentsDeposit.mockRejectedValue(failure);
+    mocks.reconcileCryptoDeposit.mockRejectedValue(failure);
 
-    const response = await POST(signedRequest(callbackBody(), 'webhook-secret-one'));
+    const response = await POST(signedRequest(callbackBody()));
 
     expect(response.status).toBe(500);
     expect(mocks.reportOperationalFailure).toHaveBeenCalledWith(
       'webhook_processing_failed',
       {
         error: failure,
-        data: { provider: 'nowpayments' },
-        dedupeKey: 'webhook_processing_failed:nowpayments',
+        data: { provider: 'cryptomus' },
+        dedupeKey: 'webhook_processing_failed:cryptomus',
       },
     );
   });

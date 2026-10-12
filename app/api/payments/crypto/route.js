@@ -9,27 +9,47 @@ import { resolveDepositRate } from '@/lib/fx-deposit';
 import { notifyDepositFinalized } from '@/lib/deposit-notifications';
 import { isReservedProviderQueryLeaseKey } from '@/lib/provider-query-lease';
 import {
-  getNowPaymentsCreationApiKey,
-  recordNowPaymentsReview,
-  reconcileNowPaymentsDeposit,
-} from '@/lib/nowpayments-payment';
+  getCryptomusCreationCredentials,
+  recordCryptoPaymentReview,
+  reconcileCryptoDeposit,
+} from '@/lib/crypto-deposit';
 import {
   canonicalizeNonNegativeDecimal,
   compareNonNegativeDecimals,
-  normalizeNowPaymentsProviderId,
-  validateNowPaymentsCreationResponse,
-} from '@/lib/nowpayments-verification';
+} from '@/lib/decimal-amounts';
+import {
+  CRYPTOMUS_API_BASE,
+  cryptomusSign,
+  normalizeCryptomusProviderId,
+  validateCryptomusCreationResponse,
+} from '@/lib/cryptomus-verification';
 import { paymentStateFromTransactionStatus } from '@/lib/payment-state';
 import { getApplicationUrl } from '@/lib/env';
 
-const NOWPAYMENTS_URL = 'https://api.nowpayments.io/v1';
+
 const PROVIDER_TIMEOUT_MS = 15_000;
 const FALLBACK_NGN_PER_USD = '1600';
 const MIN_AMOUNT_KOBO = 100_000;
 const MAX_AMOUNT_KOBO = 1_000_000_000;
-const MIN_USD_CENTS = 1_100;
+// Crypto carries its own floor above the ₦1,000 wallet minimum, because every
+// deposit costs a network fee the customer pays and Cryptomus takes a
+// percentage, so very small amounts arrive worth noticeably less than they
+// cost. Denominated in naira rather than converted from a dollar figure: the
+// old $11 rule drifted with the exchange rate, so the number shown to
+// customers moved without anyone deciding it should.
+const MIN_CRYPTO_KOBO = 1_000_000;
+// Invoices are denominated in USD, and that is a pricing decision rather than
+// a technical one. The dollar figure is the naira amount divided by the deposit
+// rate, which carries Nitro's foreign-payer premium: at a 15% premium the
+// customer pays roughly 15% more value in crypto than the naira they are
+// credited, and that spread is the margin on crypto deposits.
+//
+// Cryptomus will happily invoice in NGN, and doing so reads simpler. It also
+// silently deletes that margin, because Cryptomus then converts at its own
+// market rate and keeps 2% on top. Verified: a ₦100,000 deposit is +12.7% priced
+// in USD and -2.0% priced in NGN. Do not "simplify" this back.
 const PRICE_CURRENCY = 'usd';
-const PAY_CURRENCY = 'usdttrc20';
+const INVOICE_LIFETIME_SECONDS = 3_600;
 
 function isUniqueConstraintError(error) {
   return error?.code === 'P2002';
@@ -58,7 +78,6 @@ function canonicalRate(value) {
     ? rate
     : FALLBACK_NGN_PER_USD;
 }
-
 function roundedUsdCents(amountKobo, rate) {
   const [integer, fraction = ''] = rate.split('.');
   const scale = 10n ** BigInt(fraction.length);
@@ -68,7 +87,6 @@ function roundedUsdCents(amountKobo, rate) {
   if (cents > BigInt(Number.MAX_SAFE_INTEGER)) return null;
   return Number(cents);
 }
-
 function usdAmountFromCents(cents) {
   return `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
 }
@@ -101,11 +119,19 @@ function instructionResponse(transaction, { deduplicated = false, expiresAt = nu
     transactionStatus: transaction.status,
     retryable: false,
     paymentId: transaction.providerPaymentId,
+    // Cryptomus hosts the checkout and the customer chooses their coin there,
+    // so there is no single pay address or amount to quote up front. This is
+    // the same hosted-link model Flutterwave already uses, and gatewayUrl is
+    // the field that already exists for it.
+    gatewayUrl: transaction.gatewayUrl,
     payAddress: transaction.providerPayAddress,
     payAmount: displayDecimal(transaction.providerPayAmount),
-    payCurrency: 'USDT (TRC-20)',
-    payCurrencyCode: transaction.providerPayCurrency || PAY_CURRENCY,
-    amountUsd: Number(displayDecimal(transaction.providerPriceAmount)),
+    payCurrency: transaction.providerPayCurrency || null,
+    payCurrencyCode: transaction.providerPayCurrency || null,
+    // The dollar figure the customer is actually charged. Shown in the modal
+    // beside the naira credit so the rate is visible before they pay rather
+    // than discovered on the payment page.
+    amountUsd: displayDecimal(transaction.providerPriceAmount),
     amountNgn: transaction.amount / 100,
     amount: transaction.amount / 100,
     reference: transaction.reference,
@@ -159,7 +185,7 @@ function ambiguousCreationResponse(transaction, reason = 'provider_creation_unkn
 }
 
 function rejectedCreationResponse(transaction, reason = 'provider_rejected_creation') {
-  const message = 'NOWPayments rejected this payment attempt. Please start a new one.';
+  const message = 'The payment provider rejected this attempt. Please start a new one.';
   return {
     ...terminalReplayResponse(transaction),
     success: false,
@@ -214,9 +240,10 @@ function replayExistingPayment(transaction, { amountKobo, couponId } = {}) {
   );
 }
 
+
 // The rate a dollar credits at, resolved by lib/fx-deposit so it is the same
-// number the currency display reads. With fx_premium_live off (the default)
-// this returns markup_usd_rate exactly as before.
+// number the currency display reads. Deliberately uncached: an Admin change to
+// the premium must apply to the very next invoice.
 async function getNgnPerUsdRate() {
   try {
     const { depositRate } = await resolveDepositRate();
@@ -239,22 +266,33 @@ function normalizedCouponId(value) {
     : null;
 }
 
-async function postNowPaymentsInvoice({ apiKey, payload, fetchImpl = globalThis.fetch }) {
+/**
+ * Create a Cryptomus invoice.
+ *
+ * Attempted exactly once, deliberately. A timeout here is ambiguous: Cryptomus
+ * may have created the invoice even though the reply was lost, and retrying
+ * would risk a second invoice against the same deposit. The caller treats an
+ * ambiguous result as retryable-but-unknown rather than failed, which is why
+ * ambiguousCreationResponse exists.
+ */
+async function postCryptomusInvoice({ merchantId, apiKey, payload, fetchImpl = globalThis.fetch }) {
   if (typeof fetchImpl !== 'function') {
     return { state: 'retryable', reason: 'transport_unavailable' };
   }
 
   const controller = new AbortController();
   let timer;
+  const body = JSON.stringify(payload);
   const request = (async () => {
     try {
-      const response = await fetchImpl(`${NOWPAYMENTS_URL}/payment`, {
+      const response = await fetchImpl(`${CRYPTOMUS_API_BASE}/v1/payment`, {
         method: 'POST',
         headers: {
-          'x-api-key': apiKey,
+          merchant: merchantId,
+          sign: cryptomusSign(body, apiKey),
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body,
         signal: controller.signal,
       });
 
@@ -290,8 +328,6 @@ async function postNowPaymentsInvoice({ apiKey, payload, fetchImpl = globalThis.
   });
 
   try {
-    // Invoice creation is deliberately attempted once. A timeout is ambiguous:
-    // the provider may have accepted the request even if the response was lost.
     return await Promise.race([request, timeout]);
   } finally {
     clearTimeout(timer);
@@ -320,7 +356,7 @@ async function bestEffortAttribution(req, userId) {
 async function bindCreationObservation(transaction, validation, expectedPriceAmount, now) {
   const sameReference = validation.reference === transaction.reference;
   const safePaymentId = sameReference
-    ? normalizeNowPaymentsProviderId(validation.paymentId)
+    ? normalizeCryptomusProviderId(validation.uuid ?? validation.paymentId)
     : null;
   const payAmount = displayDecimal(validation.payAmount);
   const data = {};
@@ -337,11 +373,18 @@ async function bindCreationObservation(transaction, validation, expectedPriceAmo
   if (safePaymentId && payAmount && compareNonNegativeDecimals(payAmount, '0') === 1) {
     data.providerPayAmount = payAmount;
   }
-  if (safePaymentId && validation.payCurrency === PAY_CURRENCY) {
-    data.providerPayCurrency = PAY_CURRENCY;
+  // Recorded as observed rather than checked against an expectation: the coin
+  // is the customer's choice on the Cryptomus page, so there is nothing to have
+  // expected it to be.
+  if (safePaymentId && validation.payCurrency) {
+    data.providerPayCurrency = validation.payCurrency;
   }
   if (validation.state === 'created') {
-    data.providerPayAddress = validation.payAddress;
+    data.providerPayAddress = validation.payAddress ?? null;
+    // The hosted checkout link is what the customer is actually sent to, so it
+    // has to be durable. Without it a successful creation whose response was
+    // lost would leave a paid-for invoice the customer can never reach.
+    if (validation.url) data.gatewayUrl = validation.url;
   }
 
   let bound = transaction;
@@ -384,7 +427,7 @@ async function bindCreationObservation(transaction, validation, expectedPriceAmo
   if (safePaymentId) {
     bound = await prisma.transaction.findUnique({ where: { id: transaction.id } });
     if (!bound) throw new Error('Crypto payment transaction disappeared during provider binding');
-    if (normalizeNowPaymentsProviderId(bound.providerPaymentId) !== safePaymentId) {
+    if (normalizeCryptomusProviderId(bound.providerPaymentId) !== safePaymentId) {
       bindingConflict = true;
     }
   }
@@ -395,14 +438,14 @@ async function bindCreationObservation(transaction, validation, expectedPriceAmo
 function creationReviewDetails(validation, expectedPriceAmount) {
   return {
     providerStatus: validation.providerStatus,
-    observedPaymentId: validation.paymentId,
+    observedPaymentId: validation.uuid ?? validation.paymentId,
     observedReference: validation.reference,
     expectedPriceAmount,
     priceAmount: validation.priceAmount,
     expectedPriceCurrency: PRICE_CURRENCY,
     priceCurrency: validation.priceCurrency,
     payAmount: validation.payAmount,
-    expectedPayCurrency: PAY_CURRENCY,
+    expectedPayCurrency: validation.payCurrency,
     payCurrency: validation.payCurrency,
   };
 }
@@ -497,25 +540,30 @@ export async function POST(req) {
     // Disabling the gateway blocks only new invoice creation. Existing rows
     // still replay above and GET/webhook/cron reconciliation remains active so
     // payments already sent cannot be stranded by an operational toggle.
-    const apiKey = await getNowPaymentsCreationApiKey();
-    if (!apiKey) {
+    const credentials = await getCryptomusCreationCredentials();
+    if (!credentials.ready) {
       return Response.json({ error: 'Crypto payments are not available' }, { status: 503 });
     }
 
-    const ngnPerUsd = await getNgnPerUsdRate();
-    const usdCents = roundedUsdCents(amountKobo, ngnPerUsd);
-    if (usdCents === null || usdCents < MIN_USD_CENTS) {
-      const minimumNgn = Math.ceil((MIN_USD_CENTS / 100) * Number(ngnPerUsd));
+    if (amountKobo < MIN_CRYPTO_KOBO) {
       return Response.json({
-        error: `Minimum for crypto is ~₦${minimumNgn.toLocaleString()} ($11 USD)`,
+        error: `Crypto deposits start at ₦${(MIN_CRYPTO_KOBO / 100).toLocaleString()}. Card and bank transfer start at ₦${(MIN_AMOUNT_KOBO / 100).toLocaleString()}.`,
       }, { status: 400 });
     }
 
+    // The floor is checked in naira above, because that is how it is set and
+    // displayed. The invoice is priced in dollars, because that is where the
+    // premium lives.
+    const ngnPerUsd = await getNgnPerUsdRate();
+    const usdCents = roundedUsdCents(amountKobo, ngnPerUsd);
+    if (usdCents === null || usdCents < 1) {
+      return Response.json({ error: 'Could not price this deposit. Please try again.' }, { status: 503 });
+    }
     const expectedPriceAmount = usdAmountFromCents(usdCents);
     const reference = paymentReference();
     const amountNgn = amountKobo / 100;
     const note = [
-      `Crypto deposit ₦${amountNgn.toLocaleString()} ($${expectedPriceAmount} USD)`,
+      `Crypto deposit ₦${amountNgn.toLocaleString()}`,
       couponId ? `[coupon:${couponId}]` : '',
     ].filter(Boolean).join(' ');
     // Resolve and validate the callback origin before persisting the durable
@@ -537,7 +585,6 @@ export async function POST(req) {
           note,
           providerPriceAmount: expectedPriceAmount,
           providerPriceCurrency: PRICE_CURRENCY,
-          providerPayCurrency: PAY_CURRENCY,
         },
       });
     } catch (error) {
@@ -549,15 +596,15 @@ export async function POST(req) {
       throw error;
     }
 
-    const providerResult = await postNowPaymentsInvoice({
-      apiKey,
+    const providerResult = await postCryptomusInvoice({
+      merchantId: credentials.merchantId,
+      apiKey: credentials.apiKey,
       payload: {
-        price_amount: Number(expectedPriceAmount),
-        price_currency: PRICE_CURRENCY,
-        pay_currency: PAY_CURRENCY,
+        amount: expectedPriceAmount,
+        currency: 'USD',
         order_id: reference,
-        order_description: `Nitro deposit ${reference}`,
-        ipn_callback_url: `${origin}/api/payments/crypto/webhook`,
+        url_callback: `${origin}/api/payments/crypto/webhook`,
+        lifetime: INVOICE_LIFETIME_SECONDS,
       },
     });
 
@@ -592,11 +639,10 @@ export async function POST(req) {
       );
     }
 
-    const validation = validateNowPaymentsCreationResponse(providerResult.payload, {
+    const validation = validateCryptomusCreationResponse(providerResult.payload, {
       reference,
-      expectedPriceAmount,
-      expectedPriceCurrency: PRICE_CURRENCY,
-      expectedPayCurrency: PAY_CURRENCY,
+      expectedAmount: expectedPriceAmount,
+      expectedCurrency: PRICE_CURRENCY,
     });
     const observedAt = new Date();
     const binding = await bindCreationObservation(
@@ -608,7 +654,7 @@ export async function POST(req) {
     const bound = binding.transaction;
 
     if (binding.bindingConflict) {
-      const reviewed = await recordNowPaymentsReview({
+      const reviewed = await recordCryptoPaymentReview({
         transaction: bound,
         reason: 'provider_payment_id_reused',
         details: creationReviewDetails(validation, expectedPriceAmount),
@@ -618,7 +664,7 @@ export async function POST(req) {
     }
 
     if (validation.state === 'review') {
-      const reviewed = await recordNowPaymentsReview({
+      const reviewed = await recordCryptoPaymentReview({
         transaction: bound,
         reason: validation.reason || 'creation_response_mismatch',
         details: creationReviewDetails(validation, expectedPriceAmount),
@@ -639,7 +685,7 @@ export async function POST(req) {
 
     if (validation.state !== 'created' || !bound.providerPaymentId) {
       if (!bound.providerPaymentId) {
-        const reviewed = await recordNowPaymentsReview({
+        const reviewed = await recordCryptoPaymentReview({
           transaction: bound,
           reason: 'creation_response_mismatch',
           details: {
@@ -752,7 +798,7 @@ export async function GET(req) {
     const reference = new URL(req.url).searchParams.get('reference')?.trim();
     if (!reference) return Response.json({ error: 'Reference required' }, { status: 400 });
 
-    const outcome = await reconcileNowPaymentsDeposit({
+    const outcome = await reconcileCryptoDeposit({
       reference,
       userId: session.id,
     });

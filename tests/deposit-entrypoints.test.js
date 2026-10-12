@@ -7,8 +7,8 @@ const FINALIZE_IMPORT = /import\s*\{[^}]*\bfinalizeDeposit\b[^}]*\}\s*from\s*['"
 const FINALIZE_CALL = /\bfinalizeDeposit\s*\(/;
 const RECONCILE_IMPORT = /import\s*\{[^}]*\breconcileFlutterwaveDeposit\b[^}]*\}\s*from\s*['"][^'"]+['"]/s;
 const RECONCILE_CALL = /\breconcileFlutterwaveDeposit\s*\(/;
-const CRYPTO_RECONCILE_IMPORT = /import\s*\{[^}]*\breconcileNowPaymentsDeposit\b[^}]*\}\s*from\s*['"][^'"]+['"]/s;
-const CRYPTO_RECONCILE_CALL = /\breconcileNowPaymentsDeposit\s*\(/;
+const CRYPTO_RECONCILE_IMPORT = /import\s*\{[^}]*\breconcileCryptoDeposit\b[^}]*\}\s*from\s*['"][^'"]+['"]/s;
+const CRYPTO_RECONCILE_CALL = /\breconcileCryptoDeposit\s*\(/;
 const RECOVERY_IMPORT = /import\s*\{[^}]*\brecoverStalePendingPayments\b[^}]*\}\s*from\s*['"][^'"]+['"]/s;
 const RECOVERY_CALL = /\brecoverStalePendingPayments\s*\(/;
 

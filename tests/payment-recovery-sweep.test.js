@@ -9,9 +9,9 @@ const mocks = vi.hoisted(() => ({
   idempotencyKeyFindMany: vi.fn().mockResolvedValue([]),
   idempotencyKeyDeleteMany: vi.fn().mockResolvedValue({ count: 0 }),
   reconcileFlutterwaveDeposit: vi.fn(),
-  reconcileNowPaymentsDeposit: vi.fn(),
+  reconcileCryptoDeposit: vi.fn(),
   getFlutterwaveSecretKey: vi.fn().mockResolvedValue('FLWSECK_TEST'),
-  getNowPaymentsApiKey: vi.fn().mockResolvedValue('NP_TEST'),
+  getCryptomusCredentials: vi.fn().mockResolvedValue('NP_TEST'),
   notifyDepositFinalized: vi.fn().mockResolvedValue(),
   info: vi.fn(),
   warn: vi.fn(),
@@ -40,10 +40,10 @@ vi.mock('@/lib/flutterwave-payment', () => ({
   reconcileFlutterwaveDeposit: mocks.reconcileFlutterwaveDeposit,
 }));
 
-vi.mock('@/lib/nowpayments-payment', () => ({
-  getNowPaymentsApiKey: mocks.getNowPaymentsApiKey,
-  NOWPAYMENTS_RECONCILABLE_STATUSES: ['Pending', 'Processing', 'Expired'],
-  reconcileNowPaymentsDeposit: mocks.reconcileNowPaymentsDeposit,
+vi.mock('@/lib/crypto-deposit', () => ({
+  getCryptomusCredentials: mocks.getCryptomusCredentials,
+  CRYPTO_RECONCILABLE_STATUSES: ['Pending', 'Processing', 'Expired'],
+  reconcileCryptoDeposit: mocks.reconcileCryptoDeposit,
 }));
 
 vi.mock('@/lib/deposit-notifications', () => ({
@@ -255,7 +255,7 @@ describe('stuck signal threshold', () => {
       createdAt: new Date(now.getTime() - 48 * 60 * 60 * 1000),
       paymentReconciliationAttemptAt: new Date(now.getTime() - 60 * 60 * 1000),
     })]);
-    mocks.reconcileNowPaymentsDeposit.mockResolvedValue(retryableRead);
+    mocks.reconcileCryptoDeposit.mockResolvedValue(retryableRead);
 
     const stats = await recoverStalePendingPayments({ now });
 
@@ -273,7 +273,7 @@ describe('stuck signal threshold', () => {
       createdAt: new Date(now.getTime() - 48 * 60 * 60 * 1000),
       paymentReconciliationAttemptAt: new Date(now.getTime() - 60 * 60 * 1000),
     })]);
-    mocks.reconcileNowPaymentsDeposit.mockResolvedValue(retryableRead);
+    mocks.reconcileCryptoDeposit.mockResolvedValue(retryableRead);
 
     const stats = await recoverStalePendingPayments({ now });
 

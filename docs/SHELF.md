@@ -311,6 +311,38 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   is a team again, then pick this up. The conversion feed and daily roll-up are
   built and waiting behind the same flag.
 
+- **Blog redesign — reference is NotPanel.** https://notpanel.com/blog. Trip,
+  13 Oct 2026: *"i like how they desugned their blog and its thumbnails and we
+  should take inspiration from that when redesigning ours."* A taste note, not
+  an agreed design — nothing is specified yet beyond the direction.
+
+  What is worth copying, from reading their index: every post carries an
+  illustrated thumbnail in one flat house style — icon compositions (a video
+  player with a clock, a wallet with a shield) on a solid brand-blue ground,
+  landscape, image above the text rather than beside it. Because the
+  illustrations share a palette and a vocabulary the index reads as one
+  publication instead of a pile of articles. A category label sits above each
+  title ("Guides", "Engineering", "Industry", "Reseller business") with the date
+  and a read-time estimate under it. Sans throughout, bold titles, muted grey
+  metadata. Single column, not a grid.
+
+  Where ours actually stands, checked against production the same day: 95 posts,
+  90 published, and **only 50 carry a thumbnail** — so 40 published posts render
+  `.bl-thumb` as a bare 150px accent-gradient block
+  (`components/blog-listing.jsx:135`). The 47 files in `public/blog/` are
+  already SVG, so the format NotPanel uses is the format we have; what is
+  missing is coverage and a shared visual language across them. We also already
+  have the category list (`lib/blog-categories.js`) their labels would come
+  from, and read time is derivable from `content`.
+
+  So the gap is not the layout — it is that half the posts have no artwork and
+  the half that do were drawn one at a time. Decide the illustration system
+  first (palette, icon vocabulary, who draws them, and whether 40 backfills are
+  worth it) because the grid is easy and the artwork is the actual work. Pairs
+  with the pillar-page restructure in the SEO/trust audit section below: same
+  index, one is what it looks like and the other is how it is organised, and
+  doing them in one pass avoids rebuilding the listing twice.
+
 - **Cohort / ops** — anything the nightly cohort check surfaces. See the
   protected routes in CLAUDE.md.
 

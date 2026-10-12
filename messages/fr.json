@@ -1567,6 +1567,7 @@
   "Type of Traffic": "Type de trafic",
   "Type to filter...": "Tapez pour filtrer...",
   "Type your email address to confirm": "Saisissez votre adresse e-mail pour confirmer",
+  "USD": "USD",
   "USD ·": "USD ·",
   "USDT via TRC-20": "USDT via TRC-20",
   "Unable to log out": "Déconnexion impossible",
@@ -2435,5 +2436,13 @@
   "Auto services": "Services automatiques",
   "Delivers to every post you make from now on, not to one post.": "Livre sur chaque publication que vous ferez désormais, pas sur une seule.",
   "Give it your profile or channel link. Quantity is what each new post gets.": "Donnez le lien de votre profil ou chaîne. La quantité est ce que reçoit chaque nouvelle publication.",
-  "Filter the list by Auto to see them.": "Filtrez la liste par Auto pour les voir."
+  "Filter the list by Auto to see them.": "Filtrez la liste par Auto pour les voir.",
+  "Bitcoin, USDT and more": "Bitcoin, USDT et plus",
+  "Bank transfer and mobile money are Nigerian-only for now. Card and crypto work from anywhere, and credit your wallet in naira.": "Le virement bancaire et le mobile money sont réservés au Nigéria pour l'instant. La carte et les cryptos fonctionnent partout et créditent votre portefeuille en nairas.",
+  "Pay with crypto": "Payer en crypto",
+  "Choose your coin on the next screen. Your wallet is credited in naira.": "Choisissez votre crypto sur l'écran suivant. Votre portefeuille est crédité en nairas.",
+  "The exact coin amount is shown on the payment page.": "Le montant exact en crypto est indiqué sur la page de paiement.",
+  "Open payment page": "Ouvrir la page de paiement",
+  "Could not start payment": "Impossible de démarrer le paiement",
+  "Crypto deposits start at": "Les dépôts en crypto commencent à"
 }

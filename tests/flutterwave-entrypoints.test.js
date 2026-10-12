@@ -11,8 +11,8 @@ const mocks = vi.hoisted(() => ({
   idempotencyKeyDeleteMany: vi.fn().mockResolvedValue({ count: 0 }),
   getFlutterwaveSecretKey: vi.fn(),
   reconcileFlutterwaveDeposit: vi.fn(),
-  getNowPaymentsApiKey: vi.fn(),
-  reconcileNowPaymentsDeposit: vi.fn(),
+  getCryptomusCredentials: vi.fn(),
+  reconcileCryptoDeposit: vi.fn(),
   finalizeDeposit: vi.fn(),
   notifyDepositFinalized: vi.fn(),
   info: vi.fn(),
@@ -43,12 +43,12 @@ vi.mock('@/lib/flutterwave-payment', () => ({
   reconcileFlutterwaveDeposit: mocks.reconcileFlutterwaveDeposit,
 }));
 
-vi.mock('@/lib/nowpayments-payment', () => ({
-  getNowPaymentsApiKey: mocks.getNowPaymentsApiKey,
-  NOWPAYMENTS_RECONCILABLE_STATUSES: [
+vi.mock('@/lib/crypto-deposit', () => ({
+  getCryptomusCredentials: mocks.getCryptomusCredentials,
+  CRYPTO_RECONCILABLE_STATUSES: [
     'Pending', 'Processing', 'Expired', 'Failed', 'Cancelled', 'Review', 'Rejected', 'Refunded',
   ],
-  reconcileNowPaymentsDeposit: mocks.reconcileNowPaymentsDeposit,
+  reconcileCryptoDeposit: mocks.reconcileCryptoDeposit,
 }));
 
 vi.mock('@/lib/deposit-finalization', () => ({
@@ -139,11 +139,12 @@ function webhookRequest({ signature = 'webhook-hash', event = 'charge.completed'
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv('FLUTTERWAVE_WEBHOOK_HASH', 'webhook-hash');
-  vi.stubEnv('NOWPAYMENTS_API_KEY', 'nowpayments-key');
+  vi.stubEnv('CRYPTOMUS_MERCHANT_ID', 'cryptomus-merchant');
+  vi.stubEnv('CRYPTOMUS_API_KEY', 'cryptomus-key');
   mocks.transactionCount.mockResolvedValue(0);
   mocks.transactionFindMany.mockResolvedValue([]);
   mocks.getFlutterwaveSecretKey.mockResolvedValue('flw-secret');
-  mocks.getNowPaymentsApiKey.mockResolvedValue('nowpayments-key');
+  mocks.getCryptomusCredentials.mockResolvedValue({ merchantId: 'cryptomus-merchant', apiKey: 'cryptomus-key', ready: true });
   mocks.transactionUpdate.mockResolvedValue({});
   mocks.transactionUpdateMany.mockResolvedValue({ count: 0 });
   mocks.notifyDepositFinalized.mockResolvedValue({ attempted: 1, failed: [] });
@@ -322,7 +323,7 @@ describe('recoverStalePendingPayments', () => {
         newlyFinalized: false,
       };
     });
-    mocks.reconcileNowPaymentsDeposit.mockResolvedValue({
+    mocks.reconcileCryptoDeposit.mockResolvedValue({
       paymentState: 'review',
       transactionStatus: 'Review',
       retryable: false,
@@ -453,9 +454,9 @@ describe('recoverStalePendingPayments', () => {
       });
     }
     expect(mocks.notifyDepositFinalized).toHaveBeenCalledTimes(1);
-    expect(mocks.reconcileNowPaymentsDeposit).toHaveBeenCalledWith({
+    expect(mocks.reconcileCryptoDeposit).toHaveBeenCalledWith({
       transaction: crypto,
-      apiKey: 'nowpayments-key',
+      credentials: { merchantId: 'cryptomus-merchant', apiKey: 'cryptomus-key', ready: true },
       recoveredBy: 'cron',
       timeoutMs: 8_000,
       auditCompleted: false,
@@ -523,7 +524,7 @@ describe('recoverStalePendingPayments', () => {
       providerPaymentId: 'np-completed',
     });
     useRecoveryBuckets({ cryptoCompleted: [completed] });
-    mocks.reconcileNowPaymentsDeposit.mockResolvedValue({
+    mocks.reconcileCryptoDeposit.mockResolvedValue({
       paymentState: 'review',
       transactionStatus: 'Completed',
       reason: 'refunded_after_credit',
@@ -556,9 +557,9 @@ describe('recoverStalePendingPayments', () => {
       ],
     }));
 
-    expect(mocks.reconcileNowPaymentsDeposit).toHaveBeenCalledWith({
+    expect(mocks.reconcileCryptoDeposit).toHaveBeenCalledWith({
       transaction: completed,
-      apiKey: 'nowpayments-key',
+      credentials: { merchantId: 'cryptomus-merchant', apiKey: 'cryptomus-key', ready: true },
       recoveredBy: 'cron',
       timeoutMs: 8_000,
       auditCompleted: true,
@@ -581,7 +582,7 @@ describe('recoverStalePendingPayments', () => {
       paymentReconciliationAttemptAt: null,
     });
     useRecoveryBuckets({ cryptoReviewed: [rejected] });
-    mocks.reconcileNowPaymentsDeposit.mockResolvedValue({
+    mocks.reconcileCryptoDeposit.mockResolvedValue({
       paymentState: 'review',
       transactionStatus: 'Rejected',
       reason: 'provider_verified_after_rejection',
@@ -597,9 +598,9 @@ describe('recoverStalePendingPayments', () => {
     const now = new Date('2026-07-17T12:00:00.000Z');
     const stats = await recoverStalePendingPayments({ now });
 
-    expect(mocks.reconcileNowPaymentsDeposit).toHaveBeenCalledWith({
+    expect(mocks.reconcileCryptoDeposit).toHaveBeenCalledWith({
       transaction: rejected,
-      apiKey: 'nowpayments-key',
+      credentials: { merchantId: 'cryptomus-merchant', apiKey: 'cryptomus-key', ready: true },
       recoveredBy: 'cron',
       timeoutMs: 8_000,
       auditCompleted: false,
@@ -645,7 +646,7 @@ describe('recoverStalePendingPayments', () => {
         });
       return eligible.slice(0, take);
     });
-    mocks.reconcileNowPaymentsDeposit.mockImplementation(async ({ transaction, now }) => {
+    mocks.reconcileCryptoDeposit.mockImplementation(async ({ transaction, now }) => {
       transaction.paymentReconciliationAttemptAt = now;
       return {
         paymentState: 'review',
@@ -660,10 +661,10 @@ describe('recoverStalePendingPayments', () => {
 
     const audited = new Set();
     for (let slot = 0; slot < reviewed.length; slot++) {
-      mocks.reconcileNowPaymentsDeposit.mockClear();
+      mocks.reconcileCryptoDeposit.mockClear();
       const now = new Date(Date.UTC(2026, 6, 17) + (slot * 5 * 60 * 1000));
       await recoverStalePendingPayments({ now });
-      audited.add(mocks.reconcileNowPaymentsDeposit.mock.calls[0][0].transaction.id);
+      audited.add(mocks.reconcileCryptoDeposit.mock.calls[0][0].transaction.id);
     }
 
     expect(audited.size).toBe(reviewed.length);
@@ -695,7 +696,7 @@ describe('recoverStalePendingPayments', () => {
         });
       return eligible.slice(0, take);
     });
-    mocks.reconcileNowPaymentsDeposit.mockImplementation(async ({ transaction, now }) => {
+    mocks.reconcileCryptoDeposit.mockImplementation(async ({ transaction, now }) => {
       transaction.paymentReconciliationAttemptAt = now;
       return {
       paymentState: 'retryable',
@@ -710,10 +711,10 @@ describe('recoverStalePendingPayments', () => {
 
     const audited = new Set();
     for (let slot = 0; slot < completed.length; slot++) {
-      mocks.reconcileNowPaymentsDeposit.mockClear();
+      mocks.reconcileCryptoDeposit.mockClear();
       const now = new Date(Date.UTC(2026, 6, 17) + (slot * 5 * 60 * 1000));
       await recoverStalePendingPayments({ now });
-      audited.add(mocks.reconcileNowPaymentsDeposit.mock.calls[0][0].transaction.id);
+      audited.add(mocks.reconcileCryptoDeposit.mock.calls[0][0].transaction.id);
     }
 
     expect(audited.size).toBe(completed.length);

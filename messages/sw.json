@@ -1567,6 +1567,7 @@
   "Type of Traffic": "Aina ya trafiki",
   "Type to filter...": "Andika ili kuchuja...",
   "Type your email address to confirm": "Weka anwani yako ya barua pepe kuthibitisha",
+  "USD": "USD",
   "USD ·": "USD ·",
   "USDT via TRC-20": "USDT kupitia TRC-20",
   "Unable to log out": "Imeshindwa kutoka",
@@ -2435,5 +2436,13 @@
   "Auto services": "Huduma za otomatiki",
   "Delivers to every post you make from now on, not to one post.": "Inawasilisha kwa kila chapisho utakayoweka kuanzia sasa, sio chapisho moja.",
   "Give it your profile or channel link. Quantity is what each new post gets.": "Weka kiungo cha wasifu au chaneli yako. Kiasi ni kile kila chapisho jipya linapata.",
-  "Filter the list by Auto to see them.": "Chuja orodha kwa Auto ili kuziona."
+  "Filter the list by Auto to see them.": "Chuja orodha kwa Auto ili kuziona.",
+  "Bitcoin, USDT and more": "Bitcoin, USDT na zaidi",
+  "Bank transfer and mobile money are Nigerian-only for now. Card and crypto work from anywhere, and credit your wallet in naira.": "Uhamisho wa benki na pesa za simu ni kwa Nigeria pekee kwa sasa. Kadi na sarafu za kidijitali zinafanya kazi popote, na zinaweka salio kwenye pochi yako kwa naira.",
+  "Pay with crypto": "Lipa kwa sarafu ya kidijitali",
+  "Choose your coin on the next screen. Your wallet is credited in naira.": "Chagua sarafu yako kwenye skrini inayofuata. Pochi yako inawekewa salio kwa naira.",
+  "The exact coin amount is shown on the payment page.": "Kiasi kamili cha sarafu kinaonyeshwa kwenye ukurasa wa malipo.",
+  "Open payment page": "Fungua ukurasa wa malipo",
+  "Could not start payment": "Imeshindwa kuanzisha malipo",
+  "Crypto deposits start at": "Amana za sarafu za kidijitali huanzia"
 }

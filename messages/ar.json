@@ -1567,6 +1567,7 @@
   "Type of Traffic": "نوع الزيارات",
   "Type to filter...": "اكتب للتصفية...",
   "Type your email address to confirm": "أدخل بريدك الإلكتروني للتأكيد",
+  "USD": "USD",
   "USD ·": "USD ·",
   "USDT via TRC-20": "USDT عبر TRC-20",
   "Unable to log out": "تعذّر تسجيل الخروج",
@@ -2435,5 +2436,13 @@
   "Auto services": "الخدمات التلقائية",
   "Delivers to every post you make from now on, not to one post.": "تُسلّم إلى كل منشور تنشره من الآن، لا إلى منشور واحد.",
   "Give it your profile or channel link. Quantity is what each new post gets.": "ضع رابط ملفك أو قناتك. الكمية هي ما يحصل عليه كل منشور جديد.",
-  "Filter the list by Auto to see them.": "صفِّ القائمة بـ Auto لرؤيتها."
+  "Filter the list by Auto to see them.": "صفِّ القائمة بـ Auto لرؤيتها.",
+  "Bitcoin, USDT and more": "بيتكوين وUSDT وغيرها",
+  "Bank transfer and mobile money are Nigerian-only for now. Card and crypto work from anywhere, and credit your wallet in naira.": "التحويل البنكي والمحفظة عبر الهاتف متاحان داخل نيجيريا فقط حاليًا. أما البطاقة والعملات الرقمية فتعمل من أي مكان، وتُضاف القيمة إلى محفظتك بالنايرا.",
+  "Pay with crypto": "الدفع بالعملات الرقمية",
+  "Choose your coin on the next screen. Your wallet is credited in naira.": "اختر عملتك في الشاشة التالية. تُضاف القيمة إلى محفظتك بالنايرا.",
+  "The exact coin amount is shown on the payment page.": "يظهر مبلغ العملة الرقمية بالضبط في صفحة الدفع.",
+  "Open payment page": "افتح صفحة الدفع",
+  "Could not start payment": "تعذّر بدء الدفع",
+  "Crypto deposits start at": "تبدأ إيداعات العملات الرقمية من"
 }

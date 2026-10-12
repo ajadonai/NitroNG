@@ -179,9 +179,14 @@ const ACCEPTED_TYPES = [
   { label: msg("Mobile Money"), short: msg("Mobile"), icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> },
 ];
 
+// Mirrors MIN_CRYPTO_KOBO in app/api/payments/crypto/route.js. The server is
+// still the authority; this exists so the floor is visible before somebody
+// picks crypto and presses pay.
+const MIN_CRYPTO_NGN = 10_000;
+
 const GW_META = {
   flutterwave: { desc: msg("Card, bank transfer"), speed: msg("Fast") },
-  crypto: { desc: msg("USDT via TRC-20"), speed: msg("5–30 min") },
+  crypto: { desc: msg("Bitcoin, USDT and more"), speed: msg("5–30 min") },
   manual: { desc: msg("Transfer from any bank"), speed: msg("15–60 min") },
 };
 
@@ -444,7 +449,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           reference: data.reference,
         };
 
-        if (res.ok && data.payAddress) {
+        if (res.ok && data.gatewayUrl) {
           releaseCryptoPaymentAttempt(cryptoAttemptCache.current, attempt.fingerprint);
           stopCryptoPolling();
           setCryptoModal(data);
@@ -466,7 +471,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 const sd = await sr.json();
                 const pollResult = {
                   ...sd,
-                  status: sd.status || (sd.npStatus === "confirming" ? "Confirming" : "Pending"),
+                  status: sd.status || (sd.providerStatus === "check" ? "Confirming" : "Pending"),
                 };
                 if (!sr.ok && !isTerminalCryptoPaymentResult(pollResult)) return;
                 applyCryptoStatusResult(pollResult, fallback);
@@ -489,7 +494,16 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           if (isDefinitiveCryptoCreationRejection(res.status)) {
             releaseCryptoPaymentAttempt(cryptoAttemptCache.current, attempt.fingerprint);
           }
-          toast.error(tr("Payment failed"), data.error || data.message ? tr(data.message) : tr("Failed to create crypto payment"));
+          // The condition tested error-or-message but only ever rendered
+          // message, so a response carrying only `error` (every 400 this route
+          // returns, including the deposit minimum) surfaced as an empty
+          // description. The reason was always there; the toast discarded it.
+          // The server's message is the useful half, so it leads. "Payment
+          // failed" as a heading told somebody whose amount was simply too low
+          // that something had broken, which is both alarming and wrong.
+          const failureReason = data.error || data.message;
+          if (failureReason) toast.error(tr("Could not start payment"), tr(failureReason));
+          else toast.error(tr("Could not start payment"), tr("Failed to create crypto payment"));
         }
       } catch (err) {
         toast.error(
@@ -734,7 +748,15 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         );
       })()}
       <div className="min-h-0 mt-1 flex items-center">
-        {numAmount > 0 && numAmount < 1000 ? (
+        {/* Crypto carries a higher floor than the rest of the wallet, so it is
+            said here rather than left for the server to reject after they have
+            already picked a method and pressed pay. */}
+        {numAmount > 0 && numAmount < MIN_CRYPTO_NGN && method === "crypto" ? (
+          <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            {tr("Crypto deposits start at")} {money(MIN_CRYPTO_NGN)}
+          </div>
+        ) : numAmount > 0 && numAmount < 1000 ? (
           <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             Minimum deposit is {money(1000)}
@@ -949,7 +971,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               a hidden method with one reads as the site knowing where you are. */}
           {!gatewaysLoading && hiddenNigeriaOnly > 0 && (
             gateways.length > 0
-              ? <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">{tr("Bank transfer and mobile money are Nigerian-only for now. Card and USDT work from anywhere, and credit your wallet in naira.")}</div>
+              ? <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">{tr("Bank transfer and mobile money are Nigerian-only for now. Card and crypto work from anywhere, and credit your wallet in naira.")}</div>
               : <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">{tr("No payment method is available for your country yet. Message us on WhatsApp and we will sort it out.")}</div>
           )}
           {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
@@ -1018,25 +1040,33 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               </>
             ) : (
               <>
-                <div className="text-base font-semibold mb-1 text-t-text">{tr("Send USDT (TRC-20)")}</div>
-                <div className="text-[13px] mb-4 text-t-text-muted">{tr("Send exactly the amount below to this address")}</div>
+                <div className="text-base font-semibold mb-1 text-t-text">{tr("Pay with crypto")}</div>
+                <div className="text-[13px] mb-4 text-t-text-muted">{tr("Choose your coin on the next screen. Your wallet is credited in naira.")}</div>
 
                 <div className="p-3.5 rounded-[10px] mb-3 text-center" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.04)", border: `1px solid ${t.cardBorder}` }}>
-                  <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1 text-t-text-muted">{tr("Amount to send")}</div>
-                  <div className="m text-[28px] font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{cryptoModal.payAmount} USDT</div>
-                  <div className="text-xs mt-0.5 text-t-text-muted">≈ ${cryptoModal.amountUsd} {tr("USD ·")} {fN(cryptoModal.amountNgn)}{Number(cryptoModal.amountUsd) > 0 && <> · ₦{Math.round(Number(cryptoModal.amountNgn) / Number(cryptoModal.amountUsd)).toLocaleString()} per $1</>}</div>
-                  {/* The one sentence in the product that shows both currencies:
-                      said here, before the money moves, so nobody meets the rate after. */}
-                  <div className="text-[11px] mt-2 text-t-text-muted">{tr("Your wallet is credited in naira at this rate.")}</div>
+                  <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1 text-t-text-muted">{tr("Amount")}</div>
+                  <div className="m text-[28px] font-bold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(cryptoModal.amountNgn)}</div>
+                  {/* The dollar figure is shown because the customer meets it on
+                      the payment page regardless, and a number that appears for
+                      the first time after they have committed reads as a
+                      surprise. The naira-per-dollar division is deliberately
+                      not done for them: the deposit rate carries Nitro's
+                      premium, and spelling out the spread invites a holder to
+                      sell their coin elsewhere and bank transfer instead. The
+                      charge is disclosed; the margin is not advertised. */}
+                  {Number(cryptoModal.amountUsd) > 0 && (
+                    <div className="text-xs mt-0.5 text-t-text-muted">≈ ${cryptoModal.amountUsd} {tr("USD")}</div>
+                  )}
+                  <div className="text-[11px] mt-2 text-t-text-muted">{tr("The exact coin amount is shown on the payment page.")}</div>
                 </div>
 
-                <div className="mb-3">
-                  <div className="text-[11px] font-semibold uppercase tracking-[1px] mb-1 text-t-text-muted">{tr("TRC-20 Address")}</div>
-                  <div className="py-2.5 px-3 rounded-lg text-xs leading-normal break-all text-t-text font-[JetBrains_Mono,monospace]" style={{ background: dark ? "#160f22" : "#f8f8f8", border: `1px solid ${t.cardBorder}` }}>
-                    {cryptoModal.payAddress}
-                  </div>
-                  <button onClick={() => { copyText(cryptoModal.payAddress); }} className="mt-1.5 py-1.5 px-3.5 rounded-md bg-transparent text-xs font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent-ink font-[inherit]" style={{ border: `1px solid ${t.accent}` }}>{tr("Copy address")}</button>
-                </div>
+                <a
+                  href={cryptoModal.gatewayUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full py-3 mb-3 rounded-[10px] text-center text-[15px] font-semibold cursor-pointer no-underline transition-transform duration-200 hover:-translate-y-px text-white"
+                  style={{ background: t.accent }}
+                >{tr("Open payment page")}</a>
 
                 <div className="py-2.5 px-3.5 rounded-lg mb-3.5" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.06)", border: `1px solid ${dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.14)"}` }}>
                   <div className="flex items-center gap-2">

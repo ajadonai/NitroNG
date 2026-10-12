@@ -29,7 +29,7 @@ function validProductionEnv() {
     UPSTASH_REDIS_REST_URL: 'https://redis.example.upstash.io',
     UPSTASH_REDIS_REST_TOKEN: strongSecret('redis'),
     FLUTTERWAVE_WEBHOOK_HASH: strongSecret('flutterwave'),
-    NOWPAYMENTS_IPN_SECRET: strongSecret('nowpayments'),
+    CRYPTOMUS_MERCHANT_ID: strongSecret('cryptomusmerchant'),
     BREVO_API_KEY: strongSecret('brevo'),
     MTP_API_KEY: strongSecret('mtp'),
     DAOSMM_API_KEY: strongSecret('dao'),
@@ -202,7 +202,7 @@ describe('production environment validation', () => {
       ...validProductionEnv(),
       FLUTTERWAVE_SECRET_KEY: 'change-me',
       FLUTTERWAVE_PUBLIC_KEY: 'short',
-      NOWPAYMENTS_API_KEY: 'development-secret',
+      CRYPTOMUS_API_KEY: 'development-secret',
     };
 
     expect(() => validateProductionEnv(env, { phase: 'build' })).toThrow(
@@ -211,7 +211,7 @@ describe('production environment validation', () => {
           'FLUTTERWAVE_SECRET_KEY must contain at least 16 characters',
           'FLUTTERWAVE_SECRET_KEY must not use a placeholder or development value',
           'FLUTTERWAVE_PUBLIC_KEY must contain at least 8 characters',
-          'NOWPAYMENTS_API_KEY must not use a placeholder or development value',
+          'CRYPTOMUS_API_KEY must not use a placeholder or development value',
         ]),
       }),
     );

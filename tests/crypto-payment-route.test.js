@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
   rateLimit: vi.fn(),
-  getNowPaymentsCreationApiKey: vi.fn(),
-  reconcileNowPaymentsDeposit: vi.fn(),
-  recordNowPaymentsReview: vi.fn(),
+  getCryptomusCreationCredentials: vi.fn(),
+  reconcileCryptoDeposit: vi.fn(),
+  recordCryptoPaymentReview: vi.fn(),
   notifyDepositFinalized: vi.fn(),
   parseFbCookies: vi.fn(() => ({})),
   settingFindUnique: vi.fn(),
@@ -53,10 +53,10 @@ vi.mock('@/lib/provider-query-lease', () => ({
     typeof value === 'string' && value.startsWith('payment:provider-query:')
   ),
 }));
-vi.mock('@/lib/nowpayments-payment', () => ({
-  getNowPaymentsCreationApiKey: mocks.getNowPaymentsCreationApiKey,
-  reconcileNowPaymentsDeposit: mocks.reconcileNowPaymentsDeposit,
-  recordNowPaymentsReview: mocks.recordNowPaymentsReview,
+vi.mock('@/lib/crypto-deposit', () => ({
+  getCryptomusCreationCredentials: mocks.getCryptomusCreationCredentials,
+  reconcileCryptoDeposit: mocks.reconcileCryptoDeposit,
+  recordCryptoPaymentReview: mocks.recordCryptoPaymentReview,
 }));
 vi.mock('@/lib/deposit-notifications', () => ({
   notifyDepositFinalized: mocks.notifyDepositFinalized,
@@ -72,7 +72,7 @@ const { DELETE, GET, POST } = await import('@/app/api/payments/crypto/route');
 const USER_ID = 'user-crypto-1';
 const IDEMPOTENCY_KEY = 'customer-attempt-1';
 const REFERENCE = 'NTR-CRYPTO-TEST-1';
-const PAYMENT_ID = '900719925474099312345';
+const PAYMENT_ID = '940c4d31-70fb-4bf3-856b-5eb12a490af4';
 
 function request(method, body, search = '') {
   return new Request(`https://nitro.ng/api/payments/crypto${search}`, {
@@ -97,7 +97,7 @@ function pendingTransaction(overrides = {}) {
     providerPriceAmount: '31.25',
     providerPriceCurrency: 'usd',
     providerPayAmount: null,
-    providerPayCurrency: 'usdttrc20',
+    providerPayCurrency: null,
     providerPayAddress: null,
     paymentReviewReason: null,
     paymentReviewResolvedAt: null,
@@ -105,19 +105,27 @@ function pendingTransaction(overrides = {}) {
   };
 }
 
+// Cryptomus wraps every reply in { state, result }. The deposit here is
+// ₦50,000, invoiced in USD at the deposit rate: $31.25 at 1600.
 function providerCreation(overrides = {}) {
   return {
-    payment_id: PAYMENT_ID,
-    payment_status: 'waiting',
-    order_id: REFERENCE,
-    parent_payment_id: null,
-    price_amount: '31.25',
-    price_currency: 'usd',
-    pay_amount: '30.125',
-    pay_currency: 'usdttrc20',
-    pay_address: 'TMwFHYXLJaRUPeW6421aqXL4ZEzPRFGkGT',
-    expiration_estimate_date: '2026-07-17T02:00:00Z',
-    ...overrides,
+    state: 0,
+    result: {
+      uuid: PAYMENT_ID,
+      order_id: REFERENCE,
+      amount: '31.25',
+      currency: 'USD',
+      payment_status: 'check',
+      status: 'check',
+      url: `https://pay.cryptomus.com/pay/${PAYMENT_ID}`,
+      address: null,
+      address_qr_code: null,
+      payer_currency: null,
+      payer_amount: null,
+      expired_at: 1_785_000_000,
+      is_final: false,
+      ...overrides,
+    },
   };
 }
 
@@ -125,7 +133,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.getCurrentUser.mockResolvedValue({ id: USER_ID });
   mocks.rateLimit.mockResolvedValue({ limited: false });
-  mocks.getNowPaymentsCreationApiKey.mockResolvedValue('np-key');
+  mocks.getCryptomusCreationCredentials.mockResolvedValue({ merchantId: 'cryptomus-merchant', apiKey: 'cryptomus-key', ready: true });
   mocks.settingFindUnique.mockResolvedValue({ value: '1600' });
   // The rate now comes through lib/fx-deposit, which reads the settings in one
   // findMany. With no fx_premium_live row the resolver returns markup_usd_rate
@@ -173,7 +181,7 @@ describe('POST /api/payments/crypto', () => {
   });
 
   it('blocks new invoices when the crypto gateway is disabled', async () => {
-    mocks.getNowPaymentsCreationApiKey.mockResolvedValue('');
+    mocks.getCryptomusCreationCredentials.mockResolvedValue({ merchantId: '', apiKey: '', ready: false });
 
     const response = await POST(request('POST', {
       amount: 50_000,
@@ -217,7 +225,7 @@ describe('POST /api/payments/crypto', () => {
       const providerRequest = JSON.parse(options.body);
       return Response.json(providerCreation({
         order_id: providerRequest.order_id,
-        price_amount: providerRequest.price_amount,
+        amount: providerRequest.amount,
       }));
     });
     mocks.transactionUpdateMany.mockImplementation(async ({ data }) => {
@@ -247,15 +255,51 @@ describe('POST /api/payments/crypto', () => {
         idempotencyKey: IDEMPOTENCY_KEY,
         providerPriceAmount: '31.25',
         providerPriceCurrency: 'usd',
-        providerPayCurrency: 'usdttrc20',
       }),
     });
     expect(body).toMatchObject({
       paymentId: PAYMENT_ID,
-      payAddress: 'TMwFHYXLJaRUPeW6421aqXL4ZEzPRFGkGT',
-      payAmount: '30.125',
+      // Cryptomus hosts the checkout and the customer picks their coin there,
+      // so there is no address or amount to quote at creation time; the hosted
+      // link is what the customer is sent to.
+      gatewayUrl: `https://pay.cryptomus.com/pay/${PAYMENT_ID}`,
+      payAddress: null,
+      payAmount: null,
       reference: created.reference,
       status: 'Pending',
+    });
+  });
+
+  // This exists because the margin was silently deleted once. Pricing the
+  // invoice in NGN reads simpler and passes every other test in this file:
+  // Cryptomus accepts it, the amounts reconcile, the customer pays. It also
+  // hands back the whole premium and then pays Cryptomus 2% on top, turning
+  // +12.7% into -2.0% with nothing failing anywhere. So the currency is
+  // asserted, not just the arithmetic.
+  it('invoices in USD at the premium rate, which is where the crypto margin lives', async () => {
+    mocks.settingFindMany.mockResolvedValue([
+      { key: 'markup_usd_market', value: '1329' },
+      { key: 'fx_premium_live', value: '1' },
+      { key: 'fx_premium_percent', value: '15' },
+    ]);
+    const created = pendingTransaction({ providerPriceAmount: '43.27' });
+    mocks.transactionCreate.mockResolvedValue(created);
+    mocks.fetch.mockResolvedValue(Response.json(providerCreation({ amount: '43.27' })));
+
+    await POST(request('POST', { amount: 50_000, idempotencyKey: IDEMPOTENCY_KEY }));
+
+    // ₦50,000 at a deposit rate of 1155.65 (1329 ÷ 1.15), so the customer
+    // sends $43.27 of crypto — about ₦57,500 at the real market rate — for a
+    // ₦50,000 credit. That gap is the margin.
+    const sent = JSON.parse(mocks.fetch.mock.calls[0][1].body);
+    expect(sent).toMatchObject({ amount: '43.27', currency: 'USD' });
+    expect(sent.currency).not.toBe('NGN');
+    expect(sent.amount).not.toBe('50000.00');
+    expect(mocks.transactionCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        providerPriceAmount: '43.27',
+        providerPriceCurrency: 'usd',
+      }),
     });
   });
 
@@ -387,7 +431,7 @@ describe('POST /api/payments/crypto', () => {
       const providerRequest = JSON.parse(options.body);
       return Response.json(providerCreation({
         order_id: providerRequest.order_id,
-        price_amount: providerRequest.price_amount,
+        amount: providerRequest.amount,
       }));
     });
     mocks.transactionUpdateMany
@@ -396,7 +440,7 @@ describe('POST /api/payments/crypto', () => {
     mocks.transactionFindUnique.mockImplementation(async ({ where }) => (
       where.userId_idempotencyKey ? null : created
     ));
-    mocks.recordNowPaymentsReview.mockImplementation(async ({ transaction, reason }) => ({
+    mocks.recordCryptoPaymentReview.mockImplementation(async ({ transaction, reason }) => ({
       ...transaction,
       status: 'Review',
       paymentReviewReason: reason,
@@ -415,7 +459,7 @@ describe('POST /api/payments/crypto', () => {
       status: 'Review',
       reason: 'provider_payment_id_reused',
     });
-    expect(mocks.recordNowPaymentsReview).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mocks.recordCryptoPaymentReview).toHaveBeenCalledWith(expect.objectContaining({
       reason: 'provider_payment_id_reused',
     }));
     expect(mocks.transactionUpdate).not.toHaveBeenCalled();
@@ -431,7 +475,7 @@ describe('POST /api/payments/crypto', () => {
       const providerRequest = JSON.parse(options.body);
       return Response.json(providerCreation({
         order_id: providerRequest.order_id,
-        price_amount: providerRequest.price_amount,
+        amount: providerRequest.amount,
       }));
     });
 
@@ -441,12 +485,12 @@ describe('POST /api/payments/crypto', () => {
         ? null
         : {
             ...created,
-            providerPaymentId: 'different-provider-payment',
+            providerPaymentId: '99999999-8888-4777-8666-555555555555',
             providerPayAmount: '44.5',
             providerPayAddress: 'TDifferentInvoiceAddress',
           }
     ));
-    mocks.recordNowPaymentsReview.mockImplementation(async ({ transaction, reason }) => ({
+    mocks.recordCryptoPaymentReview.mockImplementation(async ({ transaction, reason }) => ({
       ...transaction,
       status: 'Review',
       paymentReviewReason: reason,
@@ -475,14 +519,15 @@ describe('POST /api/payments/crypto', () => {
       },
       data: expect.objectContaining({
         providerPaymentId: PAYMENT_ID,
-        providerPayAmount: '30.125',
-        providerPayAddress: 'TMwFHYXLJaRUPeW6421aqXL4ZEzPRFGkGT',
+        // The hosted link is the durable artefact now, not an address: without
+        // it a created invoice whose response was lost is unreachable.
+        gatewayUrl: `https://pay.cryptomus.com/pay/${PAYMENT_ID}`,
       }),
     }));
     expect(mocks.transactionUpdate).not.toHaveBeenCalled();
-    expect(mocks.recordNowPaymentsReview).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mocks.recordCryptoPaymentReview).toHaveBeenCalledWith(expect.objectContaining({
       transaction: expect.objectContaining({
-        providerPaymentId: 'different-provider-payment',
+        providerPaymentId: '99999999-8888-4777-8666-555555555555',
         providerPayAmount: '44.5',
         providerPayAddress: 'TDifferentInvoiceAddress',
       }),
@@ -496,16 +541,10 @@ describe('POST /api/payments/crypto', () => {
       created = { ...pendingTransaction(), ...data, id: 'deposit-1' };
       return created;
     });
-    mocks.fetch.mockResolvedValue(Response.json({
-      payment_status: 'waiting',
-      order_id: REFERENCE,
-      price_amount: '31.25',
-      price_currency: 'usd',
-      pay_amount: '30.125',
-      pay_currency: 'usdttrc20',
-      pay_address: 'TUnknownPayment',
-    }));
-    mocks.recordNowPaymentsReview.mockImplementation(async ({ transaction, reason }) => ({
+    mocks.fetch.mockResolvedValue(Response.json(providerCreation({
+      uuid: '99999999-8888-4777-8666-555555555555',
+    })));
+    mocks.recordCryptoPaymentReview.mockImplementation(async ({ transaction, reason }) => ({
       ...transaction,
       status: 'Review',
       paymentReviewReason: reason,
@@ -522,12 +561,19 @@ describe('POST /api/payments/crypto', () => {
     expect(body).toMatchObject({
       paymentState: 'review',
       status: 'Review',
-      reason: 'creation_response_mismatch',
+      reason: 'reference_mismatch',
     });
     expect(mocks.fetch).toHaveBeenCalledTimes(1);
-    expect(mocks.recordNowPaymentsReview).toHaveBeenCalledWith(expect.objectContaining({
-      reason: 'creation_response_mismatch',
-      details: expect.objectContaining({ validationReason: 'invalid_payment_id' }),
+    // The validator now names which part of the response disagreed, so the
+    // reason itself is the validation reason and the details carry what was
+    // observed against what was expected.
+    expect(mocks.recordCryptoPaymentReview).toHaveBeenCalledWith(expect.objectContaining({
+      reason: 'reference_mismatch',
+      details: expect.objectContaining({
+        observedReference: REFERENCE,
+        observedPaymentId: '99999999-8888-4777-8666-555555555555',
+        expectedPriceCurrency: 'usd',
+      }),
     }));
   });
 
@@ -548,7 +594,7 @@ describe('GET /api/payments/crypto', () => {
   it('scopes reconciliation to the authenticated user and notifies only a new finalization', async () => {
     const transaction = pendingTransaction({ status: 'Completed' });
     const finalization = { finalized: true, transaction };
-    mocks.reconcileNowPaymentsDeposit.mockResolvedValue({
+    mocks.reconcileCryptoDeposit.mockResolvedValue({
       success: true,
       paymentState: 'credited',
       transactionStatus: 'Completed',
@@ -571,7 +617,7 @@ describe('GET /api/payments/crypto', () => {
       status: 'Completed',
       reference: REFERENCE,
     });
-    expect(mocks.reconcileNowPaymentsDeposit).toHaveBeenCalledWith({
+    expect(mocks.reconcileCryptoDeposit).toHaveBeenCalledWith({
       reference: REFERENCE,
       userId: USER_ID,
     });
@@ -580,7 +626,7 @@ describe('GET /api/payments/crypto', () => {
 
   it('does not replay notifications for an already-completed payment', async () => {
     const transaction = pendingTransaction({ status: 'Completed' });
-    mocks.reconcileNowPaymentsDeposit.mockResolvedValue({
+    mocks.reconcileCryptoDeposit.mockResolvedValue({
       success: true,
       paymentState: 'credited',
       transactionStatus: 'Completed',
@@ -604,7 +650,7 @@ describe('GET /api/payments/crypto', () => {
       paymentReviewReason: 'refunded_after_credit',
       paymentReviewResolvedAt: null,
     });
-    mocks.reconcileNowPaymentsDeposit.mockResolvedValue({
+    mocks.reconcileCryptoDeposit.mockResolvedValue({
       success: false,
       paymentState: 'review',
       transactionStatus: 'Completed',

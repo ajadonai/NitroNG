@@ -60,11 +60,11 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 const {
-  getNowPaymentsCreationApiKey,
-  reconcileNowPaymentsDeposit,
-} = await import('@/lib/nowpayments-payment');
+  getCryptomusCreationCredentials,
+  reconcileCryptoDeposit,
+} = await import('@/lib/crypto-deposit');
 
-const PAYMENT_ID = '900719925474099312345';
+const PAYMENT_ID = '940c4d31-70fb-4bf3-856b-5eb12a490af4';
 const REFERENCE = 'NTR-CRYPTO-TEST-1';
 const NOW = new Date('2026-07-17T01:00:00.000Z');
 
@@ -82,14 +82,14 @@ function transaction(overrides = {}) {
     idempotencyKey: 'crypto-create-1',
     amount: 500_000,
     status: 'Pending',
-    note: `Crypto deposit [np:${PAYMENT_ID}] ($11 USDT)`,
+    note: 'Crypto deposit ₦20,000',
     providerPaymentId: PAYMENT_ID,
-    providerPriceAmount: '11',
-    providerPriceCurrency: 'usd',
-    providerPayAmount: '10.5',
-    providerPayCurrency: 'usdttrc20',
+    providerPriceAmount: '20000',
+    providerPriceCurrency: 'ngn',
+    providerPayAmount: '12.5',
+    providerPayCurrency: 'usdt',
     providerPayAddress: 'TMwFHYXLJaRUPeW6421aqXL4ZEzPRFGkGT',
-    providerPaymentStatus: 'waiting',
+    providerPaymentStatus: 'check',
     providerActuallyPaid: null,
     providerLastVerifiedAt: null,
     paymentReconciliationAttemptAt: null,
@@ -104,15 +104,16 @@ function transaction(overrides = {}) {
 
 function providerPayload(overrides = {}) {
   return {
-    payment_id: PAYMENT_ID,
-    payment_status: 'confirmed',
+    uuid: PAYMENT_ID,
+    payment_status: 'paid',
     order_id: REFERENCE,
-    parent_payment_id: null,
-    price_amount: '11.0000',
-    price_currency: 'usd',
-    pay_amount: '10.500000',
-    pay_currency: 'usdttrc20',
-    actually_paid: '10.5',
+    amount: '20000.00',
+    currency: 'NGN',
+    payer_amount: '12.500000',
+    payer_currency: 'usdt',
+    payment_amount: '12.5',
+    merchant_amount: '12.25',
+    is_final: true,
     ...overrides,
   };
 }
@@ -121,7 +122,7 @@ function providerFetch(payload) {
   return vi.fn().mockResolvedValue({
     ok: true,
     status: 200,
-    json: vi.fn().mockResolvedValue(payload),
+    json: vi.fn().mockResolvedValue({ state: 0, result: payload }),
   });
 }
 
@@ -268,9 +269,9 @@ function installInMemoryPrisma(row) {
 async function reconcile(row, payload, overrides = {}) {
   installInMemoryPrisma(row);
   const fetchImpl = providerFetch(payload);
-  const result = await reconcileNowPaymentsDeposit({
+  const result = await reconcileCryptoDeposit({
     transaction: cloneStored(),
-    apiKey: 'nowpayments-test-key',
+    credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
     fetchImpl,
     timeoutMs: 50,
     recoveredBy: 'test',
@@ -302,41 +303,45 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe('getNowPaymentsCreationApiKey', () => {
+describe('getCryptomusCreationCredentials', () => {
   it('returns a key only when the persisted crypto gateway is enabled', async () => {
     mocks.settingFindUnique.mockResolvedValue({
-      value: JSON.stringify({ enabled: true, fields: { apiKey: ' configured-key ' } }),
+      value: JSON.stringify({ enabled: true, fields: { merchantId: ' configured-merchant ', apiKey: ' configured-key ' } }),
     });
 
-    await expect(getNowPaymentsCreationApiKey()).resolves.toBe('configured-key');
+    await expect(getCryptomusCreationCredentials()).resolves.toEqual(
+      expect.objectContaining({ merchantId: 'configured-merchant', apiKey: 'configured-key', ready: true }),
+    );
   });
 
   it('does not let an environment key bypass a disabled gateway', async () => {
     vi.stubEnv('NOWPAYMENTS_API_KEY', 'environment-key');
     mocks.settingFindUnique.mockResolvedValue({
-      value: JSON.stringify({ enabled: false, fields: { apiKey: 'configured-key' } }),
+      value: JSON.stringify({ enabled: false, fields: { merchantId: 'configured-merchant', apiKey: 'configured-key' } }),
     });
 
-    await expect(getNowPaymentsCreationApiKey()).resolves.toBe('');
+    await expect(getCryptomusCreationCredentials()).resolves.toEqual(
+      expect.objectContaining({ merchantId: '', apiKey: '', ready: false }),
+    );
   });
 });
 
-describe('reconcileNowPaymentsDeposit', () => {
+describe('reconcileCryptoDeposit', () => {
   it('credits an exact confirmation once and short-circuits later non-audit checks', async () => {
     installInMemoryPrisma(transaction());
     const fetchImpl = providerFetch(providerPayload());
 
-    const first = await reconcileNowPaymentsDeposit({
+    const first = await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl,
       timeoutMs: 50,
       recoveredBy: 'dashboard',
       now: NOW,
     });
-    const second = await reconcileNowPaymentsDeposit({
+    const second = await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl,
       timeoutMs: 50,
       recoveredBy: 'dashboard',
@@ -362,7 +367,7 @@ describe('reconcileNowPaymentsDeposit', () => {
       transactionId: storedTransaction.id,
       userId: storedTransaction.userId,
       paidAmountKobo: 500_000,
-      providerPaidAmount: '10.5',
+      providerPaidAmount: '12.5',
       recoveredBy: 'dashboard',
       claimableStatuses: expect.arrayContaining([
         'Pending', 'Processing', 'Expired', 'Failed', 'Cancelled',
@@ -371,19 +376,18 @@ describe('reconcileNowPaymentsDeposit', () => {
     expect(mocks.finalizeDeposit.mock.calls[0][0].claimableStatuses).not.toContain('Review');
   });
 
+  // Cryptomus decides the over and underpayment question itself and reports it
+  // in the status, so the amount comparison cases the previous provider needed
+  // are gone. What remains ours to police is that the invoice being read is the
+  // one we expect: right order, right uuid, right amount, right currency.
   it.each([
-    ['underpayment', { payment_status: 'finished', actually_paid: '10.499999' }],
-    ['overpayment', { payment_status: 'confirmed', actually_paid: '10.500001' }],
-    ['partially_paid', { payment_status: 'partially_paid', actually_paid: '5' }],
-    ['payment_id_mismatch', { payment_id: 'different-provider-payment' }],
+    ['underpayment', { payment_status: 'wrong_amount' }],
+    ['overpayment', { payment_status: 'paid_over', payment_amount: '25' }],
+    ['payment_id_mismatch', { uuid: '00000000-0000-4000-8000-000000000999' }],
     ['order_id_mismatch', { order_id: 'NTR-OTHER' }],
-    ['price_amount_mismatch', { price_amount: '12' }],
-    ['price_currency_mismatch', { price_currency: 'eur' }],
-    ['pay_amount_mismatch', { pay_amount: '10.6', actually_paid: '10.6' }],
-    ['pay_currency_mismatch', { pay_currency: 'usdtbsc' }],
-    ['missing_actual_amount', { actually_paid: undefined }],
-    ['repeated_payment', { parent_payment_id: 'parent-payment-1' }],
-    ['wrong_asset', { payment_status: 'wrong_asset' }],
+    ['amount_mismatch', { amount: '12' }],
+    ['currency_mismatch', { currency: 'USD' }],
+    ['locked', { payment_status: 'locked' }],
   ])('sends %s to durable review without crediting', async (reason, patch) => {
     const { result } = await reconcile(transaction(), providerPayload(patch));
 
@@ -414,19 +418,49 @@ describe('reconcileNowPaymentsDeposit', () => {
       reason,
     }));
 
-    if (['underpayment', 'overpayment', 'partially_paid'].includes(reason)) {
+    if (['underpayment', 'overpayment'].includes(reason)) {
       expect(storedTransaction).toEqual(expect.objectContaining({
         providerPaymentStatus: patch.payment_status,
-        providerActuallyPaid: patch.actually_paid,
+        providerActuallyPaid: patch.payment_amount || '12.5',
         providerLastVerifiedAt: NOW,
       }));
     }
   });
 
+  // Overpaying by dust is the ordinary way a crypto payment arrives: the
+  // customer rounds up, or pays from a wallet that will not send an exact
+  // figure, and Cryptomus reports paid_over for a single cent. Holding those
+  // for approval is what stopped crypto from being instant the way card and
+  // transfer are.
+  it('credits a dust overpayment without a human, at the invoiced naira amount', async () => {
+    const { result } = await reconcile(transaction(), providerPayload({
+      payment_status: 'paid_over',
+      payer_amount: '12.500000',
+      payment_amount: '12.75',
+    }));
+
+    expect(result).toEqual(expect.objectContaining({
+      success: true,
+      paymentState: 'credited',
+      transactionStatus: 'Completed',
+    }));
+    expect(storedTransaction).toEqual(expect.objectContaining({
+      status: 'Completed',
+      paymentReviewReason: null,
+    }));
+    expect(adminIssues).toHaveLength(0);
+    // The surplus does not inflate the credit. What is credited is the naira
+    // the invoice was for, never a figure derived from the coin that arrived.
+    expect(mocks.finalizeDeposit).toHaveBeenCalledTimes(1);
+    expect(mocks.finalizeDeposit.mock.calls[0][0]).toEqual(expect.objectContaining({
+      transactionId: storedTransaction.id,
+    }));
+  });
+
   it('keeps a provider-pending payment uncredited and records the observation', async () => {
     const { result } = await reconcile(
       transaction({ status: 'Processing' }),
-      providerPayload({ payment_status: 'confirming', actually_paid: '0' }),
+      providerPayload({ payment_status: 'check', payment_amount: '0', is_final: false }),
     );
 
     expect(result).toEqual(expect.objectContaining({
@@ -439,28 +473,28 @@ describe('reconcileNowPaymentsDeposit', () => {
     }));
     expectNoCredit();
     expect(storedTransaction).toEqual(expect.objectContaining({
-      providerPaymentStatus: 'confirming',
+      providerPaymentStatus: 'check',
       providerActuallyPaid: '0',
       providerLastVerifiedAt: NOW,
     }));
   });
 
   it.each([
-    ['expired', 'Expired'],
-    ['failed', 'Failed'],
-    ['cancelled', 'Cancelled'],
-  ])('preserves the row and records provider terminal status %s', async (providerStatus, status) => {
+    ['cancel', 'Cancelled', 'cancelled'],
+    ['fail', 'Failed', 'failed'],
+    ['system_fail', 'Failed', 'system_fail'],
+  ])('preserves the row and records provider terminal status %s', async (providerStatus, status, expectedReason) => {
     const { result } = await reconcile(
       transaction({ status: 'Processing' }),
-      providerPayload({ payment_status: providerStatus, actually_paid: '0' }),
+      providerPayload({ payment_status: providerStatus, payment_amount: '0' }),
     );
 
     expect(result).toEqual(expect.objectContaining({
       success: false,
-      paymentState: status === 'Expired' ? 'retryable' : 'failed',
+      paymentState: 'failed',
       transactionStatus: status,
+      reason: expectedReason,
       newlyFinalized: false,
-      reason: 'provider_failed',
     }));
     expectNoCredit();
     expect(storedTransaction).toEqual(expect.objectContaining({
@@ -473,7 +507,7 @@ describe('reconcileNowPaymentsDeposit', () => {
   it('records a refund before credit as terminal and never finalizes', async () => {
     const { result } = await reconcile(
       transaction(),
-      providerPayload({ payment_status: 'refunded', actually_paid: '10.5' }),
+      providerPayload({ payment_status: 'refund_paid' }),
     );
 
     expect(result).toEqual(expect.objectContaining({
@@ -485,14 +519,14 @@ describe('reconcileNowPaymentsDeposit', () => {
       reason: 'refunded',
     }));
     expectNoCredit();
-    expect(storedTransaction.providerPaymentStatus).toBe('refunded');
+    expect(storedTransaction.providerPaymentStatus).toBe('refund_paid');
   });
 
   it('preserves a credited balance on refund and opens a durable admin review', async () => {
     const completed = transaction({ status: 'Completed' });
     const { result, fetchImpl } = await reconcile(
       completed,
-      providerPayload({ payment_status: 'refunded', actually_paid: '10.5' }),
+      providerPayload({ payment_status: 'refund_paid' }),
       { auditCompleted: true },
     );
 
@@ -503,7 +537,7 @@ describe('reconcileNowPaymentsDeposit', () => {
       paymentReviewReason: 'refunded_after_credit',
       paymentReviewAt: NOW,
       paymentReviewResolvedAt: null,
-      providerPaymentStatus: 'refunded',
+      providerPaymentStatus: 'refund_paid',
     }));
     expect(result).toEqual(expect.objectContaining({
       success: false,
@@ -524,21 +558,21 @@ describe('reconcileNowPaymentsDeposit', () => {
   it('requires manual review when a refunded payment later reports verified', async () => {
     installInMemoryPrisma(transaction({
       status: 'Refunded',
-      providerPaymentStatus: 'refunded',
-      providerActuallyPaid: '10.5',
+      providerPaymentStatus: 'refund_paid',
+      providerActuallyPaid: '12.5',
     }));
     const fetchImpl = providerFetch(providerPayload());
 
-    const first = await reconcileNowPaymentsDeposit({
+    const first = await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl,
       timeoutMs: 50,
       now: NOW,
     });
-    const second = await reconcileNowPaymentsDeposit({
+    const second = await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl,
       timeoutMs: 50,
       now: NOW,
@@ -559,7 +593,7 @@ describe('reconcileNowPaymentsDeposit', () => {
     expect(adminIssues[0].status).toBe('open');
     expect(JSON.parse(adminIssues[0].metadata)).toEqual(expect.objectContaining({
       reason: 'provider_verified_after_refund',
-      actuallyPaid: '10.5',
+      actuallyPaid: '12.5',
     }));
   });
 
@@ -579,9 +613,9 @@ describe('reconcileNowPaymentsDeposit', () => {
       resolvedBy: null,
     });
 
-    const result = await reconcileNowPaymentsDeposit({
+    const result = await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl: providerFetch(providerPayload()),
       timeoutMs: 50,
       auditCompleted: true,
@@ -630,9 +664,9 @@ describe('reconcileNowPaymentsDeposit', () => {
     async initialStatus => {
       installInMemoryPrisma(transaction({ status: initialStatus }));
 
-      const result = await reconcileNowPaymentsDeposit({
+      const result = await reconcileCryptoDeposit({
         transaction: cloneStored(),
-        apiKey: 'nowpayments-test-key',
+        credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
         fetchImpl: providerFetch(providerPayload()),
         timeoutMs: 50,
         recoveredBy: 'cron',
@@ -650,7 +684,7 @@ describe('reconcileNowPaymentsDeposit', () => {
     },
   );
 
-  it.each(['underpayment', 'repeated_payment', 'wrong_asset', 'payment_id_mismatch'])(
+  it.each(['underpayment', 'overpayment', 'payment_id_mismatch'])(
     'records a later exact response during an open %s review without auto-credit',
     async reason => {
       installInMemoryPrisma(transaction({
@@ -668,9 +702,9 @@ describe('reconcileNowPaymentsDeposit', () => {
         resolvedBy: null,
       });
 
-      const result = await reconcileNowPaymentsDeposit({
+      const result = await reconcileCryptoDeposit({
         transaction: cloneStored(),
-        apiKey: 'nowpayments-test-key',
+        credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
         fetchImpl: providerFetch(providerPayload()),
         timeoutMs: 50,
         recoveredBy: 'cron',
@@ -690,7 +724,7 @@ describe('reconcileNowPaymentsDeposit', () => {
       expect(adminIssues).toHaveLength(2);
       expect(JSON.parse(adminIssues[1].metadata)).toEqual(expect.objectContaining({
         reason: 'provider_verified_during_review',
-        actuallyPaid: '10.5',
+        actuallyPaid: '12.5',
       }));
     },
   );
@@ -704,9 +738,9 @@ describe('reconcileNowPaymentsDeposit', () => {
     }));
     const fetchImpl = vi.fn();
 
-    const result = await reconcileNowPaymentsDeposit({
+    const result = await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl,
       timeoutMs: 50,
       now: NOW,
@@ -726,14 +760,11 @@ describe('reconcileNowPaymentsDeposit', () => {
 
   it('does not reopen or credit the same anomaly after manual rejection', async () => {
     installInMemoryPrisma(transaction());
-    const underpayment = providerPayload({
-      payment_status: 'finished',
-      actually_paid: '10',
-    });
+    const underpayment = providerPayload({ payment_status: 'wrong_amount' });
 
-    await reconcileNowPaymentsDeposit({
+    await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl: providerFetch(underpayment),
       timeoutMs: 50,
       now: NOW,
@@ -752,10 +783,10 @@ describe('reconcileNowPaymentsDeposit', () => {
       resolvedBy: 'Ada',
     };
 
-    const result = await reconcileNowPaymentsDeposit({
+    const result = await reconcileCryptoDeposit({
       transaction: cloneStored(),
       providerPaymentId: PAYMENT_ID,
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl: providerFetch(underpayment),
       timeoutMs: 50,
       now: NOW,
@@ -777,11 +808,11 @@ describe('reconcileNowPaymentsDeposit', () => {
 
   it('opens new evidence instead of auto-crediting an exact payment after rejection', async () => {
     installInMemoryPrisma(transaction());
-    await reconcileNowPaymentsDeposit({
+    await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl: providerFetch(providerPayload({
-        payment_status: 'partially_paid',
+        payment_status: 'wrong_amount',
         actually_paid: '5',
       })),
       timeoutMs: 50,
@@ -803,13 +834,13 @@ describe('reconcileNowPaymentsDeposit', () => {
     const exactInput = {
       transaction: cloneStored(),
       providerPaymentId: PAYMENT_ID,
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl: providerFetch(providerPayload()),
       timeoutMs: 50,
       now: NOW,
     };
-    const first = await reconcileNowPaymentsDeposit(exactInput);
-    const second = await reconcileNowPaymentsDeposit({
+    const first = await reconcileCryptoDeposit(exactInput);
+    const second = await reconcileCryptoDeposit({
       ...exactInput,
       transaction: cloneStored(),
       fetchImpl: providerFetch(providerPayload()),
@@ -834,8 +865,8 @@ describe('reconcileNowPaymentsDeposit', () => {
   });
 
   it.each([
-    ['refunded', 'provider_refunded_during_review'],
-    ['failed', 'provider_terminal_during_review'],
+    ['refund_paid', 'provider_refunded_during_review'],
+    ['fail', 'provider_terminal_during_review'],
   ])('records a material %s transition during review', async (providerStatus, reason) => {
     installInMemoryPrisma(transaction({
       status: 'Review',
@@ -852,12 +883,11 @@ describe('reconcileNowPaymentsDeposit', () => {
       resolvedBy: null,
     });
 
-    const result = await reconcileNowPaymentsDeposit({
+    const result = await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl: providerFetch(providerPayload({
         payment_status: providerStatus,
-        actually_paid: providerStatus === 'refunded' ? '10.5' : '10',
       })),
       timeoutMs: 50,
       now: NOW,
@@ -908,10 +938,10 @@ describe('reconcileNowPaymentsDeposit', () => {
       parent_payment_id: PAYMENT_ID,
     }));
 
-    const result = await reconcileNowPaymentsDeposit({
+    const result = await reconcileCryptoDeposit({
       transaction: cloneStored(),
       providerPaymentId: childId,
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl,
       timeoutMs: 50,
       auditCompleted: initialStatus === 'Completed',
@@ -939,10 +969,10 @@ describe('reconcileNowPaymentsDeposit', () => {
     }));
     const fetchImpl = vi.fn(() => new Promise(() => {}));
 
-    const result = await reconcileNowPaymentsDeposit({
+    const result = await reconcileCryptoDeposit({
       transaction: cloneStored(),
       providerPaymentId: PAYMENT_ID,
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl,
       timeoutMs: 5,
       now: NOW,
@@ -961,13 +991,13 @@ describe('reconcileNowPaymentsDeposit', () => {
   it('does not reopen the same post-credit refund after an admin closes it', async () => {
     installInMemoryPrisma(transaction({ status: 'Completed' }));
     const refunded = providerPayload({
-      payment_status: 'refunded',
-      actually_paid: '10.5',
+      payment_status: 'refund_paid',
+      payment_amount: '12.5',
     });
 
-    await reconcileNowPaymentsDeposit({
+    await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl: providerFetch(refunded),
       timeoutMs: 50,
       auditCompleted: true,
@@ -986,9 +1016,9 @@ describe('reconcileNowPaymentsDeposit', () => {
       resolvedBy: 'Ada',
     };
 
-    const result = await reconcileNowPaymentsDeposit({
+    const result = await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl: providerFetch(refunded),
       timeoutMs: 50,
       auditCompleted: true,
@@ -1007,74 +1037,13 @@ describe('reconcileNowPaymentsDeposit', () => {
     expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
   });
 
-  it('keeps distinct repeated child payments as separate review observations', async () => {
-    installInMemoryPrisma(transaction());
-    const reconcileChild = childId => reconcileNowPaymentsDeposit({
-      transaction: cloneStored(),
-      providerPaymentId: childId,
-      apiKey: 'nowpayments-test-key',
-      fetchImpl: providerFetch(providerPayload({
-        payment_id: childId,
-        parent_payment_id: PAYMENT_ID,
-      })),
-      timeoutMs: 50,
-      now: NOW,
-    });
-
-    await reconcileChild('child-payment-a');
-    await reconcileChild('child-payment-b');
-    await reconcileChild('child-payment-b');
-
-    expect(adminIssues).toHaveLength(2);
-    const observations = adminIssues.map(issue => JSON.parse(issue.metadata));
-    expect(observations.map(item => item.observedPaymentId)).toEqual([
-      'child-payment-a',
-      'child-payment-b',
-    ]);
-    expect(new Set(observations.map(item => item.reviewFingerprint)).size).toBe(2);
-    expect(adminIssues.every(issue => issue.status === 'open')).toBe(true);
-    expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
-
-    const closedAt = new Date('2026-07-17T00:45:00.000Z');
-    storedTransaction = {
-      ...storedTransaction,
-      status: 'Rejected',
-      paymentReviewResolvedAt: closedAt,
-    };
-    adminIssues = adminIssues.map(issue => ({
-      ...issue,
-      status: 'resolved',
-      resolvedAt: closedAt,
-      resolvedBy: 'Ada',
-    }));
-
-    const newObservation = await reconcileChild('child-payment-c');
-
-    expect(newObservation).toEqual(expect.objectContaining({
-      success: false,
-      paymentState: 'review',
-      transactionStatus: 'Rejected',
-      retryable: false,
-      reason: 'payment_id_mismatch',
-    }));
-    expect(adminIssues).toHaveLength(3);
-    expect(JSON.parse(adminIssues[2].metadata).observedPaymentId).toBe('child-payment-c');
-    expect(adminIssues[2].status).toBe('open');
-    expect(storedTransaction).toEqual(expect.objectContaining({
-      status: 'Rejected',
-      paymentReviewReason: 'payment_id_mismatch',
-      paymentReviewResolvedAt: null,
-    }));
-    expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
-  });
-
-  it('does not query, lease, or finalize a Completed payment without an audit request', async () => {
+    it('does not query, lease, or finalize a Completed payment without an audit request', async () => {
     installInMemoryPrisma(transaction({ status: 'Completed' }));
     const fetchImpl = vi.fn();
 
-    const result = await reconcileNowPaymentsDeposit({
+    const result = await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl,
       now: NOW,
     });
@@ -1096,9 +1065,9 @@ describe('reconcileNowPaymentsDeposit', () => {
     mocks.renewLease.mockResolvedValue(false);
     const original = cloneStored();
 
-    const result = await reconcileNowPaymentsDeposit({
+    const result = await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl: providerFetch(providerPayload()),
       timeoutMs: 50,
       now: NOW,
@@ -1125,24 +1094,24 @@ describe('reconcileNowPaymentsDeposit', () => {
   it('cannot overwrite a different provider ID bound while its query was in flight', async () => {
     installInMemoryPrisma(transaction({
       providerPaymentId: null,
-      note: 'Crypto deposit ($11 USDT)',
+      note: 'Crypto deposit ₦20,000',
     }));
     const fetchImpl = vi.fn().mockImplementation(async () => {
       storedTransaction = {
         ...storedTransaction,
-        providerPaymentId: 'newer-provider-payment',
+        providerPaymentId: '11111111-2222-4333-8444-555555555555',
       };
       return {
         ok: true,
         status: 200,
-        json: vi.fn().mockResolvedValue(providerPayload()),
+        json: vi.fn().mockResolvedValue({ state: 0, result: providerPayload() }),
       };
     });
 
-    const result = await reconcileNowPaymentsDeposit({
+    const result = await reconcileCryptoDeposit({
       transaction: cloneStored(),
       providerPaymentId: PAYMENT_ID,
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl,
       timeoutMs: 50,
       now: NOW,
@@ -1153,14 +1122,14 @@ describe('reconcileNowPaymentsDeposit', () => {
       paymentState: 'review',
       reason: 'payment_id_mismatch',
     }));
-    expect(storedTransaction.providerPaymentId).toBe('newer-provider-payment');
+    expect(storedTransaction.providerPaymentId).toBe('11111111-2222-4333-8444-555555555555');
     expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
   });
 
   it('rejects adoption of a provider payment ID already bound to another transaction', async () => {
     installInMemoryPrisma(transaction({
       providerPaymentId: null,
-      note: 'Crypto deposit ($11 USDT)',
+      note: 'Crypto deposit ₦20,000',
     }));
     otherTransactions.push(transaction({
       id: 'tx-crypto-other',
@@ -1168,10 +1137,10 @@ describe('reconcileNowPaymentsDeposit', () => {
       providerPaymentId: PAYMENT_ID,
     }));
 
-    const result = await reconcileNowPaymentsDeposit({
+    const result = await reconcileCryptoDeposit({
       transaction: cloneStored(),
       providerPaymentId: PAYMENT_ID,
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl: vi.fn(),
       now: NOW,
     });
@@ -1191,87 +1160,25 @@ describe('reconcileNowPaymentsDeposit', () => {
     }));
   });
 
-  it('sends an ambiguous legacy note ID to review instead of skipping or rebinding it', async () => {
-    installInMemoryPrisma(transaction({
-      providerPaymentId: null,
-      note: `Legacy crypto deposit [np:${PAYMENT_ID}] ($11 USDT)`,
-    }));
-    otherTransactions.push(transaction({
-      id: 'tx-crypto-already-bound',
-      reference: 'NTR-CRYPTO-BOUND',
-      providerPaymentId: PAYMENT_ID,
-    }));
-
-    const result = await reconcileNowPaymentsDeposit({
-      transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
-      fetchImpl: vi.fn(),
-      now: NOW,
-    });
-
-    expect(result).toEqual(expect.objectContaining({
-      success: false,
-      paymentState: 'review',
-      transactionStatus: 'Review',
-      reason: 'provider_payment_id_reused',
-    }));
-    expect(mocks.acquireLease).not.toHaveBeenCalled();
-    expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
-    expect(adminIssues).toHaveLength(1);
-  });
-
-  it('turns a concurrent legacy provider-ID bind collision into review', async () => {
-    installInMemoryPrisma(transaction({
-      providerPaymentId: null,
-      note: `Legacy crypto deposit [np:${PAYMENT_ID}] ($11 USDT)`,
-    }));
-    mocks.transactionUpdate
-      .mockImplementationOnce(async ({ where, data }) => {
-        if (where.id !== storedTransaction.id) throw new Error('Transaction not found');
-        storedTransaction = { ...storedTransaction, ...data };
-        return cloneStored();
-      })
-      .mockRejectedValueOnce({ code: 'P2002' });
-
-    const result = await reconcileNowPaymentsDeposit({
-      transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
-      fetchImpl: providerFetch(providerPayload()),
-      timeoutMs: 50,
-      now: NOW,
-    });
-
-    expect(result).toEqual(expect.objectContaining({
-      success: false,
-      paymentState: 'review',
-      transactionStatus: 'Review',
-      retryable: false,
-      reason: 'provider_payment_id_reused',
-    }));
-    expect(mocks.finalizeDeposit).not.toHaveBeenCalled();
-    expect(adminIssues).toHaveLength(1);
-  });
-
-  it.each([
+      it.each([
     [
-      'missing_provider_payment_id',
-      { providerPaymentId: null, note: 'Crypto deposit ($11 USDT)' },
+      'missing_payment_identifier',
+      { providerPaymentId: null, reference: null },
     ],
     [
       'missing_expected_terms',
       {
         providerPriceAmount: null,
         providerPriceCurrency: null,
-        note: `Crypto deposit [np:${PAYMENT_ID}]`,
       },
     ],
   ])('sends %s to review before querying the provider', async (reason, patch) => {
     installInMemoryPrisma(transaction(patch));
     const fetchImpl = vi.fn();
 
-    const result = await reconcileNowPaymentsDeposit({
+    const result = await reconcileCryptoDeposit({
       transaction: cloneStored(),
-      apiKey: 'nowpayments-test-key',
+      credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
       fetchImpl,
       now: NOW,
     });
@@ -1301,9 +1208,9 @@ describe('reconcileNowPaymentsDeposit', () => {
         transaction: cloneStored(),
       }));
 
-      const result = await reconcileNowPaymentsDeposit({
+      const result = await reconcileCryptoDeposit({
         transaction: cloneStored(),
-        apiKey: 'nowpayments-test-key',
+        credentials: { merchantId: 'test-merchant', apiKey: 'cryptomus-test-key', ready: true },
         fetchImpl: providerFetch(providerPayload()),
         timeoutMs: 50,
         now: NOW,
