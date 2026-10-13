@@ -4,6 +4,29 @@ import { requireAdmin, logActivity, canSeeSensitive } from '@/lib/admin';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 import { DEAD_ORDER_STATES } from '@/lib/ledger';
 import { closeStrandedGroups } from '@/lib/group-integrity';
+import { PROVIDER_IDS } from '@/lib/smm';
+import { reportOperationalFailure } from '@/lib/monitoring';
+
+/**
+ * Row count at which this response is close enough to Vercel's 4.5 MB cap to
+ * shout about it.
+ *
+ * Measured 13 Oct 2026: 12,268 live services serialise to 4.01 MB, about 343
+ * bytes a row, so the cap lands near 13,750 rows. Warning at 13,000 leaves
+ * roughly 700 rows of notice.
+ *
+ * This exists because of how the failure presents. Going over the cap does not
+ * raise an error anyone sees — the tail of the list is simply not there, so a
+ * service that is present, enabled and listed by its provider cannot be found
+ * in Raw Services, Menu Builder or search, and the only symptom is a person
+ * saying "we keep searching but it doesn't appear". That is a bad week of
+ * debugging. An alert is worth the four lines.
+ *
+ * When this does fire, dropping another retired provider will not save it
+ * twice. The fix at that point is server-side search and pagination here and in
+ * the Menu Builder picker.
+ */
+const SERVICE_PAYLOAD_WARN_ROWS = 13_000;
 
 export async function GET() {
   const { admin, error } = await requireAdmin('services');
@@ -12,6 +35,20 @@ export async function GET() {
   try {
     const [services, usdSetting] = await Promise.all([
       prisma.service.findMany({
+        // Live providers only, read from the register rather than named here.
+        //
+        // This route had no filter and no limit, so it serialised every row we
+        // have ever seen — 18,291 of them, 6.11 MB, against Vercel's 4.5 MB
+        // response cap. Everything past roughly row 13,500 never reached the
+        // page, which is why a service could be present, correct and listed by
+        // its provider and still be unfindable in Raw Services, Menu Builder and
+        // search all at once. DaoSMM 660 sat 70 KB the wrong side of that line.
+        //
+        // The 6,023 retired `jap` rows were a third of the payload. They stay in
+        // the table — 22 historical orders point at them and they are the
+        // receipts — they just stop being shipped to a picker that could never
+        // order them anyway.
+        where: { provider: { in: PROVIDER_IDS } },
         orderBy: { category: 'asc' },
         include: {
           _count: { select: { orders: { where: { status: { notIn: DEAD_ORDER_STATES }, deletedAt: null } }, tiers: { where: { enabled: true } } } },
@@ -22,6 +59,14 @@ export async function GET() {
 
     const usdRate = Number(usdSetting?.value || 1600);
     const sensitive = canSeeSensitive(admin);
+
+    if (services.length >= SERVICE_PAYLOAD_WARN_ROWS) {
+      reportOperationalFailure('admin_services_payload_near_cap', {
+        level: 'warning',
+        data: { rows: services.length, warnAt: SERVICE_PAYLOAD_WARN_ROWS },
+        dedupeKey: 'admin_services_payload_near_cap',
+      });
+    }
 
     return Response.json({
       services: services.map(s => ({

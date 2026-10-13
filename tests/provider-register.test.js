@@ -38,12 +38,18 @@ describe('the provider register', () => {
     }
   });
 
-  it('keeps the jap rows documented as receipts, not as debt', () => {
-    // 22 orders point at 6,023 service rows. Deleting them would be refused by
-    // the foreign key or would erase what those customers bought.
+  it('keeps the jap rows that are receipts documented as receipts', () => {
+    // 6,014 of the 6,023 rows had nothing pointing at them and were deleted on
+    // 13 Oct 2026. The 9 that stayed are the ones something holds: 4 carry the
+    // 22 historical orders, 5 are referenced by a curated tier. Deleting those
+    // would erase what those customers bought.
     const md = read('CLAUDE.md');
-    expect(md).toMatch(/deliberately still in the table/);
+    expect(md).toMatch(/9 remain and 6,014 were deleted/);
+    expect(md).toMatch(/those rows are the receipts/i);
     expect(md).toMatch(/providerListedAt: null` and `enabled: false/);
     expect(md).not.toMatch(/14 curated tiers still point at it/);
+    // The export is the only way back. If the path stops being named, the
+    // deletion stops being reversible in anyone's memory.
+    expect(md).toMatch(/jap-services-deleted-2026-10-13\.json/);
   });
 });

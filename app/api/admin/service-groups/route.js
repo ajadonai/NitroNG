@@ -4,6 +4,7 @@ import { requireAdmin, logActivity, canSeeSensitive } from '@/lib/admin';
 import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 import { recordPriceChanges } from '@/lib/price-changes';
 import { closeStrandedGroups } from '@/lib/group-integrity';
+import { PROVIDER_IDS } from '@/lib/smm';
 
 export async function GET() {
   const { admin, error } = await requireAdmin('services');
@@ -24,8 +25,12 @@ export async function GET() {
       },
     });
 
-    // Also return raw MTP services for the admin picker (all, not just enabled)
+    // Services for the admin picker: all, not just enabled, but live providers
+    // only. Retired providers cannot be ordered from, so listing them here only
+    // pushed this response past the size cap and truncated the real ones off the
+    // end. See the note in app/api/admin/services/route.js.
     const services = await prisma.service.findMany({
+      where: { provider: { in: PROVIDER_IDS } },
       orderBy: { category: 'asc' },
       select: { id: true, apiId: true, name: true, category: true, provider: true, costPer1k: true, sellPer1k: true, min: true, max: true, refill: true, avgTime: true },
     });

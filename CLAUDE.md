@@ -192,12 +192,21 @@ once they were found to have no orders at all and no honest replacement, and
 the provider was then removed from the register, the crons, the admin UI and
 the env validation.
 
-Its 6,023 service rows are **deliberately still in the table**, because 22
-historical orders point at them and deleting them would either be refused by
-the foreign key or erase what those customers actually bought. They are marked
-`providerListedAt: null` and `enabled: false`, which is what every catalogue
-query already fences on, so nothing can surface or reprice them. Do not "tidy
-them up" — the rows are the receipts.
+Of its 6,023 service rows, **9 remain and 6,014 were deleted on 13 Oct 2026**.
+The survivors are the ones something still points at: 4 carry the 22 historical
+orders and 5 are referenced by a curated tier. Those are the receipts and they
+stay — deleting them would erase what those customers actually bought.
+
+The other 6,014 had nothing pointing at them at all: no orders, no tiers, no
+reseller IDs, no votes or favourites. They were costing 2.09 MB on every admin
+page load, which is what pushed `/api/admin/services` past Vercel's 4.5 MB
+response cap and silently truncated the live catalogue (see the note in that
+route). A full export of the deleted rows is at
+`Operations/jap-services-deleted-2026-10-13.json`.
+
+The 9 that remain are marked `providerListedAt: null` and `enabled: false`,
+which is what every catalogue query already fences on, so nothing can surface or
+reprice them. Do not "tidy them up" — those rows are the receipts.
 
 **Never expose provider names or their raw service names to resellers or users.**
 Provider service names carry a recognisable house style (emoji, pipe-delimited
