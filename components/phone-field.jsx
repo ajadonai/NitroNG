@@ -108,7 +108,24 @@ export function PhoneField({
           autoComplete="tel"
           autoFocus={autoFocus}
           value={value}
-          onChange={(e) => onValue?.(e.target.value.replace(/\D/g, '').slice(0, cc.maxLocal + 1))}
+          // The cap has to fit the longest thing a real person types, which is
+          // not the local number. The field says "your WhatsApp number", so
+          // people go to WhatsApp and copy it, and WhatsApp shows it as
+          // +234 801 234 5678 — the full international form. Browser autofill
+          // hands over the same shape.
+          //
+          // Capping at maxLocal + 1 silently dropped the last digit or three of
+          // every one of those, and validatePhone then could not recognise what
+          // was left, so a number the customer had typed correctly came back as
+          // "Enter a valid Nigerian number". It cost the last digit in NG, GB,
+          // GH and KE; US survived only because +1 is one digit long.
+          //
+          // dial + maxLocal is the full international form, and the +1 is the
+          // leading zero some people keep after the country code (+234 0801…).
+          // normalizeLocal already strips both the dial code and that zero, so
+          // nothing downstream needs to change — the digits just have to reach
+          // it intact.
+          onChange={(e) => onValue?.(e.target.value.replace(/\D/g, '').slice(0, cc.dial.length + cc.maxLocal + 1))}
           placeholder={cc.example}
           className="font-[inherit]"
           style={{

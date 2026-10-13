@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect } from "vitest";
 import {
   COUNTRIES,
@@ -141,6 +142,74 @@ describe("normalizeAnyPhone — the crew portal, where there is no country picke
   it("returns null rather than storing something undialable", () => {
     for (const bad of ["", null, "123", "abc", "+33612345678"]) {
       expect(normalizeAnyPhone(bad), String(bad)).toBeNull();
+    }
+  });
+});
+
+/**
+ * The input cap in components/phone-field.jsx, kept honest here.
+ *
+ * The field asks for a WhatsApp number, so people copy it out of WhatsApp,
+ * where it reads +234 801 234 5678. Browser autofill supplies the same shape.
+ * The cap used to be maxLocal + 1, which is shorter than that form in every
+ * country whose dial code is longer than one digit, so the last digits were
+ * silently dropped and a correctly typed number was rejected as invalid.
+ *
+ * This duplicates one expression from the component on purpose: it is the one
+ * line that decides whether a real number survives being typed, and a unit test
+ * can reach it where a JSX onChange handler cannot.
+ */
+const fieldCap = (c) => c.dial.length + c.maxLocal + 1;
+const typeInto = (c, typed) => String(typed).replace(/\D/g, "").slice(0, fieldCap(c));
+
+describe("the phone field's input cap fits what people actually paste", () => {
+  it("keeps a full international number intact for every country", () => {
+    for (const c of COUNTRIES) {
+      const pasted = `+${c.dial} ${c.example}`;
+      const survived = validatePhone(c.code, typeInto(c, pasted));
+      expect(survived.ok, `${c.code} ${pasted}`).toBe(true);
+      expect(survived.e164, `${c.code} ${pasted}`).toBe(`+${c.dial}${c.example}`);
+    }
+  });
+
+  it("still accepts the local forms it always did", () => {
+    for (const c of COUNTRIES) {
+      expect(validatePhone(c.code, typeInto(c, c.example)).ok, c.code).toBe(true);
+      expect(validatePhone(c.code, typeInto(c, `0${c.example}`)).ok, c.code).toBe(true);
+    }
+  });
+
+  it("survives the country code followed by a leading zero", () => {
+    // +234 0801 234 5678 — people keep the zero they are used to dialling.
+    for (const c of COUNTRIES) {
+      expect(validatePhone(c.code, typeInto(c, `+${c.dial}0${c.example}`)).ok, c.code).toBe(true);
+    }
+  });
+
+  // The regression itself: the old cap, asserted to fail, so nobody can quietly
+  // restore it and still see this file pass.
+  it("would reject the same pasted numbers at the old maxLocal + 1 cap", () => {
+    const oldCap = (c, typed) => String(typed).replace(/\D/g, "").slice(0, c.maxLocal + 1);
+    const broken = COUNTRIES.filter(
+      (c) => !validatePhone(c.code, oldCap(c, `+${c.dial} ${c.example}`)).ok,
+    );
+    // Four of five: US escaped only because +1 is a single digit.
+    expect(broken.map((c) => c.code)).toEqual(["NG", "GB", "GH", "KE"]);
+  });
+
+  // Everything above reasons about a copy of the cap. This is the line that
+  // ties that copy to the component, so changing the component without changing
+  // this file fails here rather than silently in front of a customer.
+  it("is the cap the component actually applies", () => {
+    const source = readFileSync("components/phone-field.jsx", "utf8");
+    expect(source).toContain("slice(0, cc.dial.length + cc.maxLocal + 1)");
+    expect(source).not.toContain("slice(0, cc.maxLocal + 1)");
+  });
+
+  it("is still a bound, so the field cannot take an essay", () => {
+    for (const c of COUNTRIES) {
+      expect(typeInto(c, "9".repeat(80)).length, c.code).toBe(fieldCap(c));
+      expect(fieldCap(c)).toBeLessThanOrEqual(16);
     }
   });
 });
