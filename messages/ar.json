@@ -2444,5 +2444,7 @@
   "The exact coin amount is shown on the payment page.": "يظهر مبلغ العملة الرقمية بالضبط في صفحة الدفع.",
   "Open payment page": "افتح صفحة الدفع",
   "Could not start payment": "تعذّر بدء الدفع",
-  "Crypto deposits start at": "تبدأ إيداعات العملات الرقمية من"
+  "Crypto deposits start at": "تبدأ إيداعات العملات الرقمية من",
+  "Already on another account. Use another number, or": "هذا الرقم على حساب آخر. استخدم رقمًا آخر، أو",
+  "message us on WhatsApp": "راسلنا على واتساب"
 }

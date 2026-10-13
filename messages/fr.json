@@ -2444,5 +2444,7 @@
   "The exact coin amount is shown on the payment page.": "Le montant exact en crypto est indiqué sur la page de paiement.",
   "Open payment page": "Ouvrir la page de paiement",
   "Could not start payment": "Impossible de démarrer le paiement",
-  "Crypto deposits start at": "Les dépôts en crypto commencent à"
+  "Crypto deposits start at": "Les dépôts en crypto commencent à",
+  "Already on another account. Use another number, or": "Ce numéro est sur un autre compte. Utilisez-en un autre, ou",
+  "message us on WhatsApp": "écrivez-nous sur WhatsApp"
 }

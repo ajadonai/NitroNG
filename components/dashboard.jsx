@@ -805,6 +805,9 @@ function DashboardInner({ initialData }) {
   const [phonePromptCc, setPhonePromptCc] = useState(user?.country || DEFAULT_COUNTRY);
   const [phonePromptSaving, setPhonePromptSaving] = useState(false);
   const [phonePromptError, setPhonePromptError] = useState("");
+  // Tracked apart from the message because this one case renders a link, and
+  // the message it would have to be recognised by is translated.
+  const [phonePromptTaken, setPhonePromptTaken] = useState(false);
   const [phonePromptDone, setPhonePromptDone] = useState(false);
   const currentUserIdRef = useRef(initialData?.user?.id || null);
   const identityRequestGenerationRef = useRef(0);
@@ -2016,7 +2019,22 @@ function DashboardInner({ initialData }) {
             <p className="text-[13px] text-t-text-muted text-center m-0 mb-5 leading-[1.6]">
               {tr("We need your WhatsApp number to send you order updates and support.")}
             </p>
-            {phonePromptError && <div className="py-2 px-3 rounded-lg text-[13px] mb-3" style={{ background: dark ? "rgba(220,38,38,0.1)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.28)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626" }}>{phonePromptError}</div>}
+            {phonePromptError && <div className="py-2 px-3 rounded-lg text-[13px] mb-3 leading-[1.55]" style={{ background: dark ? "rgba(220,38,38,0.1)" : "#fef2f2", border: `1px solid ${dark ? "rgba(220,38,38,.28)" : "#fecaca"}`, color: dark ? "#fca5a5" : "#dc2626" }}>
+              {/* The one error with somewhere to go. Saying the number is taken
+                  and stopping leaves the customer holding their only number
+                  against a modal that will not close, so the sentence names
+                  both exits and support is one tap instead of a hunt. */}
+              {phonePromptTaken && socialLinks.social_whatsapp_support ? <>
+                {tr("Already on another account. Use another number, or")}{" "}
+                <a
+                  href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, my WhatsApp number is already on another account")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold underline underline-offset-2"
+                  style={{ color: "inherit" }}
+                >{tr("message us on WhatsApp")}</a>.
+              </> : phonePromptError}
+            </div>}
             <div className="flex gap-2 mb-5">
               <PhoneField id="dash-phone-prompt" country={phonePromptCc} onCountry={setPhonePromptCc} value={phonePromptVal} onValue={setPhonePromptVal} t={t} dark={dark} />
             </div>
@@ -2024,6 +2042,7 @@ function DashboardInner({ initialData }) {
               disabled={phonePromptSaving || !validatePhone(phonePromptCc, phonePromptVal).ok}
               onClick={async () => {
                 setPhonePromptError("");
+                setPhonePromptTaken(false);
                 const checked = validatePhone(phonePromptCc, phonePromptVal);
                 if (!checked.ok) { setPhonePromptError(checked.error); return; }
                 setPhonePromptSaving(true);
@@ -2042,7 +2061,11 @@ function DashboardInner({ initialData }) {
                       setPhonePromptDone(false);
                     }, 3000);
                   }
-                  else { const d = await res.json(); setPhonePromptError(d.error || "Failed to save"); }
+                  else {
+                    const d = await res.json();
+                    setPhonePromptTaken(d.code === "phone_taken");
+                    setPhonePromptError(d.error || "Failed to save");
+                  }
                 } catch { setPhonePromptError("Network error. Try again."); }
                 setPhonePromptSaving(false);
               }}

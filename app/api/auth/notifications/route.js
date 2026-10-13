@@ -123,7 +123,19 @@ export async function POST(req) {
     return ok({ message: 'Updated', ...data });
   } catch (err) {
     log.error('Notifications POST', err);
-    if (err?.code === 'P2002') return error('This phone number is already registered', 400);
+    // The number belongs to another account. The phone prompt renders this one
+    // with a live WhatsApp link rather than as plain text, so it ships a code to
+    // match on: the sentence itself is translated, and matching the English
+    // would break the moment anyone read the modal in Pidgin.
+    //
+    // The message stays a complete sentence anyway, because it is what shows if
+    // the support number is ever unset.
+    if (err?.code === 'P2002') {
+      return Response.json({
+        error: 'Already on another account. Use another number, or message us on WhatsApp.',
+        code: 'phone_taken',
+      }, { status: 400 });
+    }
     return error('Failed to update', 500);
   }
 }

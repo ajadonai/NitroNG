@@ -2444,5 +2444,7 @@
   "The exact coin amount is shown on the payment page.": "Kiasi kamili cha sarafu kinaonyeshwa kwenye ukurasa wa malipo.",
   "Open payment page": "Fungua ukurasa wa malipo",
   "Could not start payment": "Imeshindwa kuanzisha malipo",
-  "Crypto deposits start at": "Amana za sarafu za kidijitali huanzia"
+  "Crypto deposits start at": "Amana za sarafu za kidijitali huanzia",
+  "Already on another account. Use another number, or": "Namba hii iko kwenye akaunti nyingine. Tumia nyingine, au",
+  "message us on WhatsApp": "tutumie ujumbe WhatsApp"
 }
