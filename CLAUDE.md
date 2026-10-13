@@ -212,6 +212,43 @@ reprice them. Do not "tidy them up" — those rows are the receipts.
 Provider service names carry a recognisable house style (emoji, pipe-delimited
 speed and refill fields) that identifies the source on sight.
 
+## The refill promise is the tier name, not the data
+
+Budget means no refill, Standard thirty days, Premium for life. **That is the
+Nitro assurance — we set it and we honour it ourselves**, whatever the upstream
+provider offers that week. `refillLabel` in `components/new-order.jsx` maps the
+tier NAME to that promise on purpose.
+
+`Service.refill`, `ServiceTier.refill` and `ServiceTier.refillDays` are
+bookkeeping about the upstream service. They are **not** what the customer was
+sold, and they will disagree with the promise constantly: on 13 Oct 2026, 159 of
+265 live tiers disagreed and 62 Premium tiers sat on upstream services carrying
+thirty days or none at all. Nitro covers the difference. That is the product
+working, not a defect.
+
+A session read that mismatch as "62 Premium tiers falsely promising lifetime
+refill" and rewrote the label to follow the data before being told otherwise. If
+the numbers look wrong to you, the numbers are not the promise. Ask Trip before
+touching it.
+
+Service-type pages (`components/service-type-page.jsx`) do print the real
+`refillDays`. That is a separate surface describing the upstream service and is
+not evidence the New Order label is broken.
+
+## Groups that hold options instead of tiers
+
+Most groups are a Budget/Standard/Premium ladder. A few hold **variants** —
+WhatsApp Poll Votes, where A to E pick which answer in the poll the votes land
+on. There is no better or worse among them, so the three tier cards (with their
+colours, icons and "Most pick" caption) would misdescribe the choice.
+
+A group tagged **`options`** draws a dropdown instead. It is opt-in per group and
+must stay that way — never make it the default picker. Each option is still a
+real `ServiceTier` row, so the order path is unchanged; only the control differs.
+Set the tag in Menu Builder, name the tiers for what they are ("Option A"), and
+leave the refill assurance off: a variant is not a point on the tier ladder, so
+there is no promise to state.
+
 ## The `[dir="ltr"]` specificity trap
 
 An RTL build plugin rewrites asymmetric physical CSS into direction-scoped

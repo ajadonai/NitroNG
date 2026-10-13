@@ -33,6 +33,24 @@ const PROMO_SLIDES = ['wa', 'ig', ...(TASKS_ENABLED ? ['tasks'] : []), ...(RESEL
 /* ═══ Grouped: Social (21) Music (9) Utility (5) */
 /* ═══════════════════════════════════════════ */
 
+/**
+ * INTENTIONAL. Do not "fix" this to read ServiceTier.refillDays.
+ *
+ * The tier NAME is the promise. Budget means no refill, Standard means thirty
+ * days, Premium means for life — that is the Nitro assurance, we set it and we
+ * honour it ourselves, whatever the provider happens to offer that week. The
+ * provider's own refill flag and the refillDays column are bookkeeping about
+ * the upstream service; they are not what the customer was sold.
+ *
+ * So the two WILL disagree, often. As of 13 Oct 2026, 159 of 265 live tiers
+ * disagree and 62 Premium tiers sit on upstream services carrying thirty days
+ * or none. That is the assurance doing its job, not a bug: Nitro covers the
+ * difference. A previous session read the mismatch as 62 false promises and
+ * "fixed" it before being told otherwise.
+ *
+ * If you are about to change this because the data looks wrong, the data is not
+ * what is being promised. Ask Trip first.
+ */
 const refillLabel = (tier) => tier === "Budget" ? msg("No refill") : tier === "Standard" ? msg("30-day refill") : msg("Lifetime refill");
 const tierClr = { Budget: { text: "#e0a458", bg: "rgba(224,164,88,.1)" }, Standard: { text: "#60a5fa", bg: "rgba(96,165,250,.1)" }, Premium: { text: "#a78bfa", bg: "rgba(167,139,250,.1)" } };
 const formatDeliverySpeed = (speed) => {
@@ -243,6 +261,20 @@ const TS = {
 
 
 function TierChips({ svc, selTier, selSvc, onPickTier, dark, t, activePromotion, orderMode, cartCounts, whichTier }) {
+  /**
+   * The dropdown is for groups whose rows are VARIANTS, not a quality ladder —
+   * WhatsApp Poll Votes, where the letter picks which answer in the poll the
+   * votes land on, and anything built the same way later.
+   *
+   * It is deliberately opt-in per group, via the `options` tag set in Menu
+   * Builder, and must stay that way. Every other group in the menu is a genuine
+   * Budget/Standard/Premium ladder and keeps the three tier cards: the grid
+   * carries the tier colours, icons and "Most pick" captions, all of which are
+   * meaningless for a variant. Do not make this the default picker.
+   *
+   * Carried on the tiers because that is where the group's tags already arrive.
+   */
+  const isOptionPicker = !!svc.tiers[0]?.tags?.includes("options");
   const tr = useT();
   const money = useMoney();
   const promoOff = activePromotion?.active ? activePromotion.discountPercent / 100 : 0;
@@ -255,10 +287,40 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, t, activePromotion,
           end of that same rule — the question sits as close to the tier grid
           as it can, on both a stacked phone and a wide desktop row alike. */}
       <div className="flex items-center gap-2.5 mb-2">
-        <span className="text-[10.5px] font-semibold uppercase tracking-[1px] whitespace-nowrap" style={{ color: "#8a8580" }}>{bulk ? tr("Tier · tap to add") : tr("Tier")}</span>
+        <span className="text-[10.5px] font-semibold uppercase tracking-[1px] whitespace-nowrap" style={{ color: "#8a8580" }}>{isOptionPicker ? tr("Option") : bulk ? tr("Tier · tap to add") : tr("Tier")}</span>
         <span className="flex-1 h-px" style={{ background: t.cardBorder }} />
-        {whichTier}
+        {!isOptionPicker && whichTier}
       </div>
+      {/* Some groups hold variants rather than a quality ladder — WhatsApp poll
+          votes, where the choice is which answer the votes land on. There is no
+          better or worse among them, so the three-up tier grid would be lying
+          about the shape of the decision, and five of them do not fit it anyway.
+          One dropdown, in the group's own words. */}
+      {isOptionPicker ? (
+        <select
+          aria-label={tr("Option")}
+          value={selSvc?.id === svc.id && selTier ? selTier.tier : ""}
+          // The card toggles itself open and shut on click, and the tier chips
+          // only escape that because pickTier stops their click from bubbling.
+          // A select fires `change`, which is a different event from the click
+          // that reaches the card — so opening the dropdown collapsed the whole
+          // card out from under it. Both are stopped here: mousedown because a
+          // native select opens on it, click because that is what the card
+          // listens to.
+          onMouseDown={e => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
+          onChange={e => { const picked = svc.tiers.find(x => x.tier === e.target.value); if (picked) onPickTier(picked, e); }}
+          className="w-full py-2.5 px-3 rounded-xl text-[13px] font-medium font-[inherit] cursor-pointer outline-none"
+          style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.025)", border: `1.5px solid ${selSvc?.id === svc.id && selTier ? t.accent : t.cardBorder}`, color: t.text }}
+        >
+          <option value="" disabled>{tr("Choose an option")}</option>
+          {svc.tiers.map(tier => (
+            <option key={tier.tier} value={tier.tier}>
+              {tier.tier} — {money(promoOff > 0 ? Math.round(tier.price * (1 - promoOff)) : tier.price)} per {tier.per || "1K"}
+            </option>
+          ))}
+        </select>
+      ) : (
       <div className="grid grid-cols-3 gap-1.5 md:gap-2">
         {svc.tiers.map(tier => {
           const s = TS[tier.tier];
@@ -278,6 +340,7 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, t, activePromotion,
           );
         })}
       </div>
+      )}
     </div>
   );
 }
@@ -461,6 +524,9 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
   const cardRef = useRef(null);
   useEffect(() => { if (!isSel) setExplOpen(false); }, [isSel]);
   const lowestPrice = Math.min(...svc.tiers.map(ti => ti.price));
+  // Set per group in Menu Builder. Carried on the tiers because that is where
+  // the group's tags already arrive.
+  const isOptionPicker = !!svc.tiers[0]?.tags?.includes("options");
   const activeTier = isSel && selTier ? selTier : null;
   const accent = svc.isPackage ? { light: "#1d4ed8", dark: "#60a5fa", bgL: "#eff6ff", bgD: "rgba(59,130,246,.12)", selBgL: "#dbeafe", selBgD: "#111d3a", shadow: "59,130,246" } : svc.ng ? { light: "#16a34a", dark: "#4ade80", bgL: "#e8f5ee", bgD: "rgba(30,80,60,.24)", selBgL: "#d0f0db", selBgD: "#122a1c", shadow: "22,163,74" } : svc.us ? { light: "#dc2626", dark: "#f87171", bgL: "#fdeeee", bgD: "rgba(80,30,32,.24)", selBgL: "#fadada", selBgD: "#2a1216", shadow: "220,38,38" } : null;
   // The one colour this card speaks in: its audience where it has one, the
@@ -501,7 +567,9 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
               which said what three tappable tiers already said. A rule full
               width of the card — not just the content column — marks it as a
               new block rather than a continuation of the tier grid above it. */}
-          {activeTier && (
+          {/* The refill line states the Budget/Standard/Premium assurance. An
+              option is not a point on that ladder, so it says nothing here. */}
+          {activeTier && !isOptionPicker && (
             <div className="mt-3 pt-3 -mx-3.5 px-3.5 md:-mx-4 md:px-4 desktop:-mx-5 desktop:px-5 flex items-center gap-2.5 border-t border-solid" style={{ borderColor: t.cardBorder }}>
               <span className="w-[22px] h-[22px] rounded-[7px] flex items-center justify-center shrink-0" style={{ background: s ? (dark ? s.bgD : s.bg) : "transparent", border: `1px solid ${s ? (dark ? s.borderD : s.border) : t.cardBorder}`, color: s ? (dark ? s.textD : s.text) : t.textMuted }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
