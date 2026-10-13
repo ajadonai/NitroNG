@@ -2,12 +2,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useT } from "./locale";
 import NitroLoader from './nitro-loader';
+import { NitroWordmark } from './nitro-logo';
 import { platformBrand } from '@/lib/platform-brand';
 
 // Pulse: the office screen. People first, today's figures on their own day
 // lines, three lists for what is happening, one row of facts for the month.
 // Colour means something: green is money in and done, amber is waiting, red is
 // out or cancelled, the accent is orders. Built 1:1 from the approved mock.
+
+// One number for how often the data reloads, so the countdown strip and the
+// fetch it is counting down to can never disagree about the interval.
+const REFRESH_MS = 30_000;
+const REFRESH_SECONDS = REFRESH_MS / 1000;
 
 const naira = (n) => `${n < 0 ? '−' : ''}₦${Math.round(Math.abs(n)).toLocaleString('en-NG')}`;
 const num = (n) => Math.round(n || 0).toLocaleString('en-NG');
@@ -217,8 +223,13 @@ export default function PulseDashboard() {
       setData(await res.json()); setSecondsAgo(0); setError(false);
     } catch { setError(true); }
   }, []);
-  useEffect(() => { fetchData(); const iv = setInterval(fetchData, 30000); return () => clearInterval(iv); }, [fetchData]);
+  useEffect(() => { fetchData(); const iv = setInterval(fetchData, REFRESH_MS); return () => clearInterval(iv); }, [fetchData]);
   useEffect(() => { const iv = setInterval(() => setSecondsAgo(s => s + 1), 1000); return () => clearInterval(iv); }, []);
+  // The strip is driven by how long it has actually been, not by an animation
+  // of its own, so it cannot drift away from the data underneath it. It also
+  // means a fetch that hangs parks the bar full instead of looping cheerfully
+  // while the numbers go stale.
+  const tickPercent = Math.min(100, (secondsAgo / REFRESH_SECONDS) * 100);
 
   if (!data) {
     return (
@@ -235,8 +246,16 @@ export default function PulseDashboard() {
   return (
     <div ref={containerRef} className="pl">
       <style>{CSS}</style>
+      {/* Counts down to the next refresh, pinned to the very top edge of the
+          screen — where a browser puts its own progress, and where the
+          navigation strip this borrows its colours from sits.
+
+          Unlike that strip, this one is allowed to actually arrive: the nav bar
+          creeps and never reaches the end because nobody knows how long a chunk
+          takes, which would be a lie to tell about a fixed interval. */}
+      <div className="pl-tick" aria-hidden="true"><i style={{ width: `${tickPercent}%` }} /></div>
       <header className="pl-top">
-        <div className="pl-brand"><span className="pl-mark">N</span><h1>Pulse</h1></div>
+        <div className="pl-brand"><span className="pl-mark"><NitroWordmark height={11} color="#fff" /></span><h1>Pulse</h1></div>
         <div className="pl-state">
           {data.processing > 0 && <span className="pl-chip"><i className="pl-dot pl-run" />{num(data.processing)} running</span>}
           {error
@@ -275,11 +294,26 @@ export default function PulseDashboard() {
 
 const CSS = `
 .pl{--bg:#0b0e17;--sf:#121724;--hair:rgba(255,255,255,.08);--tx:#f2efe9;--mu:#8b90a0;--dim:#5c6170;--ac:#c47d8e;--ok:#34d399;--wait:#e0a458;--bad:#f87171;--run:#7aa2f7;--warn:#fdba74;
-  height:100dvh;background:var(--bg);color:var(--tx);font-family:Outfit,system-ui,sans-serif;padding:14px 18px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box;overflow:hidden}
+  height:100dvh;background:var(--bg);color:var(--tx);font-family:Outfit,system-ui,sans-serif;padding:14px 18px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box;overflow:hidden;position:relative}
 .pl h1,.pl h3{margin:0}
 .pl .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .pl-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
-.pl-brand{display:flex;align-items:center;gap:10px}.pl-mark{width:26px;height:26px;border-radius:7px;background:var(--ac);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-weight:700;font-size:16px}
+/* The real wordmark on the brand gradient, the same pill the nav and the
+   dashboard use. This was a Cormorant capital N in a rounded square — a letter
+   set in a text face, not the mark. */
+.pl-brand{display:flex;align-items:center;gap:10px}
+.pl-mark{height:22px;padding:0 9px;border-radius:999px;background:linear-gradient(135deg,#c47d8e,#8b5e6b);display:inline-flex;align-items:center;justify-content:center}
+/* Four colours, taken from the Nitro loading mark rather than picked here, in
+   the mark's own draw order: pink leads and the echoes trail behind it. The
+   gradient is sized to the strip, not the track, so compressing as the bar
+   grows keeps pink on the leading edge. Matches app/globals.css .nitro-navbar.
+
+   Absolute against .pl rather than inside the header, so it spans the screen
+   edge to edge across the page's own padding and sits at the very top where a
+   browser draws progress. */
+.pl-tick{position:absolute;top:0;left:0;right:0;height:3px;background:var(--hair);overflow:hidden;z-index:5}
+.pl-tick i{display:block;height:100%;background:linear-gradient(90deg,#ecc94b 0%,#34a97b 14%,#e05252 30%,#c47d8e 58%,#c47d8e 100%);background-size:100% 100%;background-repeat:no-repeat;transition:width 1s linear}
+@media (prefers-reduced-motion:reduce){.pl-tick i{transition:none}}
 .pl-top h1{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;line-height:1}
 .pl-state{display:flex;align-items:center;gap:12px;font-size:11px}
 .pl-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;border:1px solid var(--hair);color:var(--mu)}

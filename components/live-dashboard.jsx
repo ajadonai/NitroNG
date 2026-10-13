@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useT } from "./locale";
+import { NitroWordmark } from './nitro-logo';
 import { formatNaira as naira } from '../lib/money';
 
 function timeOnSite(firstSeen) {
@@ -224,7 +225,7 @@ export default function LiveDashboard() {
     <div ref={containerRef} className="lv">
       <style>{CSS}</style>
       <header className="lv-top">
-        <div className="lv-brand"><span className="lv-mark">N</span><h1>{tr("Live")}</h1></div>
+        <div className="lv-brand"><span className="lv-mark"><NitroWordmark height={11} color="#fff" /></span><h1>{tr("Live")}</h1></div>
         <div className="lv-state">
           {error
             ? <span className="lv-live lv-lost"><i className="lv-dot bad" />{tr("CONNECTION LOST")}</span>
@@ -274,7 +275,11 @@ const CSS = `
 .lv h1,.lv h3,.lv h4{margin:0}
 .lv .m{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .lv-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
-.lv-brand{display:flex;align-items:center;gap:10px}.lv-mark{width:26px;height:26px;border-radius:7px;background:var(--ac);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-weight:700;font-size:16px}
+/* The real wordmark on the brand gradient, matching the nav, the dashboard and
+   Pulse. Was a Cormorant capital N in a rounded square — a letter in a text
+   face standing in for the mark. */
+.lv-brand{display:flex;align-items:center;gap:10px}
+.lv-mark{height:22px;padding:0 9px;border-radius:999px;background:linear-gradient(135deg,#c47d8e,#8b5e6b);display:inline-flex;align-items:center;justify-content:center}
 .lv-top h1{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;line-height:1}
 .lv-state{display:flex;align-items:center;gap:12px;font-size:11px}
 .lv-live{display:inline-flex;align-items:center;gap:6px;color:var(--ok);font-weight:700;letter-spacing:1.2px}.lv-live.lv-lost{color:var(--bad)}
