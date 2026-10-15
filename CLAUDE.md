@@ -235,6 +235,30 @@ Service-type pages (`components/service-type-page.jsx`) do print the real
 `refillDays`. That is a separate surface describing the upstream service and is
 not evidence the New Order label is broken.
 
+## Tier order is the ladder, not the stored number and not the price
+
+Budget, Standard, Premium renders in that order because `lib/tier-order.js` says
+so, not because of each tier's `sortOrder`. Both surfaces that list tiers — the
+storefront menu and Menu Builder — sort through `sortTiers`.
+
+**It is not a price sort.** Price usually climbs with the tier and sometimes
+does not: Snapchat Followers sells Budget at ₦37,882 against Standard at
+₦37,672. A tier is a promise about quality and refill, not a position in a price
+list, so sorting on `sellPer1k` would reorder that group and any future one like
+it. Do not "simplify" it to a price sort.
+
+It works that way because the database was wrong and nobody could see it:
+Instagram Followers had Standard saved at 2 and Budget at 3, so Budget rendered
+in the middle of the row until someone happened to look. One
+group of 167, which is exactly how long that kind of fault survives.
+
+`sortOrder` still decides for **option groups** (see below), where the rows are
+variants and one is not better than another. The rule is narrow on purpose: the ladder
+wins only when both tiers being compared are rungs of it.
+
+Reordering two ladder rungs by hand in Menu Builder is refused with a message,
+rather than silently doing nothing.
+
 ## Groups that hold options instead of tiers
 
 Most groups are a Budget/Standard/Premium ladder. A few hold **variants** —

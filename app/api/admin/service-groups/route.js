@@ -5,6 +5,7 @@ import { invalidateServiceCatalogue } from '@/lib/service-catalog';
 import { recordPriceChanges } from '@/lib/price-changes';
 import { closeStrandedGroups } from '@/lib/group-integrity';
 import { PROVIDER_IDS } from '@/lib/smm';
+import { isLadderTier, sortTiers } from '@/lib/tier-order';
 
 export async function GET() {
   const { admin, error } = await requireAdmin('services');
@@ -47,7 +48,9 @@ export async function GET() {
         enabled: g.enabled,
         sortOrder: g.sortOrder,
         tags: g.tags || [],
-        tiers: g.tiers.map(t => ({
+        // Same ladder order the storefront uses, so Menu Builder never shows a
+        // different arrangement from the one customers get.
+        tiers: sortTiers(g.tiers).map(t => ({
           id: t.id,
           tier: t.tier,
           sellPer1k: t.sellPer1k,
@@ -293,11 +296,19 @@ export async function POST(req) {
       const { tierA, tierB } = body;
       if (!tierA || !tierB) return Response.json({ error: 'Two tier IDs required' }, { status: 400 });
       const [a, b] = await Promise.all([
-        prisma.serviceTier.findUnique({ where: { id: tierA }, select: { id: true, groupId: true } }),
-        prisma.serviceTier.findUnique({ where: { id: tierB }, select: { id: true, groupId: true } }),
+        prisma.serviceTier.findUnique({ where: { id: tierA }, select: { id: true, groupId: true, tier: true } }),
+        prisma.serviceTier.findUnique({ where: { id: tierB }, select: { id: true, groupId: true, tier: true } }),
       ]);
       if (!a || !b) return Response.json({ error: 'Tier not found' }, { status: 404 });
       if (a.groupId !== b.groupId) return Response.json({ error: 'Tiers are in different groups' }, { status: 400 });
+      // The ladder decides its own order now (lib/tier-order) — by name, not by
+      // price — so writing a new sortOrder for two rungs would change nothing on
+      // the page. Saying so beats a button that appears to work and does not.
+      if (isLadderTier(a.tier) && isLadderTier(b.tier)) {
+        return Response.json({
+          error: 'Budget, Standard and Premium always show in that order. Only option groups can be reordered by hand.',
+        }, { status: 400 });
+      }
       // Tiers created before ordering shipped all sit at sortOrder 0, and
       // swapping two equal numbers moves nothing. Renumber the group by its
       // current display order, swap the two positions, and write the lot.

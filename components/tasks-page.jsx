@@ -64,6 +64,11 @@ function proofPlaceholder(proofType, platform) {
 
 export default function TasksPage({ dark, t }) {
   const tr = useT();
+  // fmtNaira takes the formatter as an argument, and the Summary panel below
+  // called it without one — TaskCard had the only useMoney() in the file, so
+  // `money` was undefined here and opening Summary threw straight into the
+  // error boundary. Sentry 7794355937.
+  const money = useMoney();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
@@ -201,7 +206,7 @@ export default function TasksPage({ dark, t }) {
           </button>
           {sumOpen && (
             <div className="absolute top-11 z-20 w-[240px] rounded-2xl px-3.5 py-1" style={{ insetInlineEnd: 0, background: dark ? '#1a1329' : '#fff', border: `1px solid ${border}`, boxShadow: '0 18px 44px rgba(0,0,0,.18)' }}>
-              {[['Earned', fmtNaira(stats.earned || 0), green], ['In review', String(stats.pending || 0), dark ? '#a5b4fc' : '#4f46e5'], ['Open tasks', String(openCount), t.text], ['Credit expires', `${stats.expiryDays || 30} days`, t.text]].map(([label, val, color], i) => (
+              {[['Earned', fmtNaira(stats.earned || 0, money), green], ['In review', String(stats.pending || 0), dark ? '#a5b4fc' : '#4f46e5'], ['Open tasks', String(openCount), t.text], ['Credit expires', `${stats.expiryDays || 30} days`, t.text]].map(([label, val, color], i) => (
                 <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-soft" style={{ borderTop: i > 0 ? `1px solid ${border}` : 'none' }}><span>{label}</span><b className="m text-[15px] font-semibold" style={{ color }}>{val}</b></div>
               ))}
             </div>
