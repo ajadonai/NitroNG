@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { scrubSentryBreadcrumb, scrubSentryEvent } from './lib/monitoring-redaction.js';
-import { sentryIgnoreErrors, sentryDenyUrls, isIgnoredBrowserNoise } from './lib/sentry-filters.js';
+import { sentryIgnoreErrors, sentryDenyUrls, isIgnoredBrowserNoise, hasForeignAppFrame } from './lib/sentry-filters.js';
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -31,8 +31,7 @@ Sentry.init({
   ],
   beforeSend(event, hint) {
     if (isIgnoredBrowserNoise(event, hint)) return null;
-    const frames = event.exception?.values?.[0]?.stacktrace?.frames;
-    if (frames?.some(f => /^app:\/\//.test(f.filename) && !/^\/?_next\//.test(f.filename))) return null;
+    if (hasForeignAppFrame(event)) return null;
     const msg = event.exception?.values?.map(v => v.value).join(" ") || "";
     if (/Java object is gone|Object Not Found Matching Id|webkit\.messageHandlers|Can't find variable: FileReader/.test(msg)) return null;
     return scrubSentryEvent(event);
