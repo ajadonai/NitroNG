@@ -18,7 +18,7 @@ const nextConfig = {
     '/services/\\[platform\\]/\\[type\\]/opengraph-image': ['./assets/og-fonts/**/*'],
     '/blog/\\[slug\\]/opengraph-image': ['./assets/og-fonts/**/*'],
   },
-  allowedDevOrigins: ['192.168.1.11', '192.168.1.12', '192.168.1.15', '192.168.1.16'],
+  allowedDevOrigins: ['192.168.1.11', '192.168.1.12', '192.168.1.15', '192.168.1.16', '192.168.1.20'],
   async redirects() {
     return [
       // Creator Economy Index vanity URL

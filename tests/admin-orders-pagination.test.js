@@ -10,9 +10,11 @@ const mockOrder = {
 const mockDripDispatch = { findFirst: vi.fn() };
 const mockTransaction = { groupBy: vi.fn() };
 const mockSetting = { findUnique: vi.fn() };
+const mockGuestCheckout = { findUnique: vi.fn() };
 
 const mockPrisma = {
   order: mockOrder,
+  guestCheckout: mockGuestCheckout,
   dripDispatch: mockDripDispatch,
   transaction: mockTransaction,
   setting: mockSetting,
@@ -99,7 +101,8 @@ describe('GET /api/admin/orders — pagination', () => {
     expect(body.total).toBe(50);
     expect(body.orders).toHaveLength(2);
     expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
-    expect(mockPrisma.$transaction.mock.calls[0][0]).toHaveLength(4);
+    // Orders, status counts, queued, needs dispatch and guest: one batch, one pool slot.
+    expect(mockPrisma.$transaction.mock.calls[0][0]).toHaveLength(5);
   });
 
   it('passes take and skip to findMany', async () => {
@@ -282,5 +285,34 @@ describe('admin orders pool-pressure controls', () => {
     expect(source).toContain("document.visibilityState !== 'visible' || inFlight");
     expect(source).toContain("if (active === 'overview')");
     expect(source).toContain('}, [redirecting, active]);');
+  });
+});
+
+describe('GET /api/admin/orders — guest orders', () => {
+  beforeEach(() => {
+    mockOrder.count.mockResolvedValue(0);
+    mockOrder.groupBy.mockResolvedValue([]);
+  });
+
+  it('finds an order by its guest code, typed any case and without the dash', async () => {
+    mockOrder.findMany.mockResolvedValue([fakeOrder({ guestCheckout: { code: 'G7K2-9XQM', email: 'ada@x.ng', creditKobo: 0 } })]);
+    const body = await (await GET(makeReq({ search: 'g7k29xqm' }))).json();
+    const where = mockOrder.findMany.mock.calls[0][0].where;
+    expect(JSON.stringify(where)).toContain('"code":"G7K2-9XQM"');
+    expect(body.orders[0].guest).toEqual({ code: 'G7K2-9XQM', email: 'ada@x.ng', credit: 0 });
+    expect(body.guestLookup).toBeNull();
+  });
+
+  it('describes a searched code that has no order, so support can see its credit', async () => {
+    mockOrder.findMany.mockResolvedValue([]);
+    mockGuestCheckout.findUnique.mockResolvedValue({ code: 'G7K2-9XQM', status: 'Failed', email: null, priceKobo: 1000000, creditKobo: 1000000, failReason: 'Service not available', createdAt: new Date('2026-10-16T12:00:00Z'), order: null });
+    const body = await (await GET(makeReq({ search: 'G7K2-9XQM' }))).json();
+    expect(body.guestLookup).toMatchObject({ code: 'G7K2-9XQM', status: 'Failed', price: 10000, credit: 10000, failReason: 'Service not available', orderId: null });
+  });
+
+  it('filters to guest orders and counts them', async () => {
+    mockOrder.findMany.mockResolvedValue([]);
+    await GET(makeReq({ filter: 'guest' }));
+    expect(JSON.stringify(mockOrder.findMany.mock.calls[0][0].where)).toContain('"guestCheckout":{"isNot":null}');
   });
 });

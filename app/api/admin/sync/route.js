@@ -9,6 +9,7 @@ import { platformOf } from '@/lib/full-catalogue';
 import { reverseOrderPoints, computeRefundSplit, getTotalRefundedKobo } from '@/lib/nitro-rewards';
 import { findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 import { lockOrderSettlementAccount, ORDER_SETTLEMENT_ACCOUNT_STATUSES } from '@/lib/account-deletion';
+import { creditOrderRefund } from '@/lib/order-refund-credit';
 
 export const maxDuration = 60;
 
@@ -246,8 +247,7 @@ export async function POST(req) {
               if (refundAmount > 0) {
                 const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
                 if (walletRefund > 0) {
-                  await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
-                  await tx.transaction.create({
+                  await creditOrderRefund(tx, order.id, {
                     data: {
                       userId: order.userId,
                       type: 'refund',

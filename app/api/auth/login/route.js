@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { isGuestAccountEmail } from '@/lib/guest-account';
 import { log } from "@/lib/logger";
 import bcrypt from 'bcryptjs';
 import { signUserToken, setUserCookie, detectDevice, hashToken, createSessionId } from '@/lib/auth';
@@ -42,6 +43,10 @@ export async function POST(req) {
         accountLimit.retryAfter,
       );
     }
+
+    // Nobody signs in to the shared guest account (lib/guest-account.js). It
+    // answers exactly like a wrong password, so it reveals nothing.
+    if (isGuestAccountEmail(email)) return error('Invalid email or password', 401);
 
     const user = await prisma.user.findUnique({
       where: { email },

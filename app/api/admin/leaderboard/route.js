@@ -4,6 +4,7 @@ import { requireAdmin, logActivity, canPerformAction, canSeeSensitive, maskEmail
 import { sendEmail, leaderboardRewardEmail } from '@/lib/email';
 import { watBounds } from '@/lib/format';
 import { DEAD_ORDER_STATES } from '@/lib/ledger';
+import { guestAccountId } from '@/lib/guest-account';
 
 export async function GET(req) {
   const { admin, error } = await requireAdmin('leaderboard');
@@ -16,9 +17,13 @@ export async function GET(req) {
     const dateFilter = period === 'month' ? { createdAt: { gte: monthStart } } : {};
 
     // Top spenders
+    // The shared guest account holds every email-less guest order, so it would
+    // top both boards with everyone's spend (lib/guest-account.js).
+    const guestId = await guestAccountId();
+    const notGuest = guestId ? { userId: { not: guestId } } : {};
     const spenders = await prisma.order.groupBy({
       by: ['userId'],
-      where: { ...dateFilter, deletedAt: null, status: { in: ['Completed', 'Processing', 'Pending'] } },
+      where: { ...dateFilter, deletedAt: null, status: { in: ['Completed', 'Processing', 'Pending'] }, ...notGuest },
       _sum: { charge: true, cost: true },
       _count: { id: true },
       orderBy: { _sum: { charge: 'desc' } },
@@ -42,7 +47,7 @@ export async function GET(req) {
     // Most active
     const active = await prisma.order.groupBy({
       by: ['userId'],
-      where: { ...dateFilter, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } },
+      where: { ...dateFilter, deletedAt: null, status: { notIn: DEAD_ORDER_STATES }, ...notGuest },
       _count: { id: true },
       _sum: { charge: true, cost: true },
       orderBy: { _count: { id: 'desc' } },

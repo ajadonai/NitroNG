@@ -7,18 +7,10 @@ import { DEFAULT_COUNTRY, validatePhone } from '../lib/phone-countries';
 import { PhoneField } from './phone-field';
 import { useMoney, useLocale } from './locale';
 import { MAX_BONUS_NAIRA } from '../lib/welcome-bonus';
-
-function Lbl({ t, htmlFor, children }) {
-  return (
-    <label
-      htmlFor={htmlFor}
-      className="block text-[13px] font-semibold mb-1.5 uppercase tracking-wider"
-      style={{ color: t.text }}
-    >
-      {children}
-    </label>
-  );
-}
+import { placeAuthError } from '../lib/auth-errors';
+import { suggestEmail } from '../lib/email-typos';
+import { useSignupChecks } from './use-signup-checks';
+import { Slot, LineMsg, emailState, phoneState, GuestButton } from './auth-messages';
 
 function PwStrength({ pw, t }) {
   const tr = useT();
@@ -64,7 +56,7 @@ function PwStrength({ pw, t }) {
 }
 
 // Opt-in two-panel shell (landing v3). Desktop: brand panel + the usual card. Mobile: the usual card with a slim brand strip.
-function ElevatedShell({ elevated, dark, mode, children }) {
+function ElevatedShell({ elevated, dark, mode, guest, children }) {
   // The count was typed in as "2,300+" and left there: the real figure is 7.8K,
   // so the modal was understating the site by more than three times to every
   // person deciding whether to sign up. Same endpoint the landing page uses;
@@ -86,18 +78,19 @@ function ElevatedShell({ elevated, dark, mode, children }) {
   const { currency } = useLocale() || { currency: 'NGN' };
   if (!elevated) return children;
   return (
-    <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[860px] max-md:max-w-[440px] max-h-[90dvh] grid md:grid-cols-[.9fr_1.1fr] rounded-[22px] overflow-hidden animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]" style={{ border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`, boxShadow: '0 30px 80px rgba(0,0,0,.35)' }}>
+    <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[860px] max-md:max-w-[440px] max-h-[90dvh] grid md:grid-cols-[.9fr_1.1fr] rounded-[22px] overflow-hidden animate-[modalRiseIn_.24s_cubic-bezier(.2,.8,.2,1)_both] motion-reduce:animate-none" style={{ border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`, boxShadow: '0 30px 80px rgba(0,0,0,.35)' }}>
       <div className="max-md:hidden relative overflow-hidden text-white flex flex-col p-[30px] pb-[26px]" style={{ background: 'linear-gradient(160deg,#c47d8e 0%,#a3586b 55%,#7a3d52 100%)' }}>
         <div className="absolute rounded-full pointer-events-none" style={{ width: 260, height: 260, right: -90, top: -80, background: 'rgba(255,220,200,.35)', filter: 'blur(70px)' }}/>
         <span className="nitro-mark self-start h-7 px-3 inline-flex items-center relative" style={{ background: 'rgba(255,255,255,.16)' }}><NitroWordmark height={12} color="#fff" /></span>
         <h3 className="serif italic font-medium text-[34px] leading-[1.1] mt-auto mb-3 relative">{mode === 'login' ? tr("Welcome back. Let's run it up.") : mode === 'signup' ? tr("Your first push is on us.") : tr("No stress. Let's get you back in.")}</h3>
         <p className="text-[13px] leading-[1.6] relative" style={{ opacity: .86 }}>{mode === 'login' ? tr("Your wallet, your orders and your tiers are exactly where you left them.") : mode === 'signup' ? tr("Tested services, naira prices, delivery in minutes. Account in 30 seconds.") : tr("Tell us the email on the account and we will send a reset link.")}</p>
-        <ul className="list-none p-0 m-0 mt-[18px] flex flex-col gap-[9px] relative">
-          {[currency === 'NGN' ? tr("Naira pricing, no FX markup") : tr("Prices shown in your currency"), tr("Starts in under 60 seconds"), tr("Real humans on WhatsApp")].map(x => <li key={x} className="flex gap-[9px] text-[13px] items-center"><i className="not-italic w-5 h-5 rounded-full inline-flex items-center justify-center shrink-0 text-[11px]" style={{ background: 'rgba(255,255,255,.18)' }}>✓</i>{x}</li>)}
+        <ul className="list-none p-0 m-0 mt-5 flex flex-col gap-2.5 relative">
+          {[currency === 'NGN' ? tr("Naira pricing, no FX markup") : tr("Prices shown in your currency"), tr("Starts in under 60 seconds"), tr("Real humans on WhatsApp")].map(x => <li key={x} className="flex gap-2.5 text-[13.5px] items-center"><i className="not-italic w-5 h-5 rounded-full inline-flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,.2)' }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></i>{x}</li>)}
         </ul>
-        {mode === 'signup' && <div className="mt-5 py-3 px-3.5 rounded-[14px] text-[12.5px] leading-[1.45] relative" style={{ background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.26)' }}><b className="block text-[13.5px]">{tr("🎁 Up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free promo credit")}</b>{tr("on your first deposit, straight into your wallet.")}</div>}
-        <div className="flex items-center gap-2.5 mt-[18px] text-xs relative" style={{ opacity: .9 }}>
-          <div className="flex">{[['TM','#e0a458'],['AO','#6ee7b7'],['EN','#a5b4fc'],['BI','#f472b6']].map(([a, c], i) => <i key={a} className="not-italic w-[22px] h-[22px] rounded-full text-[8px] font-extrabold flex items-center justify-center" style={{ background: c, border: '2px solid rgba(255,255,255,.9)', marginLeft: i ? -7 : 0 }}>{a}</i>)}</div>
+        {guest && <GuestButton tr={tr} onClick={guest} className="on-panel relative" />}
+        {mode === 'signup' && <div className="mt-5 py-3 px-3.5 rounded-[14px] text-[12.5px] leading-[1.45] relative" style={{ background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.24)' }}><b className="block text-[14px] mb-px">{tr("🎁 Up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free promo credit")}</b>{tr("on your first deposit, straight into your wallet.")}</div>}
+        <div className="flex items-center gap-2.5 mt-5 pt-4 text-[12.5px] relative" style={{ borderTop: '1px solid rgba(255,255,255,.18)' }}>
+          <div className="flex">{[['TM','#e0a458'],['AO','#6ee7b7'],['EN','#a5b4fc'],['BI','#f472b6']].map(([a, c], i) => <i key={a} className="not-italic w-[26px] h-[26px] rounded-full text-[9px] font-extrabold flex items-center justify-center" style={{ background: c, color: '#3b1d27', border: '2px solid #9b5368', marginLeft: i ? -4 : 0 }}>{a}</i>)}</div>
           <span>{creatorCount ? `${creatorCount}+ ` : ""}{tr("creators already here")}</span>
         </div>
       </div>
@@ -106,7 +99,7 @@ function ElevatedShell({ elevated, dark, mode, children }) {
   );
 }
 
-function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode, resetToken: resetTokenProp, elevated = false, returnTo = "" }) {
+function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode, resetToken: resetTokenProp, elevated = false, returnTo = "", supportWhatsApp = "", onGuestOrder = null }) {
   const tr = useT();
   const money = useMoney();
   const [method] = useState('email');
@@ -115,33 +108,50 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
   const [step, setStep] = useState(1);
   const [remember, setRemember] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
-  const [error, setError] = useState('');
+  // What the line under the button says instead of its usual text:
+  // { kind: 'error' | 'success', text, action?: { label, onClick }, net? }.
+  const [line, setLine] = useState(null);
+  const setError = (text) => setLine(text ? { kind: 'error', text } : null);
+  // Which fields are wrong, and why: { first, last, email, phone, password, password2, terms }.
+  const [fieldErr, setFieldErr] = useState({});
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  // Set just before switching between log in and sign up from a message, so
+  // "Log in instead" arrives with the email already filled in.
+  const carryEmail = useRef(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [emailTaken, setEmailTaken] = useState(false);
-  const [emailChecking, setEmailChecking] = useState(false);
-  const emailCheckTimer = useRef(null);
   const [phone, setPhone] = useState('');
   const [country, setCountry] = useState(DEFAULT_COUNTRY);
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
   const [refCode, setRefCode] = useState(referralCode || '');
   const [agree, setAgree] = useState(false);
-  const [phoneTaken, setPhoneTaken] = useState(false);
-  const [phoneChecking, setPhoneChecking] = useState(false);
-  const phoneCheckTimer = useRef(null);
   const [forgotSent, setForgotSent] = useState(false);
   const [resetToken] = useState(resetTokenProp || '');
   const [resetDone, setResetDone] = useState(false);
+  const { emailTaken, emailChecking, phoneTaken, phoneChecking } = useSignupChecks({ active: mode === 'signup', email, phone, country });
+
+  const switchMode = (next) => { carryEmail.current = true; setMode(next); };
+  // A message goes the moment the field it is about changes.
+  const clearErr = (key) => {
+    setFieldErr((f) => (f[key] ? { ...f, [key]: null } : f));
+    setLine((l) => (l?.kind === 'error' ? null : l));
+  };
+  const focusField = (id) => requestAnimationFrame(() => document.getElementById(id)?.focus());
+  const guestHere = !!onGuestOrder && (mode === 'login' || mode === 'signup' || (mode === 'forgot' && !forgotSent));
+  const startGuest = () => { onClose(); onGuestOrder(); };
 
   useEffect(() => {
     setAuthLoading(false);
     setError('');
+    setFieldErr({});
+    setEmailTouched(false);
+    setPhoneTouched(false);
     setPw('');
     setPw2('');
-    setEmailTaken(false);
     setForgotSent(false);
     setResetDone(false);
     if (mode === 'signup' && prefill) {
@@ -156,74 +166,25 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       setFirstName('');
       setLastName('');
       setName('');
-      setEmail('');
+      if (!carryEmail.current) setEmail('');
       setPhone('');
     }
+    carryEmail.current = false;
   }, [mode]);
 
-  useEffect(() => {
-    if (mode !== 'signup' || !email || !validEmail) {
-      setEmailTaken(false);
-      return;
-    }
-    setEmailChecking(true);
-    if (emailCheckTimer.current) clearTimeout(emailCheckTimer.current);
-    emailCheckTimer.current = setTimeout(() => {
-      fetch('/api/auth/check-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
-        .then((r) => r.json())
-        .then((d) => {
-          setEmailTaken(!d.available);
-          setEmailChecking(false);
-        })
-        .catch(() => setEmailChecking(false));
-    }, 600);
-    return () => {
-      if (emailCheckTimer.current) clearTimeout(emailCheckTimer.current);
-    };
-  }, [email, mode]);
-
-  useEffect(() => {
-    if (mode !== 'signup' || !phone) {
-      setPhoneTaken(false);
-      return;
-    }
-    const checked = validatePhone(country, phone);
-    if (!checked.ok) {
-      setPhoneTaken(false);
-      return;
-    }
-    const cleaned = checked.local;
-    setPhoneChecking(true);
-    if (phoneCheckTimer.current) clearTimeout(phoneCheckTimer.current);
-    phoneCheckTimer.current = setTimeout(() => {
-      fetch('/api/auth/check-phone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: cleaned, country }),
-      })
-        .then((r) => r.json())
-        .then((d) => {
-          setPhoneTaken(!d.available);
-          setPhoneChecking(false);
-        })
-        .catch(() => setPhoneChecking(false));
-    }, 600);
-    return () => {
-      if (phoneCheckTimer.current) clearTimeout(phoneCheckTimer.current);
-    };
-  }, [phone, country, mode]);
+  const netError = () => setLine({ kind: 'error', net: true, text: tr("Network error. Check your connection and try again.") });
 
   const handleLogin = async () => {
-    setError('');
-    const contact = method === 'email' ? email : phone;
-    if (!contact || !pw) {
-      setError(tr("Please fill in all fields"));
+    setLine(null);
+    const errs = {};
+    if (!email) errs.email = { code: 'required' };
+    if (!pw) errs.password = { code: 'required' };
+    if (errs.email || errs.password) {
+      setFieldErr(errs);
+      focusField(errs.email ? 'login-identity' : 'login-password');
       return;
     }
+    setFieldErr({});
     setAuthLoading(true);
     try {
       const res = await fetch('/api/auth/login', {
@@ -241,7 +202,18 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
           window.location.href = '/banned';
           return;
         }
-        setError(data.error || tr("Login failed"));
+        const place = placeAuthError(data.error);
+        if (place.code === 'no-account') {
+          setFieldErr({ email: place });
+          setLine({ kind: 'error', text: tr("No account uses this email."), action: { label: tr("Sign up free"), onClick: () => switchMode('signup') } });
+          focusField('login-identity');
+        } else if (place.code === 'wrong-password') {
+          setFieldErr({ password: place });
+          setLine({ kind: 'error', text: tr("That password doesn't match this account") });
+          focusField('login-password');
+        } else {
+          setError(data.error || tr("Login failed"));
+        }
         setAuthLoading(false);
         return;
       }
@@ -250,29 +222,28 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       window.location.replace(returnTo || '/dashboard');
     } catch (err) {
       console.error('[Login Error]', err);
-      setError(tr("Network error. Check your connection and try again."));
+      netError();
       setAuthLoading(false);
     }
   };
 
   const handleSignup = async () => {
-    setError('');
-    if (!name || !email || !pw) {
-      setError(tr("Please fill in all fields"));
+    setLine(null);
+    const errs = {};
+    if (!pw) errs.password = { code: 'required' };
+    else if (pw.length < 6) errs.password = { code: 'short' };
+    if (!pw2) errs.password2 = { code: 'required' };
+    else if (pw !== pw2) errs.password2 = { code: 'mismatch' };
+    if (!agree) errs.terms = { code: 'required' };
+    const firstBad = [['password', 'signup-password'], ['password2', 'signup-confirm'], ['terms', 'signup-terms']].find(([k]) => errs[k]);
+    if (firstBad) {
+      setFieldErr(errs);
+      if (errs.password?.code === 'short') setError(tr("Password must be at least 6 characters"));
+      else if (errs.terms && !errs.password && !errs.password2) setError(tr("Tick the box to accept the terms"));
+      focusField(firstBad[1]);
       return;
     }
-    if (pw.length < 6) {
-      setError(tr("Password must be at least 6 characters"));
-      return;
-    }
-    if (pw !== pw2) {
-      setError(tr("Passwords don't match"));
-      return;
-    }
-    if (!agree) {
-      setError(tr("Please agree to the Terms of Service"));
-      return;
-    }
+    setFieldErr({});
     setAuthLoading(true);
     try {
       const res = await fetch('/api/auth/signup', {
@@ -292,7 +263,25 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || tr("Signup failed"));
+        // A problem with something typed on step 1 goes back to step 1, on
+        // that field, instead of being announced beside the password.
+        const place = placeAuthError(data.error);
+        if (place.field === 'email' || place.field === 'phone') {
+          setStep(1);
+          setFieldErr({ [place.field]: { ...place, text: data.error } });
+          focusField(place.field === 'email' ? 'signup-email' : 'signup-phone');
+        } else if (place.field === 'name') {
+          setStep(1);
+          setFieldErr({ first: place, last: place });
+          setError(data.error);
+          focusField('signup-first');
+        } else if (place.field === 'password') {
+          setFieldErr({ password: place });
+          setError(data.error);
+          focusField('signup-password');
+        } else {
+          setError(data.error || tr("Signup failed"));
+        }
         setAuthLoading(false);
         return;
       }
@@ -300,15 +289,16 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       setTimeout(() => window.location.replace('/dashboard'), 300);
     } catch (err) {
       console.error('[Signup Error]', err);
-      setError(tr("Network error. Check your connection and try again."));
+      netError();
       setAuthLoading(false);
     }
   };
 
   const handleForgot = async () => {
-    setError('');
+    setLine(null);
     if (!email) {
-      setError(tr("Please enter your email"));
+      setFieldErr({ email: { code: 'required' } });
+      focusField('forgot-email');
       return;
     }
     setAuthLoading(true);
@@ -327,7 +317,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       setForgotSent(true);
       setAuthLoading(false);
     } catch {
-      setError(tr("Something went wrong."));
+      netError();
       setAuthLoading(false);
     }
   };
@@ -363,26 +353,37 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
   const pwMismatch = pw2.length > 0 && pw !== pw2;
 
   const handleSignupDetails = () => {
-    setError('');
-    if (!firstName || !lastName) {
-      setError(tr("Please enter your first and last name"));
+    setLine(null);
+    const errs = {};
+    if (!firstName) errs.first = { code: 'required' };
+    if (!lastName) errs.last = { code: 'required' };
+    if (!email) errs.email = { code: 'required' };
+    else if (!validEmail) errs.email = { code: 'invalid' };
+    else if (emailTaken) errs.email = { code: 'taken' };
+    else if (suggestEmail(email)) errs.email = { code: 'typo', suggestion: suggestEmail(email) };
+    if (!validPhone) errs.phone = { code: 'invalid', text: phoneCheck.error };
+    else if (phoneTaken) errs.phone = { code: 'taken' };
+    const firstBad = [['first', 'signup-first'], ['last', 'signup-last'], ['email', 'signup-email'], ['phone', 'signup-phone']].find(([k]) => errs[k]);
+    if (firstBad) {
+      setFieldErr(errs);
+      setEmailTouched(true);
+      setPhoneTouched(true);
+      focusField(firstBad[1]);
       return;
     }
-    if (method === 'email' && (!email || !validEmail)) {
-      setError('Please enter a valid email');
-      return;
-    }
-    if (!validPhone) {
-      setError(phoneCheck.error);
-      return;
-    }
-    if (phoneTaken) {
-      setError(tr("This WhatsApp number is already in use"));
-      return;
-    }
+    setFieldErr({});
     setName(`${firstName} ${lastName}`);
     setStep(2);
   };
+
+  const { bad: emailBad, slot: emailSlot } = emailState({
+    tr, fe: fieldErr.email, email, valid: !!validEmail, touched: emailTouched, taken: emailTaken, checking: emailChecking, suggestion: suggestEmail(email),
+    onUseSuggestion: (v) => { setEmail(v); clearErr('email'); },
+    onLogin: () => switchMode('login'),
+  });
+  const { bad: phoneBad, slot: phoneSlot } = phoneState({
+    tr, fe: fieldErr.phone, phone, check: phoneCheck, touched: phoneTouched, taken: phoneTaken, checking: phoneChecking, supportWhatsApp,
+  });
 
   const handleAuthSubmit = (event) => {
     event.preventDefault();
@@ -442,15 +443,15 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
       className="fixed inset-0 z-100 backdrop-blur-[4px] flex items-center justify-center p-4 animate-[modalFadeIn_.2s_ease]"
       style={{ background: "rgba(0,0,0,.45)" }}
     >
-      <ElevatedShell elevated={elevated} dark={dark} mode={mode}>
+      <ElevatedShell elevated={elevated} dark={dark} mode={mode} guest={guestHere ? startGuest : null}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={mode === 'signup' ? tr("Create account") : tr("Log in")}
         onClick={(e) => e.stopPropagation()}
         className={elevated
-          ? "auth-card w-full max-h-[90dvh] overflow-y-auto overflow-x-hidden px-8 py-9 max-md:py-6 relative"
-          : "auth-card w-full max-w-[440px] max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-2xl px-8 py-9 max-md:py-6 relative backdrop-blur-[20px] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both]"}
+          ? "auth-card w-full max-h-[90dvh] overflow-y-auto overflow-x-hidden px-8 py-7 max-md:py-6 relative"
+          : "auth-card w-full max-w-[440px] max-h-[90dvh] overflow-y-auto overflow-x-hidden rounded-2xl px-8 py-7 max-md:py-6 relative backdrop-blur-[20px] animate-[modalRiseIn_.24s_cubic-bezier(.2,.8,.2,1)_both] motion-reduce:animate-none"}
         style={elevated ? { background: dark ? '#140d1e' : '#fff' } : {
           background: dark ? '#140d1e' : '#fff',
           border: `1px solid ${dark ? 'rgba(255,255,255,.22)' : 'rgba(0,0,0,.14)'}`,
@@ -485,9 +486,11 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
 
-        {/* Heading */}
+        {/* Heading — on the same left edge as the fields under it, clear of the close button */}
+        <div className="mb-[18px]">
+        {/* Only the title needs to clear the close button; the line under it runs to the fields' edge */}
         <h2
-          className="serif text-2xl font-semibold text-center mb-1 italic"
+          className="serif text-[31px] max-md:text-[28px] leading-[1.08] font-semibold mb-1 italic pe-10 max-md:pe-0"
           style={{ color: t.text }}
         >
           {mode === 'login'
@@ -497,16 +500,16 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               : mode === 'reset'
                 ? tr("Reset password")
                 : step === 1
-                  ? tr("Create Account")
-                  : tr("Secure Your Account")}
+                  ? tr("Create account")
+                  : tr("Secure your account")}
         </h2>
 
         {/* Subheading */}
         <p
-          className="text-[15px] text-center mb-7 font-medium"
+          className="text-[14.5px] flex items-baseline justify-between gap-3"
           style={{ color: t.textSoft }}
         >
-          {mode === 'login'
+          <span>{mode === 'login'
             ? tr("Log in and start boosting")
             : mode === 'forgot'
               ? forgotSent
@@ -517,27 +520,23 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                   ? tr("You are all set")
                   : tr("Choose a new password")
                 : step === 1
-                  ? tr("Step 1 of 2 — Your details")
-                  : tr("Step 2 of 2 — Set your password")}
+                  ? tr("Your details")
+                  : tr("Set your password")}</span>
+          {/* Which step, on the subtitle's own line so it costs no extra row */}
+          {mode === 'signup' && <span className="text-[11.5px] font-semibold whitespace-nowrap" style={{ color: t.textMuted }}>{step === 1 ? tr("Step 1 of 2") : tr("Step 2 of 2")}</span>}
         </p>
 
-        {/* Error bar — rendered only while there is an error, so idle modals carry no reserved gap */}
-        {error && (
-          <div
-            role="alert"
-            aria-live="assertive"
-            aria-atomic="true"
-            className="w-full px-3 py-2 rounded-lg text-[13px] leading-tight mb-3"
-            style={{
-              background: dark ? 'rgba(220,38,38,0.1)' : '#fef2f2',
-              border: `1px solid ${dark ? 'rgba(220,38,38,.28)' : '#fecaca'}`,
-              color: dark ? '#fca5a5' : '#dc2626',
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {error}
+        {/* Which sign up step — a bar under the heading, where it is seen, rather than dots under the last button */}
+        {mode === 'signup' && (
+          <div className="grid grid-cols-2 gap-1 mt-2.5">
+            <i className="block h-[3px] rounded-sm" style={{ background: t.accent }} />
+            <i className="block h-[3px] rounded-sm transition-[background] duration-300" style={{ background: step === 2 ? t.accent : 'var(--auth-field-line)' }} />
           </div>
         )}
+        </div>
 
+        {/* No error box here any more. Messages sit on their field or on the
+            line under the button, so a problem never makes the card taller. */}
         <form onSubmit={handleAuthSubmit} noValidate>
 
         {/* ====== LOGIN MODE ====== */}
@@ -551,7 +550,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 setAuthLoading(true);
                 { const gp = new URLSearchParams(); if (refCode) gp.set('ref', refCode); if (via) gp.set('via', via); window.location.href = `/api/auth/google${gp.size ? `?${gp}` : ''}`; }
               }}
-              className="google-btn w-full py-[13px] rounded-xl flex items-center justify-center gap-2.5 text-[15px] font-semibold mb-0 transition-[color,transform] duration-200 hover:-translate-y-px"
+              className="google-btn w-full h-11 rounded-xl flex items-center justify-center gap-2.5 text-[15px] font-semibold mb-0 transition-[color,transform] duration-200 hover:-translate-y-px"
               style={{
                 background: dark ? 'rgba(255,255,255,.09)' : '#fff',
                 border: `1px solid ${dark ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.19)'}`,
@@ -580,7 +579,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             </button>
 
             {/* Divider */}
-            <div className="flex items-center gap-3.5 my-4">
+            <div className="flex items-center gap-3.5 my-3">
               <div
                 className="flex-1 h-px"
                 style={{
@@ -590,7 +589,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 }}
               />
               <span
-                className="text-[13px] font-medium"
+                className="text-[12px] font-medium"
                 style={{ color: t.textMuted }}
               >
                 {tr("or")}
@@ -606,57 +605,50 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             </div>
 
             {/* Email / Phone input */}
-            <Lbl t={t} htmlFor="login-identity">
-              {method === 'email' ? tr("Email Address") : tr("Phone Number")}
-            </Lbl>
+            <div className={`auth-box mb-4${method === 'email' ? '' : ' auth-tel'}`}>
+            <label htmlFor="login-identity">
+              {method === 'email' ? tr("Email address") : tr("Phone Number")}
+            </label>
             {method === 'email' ? (
               <input
                 id="login-identity"
                 name="email"
                 value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value.trim().toLowerCase().slice(0, 254))
-                }
-                placeholder="you@example.com"
+                onChange={(e) => {
+                  setEmail(e.target.value.trim().toLowerCase().slice(0, 254));
+                  clearErr('email');
+                }}
+                placeholder={fieldErr.email?.code === 'required' ? tr("Required") : "you@example.com"}
                 type="email"
                 autoComplete="email"
-                className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none mb-4"
-                style={{
-                  background: t.inputBg,
-                  border: `1px solid ${t.inputBorder}`,
-                  color: t.text,
-                }}
+                aria-invalid={!!fieldErr.email}
+                className={`auth-in${fieldErr.email ? ' is-bad' : ''}`}
               />
             ) : (
-              <div className="mb-2">
-                <PhoneField id="login-identity" country={country} onCountry={setCountry} value={phone} onValue={setPhone} t={t} dark={dark} compact />
-              </div>
+              <PhoneField id="login-identity" country={country} onCountry={setCountry} value={phone} onValue={setPhone} t={t} dark={dark} boxed />
             )}
+            </div>
 
             {/* Password */}
-            <Lbl t={t} htmlFor="login-password">{tr("Password")}</Lbl>
-            <div className="relative mb-4">
+            <div className="auth-box mb-4">
+              <label htmlFor="login-password">{tr("Password")}</label>
               <input
                 id="login-password"
                 name="password"
                 value={pw}
-                onChange={(e) => setPw(e.target.value.slice(0, 128))}
-                placeholder={tr("Enter password")}
+                onChange={(e) => { setPw(e.target.value.slice(0, 128)); clearErr('password'); }}
+                placeholder={fieldErr.password?.code === 'required' ? tr("Required") : tr("Enter password")}
+                aria-invalid={!!fieldErr.password}
                 maxLength={128}
                 type={showPw ? 'text' : 'password'}
                 autoComplete="current-password"
-                className="w-full pl-3.5 pr-11 py-3 rounded-xl text-[15px] outline-none"
-                style={{
-                  background: t.inputBg,
-                  border: `1px solid ${t.inputBorder}`,
-                  color: t.text,
-                }}
+                className={`auth-in has-eye${fieldErr.password ? ' is-bad' : ''}`}
               />
               <EyeBtn show={showPw} toggle={() => setShowPw(!showPw)} />
             </div>
 
             {/* Remember me + Forgot */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-5">
               <label htmlFor="login-remember" className="flex items-center gap-2 cursor-pointer">
                 <input
                   id="login-remember"
@@ -688,7 +680,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]"
+              className="w-full h-[50px] rounded-[14px] text-white text-[15.5px] font-bold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]"
               style={{
                 background: authLoading ? '#999' : t.btnPrimary,
                 opacity: authLoading ? 0.7 : 1,
@@ -697,14 +689,15 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               {authLoading && (
                 <NitroLoader size={16} mono ariaHidden />
               )}
-              {authLoading ? tr("Logging in...") : tr("Log In")}
+              {authLoading ? tr("Logging in...") : tr("Log in")}
             </button>
 
-            {/* Switch to signup */}
+            {/* Switch to signup — or, when something went wrong, what it was */}
             <div
               className="text-center text-sm"
               style={{ color: t.textSoft }}
             >
+              {line ? <LineMsg line={line} /> : <>
               {tr("Don't have an account?")}{' '}
               <button
                 type="button"
@@ -712,15 +705,22 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 className="bg-transparent font-semibold text-sm"
                 style={{ color: "var(--t-accent-ink)" }}
               >
-                {tr("Sign Up Free")}
+                {tr("Sign up free")}
               </button>
+              </>}
             </div>
           </>
         )}
 
+        {/* Both sign up steps are drawn in one grid cell and only the current one is
+            shown, so the card is always as tall as the taller step and does not
+            change size between them. The hidden step is inert, and its main button
+            is not a submit, so Enter always submits the step on screen. */}
+        {mode === 'signup' && (
+        <div className="grid">
+
         {/* ====== SIGNUP STEP 1 ====== */}
-        {mode === 'signup' && step === 1 && (
-          <>
+          <div className="[grid-area:1/1] flex flex-col min-w-0" inert={step !== 1} style={step !== 1 ? { visibility: 'hidden' } : undefined}>
             {/* Google button */}
             <button
               type="button"
@@ -728,7 +728,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 setError('');
                 { const gp = new URLSearchParams(); if (refCode) gp.set('ref', refCode); if (via) gp.set('via', via); window.location.href = `/api/auth/google${gp.size ? `?${gp}` : ''}`; }
               }}
-              className="google-btn w-full py-[13px] rounded-xl flex items-center justify-center gap-2.5 text-[15px] font-semibold mb-0 transition-[color,transform] duration-200 hover:-translate-y-px"
+              className="google-btn w-full h-11 rounded-xl flex items-center justify-center gap-2.5 text-[15px] font-semibold mb-0 transition-[color,transform] duration-200 hover:-translate-y-px"
               style={{
                 background: dark ? 'rgba(255,255,255,.09)' : '#fff',
                 border: `1px solid ${dark ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.19)'}`,
@@ -757,7 +757,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             </button>
 
             {/* Divider */}
-            <div className="flex items-center gap-3.5 my-4">
+            <div className="flex items-center gap-3.5 my-3">
               <div
                 className="flex-1 h-px"
                 style={{
@@ -767,7 +767,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 }}
               />
               <span
-                className="text-[13px] font-medium"
+                className="text-[12px] font-medium"
                 style={{ color: t.textMuted }}
               >
                 {tr("or")}
@@ -783,144 +783,99 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             </div>
 
             {/* First / Last name */}
-            <div className="flex gap-2.5 mb-4">
-              <div className="flex-1">
-                <Lbl t={t} htmlFor="signup-first">{tr("First Name")}</Lbl>
+            <div className="flex gap-2.5 mb-3">
+              <div className="flex-1 min-w-0 auth-box">
+                <label htmlFor="signup-first">{tr("First name")}</label>
                 <input
                   id="signup-first"
                   name="firstName"
                   value={firstName}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFirstName(
                       e.target.value
                         .replace(/[^a-zA-Z\u00C0-\u017F]/g, '')
                         .slice(0, 50)
-                    )
-                  }
-                  placeholder={tr("First")}
+                    );
+                    clearErr('first');
+                  }}
+                  placeholder={fieldErr.first?.code === 'required' ? tr("Required") : tr("First")}
+                  aria-invalid={!!fieldErr.first}
                   maxLength={50}
                   type="text"
                   autoComplete="given-name"
-                  className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none"
-                  style={{
-                    background: t.inputBg,
-                    border: `1px solid ${t.inputBorder}`,
-                    color: t.text,
-                  }}
+                  className={`auth-in${fieldErr.first ? ' is-bad' : ''}`}
                 />
               </div>
-              <div className="flex-1">
-                <Lbl t={t} htmlFor="signup-last">{tr("Last Name")}</Lbl>
+              <div className="flex-1 min-w-0 auth-box">
+                <label htmlFor="signup-last">{tr("Last name")}</label>
                 <input
                   id="signup-last"
                   name="lastName"
                   value={lastName}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setLastName(
                       e.target.value
                         .replace(/[^a-zA-Z\u00C0-\u017F]/g, '')
                         .slice(0, 50)
-                    )
-                  }
-                  placeholder={tr("Last")}
+                    );
+                    clearErr('last');
+                  }}
+                  placeholder={fieldErr.last?.code === 'required' ? tr("Required") : tr("Last")}
+                  aria-invalid={!!fieldErr.last}
                   maxLength={50}
                   type="text"
                   autoComplete="family-name"
-                  className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none"
-                  style={{
-                    background: t.inputBg,
-                    border: `1px solid ${t.inputBorder}`,
-                    color: t.text,
-                  }}
+                  className={`auth-in${fieldErr.last ? ' is-bad' : ''}`}
                 />
               </div>
             </div>
 
             {/* Email */}
-            <Lbl t={t} htmlFor="signup-email">{tr("Email Address")}</Lbl>
+            <div className="auth-box">
+            <label htmlFor="signup-email">{tr("Email address")}</label>
             <input
               id="signup-email"
               name="email"
               value={email}
-              onChange={(e) =>
-                setEmail(e.target.value.trim().toLowerCase().slice(0, 254))
-              }
-              placeholder="you@example.com"
+              onChange={(e) => {
+                setEmail(e.target.value.trim().toLowerCase().slice(0, 254));
+                clearErr('email');
+              }}
+              onBlur={() => setEmailTouched(true)}
+              placeholder={fieldErr.email?.code === 'required' ? tr("Required") : "you@example.com"}
               type="email"
               autoComplete="email"
-              className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none mb-1"
-              style={{
-                background: t.inputBg,
-                border: `1px solid ${t.inputBorder}`,
-                color: t.text,
-              }}
+              aria-invalid={emailBad}
+              className={`auth-in${emailBad ? ' is-bad' : ''}`}
             />
-            <div className="min-h-[16px] mb-1">
-              {email && !validEmail ? (
-                <span
-                  className="text-xs"
-                  style={{ color: dark ? '#fca5a5' : '#dc2626' }}
-                >
-                  {tr("Please enter a valid email")}
-                </span>
-              ) : email && validEmail && emailTaken ? (
-                <span
-                  className="text-xs"
-                  style={{ color: dark ? '#fca5a5' : '#dc2626' }}
-                >
-                  {tr("This email is already in use")}
-                </span>
-              ) : email && validEmail && emailChecking ? (
-                <span
-                  className="text-xs"
-                  style={{ color: t.textMuted }}
-                >
-                  {tr("Checking...")}
-                </span>
-              ) : null}
             </div>
+            <div className="mb-0.5">{emailSlot}</div>
 
             {/* WhatsApp number */}
-            <Lbl t={t} htmlFor="signup-phone">
-              {tr("WhatsApp Number")} <span style={{ color: dark ? '#fca5a5' : '#dc2626' }}>*</span>
-            </Lbl>
-            <div className="mb-1">
-              <PhoneField id="signup-phone" country={country} onCountry={setCountry} value={phone} onValue={setPhone} t={t} dark={dark} />
+            <div className={`auth-box auth-tel${phoneBad ? ' is-bad' : ''}`} onBlur={() => setPhoneTouched(true)}>
+              <label htmlFor="signup-phone">
+                {tr("WhatsApp number")} <span style={{ color: dark ? '#fca5a5' : '#dc2626' }}>*</span>
+              </label>
+              <PhoneField id="signup-phone" country={country} onCountry={(c) => { setCountry(c); clearErr('phone'); }} value={phone} onValue={(v) => { setPhone(v); clearErr('phone'); }} t={{ ...t, inputBg: 'var(--auth-field)', inputBorder: 'var(--auth-field-line)' }} dark={dark} boxed />
             </div>
-            <div className="min-h-[16px] mb-1">
-              {phone && !validPhone ? (
-                <span className="text-[11px]" style={{ color: dark ? '#fca5a5' : '#dc2626' }}>
-                  {phoneCheck.error}
-                </span>
-              ) : phone && validPhone && phoneTaken ? (
-                <span className="text-[11px]" style={{ color: dark ? '#fca5a5' : '#dc2626' }}>
-                  {tr("This number is already in use")}
-                </span>
-              ) : phone && validPhone && phoneChecking ? (
-                <span className="text-[11px]" style={{ color: t.textMuted }}>
-                  {tr("Checking...")}
-                </span>
-              ) : (
-                <span className="text-[11px]" style={{ color: t.textMuted }}>
-                  {tr("We'll reach you here for order updates")}
-                </span>
-              )}
-            </div>
+            <div className="mb-0.5">{phoneSlot}</div>
 
-            {/* Continue button */}
+            {/* Continue + switch — pinned to the bottom, the same height as step 2's pair, so the button never moves */}
+            <div className="mt-auto pt-2">
             <button
-              type="submit"
-              className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]"
+              type={step === 1 ? 'submit' : 'button'}
+              className="w-full h-[50px] rounded-[14px] text-white text-[15.5px] font-bold transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]"
               style={{ background: t.btnPrimary }}
             >
               {tr("Continue →")}
             </button>
 
-            {/* Switch to login */}
+            {/* Switch to login — or, when something went wrong, what it was */}
             <div
-              className="text-center text-sm"
+              className="text-center text-sm mt-1.5 leading-8"
               style={{ color: t.textSoft }}
             >
+              {step === 1 && line ? <LineMsg line={line} /> : <>
               {tr("Already have an account?")}{' '}
               <button
                 type="button"
@@ -928,45 +883,29 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 className="bg-transparent font-semibold text-sm"
                 style={{ color: "var(--t-accent-ink)" }}
               >
-                {tr("Log In")}
+                {tr("Log in")}
               </button>
+              </>}
             </div>
-
-            {/* Step dots */}
-            <div className="flex justify-center gap-1.5 mt-5">
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ background: t.accent }}
-              />
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ background: t.textMuted }}
-              />
             </div>
-          </>
-        )}
+          </div>
 
         {/* ====== SIGNUP STEP 2 ====== */}
-        {mode === 'signup' && step === 2 && (
-          <>
+          <div className="[grid-area:1/1] flex flex-col min-w-0" inert={step !== 2} style={step !== 2 ? { visibility: 'hidden' } : undefined}>
             {/* Password */}
-            <Lbl t={t} htmlFor="signup-password">{tr("Password")}</Lbl>
-            <div className="relative mb-1">
+            <div className="auth-box mb-1">
+              <label htmlFor="signup-password">{tr("Password")}</label>
               <input
                 id="signup-password"
                 name="password"
-                placeholder={tr("Min. 6 characters")}
+                placeholder={fieldErr.password?.code === 'required' ? tr("Required") : tr("Min. 6 characters")}
                 value={pw}
-                onChange={(e) => setPw(e.target.value.slice(0, 128))}
+                onChange={(e) => { setPw(e.target.value.slice(0, 128)); clearErr('password'); }}
                 type={showPw ? 'text' : 'password'}
                 maxLength={128}
                 autoComplete="new-password"
-                className="w-full pl-3.5 pr-11 py-3 rounded-xl text-[15px] outline-none"
-                style={{
-                  background: t.inputBg,
-                  border: `1px solid ${t.inputBorder}`,
-                  color: t.text,
-                }}
+                aria-invalid={!!fieldErr.password}
+                className={`auth-in has-eye${fieldErr.password ? ' is-bad' : ''}`}
               />
               <EyeBtn show={showPw} toggle={() => setShowPw(!showPw)} />
             </div>
@@ -978,67 +917,42 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             )}
 
             {/* Confirm password */}
-            <Lbl t={t} htmlFor="signup-confirm">{tr("Confirm Password")}</Lbl>
-            <div className="relative mb-1">
+            <div className="auth-box mb-1">
+              <label htmlFor="signup-confirm">{tr("Confirm password")}</label>
               <input
                 id="signup-confirm"
                 name="passwordConfirmation"
                 value={pw2}
-                onChange={(e) => setPw2(e.target.value.slice(0, 128))}
-                placeholder={tr("Re-enter password")}
+                onChange={(e) => { setPw2(e.target.value.slice(0, 128)); clearErr('password2'); }}
+                placeholder={fieldErr.password2?.code === 'required' ? tr("Required") : tr("Re-enter password")}
                 maxLength={128}
                 type={showPw2 ? 'text' : 'password'}
                 autoComplete="new-password"
-                className="w-full pl-3.5 pr-11 py-3 rounded-xl text-[15px] outline-none"
-                style={{
-                  background: t.inputBg,
-                  border: `1px solid ${
-                    pwMismatch
-                      ? dark
-                        ? 'rgba(220,38,38,0.4)'
-                        : '#fecaca'
-                      : pwMatch
-                        ? dark
-                          ? 'rgba(110,231,183,0.4)'
-                          : '#a7f3d0'
-                        : t.inputBorder
-                  }`,
-                  color: t.text,
-                }}
+                aria-invalid={pwMismatch || !!fieldErr.password2}
+                className={`auth-in has-eye${pwMismatch || fieldErr.password2 ? ' is-bad' : pwMatch ? ' is-good' : ''}`}
               />
               <EyeBtn
                 show={showPw2}
                 toggle={() => setShowPw2(!showPw2)}
               />
             </div>
-            <div className="min-h-[18px] mb-1">
-              {pwMatch ? (
-                <div
-                  className="text-xs"
-                  style={{ color: dark ? '#6ee7b7' : '#059669' }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> {tr("Passwords match")}
-                </div>
-              ) : pwMismatch ? (
-                <div
-                  className="text-xs"
-                  style={{ color: dark ? '#fca5a5' : '#dc2626' }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> {tr("Passwords don’t match")}
-                </div>
-              ) : null}
+            <div className="mb-1">
+              {pwMatch ? <Slot kind="ok">{tr("Passwords match")}</Slot>
+                : pwMismatch ? <Slot kind="err">{tr("Passwords don’t match")}</Slot>
+                : <Slot />}
             </div>
 
             {/* Referral code */}
-            <Lbl t={t} htmlFor="signup-referral">
-              Referral Code{' '}
+            <div className="auth-box mb-4">
+            <label htmlFor="signup-referral">
+              Referral code{' '}
               <span
                 className="font-normal"
                 style={{ color: t.textMuted }}
               >
                 (optional)
               </span>
-            </Lbl>
+            </label>
             <input
               id="signup-referral"
               name="referralCode"
@@ -1054,22 +968,19 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               placeholder="e.g. NTR-K3BN7A"
               maxLength={20}
               type="text"
-              className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none mb-4"
-              style={{
-                background: t.inputBg,
-                border: `1px solid ${t.inputBorder}`,
-                color: t.text,
-              }}
+              className="auth-in"
             />
+            </div>
 
             {/* Terms checkbox */}
-            <label className="flex items-start gap-2.5 mb-3 cursor-pointer">
+            <label className={`auth-terms flex items-start gap-2.5 mb-1 cursor-pointer${fieldErr.terms ? ' is-bad' : ''}`}>
               <input
                 id="signup-terms"
                 name="termsAccepted"
                 type="checkbox"
                 checked={agree}
-                onChange={(e) => setAgree(e.target.checked)}
+                onChange={(e) => { setAgree(e.target.checked); clearErr('terms'); }}
+                aria-invalid={!!fieldErr.terms}
                 className="mt-[3px] w-4 h-4 shrink-0"
                 style={{ accentColor: t.accent }}
               />
@@ -1096,11 +1007,14 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               </span>
             </label>
 
-            {/* Create account button */}
+            {/* Create account + back — pinned to the bottom, level with step 1's Continue.
+                A message sits just above the button, in room step 2 already has. */}
+            <div className="mt-auto pt-2">
+            {step === 2 && line && <p className="text-center text-[13px] mb-2.5"><LineMsg line={line} /></p>}
             <button
-              type="submit"
+              type={step === 2 ? 'submit' : 'button'}
               disabled={authLoading}
-              className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-2 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]"
+              className="w-full h-[50px] rounded-[14px] text-white text-[15.5px] font-bold flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]"
               style={{
                 background: authLoading ? '#999' : t.btnPrimary,
                 opacity: authLoading ? 0.7 : 1,
@@ -1109,54 +1023,45 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               {authLoading && (
                 <NitroLoader size={16} mono ariaHidden />
               )}
-              {authLoading ? tr("Creating...") : tr("Create Account")}
+              {authLoading ? tr("Creating...") : tr("Create account")}
             </button>
 
             {/* Back button */}
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="w-full py-1.5 rounded-[10px] bg-transparent text-sm font-medium"
+              className="w-full mt-1.5 h-8 rounded-[10px] bg-transparent text-sm font-semibold flex items-center justify-center gap-1.5"
               style={{ color: t.textSoft }}
             >
-              {tr("← Back to Step 1")}
+              <span className="dir-flip" aria-hidden="true">←</span>{tr("Back to step 1")}
             </button>
-
-            {/* Step dots */}
-            <div className="flex justify-center gap-1.5 mt-4">
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ background: t.textMuted }}
-              />
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ background: t.accent }}
-              />
             </div>
-          </>
+          </div>
+        </div>
         )}
 
         {/* ====== RESET MODE — FORM ====== */}
         {mode === 'reset' && !resetDone && (
           <>
-            <Lbl t={t} htmlFor="reset-pw">{tr("New Password")}</Lbl>
-            <div className="relative mb-1">
-              <input id="reset-pw" name="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value.slice(0, 128))} placeholder={tr("Enter new password")} type={showPw ? 'text' : 'password'} className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none pr-11" style={{ background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text }} />
+            <div className="auth-box mb-1">
+              <label htmlFor="reset-pw">{tr("New password")}</label>
+              <input id="reset-pw" name="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value.slice(0, 128))} placeholder={tr("Enter new password")} type={showPw ? 'text' : 'password'} className="auth-in has-eye" />
               <EyeBtn show={showPw} toggle={() => setShowPw(!showPw)} />
             </div>
             <PwStrength pw={pw} t={t} />
 
-            <Lbl t={t} htmlFor="reset-pw2">{tr("Confirm Password")}</Lbl>
-            <div className="relative mb-5">
-              <input id="reset-pw2" name="passwordConfirmation" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value.slice(0, 128))} placeholder={tr("Confirm new password")} type={showPw2 ? 'text' : 'password'} className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none pr-11" style={{ background: t.inputBg, border: `1px solid ${pwMismatch ? '#dc2626' : t.inputBorder}`, color: t.text }} />
+            <div className="auth-box mb-5">
+              <label htmlFor="reset-pw2">{tr("Confirm password")}</label>
+              <input id="reset-pw2" name="passwordConfirmation" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value.slice(0, 128))} placeholder={tr("Confirm new password")} type={showPw2 ? 'text' : 'password'} className={`auth-in has-eye${pwMismatch ? ' is-bad' : ''}`} />
               <EyeBtn show={showPw2} toggle={() => setShowPw2(!showPw2)} />
-              {pwMismatch && <p className="text-[11px] mt-1 font-medium" style={{ color: '#dc2626' }}>{tr("Passwords do not match")}</p>}
             </div>
+            {pwMismatch && <p className="text-[11px] -mt-4 mb-4 font-medium" style={{ color: '#dc2626' }}>{tr("Passwords do not match")}</p>}
 
-            <button type="submit" disabled={authLoading || !pw || !pwMatch} className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: authLoading ? '#999' : t.btnPrimary, opacity: authLoading || !pw || !pwMatch ? 0.7 : 1 }}>
+            <button type="submit" disabled={authLoading || !pw || !pwMatch} className="w-full h-[50px] rounded-[14px] text-white text-[15.5px] font-bold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ background: authLoading ? '#999' : t.btnPrimary, opacity: authLoading || !pw || !pwMatch ? 0.7 : 1 }}>
               {authLoading && <NitroLoader size={16} mono ariaHidden />}
-              {authLoading ? tr("Resetting...") : tr("Reset Password")}
+              {authLoading ? tr("Resetting...") : tr("Reset password")}
             </button>
+            {line && <p className="text-center text-sm -mt-2.5 mb-4"><LineMsg line={line} /></p>}
           </>
         )}
 
@@ -1167,36 +1072,35 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
             </div>
             <p className="text-[15px] text-center mb-6" style={{ color: t.textSoft }}>{tr("Your password has been reset. You can now log in.")}</p>
-            <button type="button" onClick={() => { setMode('login'); window.history.replaceState({}, '', '/'); }} className="w-full py-3.5 rounded-xl text-white text-base font-semibold" style={{ background: t.btnPrimary }}>{tr("Log In")}</button>
+            <button type="button" onClick={() => { setMode('login'); window.history.replaceState({}, '', '/'); }} className="w-full h-[50px] rounded-[14px] text-white text-[15.5px] font-bold" style={{ background: t.btnPrimary }}>{tr("Log in")}</button>
           </div>
         )}
 
         {/* ====== FORGOT MODE — FORM ====== */}
         {mode === 'forgot' && !forgotSent && (
           <>
-            <Lbl t={t} htmlFor="forgot-email">{tr("Email Address")}</Lbl>
+            <div className="auth-box mb-5">
+            <label htmlFor="forgot-email">{tr("Email address")}</label>
             <input
               id="forgot-email"
               name="email"
               value={email}
-              onChange={(e) =>
-                setEmail(e.target.value.trim().toLowerCase().slice(0, 254))
-              }
-              placeholder="you@example.com"
+              onChange={(e) => {
+                setEmail(e.target.value.trim().toLowerCase().slice(0, 254));
+                clearErr('email');
+              }}
+              placeholder={fieldErr.email?.code === 'required' ? tr("Required") : "you@example.com"}
+              aria-invalid={!!fieldErr.email}
               type="email"
               autoComplete="email"
-              className="w-full px-3.5 py-3 rounded-xl text-[15px] outline-none mb-5"
-              style={{
-                background: t.inputBg,
-                border: `1px solid ${t.inputBorder}`,
-                color: t.text,
-              }}
+              className={`auth-in${fieldErr.email ? ' is-bad' : ''}`}
             />
+            </div>
 
             <button
               type="submit"
               disabled={authLoading}
-              className="w-full py-3.5 rounded-xl text-white text-base font-semibold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]"
+              className="w-full h-[50px] rounded-[14px] text-white text-[15.5px] font-bold mb-5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]"
               style={{
                 background: authLoading ? '#999' : t.btnPrimary,
                 opacity: authLoading ? 0.7 : 1,
@@ -1205,13 +1109,14 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
               {authLoading && (
                 <NitroLoader size={16} mono ariaHidden />
               )}
-              {authLoading ? tr("Sending...") : tr("Send Reset Link")}
+              {authLoading ? tr("Sending...") : tr("Send reset link")}
             </button>
 
             <div
               className="text-center text-sm"
               style={{ color: t.textSoft }}
             >
+              {line ? <LineMsg line={line} /> : <>
               Remember your password?{' '}
               <button
                 type="button"
@@ -1219,8 +1124,9 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 className="bg-transparent font-semibold text-sm"
                 style={{ color: "var(--t-accent-ink)" }}
               >
-                {tr("Log In")}
+                {tr("Log in")}
               </button>
+              </>}
             </div>
           </>
         )}
@@ -1272,14 +1178,25 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             <button
               type="button"
               onClick={() => setMode('login')}
-              className="w-full py-3.5 rounded-xl text-white text-base font-semibold"
+              className="w-full h-[50px] rounded-[14px] text-white text-[15.5px] font-bold"
               style={{ background: t.btnPrimary }}
             >
-              {tr("Back to Login")}
+              {tr("Back to login")}
             </button>
           </div>
         )}
         </form>
+
+        {/* For someone who would rather not make an account at all. On a desktop
+            modal it sits in the pink panel instead; this bar is for phones and
+            the plain card. Only passed in while guest_checkout_enabled is on. */}
+        {guestHere && (
+          // The wrapper carries md:hidden: .auth-guest's own display in
+          // globals.css is unlayered, so it would beat a utility on the button.
+          <div className={elevated ? 'md:hidden' : ''}>
+            <GuestButton tr={tr} onClick={startGuest} className="-mx-8 -mb-7 max-md:-mb-6 mt-4 px-8 py-3 w-[calc(100%+4rem)]" />
+          </div>
+        )}
       </div>
       </ElevatedShell>
     </div>

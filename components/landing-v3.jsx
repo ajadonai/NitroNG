@@ -10,20 +10,26 @@ import { WaButton } from "./wa-button";
 import { useMoney } from "./locale";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { DEFAULT_COUNTRY, validatePhone } from "../lib/phone-countries";
+import { placeAuthError } from "../lib/auth-errors";
+import { useSignupChecks } from "./use-signup-checks";
+import { LineMsg, emailState, phoneState, GuestButton } from "./auth-messages";
+import { suggestEmail } from "../lib/email-typos";
+import { previewOrder } from "../lib/guest-order-previews";
 import { NitroWordmark } from "./nitro-logo";
 import NitroLoader from "./nitro-loader";
 import AnnouncementBanner from "./announcement-banner";
 import { trackViewContent } from "./capi-tracker";
-import InlineAlert from "./inline-alert";
 import { PublicNavSheet, SHEET_LINKS } from "./public-nav-sheet";
 
 // The mobile hero card. Colours come in as CSS variables from the component so it follows the theme.
 const HC_CSS = `
 .hc{border-radius:22px;background:var(--cbg);border:1px solid var(--cline);box-shadow:var(--shadow);color:var(--cink);text-align:left;overflow:hidden;padding-bottom:13px}
 /* 2x2 stat grid, number beside label so the rows stay short — the second row
-   is paid for by the removed Live-activity strip, so the card height holds */
+   is paid for by the removed Live-activity strip, so the card height holds.
+   It wraps only when the pair cannot fit: "Delivering now" spilled out of its
+   box on a 320px phone. */
 .hc-facts{display:grid;grid-template-columns:1fr 1fr;margin:13px 16px 11px;border:1px solid var(--cline);border-radius:14px;overflow:hidden}
-.hc-f{display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 6px;border-left:1px solid var(--cline);min-width:0}
+.hc-f{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;column-gap:7px;row-gap:1px;padding:9px 6px;border-left:1px solid var(--cline);min-width:0}
 .hc-f:nth-child(odd){border-left:0}
 .hc-f:nth-child(n+3){border-top:1px solid var(--cline)}
 /* fallback when the live stat is unavailable: one clean three-column row */
@@ -32,7 +38,7 @@ const HC_CSS = `
 .hc-facts.three .hc-f:first-child{border-left:0}
 .hc-f b{font-size:16.5px;font-weight:800;letter-spacing:-.01em;font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 .hc-f span{font-size:9.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--cmut);white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
-.hc-f.live b{color:#0a9d6b}.dark .hc-f.live b{color:#4be284}
+.hc-f.live b{color:#0a7f57}.dark .hc-f.live b{color:#4be284}
 .hc-f.live i{width:5px;height:5px;border-radius:50%;background:#34d399;flex-shrink:0;animation:hcLp 2.2s ease-out infinite}
 @keyframes hcLp{0%{box-shadow:0 0 0 0 rgba(52,211,153,.4)}80%,100%{box-shadow:0 0 0 5px rgba(52,211,153,0)}}
 @media (prefers-reduced-motion:reduce){.hc-f.live i{animation:none}}
@@ -40,9 +46,10 @@ const HC_CSS = `
 .hc-gi{width:32px;height:32px;border-radius:10px;background:var(--cbg);color:#c47d8e;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}.hc-gi svg{width:16px;height:16px}
 .hc-gift>span:last-child{display:flex;flex-direction:column;line-height:1.25;min-width:0}.hc-gift b{font-size:13px;font-weight:700}.hc-gift i{font-style:normal;font-size:12px;color:var(--cmut)}
 .hc-cta{display:block;margin:0 16px;padding:14px;border-radius:14px;font-size:15px;font-weight:700;text-align:center;color:#fff;background:linear-gradient(135deg,#c47d8e,#a3586b);box-shadow:0 6px 24px rgba(196,125,142,.4);cursor:pointer}
-.hc-login{text-align:center;font-size:13px;color:var(--cmut);margin:11px 16px 0}.hc-login a{color:#c47d8e;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.hc-trust{display:flex;justify-content:center;gap:14px;margin:11px 16px 0;padding-top:11px;border-top:1px solid var(--cline);font-size:11px;color:var(--cdim)}
-.hc-trust span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}.hc-trust svg{width:11px;height:11px}
+.hc-login{text-align:center;font-size:13px;color:var(--cmut);margin:11px 16px 0}.hc-login a{color:var(--cacc);font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+/* it ran off the card on every phone up to 390px; now it wraps onto a second line when it cannot fit (360px and narrower) */
+.hc-trust{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;margin:11px 16px 0;padding-top:11px;border-top:1px solid var(--cline);font-size:10.5px;color:var(--cmut)}
+.hc-trust span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.hc-trust svg{width:11px;height:11px}
 `;
 
 
@@ -117,13 +124,25 @@ const LV3_CSS = `
 }
 /* shorter desktop viewports: the hero interior compresses so the strip stays in frame */
 @media (min-width:1200px) and (max-height:820px){
-  .lv3-fold #hero .lv3-grid{padding-top:24px;padding-bottom:20px}
+  .lv3-fold #hero .lv3-grid{padding-top:14px;padding-bottom:10px}
   .lv3-fold .lv3-strip .lv3-stat{padding-top:16px;padding-bottom:16px}
+  /* The sign up card is the tallest thing on the first screen; on a 768px
+     laptop it ran into the stats strip. Slightly shorter fields here only. */
+  .lv3-fold #hero form .auth-box{padding-top:4px;padding-bottom:5px}
+  .lv3-fold #hero form .auth-guest{padding-top:8px;padding-bottom:8px;margin-top:10px}
+  .lv3-fold #hero form .auth-guest-ic{width:30px;height:30px}
+  .lv3-fold #hero form{padding-top:14px}
+}
+/* At 720px tall there is no room for it under the sign up form; there it stays
+   on the log in card only. */
+@media (min-width:1200px) and (max-height:740px){
+  .lv3-fold #hero form .auth-guest.on-signup{display:none}
 }
 @media (prefers-reduced-motion:reduce){.lv3-ring,.lv3-aur,.lv3-ficon,.lv3-mq{animation:none!important}.lv3-roller>span{transition:none}}
 `;
 
 const AuthModal = dynamic(() => import("./auth-modal"), { ssr: false });
+const GuestOrderCard = dynamic(() => import("./guest-order-card").then(m => m.GuestOrderCard), { ssr: false });
 const BelowFold = dynamic(() => import('./landing-v3-below-fold'), { ssr: true });
 
 function PwStrength({ pw, dark }) {
@@ -196,8 +215,15 @@ function LandingInner({ initialAuthQuery, initialStats }){
   const [heroPw,setHeroPw]=useState("");
   const [heroRemember,setHeroRemember]=useState(true);
   const [heroLoading,setHeroLoading]=useState(false);
-  const [heroError,setHeroError]=useState("");
-  const [heroSuccess,setHeroSuccess]=useState("");
+  // The hero card's line under the button, when it has something to say instead
+  // of its usual text: { kind: "error" | "success", text, action?, net? }. The
+  // old error and success boxes sat below the card and made it taller.
+  const [heroLine,setHeroLine]=useState(null);
+  const setHeroError=text=>setHeroLine(text?{kind:"error",text}:null);
+  const setHeroSuccess=text=>setHeroLine(text?{kind:"success",text}:null);
+  const [heroFieldErr,setHeroFieldErr]=useState({});
+  const [heroEmailTouched,setHeroEmailTouched]=useState(false);
+  const [heroPhoneTouched,setHeroPhoneTouched]=useState(false);
   const [heroSignupData] = useState(null);
   const [heroSignupStep,setHeroSignupStep]=useState(1);
   const [heroPw2,setHeroPw2]=useState("");
@@ -207,6 +233,26 @@ function LandingInner({ initialAuthQuery, initialStats }){
   const heroVia=initialVia;
   const [heroAgree,setHeroAgree]=useState(false);
   const [heroShowPw,setHeroShowPw]=useState(false);
+  const heroChecks=useSignupChecks({active:heroAuth==="signup",email:heroEmail,phone:heroPhone,country:heroCountry});
+  // A message goes the moment the field it is about changes.
+  const heroClear=k=>{setHeroFieldErr(f=>f[k]?{...f,[k]:null}:f);setHeroLine(l=>l?.kind==="error"?null:l);};
+  const heroFocus=id=>requestAnimationFrame(()=>document.getElementById(id)?.focus());
+  const heroGo=mode=>{setHeroAuth(mode);setHeroSignupStep(1);setHeroFieldErr({});setHeroLine(null);};
+  // "Order without an account". Built dark: on the live site it shows only once
+  // guest_checkout_enabled is "true", which waits for guest checkout itself to
+  // ship. Always on in local development, the same as the guest API routes
+  // (guestCheckoutOpen), so it can be worked on without flipping the setting,
+  // which local dev would flip on production too.
+  const guestPreview=process.env.NODE_ENV!=="production";
+  // The order card takes the hero card's place, on desktop and phone, as in
+  // the mockup. ?guest_code=CODE (an order page's "Use credit") opens it with
+  // that code's credit applied.
+  const [heroGuest,setHeroGuest]=useState(false);
+  const [guestCredit,setGuestCredit]=useState("");
+  // Back from paying: ?guest_order=CODE opens the card on its receipt. On
+  // localhost, &receipt=delivering (or any order page state) shows a made-up one.
+  const [guestReturn,setGuestReturn]=useState({code:"",preview:null});
+  const startGuestOrder=()=>{setModal(null);setHeroGuest(true);setTimeout(()=>{const el=[...document.querySelectorAll("[data-guest-card]")].find(n=>n.offsetParent);el?.scrollIntoView({behavior:"smooth",block:"center"});},350);};
   const [scrolled,setScrolled]=useState(false);
   const [activeSection,setActiveSection]=useState(0);
   const scrollRef=useRef(null);
@@ -235,6 +281,20 @@ function LandingInner({ initialAuthQuery, initialStats }){
   const cardFactCount=cardFacts.length+(siteStats.processing!=null?1:0);
   const [siteAlerts,setSiteAlerts]=useState([]);
   const [socialLinks,setSocialLinks]=useState({});
+  // Before it is on for everyone, a signed-in admin sees it on the live site, so
+  // staff can test real payments. Asked only while the setting is off.
+  const guestLive=socialLinks.guest_checkout_enabled==="true";
+  const [guestStaff,setGuestStaff]=useState(false);
+  useEffect(()=>{if(guestLive||guestPreview)return;let gone=false;
+    fetch("/api/guest/access",{cache:"no-store"}).then(r=>r.json()).then(d=>{if(!gone&&d?.open)setGuestStaff(true);}).catch(()=>{});
+    return()=>{gone=true;};},[guestLive,guestPreview]);
+  const guestOn=guestLive||guestPreview||guestStaff;
+  useEffect(()=>{if(!guestOn)return;const q=new URLSearchParams(window.location.search);const code=q.get("guest_code");if(code){setGuestCredit(code.toUpperCase());setHeroGuest(true);}
+    const back=q.get("guest_order")?.toUpperCase();if(back){const preview=process.env.NODE_ENV!=="production"&&q.get("receipt")?previewOrder(back,q.get("receipt")):null;setGuestReturn({code:preview?"":back,preview});setHeroGuest(true);}
+    // A credit link is read once, so a reload does not hand the code over
+    // again. ?guest_order= stays until "Place another order", so a refresh
+    // while a transfer is still landing keeps the receipt.
+    if(code){q.delete("guest_code");window.history.replaceState(null,"",window.location.pathname+(q.size?`?${q}`:""));}},[guestOn]);
   const [pricingData,setPricingData]=useState(null);
   const [word,setWord]=useState(0);
   useEffect(()=>{if(typeof matchMedia!=="undefined"&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;const iv=setInterval(()=>setWord(w=>(w+1)%HERO_WORDS.length),2600);return()=>clearInterval(iv);},[]);
@@ -257,36 +317,71 @@ function LandingInner({ initialAuthQuery, initialStats }){
   useEffect(()=>{if(modal){document.body.style.overflow="hidden";}else{document.body.style.overflow="";}return()=>{document.body.style.overflow="";};},[modal]);
 
   // Hero card auth handlers
+  const heroNetError=()=>setHeroLine({kind:"error",net:true,text:tr("Network error. Check your connection and try again.")});
   const heroLoginSubmit=async()=>{
-    setHeroError("");if(!heroEmail||!heroPw){setHeroError(tr("Please fill in all fields"));return;}
-    setHeroLoading(true);
-    try{const res=await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:heroMethod==="email"?heroEmail:(validatePhone(heroCountry,heroEmail).e164||heroEmail),password:heroPw,remember:heroRemember})});const data=await res.json();if(!res.ok){if(data.banned){window.location.href="/banned";return;}setHeroError(data.error||tr("Login failed"));setHeroLoading(false);return;}window.location.replace("/dashboard");}catch{setHeroError(tr("Something went wrong."));setHeroLoading(false);}
+    setHeroLine(null);
+    const errs={};if(!heroEmail)errs.email={code:"required"};if(!heroPw)errs.password={code:"required"};
+    if(errs.email||errs.password){setHeroFieldErr(errs);heroFocus(errs.email?"hero-login-email":"hero-login-password");return;}
+    setHeroFieldErr({});setHeroLoading(true);
+    try{const res=await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:heroMethod==="email"?heroEmail:(validatePhone(heroCountry,heroEmail).e164||heroEmail),password:heroPw,remember:heroRemember})});const data=await res.json();
+      if(!res.ok){if(data.banned){window.location.href="/banned";return;}
+        const place=placeAuthError(data.error);
+        if(place.code==="no-account"){setHeroFieldErr({email:place});setHeroLine({kind:"error",text:tr("No account uses this email."),action:{label:tr("Sign up free"),onClick:()=>heroGo("signup")}});heroFocus("hero-login-email");}
+        else if(place.code==="wrong-password"){setHeroFieldErr({password:place});setHeroLine({kind:"error",text:tr("That password doesn't match this account")});heroFocus("hero-login-password");}
+        else setHeroError(data.error||tr("Login failed"));
+        setHeroLoading(false);return;}
+      window.location.replace("/dashboard");}catch{heroNetError();setHeroLoading(false);}
   };
   const heroSignupSubmit=()=>{
-    setHeroError("");if(!heroFirstName||!heroLastName){setHeroError(tr("Please enter your first and last name"));return;}if(!heroEmail){setHeroError(tr("Please enter your email"));return;}
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(heroEmail)){setHeroError(tr("Please enter a valid email"));return;}
-    const heroPhoneCheck=validatePhone(heroCountry,heroPhone);if(!heroPhoneCheck.ok){setHeroError(heroPhoneCheck.error);return;}
-    setHeroSignupStep(2);
+    setHeroLine(null);
+    const phoneCheck=validatePhone(heroCountry,heroPhone);const validEmail=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(heroEmail);
+    const errs={};
+    if(!heroFirstName)errs.first={code:"required"};if(!heroLastName)errs.last={code:"required"};
+    if(!heroEmail)errs.email={code:"required"};else if(!validEmail)errs.email={code:"invalid"};else if(heroChecks.emailTaken)errs.email={code:"taken"};else if(suggestEmail(heroEmail))errs.email={code:"typo",suggestion:suggestEmail(heroEmail)};
+    if(!phoneCheck.ok)errs.phone={code:"invalid",text:phoneCheck.error};else if(heroChecks.phoneTaken)errs.phone={code:"taken"};
+    const firstBad=[["first","hero-signup-first"],["last","hero-signup-last"],["email","hero-signup-email"],["phone","hero-signup-phone"]].find(([k])=>errs[k]);
+    if(firstBad){setHeroFieldErr(errs);setHeroEmailTouched(true);setHeroPhoneTouched(true);heroFocus(firstBad[1]);return;}
+    setHeroFieldErr({});setHeroSignupStep(2);
   };
   const heroSignupFinalSubmit=async()=>{
-    setHeroError("");
-    if(!heroPw||heroPw.length<6){setHeroError(tr("Password must be at least 6 characters"));return;}
-    if(heroPw!==heroPw2){setHeroError(tr("Passwords don't match"));return;}
-    if(!heroAgree){setHeroError(tr("Please agree to the Terms of Service"));return;}
-    setHeroLoading(true);
+    setHeroLine(null);
+    const errs={};
+    if(!heroPw)errs.password={code:"required"};else if(heroPw.length<6)errs.password={code:"short"};
+    if(!heroPw2)errs.password2={code:"required"};else if(heroPw!==heroPw2)errs.password2={code:"mismatch"};
+    if(!heroAgree)errs.terms={code:"required"};
+    const firstBad=[["password","hero-signup-password"],["password2","hero-signup-confirm"],["terms","hero-signup-terms"]].find(([k])=>errs[k]);
+    if(firstBad){setHeroFieldErr(errs);
+      if(errs.password?.code==="short")setHeroError(tr("Password must be at least 6 characters"));
+      else if(errs.terms&&!errs.password&&!errs.password2)setHeroError(tr("Tick the box to accept the terms"));
+      heroFocus(firstBad[1]);return;}
+    setHeroFieldErr({});setHeroLoading(true);
     try{
       const res=await fetch("/api/auth/signup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:`${heroFirstName} ${heroLastName}`,firstName:heroFirstName,lastName:heroLastName,email:heroEmail,password:heroPw,phone:heroPhone||undefined,country:heroCountry,referralCode:heroRefCode||undefined,via:heroVia||undefined})});
       const data=await res.json();
-      if(!res.ok){setHeroError(data.error||tr("Signup failed"));setHeroLoading(false);return;}
+      if(!res.ok){
+        // A problem with something typed on step 1 goes back to step 1, on that field.
+        const place=placeAuthError(data.error);
+        if(place.field==="email"||place.field==="phone"){setHeroSignupStep(1);setHeroFieldErr({[place.field]:{...place,text:data.error}});heroFocus(place.field==="email"?"hero-signup-email":"hero-signup-phone");}
+        else if(place.field==="name"){setHeroSignupStep(1);setHeroFieldErr({first:place,last:place});setHeroError(data.error);heroFocus("hero-signup-first");}
+        else if(place.field==="password"){setHeroFieldErr({password:place});setHeroError(data.error);heroFocus("hero-signup-password");}
+        else setHeroError(data.error||tr("Signup failed"));
+        setHeroLoading(false);return;}
       window.fbq&&window.fbq("track","CompleteRegistration",{content_name:"signup",status:true},{eventID:data.eventId});
       setTimeout(()=>window.location.replace("/dashboard"),300);
-    }catch{setHeroError(tr("Something went wrong."));setHeroLoading(false);}
+    }catch{heroNetError();setHeroLoading(false);}
   };
   const heroForgotSubmit=async()=>{
-    setHeroError("");if(!heroEmail){setHeroError(tr("Please enter your email"));return;}
+    setHeroLine(null);if(!heroEmail){setHeroFieldErr({email:{code:"required"}});heroFocus("hero-forgot-email");return;}
     setHeroLoading(true);
-    try{const res=await fetch("/api/auth/forgot-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:heroEmail})});const data=await res.json();if(!res.ok){setHeroError(data.error||tr("Failed to send reset link"));setHeroLoading(false);return;}setHeroError("");setHeroLoading(false);setHeroAuth("login");setHeroSuccess(tr("Reset link sent! Check your email."));}catch{setHeroError(tr("Something went wrong."));setHeroLoading(false);}
+    try{const res=await fetch("/api/auth/forgot-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:heroEmail})});const data=await res.json();if(!res.ok){setHeroError(data.error||tr("Failed to send reset link"));setHeroLoading(false);return;}setHeroError("");setHeroLoading(false);setHeroAuth("login");setHeroSuccess(tr("Reset link sent! Check your email."));}catch{heroNetError();setHeroLoading(false);}
   };
+  const heroEmailValid=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(heroEmail);
+  const heroEmailSt=emailState({tr,fe:heroFieldErr.email,email:heroEmail,valid:heroEmailValid,touched:heroEmailTouched,taken:heroChecks.emailTaken,checking:heroChecks.emailChecking,suggestion:suggestEmail(heroEmail),
+    onUseSuggestion:v=>{setHeroEmail(v);heroClear("email");},onLogin:()=>heroGo("login")});
+  const heroPhoneSt=phoneState({tr,fe:heroFieldErr.phone,phone:heroPhone,check:validatePhone(heroCountry,heroPhone),touched:heroPhoneTouched,taken:heroChecks.phoneTaken,checking:heroChecks.phoneChecking,
+    supportWhatsApp:socialLinks.social_whatsapp_support||""});
+  // Desktop hero card pieces used in more than one state.
+  const heroSteps=n=><div className="grid grid-cols-[1fr_1fr_auto] gap-1 items-center mt-2"><i className="block h-[3px] rounded-sm" style={{background:t.accent}}/><i className="block h-[3px] rounded-sm" style={{background:n===2?t.accent:"var(--auth-field-line)"}}/><span className="text-[11.5px] font-semibold ms-2 whitespace-nowrap text-t-text-muted">{n===1?tr("Step 1 of 2"):tr("Step 2 of 2")}</span></div>;
   const handleHeroAuthSubmit=(event)=>{
     event.preventDefault();
     if(heroLoading)return;
@@ -413,7 +508,7 @@ function LandingInner({ initialAuthQuery, initialStats }){
               {/* Mobile hero card: the live format (strip, facts, gift, CTA, log in, trust) */}
               <div className="fu fd4 hidden max-desktop:!flex max-desktop:flex-col max-desktop:items-center max-desktop:mt-4 max-md:mt-3 w-full max-md:max-w-full relative z-[2]">
                 <style>{HC_CSS}</style>
-                <div className="hc w-full max-w-[380px] max-md:max-w-full" style={{"--cbg":dark?"#171126":"#fff","--cink":dark?"#f2efe9":"#1a1a1a","--cmut":dark?"rgba(255,255,255,.5)":"rgba(0,0,0,.45)","--cdim":dark?"rgba(255,255,255,.35)":"rgba(0,0,0,.35)","--cline":dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.08)","--acbg":dark?"rgba(196,125,142,.16)":"rgba(196,125,142,.1)","--shadow":dark?"0 20px 60px rgba(0,0,0,.5)":"0 20px 60px rgba(0,0,0,.16)"}}>
+                {heroGuest?<GuestOrderCard dark={dark} initialCredit={guestCredit} returnCode={guestReturn.code} returnPreview={guestReturn.preview} supportWhatsApp={socialLinks.social_whatsapp_support||""} className="w-full max-w-[380px] max-md:max-w-full" onSignup={()=>{setHeroGuest(false);setModal("signup");}}/>:<div className="hc w-full max-w-[380px] max-md:max-w-full" style={{"--cbg":dark?"#171126":"#fff","--cink":dark?"#f2efe9":"#1a1a1a","--cmut":dark?"rgba(255,255,255,.62)":"rgba(0,0,0,.58)","--cacc":dark?"#e3a4b5":"#83535f","--cline":dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.08)","--acbg":dark?"rgba(196,125,142,.16)":"rgba(196,125,142,.1)","--shadow":dark?"0 20px 60px rgba(0,0,0,.5)":"0 20px 60px rgba(0,0,0,.16)"}}>
                   {/* Three-up when there are three, two-up otherwise. The class
                       used to key off whether "delivering now" existed, which was
                       the same thing only while the other three were guaranteed —
@@ -432,13 +527,14 @@ function LandingInner({ initialAuthQuery, initialStats }){
                     <span><b>{tr("Up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("in free promo credit")}</b><i>{tr("to give your next post a real push")}</i></span>
                   </div>
                   <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hc-cta hero-cta-pulse no-underline">{tr("Create free account")} <span className="dir-flip">→</span></a>
+                  {guestOn&&<GuestButton tr={tr} onClick={startGuestOrder} isNew className="on-card mx-4 mt-[9px] w-[calc(100%-32px)]"/>}
                   <div className="hc-login">{tr(tr("Already have an account?"))} <a href="/?login=1" onClick={e=>{e.preventDefault();setModal("login")}}>{tr("Log in")}</a></div>
                   <div className="hc-trust">
                     <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>{tr("Trusted by creators")}</span>
                     <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>{tr("Fast delivery")}</span>
                     <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>{tr("Human support")}</span>
                   </div>
-                </div>
+                </div>}
               </div>
 
               {/* Trust — desktop/tablet */}
@@ -458,64 +554,87 @@ function LandingInner({ initialAuthQuery, initialStats }){
 
             {/* RIGHT — Auth card (desktop) */}
             <div className="w-full max-w-[400px] justify-self-end max-desktop:hidden">
-              <form onSubmit={handleHeroAuthSubmit} noValidate className="fu fd2 rounded-[20px] pt-[26px] px-[26px] pb-[22px] relative z-[2]" style={{background:dark?"#160f22":"#fff",border:`1px solid ${dark?"rgba(255,255,255,.14)":"rgba(0,0,0,.09)"}`,boxShadow:"0 30px 80px rgba(0,0,0,.26)"}}>
-                <h2 className="text-[22px] font-semibold text-center mb-[3px] text-t-text">{heroAuth==="login"?tr("Let's run it up"):heroAuth==="forgot"?tr("Forgot password?"):(heroSignupStep===1?tr("Create your free account"):tr("Secure Your Account"))}</h2>
-                <p className="text-[15px] text-center mb-4 font-medium text-t-text-soft">{heroAuth==="login"?tr("Log in and start boosting"):heroAuth==="forgot"?tr("Enter your email for a reset link"):(heroSignupStep===1?tr("Free to join, no card needed."):tr("Step 2 of 2. Set your password"))}</p>
-                {heroAuth==="signup"&&heroSignupStep===1&&<div className="text-center mb-3"><span className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-[11px] font-semibold text-accent-ink" style={{background:dark?"rgba(196,125,142,.15)":"rgba(196,125,142,.1)"}}>🎁 {tr("Get up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free on your first deposit")}</span></div>}
-                {heroAuth!=="forgot"&&heroSignupStep===1&&<><button type="button" onClick={()=>{const gp=new URLSearchParams();if(heroRefCode)gp.set('ref',heroRefCode);if(heroVia)gp.set('via',heroVia);window.location.href=`/api/auth/google${gp.size?`?${gp}`:''}`;}} style={{width:"100%",padding:"11px 0",borderRadius:12,background:dark?"rgba(255,255,255,.16)":"#fff",border:`1px solid ${dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.19)"}`,display:"flex",alignItems:"center",justifyContent:"center",gap:10,fontSize:13,fontWeight:600,color:dark?"#eae7e2":"#333",marginBottom:0}}><svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>{heroAuth==="login"?tr("Continue with Google"):tr("Sign up with Google")}</button><div style={{display:"flex",alignItems:"center",gap:12,margin:"12px 0"}}><div style={{flex:1,height:1,background:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.14)"}}/><span className="text-t-text-muted" style={{fontSize:11,fontWeight:500}}>{tr("or")}</span><div style={{flex:1,height:1,background:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.14)"}}/></div></>}
-                {heroAuth==="signup"&&heroSignupStep===1&&<>
+              {heroGuest?<GuestOrderCard dark={dark} initialCredit={guestCredit} returnCode={guestReturn.code} returnPreview={guestReturn.preview} supportWhatsApp={socialLinks.social_whatsapp_support||""} onSignup={()=>{setHeroGuest(false);heroGo("signup");}}/>:<form onSubmit={handleHeroAuthSubmit} noValidate className="fu fd2 rounded-[20px] pt-6 px-[26px] pb-[22px] relative z-[2]" style={{background:dark?"#160f22":"#fff",border:`1px solid ${dark?"rgba(255,255,255,.14)":"rgba(0,0,0,.09)"}`,boxShadow:"0 30px 80px rgba(0,0,0,.26)"}}>
+                {/* Heading: italic and on the left edge, the same as the login modal */}
+                {heroAuth!=="signup"&&<div className="mb-3.5">
+                  <h2 className="serif italic text-[29px] leading-[1.08] font-semibold mb-[3px] text-t-text">{heroAuth==="login"?tr("Let's run it up"):tr("Forgot password?")}</h2>
+                  <p className="text-[14.5px] text-t-text-soft">{heroAuth==="login"?tr("Log in and start boosting"):tr("Enter your email for a reset link")}</p>
+                </div>}
+                {heroAuth==="login"&&<><button type="button" onClick={()=>{const gp=new URLSearchParams();if(heroRefCode)gp.set('ref',heroRefCode);if(heroVia)gp.set('via',heroVia);window.location.href=`/api/auth/google${gp.size?`?${gp}`:''}`;}} style={{width:"100%",height:44,borderRadius:12,background:dark?"rgba(255,255,255,.16)":"#fff",border:`1px solid ${dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.19)"}`,display:"flex",alignItems:"center",justifyContent:"center",gap:10,fontSize:14,fontWeight:600,color:dark?"#eae7e2":"#333",marginBottom:0}}><svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>{heroAuth==="login"?tr("Continue with Google"):tr("Sign up with Google")}</button><div style={{display:"flex",alignItems:"center",gap:12,margin:"10px 0"}}><div style={{flex:1,height:1,background:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.14)"}}/><span className="text-t-text-muted" style={{fontSize:12,fontWeight:500}}>{tr("or")}</span><div style={{flex:1,height:1,background:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.14)"}}/></div></>}
+                {/* Both sign up steps are drawn in one grid cell and only the current one is
+                    shown, so the card holds one height across Continue and Back and the hero
+                    behind it stops shifting. The hidden step is inert. */}
+                {heroAuth==="signup"&&<div className="grid">
+                <div className="[grid-area:1/1] min-w-0" inert={heroSignupStep!==1} style={heroSignupStep!==1?{visibility:"hidden"}:undefined}>
+                  <div className="mb-3.5">
+                    <h2 className="serif italic text-[29px] leading-[1.08] font-semibold mb-[3px] text-t-text">{tr("Create your free account")}</h2>
+                    <p className="text-[14.5px] text-t-text-soft">{tr("Free to join, no card needed.")}</p>
+                    {heroSteps(1)}
+                  </div>
+                  <><button type="button" onClick={()=>{const gp=new URLSearchParams();if(heroRefCode)gp.set('ref',heroRefCode);if(heroVia)gp.set('via',heroVia);window.location.href=`/api/auth/google${gp.size?`?${gp}`:''}`;}} style={{width:"100%",height:44,borderRadius:12,background:dark?"rgba(255,255,255,.16)":"#fff",border:`1px solid ${dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.19)"}`,display:"flex",alignItems:"center",justifyContent:"center",gap:10,fontSize:14,fontWeight:600,color:dark?"#eae7e2":"#333",marginBottom:0}}><svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>{heroAuth==="login"?tr("Continue with Google"):tr("Sign up with Google")}</button><div style={{display:"flex",alignItems:"center",gap:12,margin:"10px 0"}}><div style={{flex:1,height:1,background:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.14)"}}/><span className="text-t-text-muted" style={{fontSize:12,fontWeight:500}}>{tr("or")}</span><div style={{flex:1,height:1,background:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.14)"}}/></div></>
                   <div style={{display:"flex",gap:8,marginBottom:12}}>
-                    <div className="flex-1">
-                      <label htmlFor="hero-signup-first" className="text-t-text-soft" style={{fontSize:11,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{tr("First Name")}</label>
-                      <input id="hero-signup-first" name="firstName" autoComplete="given-name" placeholder={tr("First")} value={heroFirstName} onChange={e=>setHeroFirstName(e.target.value.replace(/[^a-zA-Z\u00C0-\u017F]/g,"").slice(0,50))} className="text-t-text font-[inherit]" style={{width:"100%",padding:"11px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,fontSize:15,outline:"none"}}/>
+                    <div className="flex-1 min-w-0 auth-box">
+                      <label htmlFor="hero-signup-first">{tr("First name")}</label>
+                      <input id="hero-signup-first" name="firstName" autoComplete="given-name" placeholder={heroFieldErr.first?.code==="required"?tr("Required"):tr("First")} value={heroFirstName} onChange={e=>{setHeroFirstName(e.target.value.replace(/[^a-zA-Z\u00C0-\u017F]/g,"").slice(0,50));heroClear("first");}} aria-invalid={!!heroFieldErr.first} className={"auth-in"+(heroFieldErr.first?" is-bad":"")}/>
                     </div>
-                    <div className="flex-1">
-                      <label htmlFor="hero-signup-last" className="text-t-text-soft" style={{fontSize:11,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{tr("Last Name")}</label>
-                      <input id="hero-signup-last" name="lastName" autoComplete="family-name" placeholder={tr("Last")} value={heroLastName} onChange={e=>setHeroLastName(e.target.value.replace(/[^a-zA-Z\u00C0-\u017F]/g,"").slice(0,50))} className="text-t-text font-[inherit]" style={{width:"100%",padding:"11px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,fontSize:15,outline:"none"}}/>
+                    <div className="flex-1 min-w-0 auth-box">
+                      <label htmlFor="hero-signup-last">{tr("Last name")}</label>
+                      <input id="hero-signup-last" name="lastName" autoComplete="family-name" placeholder={heroFieldErr.last?.code==="required"?tr("Required"):tr("Last")} value={heroLastName} onChange={e=>{setHeroLastName(e.target.value.replace(/[^a-zA-Z\u00C0-\u017F]/g,"").slice(0,50));heroClear("last");}} aria-invalid={!!heroFieldErr.last} className={"auth-in"+(heroFieldErr.last?" is-bad":"")}/>
                     </div>
                   </div>
-                  <label htmlFor="hero-signup-email" className="text-t-text-soft" style={{fontSize:11,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{tr("Email Address")}</label>
-                  <input id="hero-signup-email" name="email" autoComplete="email" placeholder="you@example.com" value={heroEmail} onChange={e=>setHeroEmail(e.target.value.trim().toLowerCase().slice(0,254))} type="email" className="text-t-text font-[inherit]" style={{width:"100%",padding:"11px 14px",borderRadius:12,background:t.inputBg,border:`1px solid ${t.inputBorder}`,fontSize:15,outline:"none",marginBottom:12}}/>
-                  <label htmlFor="hero-signup-phone" className="text-t-text-soft" style={{fontSize:11,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{tr("WhatsApp Number")} <span style={{color:dark?"#fca5a5":"#dc2626"}}>*</span></label>
-                  <div style={{marginBottom:12}}>
-                    <PhoneField id="hero-signup-phone" country={heroCountry} onCountry={setHeroCountry} value={heroPhone} onValue={setHeroPhone} t={t} dark={dark} compact />
+                  <div className="auth-box"><label htmlFor="hero-signup-email">{tr("Email address")}</label>
+                  <input id="hero-signup-email" name="email" autoComplete="email" placeholder={heroFieldErr.email?.code==="required"?tr("Required"):"you@example.com"} value={heroEmail} onChange={e=>{setHeroEmail(e.target.value.trim().toLowerCase().slice(0,254));heroClear("email");}} onBlur={()=>setHeroEmailTouched(true)} type="email" aria-invalid={heroEmailSt.bad} className={"auth-in"+(heroEmailSt.bad?" is-bad":"")}/></div>
+                  <div style={{marginBottom:2}}>{heroEmailSt.slot}</div>
+                  <div className={"auth-box auth-tel"+(heroPhoneSt.bad?" is-bad":"")} onBlur={()=>setHeroPhoneTouched(true)}>
+                    <label htmlFor="hero-signup-phone">{tr("WhatsApp number")} <span style={{color:dark?"#fca5a5":"#dc2626"}}>*</span></label>
+                    <PhoneField id="hero-signup-phone" country={heroCountry} onCountry={c=>{setHeroCountry(c);heroClear("phone");}} value={heroPhone} onValue={v=>{setHeroPhone(v);heroClear("phone");}} t={{...t,inputBg:"var(--auth-field)",inputBorder:"var(--auth-field-line)"}} dark={dark} boxed />
                   </div>
-                </>}
-                {heroAuth==="signup"&&heroSignupStep===2&&<>
-                  <label htmlFor="hero-signup-password" className="text-t-text-soft" style={{fontSize:11,fontWeight:600,display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:1.5}}>{tr("Password")}</label>
-                  <div style={{position:"relative",marginBottom:2}}>
-                    <input id="hero-signup-password" name="password" autoComplete="new-password" placeholder={tr("Min. 6 characters")} value={heroPw} onChange={e=>setHeroPw(e.target.value.slice(0,128))} type={heroShowPw?"text":"password"} className="text-t-text font-[inherit]" style={{width:"100%",padding:"9px 40px 9px 14px",borderRadius:10,background:t.inputBg,border:"1px solid "+t.inputBorder,fontSize:13,outline:"none"}}/>
+                  <div style={{marginBottom:4}}>{heroPhoneSt.slot}</div>
+                </div>
+                <div className="[grid-area:1/1] min-w-0 flex flex-col" inert={heroSignupStep!==2} style={heroSignupStep!==2?{visibility:"hidden"}:undefined}>
+                  <div className="mb-3.5">
+                    <h2 className="serif italic text-[29px] leading-[1.08] font-semibold mb-[3px] text-t-text">{tr("Secure your account")}</h2>
+                    {/* The way back sits beside the subtitle, where people look for it */}
+                    <p className="text-[14.5px] text-t-text-soft flex items-center justify-between gap-2.5"><span>{tr("Set your password")}</span><button type="button" onClick={()=>{setHeroSignupStep(1);setHeroError("")}} className="bg-transparent text-[13px] font-semibold text-t-text-soft inline-flex items-center gap-1.5 shrink-0"><span className="dir-flip" aria-hidden="true">←</span>{tr("Back to step 1")}</button></p>
+                    {heroSteps(2)}
+                  </div>
+                  <div className="auth-box" style={{marginBottom:2}}>
+                    <label htmlFor="hero-signup-password">{tr("Password")}</label>
+                    <input id="hero-signup-password" name="password" autoComplete="new-password" placeholder={heroFieldErr.password?.code==="required"?tr("Required"):tr("Min. 6 characters")} value={heroPw} onChange={e=>{setHeroPw(e.target.value.slice(0,128));heroClear("password");}} type={heroShowPw?"text":"password"} aria-invalid={!!heroFieldErr.password} className={"auth-in has-eye"+(heroFieldErr.password?" is-bad":"")}/>
                     <button onClick={()=>setHeroShowPw(!heroShowPw)} type="button" aria-label={heroShowPw?tr("Hide password"):tr("Show password")} className="text-t-text-muted" style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",padding:2}}>{heroShowPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button>
                   </div>
                   <PwStrength pw={heroPw} dark={dark} />
                   {heroPw&&heroPw.length<6&&<div className="text-t-text-muted" style={{fontSize:11,marginBottom:4,lineHeight:1.5}}>{tr("Use 6+ characters with a mix of uppercase, numbers, and symbols for a strong password.")}</div>}
-                  <label htmlFor="hero-signup-confirm" className="text-t-text-soft" style={{fontSize:11,fontWeight:600,display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:1.5}}>{tr("Confirm Password")}</label>
-                  <input id="hero-signup-confirm" name="passwordConfirmation" autoComplete="new-password" placeholder={tr("Re-enter password")} value={heroPw2} onChange={e=>setHeroPw2(e.target.value.slice(0,128))} type="password" className="text-t-text font-[inherit]" style={{width:"100%",padding:"9px 14px",borderRadius:10,background:t.inputBg,border:"1px solid "+(heroPw2&&heroPw!==heroPw2?(dark?"rgba(220,38,38,.4)":"#fecaca"):heroPw2&&heroPw===heroPw2?(dark?"rgba(110,231,183,.4)":"#a7f3d0"):t.inputBorder),fontSize:13,outline:"none",marginBottom:2}}/>
+                  <div className="auth-box" style={{marginBottom:2}}><label htmlFor="hero-signup-confirm">{tr("Confirm password")}</label>
+                  <input id="hero-signup-confirm" name="passwordConfirmation" autoComplete="new-password" placeholder={heroFieldErr.password2?.code==="required"?tr("Required"):tr("Re-enter password")} value={heroPw2} onChange={e=>{setHeroPw2(e.target.value.slice(0,128));heroClear("password2");}} type="password" aria-invalid={(!!heroPw2&&heroPw!==heroPw2)||!!heroFieldErr.password2} className={"auth-in"+((heroPw2&&heroPw!==heroPw2)||heroFieldErr.password2?" is-bad":heroPw2&&heroPw===heroPw2?" is-good":"")}/></div>
                   <div style={{minHeight:14,marginBottom:4}}>{heroPw2&&heroPw===heroPw2?<span style={{fontSize:11,color:dark?"#6ee7b7":"#059669"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> {tr("Passwords match")}</span>:heroPw2&&heroPw!==heroPw2?<span style={{fontSize:11,color:dark?"#fca5a5":"#dc2626"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> {tr("Passwords don't match")}</span>:null}</div>
-                  <label htmlFor="hero-signup-referral" className="text-t-text-soft" style={{fontSize:11,fontWeight:600,display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:1.5}}>{tr("Referral Code")} <span className="text-t-text-muted" style={{fontWeight:400}}>{tr("(optional)")}</span></label>
-                  <input id="hero-signup-referral" name="referralCode" placeholder="e.g. NTR-7X92" value={heroRefCode} onChange={e=>setHeroRefCode(e.target.value.replace(/[^a-zA-Z0-9\-]/g,"").toUpperCase().slice(0,20))} className="text-t-text font-[inherit]" style={{width:"100%",padding:"9px 14px",borderRadius:10,background:t.inputBg,border:"1px solid "+t.inputBorder,fontSize:13,outline:"none",marginBottom:8}}/>
-                  <label htmlFor="hero-signup-terms" style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:10,cursor:"pointer"}}><input id="hero-signup-terms" name="termsAccepted" type="checkbox" checked={heroAgree} onChange={e=>setHeroAgree(e.target.checked)} style={{marginTop:2,accentColor:t.accent,width:14,height:14,flexShrink:0}}/><span className="text-t-text-soft" style={{fontSize:11,lineHeight:1.4}}>{tr("I agree to the")} <a href="/terms" className="text-accent-ink no-underline">{tr("Terms")}</a> {tr("and")} <a href="/privacy" className="text-accent-ink no-underline">{tr("Privacy Policy")}</a></span></label>
-                </>}
+                  <div className="auth-box" style={{marginBottom:8}}><label htmlFor="hero-signup-referral">{tr("Referral code")} <span className="text-t-text-muted" style={{fontWeight:400}}>{tr("(optional)")}</span></label>
+                  <input id="hero-signup-referral" name="referralCode" placeholder="e.g. NTR-7X92" value={heroRefCode} onChange={e=>setHeroRefCode(e.target.value.replace(/[^a-zA-Z0-9\-]/g,"").toUpperCase().slice(0,20))} className="auth-in"/></div>
+                  <label htmlFor="hero-signup-terms" className={"auth-terms"+(heroFieldErr.terms?" is-bad":"")} style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:4,cursor:"pointer"}}><input id="hero-signup-terms" name="termsAccepted" type="checkbox" checked={heroAgree} onChange={e=>{setHeroAgree(e.target.checked);heroClear("terms");}} aria-invalid={!!heroFieldErr.terms} style={{marginTop:1,accentColor:t.accent,width:16,height:16,flexShrink:0}}/><span className="text-t-text-soft" style={{fontSize:12.5,lineHeight:1.4}}>{tr("I agree to the")} <a href="/terms" className="text-accent-ink no-underline">{tr("Terms")}</a> {tr("and")} <a href="/privacy" className="text-accent-ink no-underline">{tr("Privacy Policy")}</a></span></label>
+                  {heroSignupStep===2&&heroLine&&<p className="mt-auto pt-2 text-center text-[13px]"><LineMsg line={heroLine}/></p>}
+                </div>
+                </div>}
                 {heroAuth==="login"&&<>
-                  <label htmlFor="hero-login-email" className="text-t-text-soft" style={{fontSize:11,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{tr("Email Address")}</label>
-                  <input id="hero-login-email" name="email" autoComplete="username" placeholder="you@example.com" value={heroEmail} onChange={e=>setHeroEmail(e.target.value.trim().toLowerCase().slice(0,254))} type="email" className="text-t-text font-[inherit]" style={{width:"100%",padding:"11px 14px",borderRadius:12,background:t.inputBg,border:"1px solid "+t.inputBorder,fontSize:15,outline:"none",marginBottom:12}}/>
-                  <label htmlFor="hero-login-password" className="text-t-text-soft" style={{fontSize:11,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{tr("Password")}</label>
-                  <input id="hero-login-password" name="password" autoComplete="current-password" placeholder={tr("Enter password")} type="password" value={heroPw} onChange={e=>setHeroPw(e.target.value.slice(0,128))} className="text-t-text font-[inherit]" style={{width:"100%",padding:"11px 14px",borderRadius:12,background:t.inputBg,border:"1px solid "+t.inputBorder,fontSize:15,outline:"none",marginBottom:14}}/>
+                  <div className="auth-box" style={{marginBottom:12}}><label htmlFor="hero-login-email">{tr("Email address")}</label>
+                  <input id="hero-login-email" name="email" autoComplete="username" placeholder={heroFieldErr.email?.code==="required"?tr("Required"):"you@example.com"} value={heroEmail} onChange={e=>{setHeroEmail(e.target.value.trim().toLowerCase().slice(0,254));heroClear("email");}} type="email" aria-invalid={!!heroFieldErr.email} className={"auth-in"+(heroFieldErr.email?" is-bad":"")}/></div>
+                  <div className="auth-box" style={{marginBottom:14}}><label htmlFor="hero-login-password">{tr("Password")}</label>
+                  <input id="hero-login-password" name="password" autoComplete="current-password" placeholder={heroFieldErr.password?.code==="required"?tr("Required"):tr("Enter password")} type="password" value={heroPw} onChange={e=>{setHeroPw(e.target.value.slice(0,128));heroClear("password");}} aria-invalid={!!heroFieldErr.password} className={"auth-in"+(heroFieldErr.password?" is-bad":"")}/></div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-                    <label htmlFor="hero-login-remember" style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}><input id="hero-login-remember" name="remember" type="checkbox" checked={heroRemember} onChange={e=>setHeroRemember(e.target.checked)} style={{accentColor:t.accent,width:14,height:14}}/><span className="text-t-text-soft" style={{fontSize:13}}>{tr("Remember me")}</span></label>
-                    <button type="button" onClick={()=>{setHeroAuth("forgot");setHeroError("")}} className="text-accent-ink" style={{background:"none",fontSize:13,fontWeight:500}}>{tr(tr("Forgot password?"))}</button>
+                    <label htmlFor="hero-login-remember" style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}><input id="hero-login-remember" name="remember" type="checkbox" checked={heroRemember} onChange={e=>setHeroRemember(e.target.checked)} style={{accentColor:t.accent,width:16,height:16}}/><span className="text-t-text-soft" style={{fontSize:13}}>{tr("Remember me")}</span></label>
+                    <button type="button" onClick={()=>heroGo("forgot")} className="text-accent-ink" style={{background:"none",fontSize:13,fontWeight:600}}>{tr(tr("Forgot password?"))}</button>
                   </div>
                 </>}
                 {heroAuth==="forgot"&&<>
-                  <label htmlFor="hero-forgot-email" className="text-t-text-soft" style={{fontSize:11,fontWeight:600,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:1.5}}>{tr("Email Address")}</label>
-                  <input id="hero-forgot-email" name="email" autoComplete="email" placeholder="you@example.com" value={heroEmail} onChange={e=>setHeroEmail(e.target.value.trim().toLowerCase().slice(0,254))} type="email" className="text-t-text font-[inherit]" style={{width:"100%",padding:"11px 14px",borderRadius:12,background:t.inputBg,border:"1px solid "+t.inputBorder,fontSize:15,outline:"none",marginBottom:16}}/>
+                  <div className="auth-box" style={{marginBottom:16}}><label htmlFor="hero-forgot-email">{tr("Email address")}</label>
+                  <input id="hero-forgot-email" name="email" autoComplete="email" placeholder={heroFieldErr.email?.code==="required"?tr("Required"):"you@example.com"} value={heroEmail} onChange={e=>{setHeroEmail(e.target.value.trim().toLowerCase().slice(0,254));heroClear("email");}} type="email" aria-invalid={!!heroFieldErr.email} className={"auth-in"+(heroFieldErr.email?" is-bad":"")}/></div>
                 </>}
-                <button type="submit" disabled={heroLoading} className="w-full py-3.5 px-0 rounded-xl text-base font-semibold mb-3.5 flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{background:heroLoading?"#999":t.btnPrimary,color:"#fff",opacity:heroLoading?.7:1,boxShadow:heroLoading?"none":"0 4px 16px rgba(196,125,142,.38)"}}>{heroLoading&&<NitroLoader size={16} mono ariaHidden />}{heroAuth==="login"?(heroLoading?tr("Logging in..."):tr("Log In")):heroAuth==="forgot"?(heroLoading?tr("Sending…"):tr("Send Reset Link")):(heroSignupStep===2?(heroLoading?tr("Creating..."):tr("Create Account")):(heroLoading?tr("Please wait..."):tr("Continue →")))}</button>
-                {heroAuth==="signup"&&heroSignupStep===2&&<button type="button" onClick={()=>{setHeroSignupStep(1);setHeroError("")}} className="w-full py-2 px-0 bg-transparent text-sm font-medium mb-2 text-t-text-soft">{tr("← Back to Step 1")}</button>}
-                <div className="text-center text-[13px] text-t-text-muted">{heroAuth==="signup"&&heroSignupStep===1?tr("Takes 30 seconds.") + " ":""}{heroAuth==="login"?tr("Don't have an account?") + " ":heroAuth==="forgot"?tr("Remember your password?") + " ":tr("Already have an account?") + " "}<button type="button" onClick={()=>{setHeroAuth(heroAuth==="forgot"?"login":heroAuth==="login"?"signup":"login");setHeroSignupStep(1);setHeroError("")}} className="bg-transparent font-semibold text-[13px] text-accent-ink">{heroAuth==="forgot"?tr("Log In"):heroAuth==="login"?tr("Sign Up Free"):tr("Log In")}</button></div>
-                {heroError&&<InlineAlert type="error" dark={dark} className="mt-3">{heroError}</InlineAlert>}
-                {heroSuccess&&<InlineAlert type="success" dark={dark} className="mt-3">{heroSuccess}</InlineAlert>}
-              </form>
+                <button type="submit" disabled={heroLoading} className="w-full h-[50px] px-0 mt-3 rounded-[14px] text-[15.5px] font-bold flex items-center justify-center gap-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{background:heroLoading?"#999":t.btnPrimary,color:"#fff",opacity:heroLoading?.7:1,boxShadow:heroLoading?"none":"0 4px 16px rgba(196,125,142,.38)"}}>{heroLoading&&<NitroLoader size={16} mono ariaHidden />}{heroAuth==="login"?(heroLoading?tr("Logging in..."):tr("Log in")):heroAuth==="forgot"?(heroLoading?tr("Sending…"):tr("Send reset link")):(heroSignupStep===2?(heroLoading?tr("Creating..."):tr("Create account")):(heroLoading?tr("Please wait..."):tr("Continue →")))}</button>
+                <div className="text-center text-[13px] text-t-text-muted mt-1 leading-8">{heroLine&&!(heroAuth==="signup"&&heroSignupStep===2)?<LineMsg line={heroLine}/>:<>{heroAuth==="signup"&&heroSignupStep===1?tr("Takes 30 seconds.") + " ":""}{heroAuth==="login"?tr("Don't have an account?") + " ":heroAuth==="forgot"?tr("Remember your password?") + " ":tr("Already have an account?") + " "}<button type="button" onClick={()=>heroGo(heroAuth==="forgot"?"login":heroAuth==="login"?"signup":"login")} className="bg-transparent font-semibold text-[13px] text-accent-ink">{heroAuth==="forgot"?tr("Log in"):heroAuth==="login"?tr("Sign up free"):tr("Log in")}</button></>}</div>
+                {/* Not on sign up: the first screen is locked to the window height, so
+                    the tallest card has no room for it, and someone filling in sign up
+                    has already chosen an account. Log in, one tap away, carries it. */}
+                {guestOn&&<GuestButton tr={tr} onClick={startGuestOrder} className={(heroAuth==="signup"?"on-signup ":"")+"-mx-[26px] -mb-[22px] mt-3.5 px-[26px] py-3 w-[calc(100%+52px)] rounded-b-[20px]"}/>}
+              </form>}
             </div>
           </div>
         </section>
@@ -548,7 +667,7 @@ function LandingInner({ initialAuthQuery, initialStats }){
         ))}
       </div>
 
-      {modal&&<AuthModal key="auth-modal" elevated dark={dark} t={t} mode={modal} setMode={setModal} onClose={closeModal} prefill={heroSignupData} via={heroVia} referralCode={heroRefCode} resetToken={resetToken} returnTo={returnTo}/>}
+      {modal&&<AuthModal key="auth-modal" elevated dark={dark} t={t} mode={modal} setMode={setModal} onClose={closeModal} prefill={heroSignupData} via={heroVia} referralCode={heroRefCode} resetToken={resetToken} returnTo={returnTo} supportWhatsApp={socialLinks.social_whatsapp_support||""} onGuestOrder={guestOn?startGuestOrder:null}/>}
 
       {/* Logout toast */}
       {/* Same proportions as the app's success toast: the tick sits in its own

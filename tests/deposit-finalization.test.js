@@ -5,6 +5,9 @@ vi.mock('@/lib/logger', () => ({
   log: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
+const settleGuestPayment = vi.hoisted(() => vi.fn(async () => ({ placed: true, orderId: 'NTR-1' })));
+vi.mock('../lib/guest-checkout.js', () => ({ settleGuestPayment }));
+
 const { finalizeDeposit } = await import('@/lib/deposit-finalization');
 
 function matches(row, where = {}) {
@@ -138,6 +141,9 @@ function createPaymentDb({
       }),
     },
     $queryRaw: vi.fn(async () => [{ value: JSON.stringify(state.coupons) }]),
+    // finalizeDeposit asks whether the deposit pays a guest checkout; none of
+    // these do (the guest path has its own test, guest-checkout-payment).
+    guestCheckout: { findUnique: vi.fn(async () => null) },
   };
 
   const db = {
@@ -279,6 +285,47 @@ describe('finalizeDeposit', () => {
     expect(state.transactions.find(row => row.id === 'one').status).toBe('Completed');
     expect(state.transactions.filter(row => row.type === 'bonus')).toHaveLength(2);
     expect(state.transactions.filter(row => row.type === 'bonus').every(row => row.idempotencyKey)).toBe(true);
+  });
+
+  it('credits a guest checkout payment with no bonus and no deposit count, then places its order', async () => {
+    // The same coupon and first-deposit welcome bonus the test above pays out,
+    // so the only thing switching them off is that this deposit pays a guest
+    // checkout (docs/v2/guest_checkout_brief.md).
+    const { db, state, tx } = createPaymentDb({
+      deposits: [deposit('guest', { note: 'Guest checkout G7K2-9XQM [coupon:coupon-1]' })],
+      users: [user('user-1', { signupIp: '1.2.3.4', balance: 0 })],
+      coupons: [{
+        id: 'coupon-1', code: 'SAVE10', type: 'percent', value: 10,
+        maxDeposit: 3_000, maxUses: 10, used: 0, enabled: true,
+      }],
+    });
+    tx.guestCheckout.findUnique.mockResolvedValue({ id: 'gc-1' });
+
+    const result = await finalizeDeposit({
+      prismaClient: db,
+      transactionId: 'guest',
+      paidAmountKobo: 500_000,
+      now: new Date('2026-07-16T12:00:00Z'),
+    });
+
+    expect(result).toMatchObject({
+      finalized: true,
+      guestCheckoutId: 'gc-1',
+      depositAmount: 500_000,
+      couponBonus: 0,
+      welcomeBonus: 0,
+      inviteeBonus: 0,
+      topupBonus: 0,
+      totalUserCredit: 500_000,
+      guestPlacement: { placed: true },
+    });
+    // Exactly what was paid: the order spends it at once.
+    expect(state.users[0].balance).toBe(500_000);
+    expect(state.users[0].depositCount).toBeFalsy();
+    expect(state.users[0].firstDepositBonusPaid).not.toBe(true);
+    expect(state.coupons[0].used).toBe(0);
+    expect(state.transactions.filter(row => row.type === 'bonus')).toHaveLength(0);
+    expect(settleGuestPayment).toHaveBeenCalledWith('gc-1');
   });
 
   it('pays a referred user the tiered welcome bonus and the referrer their configured bonus', async () => {

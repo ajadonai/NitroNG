@@ -180,9 +180,9 @@ function groupOrders(orders) {
 
 
 /* ── Shared expanded order details ── */
+// Decided on the server from the tier name's promise (lib/refill-promise).
 function refillEligible(o) {
-  if (o.status !== "Completed" || !o.refill || !o.completedAt) return false;
-  return Date.now() < new Date(o.completedAt).getTime() + (o.refillDays || 30) * 86400000;
+  return !!o.canRefill;
 }
 
 function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, waNum, onViewComments, doRefill, refillLoading }) {
@@ -580,7 +580,52 @@ function SummaryRows({ orderSummary, dark, t }) {
   );
 }
 
-export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, orderSummary, dark, t, onNavigate, onRefresh, waNum, email, initialSearch = "" }) {
+/* "Ordered without an account?" A guest order, and any credit left on its
+   code, moves into this account with the guest code: only the buyer holds it
+   (lib/guest-checkout.js). Shown once guest checkout is on. */
+function GuestCodeClaim({ t, onDone }) {
+  const tr = useT();
+  const money = useMoney();
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [state, setState] = useState({ busy: false, error: "", done: null });
+  const valid = /^[A-Za-z0-9]{4}-?[A-Za-z0-9]{4}$/.test(code.trim());
+  const add = async (e) => {
+    e.preventDefault();
+    if (!valid || state.busy) return;
+    setState({ busy: true, error: "", done: null });
+    const res = await fetch("/api/guest/claim", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: code.trim() }) }).catch(() => null);
+    const d = await res?.json().catch(() => null);
+    if (res?.ok) { setState({ busy: false, error: "", done: d.claimed }); setCode(""); onDone?.(); }
+    else setState({ busy: false, error: d?.error ? tr(d.error) : tr("Could not add that order. Try again."), done: null });
+  };
+  return (
+    <div className="mt-3 text-[13px] text-t-text-muted">
+      {!open ? (
+        <button type="button" onClick={() => setOpen(true)} className="bg-transparent border-none p-0 cursor-pointer font-[inherit] text-[13px] text-t-text-muted">
+          {tr("Ordered without an account?")} <span className="font-semibold text-accent-ink">{tr("Add a guest code")}</span>
+        </button>
+      ) : (
+        <form onSubmit={add} className="flex items-center gap-2 flex-wrap">
+          <label htmlFor="guest-claim-code" className="font-semibold text-t-text">{tr("Guest code")}</label>
+          <input id="guest-claim-code" value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setState(s => ({ ...s, error: "" })); }} maxLength={9} autoComplete="off" spellCheck={false}
+            className="w-[130px] py-2 px-3 rounded-[10px] text-[13px] font-mono tracking-[1.5px] outline-none text-t-text" style={{ border: `1px solid ${t.cardBorder}`, background: t.cardBg }} />
+          <button type="submit" disabled={!valid || state.busy} className="py-2 px-3.5 rounded-[10px] border-none text-[13px] font-semibold cursor-pointer text-white disabled:opacity-40 disabled:cursor-default" style={{ background: t.accent }}>
+            {state.busy ? tr("Adding…") : tr("Add")}
+          </button>
+        </form>
+      )}
+      {state.error && <p role="alert" className="mt-1.5 mb-0 text-[12.5px]" style={{ color: t.red }}>{state.error}</p>}
+      {state.done && (
+        <p role="status" className="mt-1.5 mb-0 text-[12.5px]" style={{ color: t.green }}>
+          {tr("Order added to your account.")}{state.done.creditKobo > 0 && <> {money(state.done.creditKobo / 100)} {tr("credit moved to your wallet.")}</>}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, orderSummary, dark, t, onNavigate, onRefresh, waNum, email, initialSearch = "", guestCodes = false }) {
   const tr = useT();
   const money = useMoney();
   const [sumOpen, setSumOpen] = useState(false);
@@ -868,6 +913,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
         )}
       </div>
       <Pagination total={total} page={oPage} setPage={setOPage} perPage={perPage} setPerPage={setPerPage} t={t} />
+      {guestCodes && <GuestCodeClaim t={t} onDone={onRefresh} />}
 
       {viewComments && (
         <Modal open onClose={() => setViewComments(null)} dark={dark} maxWidth={448} title={tr("Submitted comments")}

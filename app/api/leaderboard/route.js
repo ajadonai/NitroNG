@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { watBounds } from '@/lib/format';
 import { getEligibleSpendKoboBatch, getNitroStatus, STATUS_TIERS } from '@/lib/nitro-rewards';
 import { DEAD_ORDER_STATES } from '@/lib/ledger';
+import { guestAccountId } from '@/lib/guest-account';
 
 export async function GET(req) {
   try {
@@ -16,9 +17,13 @@ export async function GET(req) {
     const dateFilter = period === 'month' ? { createdAt: { gte: monthStart } } : {};
 
     // Top spenders — ranked by order count (no amount exposed)
+    // The shared guest account holds every email-less guest order, so it would
+    // top both boards with everyone's spend (lib/guest-account.js).
+    const guestId = await guestAccountId();
+    const notGuest = guestId ? { userId: { not: guestId } } : {};
     const spenders = await prisma.order.groupBy({
       by: ['userId'],
-      where: { ...dateFilter, deletedAt: null, status: { in: ['Completed', 'Processing', 'Pending'] } },
+      where: { ...dateFilter, deletedAt: null, status: { in: ['Completed', 'Processing', 'Pending'] }, ...notGuest },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
       take: 10,
@@ -59,7 +64,7 @@ export async function GET(req) {
     // Most active — by order count
     const active = await prisma.order.groupBy({
       by: ['userId'],
-      where: { ...dateFilter, deletedAt: null, status: { notIn: DEAD_ORDER_STATES } },
+      where: { ...dateFilter, deletedAt: null, status: { notIn: DEAD_ORDER_STATES }, ...notGuest },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
       take: 10,

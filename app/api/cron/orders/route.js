@@ -22,6 +22,7 @@ import {
   ORDER_SETTLEMENT_ACCOUNT_STATUSES,
   lockOrderSettlementAccount,
 } from '@/lib/account-deletion';
+import { creditOrderRefund } from '@/lib/order-refund-credit';
 
 // Polls provider APIs for order status updates
 // Auto-refunds failed/cancelled orders
@@ -226,8 +227,7 @@ export async function GET(req) {
               if (safeRefund > 0) {
                 const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, safeRefund);
                 if (walletRefund > 0) {
-                  await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
-                  await tx.transaction.create({
+                  await creditOrderRefund(tx, order.id, {
                     data: { userId: order.userId, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund for cancelled order ${order.orderId}` },
                   });
                 }
@@ -279,8 +279,7 @@ export async function GET(req) {
                 if (safeRefund > 0) {
                   const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, safeRefund);
                   if (walletRefund > 0) {
-                    await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
-                    await tx.transaction.create({
+                    await creditOrderRefund(tx, order.id, {
                       data: { userId: order.userId, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Partial refund for ${order.orderId}` },
                     });
                   }
@@ -596,8 +595,7 @@ export async function GET(req) {
             if (claimed.count === 0) return false;
             const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, order.charge);
             if (walletRefund > 0) {
-              await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
-              await tx.transaction.create({
+              await creditOrderRefund(tx, order.id, {
                 data: { userId: order.userId, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Auto-refund: failed to dispatch ${order.orderId}` },
               });
             }
@@ -668,8 +666,7 @@ export async function GET(req) {
             if (safeRefund <= 0) return { safeRefund: 0 };
             const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, safeRefund);
             if (walletRefund > 0) {
-              await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
-              await tx.transaction.create({
+              await creditOrderRefund(tx, order.id, {
                 data: { userId: order.userId, type: 'refund', amount: walletRefund, method: 'wallet', status: 'Completed', reference: `REF-${order.orderId}`, note: `Recovered refund for ${order.orderId}` },
               });
             }
@@ -741,8 +738,7 @@ async function refundOrder(order, amount = null, emailOnly = false, failReason =
       if (safeRefund <= 0) return;
       const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, safeRefund);
       if (walletRefund > 0) {
-        await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
-        await tx.transaction.create({
+        await creditOrderRefund(tx, order.id, {
           data: {
             userId: order.userId,
             type: 'refund',

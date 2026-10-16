@@ -21,6 +21,8 @@ import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConfli
 import { calculateCreateOrderPricing, parseCreateOrderInput, validateCreateOrderOfferInput } from '@/lib/order-create-input.server';
 import { lockOrderSettlementAccount } from '@/lib/account-deletion';
 import { autoTargetFrom, autoTargetError, isAutoService } from '@/lib/auto-services';
+import { canRequestRefill } from '@/lib/refill-promise';
+import { creditOrderRefund } from '@/lib/order-refund-credit';
 
 export const maxDuration = 60;
 
@@ -95,8 +97,7 @@ async function refundRejectedCreatedOrder({
 
     const walletRefund = charge - pointsDiscountKobo;
     if (walletRefund > 0) {
-      await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${userId}`;
-      await tx.transaction.create({
+      await creditOrderRefund(tx, orderDbId, {
         data: {
           userId,
           type: 'refund',
@@ -236,8 +237,9 @@ export async function GET(req) {
         batchId: o.batchId || null,
         lastError: o.lastError || null,
         retryCount: o.retryCount || 0,
-        refill: o.tier?.refill || false,
-        refillDays: o.tier?.refillDays || 0,
+        // The tier name's promise (lib/refill-promise), the same rule the
+        // refill route applies, not the provider's refill flag.
+        canRefill: canRequestRefill({ status: o.status, completedAt: o.completedAt || o.updatedAt, tierName: offer.tierLabel }),
         completedAt: o.completedAt?.toISOString() || null,
         refillRequestedAt: o.refillRequestedAt?.toISOString() || null,
         created: o.createdAt.toISOString(),
@@ -909,8 +911,15 @@ export async function POST(req) {
 // nothing here — but the reseller API still sends it, and who a reseller's key
 // may order for is still decided over there, in resolveVisible. Kept so that
 // contract stays visible from this side; deliberately unread.
+//
+// `guest` is set only by lib/guest-checkout.js, placing an order a visitor has
+// already paid for without an account (docs/v2/guest_checkout_brief.md):
+// { checkoutId, priceKobo, email }. Such an order is retail — no reseller
+// rate, no Nitro Status, no points, no bonus credit — and must charge exactly
+// the price the visitor was quoted, or it is refused and the payment becomes
+// credit on their code.
 // eslint-disable-next-line no-unused-vars
-export async function createOrderForSession(session, body, req, { source = 'web', catalogue = false } = {}) {
+export async function createOrderForSession(session, body, req, { source = 'web', catalogue = false, guest = null } = {}) {
   try {
     const parsedInput = parseCreateOrderInput(body);
     if (!parsedInput.ok) return Response.json({ error: parsedInput.error }, { status: 400 });
@@ -945,8 +954,9 @@ export async function createOrderForSession(session, body, req, { source = 'web'
     const usdRateSetting = await prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } });
     const usdRate = Number(usdRateSetting?.value || 1600);
 
-    // Duplicate order check — warn if same service tier + link in last 24h
-    if (!confirmDuplicate) {
+    // Duplicate order check — warn if same service tier + link in last 24h.
+    // Not for a guest: they have already paid, and there is nobody to ask.
+    if (!confirmDuplicate && !guest) {
       const recentDupe = await prisma.order.findFirst({
         where: {
           userId: session.id,
@@ -1041,7 +1051,7 @@ export async function createOrderForSession(session, body, req, { source = 'web'
     // measures spend at the site price, so that a promoted reseller does not
     // measure slower the better it does.
     let retailCharge = null;
-    const resellerTerms = await getResellerTerms(session.id);
+    const resellerTerms = guest ? null : await getResellerTerms(session.id);
     if (resellerTerms) {
       // `cost` is this order's cost in kobo, the same basis as `charge`, which
       // is what the margin floor needs. Without it a 30% rate on the thinnest
@@ -1054,7 +1064,7 @@ export async function createOrderForSession(session, body, req, { source = 'web'
     // Apply Nitro Status discount based on eligible lifetime spend
     let loyaltyDiscount = 0;
     let nitroTier = null;
-    try {
+    if (!guest) try {
       const spendKobo = await getEligibleSpendKoboTx(prisma, session.id);
       nitroTier = getNitroStatus(Math.floor(spendKobo / 100));
       loyaltyDiscount = resellerTerms ? 0 : computeNitroDiscount(charge, nitroTier);
@@ -1084,6 +1094,11 @@ export async function createOrderForSession(session, body, req, { source = 'web'
       }
     } catch (err) { log.warn('Promotion discount', err.message); }
 
+    // A guest's price was held when they were quoted. A price that moved since
+    // is refused rather than charged; the caller turns the payment into credit.
+    if (guest && charge !== guest.priceKobo) {
+      return Response.json({ error: 'The price changed before the order could be placed', guestPriceChanged: true, charge }, { status: 409 });
+    }
     // Check for active order on same service + link (providers reject duplicates)
     const activeForLink = await findOpenSameLinkOrder(prisma, {
       serviceId: service.id,
@@ -1206,7 +1221,10 @@ export async function createOrderForSession(session, body, req, { source = 'web'
               },
             });
           }
-          await trackBonusConsumption(tx, session.id, order.id, walletCharge);
+          // A guest's order is paid by the deposit just made for it. Counting it
+          // against the account's bonus credit would spend a real customer's
+          // bonus on an order they paid cash for.
+          if (!guest) await trackBonusConsumption(tx, session.id, order.id, walletCharge);
           if (dripSchedule) {
             await tx.dripDispatch.createMany({
               data: dripSchedule.dispatches.map(d => ({
@@ -1235,8 +1253,11 @@ export async function createOrderForSession(session, body, req, { source = 'web'
               note: `Order ${orderId} — ${tierName} x${qty.toLocaleString()}${discountParts.length > 0 ? ` (${discountParts.join(', ')})` : ''}`,
             },
           });
-          const stored = await loadStoredCapiIdentity(tx, session.id);
-          await persistFbTouch(tx, session.id, parseFbCookies(req.headers.get('cookie')), stored);
+          // A guest's identity is the guest's own, from their checkout, never the
+          // account it lives on: the shared guest account's email and stored
+          // touches belong to nobody.
+          const stored = guest ? {} : await loadStoredCapiIdentity(tx, session.id);
+          if (!guest) await persistFbTouch(tx, session.id, parseFbCookies(req.headers.get('cookie')), stored);
           // Captured for the post-commit TikTok send. The provider-rejection
           // path refunds and returns before triggerPurchaseDelivery is
           // reached, so by the time this is used the order has survived —
@@ -1245,9 +1266,9 @@ export async function createOrderForSession(session, body, req, { source = 'web'
           purchaseOpts = buildPurchaseEvent(req, {
             eventId,
             eventTime: order.createdAt,
-            email: session.email,
+            email: guest ? (guest.email || undefined) : session.email,
             phone: stored.phone,
-            externalId: session.id,
+            externalId: guest ? guest.checkoutId : session.id,
             valueKobo: charge,
             stored,
           });

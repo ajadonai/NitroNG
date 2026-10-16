@@ -21,7 +21,9 @@ describe("a drip order that ends Partial refunds the undelivered part", () => {
 
   it("issues the refund at all", () => {
     const block = drip.slice(drip.indexOf("if (upd.status === 'Partial')"));
-    expect(block, "the Partial branch does not credit the wallet").toMatch(/UPDATE users SET balance = balance \+/);
+    // Through creditOrderRefund since 16 Oct 2026: the wallet, or the guest code
+    // for an order on the shared guest account (lib/order-refund-credit.js).
+    expect(block, "the Partial branch does not credit the wallet").toMatch(/creditOrderRefund\(tx, parent\.id/);
     expect(block, "no refund transaction is written").toMatch(/type: 'refund'/);
     expect(block, "refundedAt is never stamped, so it looks unrefunded forever").toMatch(/refundedAt: new Date\(\)/);
   });

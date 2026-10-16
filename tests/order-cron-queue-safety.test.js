@@ -90,6 +90,9 @@ beforeEach(() => {
   mocks.transaction.mockImplementation(async callback => callback({
     order: { updateMany: mocks.orderUpdateMany },
     transaction: { create: mocks.transactionCreate },
+    // creditOrderRefund asks whether the order is on the guest account first;
+    // there is none here, so every refund takes the ordinary wallet path.
+    user: { findUnique: vi.fn().mockResolvedValue(null) },
     $queryRaw: mocks.accountQueryRaw,
     $executeRaw: mocks.executeRaw,
   }));

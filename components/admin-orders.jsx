@@ -325,7 +325,10 @@ function AdminFacts({ o, dark, t, isSensitive, setSearch }) {
           {o.childOrderId && <button onClick={() => setSearch(o.childOrderId)} className="text-[10px] font-semibold cursor-pointer border-none rounded px-1.5 py-0.5" style={{ background: `${t.accent}18`, color: t.accentInk }}>&rarr; {o.childOrderId}</button>}</span>],
         isPartial ? ["Delivered", <span key="d" className="m text-[13px] text-t-text-muted"><B>{delivered.toLocaleString()}</B> of {(o.quantity || 0).toLocaleString()}</span>] : ["Quantity", <B key="q">{(o.quantity || 0).toLocaleString()}</B>],
         ["Start count", o.startCount != null ? <B key="s">{o.startCount.toLocaleString()}</B> : <span key="s" className="text-t-text-muted">Not yet</span>],
-        ["Placed from", <B key="src">{o.source === "api" ? "API" : "Website"}</B>],
+        ["Placed from", <B key="src">{o.guest ? "Guest checkout" : o.source === "api" ? "API" : "Website"}</B>],
+        o.guest ? ["Guest code", <CopyId key="gc" value={o.guest.code} dark={dark} />] : null,
+        o.guest ? ["Receipt email", o.guest.email ? <B key="ge">{o.guest.email}</B> : <span key="ge" className="text-t-text-muted">None given</span>] : null,
+        o.guest && o.guest.credit > 0 ? ["Credit on code", <B key="gcr" color={dark ? "#6ee7b7" : "#059669"}>{fN(o.guest.credit)}</B>] : null,
         // Full-list orders have no tier or group name to pin them down — a
         // curated order is already identified by "Standard" under "Instagram
         // Followers"; a full-list row is just one of ~8,000 near-identical
@@ -421,6 +424,8 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
 
   const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState({});
+  // A searched guest code that has no order behind it.
+  const [guestLookup, setGuestLookup] = useState(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const abortRef = useRef(null);
 
@@ -444,6 +449,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
       setOrders(d.orders || []);
       setTotal(d.total || 0);
       if (d.counts) setCounts(d.counts);
+      setGuestLookup(d.guestLookup || null);
       setLoading(false);
     }).catch(e => { if (e.name !== 'AbortError') setLoading(false); }).finally(() => {
       if (abortRef.current === controller) abortRef.current = null;
@@ -666,7 +672,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
       <div className="flex items-center gap-2 mb-4">
         <div className="relative flex-1 min-w-0">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-          <input aria-label="Search orders" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search order ID, link, name, email or phone" className="w-full py-[9px] pl-9 pr-8 rounded-lg text-[13px] outline-none font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? '#160f22' : '#fff', color: t.text }} />
+          <input aria-label="Search orders" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search order ID, guest code, link, name, email or phone" className="w-full py-[9px] pl-9 pr-8 rounded-lg text-[13px] outline-none font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? '#160f22' : '#fff', color: t.text }} />
           {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full cursor-pointer border-none p-0" style={{ background: dark ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.1)', color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
         </div>
         <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} alert={counts.needs_dispatch > 0} options={
@@ -674,6 +680,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
             { value: "all", label: "All" },
             { value: "needs_dispatch", label: `Needs Dispatch${counts.needs_dispatch ? ` (${counts.needs_dispatch})` : ""}` },
             { value: "queued", label: `Queued${counts.queued ? ` (${counts.queued})` : ""}` },
+            { value: "guest", label: `Guest${counts.guest ? ` (${counts.guest})` : ""}` },
             ...["Pending", "Processing", "Completed", "Partial", "Cancelled"].map(f => ({ value: f, label: f })),
           ]
         } />
@@ -682,6 +689,17 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
           {syncing ? "Syncing…" : "Sync"}
         </button>
       </div>
+
+      {guestLookup && (
+        <div className="adm-card mb-3 py-3 px-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[12.5px]" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(224,164,88,.35)" : "rgba(217,119,6,.3)"}` }}>
+          <span className="flex items-center gap-2"><AccountTag guest dark={dark} /><CopyId value={guestLookup.code} dark={dark} /></span>
+          <span className="text-t-text-muted">No order placed. Status <b className="text-t-text">{guestLookup.status}</b></span>
+          <span className="text-t-text-muted">Price <b className="m text-t-text">{fN(guestLookup.price)}</b></span>
+          {guestLookup.credit > 0 && <span className="text-t-text-muted">Credit on code <b className="m" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{fN(guestLookup.credit)}</b></span>}
+          {guestLookup.email && <span className="text-t-text-muted">Email <b className="text-t-text">{guestLookup.email}</b></span>}
+          {guestLookup.failReason && <span className="text-t-text-muted basis-full">Why: {guestLookup.failReason}</span>}
+        </div>
+      )}
 
       {/* Orders list */}
       <div className="adm-card" style={{ background: t.cardBg, border: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}`, opacity: fetching && !loading ? .55 : 1, transition: "opacity .2s" }}>
@@ -754,7 +772,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                             <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5 flex-wrap" style={{ color: t.textMuted }}>
                               <span>{o.created ? fT(o.created) : ""}</span>
                               <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                              <span>{o.user}<AccountTag reseller={o.isReseller} api={o.source === "api"} dark={dark} className="ml-1.5" /></span>
+                              <span>{o.user}<AccountTag reseller={o.isReseller} api={o.source === "api"} guest={!!o.guest} dark={dark} className="ml-1.5" /></span>
                             </div>
                           </div>
                           {(o.status === "Processing" || o.status === "Pending") && <span className="w-[6px] h-[6px] rounded-full shrink-0" style={{ background: sClr(o.status, dark), animation: "progress-pulse 2.8s ease-in-out infinite" }} />}
@@ -769,7 +787,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                             <div className="flex items-center gap-2.5 mb-2.5">
                               <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0" style={{ background: `${t.accent}20`, color: t.accentInk }}>{(o.user || "?")[0].toUpperCase()}</div>
                               <div className="flex-1 min-w-0">
-                                <span className="text-[12px] font-semibold" style={{ color: t.text }}>{o.user}<AccountTag reseller={o.isReseller} api={o.source === "api"} dark={dark} className="ml-1.5" /></span>
+                                <span className="text-[12px] font-semibold" style={{ color: t.text }}>{o.user}<AccountTag reseller={o.isReseller} api={o.source === "api"} guest={!!o.guest} dark={dark} className="ml-1.5" /></span>
                                 <span className="text-[11px] ml-1.5" style={{ color: t.textMuted }}>{o.email}</span>
                               </div>
                               <span className="text-[11px] shrink-0" style={{ color: t.textMuted }}>{o.created ? fD(o.created) : ""}</span>
@@ -886,7 +904,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                   <div className="flex items-center gap-1.5 text-[10px] desktop:text-[11px] mt-0.5 flex-wrap" style={{ color: t.textMuted }}>
                     <span>{o.created ? fT(o.created) : ""}</span>
                     <span className="w-[3px] h-[3px] rounded-full bg-current opacity-30 shrink-0" />
-                    <span>{o.user}<AccountTag reseller={o.isReseller} api={o.source === "api"} dark={dark} className="ml-1.5" /></span>
+                    <span>{o.user}<AccountTag reseller={o.isReseller} api={o.source === "api"} guest={!!o.guest} dark={dark} className="ml-1.5" /></span>
                   </div>
                 </div>
                 {(o.status === "Processing" || o.status === "Pending") && <span className="w-[7px] h-[7px] rounded-full shrink-0" style={{ background: sClr(o.status, dark), animation: "progress-pulse 2.8s ease-in-out infinite" }} />}

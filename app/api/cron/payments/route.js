@@ -4,6 +4,8 @@ import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { reportOperationalFailure } from '@/lib/monitoring';
 import { recoverStalePendingPayments } from '@/lib/payment-recovery';
+import { sweepGuestCheckouts } from '@/lib/guest-checkout';
+import { guestAccountId } from '@/lib/guest-account';
 import { getBalance, isProviderConfigured, PROVIDER_IDS, getProviderName } from '@/lib/smm';
 import { tgProviderBalance, tgFlush } from '@/lib/telegram';
 
@@ -17,6 +19,20 @@ export async function GET(req) {
 
   try {
     const stats = await recoverStalePendingPayments();
+    // Guest checkout (docs/v2/guest_checkout_brief.md): place any paid order a
+    // crash left unplaced, close quotes nobody paid for, and say so if the
+    // shared guest wallet is ever not ₦0, which means a pass-through broke.
+    let guest = null;
+    try {
+      guest = await sweepGuestCheckouts();
+      const guestId = await guestAccountId();
+      const wallet = guestId ? await prisma.user.findUnique({ where: { id: guestId }, select: { balance: true } }) : null;
+      if (wallet && wallet.balance !== 0) {
+        reportOperationalFailure('guest_wallet_not_zero', { data: { balanceKobo: wallet.balance }, dedupeKey: 'guest_wallet_not_zero' });
+      }
+    } catch (err) {
+      log.warn('Guest sweep', err.message);
+    }
 
     let balanceAlert = false;
     try {
@@ -60,6 +76,7 @@ export async function GET(req) {
     await tgFlush();
 
     return Response.json({
+      guest,
       checked: stats.checked,
       recovered: stats.recovered,
       alreadyCredited: stats.alreadyCredited,

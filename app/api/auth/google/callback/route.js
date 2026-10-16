@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { isGuestAccountEmail } from '@/lib/guest-account';
 import { log } from '@/lib/logger';
 import { signUserToken, setUserCookie, detectDevice, hashToken, createSessionId } from '@/lib/auth';
 import { generateReferralCode } from '@/lib/utils';
@@ -90,6 +91,9 @@ export async function GET(req) {
     const firstName = titleCase(cleanName(googleUser.given_name || ''));
     const lastName = titleCase(cleanName(googleUser.family_name || ''));
     const name = `${firstName} ${lastName}`.trim() || googleUser.name || '';
+
+    // Nobody signs in to the shared guest account, Google included.
+    if (isGuestAccountEmail(email)) return NextResponse.redirect(`${APP_URL}/?error=google_failed`);
 
     // Check if user exists
     let user = await prisma.user.findUnique({ where: { email } });
@@ -182,6 +186,10 @@ export async function GET(req) {
       }
 
       isNewUser = true;
+      // Guest orders bought with this email move in now: Google has verified
+      // the address, which email sign-up does not (lib/guest-checkout.js).
+      const { claimGuestCheckoutsByEmail } = await import('@/lib/guest-checkout');
+      await claimGuestCheckoutsByEmail(user.id, email);
       sendWelcomeEmail(firstName || name, email).catch(err =>
         log.error('Google signup', `Welcome email failed: ${err.message}`)
       );

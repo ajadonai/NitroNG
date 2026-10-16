@@ -6,7 +6,9 @@ const prisma = {
     groupBy: vi.fn(),
     count: vi.fn(),
   },
-  user: { findMany: vi.fn() },
+  // findUnique is the guest-account lookup (lib/guest-account.js); there is
+  // none here, so no board excludes anyone.
+  user: { findMany: vi.fn(), findUnique: vi.fn(async () => null) },
   setting: { findUnique: vi.fn() },
 };
 

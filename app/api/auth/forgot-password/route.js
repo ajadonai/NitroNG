@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { isGuestAccountEmail } from '@/lib/guest-account';
 import { log } from "@/lib/logger";
 import crypto from 'crypto';
 import { ok, error } from '@/lib/utils';
@@ -19,8 +20,9 @@ export async function POST(req) {
       where: { email: email.toLowerCase().trim() },
     });
 
-    // Always return success to prevent email enumeration
-    if (!user) {
+    // Always return success to prevent email enumeration. The shared guest
+    // account never gets a reset link: nobody signs in to it.
+    if (!user || isGuestAccountEmail(user.email)) {
       return ok({ message: 'If an account exists, a reset link has been sent.' });
     }
 

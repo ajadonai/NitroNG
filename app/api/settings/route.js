@@ -11,6 +11,9 @@ const PUBLIC_KEYS = [
   // The Discord order steps link these on the user side; without them here the
   // admin-edited bot links never reached customers and the hardcoded fallback ran.
   'discord_bot_url', 'discord_bot_url_premium',
+  // "Order without an account" on the sign-in cards. Off until guest checkout
+  // ships: the button has nowhere to go before then. See docs/SHELF.md.
+  'guest_checkout_enabled',
 ];
 
 export async function GET() {

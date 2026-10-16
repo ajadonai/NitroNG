@@ -129,6 +129,7 @@ model User {
   firstSeenWalletAt   DateTime?
   firstSeenNewOrderAt DateTime?
   resellerProfile     ResellerProfile?
+  guestCheckouts      GuestCheckout[]
 
   @@index([signupIp])
   @@index([createdAt])
@@ -426,6 +427,7 @@ model Order {
   dripDispatches       DripDispatch[]
   affiliateCommissions AffiliateCommission[]
   creditUsages         OrderCreditUsage[]
+  guestCheckout        GuestCheckout?
   nitroPointLedger     NitroPointLedger[]
 
   @@index([userId])
@@ -502,6 +504,8 @@ model Transaction {
   createdAt                      DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id])
+
+  guestCheckout GuestCheckout?
 
   @@unique([userId, idempotencyKey])
   @@unique([method, providerPaymentId], map: "transactions_method_provider_payment_id_key")
@@ -1499,4 +1503,75 @@ model ServiceFavourite {
   @@unique([userId, serviceId])
   @@index([userId])
   @@map("service_favourites")
+}
+
+// ──────────────────────────────────────
+// GUEST CHECKOUT (docs/v2/guest_checkout_brief.md)
+// ──────────────────────────────────────
+
+/// One order bought without an account. The payment is an ordinary deposit and
+/// the order an ordinary order, on `ownerUserId`: the shared guest account
+/// (nitrongguest@gmail.com), or the existing account an email belongs to.
+/// `code` is the guest's only way back to the order, so it is unguessable.
+model GuestCheckout {
+  id                String    @id @default(cuid())
+  code              String    @unique
+  /// Quoted → AwaitingPayment → Placing → Placed | Failed | Expired
+  status            String    @default("Quoted")
+  ownerUserId       String
+  email             String?
+  tierId            String?
+  serviceId         String
+  link              String
+  quantity          Int
+  comments          String?   @db.Text
+  /// The held price. The order must charge exactly this.
+  priceKobo         Int
+  creditAppliedKobo Int       @default(0)
+  /// The code whose credit paid part of this one.
+  creditFromCode    String?
+  /// priceKobo minus credit: what the payment is for.
+  dueKobo           Int       @default(0)
+  currency          String    @default("NGN")
+  transactionId     String?   @unique
+  orderId           String?   @unique
+  /// Refunds on guest-account orders land here, never in the shared wallet.
+  creditKobo        Int       @default(0)
+  failReason        String?
+  expiresAt         DateTime
+  placedAt          DateTime?
+  claimedByUserId   String?
+  ip                String?
+  ua                String?   @db.Text
+  fbp               String?
+  fbc               String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  owner        User               @relation(fields: [ownerUserId], references: [id])
+  transaction  Transaction?       @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  order        Order?             @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  creditEvents GuestCreditEvent[]
+
+  @@index([email])
+  @@index([status, expiresAt])
+  @@index([ownerUserId])
+  @@map("guest_checkouts")
+}
+
+/// The money trail for credit on a guest code: + refund in, − spent or moved
+/// to a wallet when the email signs up.
+model GuestCreditEvent {
+  id         String   @id @default(cuid())
+  checkoutId String
+  amountKobo Int
+  /// refund_partial | refund_cancelled | refund_failed | placement_failed | spent | released | claimed
+  reason     String
+  orderId    String?
+  createdAt  DateTime @default(now())
+
+  checkout GuestCheckout @relation(fields: [checkoutId], references: [id], onDelete: Cascade)
+
+  @@index([checkoutId])
+  @@map("guest_credit_events")
 }

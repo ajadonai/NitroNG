@@ -8,7 +8,7 @@ import {
   pitApprovedEmail, pitSuspendedEmail, pitRejectionEmail,
   payoutCompletedEmail, payoutRejectedEmail,
   sendAdActivationDay1, sendAdActivationDay3, sendAdActivationDay6,
-  gradualDeliveryAnnouncementEmail,
+  gradualDeliveryAnnouncementEmail, guestReceiptEmail,
 } from '@/lib/email';
 import prisma from '@/lib/prisma';
 
@@ -32,6 +32,7 @@ export async function GET(req) {
     refund:          () => sendEmail(EMAIL, '₦1,200 refunded to your Nitro wallet', walletCreditEmail(NAME, 1200, null, { kind: 'refund', orderRef: '#48213', failReason: 'Could not deliver', newBalance: 3650 })), // 6
     credit:          () => sendEmail(EMAIL, '₦2,000 credited to your Nitro wallet', walletCreditEmail(NAME, 2000, 'a small thank-you from the team.')), // generic credit
     'batch-place':   () => sendEmail(EMAIL, 'Batch order placed', batchPlacementEmail(NAME, 'BULK-20', 18, 16, 2, 24300)),   // 7
+    'guest-receipt': () => sendEmail(EMAIL, 'Order NTR-15978 placed', guestReceiptEmail({ code: 'G7K2-9XQM', orderId: 'NTR-15978', service: 'Instagram Followers', tier: 'Standard', quantity: 500, link: 'https://instagram.com/adaeze.styles', paidKobo: 1000000 })), // 24
     'batch-done':    () => sendEmail(EMAIL, 'Batch BULK-20, all orders complete', batchCompletionEmail(NAME, 'BULK-20', 16, 1, 1, 1350)), // 8
     'act-day1':      () => sendAdActivationDay1(NAME, EMAIL),                                              // 9
     'act-day3':      () => sendAdActivationDay3(NAME, EMAIL),                                              // 10

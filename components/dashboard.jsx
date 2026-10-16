@@ -1501,7 +1501,7 @@ function DashboardInner({ initialData }) {
       case "services":
         return <NewOrderPage openFullList={openFullList} onOpenedFullList={() => setOpenFullList(false)} dark={dark} t={t} user={user} onOrderSuccess={refreshDashboard} onViewOrders={() => setActive("orders")} onNavigate={(id) => setActive(id)} onTopUp={() => setActive("add-funds")} platform={noPlatform} setPlatform={setNoPlatform} selSvc={noSelSvc} setSelSvc={setNoSelSvc} selTier={noSelTier} setSelTier={setNoSelTier} qty={noQty} setQty={setNoQty} link={noLink} setLink={setNoLink} comments={noComments} setComments={setNoComments} catModal={noCatModal} setCatModal={setNoCatModal} tourActive={showOrderTour} activePromotion={activePromotion} rewards={rewards} socialLinks={socialLinks} refreshRewards={refreshRewards} onSuppressBackToTop={setSuppressBackToTop} />;
       case "orders":
-        return <OrdersPage orders={orders} initialTotal={ordersTotal} orderSummary={orderSummary} txs={enrichedTxs} dark={dark} t={t} onNavigate={setActive} onRefresh={refreshDashboard} waNum={socialLinks.social_whatsapp_support?.replace(/\D/g, "")} email={user?.email} initialSearch={ordersFocus || ""} />;
+        return <OrdersPage orders={orders} initialTotal={ordersTotal} orderSummary={orderSummary} txs={enrichedTxs} dark={dark} t={t} onNavigate={setActive} onRefresh={refreshDashboard} waNum={socialLinks.social_whatsapp_support?.replace(/\D/g, "")} email={user?.email} initialSearch={ordersFocus || ""} guestCodes={socialLinks.guest_checkout_enabled === "true" || process.env.NODE_ENV !== "production"} />;
       case "referrals":
         return <ReferralsPage user={user} dark={dark} t={t} />;
       case "settings":

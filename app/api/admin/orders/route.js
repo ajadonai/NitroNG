@@ -12,6 +12,8 @@ import { buildOrderOfferSnapshot, getOrderOfferDisplay } from '@/lib/order-offer
 import { findOpenSameLinkOrder, findSameLinkDispatchBlocker, isActiveOrderConflict, PROVIDER_ACTIVE_WAIT } from '@/lib/order-queue';
 import { lockOrderSettlementAccount, ORDER_SETTLEMENT_ACCOUNT_STATUSES } from '@/lib/account-deletion';
 import { autoTargetFrom } from '@/lib/auto-services';
+import { creditOrderRefund } from '@/lib/order-refund-credit';
+import { normalizeGuestCode } from '@/lib/guest-code';
 
 
 async function renewAdminCancellationLease(orderId, userId) {
@@ -54,8 +56,13 @@ export async function GET(req) {
     const filter = url.searchParams.get('filter') || 'all';
 
     const searchPhone = phoneSearchDigits(search);
+    // A guest code (G7K2-9XQM, typed any case, with or without the dash) finds
+    // the order it bought; a guest's email finds their orders too.
+    const searchGuestCode = search ? normalizeGuestCode(search) : null;
     const searchCondition = search ? {
       OR: [
+        ...(searchGuestCode ? [{ guestCheckout: { is: { code: searchGuestCode } } }] : []),
+        { guestCheckout: { is: { email: { contains: search, mode: 'insensitive' } } } },
         { orderId: { contains: search, mode: 'insensitive' } },
         { apiOrderId: { contains: search, mode: 'insensitive' } },
         { batchId: { contains: search, mode: 'insensitive' } },
@@ -72,6 +79,7 @@ export async function GET(req) {
       service: { select: { name: true, category: true, provider: true, apiId: true, costPer1k: true, enabled: true, providerListedAt: true, blacklisted: true, resellerMap: { select: { apiId: true } } } },
       tier: { select: { tier: true, sellPer1k: true, enabled: true, serviceId: true, group: { select: { name: true, platform: true, type: true, enabled: true } }, service: { select: { apiId: true, costPer1k: true } } } },
       dripDispatches: { select: { id: true, day: true, batch: true, quantity: true, status: true, apiOrderId: true, scheduledAt: true, dispatchedAt: true, completedAt: true, lastError: true }, orderBy: { scheduledAt: 'asc' } },
+      guestCheckout: { select: { code: true, email: true, creditKobo: true } },
     };
     if (search && searchCondition.OR) searchCondition.OR.push({ dripDispatches: { some: { apiOrderId: { contains: search, mode: 'insensitive' } } } });
 
@@ -88,6 +96,7 @@ export async function GET(req) {
     } else {
       const filterCondition = (() => {
         if (filter === 'queued') return { queuedBehind: { not: null } };
+        if (filter === 'guest') return { guestCheckout: { isNot: null } };
         if (filter === 'needs_dispatch') {
           const nd = { queuedBehind: null, status: { in: ['Pending', 'Processing', 'Dispatching'] } };
           nd.OR = [{ apiOrderId: null, dripDispatches: { none: {} } }, { dripDispatches: { some: { status: 'failed' } } }];
@@ -109,11 +118,11 @@ export async function GET(req) {
       const ndWhere = { queuedBehind: null, status: { in: ['Pending', 'Processing', 'Dispatching'] } };
       ndWhere.OR = [{ apiOrderId: null, dripDispatches: { none: {} } }, { dripDispatches: { some: { status: 'failed' } } }];
 
-      let statusGroups, queuedCount, needsDispatchCount;
+      let statusGroups, queuedCount, needsDispatchCount, guestCount;
       // Keep this frequently-polled endpoint to one pool slot per request.
       // Parallel Prisma calls can otherwise reserve several connections at once
       // and starve concurrent Vercel invocations before any SQL is executed.
-      [orders, statusGroups, queuedCount, needsDispatchCount] = await prisma.$transaction([
+      [orders, statusGroups, queuedCount, needsDispatchCount, guestCount] = await prisma.$transaction([
         prisma.order.findMany({
           where,
           orderBy: { createdAt: 'desc' },
@@ -124,12 +133,14 @@ export async function GET(req) {
         prisma.order.groupBy({ by: ['status'], where: countsWhere, _count: true }),
         prisma.order.count({ where: { ...countsWhere, queuedBehind: { not: null } } }),
         prisma.order.count({ where: searchCondition ? { ...countsWhere, AND: [...(countsWhere.AND || []), ndWhere] } : { ...baseWhere, ...ndWhere } }),
+        prisma.order.count({ where: { ...countsWhere, guestCheckout: { isNot: null } } }),
       ]);
 
-      counts = { all: 0, needs_dispatch: needsDispatchCount, queued: queuedCount };
+      counts = { all: 0, needs_dispatch: needsDispatchCount, queued: queuedCount, guest: guestCount };
       for (const g of statusGroups) { counts[g.status] = g._count; counts.all += g._count; }
       if (filter === 'queued') total = queuedCount;
       else if (filter === 'needs_dispatch') total = needsDispatchCount;
+      else if (filter === 'guest') total = guestCount;
       else if (filter && filter !== 'all') total = counts[filter] || 0;
       else total = counts.all;
     }
@@ -146,6 +157,21 @@ export async function GET(req) {
 
     const sensitive = canSeeSensitive(admin);
 
+    // A searched guest code with no order behind it (a payment that never
+    // placed, or one still waiting): what support needs when that guest asks.
+    let guestLookup = null;
+    if (searchGuestCode && !orders.some(o => o.guestCheckout?.code === searchGuestCode)) {
+      const c = await prisma.guestCheckout.findUnique({
+        where: { code: searchGuestCode },
+        select: { code: true, status: true, email: true, priceKobo: true, creditKobo: true, failReason: true, createdAt: true, order: { select: { orderId: true } } },
+      });
+      if (c) guestLookup = {
+        code: c.code, status: c.status, email: sensitive ? (c.email || null) : maskEmail(c.email),
+        price: c.priceKobo / 100, credit: c.creditKobo / 100, failReason: c.failReason || null,
+        orderId: c.order?.orderId || null, created: c.createdAt.toISOString(),
+      };
+    }
+
     const redispatchedIds = orders.filter(o => o.redispatchedAt).map(o => o.orderId);
     let childMap = {};
     if (redispatchedIds.length > 0) {
@@ -159,6 +185,7 @@ export async function GET(req) {
     return Response.json({
       total,
       counts,
+      guestLookup,
       orders: orders.map(o => {
         const offer = getOrderOfferDisplay(o);
         return {
@@ -217,6 +244,11 @@ export async function GET(req) {
         tierServiceApiId: o.tier?.service?.apiId || null,
         tierCurrentPrice: o.tier?.sellPer1k ? Math.round(Number(o.tier.sellPer1k) * o.quantity / 1000) / 100 : null,
         comments: o.comments || null,
+        guest: o.guestCheckout ? {
+          code: o.guestCheckout.code,
+          email: sensitive ? (o.guestCheckout.email || null) : maskEmail(o.guestCheckout.email),
+          credit: o.guestCheckout.creditKobo / 100,
+        } : null,
         };
       }),
     });
@@ -420,8 +452,7 @@ export async function POST(req) {
           if (refundAmount > 0) {
             const { walletRefund } = computeRefundSplit(Number(fresh.charge), Number(fresh.nitroPointsRedeemedKobo || 0), refundAmount);
             if (walletRefund > 0) {
-              await tx.user.update({ where: { id: fresh.userId }, data: { balance: { increment: walletRefund } } });
-              await tx.transaction.create({
+              await creditOrderRefund(tx, order.id, {
                 data: {
                   userId: fresh.userId, type: 'refund', amount: walletRefund,
                   method: 'wallet', status: 'Completed',
@@ -557,8 +588,7 @@ export async function POST(req) {
                 if (refundAmount > 0) {
                   const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
                   if (walletRefund > 0) {
-                    await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
-                    await tx.transaction.create({
+                    await creditOrderRefund(tx, order.id, {
                       data: {
                         userId: order.userId, type: 'refund', amount: walletRefund,
                         method: 'wallet', status: 'Completed',
@@ -598,8 +628,7 @@ export async function POST(req) {
                     if (cappedRefund <= 0) return true;
                     const { walletRefund } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, cappedRefund);
                     if (walletRefund > 0) {
-                      await tx.$executeRaw`UPDATE users SET balance = balance + ${walletRefund} WHERE id = ${order.userId}`;
-                      await tx.transaction.create({
+                      await creditOrderRefund(tx, order.id, {
                         data: {
                           userId: order.userId, type: 'refund', amount: walletRefund,
                           method: 'wallet', status: 'Completed',
@@ -728,8 +757,7 @@ export async function POST(req) {
 
         const { walletRefund, pointsRestore } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
         if (walletRefund > 0) {
-          await tx.user.update({ where: { id: order.userId }, data: { balance: { increment: walletRefund } } });
-          await tx.transaction.create({
+          await creditOrderRefund(tx, order.id, {
             data: {
               userId: order.userId, type: 'refund', amount: walletRefund,
               method: 'wallet', status: 'Completed',

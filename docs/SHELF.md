@@ -12,6 +12,14 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
 
 ### Waiting on Trip — one word or one flip
 
+- **Hero platform icons — mocked 16 Oct 2026, parked.** Three directions for
+  the floating icons beside the hero card, next to today's, on
+  claude.ai/artifact/FXpo21aD3iwMLZteWAgnRZ: A brand-coloured glass tiles, B an
+  "Order" rail whose icons open the order card on that platform (recommended:
+  turns decoration into a way into guest checkout, needs no new data), C a live
+  arc with green dots on platforms delivering now (needs a new public
+  count-only endpoint). Trip: *"let us leave it for now"*.
+
 - **Deposit bonus ladder — the restore is built and HELD.** Rungs run
   ₦250 / ₦600 / ₦1,500 live. The restore to **₦500 / ₦1,200 / ₦3,000** is a
   **revert of `235935f5`**, not a retype — that commit carries the copy too (the
@@ -268,6 +276,51 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   **Open for Trip:** the bundle list (Brand Launch / Music Drop / Going Viral),
   whether bundles carry a discount (it is the incentive, and it is margin), and
   whether resellers see them (probably not — they compose their own).
+
+- **Guest checkout — redesigned 15–16 Oct 2026; its entry button is built dark,
+  set `guest_checkout_enabled` to `true` only once checkout ships.** Supersedes
+  the "guest-feel" plan below: Trip chose true guest checkout. Decided in the
+  mockup (claude.ai/artifact/1e3BcSmFM1LQN3FkbKsQA7): email optional, no
+  WhatsApp, no bonus or referral, no cap, a minimum spend (₦1,000 assumed, not
+  confirmed); every order keeps its NTR id plus an unguessable guest code that
+  opens the order page; email-less orders sit on the login-blocked
+  nitrongguest@gmail.com account (plus-addressed per payment for Flutterwave)
+  and are kept out of loyalty, leaderboard, points, bonuses, CAPI email,
+  audiences and counts; credit from failed or partial orders lives on the guest
+  code, spendable on Nitro only, never paid out; an email that already has an
+  account attaches the order without logging anyone in.
+
+  **Built dark, uncommitted (16 Oct 2026).** Brief approved:
+  `docs/v2/guest_checkout_brief.md`. Built: the backend (quote, pay, place,
+  refunds to the code's credit, sweep, the guest account and its exclusions,
+  site-wide refill alerts in the Telegram "refills" topic), the order page at
+  `/order/CODE` (noindex by meta tag), and the order card, which takes the hero
+  card's place on desktop and phone when "Order without an account" is tapped.
+  The card offers only the mockup's essentials (pinned in
+  `app/api/guest/menu/route.js`). Login and sign-up fields now use the card's
+  boxed style too. Localhost always shows it, with no flag, and
+  `/order/CODE?preview=delivering` shows the order page's states; never flip the
+  real setting to look, because local dev writes to production. Payment cannot
+  open locally (the Flutterwave key is only on Vercel).
+
+  Paying returns to the card, which turns into the receipt (localhost preview:
+  `/?guest_order=G7K2-9XQM&receipt=delivering`), and Track opens the order in a
+  pop-up. Committed locally in v2.4.116, not pushed.
+
+  Built since: the receipt email (template 24 in Email Copy.md; sent when an
+  order is placed with an email, or from "Want a receipt?" on the receipt
+  card), and in admin Orders a Guest chip, a Guest filter, search by guest
+  code or guest email, the code, receipt email and credit on the order, and a
+  card for a searched code that has no order (status, credit, why).
+
+  Claim (16 Oct): by the guest code ("Move to my account" on the order page,
+  "Add a guest code" under dashboard orders), and automatically on Google
+  sign-up, never by email alone (email sign-up does not verify). Staff access:
+  on the live site guest checkout already works for any signed-in admin while
+  the setting is off, so staff can test real payments before customers see it.
+
+  Next: push, then a staff test with real ₦1,000 orders (transfer, a refund
+  landing as credit, a claim), then flip `guest_checkout_enabled`.
 
 - **Guest-feel checkout — agreed 6 Sep 2026, and measure first.** An audit
   flagged "no guest checkout" as a conversion barrier. Half of that is already

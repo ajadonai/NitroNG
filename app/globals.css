@@ -1190,6 +1190,98 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 @keyframes modalBounceIn { from { transform: scale(.92) translateY(8px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
 @keyframes confirmFadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes confirmBounceIn { from { transform: scale(.92) translateY(8px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+/* The calm one: a short rise that settles without overshooting. The login and
+   sign up modal moved to it first (Oct 2026) — a form someone opens every visit
+   should arrive, not bounce. The other modals still use modalBounceIn. */
+@keyframes modalRiseIn { from { transform: scale(.97) translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ══ AUTH MODAL FIELDS ══ */
+/* One height, a soft fill, and a pink ring while typing. On :root rather than
+   the card because the WhatsApp country menu is portalled to <body> and reads
+   the same colours. Logical properties only, so the RTL build adds no
+   [dir] rules here (see "The [dir="ltr"] specificity trap" in CLAUDE.md). */
+:root { --auth-field: #faf7f6; --auth-field-line: rgba(32,27,25,.16); }
+.dark { --auth-field: #1a1227; --auth-field-line: rgba(255,255,255,.16); }
+.auth-in {
+  display: block; width: 100%; height: 44px; padding-inline: 14px; border-radius: 12px;
+  border: 1px solid var(--auth-field-line); background: var(--auth-field); color: var(--t-text);
+  font-family: inherit; font-size: 15px; outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+.auth-in.has-eye { padding-inline-end: 46px; }
+.auth-in::placeholder { color: var(--t-text-muted); opacity: .8; }
+.auth-in:hover { border-color: rgba(196,125,142,.45); }
+.auth-in.is-bad { border-color: rgba(220,38,38,.5); }
+.auth-in.is-good { border-color: rgba(5,150,105,.5); }
+/* PhoneField pads itself to 45px; this holds both its boxes at the 44px every other auth field uses. */
+.auth-tel input, .auth-tel button[aria-haspopup] { min-height: 44px; }
+/* PhoneField draws its border inline, so its focus needs the !important. */
+.auth-in:focus, .auth-tel input:focus { border-color: #c47d8e !important; box-shadow: 0 0 0 3px rgba(196,125,142,.2); background: var(--t-input-bg); }
+
+/* A field is one box with its caption inside it, as on the guest order card.
+   The input keeps .auth-in, so every state rule below still reaches it; these
+   take away its own box and draw the state on this one instead. */
+.auth-box { position: relative; display: block; border: 1px solid var(--auth-field-line); border-radius: 12px; background: var(--auth-field); padding: 6px 14px 7px; cursor: text; transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease; }
+.auth-box > label { display: flex; align-items: center; gap: 4px; margin: 0; font-size: 11px; font-weight: 600; line-height: 15px; color: var(--t-text-muted); white-space: nowrap; overflow: hidden; cursor: text; }
+.auth-box:hover { border-color: rgba(196,125,142,.45); }
+.auth-box:focus-within { border-color: #c47d8e; box-shadow: 0 0 0 3px rgba(196,125,142,.2); background: var(--t-input-bg); }
+.auth-box .auth-in { height: 22px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; font-size: 14.5px; font-weight: 600; }
+.auth-box .auth-in:focus { box-shadow: none; background: transparent; }
+.auth-box .auth-in::placeholder { font-weight: 500; }
+.auth-box .auth-in.has-eye { padding-inline-end: 30px; }
+.auth-box.auth-tel input, .auth-box.auth-tel button[aria-haspopup] { min-height: 0; }
+.auth-box.auth-tel input:focus { box-shadow: none; background: transparent !important; }
+
+/* ══ AUTH MODAL ERRORS ══ */
+/* One rule: a problem never adds anything above or below the form. The field
+   turns red, and its message takes a line that is already there: the one-line
+   slot under the sign up email and WhatsApp number, or the line under the
+   button. An empty field says "Required" inside itself. */
+:root { --auth-err: #c42020; --auth-err-line: rgba(196,32,32,.55); --auth-err-bg: #fdf3f3; --auth-amber: #8a5208; --auth-ok: #047857; }
+.dark { --auth-err: #fca5a5; --auth-err-line: rgba(252,165,165,.6); --auth-err-bg: rgba(220,38,38,.1); --auth-amber: #fcd34d; --auth-ok: #6ee7b7; }
+.auth-in.is-bad, .auth-tel.is-bad input, .auth-tel.is-bad button[aria-haspopup] { border-color: var(--auth-err-line) !important; background: var(--auth-err-bg) !important; }
+.auth-in.is-bad:focus, .auth-tel.is-bad input:focus { box-shadow: 0 0 0 3px rgba(220,38,38,.14); }
+.auth-in.is-bad::placeholder { color: var(--auth-err); opacity: 1; font-weight: 500; }
+/* The same states, drawn on the box around a boxed field. */
+.auth-box:has(.is-bad), .auth-box.is-bad { border-color: var(--auth-err-line); background: var(--auth-err-bg); }
+.auth-box:has(.is-bad):focus-within, .auth-box.is-bad:focus-within { box-shadow: 0 0 0 3px rgba(220,38,38,.14); }
+.auth-box:has(.is-good) { border-color: rgba(5,150,105,.5); }
+.auth-box .auth-in.is-bad, .auth-box.auth-tel.is-bad input { background: transparent !important; }
+/* The ring belongs to the box; the input inside draws none, in error or not. */
+.auth-box .auth-in.is-bad:focus, .auth-box.auth-tel.is-bad input:focus { box-shadow: none; }
+.auth-slot { display: flex; align-items: center; gap: 5px; height: 16px; margin-top: 4px; font-size: 12px; line-height: 16px; color: var(--t-text-muted); white-space: nowrap; overflow: hidden; min-width: 0; }
+.auth-slot > span { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.auth-slot svg, .auth-msg svg { width: 13px; height: 13px; flex-shrink: 0; }
+.auth-slot.is-err, .auth-msg.is-err { color: var(--auth-err); font-weight: 500; }
+.auth-slot.is-amber { color: var(--auth-amber); font-weight: 500; }
+.auth-slot.is-ok, .auth-msg.is-ok { color: var(--auth-ok); }
+/* vertical-align: top, or the icon drops the text onto its baseline and the line grows a few px */
+.auth-msg { display: inline-flex; align-items: center; gap: 6px; vertical-align: top; line-height: inherit; }
+.auth-slot button, .auth-slot a, .auth-msg button { color: inherit; font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; background: none; border: 0; padding: 0; cursor: pointer; }
+.auth-terms { padding: 8px 10px; margin-inline: -10px; border-radius: 11px; }
+.auth-terms.is-bad { background: var(--auth-err-bg); box-shadow: inset 0 0 0 1px var(--auth-err-line); }
+
+/* ══ ORDER WITHOUT AN ACCOUNT ══ */
+/* One tinted bar at the foot of the sign-in cards, the whole bar the button:
+   icon, label, a pink arrow. Each card sets its own bleed margins, since their
+   padding differs. On the desktop modal it sits in the pink panel instead
+   (.auth-guest.on-panel), where there is room and it adds no height. */
+.auth-guest { display: flex; align-items: center; gap: 12px; text-align: start; border: 0; border-top: 1px solid rgba(196,125,142,.4); background: rgba(196,125,142,.14); color: var(--t-text); cursor: pointer; transition: background-color .15s ease; }
+.auth-guest:hover { background: rgba(196,125,142,.2); }
+/* As its own box inside a card (the phone hero card), not bled to the edge */
+.auth-guest.on-card { position: relative; border: 1px solid rgba(196,125,142,.45); border-radius: 14px; padding: 11px 12px; }
+/* A badge on the box's top edge, so the label keeps to one line on a phone */
+.auth-guest-new { position: absolute; top: -8px; inset-inline-end: 14px; font-size: 9.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; line-height: 1; color: #fff; background: #c47d8e; border-radius: 6px; padding: 4px 7px; box-shadow: 0 2px 6px rgba(160,70,95,.35); }
+.auth-guest-ic { width: 34px; height: 34px; border-radius: 10px; background: var(--t-input-bg); color: #c47d8e; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.auth-guest-ic svg { width: 17px; height: 17px; }
+.auth-guest-tx { display: flex; flex-direction: column; flex: 1; min-width: 0; line-height: 1.3; }
+.auth-guest-tx b { font-size: 14px; font-weight: 700; }
+.auth-guest-tx i { font-style: normal; font-size: 12px; color: var(--t-text-muted); }
+.auth-guest-go { width: 30px; height: 30px; border-radius: 50%; background: #c47d8e; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700; }
+.auth-guest.on-panel { width: 100%; margin-top: 20px; padding: 11px 12px; border: 0; border-radius: 14px; background: #fff; color: #2a1a20; box-shadow: 0 8px 24px rgba(60,10,30,.22); }
+.auth-guest.on-panel:hover { background: #fff6f8; }
+.auth-guest.on-panel .auth-guest-ic { background: rgba(196,125,142,.14); }
+.auth-guest.on-panel .auth-guest-tx i { color: rgba(42,26,32,.62); }
 
 /* ══════════════════════════════════════ */
 /* ══ ANNOUNCEMENT BANNER KEYFRAMES   ══ */

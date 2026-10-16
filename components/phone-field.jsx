@@ -32,6 +32,9 @@ export function PhoneField({
   t,
   dark,
   compact = false,
+  // Inside a captioned box (.auth-box): no borders of its own, the flag and the
+  // number on one line under the caption, split by a hairline.
+  boxed = false,
   autoFocus = false,
 }) {
   const tr = useT();
@@ -73,7 +76,7 @@ export function PhoneField({
   const surface = dark ? '#171126' : '#fffdfb';
 
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
+    <div style={boxed ? { display: 'flex', alignItems: 'center' } : { display: 'flex', gap: 8 }}>
       <button
         ref={trigRef}
         type="button"
@@ -82,7 +85,12 @@ export function PhoneField({
         aria-expanded={open}
         aria-controls={listId}
         aria-label={`Country: ${cc.name}`}
-        style={{
+        style={boxed ? {
+          height: 22, padding: 0, paddingInlineEnd: 10, marginInlineEnd: 10, flexShrink: 0, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 6, fontSize: 14.5, fontFamily: 'inherit',
+          background: 'transparent', borderRadius: 0, border: 'none', borderInlineEnd: `1px solid ${t.inputBorder}`,
+          color: t.textSoft || t.soft,
+        } : {
           padding: pad, borderRadius: 12, flexShrink: 0, cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: 6, fontSize: 15, fontFamily: 'inherit',
           background: t.inputBg, border: `1px solid ${open ? (t.accent || '#c47d8e') : t.inputBorder}`,
@@ -98,7 +106,9 @@ export function PhoneField({
 
       <div style={{ position: 'relative', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center' }}>
         {/* Stronger than the placeholder: this is content, not a hint. */}
-        <span aria-hidden="true" style={{ position: 'absolute', left: 14, fontSize: 15, pointerEvents: 'none', userSelect: 'none', color: t.textSoft || t.soft }}>
+        <span aria-hidden="true" style={boxed
+          ? { flexShrink: 0, marginInlineEnd: 6, fontSize: 14.5, fontWeight: 600, pointerEvents: 'none', userSelect: 'none', color: t.textSoft || t.soft }
+          : { position: 'absolute', left: 14, fontSize: 15, pointerEvents: 'none', userSelect: 'none', color: t.textSoft || t.soft }}>
           +{cc.dial}
         </span>
         <input
@@ -128,7 +138,10 @@ export function PhoneField({
           onChange={(e) => onValue?.(e.target.value.replace(/\D/g, '').slice(0, cc.dial.length + cc.maxLocal + 1))}
           placeholder={cc.example}
           className="font-[inherit]"
-          style={{
+          style={boxed ? {
+            width: '100%', minWidth: 0, height: 22, padding: 0, border: 'none', borderRadius: 0,
+            fontSize: 14.5, fontWeight: 600, outline: 'none', background: 'transparent', color: t.text,
+          } : {
             width: '100%', padding: `${inputPad} 14px ${inputPad} ${28 + cc.dial.length * 9}px`,
             borderRadius: 12, fontSize: 15, outline: 'none',
             background: t.inputBg, border: `1px solid ${t.inputBorder}`, color: t.text,

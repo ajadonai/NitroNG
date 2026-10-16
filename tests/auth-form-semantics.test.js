@@ -60,10 +60,18 @@ describe('authentication form semantics', () => {
   it('announces dynamic authentication errors and success messages', () => {
     const alerts = source('components/inline-alert.jsx');
     const modal = source('components/auth-modal.jsx');
+    // Both sign-in forms show their errors through one shared piece (the line
+    // under the button), so the announcement lives there; check that it is
+    // announced, and that both forms actually use it.
+    const messages = source('components/auth-messages.jsx');
+    const landing = source('components/landing-v3.jsx');
 
     expect(alerts).toContain('role={type === "error" ? "alert" : "status"}');
     expect(alerts).toContain('aria-live={type === "error" ? "assertive" : "polite"}');
-    expect(modal).toContain('role="alert"');
+    expect(messages).toContain('role="alert" aria-live="assertive"');
+    expect(messages).toContain('role="status" aria-live="polite"');
+    expect(modal).toContain('<LineMsg line={line} />');
+    expect(landing).toContain('<LineMsg line={heroLine}/>');
     expect(modal).toContain('role="status"');
   });
 });

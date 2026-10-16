@@ -2,6 +2,9 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { refillOrder } from '@/lib/smm';
 import { log } from '@/lib/logger';
+import { canRequestRefill, refillPromiseDays } from '@/lib/refill-promise';
+import { getOrderOfferDisplay } from '@/lib/order-offer-display';
+import { tgFlush, tgRefillRequest } from '@/lib/telegram';
 
 export async function POST(req) {
   const session = await getCurrentUser();
@@ -11,52 +14,76 @@ export async function POST(req) {
   return refillOrderForSession(session, body?.orderId);
 }
 
-/** Request a provider refill on one of the session's completed orders; shared with the reseller API. */
+/**
+ * A customer asks for a refill on one of their completed orders; shared with
+ * the reseller API.
+ *
+ * Who may ask follows the tier name they bought (lib/refill-promise): Standard
+ * for thirty days, Premium for life, Budget never. That is the Nitro promise,
+ * and Nitro honours it whatever the provider offers. So a request is accepted
+ * on the promise alone. Where the provider does offer a refill it is sent to
+ * them straight away; where it does not, or they refuse it, an admin does it by
+ * hand. Every request reaches Telegram either way, saying which it is, because
+ * the by-hand ones used to arrive nowhere.
+ */
 export async function refillOrderForSession(session, orderId) {
   if (!orderId) return Response.json({ error: 'Missing orderId' }, { status: 400 });
 
   const order = await prisma.order.findFirst({
     where: { orderId, userId: session.id, deletedAt: null },
     include: {
-      service: { select: { provider: true } },
-      tier: { select: { refill: true, refillDays: true } },
+      service: { select: { provider: true, name: true, category: true } },
+      tier: { select: { tier: true, refill: true, group: { select: { name: true, platform: true, type: true } } } },
     },
   });
 
   if (!order) return Response.json({ error: 'Order not found' }, { status: 404 });
   if (order.status !== 'Completed') return Response.json({ error: 'Only completed orders can be refilled' }, { status: 400 });
-  if (!order.apiOrderId) return Response.json({ error: 'Order has no provider reference' }, { status: 400 });
-  if (!order.tier?.refill) return Response.json({ error: 'This service does not support refills' }, { status: 400 });
 
+  const offer = getOrderOfferDisplay(order);
+  const completedAt = order.completedAt || order.updatedAt;
+  if (!canRequestRefill({ status: order.status, completedAt, tierName: offer.tierLabel })) {
+    return refillPromiseDays(offer.tierLabel) === 0
+      ? Response.json({ error: 'This order has no refill.' }, { status: 400 })
+      : Response.json({ error: 'The refill window for this order has closed. Message us on WhatsApp if you need help.' }, { status: 400 });
+  }
+
+  // One request at a time, until an admin resets it (admin orders: reset_refill).
   if (order.refillRequestedAt) {
     return Response.json({ error: 'A refill is already in progress for this order.' }, { status: 400 });
   }
 
-  const refillDays = order.tier.refillDays || 30;
-  const completedAt = order.completedAt || order.updatedAt;
-  const expiresAt = new Date(completedAt.getTime() + refillDays * 24 * 60 * 60 * 1000);
-
-  if (new Date() > expiresAt) {
-    return Response.json({ error: 'Refill is no longer available for this order. Please contact support if you need help.' }, { status: 400 });
+  // Pass it straight to the provider when they offer a refill on this service.
+  // A refusal is not the customer's problem: the promise still stands, so the
+  // request is recorded and an admin picks it up from Telegram.
+  let sentToProvider = false;
+  let providerError = null;
+  if (order.tier?.refill && order.apiOrderId) {
+    try {
+      await refillOrder(order.service?.provider || 'mtp', order.apiOrderId);
+      sentToProvider = true;
+    } catch (err) {
+      providerError = err.message || 'unknown error';
+      // "Refill already…" means the provider is already on it.
+      if (/Refill already/i.test(providerError)) { sentToProvider = true; providerError = null; }
+      else log.warn(`User refill ${order.orderId}`, providerError);
+    }
   }
 
-  const provider = order.service?.provider || 'mtp';
+  await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: new Date(), refillHandledAt: null } });
+  log.info('User refill', `${session.email} requested refill for ${order.orderId} (${sentToProvider ? 'sent to provider' : 'manual'})`);
+  tgRefillRequest({
+    orderId: order.orderId,
+    user: session.name || session.email,
+    service: offer.serviceName,
+    tier: offer.tierLabel,
+    qty: order.quantity,
+    link: order.link,
+    sentToProvider,
+    providerError,
+  });
+  // Before returning, or the platform can end the request before Telegram hears.
+  await tgFlush();
 
-  try {
-    await refillOrder(provider, order.apiOrderId);
-    await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: new Date(), refillHandledAt: null } });
-    log.info('User refill', `${session.email} requested refill for ${order.orderId}`);
-    return Response.json({ success: true, message: 'Refill requested — delivery will begin shortly' });
-  } catch (err) {
-    log.warn(`User refill ${order.orderId}`, err.message);
-    const msg = err.message || '';
-    if (msg.includes('Incorrect order') || msg.includes('not found')) {
-      return Response.json({ error: 'This order cannot be refilled.' }, { status: 400 });
-    }
-    if (msg.includes('Refill already')) {
-      await prisma.order.update({ where: { id: order.id }, data: { refillRequestedAt: new Date(), refillHandledAt: null } });
-      return Response.json({ error: 'A refill is already in progress for this order.' }, { status: 400 });
-    }
-    return Response.json({ error: msg || 'Failed to request refill. Please try again or contact support.' }, { status: 500 });
-  }
+  return Response.json({ success: true, message: 'Refill requested. We’ll top it up shortly.' });
 }
