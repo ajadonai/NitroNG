@@ -34,6 +34,17 @@ export default [
       // Core ESLint does not treat a JSX tag as a variable use on its own.
       // Without this marker, every imported or local component is false noise.
       "react/jsx-uses-vars": "error",
+      // ...and for the same reason `no-undef` below cannot see a JSX tag
+      // either: <Foo /> is a JSXIdentifier, which core scope analysis never
+      // resolves as a variable reference. So the rule written to stop exactly
+      // this was blind to the commonest shape of it.
+      //
+      // v2.4.48 deleted `function SummaryRows` and one of its two call sites,
+      // and left the other behind. Opening the Summary dropdown on the orders
+      // page threw ReferenceError from August to October, through every lint
+      // run and every build, because the only rule that reads JSX names was
+      // not switched on.
+      "react/jsx-no-undef": "error",
       // A repeated prop is silently the last one written, so the earlier one is
       // dropped at compile time with nothing said. That is how four dropdowns
       // lost their `insetInlineEnd` anchor on 9 Sep 2026 — added as a second

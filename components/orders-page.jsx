@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, Fragment } from "react";
 import { RailSec, RailCard, RailFact, RailRow, RailNote, RailEmpty } from "./rail";
-import { useBodyScrollLock } from "./ui-primitives";
+import { Modal, useBodyScrollLock } from "./ui-primitives";
 import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
@@ -541,6 +541,45 @@ function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDERS PAGE                         ═══ */
 /* ═══════════════════════════════════════════ */
+/**
+ * The rows behind the Summary dropdown on the orders list.
+ *
+ * This went missing in v2.4.48, the right-rail rework: the definition was
+ * deleted along with one of its two call sites, and the other was left behind.
+ * Opening Summary has thrown ReferenceError into the error boundary ever since
+ * — August to October — because the panel only renders on click, so nothing
+ * that merely loads the page could touch it. Sentry 7794872833.
+ *
+ * It reads its own formatters rather than taking them as arguments. The same
+ * dropdown on the tasks page took `money` as a parameter and a caller forgot to
+ * pass it, which threw in exactly the same way (7794355937) — a component that
+ * fetches what it needs cannot be called wrong.
+ */
+function SummaryRows({ orderSummary, dark, t }) {
+  const tr = useT();
+  const money = useMoney();
+  const rows = [
+    [tr("Total orders"), String(orderSummary?.total ?? 0), null],
+    [tr("Delivering now"), String(orderSummary?.active || 0), dark ? "#a5b4fc" : "#4f46e5"],
+    (orderSummary?.attention || 0) > 0
+      ? [tr("Needs attention"), String(orderSummary.attention), dark ? "#fdba74" : "#c2410c"]
+      : null,
+    [tr("Completed"), String(orderSummary?.completed || 0), dark ? "#6ee7b7" : "#059669"],
+    // `spent` arrives in naira already, the same way OrdersSidebar reads it.
+    [tr("Total spent"), money(orderSummary?.spent || 0), t.accent],
+  ].filter(Boolean);
+  return (
+    <div>
+      {rows.map(([label, val, color], i) => (
+        <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-soft" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
+          <span className="flex items-center gap-2">{label === tr("Delivering now") && Number(val) > 0 && <span className="w-[7px] h-[7px] rounded-full animate-pulse" style={{ background: "#4f46e5" }} />}{label}</span>
+          <b className="m text-[15px] font-semibold" style={{ color: color || t.text }}>{val}</b>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, orderSummary, dark, t, onNavigate, onRefresh, waNum, email, initialSearch = "" }) {
   const tr = useT();
   const money = useMoney();
