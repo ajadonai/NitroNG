@@ -290,7 +290,7 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
             <div className="relative mt-4 p-3 rounded-xl" style={{ background: dark ? 'rgba(196,125,142,.08)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.15)' : 'rgba(196,125,142,.08)'}` }}>
               <div className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: "var(--t-accent-ink)" }}>Win Real Money</div>
               <p className="text-[12px] leading-[1.55]" style={{ color: t.textMuted }}>
-                {tr("Your best score each month enters the leaderboard. Top 5 players win wallet credit. Play unlimited times — only your highest counts.")}
+                {tr("Your best score each month enters the leaderboard. Top 5 players win wallet credit. Play unlimited times. Only your highest counts.")}
               </p>
             </div>
             <button onClick={() => setShowHelp(false)} className="relative w-full mt-4 py-2.5 rounded-xl text-sm font-semibold border-none cursor-pointer" style={{ background: `linear-gradient(135deg, ${t.accent}, #8b5e6b)`, color: '#fff' }}>

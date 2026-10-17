@@ -42,8 +42,8 @@ describe('the YouTube notice', () => {
     expect(src).not.toContain('YouTube watches for sudden jumps');
   });
 
-  it('keeps the real drip rate — 50 – 500 a day, not a single made-up number', () => {
-    expect(youtube).toContain('*50 – 500 a day*');
+  it('keeps the real drip rate, 50 to 500 a day, not a single made-up number', () => {
+    expect(youtube).toContain('*50 to 500 a day*');
   });
 
   it('gives the good news ticks rather than small print', () => {

@@ -5,7 +5,7 @@ describe("serviceDisplay", () => {
   it("reads MoreThanPanel's pipe style", () => {
     const d = serviceDisplay("🟢 Instagram Followers | 30 Day Refill | Speed: 10-20K/Day | Max 3M | Low Drop | NEW! |");
     expect(d.title).toBe("Instagram Followers");
-    expect(d.facts).toEqual(["Refill 30d", "Speed 10–20K/day", "Max 3M", "Low drop"]);
+    expect(d.facts).toEqual(["Refill 30d", "Speed 10 to 20K/day", "Max 3M", "Low drop"]);
   });
   it("reads DaoSMM's bracket style and lifts the flag into a fact", () => {
     const d = serviceDisplay("Instagram Organic Followers [Nigerian 🇳🇬] [HQ Real Profile] [Refill: No] [Instant Start]");
@@ -15,7 +15,7 @@ describe("serviceDisplay", () => {
   it("reads JAP's start time and speed", () => {
     const d = serviceDisplay("Spotify Saves [Track/Album/Episode] [Refill: 30D] [Max: 1M] [Start Time: 1-12 Hours] [Speed: 50K/Day]");
     expect(d.title).toBe("Spotify Saves");
-    expect(d.facts).toEqual(["Track/Album/Episode", "Refill 30d", "Max 1M", "Start 1–12 h", "Speed 50K/day"]);
+    expect(d.facts).toEqual(["Track/Album/Episode", "Refill 30d", "Max 1M", "Start 1 to 12 h", "Speed 50K/day"]);
   });
   it("fixes casing, drops noise, and pulls a trailing speed out of the title", () => {
     expect(serviceDisplay("🔵 Tiktok Real Likes | Speed: 10-20K/Day | Max 1M | Low Drop |").title).toBe("TikTok Real Likes");

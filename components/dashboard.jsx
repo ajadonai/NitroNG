@@ -6,6 +6,7 @@ import { OffsetIcon, CurrencyCoin } from "./offset-icons";
 import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
+import { WHATSAPP_CHANNEL_URL } from "./rewards";
 import { useMoney, useT, useNairaAside } from "./locale";
 import { useDataSaver, pollEvery } from "./use-data-saver";
 import FullListNotice, { fullListIsNewsTo, fullListAlreadySeen, markFullListSeen } from "./full-list-notice";
@@ -147,8 +148,6 @@ const I = {
   resellers: <OffsetIcon name="store" />,
   changelog: <OffsetIcon name="spark" />,
   leaderboard: <OffsetIcon name="bars" size={18} />,
-  instagram: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
-  x: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
   logout: <OffsetIcon name="logout" />,
   a2hs: <OffsetIcon name="phone" />,
 };
@@ -196,8 +195,8 @@ const DOCK_ICONS = {
 };
 
 const WAITLIST_META = {
-  audit: { icon: I.audit, title: msg("Be the first to audit your account"), desc: msg("We're building a tool that analyzes your social media — follower quality, engagement rate, growth trends, and more. Join the waitlist to get early access.") },
-  cleanup: { icon: I.cleanup, title: msg("Be the first to clean up your account"), desc: msg("Mass unfollow ghost followers, non-followers, and inactive accounts — all from your Nitro dashboard. Join the waitlist to get early access.") },
+  audit: { icon: I.audit, title: msg("Be the first to audit your account"), desc: msg("We're building a tool that analyzes your social media: follower quality, engagement rate, growth trends, and more. Join the waitlist to get early access.") },
+  cleanup: { icon: I.cleanup, title: msg("Be the first to clean up your account"), desc: msg("Mass unfollow ghost followers, non-followers, and inactive accounts, all from your Nitro dashboard. Join the waitlist to get early access.") },
 };
 
 function WaitlistPage({ feature, dark, t }) {
@@ -269,12 +268,39 @@ function WaitlistPage({ feature, dark, t }) {
   );
 }
 
+/* The follow row at the foot of the sidebar and in the More sheet (approved
+   17 Oct 2026, direction A): grey icons that take their own colour and a printed
+   edge on hover. WhatsApp opens the channel, the same one Stay updated links to;
+   the support chat is one tap away under Support. */
+const handleOf = (value, prefix, fallback = "") => (value || fallback).replace(prefix, "").replace(/^@/, "").replace(/\/$/, "");
+const TT_PATH = "M16.6 3c.4 2.2 1.8 3.7 4 4v3.1c-1.5 0-2.9-.4-4-1.2v6.6A5.6 5.6 0 1 1 11 10v3.2a2.5 2.5 0 1 0 2.5 2.5V3h3.1z";
+const FOLLOW_ICONS = {
+  ig: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4.2" /><circle cx="17.3" cy="6.7" r="1.2" fill="currentColor" stroke="none" /></svg>,
+  x: <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path transform="translate(2 2) scale(.84)" d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24H16.17l-5.21-6.82-5.97 6.82H1.68l7.73-8.84L1.25 2.25H8.08l4.71 6.23zm-1.16 17.52h1.83L7.08 4.13H5.12z" /></svg>,
+  tt: <svg viewBox="0 0 24 24" aria-hidden="true"><path className="tt-c" fill="#25F4EE" transform="translate(-.9 -.7)" d={TT_PATH} /><path className="tt-r" fill="#FE2C55" transform="translate(.9 .7)" d={TT_PATH} /><path fill="currentColor" d={TT_PATH} /></svg>,
+  wa: <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z" /></svg>,
+};
+function FollowLinks({ socialLinks, compact = false }) {
+  const tr = useT();
+  const links = [
+    { k: "ig", label: "Instagram", href: `https://instagram.com/${handleOf(socialLinks.social_instagram, /^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i, "Nitro.ng")}` },
+    { k: "x", label: "X", href: `https://x.com/${handleOf(socialLinks.social_twitter, /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i, "TheNitroNG")}` },
+    socialLinks.social_tiktok && { k: "tt", label: "TikTok", href: `https://tiktok.com/@${handleOf(socialLinks.social_tiktok, /^(https?:\/\/)?(www\.)?(tiktok\.com\/@?)?/i)}` },
+    { k: "wa", label: tr("WhatsApp channel"), href: socialLinks.social_whatsapp_channel || WHATSAPP_CHANNEL_URL },
+  ].filter(Boolean);
+  return (
+    <div className={"fl-row" + (compact ? " compact" : "")}>
+      {links.map(l => <a key={l.k} href={l.href} target="_blank" rel="noopener noreferrer" className={"fl-a " + l.k} title={l.label} aria-label={l.label}>{FOLLOW_ICONS[l.k]}</a>)}
+    </div>
+  );
+}
+
 const NOTIF_ICONS = {
-  check: <OffsetIcon name="checkCircle" size={14} />,
-  clock: <OffsetIcon name="clockPlain" size={14} />,
-  x: <OffsetIcon name="xCircle" size={14} />,
-  dollar: <CurrencyCoin size={14} />,
-  gift: <OffsetIcon name="gift" size={14} />,
+  check: <OffsetIcon name="checkCircle" size={16} />,
+  clock: <OffsetIcon name="clockPlain" size={16} />,
+  x: <OffsetIcon name="xCircle" size={16} />,
+  dollar: <CurrencyCoin size={16} />,
+  gift: <OffsetIcon name="gift" size={16} />,
 };
 
 // How many rows the panel holds. It was ten, under a footer reading "Showing
@@ -356,7 +382,7 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
       <div className="flex justify-between items-center py-3.5 px-4 shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-base font-semibold text-t-text">{tr("Notifications")}</span>
-          {unreadCount > 0 && <span className="text-xs py-0.5 px-1.5 rounded-[5px] font-semibold text-accent-ink" style={{ background: dark ? "#1c1015" : "#fdf2f4" }}>{unreadCount}</span>}
+          {unreadCount > 0 && <span className="pbadge">{unreadCount}</span>}
         </div>
         <div className="flex gap-2.5">
           {unreadCount > 0 && <button onClick={markAllRead} className="text-[13px] font-semibold bg-none border-none cursor-pointer transition-transform duration-200 hover:-translate-y-px text-accent-ink">{tr("Mark all read")}</button>}
@@ -390,9 +416,10 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
           return (
             <Fragment key={n.id}>
               {newDay && <div className="sticky top-0 z-[2] py-[7px] px-4 text-[10.5px] font-bold uppercase tracking-[.1em] text-t-text-muted" style={{ background: dark ? "rgba(13,16,32,.98)" : "rgba(255,255,255,.98)", borderBottom: `1px solid ${t.cardBorder}` }}>{n.day}</div>}
-              <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => open(n)} className="relative flex items-start gap-2.5 py-3 pl-4 pr-2.5 cursor-pointer transition-colors duration-150 hover:bg-[rgba(196,125,142,.1)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: !isRead ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)") : "transparent" }}>
+              <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => open(n)} className="relative flex items-center gap-3 py-3 pl-4 pr-2.5 cursor-pointer transition-colors duration-150 hover:bg-[rgba(196,125,142,.1)]" style={{ borderBottom: i < display.length - 1 ? `1px solid ${t.cardBorder}` : "none", background: !isRead ? (dark ? "rgba(196,125,142,.06)" : "rgba(196,125,142,.04)") : "transparent" }}>
                 {!isRead && <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-accent" aria-hidden="true" />}
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${n.color}15`, color: n.color }}>{NOTIF_ICONS[n.icon]}</div>
+                {/* The printed tile every other page uses, in the notification's own colour. */}
+                <span className="ic-tile tc" style={{ width: 34, height: 34, "--tc": n.color }}>{NOTIF_ICONS[n.icon]}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center gap-1.5">
                     <span className="text-sm text-t-text" style={{ fontWeight: isRead ? 500 : 600 }}>{n.title}</span>
@@ -404,7 +431,7 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     <span className="text-[12px] text-t-text-muted">{n.time}</span>
                     {n.ref && <span className="text-[11.5px] font-[JetBrains_Mono,monospace] text-t-text-muted">{n.ref}</span>}
-                    <span className="text-[12px] font-semibold text-accent-ink">· {n.type === "order" ? tr("View order") : tr("View in wallet")}</span>
+                    <span className="text-[12px] font-semibold text-accent-ink ms-1">{n.type === "order" ? tr("View order") : tr("View in wallet")}</span>
                   </div>
                 </div>
                 <button onClick={e => { e.stopPropagation(); dismiss(n.id); }} aria-label={tr("Dismiss")} title={tr("Dismiss")} className="nitro-x">
@@ -415,7 +442,7 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
           );
         }) : (
           <div className="py-8 px-5 text-center">
-            <div className="w-10 h-10 mx-auto mb-2.5 rounded-xl flex items-center justify-center text-accent-ink" style={{ background: dark ? "#1c1015" : "#fdf2f4" }}>
+            <div className="ic-tile mx-auto mb-2.5" style={{ display: "flex", width: 40, height: 40, borderRadius: 12 }}>
               <OffsetIcon name="bell" size={18} />
             </div>
             <div className="text-sm font-semibold text-t-text mb-0.5">{tr("Nothing here yet")}</div>
@@ -951,7 +978,7 @@ function DashboardInner({ initialData }) {
         id: `bonus-${tx.id || tx.reference}`, type: "reward", title: tx.type === "referral" ? tr("Referral bonus") : tx.type === "bonus" ? tr("Reward received!") : tr("Balance credited"),
         // Never the raw note: it carries internal markers, the admin's name and,
         // on a transfer, another customer's — see txDesc in addfunds-page.jsx.
-        desc: `${money(tx.amount, { round: "down" })} — ${tx.type === "referral" ? tr("Referral commission") : tx.type === "bonus" ? tr("Reward credited") : tr("Credited by Nitro Team")}`,
+        desc: `${tx.type === "referral" ? tr("Referral commission") : tx.type === "bonus" ? tr("Reward credited") : tr("Credited by Nitro Team")}: ${money(tx.amount, { round: "down" })}`,
         time: tx.date ? fT(tx.date) : "", ts: new Date(tx.date),
         color: dark_ ? "#e0a458" : "#d97706",
         icon: "gift",
@@ -1697,22 +1724,9 @@ function DashboardInner({ initialData }) {
             </>
 
           <div className="flex-1" />
-          <div className="dash-sidebar-divider bg-t-sidebar-border" />
-          <div className="dash-sidebar-social">
-            <div className="dash-social-btns">
-              <a href={`https://instagram.com/${(socialLinks.social_instagram || "Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn text-accent-ink" title="Instagram">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-              </a>
-              <a href={`https://x.com/${(socialLinks.social_twitter || "TheNitroNG").replace(/^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn" title="X (Twitter)" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.5)" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-              </a>
-              {socialLinks.social_tiktok && <a href={`https://tiktok.com/@${socialLinks.social_tiktok.replace(/^(https?:\/\/)?(www\.)?(tiktok\.com\/@?)?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn" title="TikTok" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.5)" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.41a8.16 8.16 0 004.77 1.52V7.48a4.85 4.85 0 01-1-.79z"/></svg>
-              </a>}
-              {socialLinks.social_whatsapp_support && <a href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="dash-social-btn text-[#25d366]" title="WhatsApp">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              </a>}
-            </div>
+          <div className="fl">
+            <div className="rail-sec"><span>{tr("Follow us")}</span></div>
+            <FollowLinks socialLinks={socialLinks} />
           </div>
         </aside>
 
@@ -1741,7 +1755,7 @@ function DashboardInner({ initialData }) {
                 {nairaAside(user?.balance || 0, { round: "down" }) && (
                   <div className="m text-[11px] mt-px text-t-text-muted">{nairaAside(user?.balance || 0, { round: "down" })}</div>
                 )}
-                {user?.bonusCredit && <div className="text-[11px] mt-0.5 text-accent-ink">{money(user.bonusCredit.amount / 100, { round: "down" })} {user.bonusCredit.expiresAt ? <>{tr("bonus — expires in")} {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</> : tr("bonus")}</div>}
+                {user?.bonusCredit && <div className="text-[11px] mt-0.5 text-accent-ink">{money(user.bonusCredit.amount / 100, { round: "down" })} {user.bonusCredit.expiresAt ? <>{tr("bonus, expires in")} {Math.max(1, Math.ceil((new Date(user.bonusCredit.expiresAt) - Date.now()) / 86400000))}d</> : tr("bonus")}</div>}
               </div>
             </div>
             <div className="page-divider bg-t-card-border" />
@@ -1916,11 +1930,7 @@ function DashboardInner({ initialData }) {
           })()}
 
           <div className="w-full flex items-center justify-between gap-3 mt-1.5 pt-3" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)"}` }}>
-            <div className="flex items-center gap-2.5">
-            <a href={`https://instagram.com/${(socialLinks.social_instagram || "Nitro.ng").replace(/^(https?:\/\/)?(www\.)?(instagram\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: "#E1306C" }}>{I.instagram}</a>
-            <a href={`https://x.com/${(socialLinks.social_twitter || "TheNitroNG").replace(/^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="X" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.4)" }}>{I.x}</a>
-            {socialLinks.social_tiktok && <a href={`https://tiktok.com/@${socialLinks.social_tiktok.replace(/^(https?:\/\/)?(www\.)?(tiktok\.com\/@?)?/i,"").replace(/^@/,"").replace(/\/$/,"")}`} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="w-9 h-9 rounded-[10px] flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.4)" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.41a8.16 8.16 0 004.77 1.52V7.48a4.85 4.85 0 01-1-.79z"/></svg></a>}
-            </div>
+            <FollowLinks socialLinks={socialLinks} compact />
             <ThemeToggle dark={dark} onToggle={toggleTheme} />
           </div>
         </div>

@@ -5,7 +5,8 @@ import { OffsetIcon } from "./offset-icons";
 // rail uses), then a card of rows. Three row kinds: a fact, a list row, a step.
 //
 // Offset print (approved 17 Oct 2026): a heading, a fact, a jump and an empty
-// card can each carry an icon. `icon` is a name from the shared set, or a node
+// card can each carry an icon. A `bare` tile draws nothing of its own, for a
+// tile that brings its own printed square (a platform mark). `icon` is a name from the shared set, or a node
 // for the currency coin, which has to read the locale.
 const railIcon = (icon, size) => (typeof icon === "string" ? <OffsetIcon name={icon} size={size} /> : icon);
 
@@ -16,9 +17,9 @@ export function RailCard({ children, style }) { return <div className="rr-card" 
 export function RailFact({ label, value, mono = true, color, icon }) {
   return <div className="rr-fact"><span>{icon && <i className="rr-fi" style={color ? { color } : undefined}>{railIcon(icon, 15)}</i>}{label}</span><b className={mono ? "m" : ""} style={color ? { color } : undefined}>{value}</b></div>;
 }
-export function RailRow({ tile, round = false, print = false, title, sub, right, bar, onClick, href }) {
+export function RailRow({ tile, round = false, print = false, bare = false, title, sub, right, bar, onClick, href }) {
   const body = <>
-    {tile != null && <span className={"rr-tile" + (round ? " round" : "") + (print ? " print" : "")}>{tile}</span>}
+    {tile != null && <span className={"rr-tile" + (round ? " round" : "") + (print ? " print" : "") + (bare ? " bare" : "")}>{tile}</span>}
     <span className="rr-txt"><b>{title}</b>{sub != null && sub !== "" && <i>{sub}</i>}{bar != null && <span className="rr-bar"><i style={{ width: `${Math.max(0, Math.min(100, bar))}%` }} /></span>}</span>
     {right != null && <span className="rr-right m">{right}</span>}
   </>;

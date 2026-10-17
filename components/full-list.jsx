@@ -338,7 +338,7 @@ function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, time
           counts up rather than toggling. */}
       {bulk && (
         <button onClick={e => { e.stopPropagation(); onAdd(row); }}
-          aria-label={inCart > 0 ? `${tr("Add another")} — ${inCart} ${tr("in cart")}` : tr("Add to cart")}
+          aria-label={inCart > 0 ? `${tr("Add another")}, ${inCart} ${tr("in cart")}` : tr("Add to cart")}
           className="shrink-0 w-8 h-8 rounded-[9px] border border-solid cursor-pointer font-[inherit] text-[13px] font-bold flex items-center justify-center transition-transform duration-150 hover:-translate-y-px"
           style={{ color: t.accentInk, background: t.accentLight, borderColor: `color-mix(in srgb, ${t.accent} 45%, transparent)` }}>
           {inCart > 0 ? <span className="m">{inCart}</span> : (
@@ -636,16 +636,13 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
           const n = typeCount(x.key);
           return (
             <button key={x.key} role="tab" aria-selected={on && activeMine === "any"} onClick={() => { setType(x.key); setMineOnly("any"); }} disabled={n === 0}
-              className="no-type-tab inline-flex items-baseline gap-1.5 py-[5px] px-2.5 rounded-lg border-none font-[inherit] text-[13px] transition-colors duration-150"
+              className="no-type-tab inline-flex items-center gap-1.5 py-[5px] px-2.5 rounded-lg border-none font-[inherit] text-[13px] transition-colors duration-150"
               style={{ cursor: n === 0 ? "default" : "pointer", opacity: n === 0 ? .35 : 1, background: on ? t.accent : "transparent", color: on ? "#fff" : t.text, fontWeight: on ? 700 : 600 }}>
               {tr(x.label)}
               {/* The count in its own chip. Muted grey text on a muted grey
                   count read as switched off — seven of eight options looking
                   disabled is not restraint, it is a dead row. */}
-              <span className="m text-[10px] font-bold rounded-full px-[5px] py-[1px]"
-                style={{ fontFamily: "'JetBrains Mono', monospace",
-                  background: on ? "rgba(255,255,255,.22)" : (dark ? "rgba(255,255,255,.08)" : "rgba(88,52,62,.07)"),
-                  color: on ? "#fff" : t.textMuted }}>{n.toLocaleString()}</span>
+              <span className={"pbadge" + (on ? " solid" : "")}>{n.toLocaleString()}</span>
             </button>
           );
         })}
@@ -794,7 +791,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
                     <option key={b.key} value={b.key}>
                       {b.lo === 0 ? `${tr("Under")} ${money(b.hi)}`
                         : b.hi === Infinity ? `${tr("Over")} ${money(b.lo)}`
-                        : `${money(b.lo)} – ${money(b.hi)}`}
+                        : `${money(b.lo)}${tr(" to ")}${money(b.hi)}`}
                     </option>
                   ))}
                 </select>
@@ -851,7 +848,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
                     the header is just the label and the count. */}
                 <div className="flex items-center gap-2 py-2 px-3 md:px-4" style={{ background: dark ? "rgba(196,125,142,.17)" : "rgba(196,125,142,.13)", boxShadow: `inset 3px 0 0 ${t.accent}` }}>
                   <span className="text-[12px] font-bold uppercase tracking-[.7px]" style={{ color: t.accentInk }}>{tr(x.label)}</span>
-                  <span className="m text-[10.5px] font-bold rounded-full px-[6px] py-[1px]" style={{ fontFamily: "'JetBrains Mono', monospace", background: dark ? "rgba(255,255,255,.1)" : "rgba(131,83,95,.1)", color: t.accentInk }}>{typeCount(x.key).toLocaleString()}</span>
+                  <span className="pbadge solid">{typeCount(x.key).toLocaleString()}</span>
                   {rows.length < inType.length && <span className="ml-auto m text-[10.5px]" style={{ fontFamily: "'JetBrains Mono', monospace", color: t.accentInk, opacity: .7 }}>{rows.length}/{inType.length.toLocaleString()}</span>}
                 </div>
                 {rows.map((r, i) => <Row key={r.id} first={i === 0} row={r} dark={dark} t={t} onPick={onPick} selected={selectedId === r.id} saved={savedSet.has(r.id)} onToggleSaved={onToggleSaved} times={history[r.id]?.times} bulk={bulk} inCart={cartCounts?.[`full:${r.id}:null`] || 0} onAdd={onAdd} />)}

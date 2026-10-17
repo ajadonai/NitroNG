@@ -57,11 +57,11 @@ export function perUnit(min) { return min >= 100000; }
 // nothing are untouched.
 const nairaFmt = (v) => `₦${Number(v).toLocaleString()}`;
 export function naira(v, unit, fmt = nairaFmt) { return fmt(unit ? Math.round(v / 1000) : v); }
-export function priceRange(min, max, fmt) {
+export function priceRange(min, max, fmt, to = " to ") {
   const unit = perUnit(min);
   const a = naira(min, unit, fmt), b = naira(max, unit, fmt);
   // A foreign range carries one "≈", not one per end.
-  const s = min === max ? a : (a.startsWith("≈ ") && b.startsWith("≈ ") ? `${a} – ${b.slice(2)}` : `${a} – ${b}`);
+  const s = min === max ? a : (a.startsWith("≈ ") && b.startsWith("≈ ") ? `${a}${to}${b.slice(2)}` : `${a}${to}${b}`);
   return unit ? `${s}/unit` : s;
 }
 export function fromPrice(min, fmt) { return perUnit(min) ? `from ${naira(min, true, fmt)}/unit` : `from ${naira(min, false, fmt)}/1K`; }

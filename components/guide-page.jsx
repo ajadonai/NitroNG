@@ -168,7 +168,7 @@ export default function GuidePage({ dark, t }) {
       )}
 
       <div className="gp-ask">
-        <span className="gp-rt"><b>{tr("Still stuck?")}</b><i>{tr("WhatsApp us — faster than reading, most of the time.")}</i></span>
+        <span className="gp-rt"><b>{tr("Still stuck?")}</b><i>{tr("WhatsApp us. Faster than reading, most of the time.")}</i></span>
         <a className="nb pri" href={waLink || "/contact"} target={waLink ? "_blank" : undefined} rel={waLink ? "noopener noreferrer" : undefined}>{tr("WhatsApp us")}</a>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useLocale, useMoney, useT } from "./locale";
 import { formatKobo } from "@/lib/money";
 import { copyText } from "@/lib/clipboard";
 import { canChargeIn } from "@/lib/currency";
+import { expandUsername } from "@/lib/order-form-core";
 import { msg } from "../lib/i18n";
 import { Modal } from "./ui-primitives";
 import { GuestOrderTrack, phaseOf } from "./guest-order-page";
@@ -419,7 +420,7 @@ export function GuestOrderCard({ dark, initialCredit = "", onSignup, className =
             )}
             <div className="gco-f">
               <label htmlFor="gco-link">{group?.profile ? tr("Profile link") : tr("Post link")}</label>
-              <input id="gco-link" ref={linkRef} value={link} onChange={e => { setLink(e.target.value); setPayErr(""); }} placeholder={EXAMPLE[plat]?.[group?.profile ? 0 : 1]} inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false} />
+              <input id="gco-link" ref={linkRef} value={link} onChange={e => { setLink(e.target.value); setPayErr(""); }} onBlur={() => { if (!group?.profile) return; const full = expandUsername(link, plat); if (full !== link) setLink(full); }} placeholder={EXAMPLE[plat]?.[group?.profile ? 0 : 1]} inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false} />
             </div>
             {tier?.comments ? (
               <div className="gco-f gco-area">

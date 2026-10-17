@@ -60,26 +60,38 @@ ICONS.x = ICONS.twitter;
 ICONS['twitter/x'] = ICONS.twitter;
 ICONS['x (twitter)'] = ICONS.twitter;
 
-export function PlatformIcon({ platform, dark, size = 38 }) {
+// The offset print (17 Oct 2026): with `print` the tile is the platform's own
+// colour washed in, a printed edge in the same colour, and the mark at half the
+// tile. Without it the tile stays as it was for the pages not yet moved over.
+const tint = (rgba, alpha) => rgba.replace(/,\s*[\d.]+\)\s*$/, `,${alpha})`);
+
+export function PlatformIcon({ platform, dark, size = 38, print = false }) {
   const key = (platform || '').toLowerCase().replace(/[^a-z]/g, '');
   const match = ICONS[key] || ICONS[(platform || '').toLowerCase()];
 
   if (!match) {
     // Fallback — first letter in a neutral circle
     const letter = (platform || '?')[0].toUpperCase();
+    const neutral = dark ? 'rgba(255,255,255,.09)' : 'rgba(0,0,0,.04)';
     return (
-      <div className="ord-platform-icon" style={{ width: size, height: size, background: dark ? 'rgba(255,255,255,.09)' : 'rgba(0,0,0,.04)' }}>
+      <div className="ord-platform-icon" style={print ? { width: size, height: size, borderRadius: Math.round(size * .3), background: neutral, boxShadow: `2px 2px 0 ${tint(neutral, .22)}` } : { width: size, height: size, background: neutral }}>
         <span style={{ fontSize: size * .42, fontWeight: 600, color: dark ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.5)' }}>{letter}</span>
       </div>
     );
   }
 
-  const iconSize = size * .47;
   const bg = typeof match.bg === 'function' ? match.bg(dark) : match.bg;
 
+  if (print) {
+    return (
+      <div className="ord-platform-icon" style={{ width: size, height: size, borderRadius: Math.round(size * .3), background: tint(bg, .12), boxShadow: `2px 2px 0 ${tint(bg, .3)}` }}>
+        {match.svg(size * .5, dark)}
+      </div>
+    );
+  }
   return (
     <div className="ord-platform-icon" style={{ width: size, height: size, background: bg }}>
-      {match.svg(iconSize, dark)}
+      {match.svg(size * .47, dark)}
     </div>
   );
 }

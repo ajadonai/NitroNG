@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import SERVICE_TYPE_META from '@/lib/service-type-meta';
 import { OgCard, OG_SIZE, loadOgFonts } from '@/lib/og-card';
 
-export const alt = 'The Nitro NG — growth services';
+export const alt = 'The Nitro NG: growth services';
 export const size = OG_SIZE;
 export const contentType = 'image/png';
 

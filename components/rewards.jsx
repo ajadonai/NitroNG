@@ -3,6 +3,7 @@ import { useMoney, useLocale, useT } from "./locale";
 import { Modal } from './ui-primitives';
 import { SkelFacts, SkelList } from './skeleton';
 import { OffsetIcon } from "./offset-icons";
+import { msg } from "../lib/i18n";
 // ─────────────────────────────────────────────────────────────────
 // Nitro Rewards UI — Nitro Status + Nitro Points + Tasks strip,
 // detail modals, and the Wallet compact card.
@@ -89,7 +90,29 @@ function CellLink({ onClick, children }) {
 
 /* ── HOME: rewards strip ── */
 
-export function RewardsStrip({ rewards, dark, t, onStatus, onPoints, onTasks }) {
+/* The strip sits inside the home page's money card now (approved 17 Oct 2026):
+   three cells under the balance, each opening its own window, one accent for
+   all three and the tier's own colour kept as a dot beside its name. Logical
+   properties: this sheet does not go through the RTL build plugin. */
+const STRIP_CSS = `
+.rw-cells{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--t-card-border)}
+.rw-cells.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.rw-cell{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;padding:12px 16px 14px;border:0;border-inline-start:1px solid var(--t-card-border);background:none;font:inherit;color:inherit;text-align:start;cursor:pointer;transition:background-color .15s}
+.rw-cell:first-child{border-inline-start:0}
+.rw-cell:hover{background:color-mix(in srgb,var(--t-accent) 5%,transparent)}
+.rw-ch{display:flex;align-items:center;gap:7px;width:100%;margin-bottom:5px;font-size:11.5px;font-weight:600;color:var(--t-text-muted)}
+.rw-ch .ic-tile{width:22px;height:22px;border-radius:7px}
+.rw-chev{margin-inline-start:auto;display:inline-flex;opacity:.7}
+.rw-v{display:flex;align-items:center;gap:6px;max-width:100%;overflow:hidden;font-size:16px;font-weight:700;color:var(--t-text);white-space:nowrap}
+.rw-v small{font-size:11px;font-weight:600;color:var(--t-text-muted)}
+.rw-h{max-width:100%;font-size:11.5px;color:var(--t-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rw-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:var(--td);box-shadow:0 0 0 3px color-mix(in srgb,var(--td) 18%,transparent)}
+.rw-pb{position:absolute;inset-inline:16px;bottom:0;height:3px;border-radius:2px 2px 0 0;background:var(--t-card-border);overflow:hidden}
+.rw-pb i{display:block;height:100%;background:var(--t-accent)}
+@media (max-width:767px){.rw-cell{padding:10px 10px 12px}.rw-ch{gap:5px;font-size:11px}.rw-chev{display:none}.rw-v{font-size:14.5px}.rw-h{font-size:10.5px}.rw-pb{inset-inline:10px}}
+`;
+
+export function RewardsStrip({ rewards, onStatus, onPoints, onTasks }) {
   const tr = useT();
   const money = useMoney();
   const currency = useLocale()?.currency ?? "NGN";
@@ -98,25 +121,31 @@ export function RewardsStrip({ rewards, dark, t, onStatus, onPoints, onTasks }) 
   const curTier = STATUS_TIERS.find(ti => ti.key === status.key) || STATUS_TIERS[0];
   const curIdx = STATUS_TIERS.indexOf(curTier);
   const nextTier = curIdx < STATUS_TIERS.length - 1 ? STATUS_TIERS[curIdx + 1] : null;
-  const heroClr = curTier.key === 'spark' ? '#c47d8e' : curTier.color;
-  const barClr = nextTier ? nextTier.color : heroClr;
-  const gold = dark ? '#fbbf24' : '#d97706';
-  const blue = dark ? '#60a5fa' : '#2563eb';
-  // Three cards in the colours the strip always had: the tier's own for Status, gold for Points, blue for Tasks.
-  const Card = ({ clr, grad, onClick, label, glyph, value, hint, pct, barTo }) => (
-    <button onClick={onClick} className="relative overflow-hidden flex flex-col items-start gap-[2px] rounded-xl py-2.5 px-2.5 min-w-0 text-left border border-solid cursor-pointer font-[inherit] transition-transform duration-150 hover:-translate-y-px" style={{ background: dark ? `${clr}1f` : `${clr}14`, borderColor: `${clr}${dark ? '4d' : '40'}` }}>
-      <span className="inline-flex items-center gap-2 mb-1"><ChipIcon gradient={grad} shadow={`0 3px 10px ${clr}30`} size={28} radius={9}>{glyph}</ChipIcon><span className="text-[11px] font-bold uppercase tracking-[.8px]" style={{ color: clr, opacity: .7 }}>{label}</span></span>
-      <span className="text-[16px] font-extrabold truncate max-w-full" style={{ color: clr }}>{value}</span>
-      <span className="text-[10.5px] truncate max-w-full" style={{ color: t.textMuted }}>{hint}</span>
-      {pct != null && <span className="absolute left-0 right-0 bottom-0 h-[3px]" style={{ background: `${clr}20` }}><span className="block h-full" style={{ width: `${Math.max(3, Math.min(100, pct))}%`, background: `linear-gradient(90deg, ${clr}, ${barTo || clr})` }} /></span>}
+  const tierClr = curTier.key === 'spark' ? '#c47d8e' : curTier.color;
+  const withTasks = TASKS_ENABLED && tasks;
+  const Cell = ({ icon, label, onClick, children, hint, pct }) => (
+    <button type="button" onClick={onClick} className="rw-cell">
+      <span className="rw-ch"><span className="ic-tile"><OffsetIcon name={icon} size={12} /></span><span>{label}</span><span className="rw-chev"><Chevron /></span></span>
+      <span className="rw-v">{children}</span>
+      <span className="rw-h">{hint}</span>
+      {pct != null && <span className="rw-pb"><i style={{ width: `${Math.max(3, Math.min(100, pct))}%` }} /></span>}
     </button>
   );
   return (
-    <div className={`grid gap-1.5 mb-[18px] ${TASKS_ENABLED && tasks ? 'grid-cols-3' : 'grid-cols-2'}`}>
-      <Card clr={heroClr} grad={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} barTo={barClr} onClick={onStatus} label={tr("Status")} glyph={<CrownGlyph s={14} />} value={status.name} hint={nextTier ? `${fmtCompactNaira(status.remainingToNext, money, currency)} ${tr("to")} ${nextTier.name}` : `${fmtCompactNaira(status.eligibleSpend, money, currency)} ${tr("spent")}`} pct={nextTier ? status.progressPct : 100} />
-      <Card clr={gold} grad="linear-gradient(135deg,#fbbf24,#d97706)" onClick={onPoints} label={tr("Points")} glyph={<CoinGlyph s={14} />} value={<span className="m">{points.balance.toLocaleString()} <span className="text-[11px] font-semibold">pts</span></span>} hint={points.redeemable ? `≈ ${money(points.valueNaira, { round: "down" })} ${tr("ready")}` : `${points.neededToRedeem.toLocaleString()} ${tr("more to spend")}`} pct={points.redeemable ? null : Math.round(points.balance / points.minRedeem * 100)} />
-      {TASKS_ENABLED && tasks && <Card clr={blue} grad="linear-gradient(135deg,#60a5fa,#2563eb)" onClick={onTasks} label={tr("Tasks")} glyph={<TaskGlyph s={14} />} value={<span><span className="m">{tasks.available}</span> open</span>} hint={`${tr("up to")} ${money(tasks.topReward, { round: "down" })}`} />}
-    </div>
+    <>
+      <style>{STRIP_CSS}</style>
+      <div className={`rw-cells${withTasks ? '' : ' two'}`}>
+        <Cell icon="crown" label={tr("Status")} onClick={onStatus} hint={nextTier ? `${fmtCompactNaira(status.remainingToNext, money, currency)} ${tr("to")} ${nextTier.name}` : `${fmtCompactNaira(status.eligibleSpend, money, currency)} ${tr("spent")}`} pct={nextTier ? status.progressPct : 100}>
+          {status.name}<span className="rw-dot" style={{ "--td": tierClr }} />
+        </Cell>
+        <Cell icon="star" label={tr("Points")} onClick={onPoints} hint={points.redeemable ? `≈ ${money(points.valueNaira, { round: "down" })} ${tr("ready")}` : `${points.neededToRedeem.toLocaleString()} ${tr("more to spend")}`} pct={points.redeemable ? null : Math.round(points.balance / points.minRedeem * 100)}>
+          <span className="m">{points.balance.toLocaleString()}</span> <small className="m">pts</small>
+        </Cell>
+        {withTasks && <Cell icon="tasks" label={tr("Tasks")} onClick={onTasks} hint={`${tr("up to")} ${money(tasks.topReward, { round: "down" })}`}>
+          <span className="m">{tasks.available}</span> {tr("open")}
+        </Cell>}
+      </div>
+    </>
   );
 }
 
@@ -248,7 +277,7 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
                 <>
                   <span className="flex flex-col gap-0.5 flex-1 min-w-0">
                     <b className="text-[13.5px] font-semibold" style={{ color: t.text }}>{tasks.available} {tasks.available === 1 ? tr("task open") : tr("tasks open")}</b>
-                    <i className="not-italic text-[12px]" style={{ color: t.textMuted }}>{tr("Follow, share or review — the credit lands once we check it.")}</i>
+                    <i className="not-italic text-[12px]" style={{ color: t.textMuted }}>{tr("Follow, share or review. The credit lands once we check it.")}</i>
                   </span>
                   <b className="m text-[13.5px] font-bold whitespace-nowrap" style={{ color: green }}>{tr("up to")} {money(tasks.topReward, { round: "down" })}</b>
                   <button onClick={() => setActive?.('tasks')} className="h-[31px] px-3 rounded-[10px] text-[12px] font-semibold font-[inherit] cursor-pointer" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, color: t.text }}>{tr("Do it")}</button>
@@ -326,6 +355,53 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
 
 /* ── HOME: channel lane ── */
 
+/* Stay updated, alive (approved 17 Oct 2026): each card in its own colour with
+   something moving in it. A doodle pattern drifts behind WhatsApp, a ring
+   pulses round its logo and a "typing" bubble waits; a paper plane flies a
+   dashed trail across Telegram. All of it slow, and all of it stops for
+   reduced motion. The patterns are fixed drawings, encoded once here. */
+const svgUrl = (svg) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+export const PAT_WA = svgUrl('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12h22a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H19l-6 5v-5h-3a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4z"/><path d="M56 24l4 4 8-9M63 24l4 4 8-9"/><circle cx="74" cy="68" r="6"/><path d="M22 60v10M17 65h10"/><path d="M48 44l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/><path d="M80 86h-14a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3z"/></svg>');
+export const PAT_TG = svgUrl('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="white"><circle cx="12" cy="14" r="1.6"/><circle cx="60" cy="8" r="1.1"/><circle cx="84" cy="34" r="1.6"/><circle cx="34" cy="46" r="1.1"/><circle cx="70" cy="70" r="1.6"/><circle cx="18" cy="80" r="1.1"/><path d="M46 78l1.3 2.7 2.7 1.3-2.7 1.3-1.3 2.7-1.3-2.7-2.7-1.3 2.7-1.3z"/><path d="M88 84l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>');
+const LANE_CSS = `
+.cl-lane{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.cl-lane.one{grid-template-columns:1fr}
+.cl-card{position:relative;overflow:hidden;isolation:isolate;min-height:152px;padding:14px 16px 15px;display:flex;flex-direction:column;justify-content:space-between;border-radius:16px;color:#fff;text-decoration:none;box-shadow:3px 3px 0 var(--vs);transition:transform .2s}
+.cl-card:hover{transform:translateY(-2px)}
+.cl-card::before{content:"";position:absolute;inset:-96px 0 0 -96px;z-index:-1;background-image:var(--pat);background-size:96px 96px;opacity:.13;animation:clDrift 36s linear infinite}
+@keyframes clDrift{to{transform:translate(96px,96px)}}
+.cl-card.wa{--vs:#0c5440;--pat:${PAT_WA};background:radial-gradient(85% 120% at 100% 0%,rgba(90,255,170,.5),transparent 62%),linear-gradient(155deg,#0b5641 0%,#128c7e 50%,#1db75d 100%)}
+.cl-card.tg{--vs:#16497d;--pat:${PAT_TG};background:radial-gradient(85% 120% at 100% 0%,rgba(150,225,255,.5),transparent 62%),linear-gradient(155deg,#164c86 0%,#1e84cc 52%,#39b5ef 100%)}
+.dark .cl-card.wa{--vs:#1d6b53}
+.dark .cl-card.tg{--vs:#225c95}
+.cl-h{display:flex;align-items:flex-start;justify-content:space-between}
+.cl-g{position:relative;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;background:rgba(255,255,255,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),2px 2px 0 rgba(0,0,0,.16)}
+.cl-g.live::after{content:"";position:absolute;inset:-5px;border-radius:15px;border:2px solid rgba(255,255,255,.6);animation:clRing 2.6s ease-out infinite}
+@keyframes clRing{0%{opacity:.9;transform:scale(.86)}100%{opacity:0;transform:scale(1.28)}}
+.cl-o{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.22)}
+.cl-t b{display:block;font-size:15.5px;font-weight:750;letter-spacing:-.01em;text-shadow:0 1px 2px rgba(0,0,0,.14)}
+.cl-t small{display:block;margin-top:2px;font-size:12px;opacity:.92}
+.cl-bub{position:absolute;right:16px;top:58px;display:flex;gap:4px;padding:9px 11px;background:#fff;border-radius:13px 13px 13px 4px;box-shadow:2px 2px 0 rgba(0,0,0,.16)}
+.cl-bub i{width:6px;height:6px;border-radius:50%;background:#128c7e;animation:clType 1.3s ease-in-out infinite}
+.cl-bub i:nth-child(2){animation-delay:.18s}
+.cl-bub i:nth-child(3){animation-delay:.36s}
+@keyframes clType{0%,60%,100%{transform:none;opacity:.45}30%{transform:translateY(-3px);opacity:1}}
+.cl-trail{position:absolute;right:6px;top:22px;width:190px;height:104px;z-index:-1}
+.cl-dash{animation:clMarch 1.5s linear infinite}
+@keyframes clMarch{to{stroke-dashoffset:-18}}
+.cl-bob{animation:clBob 3.4s ease-in-out infinite}
+@keyframes clBob{50%{transform:translate(3px,-4px)}}
+@media (max-width:767px){.cl-lane{gap:8px}.cl-card{min-height:150px;padding:12px 12px 13px}.cl-g{width:34px;height:34px;border-radius:11px}.cl-t b{font-size:13.5px;line-height:1.25}.cl-t small{font-size:11px;line-height:1.35}.cl-bub{display:none}.cl-trail{width:120px;height:66px;right:-4px;top:40px}}
+@media (prefers-reduced-motion:reduce){.cl-card::before,.cl-g.live::after,.cl-bub i,.cl-dash,.cl-bob{animation:none}}
+`;
+const OUT_ARROW = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" /></svg>;
+const PLANE_TRAIL = (
+  <svg className="cl-trail" viewBox="0 0 190 104" fill="none" aria-hidden="true">
+    <path className="cl-dash" d="M6 98C58 96 82 40 140 30" stroke="rgba(255,255,255,.6)" strokeWidth="2" strokeDasharray="2 7" strokeLinecap="round" />
+    <g transform="translate(146 10) rotate(-12)"><g className="cl-bob"><path d="M2 13 26 2 18 27 13 17z" fill="#fff" /><path d="M13 17 26 2" stroke="#1e84cc" strokeWidth="1.5" strokeLinecap="round" /><path d="M13 17v7l3.2-3.6" fill="#d6ecfa" /></g></g>
+  </svg>
+);
+
 export function ChannelLane({ socialLinks }) {
   const tr = useT();
   const telegram = socialLinks?.social_telegram_support;
@@ -334,21 +410,19 @@ export function ChannelLane({ socialLinks }) {
     {
       key: 'wa',
       href: waChannel,
-      gradient: 'linear-gradient(135deg,#25d366,#128c7e)',
       title: tr("Follow us on WhatsApp"),
       sub: tr("Deal days and delivery news, first."),
       icon: (
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff" opacity=".95"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg>
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg>
       ),
     },
     telegram && {
       key: 'tg',
       href: telegram.startsWith('http') ? telegram : `https://t.me/${telegram.replace(/^@/, '')}`,
-      gradient: 'linear-gradient(135deg,#2aabee,#1e7fc4)',
       title: tr("Join the Telegram"),
       sub: tr("Service updates and community."),
       icon: (
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff" opacity=".95"><path d="M21.9 4.6c.3-1.2-.9-2-1.9-1.6L2.7 9.6c-1.2.5-1.1 2.2.1 2.6l4.4 1.4 1.7 5.3c.3 1 1.6 1.3 2.3.5l2.4-2.5 4.5 3.3c.9.7 2.2.2 2.4-.9l2.4-14.7zM9.4 13.1l8.3-5.2c.4-.2.7.3.4.6l-6.8 6.2-.3 3-1.6-4.6z"/></svg>
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M21.9 4.6c.3-1.2-.9-2-1.9-1.6L2.7 9.6c-1.2.5-1.1 2.2.1 2.6l4.4 1.4 1.7 5.3c.3 1 1.6 1.3 2.3.5l2.4-2.5 4.5 3.3c.9.7 2.2.2 2.4-.9l2.4-14.7zM9.4 13.1l8.3-5.2c.4-.2.7.3.4.6l-6.8 6.2-.3 3-1.6-4.6z"/></svg>
       ),
     },
   ].filter(Boolean);
@@ -356,198 +430,240 @@ export function ChannelLane({ socialLinks }) {
   if (!cards.length) return null;
 
   return (
-    <div className={`grid gap-2.5 mb-5 max-md:mb-4 ${cards.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-      {cards.map(c => (
-        <a key={c.key} href={c.href} onClick={e => { e.preventDefault(); window.open(c.href, '_blank', 'noopener,noreferrer'); }}
-          className="relative rounded-2xl p-4 min-h-[132px] max-md:min-h-[100px] text-white overflow-hidden flex flex-col justify-between no-underline transition-transform duration-200 hover:-translate-y-0.5"
-          style={{ background: c.gradient }}>
-          <div className="absolute rounded-full" style={{ width: 180, height: 180, background: 'rgba(255,255,255,.13)', top: -85, right: -55 }} />
-          <div className="absolute rounded-full" style={{ width: 104, height: 104, background: 'rgba(255,255,255,.09)', bottom: -52, left: -32 }} />
-          <div className="relative flex items-start justify-between">
-            <div>{c.icon}</div>
-            <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,.28)' }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>
-            </div>
-          </div>
-          <div className="relative mt-auto pt-2">
-            <div className="text-[13px] max-md:text-[13px] font-extrabold leading-snug">{c.title}</div>
-            <div className="text-[11px] max-md:text-[11px] font-medium mt-[2px] opacity-[.88]">{c.sub}</div>
-          </div>
-        </a>
-      ))}
-    </div>
+    <>
+      <style>{LANE_CSS}</style>
+      <div className={`cl-lane${cards.length > 1 ? '' : ' one'}`}>
+        {cards.map(c => (
+          <a key={c.key} href={c.href} onClick={e => { e.preventDefault(); window.open(c.href, '_blank', 'noopener,noreferrer'); }} className={`cl-card ${c.key}`}>
+            {c.key === 'tg' && PLANE_TRAIL}
+            <span className="cl-h"><span className={`cl-g${c.key === 'wa' ? ' live' : ''}`}>{c.icon}</span><span className="cl-o">{OUT_ARROW}</span></span>
+            {c.key === 'wa' && <span className="cl-bub" aria-hidden="true"><i /><i /><i /></span>}
+            <span className="cl-t"><b>{c.title}</b><small>{c.sub}</small></span>
+          </a>
+        ))}
+      </div>
+    </>
   );
 }
 
 /* ── modal shell (matches the How-it-works popup exactly) ── */
 
-function ModalShell({ open, onClose, dark, t, title, children }) {
+/* The two pop-ups from the home page's money card (approved 17 Oct 2026, mockup
+   "Status and Points"): each leads with a printed card in its own colour, the
+   tier's for Status and gold for Points, and the detail underneath reads the
+   way History and the receipt do. Logical properties: this sheet does not go
+   through the RTL build plugin. */
+const COINS = svgUrl('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" stroke="white" stroke-width="1.6"><circle cx="18" cy="20" r="8"/><circle cx="18" cy="20" r="4.5"/><circle cx="70" cy="30" r="6"/><circle cx="44" cy="62" r="9"/><circle cx="44" cy="62" r="5"/><circle cx="84" cy="78" r="5"/><path d="M76 8l1.3 2.7 2.7 1.3-2.7 1.3-1.3 2.7-1.3-2.7-2.7-1.3 2.7-1.3z" fill="white" stroke="none"/></svg>');
+const POP_CSS = `
+.rp-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px 13px 20px;border-bottom:1px solid var(--t-card-border)}
+.rp-h b{font-size:22px;font-weight:700;line-height:1;color:var(--t-text)}
+.rp-body{display:flex;flex-direction:column;gap:14px;padding:16px 18px 18px}
+.rp-more{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;border:0;border-top:1px solid var(--t-card-border);background:none;font:inherit;font-size:12.5px;font-weight:650;color:var(--t-accent-ink);cursor:pointer}
+.rp-hero{position:relative;overflow:hidden;isolation:isolate;border-radius:16px;color:#fff;padding:14px 16px 16px;box-shadow:3px 3px 0 var(--vs)}
+.rp-hero::before{content:"";position:absolute;inset:-96px 0 0 -96px;z-index:-1;background-image:var(--pat,none);background-size:96px 96px;opacity:.13;animation:rpDrift 40s linear infinite}
+@keyframes rpDrift{to{transform:translate(96px,96px)}}
+.rp-hl{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;opacity:.92}
+.rp-hg{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex-shrink:0;background:rgba(255,255,255,.2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.32),2px 2px 0 rgba(0,0,0,.16)}
+.rp-hg .ic-off{opacity:.3}
+.rp-hn{margin-top:12px;font-size:42px;font-weight:700;line-height:1;letter-spacing:-.01em;text-shadow:0 2px 6px rgba(0,0,0,.14)}
+.rp-num{margin-top:12px;font-size:38px;font-weight:700;line-height:1;letter-spacing:-.04em;text-shadow:0 2px 6px rgba(0,0,0,.14)}
+.rp-num small{margin-inline-start:6px;font-family:inherit;font-size:14px;font-weight:600;letter-spacing:0;opacity:.9}
+.rp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.rp-chip{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.28);font-size:11.5px;font-weight:650}
+.rp-st{--vs:color-mix(in srgb,var(--tc) 50%,#000);background:radial-gradient(90% 120% at 100% 0%,rgba(255,255,255,.32),transparent 60%),linear-gradient(150deg,color-mix(in srgb,var(--tc) 55%,#000) 0%,color-mix(in srgb,var(--tc) 82%,#000) 55%,var(--tc) 100%)}
+.rp-rings{position:absolute;inset-inline-end:-40px;top:-40px;width:200px;height:200px;z-index:-1;pointer-events:none}
+.rp-rings i{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);opacity:0;animation:rpRing 4.5s ease-out infinite}
+.rp-rings i:nth-child(2){animation-delay:1.5s}
+.rp-rings i:nth-child(3){animation-delay:3s}
+@keyframes rpRing{0%{transform:scale(.25);opacity:.9}100%{transform:scale(1.1);opacity:0}}
+.rp-pt{--vs:#8a4a07;--pat:${COINS};background:radial-gradient(90% 120% at 100% 0%,rgba(255,236,170,.6),transparent 60%),linear-gradient(150deg,#b45309 0%,#d97706 50%,#f59e0b 100%)}
+.dark .rp-pt{--vs:#a5600f}
+.rp-spark{position:absolute;inset-inline-end:20px;top:14px;width:16px;height:16px;z-index:-1;color:#fff;animation:rpTwinkle 2.8s ease-in-out infinite}
+.rp-spark.s2{inset-inline-end:60px;top:50px;width:10px;height:10px;animation-delay:1.2s}
+@keyframes rpTwinkle{0%,100%{opacity:.3;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}
+.rp-prog{display:flex;flex-direction:column;gap:7px}
+.rp-pr1{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--t-text-muted)}
+.rp-pr1 b{color:var(--t-text);font-weight:700}
+.rp-nx{display:inline-flex;align-items:center;gap:6px}
+.rp-dot{width:9px;height:9px;border-radius:3px;background:var(--c);box-shadow:1.5px 1.5px 0 color-mix(in srgb,var(--c) 35%,transparent)}
+.rp-track{position:relative;height:10px;border-radius:999px;background:var(--t-card-border)}
+.rp-fill{position:absolute;inset-block:0;inset-inline-start:0;border-radius:999px;background:var(--fill)}
+.rp-mark{position:absolute;top:50%;width:16px;height:16px;margin-top:-8px;margin-inline-start:-8px;border-radius:50%;background:var(--t-card-bg);box-shadow:0 0 0 3px var(--ring),0 2px 4px rgba(0,0,0,.18)}
+.rp-pr2{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;color:var(--t-text-muted)}
+.rp-pr2 b{color:var(--t-text);font-weight:700}
+.rp-para{margin:0;font-size:12.5px;line-height:1.55;color:var(--t-text-soft)}
+.rp-lad{border:1px solid var(--t-card-border);border-radius:14px;overflow:hidden}
+.rp-lh,.rp-lr{display:grid;grid-template-columns:1fr 64px 44px 52px;align-items:center;gap:8px;padding:0 12px}
+.rp-lh{height:30px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t-text-muted);background:rgba(0,0,0,.025)}
+.dark .rp-lh{background:rgba(255,255,255,.04)}
+.rp-r{text-align:end}
+.rp-lr{height:40px;border-top:1px solid var(--t-card-border);font-size:12.5px}
+.rp-nm{display:flex;align-items:center;gap:9px;min-width:0;font-weight:700;color:var(--t-text)}
+.rp-tt{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;flex-shrink:0;color:var(--c);background:color-mix(in srgb,var(--c) 14%,var(--t-card-bg));box-shadow:1.5px 1.5px 0 color-mix(in srgb,var(--c) 35%,transparent)}
+.rp-v{font-size:11.5px;font-weight:700;color:var(--t-text)}
+.rp-v.sp{font-weight:600;color:var(--t-text-muted)}
+.rp-lr.past{opacity:.5}
+.rp-lr.past .rp-tt{background:transparent;box-shadow:none}
+.rp-lr.cur{background:color-mix(in srgb,var(--c) 10%,var(--t-card-bg));box-shadow:inset 3px 0 0 var(--c)}
+.rp-you{font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 6px;border-radius:6px;color:var(--c);background:var(--t-card-bg);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 40%,transparent),1.5px 1.5px 0 color-mix(in srgb,var(--c) 30%,transparent)}
+.rp-facts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rp-f{min-width:0;padding:10px 12px;border:1px solid var(--t-card-border);border-radius:12px}
+.rp-fl{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;color:var(--t-text-muted)}
+.rp-fl svg{color:var(--t-accent-ink)}
+.rp-fv{display:block;margin-top:3px;font-size:19px;font-weight:700;letter-spacing:-.02em;color:var(--t-text)}
+.rp-fs{display:block;font-size:11px;color:var(--t-text-muted)}
+.rp-use{height:44px;width:100%;font-size:14px}
+.rp-eb{display:flex;align-items:center;gap:8px}
+.rp-eb span{font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--t-text-muted);white-space:nowrap}
+.rp-eb::after{content:"";flex:1;height:1px;background:var(--t-sidebar-border);opacity:.7}
+.rp-ar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--t-card-border)}
+.rp-ar:first-child{border-top:0}
+.rp-at{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 13%,var(--t-card-bg));box-shadow:2px 2px 0 color-mix(in srgb,var(--c) 30%,transparent)}
+.rp-ax{min-width:0}
+.rp-ax b{display:block;font-size:13px;font-weight:650;color:var(--t-text)}
+.rp-ax small{display:flex;gap:8px;font-size:11px;color:var(--t-text-muted);white-space:nowrap;overflow:hidden}
+.rp-ap{font-size:13px;font-weight:700;color:var(--c)}
+.rp-empty{padding:12px;border-radius:10px;text-align:center;font-size:12px;color:var(--t-text-muted);background:rgba(0,0,0,.02)}
+.dark .rp-empty{background:rgba(255,255,255,.04)}
+@media (prefers-reduced-motion:reduce){.rp-hero::before,.rp-rings i,.rp-spark{animation:none}}
+`;
+// The row names a points entry falls back on, registered so the scanner asks for them.
+const KIND_LABEL = { earned: msg("Earned"), spent: msg("Spent"), reversed: msg("Reversed") };
+const POP_ARROW = <svg className="dir-flip" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>;
+const STAR = (cls) => <svg className={cls} viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 1.5l2.6 7.9 7.9 2.6-7.9 2.6-2.6 7.9-2.6-7.9-7.9-2.6 7.9-2.6z" /></svg>;
+
+function ModalShell({ open, onClose, dark, title, onMore, children }) {
   const tr = useT();
   return (
     <Modal open={open} onClose={onClose} dark={dark} maxWidth={420} title={title} bare>
-      <div className="py-4 px-5 flex items-center justify-between shrink-0" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-        <div className="serif text-[21px] font-semibold leading-none" style={{ color: t.text }}>{title}</div>
+      <style>{POP_CSS}</style>
+      <div className="rp-h shrink-0">
+        <b className="serif">{title}</b>
         <button onClick={onClose} aria-label={tr("Close")} className="nitro-x">
           <OffsetIcon name="close" size={12} />
         </button>
       </div>
-      <div className="py-5 px-5 overflow-y-auto min-h-0">{children}</div>
+      <div className="rp-body overflow-y-auto min-h-0">{children}</div>
+      {onMore && <button type="button" onClick={onMore} className="rp-more shrink-0">{tr("See everything in Rewards")}{POP_ARROW}</button>}
     </Modal>
-  );
-}
-
-/* ── the link both pop-ups end with ── */
-
-function SeeAllLink({ onClick }) {
-  const tr = useT();
-  return (
-    <button onClick={onClick} className="block w-full bg-transparent border-none cursor-pointer font-[inherit] text-[12.5px] font-semibold text-center pt-4 hover:underline" style={{ color: "var(--t-accent-ink)" }}>
-      {tr("See everything in Rewards ›")}
-    </button>
   );
 }
 
 /* ── Nitro Status modal ── */
 
-export function StatusModal({ open, onClose, rewards, dark, t, setActive }) {
+export function StatusModal({ open, onClose, rewards, dark, setActive }) {
   const tr = useT();
   const money = useMoney();
   const currency = useLocale()?.currency ?? "NGN";
   if (!open || !rewards) return null;
   const { status } = rewards;
   const curIdx = Math.max(0, STATUS_TIERS.findIndex(ti => ti.key === status.key));
+  const tone = (ti) => (ti.key === 'spark' ? '#c47d8e' : ti.color);
   const curTier = STATUS_TIERS[curIdx];
   const nextTier = curIdx < STATUS_TIERS.length - 1 ? STATUS_TIERS[curIdx + 1] : null;
-  const heroClr = curTier.key === 'spark' ? '#c47d8e' : curTier.color;
-  const nextClr = nextTier ? nextTier.color : heroClr;
-  const rail = railLine(dark);
+  const pct = Math.max(3, Math.min(100, status.progressPct));
   return (
-    <ModalShell open={open} onClose={onClose} dark={dark} t={t} title={tr("Nitro Status")}>
-      <div className="flex items-center gap-3.5 rounded-[15px] p-4" style={{ background: `${heroClr}${dark ? '1a' : '12'}`, border: `1px solid ${heroClr}${dark ? '40' : '33'}` }}>
-        <ChipIcon gradient={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} shadow={`0 4px 12px ${heroClr}45`} size={40} radius={11}><CrownGlyph s={19} /></ChipIcon>
-        <div className="flex flex-col gap-[3px] min-w-0">
-          <div className="serif text-[30px] font-semibold leading-none" style={{ color: heroClr }}>{status.name}</div>
-          <div className="text-[12.5px]" style={{ color: t.textMuted }}>
-            {status.discountPct > 0 && <><b className="m font-bold" style={{ color: t.text }}>{status.discountPct}%</b> {tr("off ·")} </>}
-            <b className="m font-bold" style={{ color: t.text }}>{status.pointEarnPct}%</b> {tr("points on every order")}
-          </div>
+    <ModalShell open={open} onClose={onClose} dark={dark} title={tr("Nitro Status")} onMore={setActive ? () => { onClose?.(); setActive('rewards'); } : null}>
+      <div className="rp-hero rp-st" style={{ "--tc": tone(curTier) }}>
+        <span className="rp-rings" aria-hidden="true"><i /><i /><i /></span>
+        <span className="rp-hl"><span className="rp-hg"><OffsetIcon name="crown" size={18} /></span>{tr("Your status")}</span>
+        <div className="rp-hn serif">{status.name}</div>
+        <div className="rp-chips">
+          {status.discountPct > 0 && <span className="rp-chip"><b className="m">{status.discountPct}%</b>{tr("off every order")}</span>}
+          <span className="rp-chip"><b className="m">{status.pointEarnPct}%</b>{tr("back in points")}</span>
         </div>
       </div>
 
       {nextTier && (
-        <div className="flex flex-col gap-2 mt-3.5">
-          <div className="flex items-baseline justify-between gap-3 text-[12.5px]" style={{ color: t.textMuted }}>
-            <span>{tr("Progress to")} <b style={{ color: nextClr }}>{nextTier.name}</b></span>
-            <span className="m font-bold whitespace-nowrap" style={{ color: t.text }}>{fmtCompactNaira(status.remainingToNext, money, currency)} {tr("to go")}</span>
+        <div className="rp-prog">
+          <div className="rp-pr1">
+            <span className="rp-nx">{tr("Next tier")} <span className="rp-dot" style={{ "--c": tone(nextTier) }} /><b>{nextTier.name}</b></span>
+            <span><b className="m">{fmtCompactNaira(status.remainingToNext, money, currency)}</b> {tr("to go")}</span>
           </div>
-          <div className="h-[9px] rounded-[5px] overflow-hidden" style={{ background: trackBg(dark) }}>
-            <div className="h-full rounded-[5px] transition-[width] duration-500" style={{ width: `${Math.max(3, Math.min(100, status.progressPct))}%`, background: `linear-gradient(90deg, ${heroClr}, ${nextClr})` }} />
+          <div className="rp-track" style={{ "--fill": `linear-gradient(90deg, ${tone(curTier)}, ${tone(nextTier)})`, "--ring": tone(curTier) }}>
+            <span className="rp-fill" style={{ width: `${pct}%` }} /><span className="rp-mark" style={{ insetInlineStart: `${pct}%` }} />
           </div>
-          <div className="text-[12px]" style={{ color: t.textMuted }}>
-            <b className="m font-bold" style={{ color: t.text }}>{money(status.eligibleSpend)}</b> of <span className="m">{money(status.nextMin)}</span>
-          </div>
+          <div className="rp-pr2"><span><b className="m">{money(status.eligibleSpend, { round: "down" })}</b> {tr("spent")}</span><span className="m">{money(status.nextMin)}</span></div>
         </div>
       )}
 
-      <p className="text-[12.5px] leading-[1.55] mt-3.5 mb-0" style={{ color: t.textSoft }}>
-        {tr("Spend more to unlock higher tiers — bigger discounts, more points back.")}
-      </p>
+      <p className="rp-para">{tr("Spend more to unlock higher tiers: bigger discounts, more points back.")}</p>
 
-      <div className="flex flex-col rounded-[14px] overflow-hidden mt-3.5" style={{ border: `1px solid ${t.cardBorder}` }}>
+      <div className="rp-lad">
+        <div className="rp-lh"><span>{tr("Status")}</span><span className="rp-r">{tr("Spend")}</span><span className="rp-r">{tr("Off")}</span><span className="rp-r">{tr("Points")}</span></div>
         {STATUS_TIERS.map((tier, idx) => (
-          <div key={tier.key} className="flex items-center gap-2.5 py-[9px] px-[13px] text-[12.5px]" style={{ borderTop: idx ? `1px solid ${rail}` : 'none', opacity: idx < curIdx ? 0.42 : 1, background: idx === curIdx ? `${tier.color}${dark ? '1a' : '17'}` : 'transparent' }}>
-            <span className="w-[9px] h-[9px] rounded-full shrink-0" style={{ background: tier.color }} />
-            <b className="font-bold" style={{ color: tier.color }}>{tier.name}</b>
-            <span className="ml-auto text-[11.5px] shrink-0" style={{ color: t.textMuted }}>{tier.min === 0 ? `${money(0)}+` : `${fmtCompactNaira(tier.min, money, currency)}+`}</span>
-            <span className="m text-[11.5px] font-bold whitespace-nowrap shrink-0" style={{ color: t.text }}>{tier.discountPct > 0 ? `${tier.discountPct}%` : '—'} off</span>
-            <span className="m text-[11.5px] font-bold whitespace-nowrap shrink-0" style={{ color: t.text }}>{tier.pointEarnPct}{tr("% back")}</span>
+          <div key={tier.key} className={"rp-lr" + (idx < curIdx ? " past" : idx === curIdx ? " cur" : "")} style={{ "--c": tone(tier) }}>
+            <span className="rp-nm"><span className="rp-tt"><OffsetIcon name={idx < curIdx ? "checkCircle" : "crown"} size={idx < curIdx ? 13 : 12} /></span>{tier.name}{idx === curIdx && <span className="rp-you m">{tr("You")}</span>}</span>
+            <span className="rp-v sp m rp-r">{tier.min === 0 ? `${money(0)}+` : `${fmtCompactNaira(tier.min, money, currency)}+`}</span>
+            <span className="rp-v m rp-r">{tier.discountPct}%</span>
+            <span className="rp-v m rp-r">{tier.pointEarnPct}%</span>
           </div>
         ))}
       </div>
-
-      {setActive && <SeeAllLink t={t} onClick={() => { onClose?.(); setActive('rewards'); }} />}
     </ModalShell>
   );
 }
 
 /* ── Nitro Points modal ── */
 
-export function PointsModal({ open, onClose, rewards, dark, t, onUse, setActive }) {
+export function PointsModal({ open, onClose, rewards, dark, onUse, setActive }) {
   const tr = useT();
   const money = useMoney();
   if (!open || !rewards) return null;
   const { points, history, status } = rewards;
-  const gold = dark ? '#fbbf24' : '#d97706';
-  const green = dark ? '#6ee7b7' : '#059669';
-  const amber = dark ? '#fbbf24' : '#b45309';
-  const red = dark ? '#fca5a5' : '#c62828';
+  const tones = { earned: dark ? '#6ee7b7' : '#059669', spent: dark ? '#fbbf24' : '#b45309', reversed: dark ? '#fca5a5' : '#c62828' };
   const recent = (history || []).slice(0, 3);
+  const pct = Math.max(3, Math.min(100, Math.round(points.balance / points.minRedeem * 100)));
   return (
-    <ModalShell open={open} onClose={onClose} dark={dark} t={t} title={tr("Nitro Points")}>
-      <div className="flex items-center gap-3.5 rounded-[15px] p-4" style={{ background: dark ? 'rgba(251,191,36,.09)' : 'rgba(251,191,36,.1)', border: `1px solid ${dark ? 'rgba(251,191,36,.28)' : 'rgba(217,119,6,.22)'}` }}>
-        <ChipIcon gradient="linear-gradient(135deg,#fbbf24,#d97706)" shadow="0 5px 12px rgba(217,119,6,.3)" size={40} radius={11}><CoinGlyph s={19} /></ChipIcon>
-        <div className="flex flex-col gap-[3px] min-w-0">
-          <div className="m text-[29px] font-extrabold leading-none tracking-[-.03em]" style={{ color: gold }}>
-            {points.balance.toLocaleString()} <span className="text-[14px] font-bold">pts</span>
-          </div>
-          <div className="text-[12.5px]" style={{ color: t.textMuted }}>≈ {money(points.valueNaira, { round: "down" })} · {tr("1 point = ₦1")}</div>
+    <ModalShell open={open} onClose={onClose} dark={dark} title={tr("Nitro Points")} onMore={setActive ? () => { onClose?.(); setActive('rewards'); } : null}>
+      <div className="rp-hero rp-pt">
+        {STAR("rp-spark")}{STAR("rp-spark s2")}
+        <span className="rp-hl"><span className="rp-hg"><OffsetIcon name="star" size={18} /></span>{tr("Your points")}</span>
+        <div className="rp-num m">{fmtPoints(points.balance)}<small>{tr("points")}</small></div>
+        <div className="rp-chips">
+          <span className="rp-chip">{tr("Worth")} <b className="m">{money(points.valueNaira, { round: "down" })}</b></span>
+          <span className="rp-chip">{tr("1 point = ₦1")}</span>
         </div>
       </div>
 
-      <p className="text-[12.5px] leading-[1.55] mt-3.5 mb-0" style={{ color: t.textSoft }}>
-        Every order earns points. Once you reach {points.minRedeem.toLocaleString()} {tr("you can spend them like cash on your next order.")}
-      </p>
-
-      <div className="grid grid-cols-2 gap-2.5 mt-3.5">
-        <div className="flex flex-col rounded-[13px] py-3 px-3.5" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${t.cardBorder}` }}>
-          <span className={KICKER} style={{ color: t.textMuted }}>{tr("Earn rate")}</span>
-          <b className="m text-[21px] font-extrabold tracking-[-.02em] mt-[3px]" style={{ color: gold }}>{status?.pointEarnPct ?? 0.5}%</b>
-          <span className="text-[11.5px]" style={{ color: t.textMuted }}>{tr("of every order")}</span>
-        </div>
-        <div className="flex flex-col rounded-[13px] py-3 px-3.5" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${t.cardBorder}` }}>
-          <span className={KICKER} style={{ color: t.textMuted }}>{tr("Minimum to spend")}</span>
-          <b className="m text-[21px] font-extrabold tracking-[-.02em] mt-[3px]" style={{ color: t.text }}>{points.minRedeem.toLocaleString()}</b>
-          <span className="text-[11.5px]" style={{ color: t.textMuted }}>points</span>
-        </div>
-      </div>
-
-      <div className="mt-3.5">
-        {points.redeemable ? (
-          <button onClick={onUse} className="block w-full h-11 border-none rounded-xl text-white text-[13px] font-bold font-[inherit] cursor-pointer transition-transform duration-150 hover:-translate-y-px" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', boxShadow: '0 4px 14px rgba(217,119,6,.32)' }}>
-            {tr("Use on next order")}
-          </button>
-        ) : (
-          <div className="rounded-xl py-3 px-3.5 text-center" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${t.cardBorder}` }}>
-            <div className="text-[11.5px]" style={{ color: t.textSoft }}>
-              Earn <b style={{ color: gold }}>{points.neededToRedeem.toLocaleString()} more</b> {tr("points to start spending")}
-            </div>
-            <div className="h-1 rounded-full overflow-hidden mt-2" style={{ background: trackBg(dark) }}>
-              <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round(points.balance / points.minRedeem * 100))}%`, background: gold }} />
-            </div>
+      {points.redeemable ? (
+        <button type="button" onClick={onUse} className="nb nitro-money-btn rp-use"><OffsetIcon name="wallet" size={16} />{tr("Use on next order")}</button>
+      ) : (
+        <div className="rp-prog">
+          <div className="rp-pr1">
+            <span>{tr("Spend from")} <b className="m">{points.minRedeem.toLocaleString()}</b></span>
+            <span><b className="m">{points.neededToRedeem.toLocaleString()}</b> {tr("more to start spending")}</span>
           </div>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-[7px] mt-4">
-        <span className={KICKER} style={{ color: t.textMuted }}>{tr("Recent")}</span>
-        {recent.length ? recent.map((h, i) => {
-          const kind = h.kind === 'spent' ? 'spent' : h.kind === 'reversed' ? 'reversed' : 'earned';
-          const clr = kind === 'earned' ? green : kind === 'spent' ? amber : red;
-          return (
-            <div key={i} className="flex items-center gap-2.5 text-[12.5px]">
-              <span className="text-[9.5px] font-bold uppercase tracking-[.9px] rounded-full py-1 w-[78px] text-center shrink-0" style={{ background: `${clr}${dark ? '26' : '1f'}`, color: clr }}>{kind}</span>
-              <span className="flex-1 min-w-0 truncate" style={{ color: t.textMuted }}>{h.label} <span className="m">{h.ref}</span></span>
-              <b className="m font-bold whitespace-nowrap" style={{ color: clr }}>{h.pts > 0 ? '+' : ''}{fmtPoints(h.pts)}</b>
-            </div>
-          );
-        }) : (
-          <div className="text-[12px] py-3 text-center rounded-lg" style={{ color: t.textMuted, background: dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.02)' }}>
-            {tr("Points activity will appear here after your first order.")}
+          <div className="rp-track" style={{ "--fill": "linear-gradient(90deg,#f59e0b,#d97706)", "--ring": "#d97706" }}>
+            <span className="rp-fill" style={{ width: `${pct}%` }} /><span className="rp-mark" style={{ insetInlineStart: `${pct}%` }} />
           </div>
-        )}
+          <div className="rp-pr2"><span><b className="m">{fmtPoints(points.balance)}</b> {tr("now")}</span><span className="m">{points.minRedeem.toLocaleString()}</span></div>
+        </div>
+      )}
+
+      <div className="rp-facts">
+        <div className="rp-f"><span className="rp-fl"><OffsetIcon name="trend" size={12} />{tr("Earn rate")}</span><b className="rp-fv m">{status?.pointEarnPct ?? 0.5}%</b><span className="rp-fs">{tr("of every order")}</span></div>
+        <div className="rp-f"><span className="rp-fl"><OffsetIcon name="wallet" size={12} />{tr("Minimum to spend")}</span><b className="rp-fv m">{points.minRedeem.toLocaleString()}</b><span className="rp-fs">{tr("points")}</span></div>
       </div>
 
-      {setActive && <SeeAllLink t={t} onClick={() => { onClose?.(); setActive('rewards'); }} />}
+      <div className="rp-eb"><span>{tr("Recent")}</span></div>
+      {recent.length ? (
+        <div>
+          {recent.map((h, i) => {
+            const kind = h.kind === 'spent' ? 'spent' : h.kind === 'reversed' ? 'reversed' : 'earned';
+            const ref = h.ref && h.ref !== '—' ? h.ref : null;
+            return (
+              <div key={i} className="rp-ar" style={{ "--c": tones[kind] }}>
+                <span className="rp-at"><OffsetIcon name={kind === 'earned' ? 'plusCircle' : kind === 'spent' ? 'minusCircle' : 'refresh'} size={15} /></span>
+                <span className="rp-ax"><b>{tr(h.label || KIND_LABEL[kind])}</b>{(h.detail || ref) && <small>{h.detail && <span className="truncate">{tr(h.detail)}</span>}{ref && <span className="m">{ref}</span>}</small>}</span>
+                <span className="rp-ap m">{h.pts > 0 ? '+' : ''}{fmtPoints(h.pts)}</span>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rp-empty">{tr("Points activity will appear here after your first order.")}</div>
+      )}
     </ModalShell>
   );
 }

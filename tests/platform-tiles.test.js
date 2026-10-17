@@ -297,10 +297,11 @@ describe('the picks / full list selector', () => {
     // the platform sheet both badge theirs, and a bare number here was the one
     // exception. Tinted from the card's colour so it pairs with the glyph
     // square opposite it rather than floating.
-    expect(sel).toMatch(/tabular-nums rounded-full/);
-    expect(sel).toMatch(/background: on \? v\.tintBg/);
+    // The printed ink tab every count uses (17 Oct 2026), on the card colour
+    // when its list is the one chosen.
+    expect(sel).toMatch(/className=\{"pbadge shrink-0 tabular-nums" \+ \(on \? " solid" : ""\)\}/);
     // And says so rather than showing a zero while the count is still loading.
-    expect(sel).toMatch(/v\.n == null \? "—"/);
+    expect(sel).toMatch(/v\.n == null \? "…"/);
   });
 
   it('sinks into the ground instead of floating as two cards', () => {
@@ -389,7 +390,7 @@ describe('only the list is a card', () => {
     // options looking disabled is a dead row rather than a restrained one.
     const types = full.slice(full.indexOf('═══ TYPE ═══'), full.indexOf('desktop:hidden relative mb-3'));
     expect(types).toMatch(/color: on \? "#fff" : t\.text,/);
-    expect(types).toMatch(/rounded-full px-\[5px\]/);
+    expect(types).toMatch(/className=\{"pbadge" \+ \(on \? " solid" : ""\)\}/);
   });
 
   it('lifts the list, so it is the one object on the page', () => {

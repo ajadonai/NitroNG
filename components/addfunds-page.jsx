@@ -184,8 +184,8 @@ const MIN_CRYPTO_NGN = 10_000;
 
 const GW_META = {
   flutterwave: { desc: msg("Card, bank transfer"), speed: msg("Fast") },
-  crypto: { desc: msg("Bitcoin, USDT and more"), speed: msg("5–30 min") },
-  manual: { desc: msg("Transfer from any bank"), speed: msg("15–60 min") },
+  crypto: { desc: msg("Bitcoin, USDT and more"), speed: msg("5 to 30 min") },
+  manual: { desc: msg("Transfer from any bank"), speed: msg("15 to 60 min") },
 };
 
 /* ═══════════════════════════════════════════ */
@@ -506,7 +506,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       } catch (err) {
         toast.error(
           err?.name === "TimeoutError" ? tr("Timed out") : tr("Network error"),
-          tr("Try again — we’ll safely reuse this payment attempt."),
+          tr("Try again. We’ll safely reuse this payment attempt."),
         );
       }
       setLoading(false); payingRef.current = false;
@@ -629,7 +629,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             </div>
             <div className="text-[13px] leading-[1.5] text-t-text-soft">
               {allDone
-                ? <>{tr("All unlocked this month —")} <b style={{ color: okColor }}>{fN2(topup.unlockedAmount)}</b> {tr("earned. Fresh ladder on the 1st.")}</>
+                ? <>{tr("All unlocked this month:")} <b style={{ color: okColor }}>{fN2(topup.unlockedAmount)}</b> {tr("earned. Fresh ladder on the 1st.")}</>
                 : <>{topup.unlockedAmount > 0 && <><b style={{ color: okColor }}>{fN2(topup.unlockedAmount)} unlocked</b> · </>}<b className="m text-t-text">{fN2(topup.next.toGo)}</b> {tr("more unlocks")} <b className="text-accent-ink">{fN2(topup.next.prize)}</b>.</>}
             </div>
           </div>
@@ -728,7 +728,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(196,125,142,.06)' : 'rgba(196,125,142,.04)', border: `1px solid ${dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.1)'}` }}>
             <Tile size={22}><OffsetIcon name="topup" size={13} /></Tile>
             <span className="text-[13px] font-medium text-t-text-soft">
-              This takes you to <strong className="m">{money(projected / 100)}</strong> of {money(topup.next.min / 100)} — <button onClick={() => setAmount(String(fullAdd))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent-ink font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>deposit {money(fullAdd)}</button> {tr("to unlock")} <strong className="text-accent-ink">₦{prize}</strong>.
+              This takes you to <strong className="m">{money(projected / 100)}</strong> of {money(topup.next.min / 100)}: <button onClick={() => setAmount(String(fullAdd))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent-ink font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>deposit {money(fullAdd)}</button> {tr("to unlock")} <strong className="text-accent-ink">₦{prize}</strong>.
             </span>
           </div>
         );
@@ -838,7 +838,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         }}>
           <Tile size={28} clr={paymentNoticeTone.color}><OffsetIcon name={paymentNoticeTone.icon} size={15} /></Tile>
           <div className="flex-1 min-w-0">
-            <div className="text-[11px] font-semibold" style={{ color: paymentNoticeTone.color }}>{paymentNoticeTone.title} <span className="font-normal opacity-75">— {paymentNotice.message}</span></div>
+            <div className="text-[11px] font-semibold" style={{ color: paymentNoticeTone.color }}>{paymentNoticeTone.title}: <span className="font-normal opacity-75">{paymentNotice.message}</span></div>
           </div>
           <button onClick={() => setPaymentStatus(null)} className="bg-transparent border-none cursor-pointer p-1 rounded-md shrink-0" style={{ color: paymentNoticeTone.color, opacity: .45 }}>
             <OffsetIcon name="close" size={12} />
@@ -880,7 +880,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
               return (
                 <div className="flex items-center gap-1.5 mt-2 py-2 px-2.5 rounded-lg text-[11px]" style={{ background: dark ? "rgba(240,171,252,.06)" : "rgba(168,85,247,.04)", border: `1px solid ${dark ? "rgba(240,171,252,.14)" : "rgba(168,85,247,.1)"}`, color: dark ? "#f0abfc" : "#a855f7" }}>
                   <OffsetIcon name="gift" size={12} />
-                  <span>{money(user.bonusCredit.amount / 100, { round: "down" })} {daysLeft ? <>{tr("bonus credit — expires in")} {daysLeft}d</> : tr("bonus credit")}</span>
+                  <span>{money(user.bonusCredit.amount / 100, { round: "down" })} {daysLeft ? <>{tr("bonus credit, expires in")} {daysLeft}d</> : tr("bonus credit")}</span>
                 </div>
               );
             })()}
@@ -1048,7 +1048,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                   <div className="flex items-center gap-2">
                     {cryptoPolling && <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#fbbf24" }} />}
                     <span className="text-[13px] font-medium" style={{ color: dark ? "#fbbf24" : "#d97706" }}>
-                      {cryptoStatus === tr("Confirming") ? tr("Payment detected — confirming on blockchain...") : tr("Waiting for payment...")}
+                      {cryptoStatus === tr("Confirming") ? tr("Payment detected. Confirming on blockchain...") : tr("Waiting for payment...")}
                     </span>
                   </div>
                   <div className="text-[11px] mt-1 text-t-text-muted">{tr("We check automatically every 15 seconds. Do not close this page.")}</div>
@@ -1171,18 +1171,21 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
 
   return (
     <div className="mt-6 desktop:mt-8">
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <div>
-          <div className="text-base desktop:text-lg font-semibold text-t-text">{tr("Wallet History")}</div>
-          <div className="text-[13px] text-t-text-muted">{total} {total === 1 ? tr("transaction") : tr("transactions")} {tr("· last 6 months")}</div>
+      {/* The filters ride the title's own line, and the count goes under both.
+          With the count inside the title block the pair was too wide for a
+          phone, so the filters wrapped onto a line of their own. */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-base desktop:text-lg font-semibold text-t-text whitespace-nowrap">{tr("Wallet History")}</div>
+          <div className="flex gap-1.5 flex-wrap justify-end min-w-0">
+            <DateRangePicker dark={dark} t={t} value={dateRange} onChange={(v) => { setDateRange(v); setPage(1); }} />
+            <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} options={[
+              { value: "all", label: tr("All") },
+              ...txTypes.map(f => ({ value: f, label: tr(txLabel(f)) })),
+            ]} />
+          </div>
         </div>
-        <div className="flex gap-1.5 flex-wrap">
-          <DateRangePicker dark={dark} t={t} value={dateRange} onChange={(v) => { setDateRange(v); setPage(1); }} />
-          <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} options={[
-            { value: "all", label: tr("All") },
-            ...txTypes.map(f => ({ value: f, label: tr(txLabel(f)) })),
-          ]} />
-        </div>
+        <div className="text-[13px] text-t-text-muted">{total} {total === 1 ? tr("transaction") : tr("transactions")} {tr("· last 6 months")}</div>
       </div>
 
       {/* Summary cards */}

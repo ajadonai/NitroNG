@@ -23,8 +23,8 @@ const STEPS = [
   // sync, so a number typed in here is wrong for most people reading it. The
   // live pills on the selector say it instead. The old step 1 claimed "we
   // support 28" while the page header said 29.
-  { target: "no-list-select", noScroll: true, title: msg("Start here — two lists"),
-    desc: msg("Nitro picks are the ones we test every week and back with a refill. Full list is everything else we carry for this platform — cheaper and far wider, sold exactly as listed. Everything below changes with whichever one you are on."),
+  { target: "no-list-select", noScroll: true, title: msg("Start here: two lists"),
+    desc: msg("Nitro picks are the ones we test every week and back with a refill. Full list is everything else we carry for this platform, cheaper and far wider, sold exactly as listed. Everything below changes with whichever one you are on."),
     icon: <OffsetIcon name="shieldCheck" size={18} /> },
 
   // findFirst aims at the tile itself. The four selectors this used to try —
@@ -70,7 +70,7 @@ const STEPS = [
   // and for a bonus-eligible customer it hands straight into the deposit card
   // that already comes next.
   { target: "no-submit-btn", title: msg("Place your order"),
-    desc: msg("Check the total, then tap the button. We start straight away — you can watch it fill on the Orders page."),
+    desc: msg("Check the total, then tap the button. We start straight away. You can watch it fill on the Orders page."),
     // No Top up variant any more. The form assumes the wallet covers it while
     // the tour is running (see assumeFunded in order-form), so this step always
     // points at an Order button and one description is enough. Two earlier
@@ -535,7 +535,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
           </div>
           <div className="text-[13px] leading-[1.6] mb-3.5" style={{ color: sub }}>{tr("The two lists, how to pick a service and a tier, and how an order goes out.")}</div>
           <div className="flex flex-col gap-[7px] mb-4">
-            {[msg("Two lists — tested picks, and everything else"), msg("Pick a platform and a service"), msg("Choose a tier — how long the refill lasts")].map((line, i) => (
+            {[msg("Two lists: tested picks, and everything else"), msg("Pick a platform and a service"), msg("Choose a tier: how long the refill lasts")].map((line, i) => (
               <div key={line} className="flex items-center gap-2.5 text-[12.5px]" style={{ color: sub }}>
                 <span className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 text-[10.5px] font-extrabold"
                   style={{ background: dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)", color: accent }}>{i + 1}</span>
@@ -569,7 +569,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
       {/* TOUR STEP CARD */}
       {phase === "touring" && (
         <div key={animKey} data-tour-tooltip role="dialog" aria-modal="false"
-          aria-label={`${tr("Step")} ${step + 1} ${tr("of")} ${STEPS.length} — ${tr(STEPS[step].title)}. ${tr("Esc to exit")}`}
+          aria-label={`${tr("Step")} ${step + 1} ${tr("of")} ${STEPS.length}: ${tr(STEPS[step].title)}. ${tr("Esc to exit")}`}
           className="fixed z-[211] rounded-2xl py-5 px-5 max-w-[320px] w-[calc(100%-32px)]" style={{
           ...tooltipPos,
           animation: "otFadeIn 0.3s cubic-bezier(.4,0,.2,1)",

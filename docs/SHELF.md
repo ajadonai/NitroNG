@@ -394,6 +394,39 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **Home redrawn, and the last old badges and tiles brought over** (17 Oct
+  2026, `v2.4.127`). The home page leads with one money card: the balance, Top
+  up and New order, with Status, Points and Tasks as three cells underneath in
+  one accent. How it works, What to expect and Support are plain buttons. Stay
+  updated and the reseller card get backgrounds of their own (a drifting
+  doodle, a pulsing ring and a typing bubble on WhatsApp, a paper plane on
+  Telegram, a "Wholesale" tag behind "Your price" on the reseller card), and
+  everything moving stops for reduced motion. Orders on home use History's row
+  in three lines, and History, home and both rails print the platform mark on
+  its own coloured tile. The phone guide on New Order reads like the desktop
+  sidebar, and its tier tip points at "Which tier?" instead of an ⓘ that no
+  longer exists. The sidebar's follow links get a heading and quiet icons,
+  WhatsApp opens the channel, and the More sheet has the same row. Count badges
+  on See all platforms, the Notifications header, the bulk cart and the admin
+  pins are the printed ink tab; the admin bell stays red, and the Full List's
+  type tabs, section counts and the picks/full switch count took it too. Also:
+  the wallet history filters sit on the title's line on a phone, and
+  notification icons are centred on printed tiles, as are History's messages.
+  The receipt's rotating cards each have their own colour and one small moving
+  thing (hearts on Instagram, task circles ticking, a "Your price" tag), and
+  the receipt's order-number chip is now the one copy button (CopyChip) used on
+  History, the receipt and the home referral code. A bare username in a
+  profile service's link box becomes the full profile link when the box loses
+  focus, on the order form, bulk rows and the guest checkout. Dashes are gone
+  from customer copy: 81 translated strings and the English-only pages (FAQ,
+  refund, cookie, quality, service pages) reworded, and ranges read "to"; the
+  service pages' tile notes are their own strings instead of half a sentence
+  after a dash. Left as they were: a lone "—" where a value is missing,
+  copyright years, emails, and dashes code reads rather than shows. The
+  Status and Points pop-ups lead with a printed card (the tier's colour, and
+  gold for points), Status shows the whole ladder with a "You" tag, and Points
+  shows a line to 2,000 or the gold "Use on next order" button.
+
 - **Translations saved one place off, put back** (17 Oct 2026, `v2.4.126`). A
   batch of new keys for the Pit apply and commissions pages had each been given
   the next key's translation, in all four languages, and some of those keys are

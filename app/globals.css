@@ -599,13 +599,24 @@ button:hover .ic-x .ic-off, button:focus-visible .ic-x .ic-off, [role="button"]:
 .dash-logout { display: flex; align-items: center; gap: 11px; padding: 9px 14px; border-radius: 10px; background: none; color: #dc2626; font-size: 14px; font-weight: 450; text-align: left; width: 100%; opacity: .6; transition: opacity .2s ease, background-color .2s ease; }
 .dash-logout:hover { opacity: .85; background-color: rgba(220,38,38,.05); }
 
-/* Sidebar social links */
-.dash-sidebar-social { padding: 6px 14px; }
-.dash-social-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
-.dash-social-btns { display: flex; gap: 6px; }
-.dash-social-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 0; border-radius: 8px; font-size: 14px; font-weight: 500; text-decoration: none; border-width: 1px; border-style: solid; transition: transform .2s cubic-bezier(.4,0,.2,1), background .2s ease, border-color .2s ease, box-shadow .2s ease; }
-.dash-social-btn:hover { transform: translateY(-2px); }
-.dash-social-btn:active { transform: translateY(0) scale(.97); }
+/* The follow row (FollowLinks in dashboard.jsx), at the foot of the sidebar and
+   in the More sheet: the sidebar's own heading, then grey icons that take their
+   brand colour and a printed edge on hover. TikTok's mark is itself an offset
+   print, so its cyan and red layers come in with the hover. */
+.fl .rail-sec { padding: 0 8px 8px; }
+.fl-row { display: flex; gap: 6px; }
+.fl-a { flex: 1; height: 36px; display: grid; place-items: center; border-radius: 10px; background: var(--t-card-bg); border: 1px solid var(--t-card-border); color: var(--t-text-soft); text-decoration: none; transition: transform .15s ease, background-color .15s ease, border-color .15s ease, box-shadow .15s ease, color .15s ease; }
+.fl-a svg { width: 16px; height: 16px; overflow: visible; }
+.fl-a:hover, .fl-a:focus-visible { color: var(--bc); background: color-mix(in srgb, var(--bc) 10%, var(--t-card-bg)); border-color: color-mix(in srgb, var(--bc) 40%, transparent); box-shadow: 2px 2px 0 color-mix(in srgb, var(--bc) 30%, transparent); transform: translate(-1px, -1px); }
+.fl-a.ig { --bc: #e1306c; }
+.dark .fl-a.ig { --bc: #f06292; }
+.fl-a.x, .fl-a.tt { --bc: var(--t-text); }
+.fl-a.wa { --bc: #1fa855; }
+.dark .fl-a.wa { --bc: #34d399; }
+.fl-a .tt-c, .fl-a .tt-r { opacity: 0; transition: opacity .15s ease; }
+.fl-a:hover .tt-c, .fl-a:hover .tt-r, .fl-a:focus-visible .tt-c, .fl-a:focus-visible .tt-r { opacity: 1; }
+.fl-row.compact { gap: 8px; }
+.fl-row.compact .fl-a { flex: none; width: 40px; }
 
 /* Overlay */
 .dash-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,.3); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); z-index: 10; }
@@ -831,8 +842,28 @@ button:hover .ic-x .ic-off, button:focus-visible .ic-x .ic-off, [role="button"]:
    alarm. On the active row it takes the card colour to stay distinct. */
 .rail-bd { margin-left: auto; font-size: 10.5px; font-weight: 700; min-width: 20px; text-align: center; padding: 3px 6px; border-radius: 7px; line-height: 1; color: var(--t-accent-ink); background: rgba(196,125,142,.1); box-shadow: inset 0 0 0 1px rgba(139,74,94,.28), 1.5px 1.5px 0 #efc4cf; }
 .dark .rail-bd { background: rgba(196,125,142,.14); box-shadow: inset 0 0 0 1px rgba(232,180,196,.3), 1.5px 1.5px 0 #6b3a4a; }
-.rail-it.on .rail-bd { background: var(--t-card-bg); }
+.rail-it.on .rail-bd, .rail-pin.on .rail-bd { background: var(--t-card-bg); }
 .rail-bd-new { font-size: 9.5px; letter-spacing: .5px; text-transform: uppercase; }
+/* The same ink tab anywhere else a count rides on something: See all platforms,
+   the Notifications header, the bulk cart. `solid` takes the card colour, for a
+   badge sitting on a filled shape. */
+.pbadge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; padding: 3px 6px; border-radius: 7px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 700; line-height: 1; color: var(--t-accent-ink); background: rgba(196,125,142,.1); box-shadow: inset 0 0 0 1px rgba(139,74,94,.28), 1.5px 1.5px 0 #efc4cf; }
+.dark .pbadge { background: rgba(196,125,142,.14); box-shadow: inset 0 0 0 1px rgba(232,180,196,.3), 1.5px 1.5px 0 #6b3a4a; }
+.pbadge.solid { background: var(--t-card-bg); }
+/* The copy chip (CopyChip in copy-chip.jsx): the value in mono on a quiet
+   bordered chip with the copy mark after it. Green with a tick once copied. */
+.cpy { display: inline-flex; align-items: center; gap: 6px; height: 28px; max-width: 100%; padding: 0 9px; border-radius: 8px; border: 1px solid var(--t-card-border); background: rgba(196,125,142,.06); color: var(--t-text); font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; line-height: 1; white-space: nowrap; cursor: pointer; transition: border-color .15s ease, background-color .15s ease, color .15s ease; }
+.cpy span { overflow: hidden; text-overflow: ellipsis; }
+.cpy svg { flex-shrink: 0; color: var(--t-text-muted); }
+.cpy:hover { border-color: rgba(196,125,142,.55); background: rgba(196,125,142,.11); }
+.cpy:hover svg { color: var(--t-accent-ink); }
+.cpy:focus-visible { outline: 2px solid var(--t-accent); outline-offset: 2px; }
+.cpy.sm { height: 24px; padding: 0 7px; gap: 5px; font-size: 11.5px; border-radius: 7px; }
+.cpy.done { color: #059669; border-color: rgba(5,150,105,.4); background: rgba(5,150,105,.08); }
+.cpy.done svg { color: inherit; }
+.dark .cpy { background: rgba(196,125,142,.1); }
+.dark .cpy:hover { background: rgba(196,125,142,.16); }
+.dark .cpy.done { color: #6ee7b7; border-color: rgba(110,231,183,.4); background: rgba(110,231,183,.1); }
 /* The avatar with no photo (components/avatar.jsx): the figure from the icon
    set, printed on a soft tile. */
 .nitro-av-tile { fill: #f6e9ec; }
@@ -858,7 +889,6 @@ button:hover .ic-x .ic-off, button:focus-visible .ic-x .ic-off, [role="button"]:
 .rail-pin .rail-ii svg { width: 18px; height: 18px; }
 .rail-pin.on { background: rgba(196,125,142,.1); border-color: var(--t-accent); color: var(--t-accent); --ic: var(--t-accent); }
 .dark .rail-pin.on { background: rgba(196,125,142,.14); }
-.rail-pb { margin-left: auto; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--t-accent); color: #fff; flex-shrink: 0; }
 .rail-acc { border: 1px solid transparent; border-radius: 12px; margin-bottom: 4px; }
 .rail-acc.open { border-color: var(--t-sidebar-border); background: var(--t-card-bg); padding: 4px 4px 6px; }
 .rail-ah { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border-radius: 9px; cursor: pointer; width: 100%; background: none; border: 0; font-family: inherit; text-align: left; }
@@ -1436,7 +1466,7 @@ button:hover .ic-x .ic-off, button:focus-visible .ic-x .ic-off, [role="button"]:
 .us-b, .cw-b, .tk-b, .ou-b, .bl-b, .rs-b, .pr-b, .mb-b, .re-b, .pro-b, .rf-b,
 .aa-b, .co-b, .pm-b, .fb-b, .tm-b, .rw-b, .eb-b, .mt-b, .pv-b, .tl-b, .is-b, .cl-b,
 .us-ib, .cw-ib, .tk-ib, .ou-ib, .bl-ib, .rs-ib, .co-ib, .pm-ib, .rw-ib, .tl-ib,
-.cl-ib, .lg-ib, .dash-av-gear, .dash-social-btn {
+.cl-ib, .lg-ib, .dash-av-gear {
   border-radius: 999px !important;
 }
 
@@ -1908,6 +1938,8 @@ button:hover .ic-x .ic-off, button:focus-visible .ic-x .ic-off, [role="button"]:
 .rr-tile.print { border-radius: 9px; background: var(--t-accent-light); color: var(--t-accent); font-family: 'JetBrains Mono', monospace; box-shadow: 2px 2px 0 #efc4cf; }
 .rr-tile.round { box-shadow: 2px 2px 0 #efc4cf; }
 .dark .rr-tile.print, .dark .rr-tile.round { box-shadow: 2px 2px 0 #6b3a4a; }
+/* A tile that brings its own printed square (a platform mark) draws nothing. */
+.rr-tile.bare { background: none; border-radius: 0; overflow: visible; }
 .rr-si { display: inline-flex; vertical-align: -2px; margin-inline-end: 6px; color: var(--t-accent); }
 .rr-fact > span { display: inline-flex; align-items: center; gap: 8px; }
 .rr-fi { display: inline-flex; color: var(--t-text-muted); }

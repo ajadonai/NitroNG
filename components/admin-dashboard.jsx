@@ -882,7 +882,7 @@ function AdminDashboardInner({ initialData }) {
                           <button key={item.id} type="button" className={"rail-pin" + (active === item.id ? " on" : "")} onClick={() => go(item.id)}>
                             <span className="rail-ii">{item.icon}</span>
                             <span>{item.id === "create-order" ? "Create order" : item.label}</span>
-                            {badgeOf(item) != null && <b className="m rail-pb">{badgeOf(item)}</b>}
+                            {badgeOf(item) != null && <span className="m rail-bd">{badgeOf(item)}</span>}
                           </button>
                         ))}
                       </div>

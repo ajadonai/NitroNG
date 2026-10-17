@@ -140,7 +140,7 @@ function HelpListingInner({ articles }) {
         <div className="flex items-center gap-3 rounded-[14px] px-[18px] py-4 max-md:flex-col max-md:items-stretch" style={card}>
           <span className="flex flex-col gap-0.5">
             <b className="text-[15px]" style={{ color: t.text }}>{tr("Cannot find it?")}</b>
-            <span className="text-[13px]" style={{ color: t.soft }}>{tr("WhatsApp us — we are there all day and we answer in minutes.")}</span>
+            <span className="text-[13px]" style={{ color: t.soft }}>{tr("WhatsApp us. We are there all day and we answer in minutes.")}</span>
           </span>
           <a href={waLink} target="_blank" rel="noopener noreferrer" className="ml-auto max-md:ml-0 max-md:w-full inline-flex items-center justify-center rounded-[10px] px-4 py-2.5 text-[13.5px] font-semibold no-underline text-white transition-transform duration-200 hover:-translate-y-px" style={{ background: t.btnPrimary }}>{tr("WhatsApp us")}</a>
         </div>

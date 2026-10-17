@@ -5,7 +5,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 
 export const OG_SIZE = { width: 1200, height: 630 };
-export const OG_ALT = 'The Nitro NG — Look as big as you are. Growth for Nigerian creators.';
+export const OG_ALT = 'The Nitro NG. Look as big as you are. Growth for Nigerian creators.';
 
 const MARK = 'M 480 4498 L 480 2680 A 961 961 0 0 1 2402 2680 L 2402 3915 A 960 960 0 0 0 4322 3915 L 4322 682';
 /* pink lead + echo colors; red/green/yellow are placeholders pending the social template hexes */

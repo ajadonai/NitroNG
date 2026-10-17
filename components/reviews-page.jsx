@@ -159,7 +159,7 @@ function ReviewsInner() {
               <h2 className="serif m-0 mb-2 text-[27px] font-semibold tracking-[-0.01em]" style={h2}>{SECTIONS[3][2]}</h2>
               <p className="text-[15.5px] leading-[1.7] m-0" style={{ color: t.soft }}>{tr("We launched recently. We do not have five years of history and we are not going to pretend otherwise.")}</p>
               <p className="text-[15.5px] leading-[1.7] mt-3 mb-0" style={{ color: t.soft }}>{tr("Our third-party review footprint is thin. Our catalogue is smaller than the big panels. Our delivery estimates on individual services need work. And support, while fast, is a small team, so at 3am on a Sunday you may be waiting.")}</p>
-              <p className="text-[15.5px] leading-[1.7] mt-3 mb-0" style={{ color: t.soft }}>{tr("Do not decide from this page — we wrote it, so it is not evidence. Deposit ₦1,000, which is our minimum and deliberately low for exactly this reason, and buy one small order. Watch whether it starts, whether the tracker matches your real count, and how fast WhatsApp answers. That tells you more in an afternoon than any review page.")}</p>
+              <p className="text-[15.5px] leading-[1.7] mt-3 mb-0" style={{ color: t.soft }}>{tr("Do not decide from this page. We wrote it, so it is not evidence. Deposit ₦1,000, which is our minimum and deliberately low for exactly this reason, and buy one small order. Watch whether it starts, whether the tracker matches your real count, and how fast WhatsApp answers. That tells you more in an afternoon than any review page.")}</p>
             </section>
           </article>
         </div>

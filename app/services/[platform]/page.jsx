@@ -23,10 +23,10 @@ const PLATFORM_META = {
     whatYouGet: [
       msg('Followers on your profile'),
       msg('Likes on individual posts'),
-      msg('Reel and video views — the cheapest way to test us'),
+      [msg('Reel and video views'), msg('the cheapest way to test us')],
       msg('Story views to lift the visibility of what you post daily'),
       msg('Comments, including comments from real Nigerian accounts so the engagement looks local'),
-      msg('Saves on posts — one of the strongest signals Instagram weighs'),
+      [msg('Saves on posts'), msg('one of the strongest signals Instagram weighs')],
       msg('Reels engagement bundles for pushing a specific piece of content'),
     ],
     whySection: [
@@ -58,7 +58,7 @@ const PLATFORM_META = {
     kw: 'buy TikTok followers Nigeria',
     whatYouGet: [
       msg('Followers on your profile'),
-      msg('Video views — the cheapest entry point and the one that matters most for reach'),
+      [msg('Video views'), msg('the cheapest entry point and the one that matters most for reach')],
       msg('Likes on individual videos'),
       msg('Shares, which TikTok weighs heavily in distribution'),
       msg('Comments to make a video look like a conversation rather than a broadcast'),
@@ -88,7 +88,7 @@ const PLATFORM_META = {
     whatYouGet: [
       msg('Subscribers'),
       msg('Video views'),
-      msg('Watch hours — the hardest threshold to reach organically'),
+      [msg('Watch hours'), msg('the hardest threshold to reach organically')],
       msg('Likes'),
       msg('Comments to make a video look active'),
     ],
@@ -117,7 +117,7 @@ const PLATFORM_META = {
     whatYouGet: [
       msg('Followers'),
       msg('Likes on individual posts'),
-      msg('Post views — the cheapest way to test'),
+      [msg('Post views'), msg('the cheapest way to test')],
       msg('Video views'),
       msg('Retweets to push a post into more timelines'),
       msg('Bookmarks, which X counts as a strong quality signal'),
@@ -144,7 +144,7 @@ const PLATFORM_META = {
     mainService: 'page likes',
     kw: 'buy Facebook page likes Nigeria',
     whatYouGet: [
-      msg('Page followers — among the cheapest follower services on the site'),
+      [msg('Page followers'), msg('among the cheapest follower services on the site')],
       msg('Post likes'),
       msg('Video views'),
       msg('Page likes to lift the number people see on your page'),
@@ -175,7 +175,7 @@ const PLATFORM_META = {
     whatYouGet: [
       msg('Channel members'),
       msg('Group members for communities that run on discussion'),
-      msg('Post views — by far the cheapest service we sell'),
+      [msg('Post views'), msg('by far the cheapest service we sell')],
       msg('Reactions'),
     ],
     whySection: [
@@ -203,7 +203,7 @@ const PLATFORM_META = {
     whatYouGet: [
       msg('Plays on individual tracks'),
       msg('Followers on your artist profile'),
-      msg('Monthly listeners — the number A&R people and playlist curators actually look at'),
+      [msg('Monthly listeners'), msg('the number A&R people and playlist curators actually look at')],
       msg('Playlist adds to get a track into rotation'),
     ],
     whySection: [
@@ -324,7 +324,7 @@ const PLATFORM_META = {
     h1: msg('Buy WhatsApp Channel Followers and Group Members in Nigeria'),
     title: 'Buy WhatsApp Channel Followers in Nigeria | Naira Pricing',
     metaDesc: 'Buy WhatsApp channel followers, group members and status views in Nigeria. Naira pricing, no foreign card needed. Start from ₦1,000.',
-    heroDesc: msg('WhatsApp is where Nigerian business actually happens — the orders, the enquiries, the follow-ups. A channel with nine followers or a group nobody joins does not get used, and the customers who would have bought from you never see the post. Nitro carries WhatsApp channel, group and status services priced in Naira, from ₦1,000.'),
+    heroDesc: msg('WhatsApp is where Nigerian business actually happens: the orders, the enquiries, the follow-ups. A channel with nine followers or a group nobody joins does not get used, and the customers who would have bought from you never see the post. Nitro carries WhatsApp channel, group and status services priced in Naira, from ₦1,000.'),
     mainService: 'followers',
     kw: 'buy WhatsApp channel followers Nigeria',
     whatYouGet: [
@@ -335,7 +335,7 @@ const PLATFORM_META = {
     ],
     whySection: [
       msg('A channel with no followers gets no forwards. WhatsApp shows the follower count before anyone reads a single post, and on a platform where sharing happens by forwarding rather than by algorithm, that number decides whether your post leaves the channel at all.'),
-      msg('Groups are where Nigerian trade actually runs. Wholesale, resale, logistics, church, school runs — the group is the shop. An empty group reads as a shop nobody visits, and the people you most want in it are the least likely to be the first ones there.'),
+      msg('Groups are where Nigerian trade actually runs. Wholesale, resale, logistics, church, school runs: the group is the shop. An empty group reads as a shop nobody visits, and the people you most want in it are the least likely to be the first ones there.'),
       msg('Your link has to be public and open. A channel needs its invite link on, a group needs a link that is not capped or expired. If the link stops working partway, whatever was not delivered returns to your Nitro wallet.'),
       msg('Nobody needs your phone or your login. We work from the public link and nothing else. We never ask for a verification code, and anyone who does is trying to take your account.'),
       msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
@@ -361,7 +361,7 @@ const PLATFORM_META = {
       msg('Likes and reups on individual songs'),
     ],
     whySection: [
-      msg('Play count is the first thing a blog, a DJ or an A&R looks at. Nobody listens to a link cold. They look at the number, decide whether anyone else has bothered, and play it or close it on that basis — which makes the first few thousand plays the hardest and the most useful you will ever get.'),
+      msg('Play count is the first thing a blog, a DJ or an A&R looks at. Nobody listens to a link cold. They look at the number, decide whether anyone else has bothered, and play it or close it on that basis, which makes the first few thousand plays the hardest and the most useful you will ever get.'),
       msg('Reups travel further than plays do. A reup puts your song on somebody else’s profile, so it reaches their followers rather than sitting on yours waiting to be found. For a new release it is the service that does the most per naira.'),
       msg('Audiomack is not Spotify and does not pay like it. Nobody is monetising plays here, which means nobody is policing them the way a royalty platform does. What you are buying is the look of traction in front of the people who decide what gets pushed.'),
       msg('Release first, then push. Getting plays onto a song that is already up and already shared works. Getting them onto a link nobody has seen builds a number with no story behind it, and people can tell.'),
@@ -370,7 +370,7 @@ const PLATFORM_META = {
     faq: [
       { q: msg('What link do you need for Audiomack?'), a: msg('The public song, album or profile URL from audiomack.com. Open the page in a browser and copy what is in the address bar. We never need your Audiomack login.') },
       { q: msg('Do Audiomack plays pay royalties?'), a: msg('Audiomack does pay some creators through its own programmes, and bought plays are not what those programmes are counting. Treat this as visibility in front of blogs, DJs and labels, not as income.') },
-      { q: msg('How fast do plays arrive?'), a: msg('It depends on the service you pick, and each one shows its own speed and start time on the row before you order. Gradual is the sensible choice on a new release — a song going from 40 to 90,000 plays overnight is the kind of thing people screenshot.') },
+      { q: msg('How fast do plays arrive?'), a: msg('It depends on the service you pick, and each one shows its own speed and start time on the row before you order. Gradual is the sensible choice on a new release. A song going from 40 to 90,000 plays overnight is the kind of thing people screenshot.') },
       { q: msg('Can I push a whole album?'), a: msg('Yes. Album and playlist links work the same way a song link does. If you want the plays spread across tracks rather than landing on one, order per song instead.') },
     ],
   },
@@ -397,7 +397,7 @@ const PLATFORM_META = {
     ],
     faq: [
       { q: msg('What link do you need for Boomplay?'), a: msg('The public song, album or artist URL from boomplay.com or the share link from the app. We never need your Boomplay login.') },
-      { q: msg('Can this affect my Boomplay royalties?'), a: msg('Boomplay does pay on streams, and any platform that pays on a number also watches that number. Keep the volume proportionate to where you actually are, and do not run it on a song that is already earning — the visibility is the point, not the payout.') },
+      { q: msg('Can this affect my Boomplay royalties?'), a: msg('Boomplay does pay on streams, and any platform that pays on a number also watches that number. Keep the volume proportionate to where you actually are, and do not run it on a song that is already earning. The visibility is the point, not the payout.') },
       { q: msg('Can I get Nigerian streams specifically?'), a: msg('Where a service offers Nigerian streams it says so on the row before you order, and those cost more than worldwide ones. For a Nigerian artist they are usually worth it: the audience matches the music and the regional charts are what you are aiming at.') },
       { q: msg('How long does a Boomplay order take?'), a: msg('Each service shows its own speed and start time on the row. Most start within the hour and deliver over a day or more, which is what you want on a new release.') },
     ],
@@ -417,7 +417,7 @@ const PLATFORM_META = {
     ],
     whySection: [
       msg('Reviews decide the call, not the ranking. Two listings sit next to each other, one has eleven reviews and one has none, and the phone rings at the first. For a business people have not heard of, the review count is the entire reason a stranger picks up the phone.'),
-      msg('Write the reviews yourself and they read like your customers. The services that take custom text let you say what people actually say about you — the specific thing you are good at, in the words a Nigerian customer would use. Generic five-star praise reads as bought because it is the one thing every bought review has in common.'),
+      msg('Write the reviews yourself and they read like your customers. The services that take custom text let you say what people actually say about you: the specific thing you are good at, in the words a Nigerian customer would use. Generic five-star praise reads as bought because it is the one thing every bought review has in common.'),
       msg('This is the riskiest thing we sell, and pretending otherwise would not help you. Google removes reviews it does not believe, and it is better at this than the social platforms are. Reviews can and do disappear. Order small, order slowly, and never all at once.'),
       msg('It works alongside asking real customers, not instead of it. The businesses this goes well for are the ones already getting a few genuine reviews, where bought ones fill the gaps. On a listing with nothing real behind it, a wall of new reviews is exactly the pattern Google looks for.'),
       msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
@@ -425,7 +425,7 @@ const PLATFORM_META = {
     faq: [
       { q: msg('What do you need to leave a Google review?'), a: msg('The public link to your Google Business Profile or Maps listing. Search your business name on Google Maps, tap Share, and copy the link. We never need access to your Google account.') },
       { q: msg('Will Google remove the reviews?'), a: msg('Some, sometimes. Google filters reviews it does not trust, and no panel anywhere can promise otherwise. Ordering a small number spread over time survives far better than a burst, and a listing with real reviews already on it survives better than one without.') },
-      { q: msg('Can I write the review text myself?'), a: msg('Yes, on the services that support custom comments. You send one review per line and each goes out as written. This is the option worth paying for — specific, ordinary language about the thing you actually do is what makes a review believable.') },
+      { q: msg('Can I write the review text myself?'), a: msg('Yes, on the services that support custom comments. You send one review per line and each goes out as written. This is the option worth paying for: specific, ordinary language about the thing you actually do is what makes a review believable.') },
       { q: msg('Is this safe for my business listing?'), a: msg('It carries real risk and we would rather say so. Google can filter reviews, and in serious cases it can flag a listing. Keep it small, keep it slow, keep asking real customers, and do not let bought reviews outnumber genuine ones.') },
     ],
   },
@@ -438,7 +438,7 @@ const PLATFORM_META = {
     h1: msg('Buy Threads Followers, Likes and Reposts in Nigeria'),
     title: 'Buy Threads Followers in Nigeria | Naira Pricing',
     metaDesc: 'Buy Threads followers, likes, reposts and comments in Nigeria. Nigerian accounts available. Naira pricing, no foreign card needed. From ₦1,000.',
-    heroDesc: msg('Threads runs on your Instagram account, so the people who find you there already know the handle. An empty Threads profile beside a working Instagram reads as abandoned, which is worse than not being on it at all. Nitro carries Threads followers, likes, reposts and comments priced in Naira, from ₦1,000 — including Nigerian accounts.'),
+    heroDesc: msg('Threads runs on your Instagram account, so the people who find you there already know the handle. An empty Threads profile beside a working Instagram reads as abandoned, which is worse than not being on it at all. Nitro carries Threads followers, likes, reposts and comments priced in Naira, from ₦1,000, including Nigerian accounts.'),
     mainService: 'followers',
     kw: 'buy Threads followers Nigeria',
     whatYouGet: [
@@ -450,14 +450,14 @@ const PLATFORM_META = {
     whySection: [
       msg('Your Threads profile is your Instagram profile. Same handle, same name, same picture, and anyone who taps through from one sees the other. That is the argument for not leaving it empty: it is not a separate account nobody knows about, it is a second room in a house people already visit.'),
       msg('Reposts are the distribution. Threads has no hashtag culture and no share-to-story habit, so a post moves because somebody reposted it into their own followers. That makes reposts worth more per unit here than likes, and it is the one number that decides whether a post leaves your own followers at all.'),
-      msg('Nigerian accounts are available on Threads, and on this platform they matter. A Lagos business with ten thousand followers who have never heard of Lagos does not convert, and the replies under your posts are public — a Nigerian comment reads as a Nigerian audience to everyone who scrolls past it.'),
+      msg('Nigerian accounts are available on Threads, and on this platform they matter. A Lagos business with ten thousand followers who have never heard of Lagos does not convert, and the replies under your posts are public. A Nigerian comment reads as a Nigerian audience to everyone who scrolls past it.'),
       msg('Your profile has to be public for the order to run. A private Threads profile cannot be followed by the service, and anything not delivered comes back to your wallet.'),
       msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
     ],
     faq: [
-      { q: msg('What link do you need for Threads?'), a: msg('Your public profile URL — threads.net followed by your handle — or the direct link to a post for likes, comments and reposts. We never need your Instagram or Threads login.') },
+      { q: msg('What link do you need for Threads?'), a: msg('Your public profile URL (threads.net followed by your handle) or the direct link to a post for likes, comments and reposts. We never need your Instagram or Threads login.') },
       { q: msg('Does this touch my Instagram account?'), a: msg('No. Threads and Instagram share a login, but the follower counts are separate and an order here lands on Threads only. Your Instagram numbers do not move.') },
-      { q: msg('Can I get Nigerian followers on Threads?'), a: msg('Yes, on the groups that say so — followers, likes, comments and reposts all have a Nigerian option. They cost more than worldwide accounts and for a Nigerian audience they are usually worth it, because the replies are public and the names are visible.') },
+      { q: msg('Can I get Nigerian followers on Threads?'), a: msg('Yes, on the groups that say so: followers, likes, comments and reposts all have a Nigerian option. They cost more than worldwide accounts and for a Nigerian audience they are usually worth it, because the replies are public and the names are visible.') },
       { q: msg('Why did my order not start?'), a: msg('A private profile is the usual reason. Threads has to be public for the whole of the order, and if it goes private partway, whatever was not delivered is refunded to your wallet.') },
     ],
   },
@@ -477,16 +477,16 @@ const PLATFORM_META = {
     ],
     whySection: [
       msg('The directory is ranked by live viewers, and that is the whole problem with starting out. Nobody browses to the bottom of a category, so a stream with nothing on the counter is invisible for exactly as long as it has nothing on the counter. Getting onto the first screen is the only way anyone arrives by accident.'),
-      msg('Live viewers are timed, not permanent. The one-hour service holds a count on a stream while it is running and then it ends, which is the honest shape of the product — it buys you position during the stream, not a number that stays afterwards. Order it when you are actually going live.'),
+      msg('Live viewers are timed, not permanent. The one-hour service holds a count on a stream while it is running and then it ends, which is the honest shape of the product. It buys you position during the stream, not a number that stays afterwards. Order it when you are actually going live.'),
       msg('Followers are what survive the stream. They put your channel in somebody’s following list and get them the notification next time, which is the part that compounds. Viewers get you found once; followers get you found again.'),
       msg('Clips are how Kick streamers get discovered off-platform. A clip with views gets picked up and reposted to TikTok and X, and those are the numbers people check before they share something.'),
       msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
     ],
     faq: [
-      { q: msg('What link do you need for Kick?'), a: msg('Your channel URL — kick.com followed by your username — or the direct clip or video link for views. We never need your Kick login.') },
+      { q: msg('What link do you need for Kick?'), a: msg('Your channel URL (kick.com followed by your username) or the direct clip or video link for views. We never need your Kick login.') },
       { q: msg('When should I order live viewers?'), a: msg('Start the stream first, then place the order. The viewers are held for an hour on a stream that is actually running, so ordering them before you go live wastes the window.') },
       { q: msg('Do the live viewers chat?'), a: msg('No. They are viewers on the counter, not participants, and anyone claiming otherwise is selling you bot accounts that get channels banned. The count is what moves you up the directory; the conversation is still yours to start.') },
-      { q: msg('Can I get banned for this?'), a: msg('Keep it proportionate to your channel and you are buying visibility, not faking a community. The risk on any platform is a number that makes no sense beside everything else on the account — a thousand viewers on a channel with forty followers is the shape that gets looked at.') },
+      { q: msg('Can I get banned for this?'), a: msg('Keep it proportionate to your channel and you are buying visibility, not faking a community. The risk on any platform is a number that makes no sense beside everything else on the account: a thousand viewers on a channel with forty followers is the shape that gets looked at.') },
     ],
   },
   soundcloud: {
@@ -504,7 +504,7 @@ const PLATFORM_META = {
       msg('Reposts, which is how a track spreads on SoundCloud'),
     ],
     whySection: [
-      msg('Reposts are the engine here, not likes. SoundCloud built its feed around the repost — a track lands in somebody’s followers because another account reposted it — so the repost is the only action that actually moves your record to new ears. Likes are a signal; reposts are distribution.'),
+      msg('Reposts are the engine here, not likes. SoundCloud built its feed around the repost (a track lands in somebody’s followers because another account reposted it), so the repost is the only action that actually moves your record to new ears. Likes are a signal; reposts are distribution.'),
       msg('The play count is a gatekeeper before it is a vanity number. DJs, blogs and A&Rs use it as the first filter on whether to open a link at all, and a track sitting under a hundred plays reads as nobody has heard it, whether or not that is true.'),
       msg('It is the platform where unfinished work lives. Snippets, demos, freestyles and loosies go to SoundCloud precisely because they do not belong on Spotify yet, which means the numbers here decide what gets finished and what gets dropped.'),
       msg('Followers carry the next upload. A profile with followers means your next track opens with plays instead of starting at zero, and for an artist releasing regularly that is the difference between building and restarting each time.'),
@@ -512,7 +512,7 @@ const PLATFORM_META = {
     ],
     faq: [
       { q: msg('What link do you need for SoundCloud?'), a: msg('The public track URL for plays, likes and reposts, or your profile URL for followers. A private or unlisted track cannot be delivered to, so make it public first. We never need your SoundCloud login.') },
-      { q: msg('Do plays count towards SoundCloud monetisation?'), a: msg('Do not treat this as a payout strategy. SoundCloud pays on monetised tracks and any platform that pays on a number watches that number closely — run this for visibility on a track you are pushing, not on one that is already earning.') },
+      { q: msg('Do plays count towards SoundCloud monetisation?'), a: msg('Do not treat this as a payout strategy. SoundCloud pays on monetised tracks and any platform that pays on a number watches that number closely. Run this for visibility on a track you are pushing, not on one that is already earning.') },
       { q: msg('What is the difference between a like and a repost?'), a: msg('A like is a private signal on your track. A repost puts the track into the feed of everybody who follows the account that reposted it, which is why reposts cost more and why they are the ones worth buying if you are choosing.') },
       { q: msg('How fast do SoundCloud orders run?'), a: msg('Each service shows its own start time and speed on the row before you order. Plays usually start quickly and spread over a day, which is what you want on a new upload.') },
     ],
@@ -532,7 +532,7 @@ const PLATFORM_META = {
       msg('Comments, in Standard and Premium'),
     ],
     whySection: [
-      msg('The timeline is chronological and unranked, so nothing is being hidden from you by an algorithm — but nothing is being promoted for you either. On Bluesky reach is almost entirely who follows you and who reposts you, which makes the follower count a more direct lever here than on any platform that ranks a feed.'),
+      msg('The timeline is chronological and unranked, so nothing is being hidden from you by an algorithm, but nothing is being promoted for you either. On Bluesky reach is almost entirely who follows you and who reposts you, which makes the follower count a more direct lever here than on any platform that ranks a feed.'),
       msg('Being early is the actual asset. Handles, audiences and the habit of checking a platform all get harder to win the longer you wait, and the accounts that carry weight on any network are usually the ones that were there before it was obvious. Bluesky is at the stage where a modest number still reads as established.'),
       msg('Reposts travel further than likes because there is no algorithm doing the travelling. A repost is the entire distribution mechanism: it moves your post into somebody else’s followers and that is the only way it leaves yours.'),
       msg('Comments are visible social proof and they last. On a chronological feed a post with a conversation under it is the one that people stop on, and Premium comments read as people rather than as filler.'),
@@ -561,12 +561,12 @@ const PLATFORM_META = {
       msg('It is the francophone route. Deezer has real weight in Senegal, Côte d’Ivoire, Cameroon and across French-speaking Africa, so for a Nigerian artist planning a release beyond Lagos it reaches listeners that Spotify and Apple Music do not. The market next door is the cheapest one to grow into.'),
       msg('Followers on an artist profile get your releases in front of the same people twice. Deezer notifies followers of a new release, which means the profile you build on one drop is the audience waiting for the next, rather than a number that sits there looking good.'),
       msg('Track likes are what the editorial side reads. Deezer runs curated playlists the same way every DSP does, and engagement on a track is part of what puts it in front of whoever is building them.'),
-      msg('Keep it proportionate on a monetised profile. Deezer pays on streams, so this is a platform where an implausible number is worth avoiding — build the profile, do not farm the payout.'),
+      msg('Keep it proportionate on a monetised profile. Deezer pays on streams, so this is a platform where an implausible number is worth avoiding. Build the profile, do not farm the payout.'),
       msg('No foreign card needed. Priced in Naira, paid through Opay, PalmPay, Kuda, Moniepoint, any Nigerian bank, card or crypto.'),
     ],
     faq: [
       { q: msg('What link do you need for Deezer?'), a: msg('Your artist profile URL for followers, or the track URL for likes. Both are the public deezer.com links or the share link from the app. We never need your Deezer login.') },
-      { q: msg('Does Nitro sell Deezer streams?'), a: msg('Not at the moment — the curated Deezer groups are followers and likes. If streams appear on a provider we carry, they show up in the full list, which you can search from the order page.') },
+      { q: msg('Does Nitro sell Deezer streams?'), a: msg('Not at the moment. The curated Deezer groups are followers and likes. If streams appear on a provider we carry, they show up in the full list, which you can search from the order page.') },
       { q: msg('Is Deezer worth it for a Nigerian artist?'), a: msg('It depends where you want to be heard. For Lagos alone, Boomplay and Audiomack are closer to where people are. For a release meant to travel across West Africa, particularly the French-speaking markets, Deezer is the one that gets skipped and should not be.') },
       { q: msg('How long does a Deezer order take?'), a: msg('Each service shows its own start time and speed on the row. Most start within the hour and deliver over a day or more.') },
     ],

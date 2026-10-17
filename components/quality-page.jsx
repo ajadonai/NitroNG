@@ -17,7 +17,7 @@ const SECTIONS = [
 
 const WHY = [
   '"Drops" happen when followers, likes, or views disappear after delivery. On most SMM panels, this is common because they list services from dozens of providers without testing them. You place an order, the numbers go up, and a week later half of it is gone.',
-  "The root cause is simple: most panels are resellers with no quality control. They connect to a provider API, list everything available, and let customers sort through the mess. When a service starts dropping, they don't notice — you do.",
+  "The root cause is simple: most panels are resellers with no quality control. They connect to a provider API, list everything available, and let customers sort through the mess. When a service starts dropping, they don't notice. You do.",
   "The result? You spend hours testing services yourself, wasting money on bad ones, and still never knowing which provider is reliable this week. It's a guessing game.",
   'Nigerian creators and businesses waste real money on this cycle. At Nitro, we decided to solve it at the source instead of passing the problem to you.',
 ];
@@ -26,7 +26,7 @@ const PRACTICES = [
   ['We test before you see it', 'Every service is tested internally before it goes live. If it drops heavily in testing, it never reaches customers.'],
   ['We monitor after delivery', 'We track delivery quality across providers. When a service starts underperforming, we change provider or take it offline.'],
   ['We limit our catalogue', 'Hundreds of services that work, not thousands that might. A smaller, curated list beats a massive unreliable one.'],
-  ['We pick providers carefully', 'A shortlist of vetted providers. Not the cheapest — the most consistent.'],
+  ['We pick providers carefully', 'A shortlist of vetted providers. Not the cheapest, the most consistent.'],
   ['We offer refill protection', 'No service is drop-proof, so Standard and Premium top dropped numbers back up at no cost.'],
   ['We respond when things go wrong', 'Notice unusual drops and WhatsApp support investigates. A real person, not a ticket system.'],
 ];
@@ -34,7 +34,7 @@ const PRACTICES = [
 const TIERS = [
   ['Budget', 'No refill', 'Lowest price, no refill. Good for testing or one-time boosts where you just need the initial push.'],
   ['Standard', '30 days', '30-day refill guarantee. If numbers drop within 30 days, we top them back up automatically. Best balance of price and reliability.'],
-  ['Premium', 'Life of the order', 'Lifetime refill. Numbers drop at any point — we refill them, no questions asked. For accounts where every follower counts.'],
+  ['Premium', 'Life of the order', 'Lifetime refill. Numbers drop at any point, we refill them, no questions asked. For accounts where every follower counts.'],
 ];
 
 function QualityInner({ serviceCount, platformCount }) {
@@ -43,10 +43,10 @@ function QualityInner({ serviceCount, platformCount }) {
 
   const faq = [
     ['What is a "drop" in SMM?', 'A drop is when followers, likes, or views you received through a promotion service disappear after some time. This usually happens because the accounts providing the engagement get flagged or removed by the platform.'],
-    ['Can any panel guarantee zero drops?', 'No — anyone who claims 0% drop rate is not being honest. Social platforms constantly remove suspicious accounts. The difference is how a panel handles it: low drop rates from careful curation, plus automatic refill when drops do happen.'],
-    ['How is Nitro different from other SMM panels?', 'Most panels list every service their providers offer without testing. Nitro curates — we test services internally, monitor delivery quality, and remove underperforming providers. You only see services that have passed our quality checks.'],
-    ['Do I need to track my own drop rates?', "No. If you use a Standard or Premium tier service, refills happen automatically when we detect drops. You don't need to open a ticket or contact support — the system handles it."],
-    ['What platforms does Nitro support?', `Instagram, TikTok, YouTube, X (Twitter), Facebook, Telegram, Spotify, Snapchat, LinkedIn, Twitch, Discord, and more — ${serviceCount || '35'}+ service categories across ${platformCount || '10'}+ platforms.`],
+    ['Can any panel guarantee zero drops?', 'No. Anyone who claims 0% drop rate is not being honest. Social platforms constantly remove suspicious accounts. The difference is how a panel handles it: low drop rates from careful curation, plus automatic refill when drops do happen.'],
+    ['How is Nitro different from other SMM panels?', 'Most panels list every service their providers offer without testing. Nitro curates: we test services internally, monitor delivery quality, and remove underperforming providers. You only see services that have passed our quality checks.'],
+    ['Do I need to track my own drop rates?', "No. If you use a Standard or Premium tier service, refills happen automatically when we detect drops. You don't need to open a ticket or contact support. The system handles it."],
+    ['What platforms does Nitro support?', `Instagram, TikTok, YouTube, X (Twitter), Facebook, Telegram, Spotify, Snapchat, LinkedIn, Twitch, Discord, and more: ${serviceCount || '35'}+ service categories across ${platformCount || '10'}+ platforms.`],
   ];
 
   const [waLink, setWaLink] = useState(null);

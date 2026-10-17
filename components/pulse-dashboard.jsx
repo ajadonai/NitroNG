@@ -139,7 +139,7 @@ function Refunds({ data }) {
           <div className="pl-row pl-two" key={r.id}>
             <span className="pl-t m">{ago(r.refundedAt)}</span>
             <span className="pl-who">{r.user}</span>
-            <span className="pl-what">{r.service}{r.tier ? ` · ${r.tier}` : ''}<em>{r.reason || (r.remains > 0 ? `Partial — ${num(r.remains)} of ${num(r.quantity)} left` : 'Refunded')}</em></span>
+            <span className="pl-what">{r.service}{r.tier ? ` · ${r.tier}` : ''}<em>{r.reason || (r.remains > 0 ? `Partial: ${num(r.remains)} of ${num(r.quantity)} left` : 'Refunded')}</em></span>
             <span className="pl-amt m pl-out">−{naira(r.refunded)}</span>
           </div>
         ))}
@@ -167,7 +167,7 @@ function Month({ data }) {
   ];
   return (
     <section className="pl-month">
-      <header><h3>{tr("This month")}</h3><span className="pl-cnt">1–{day} {monthName}</span></header>
+      <header><h3>{tr("This month")}</h3><span className="pl-cnt">1{tr(" to ")}{day} {monthName}</span></header>
       <div className="pl-mfs">{facts.map(([l, v]) => <div className="pl-mf" key={l}><div className="pl-mv m">{v}</div><div className="pl-ml">{l}</div></div>)}</div>
     </section>
   );

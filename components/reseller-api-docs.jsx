@@ -359,7 +359,7 @@ function ApiDocsInner({ dark: darkProp, t: tProp, embedded, onNavigate } = {}) {
                 {/* Catalogs */}
                 <div className="rad-sec" id="catalogs">
                   <h2>{tr("Catalogs & rates")}</h2>
-                  <div className="rad-desc">{tr("Every key serves the same catalogue — there is no per-account list and nothing to switch on. The")} <code>services</code> {tr("action returns all of it at your current reseller rates, and rates improve automatically as your monthly volume climbs the ladder.")}</div>
+                  <div className="rad-desc">{tr("Every key serves the same catalogue. There is no per-account list and nothing to switch on. The")} <code>services</code> {tr("action returns all of it at your current reseller rates, and rates improve automatically as your monthly volume climbs the ladder.")}</div>
                 </div>
 
                 {/* services */}

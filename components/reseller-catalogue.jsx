@@ -41,7 +41,7 @@ function GradeLegendBody({ dark, t }) {
         ))}
       </div>
       <div className="text-[13px] leading-relaxed" style={{ color: t.textMuted }}>
-        Not every service carries a grade — an ungraded service is <span style={{ fontWeight: 600, color: dark ? "#cfc9c2" : "#555250" }}>{tr("not a lesser one")}</span>,
+        Not every service carries a grade. An ungraded service is <span style={{ fontWeight: 600, color: dark ? "#cfc9c2" : "#555250" }}>{tr("not a lesser one")}</span>,
         grading just isn&rsquo;t available across the whole catalogue. Judge ungraded services on refill terms and price;
         many are among the strongest performers.
       </div>
@@ -249,7 +249,7 @@ export default function ResellerCataloguePage({ dark, t }) {
         <span className="block text-[13px] font-medium truncate mb-0.5" style={{ color: t.text }}>{s.label}</span>
         <span className="flex items-center gap-2 text-[11px]" style={{ color: t.textMuted }}>
           {idChip(s.id)}
-          <span>{s.min.toLocaleString()}–{s.max.toLocaleString()}</span>
+          <span>{s.min.toLocaleString()}{tr(" to ")}{s.max.toLocaleString()}</span>
           {s.refill && <span className="py-px px-1.5 rounded-full text-[11px] font-semibold" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", color: dark ? "#6ee7b7" : "#059669" }}>refill</span>}
           {s.cancel && <span className="hidden md:inline py-px px-1.5 rounded-full text-[11px] font-semibold" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)", color: t.textMuted }}>cancel</span>}
         </span>
@@ -353,7 +353,7 @@ export default function ResellerCataloguePage({ dark, t }) {
                   <span className="flex-1 min-w-0">
                     <span className="flex items-center gap-2 text-[11px]" style={{ color: t.textMuted }}>
                       {idChip(tier.apiId ?? "—")}
-                      <span>{tier.min.toLocaleString()}–{tier.max.toLocaleString()}</span>
+                      <span>{tier.min.toLocaleString()}{tr(" to ")}{tier.max.toLocaleString()}</span>
                       {tier.speed && <span className="max-md:hidden">{tier.speed}</span>}
                       {tier.refill && <span className="py-px px-1.5 rounded-full text-[11px] font-semibold" style={{ background: dark ? "rgba(110,231,183,.12)" : "rgba(5,150,105,.09)", color: dark ? "#6ee7b7" : "#059669" }}>{tier.refill}</span>}
                     </span>
@@ -448,7 +448,7 @@ export default function ResellerCataloguePage({ dark, t }) {
 
             {/* the thing they came for */}
             <div className="rounded-[12px] p-4 mb-4" style={{ background: softBg }}>
-              <div className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: t.textMuted }}>{tr("Service ID — use this in API calls")}</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: t.textMuted }}>{tr("Service ID: use this in API calls")}</div>
               <div className="flex items-center justify-between">
                 <span className="text-[28px] font-bold" style={{ color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{drawer.id}</span>
                 <button onClick={() => { copyText(String(drawer.id)); setCopied(true); }}
@@ -457,7 +457,7 @@ export default function ResellerCataloguePage({ dark, t }) {
             </div>
 
             <div className="grid grid-cols-2 gap-2 mb-4">
-              {[["Price / 1k", naira(drawer.price, money)], ["Min – Max", `${drawer.min.toLocaleString()} – ${drawer.max.toLocaleString()}`],
+              {[["Price / 1k", naira(drawer.price, money)], ["Order size", `${drawer.min.toLocaleString()}${tr(" to ")}${drawer.max.toLocaleString()}`],
                 ["Refill", drawer.refill ? "Supported" : "Not offered"], ["Cancel", drawer.cancel ? "Supported" : "Not offered"]].map(([label, value]) => (
                 <div key={label} className="rounded-[10px] py-2.5 px-3" style={{ background: cardBg, border: `1px solid ${border}` }}>
                   <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: t.textMuted }}>{label}</div>

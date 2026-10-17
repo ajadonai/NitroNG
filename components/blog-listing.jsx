@@ -66,7 +66,7 @@ function BlogListingInner({ initialPosts, initialCategories, initialTotalPages }
         <div className="bl-hero">
           <span className="bl-eye">The Nitro Blog</span>
           <h1 className="bl-h1">{tr("Tips, guides and updates")}</h1>
-          <p className="bl-lede">{tr("Everything we have learned about growing an audience in Nigeria — written for the people doing the growing.")}</p>
+          <p className="bl-lede">{tr("Everything we have learned about growing an audience in Nigeria, written for the people doing the growing.")}</p>
           <div className="bl-search">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder={tr("Search articles…")} aria-label={tr("Search articles")} />
@@ -97,7 +97,7 @@ function BlogListingInner({ initialPosts, initialCategories, initialTotalPages }
               </span>
             </a>
           )) : (
-            <div className="bl-empty">{tr("Nothing matches")}{search ? ` "${search}"` : ""} {tr("— try another word or category.")}</div>
+            <div className="bl-empty">{tr("Nothing matches")}{search ? ` "${search}"` : ""}. {tr("Try another word or category.")}</div>
           )}
         </div>
 

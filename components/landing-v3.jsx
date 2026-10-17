@@ -716,7 +716,7 @@ function LandingInner({ initialAuthQuery, initialStats }){
               than saying nothing. */}
           {returnTo&&<div className="text-[11.5px] leading-[1.5] mt-2 text-center" style={{color:dark?"#8a8580":"#757170"}}>{tr("You'll land back where you were.")}</div>}
           <div className="text-[11.5px] leading-[1.55] mt-3 pt-2.5" style={{borderTop:`1px solid ${dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.06)"}`,color:dark?"#8a8580":"#757170"}}>
-            {tr("Didn't expect this?")} <button onClick={()=>{setSessionExpired(false);setModal("forgot");}} className="bg-transparent border-none p-0 cursor-pointer underline underline-offset-2 text-[11.5px] font-semibold" style={{color:dark?"#a09b95":"#555250"}}>{tr("Change your password")}</button> {tr("— it signs every other device out.")}
+            {tr("Didn't expect this?")} <button onClick={()=>{setSessionExpired(false);setModal("forgot");}} className="bg-transparent border-none p-0 cursor-pointer underline underline-offset-2 text-[11.5px] font-semibold" style={{color:dark?"#a09b95":"#555250"}}>{tr("Change your password")}</button>. {tr("It signs every other device out.")}
           </div>
         </>}
       </div>;})()}

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo, useCallback, forwardRef } from "r
 import { RailSec, RailCard, RailStep, RailNote, RailLink } from "./rail";
 import { useBodyScrollLock, Emph, Modal } from "./ui-primitives";
 import { trackViewContent } from "./capi-tracker";
-import { formatOrderQuantity as fQty, isValidLink, getLinkPlaceholder } from "../lib/order-form-core";
+import { formatOrderQuantity as fQty, isValidLink, getLinkPlaceholder, expandUsername, wantsProfileLink } from "../lib/order-form-core";
 import { useToast } from "./toast";
 import { SegPill } from "./seg-pill";
 import InlineAlert from "./inline-alert";
@@ -15,7 +15,8 @@ import { OrderForm as ExtractedOrderForm } from "./order-form";
 import FullList from "./full-list";
 import { ServiceGlyph, AUDIENCE_FLAG } from "./service-glyph";
 import { NotSureHelp, OrderForMeCard } from "./order-help";
-import { TASKS_ENABLED } from './rewards';
+import { TASKS_ENABLED, PAT_WA, PAT_TG } from './rewards';
+import { CopyChip } from './copy-chip';
 import { openCardFrame } from '@/lib/expandable-card';
 import { TRAFFIC_COUNTRIES, TRAFFIC_CONTINENTS } from "../lib/traffic-targets";
 import { copyText } from '@/lib/clipboard';
@@ -28,6 +29,11 @@ import { OffsetIcon } from "./offset-icons";
 const RESELLER_SLIDE_ENABLED = true;
 const RESELLER_SLIDE_HREF = '/resellers';
 const PROMO_SLIDES = ['wa', 'ig', ...(TASKS_ENABLED ? ['tasks'] : []), ...(RESELLER_SLIDE_ENABLED ? ['reseller'] : [])];
+// Each card in its own colour with one small thing moving (approved 17 Oct
+// 2026, mockup "Receipt Carousel"): hearts rising behind Instagram's button,
+// three task circles ticking themselves off, a "Your price" tag swinging.
+const HEART = <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.5 2.9 4.5 6.6 4.5c2.2 0 3.6 1.2 5.4 3.2 1.8-2 3.2-3.2 5.4-3.2 3.7 0 5.7 4 4.2 7.3C19.5 16.4 12 21 12 21z" /></svg>;
+const TICK = <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>;
 
 /* ═══════════════════════════════════════════ */
 /* ═══ PLATFORM DATA — 35 platforms        ═══ */
@@ -378,7 +384,7 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, t, activePromotion,
           <option value="" disabled>{tr("Choose an option")}</option>
           {svc.tiers.map(tier => (
             <option key={tier.tier} value={tier.tier}>
-              {tier.tier} — {money(promoOff > 0 ? Math.round(tier.price * (1 - promoOff)) : tier.price)} per {tier.per || "1K"}
+              {tier.tier}: {money(promoOff > 0 ? Math.round(tier.price * (1 - promoOff)) : tier.price)} per {tier.per || "1K"}
             </option>
           ))}
         </select>
@@ -445,8 +451,6 @@ const RCP_CSS = `
 .rcp-ht{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
 .rcp-ht b{font-size:18px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
 .rcp-ht small{font-size:12px;color:var(--mut);line-height:1.35}
-.rcp-id{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 9px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0}
-.rcp-id svg{width:12px;height:12px;color:var(--mut)}
 .rcp-what{display:flex;align-items:center;gap:11px;margin-top:14px;padding:11px 12px;border:1.5px solid var(--line);border-radius:13px;background:var(--soft)}
 .rcp-wt{flex:1;min-width:0}
 .rcp-wt b{display:block;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -463,14 +467,48 @@ const RCP_CSS = `
 .rcp-f small{display:block;margin-top:2px;font-size:10.5px;font-weight:600;color:var(--wait)}
 .rcp-money{color:var(--ok)}
 .rcp-car{margin-top:12px}
-.rcp-sl{display:flex;align-items:center;gap:11px;height:64px;padding:0 12px;border-radius:13px;border:1.5px solid color-mix(in srgb,var(--sc) 30%,var(--line));background:color-mix(in srgb,var(--sc) 6%,var(--card));box-shadow:2.5px 2.5px 0 color-mix(in srgb,var(--sc) 22%,transparent)}
-.rcp-si{width:38px;height:38px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;color:#fff;background:var(--sc);flex-shrink:0}
-.rcp-si svg{width:19px;height:19px}
-.rcp-st{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
-.rcp-st b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rcp-st i{font-style:normal;font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rcp-sb{display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 12px;border:0;border-radius:9px;font:inherit;font-size:12px;font-weight:800;line-height:1;white-space:nowrap;text-decoration:none;cursor:pointer;flex-shrink:0;color:var(--sci);background:var(--card);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--sc) 50%,transparent)}
-.rcp-sb svg{width:11px;height:11px}
+.rcp-pc{position:relative;display:flex;align-items:center;gap:12px;height:86px;padding-inline:14px 12px;border-radius:15px;color:#fff;overflow:hidden;isolation:isolate;box-shadow:3px 3px 0 var(--vs);animation:rcpIn .35s ease}
+@keyframes rcpIn{from{opacity:0;transform:translateY(6px)}}
+.rcp-pc::before{content:"";position:absolute;inset:-96px 0 0 -96px;z-index:-1;background-image:var(--pat,none);background-size:96px 96px;opacity:.14;animation:rcpDrift 36s linear infinite}
+@keyframes rcpDrift{to{transform:translate(96px,96px)}}
+.rcp-pc.wa{--vs:#0c5440;--bi:#0b6b47;--pat:${PAT_WA};background:radial-gradient(85% 140% at 100% 0%,rgba(90,255,170,.5),transparent 62%),linear-gradient(140deg,#0b5641 0%,#128c7e 50%,#1db75d 100%)}
+.rcp-pc.ig{--vs:#7a1f5a;--bi:#b4246a;background:radial-gradient(120% 160% at 0% 110%,#ffd77a 0%,rgba(255,215,122,0) 42%),linear-gradient(115deg,#f58529 0%,#dd2a7b 42%,#8134af 78%,#515bd4 100%)}
+.rcp-pc.tasks{--vs:#173d93;--bi:#1d4ed8;--pat:${PAT_TG};background:radial-gradient(85% 140% at 100% 0%,rgba(150,220,255,.5),transparent 62%),linear-gradient(140deg,#1e3a8a 0%,#2563eb 55%,#38bdf8 100%)}
+.rcp-pc.reseller{--vs:#3a1828;--bi:#6a3450;background:radial-gradient(70% 180% at 78% 50%,rgba(255,196,214,.4),transparent 62%),linear-gradient(115deg,#381a2a 0%,#6a3450 48%,#b56c82 100%)}
+.dark .rcp-pc.wa{--vs:#1d6b53}
+.dark .rcp-pc.ig{--vs:#8e2a6c}
+.dark .rcp-pc.tasks{--vs:#2a4fa8}
+.dark .rcp-pc.reseller{--vs:#5c2c42}
+.rcp-pc.reseller::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.2) 50%,transparent 62%);transform:translateX(-110%);animation:rcpSheen 6.5s ease-in-out infinite}
+@keyframes rcpSheen{0%,62%{transform:translateX(-110%)}100%{transform:translateX(110%)}}
+.rcp-pg{position:relative;z-index:1;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;flex-shrink:0;color:#fff;background:rgba(255,255,255,.2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.32),2px 2px 0 rgba(0,0,0,.16)}
+.rcp-pg svg{width:21px;height:21px}
+.rcp-pg .ic-off{opacity:.3}
+.rcp-pg.live::after{content:"";position:absolute;inset:-5px;border-radius:16px;border:2px solid rgba(255,255,255,.6);animation:rcpRing 2.6s ease-out infinite}
+@keyframes rcpRing{0%{opacity:.9;transform:scale(.86)}100%{opacity:0;transform:scale(1.28)}}
+.rcp-pt{position:relative;z-index:1;display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.rcp-pt b{font-size:14.5px;font-weight:750;letter-spacing:-.01em;text-shadow:0 1px 2px rgba(0,0,0,.16);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcp-pt i{font-style:normal;font-size:11.5px;line-height:1.3;opacity:.92}
+.rcp-go{position:relative;z-index:1;display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 13px;border:0;border-radius:999px;background:#fff;color:var(--bi);font:inherit;font-size:12px;font-weight:800;line-height:1;white-space:nowrap;text-decoration:none;cursor:pointer;flex-shrink:0;box-shadow:2px 2px 0 rgba(0,0,0,.2)}
+.rcp-go svg{width:11px;height:11px}
+.rcp-hearts{position:absolute;inset-inline-end:22px;bottom:22px;width:64px;height:64px;z-index:0;pointer-events:none}
+.rcp-hearts span{position:absolute;bottom:0;color:rgba(255,255,255,.75);opacity:0;animation:rcpRise 4.2s ease-in infinite}
+.rcp-hearts span:nth-child(1){inset-inline-start:6px}
+.rcp-hearts span:nth-child(2){inset-inline-start:26px;animation-delay:1.4s}
+.rcp-hearts span:nth-child(3){inset-inline-start:44px;animation-delay:2.8s}
+@keyframes rcpRise{0%{opacity:0;transform:translateY(0) scale(.7)}20%{opacity:.9}100%{opacity:0;transform:translateY(-62px) scale(1.05)}}
+.rcp-ticks{position:absolute;inset-inline-end:16px;top:8px;display:flex;gap:4px;z-index:0;pointer-events:none}
+.rcp-ticks span{width:14px;height:14px;border-radius:50%;border:1.4px solid rgba(255,255,255,.5);display:grid;place-items:center;animation:rcpTick 4.5s ease-in-out infinite}
+.rcp-ticks svg{width:8px;height:8px;opacity:0;animation:rcpMark 4.5s ease-in-out infinite}
+.rcp-ticks span:nth-child(2),.rcp-ticks span:nth-child(2) svg{animation-delay:.6s}
+.rcp-ticks span:nth-child(3),.rcp-ticks span:nth-child(3) svg{animation-delay:1.2s}
+@keyframes rcpTick{0%,10%{background:transparent}25%,80%{background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.7)}100%{background:transparent}}
+@keyframes rcpMark{0%,15%{opacity:0}25%,80%{opacity:1}100%{opacity:0}}
+.rcp-tag{position:absolute;inset-inline-end:12px;top:2px;z-index:0;pointer-events:none;zoom:.76;filter:drop-shadow(2px 2px 0 rgba(40,10,25,.3));animation:rcpSway 4.5s ease-in-out infinite}
+.rcp-tag span{position:relative;display:inline-flex;align-items:center;height:26px;padding-inline:18px 10px;font-size:10.5px;font-weight:800;white-space:nowrap;color:#6a3450;background:#fff;border-start-end-radius:6px;border-end-end-radius:6px;clip-path:polygon(11px 0,100% 0,100% 100%,11px 100%,0 50%);transform:rotate(6deg)}
+.rcp-tag span::before{content:"";position:absolute;inset-inline-start:8px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:currentColor}
+@keyframes rcpSway{50%{transform:rotate(-4deg)}}
+@media (prefers-reduced-motion:reduce){.rcp-pc,.rcp-pc::before,.rcp-pc.reseller::after,.rcp-pg.live::after,.rcp-hearts span,.rcp-ticks span,.rcp-ticks svg,.rcp-tag{animation:none}.rcp-hearts{display:none}}
 .rcp-bars{display:flex;gap:4px;margin-top:9px;padding:0 2px}
 .rcp-bar{position:relative;flex:1;height:3px;border:0;padding:0;border-radius:2px;background:var(--line);overflow:hidden;cursor:pointer}
 .rcp-bar.done{background:color-mix(in srgb,var(--ac) 45%,var(--line))}
@@ -1400,7 +1438,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
     }
     const qtyBad = cartRows.findIndex(r => r.qty < r.min || r.qty > r.max);
     if (qtyBad >= 0) {
-      toast.error(tr("Invalid quantity"), `${tr("Row")} ${qtyBad + 1}: ${tr("must be")} ${cartRows[qtyBad].min.toLocaleString()}–${cartRows[qtyBad].max.toLocaleString()}`);
+      toast.error(tr("Invalid quantity"), `${tr("Row")} ${qtyBad + 1}: ${tr("must be")} ${cartRows[qtyBad].min.toLocaleString()}${tr(" to ")}${cartRows[qtyBad].max.toLocaleString()}`);
       scrollToRow(qtyBad);
       return;
     }
@@ -1467,7 +1505,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
           sessionStorage.removeItem("nitro_bulk_pending_key");
           setBulkError({ type: "balance", needed: data.needed || 0 });
         } else if (data.error === "still_processing") {
-          toast.info(tr("Already processing"), tr("Your order is being placed — please wait."));
+          toast.info(tr("Already processing"), tr("Your order is being placed. Please wait."));
         } else {
           sessionStorage.removeItem("nitro_bulk_pending_key");
           toast.error(tr("Bulk order failed"), data.error ? tr(data.error) : tr("Something went wrong"));
@@ -1483,7 +1521,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
       localStorage.removeItem(CART_KEY);
       if (onOrderSuccess) onOrderSuccess();
     } catch (err) {
-      const msg = err?.name === "TimeoutError" ? "Request timed out — orders may still be processing" : "Couldn't reach Nitro";
+      const msg = err?.name === "TimeoutError" ? "Request timed out. Orders may still be processing" : "Couldn't reach Nitro";
       setBulkError({ type: "network", message: msg });
     }
     setBulkLoading(false);
@@ -1681,8 +1719,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
                     the only one on New Order without a surface, and it read as
                     unfinished rather than restrained. Tinted from the card's
                     own colour so it pairs with the glyph square opposite it. */}
-                <span className="m text-[11.5px] md:text-[13px] font-bold shrink-0 tabular-nums rounded-full px-1.5 md:px-2 py-[2px] md:py-[3px]"
-                  style={{ fontFamily: "'JetBrains Mono', monospace", color: on ? v.ink : t.textMuted, background: on ? v.tintBg : (dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.05)") }}>{v.n == null ? "—" : v.n.toLocaleString()}</span>
+                <span className={"pbadge shrink-0 tabular-nums" + (on ? " solid" : "")} style={{ fontSize: 12 }}>{v.n == null ? "…" : v.n.toLocaleString()}</span>
               </button>
             );
           })}
@@ -1726,7 +1763,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
              footnote. Accent pill, and the prize stated as a number. */
           <button onClick={() => setPlatExpanded(!platExpanded)} className="w-full h-[38px] rounded-[11px] border-[1.5px] border-solid text-[13px] font-bold cursor-pointer font-[inherit] mb-2 flex items-center justify-center gap-2 transition-transform duration-150 hover:-translate-y-px" style={{ color: t.accentInk, borderColor: t.accent, background: t.accentLight }}>
             {platExpanded ? tr("Show less") : tr("See all platforms")}
-            {!platExpanded && <span className="m text-[11px] font-bold rounded-full px-[7px] py-[2px] text-white" style={{ background: t.accent }}>{visiblePlatforms.length}</span>}
+            {!platExpanded && <span className="pbadge">{visiblePlatforms.length}</span>}
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ transform: platExpanded ? "rotate(180deg)" : "none", transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         )}
@@ -1802,9 +1839,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
                     <b>{orderSuccess.queued ? tr("Order queued") : tr("Order placed")}</b>
                     <small>{orderSuccess.queued ? tr("Starts when your active order completes") : `${tr("Delivery")}: ${formatDeliverySpeed(orderSuccess.speed)}`}</small>
                   </div>
-                  <button type="button" className="rcp-id m" onClick={() => { copyText(String(orderSuccess.id)); toast.success(tr("Order number copied")); }} aria-label={tr("Copy order number")}>
-                    {orderSuccess.id}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                  </button>
+                  <CopyChip value={orderSuccess.id} label={tr("Copy order number")} onCopied={() => toast.success(tr("Order number copied"))} />
                 </div>
                 {/* What was ordered, in one box: the service, then the tier and its
                     refill each on its own icon, then the link. Refill is said here
@@ -1832,7 +1867,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
                 {orderSuccess.discordSetup && (
                   <a href={discordBotUrl} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 mt-2 py-2.5 px-3 rounded-xl no-underline text-[12px] leading-[1.4]" style={{ background: dark ? "rgba(88,101,242,.14)" : "rgba(88,101,242,.1)", color: t.text }}>
                     <OffsetIcon name="alert" size={14} color="#5865F2" className="shrink-0 mt-px" />
-                    <span><Emph weight={700}>{tr("*Bot not in the server yet?* Add it now, or this order is cancelled —")}</Emph> <span style={{ color: "#5865F2", fontWeight: 700 }}>{tr("open the bot link")}</span></span>
+                    <span><Emph weight={700}>{tr("*Bot not in the server yet?* Add it now, or this order is cancelled:")}</Emph> <span style={{ color: "#5865F2", fontWeight: 700 }}>{tr("open the bot link")}</span></span>
                   </a>
                 )}
                 {/* Promo carousel: one card at a time, every card the same height,
@@ -1842,18 +1877,21 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
                   onTouchEnd={e => { const sx = promoTouchX.current; promoTouchX.current = null; setPromoPaused(false); if (sx != null) { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 36) setPromoSlide(p => (p + (dx < 0 ? 1 : PROMO_SLIDES.length - 1)) % PROMO_SLIDES.length); } }}>
                   {(() => {
                     const slides = {
-                      wa: { title: tr("Updates on WhatsApp"), sub: tr("Delivery news and deals, in one channel."), cta: tr("Follow"), c: "#1faa59", href: waChannelUrl, icon: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg> },
-                      ig: { title: tr("We're on Instagram"), sub: tr("See what we post before you post it."), cta: tr("Follow"), c: "#d62f6a", href: `https://instagram.com/${igHandle}`, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4.2" /><circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none" /></svg> },
-                      tasks: { title: tr("Earn while it delivers"), sub: tr("Quick tasks, real promo credit."), cta: tr("See tasks"), c: "#2563eb", onClick: () => { setOrderSuccess(null); setOrderModal(false); onNavigate?.("tasks"); }, icon: <OffsetIcon name="tasks" /> },
-                      reseller: { title: tr("Ordering for clients?"), sub: tr("Wholesale rates on the account you already have."), cta: tr("Join"), c: "#b0647a", href: RESELLER_SLIDE_HREF, icon: <OffsetIcon name="store" /> },
+                      wa: { title: tr("Updates on WhatsApp"), sub: tr("Delivery news and deals, in one channel."), cta: tr("Follow"), live: true, href: waChannelUrl, icon: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg> },
+                      ig: { title: tr("We're on Instagram"), sub: tr("See what we post before you post it."), cta: tr("Follow"), href: `https://instagram.com/${igHandle}`, extra: <span className="rcp-hearts" aria-hidden="true">{[0, 1, 2].map(i => <span key={i}>{HEART}</span>)}</span>, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4.2" /><circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none" /></svg> },
+                      tasks: { title: tr("Earn while it delivers"), sub: tr("Quick tasks, real promo credit."), cta: tr("See tasks"), extra: <span className="rcp-ticks" aria-hidden="true">{[0, 1, 2].map(i => <span key={i}>{TICK}</span>)}</span>, onClick: () => { setOrderSuccess(null); setOrderModal(false); onNavigate?.("tasks"); }, icon: <OffsetIcon name="tasks" /> },
+                      reseller: { title: tr("Ordering for clients?"), sub: tr("Wholesale rates on the account you already have."), cta: tr("Join"), href: RESELLER_SLIDE_HREF, extra: <span className="rcp-tag" aria-hidden="true"><span>{tr("Your price")}</span></span>, icon: <OffsetIcon name="store" /> },
                     };
-                    const sl = slides[PROMO_SLIDES[promoSlide]] || slides.wa;
+                    const key = slides[PROMO_SLIDES[promoSlide]] ? PROMO_SLIDES[promoSlide] : "wa";
+                    const sl = slides[key];
                     const Cta = sl.href ? "a" : "button";
+                    // Keyed on the slide, so each card plays its entrance as it arrives.
                     return (
-                      <div className="rcp-sl" style={{ "--sc": sl.c, "--sci": dark ? `color-mix(in srgb, ${sl.c} 70%, #fff)` : sl.c }}>
-                        <span className="rcp-si">{sl.icon}</span>
-                        <span className="rcp-st"><b>{sl.title}</b><i>{sl.sub}</i></span>
-                        <Cta className="rcp-sb" {...(sl.href ? { href: sl.href, target: "_blank", rel: "noopener" } : { type: "button", onClick: sl.onClick })}>{sl.cta}<svg className="dir-flip" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></Cta>
+                      <div key={key} className={`rcp-pc ${key}`}>
+                        {sl.extra}
+                        <span className={`rcp-pg${sl.live ? " live" : ""}`}>{sl.icon}</span>
+                        <span className="rcp-pt"><b>{sl.title}</b><i>{sl.sub}</i></span>
+                        <Cta className="rcp-go" {...(sl.href ? { href: sl.href, target: "_blank", rel: "noopener" } : { type: "button", onClick: sl.onClick })}>{sl.cta}<svg className="dir-flip" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></Cta>
                       </div>
                     );
                   })()}
@@ -1893,7 +1931,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
                 <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>{tr("Start small on TikTok")}</div>
               </div>
               <div className="text-[13px] leading-[1.6] mb-3" style={{ color: t.textMuted }}>
-                {tr("TikTok changes its rules often, and every change lands on delivery. So buy a little first, watch it arrive, then scale — that is how everyone who orders here regularly does it.")}
+                {tr("TikTok changes its rules often, and every change lands on delivery. So buy a little first, watch it arrive, then scale. That is how everyone who orders here regularly does it.")}
               </div>
               {/* Numbered, so three risks read as a short list rather than a
                   pile-on. The second one now says what happens when an order
@@ -1945,7 +1983,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
                   and the same weight. */}
               <div className="flex flex-col gap-2 mb-4">
                 {[
-                  <Emph key="rate">{tr("*50 – 500 a day*, every day, until the order is finished.")}</Emph>,
+                  <Emph key="rate">{tr("*50 to 500 a day*, every day, until the order is finished.")}</Emph>,
                   <Emph key="todo">{tr("Nothing for you to do. Watch the count climb in *Orders*.")}</Emph>,
                 ].map((line, i) => (
                   <div key={i} className="flex gap-2.5 text-[13px] leading-[1.5]" style={{ color: t.textMuted }}>
@@ -2111,47 +2149,40 @@ function MobileGuide({ dark, t }) {
     return () => { document.removeEventListener("mousedown", handler); document.removeEventListener("touchstart", handler); };
   }, [open]);
 
+  // The same structure and words as the desktop sidebar (ServicesSidebar), so a
+  // phone and a laptop explain the page the same way: numbered steps, drawn
+  // flags in place of emoji, one line on bulk, then the walkthrough.
+  const Row = ({ mark, title, sub }) => (
+    <div className="grid grid-cols-[28px_1fr] items-center gap-[11px] py-[7px]">
+      {mark}
+      <span className="min-w-0"><b className="block text-[13px] font-semibold text-t-text">{title}</b><span className="block text-[11.5px] leading-[1.4] mt-px text-t-text-muted">{sub}</span></span>
+    </div>
+  );
+  const Num = ({ n }) => <span className="ic-tile m text-[12px] font-bold" style={{ width: 26, height: 26, borderRadius: 8 }}>{n}</span>;
+  const Flag = ({ children }) => <span className="block w-[26px] h-[26px] rounded-[8px] overflow-hidden [&>svg]:w-[26px] [&>svg]:h-[26px] [&>svg]:block" style={{ boxShadow: `2px 2px 0 ${t.cardBorder}` }}>{children}</span>;
+  const Tile = ({ icon }) => <span className="ic-tile" style={{ width: 26, height: 26, borderRadius: 8 }}><OffsetIcon name={icon} size={14} /></span>;
+  const Head = ({ children }) => <div className="flex items-center gap-2 mt-3 mb-1 px-0.5 after:content-[''] after:flex-1 after:h-px after:bg-t-sidebar-border after:opacity-70"><span className="text-[10.5px] font-bold uppercase tracking-[1.3px] text-t-text-muted whitespace-nowrap">{children}</span></div>;
+
   return (
-    <div ref={ref} className="rounded-xl overflow-hidden mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.85)", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", boxShadow: dark ? "none" : "0 2px 8px rgba(0,0,0,.08)" }}>
-      <button onClick={() => setOpen(!open)} className="w-full flex justify-between items-center py-3 px-3.5 bg-transparent border-none cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ color: t.text }}>
-        <span className="text-sm font-semibold inline-flex items-center gap-1.5"><OffsetIcon name="book" size={14} /> How Our Services Work</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
+    <div ref={ref} className="rounded-[14px] overflow-hidden mb-3 border border-solid bg-t-card-bg" style={{ borderColor: t.cardBorder }}>
+      <button onClick={() => setOpen(!open)} aria-expanded={open} className="w-full flex items-center gap-[11px] py-[11px] px-3 bg-transparent border-none cursor-pointer font-[inherit] text-start">
+        <span className="ic-tile" style={{ width: 32, height: 32 }}><OffsetIcon name="book" size={16} /></span>
+        <span className="flex-1 min-w-0"><b className="block text-sm font-semibold text-t-text">{tr("How our services work")}</b><span className="block text-[11.5px] mt-px text-t-text-muted">{tr("Before you order, flags and bulk")}</span></span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-t-text-muted" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }}><path d="M6 9l6 6 6-6"/></svg>
       </button>
       {open && (
-        <div className="px-3.5 pb-3.5 pt-2.5 text-[13px] leading-[1.7] flex flex-col gap-2.5" style={{ color: t.textMuted, borderLeft: `3px solid ${t.accent}`, borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}` }}>
-          <div className="text-xs" style={{ color: t.textMuted }}>
-            <div className="mb-[3px]">• <Emph>{tr("Set profile to *public* before ordering — no refunds for private profiles")}</Emph></div>
-            <div className="mb-[3px]">• <Emph>{tr("*Start small* — test Budget first")}</Emph></div>
-            <div>{tr("• Not sure which tier? Tap the")} <OffsetIcon name="info" size={11} style={{display:"inline",verticalAlign:"-1px"}} /> {tr("for a quick breakdown")}</div>
-          </div>
-
-          <div style={{ height: 1, background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)" }} />
-
-          <div className="py-2 px-2.5 rounded-lg border border-solid" style={{ background: dark ? "rgba(74,222,128,.1)" : "rgba(22,163,74,.06)", borderColor: dark ? "rgba(74,222,128,.18)" : "rgba(22,163,74,.12)" }}>
-            <span className="font-semibold" style={{ color: dark ? "#4ade80" : "#16a34a" }}>🇳🇬 {tr("Nigerian")}</span>
-            <span className="ml-1">— {tr("Real local engagement for Naija accounts")}</span>
-          </div>
-
-          {/* 13 services already ship with 🇺🇸 in the name, and 116 carry no flag
-              at all — the biggest group in the catalogue. Both were unexplained. */}
-          <div className="py-2 px-2.5 rounded-lg border border-solid" style={{ background: dark ? "rgba(96,165,250,.1)" : "rgba(37,99,235,.06)", borderColor: dark ? "rgba(96,165,250,.2)" : "rgba(37,99,235,.14)" }}>
-            <span className="font-semibold" style={{ color: dark ? "#60a5fa" : "#2563eb" }}>🇺🇸 {tr("American")}</span>
-            <span className="ml-1">— {tr("A US audience, for reaching people over there")}</span>
-          </div>
-
-          {/* Slate, not amber: two thirds of the catalogue lives here and it is a
-              fact about targeting, not a warning about quality. */}
-          <div className="py-2 px-2.5 rounded-lg border border-solid" style={{ background: dark ? "rgba(159,176,192,.09)" : "rgba(91,107,124,.06)", borderColor: dark ? "rgba(159,176,192,.2)" : "rgba(91,107,124,.14)" }}>
-            <span className="font-semibold" style={{ color: dark ? "#9fb0c0" : "#5b6b7c" }}>{tr("No flag")}</span>
-            <span className="ml-1">— {tr("A worldwide mix. Not aimed at any one country")}</span>
-          </div>
-
-          <div className="py-2 px-2.5 rounded-lg border border-solid" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderColor: dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)" }}>
-            <span className="font-semibold" style={{ color: "#c47d8e" }}>{tr("Bulk Orders")}</span>
-            <span className="ml-1">— <Emph>{tr("Switch to *Bulk* mode to place up to 50 orders in one checkout. Failed orders are retried and refunded automatically.")}</Emph></span>
-          </div>
-
-          <button onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent("nitro-order-tour")); }} className="py-[9px] px-0 w-full rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit] flex items-center justify-center gap-1.5 border border-solid text-[#c47d8e] transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ borderColor: dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)", background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)" }}>
+        <div className="px-3 pb-3 pt-0.5" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
+          <Head>{tr("Before you order")}</Head>
+          <Row mark={<Num n={1} />} title={tr("Profile set to public")} sub={tr("No refunds for private profiles")} />
+          <Row mark={<Num n={2} />} title={tr("Start small")} sub={tr("Test a Budget tier first")} />
+          <Row mark={<Num n={3} />} title={tr("Not sure which tier?")} sub={<>{tr("Tap")} <span className="inline-flex items-center gap-[3px] text-[11px] font-bold align-[-1px] text-accent-ink"><OffsetIcon name="info" size={10} />{tr("Which tier?")}</span> {tr("on any service")}</>} />
+          <Head>{tr("Service flags")}</Head>
+          <Row mark={<Flag>{FLAG_NG}</Flag>} title={tr("Nigerian")} sub={tr("Real local engagement for Naija accounts")} />
+          <Row mark={<Flag>{FLAG_US}</Flag>} title={tr("American")} sub={tr("A US audience, for reaching people over there")} />
+          <Row mark={<Tile icon="globe" />} title={tr("No flag")} sub={tr("A worldwide mix. Not aimed at any one country")} />
+          <Head>{tr("Bulk")}</Head>
+          <Row mark={<Tile icon="layers" />} title={tr("Up to 50 orders in one checkout")} sub={tr("Anything that fails is retried, then refunded.")} />
+          <button onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent("nitro-order-tour")); }} className="mt-2.5 w-full h-[38px] rounded-[10px] border-none cursor-pointer font-[inherit] text-[13px] font-semibold flex items-center justify-center gap-1.5 text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)" }}>
             <OffsetIcon name="help" size={14} />
             {tr("Need a walkthrough?")}
           </button>
@@ -2190,7 +2221,7 @@ const BulkCartBar = forwardRef(function BulkCartBar({ rows, dark, t, menuData, b
     <div ref={ref} role={empty ? undefined : "button"} tabIndex={empty ? undefined : 0} aria-expanded={cartOpen} aria-label={empty ? "Empty cart" : `${rows.length} orders in cart`} onClick={onClick} onKeyDown={e => { if (!empty && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onClick(); } }} className={`fixed rounded-full py-2 pl-2 pr-4 max-md:py-1.5 max-md:pl-2 max-md:pr-3.5 flex items-center gap-4 max-md:gap-3 border border-solid z-[50] transition-all duration-200 ${empty ? "opacity-85" : "cursor-pointer hover:-translate-y-px"}`} style={{ left: bounds.left, right: bounds.right, bottom: bounds.bottom, background: dark ? "#1a1329" : "#fff", borderColor: dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)", boxShadow: "0 18px 48px rgba(0,0,0,.22), 0 2px 6px rgba(0,0,0,.08)" }}>
       {/* Left — cart icon + count */}
       <div className="flex items-center gap-3 shrink-0">
-        <div className="relative w-[42px] h-[42px] max-md:w-[40px] max-md:h-[40px] rounded-full flex items-center justify-center shrink-0" style={{ background: t.accent, color: "#fff" }}><CartIcon />{!empty && <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10.5px] font-bold flex items-center justify-center" style={{ background: dark ? "#f4f1ed" : "#1c1b19", color: dark ? "#0b0e1a" : "#fff", border: `2px solid ${dark ? "#1a1329" : "#fff"}` }}>{rows.length}</span>}</div>
+        <div className="relative w-[42px] h-[42px] max-md:w-[40px] max-md:h-[40px] rounded-full flex items-center justify-center shrink-0" style={{ background: t.accent, color: "#fff" }}><CartIcon />{!empty && <span className="pbadge solid absolute -top-1 -right-1.5">{rows.length}</span>}</div>
         <div className="flex flex-col gap-px">
           <span className="text-[13px] font-semibold leading-tight" style={{ color: empty ? t.textMuted : t.text }}>{empty ? "Your cart" : `${rows.length} ${rows.length === 1 ? "order" : "orders"}`}</span>
           <span className="text-[11px] leading-tight" style={{ color: t.textMuted }}>{empty ? tr(hint || msg("Tap a tier to add an order")) : tr("in cart")}</span>
@@ -2536,7 +2567,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               <div className="flex gap-2 items-center mb-2.5">
                 <div className="flex rounded-lg overflow-hidden flex-1 min-w-0" style={{ border: `1px solid ${badLink ? (dark ? "#fca5a5" : "#dc2626") : emptyLink ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)")}`, background: emptyLink ? (dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.08)") : (dark ? "#0f1322" : "#fff") }}>
                   <span className="inline-flex items-center px-2.5 text-[11px] font-semibold shrink-0 select-none" style={{ borderRight: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, color: t.textMuted }}>https://</span>
-                  <input aria-label={tr("Link")} disabled={loading} placeholder={getLinkPlaceholder(row.platform, row.name)} value={row.link} onChange={e => updateRow(idx, { link: e.target.value.replace(/^https?:\/\//i, "") })} className="flex-1 py-2 px-2.5 text-[11px] outline-none min-w-0 font-[JetBrains_Mono,monospace] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
+                  <input aria-label={tr("Link")} disabled={loading} placeholder={getLinkPlaceholder(row.platform, row.name)} value={row.link} onChange={e => updateRow(idx, { link: e.target.value.replace(/^https?:\/\//i, "") })} onBlur={() => { if (!wantsProfileLink(row.name)) return; const full = expandUsername(row.link, row.platform); if (full !== row.link) updateRow(idx, { link: full }); }} className="flex-1 py-2 px-2.5 text-[11px] outline-none min-w-0 font-[JetBrains_Mono,monospace] disabled:opacity-50 border-0" style={{ background: "transparent", color: t.text }} />
                 </div>
                 <input aria-label={tr("Quantity")} disabled={loading} type="number" min={1} step="1" value={row.qty} onChange={e => { const v = Math.min(row.max, Math.floor(Number(e.target.value)) || 0); updateRow(idx, { qty: v }); }} onKeyDown={e => { if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault(); }} className="w-[76px] py-2 px-2.5 rounded-lg border border-solid text-[11px] font-medium text-right outline-none shrink-0 font-[JetBrains_Mono,monospace] disabled:opacity-50" style={{ background: dark ? "#0f1322" : "#fff", borderColor: qtyBad ? t.accent : (dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)"), color: t.text }} />
               </div>
@@ -2588,7 +2619,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
               </div>
 
               {/* Warnings */}
-              {dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{tr("● Duplicate — remove one or change the tier")}</div>}
+              {dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{tr("● Duplicate: remove one or change the tier")}</div>}
               {emptyLink && !dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: "var(--t-accent-ink)" }}>{tr("○ Paste a link for this row")}</div>}
               {badLink && !dup && <div className="text-[11px] mt-1.5 flex items-center gap-1.5" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{tr("● Enter a valid URL or @username")}</div>}
               {qtyBad && !dup && <div className="text-[11px] mt-1.5" style={{ color: "var(--t-accent-ink)" }}>{row.qty < row.min ? `Min ${row.min.toLocaleString()} for this service` : `Max ${row.max.toLocaleString()} for this service`}</div>}
@@ -2609,7 +2640,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                   ) : row.commentsOpen ? (
                     <div className="rounded-lg border border-solid p-2.5" style={{ background: dark ? "#0f1322" : "#fff", borderColor: t.accent }}>
                       <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-[11px] font-medium" style={{ color: t.text }}>{row.needsPoll ? tr("Poll answer (number)") : row.needsMentions ? tr("Usernames — one per line") : tr("Seed comments — one per line")}</span>
+                        <span className="text-[11px] font-medium" style={{ color: t.text }}>{row.needsPoll ? tr("Poll answer (number)") : row.needsMentions ? tr("Usernames, one per line") : tr("Seed comments, one per line")}</span>
                         <button onClick={() => updateRow(idx, { commentsOpen: false })} className="bg-transparent border-none text-[11px] cursor-pointer py-0.5 px-1.5 rounded font-[inherit] hover:bg-[rgba(0,0,0,.08)] transition-transform duration-200 hover:-translate-y-px" style={{ color: t.textMuted }}>{tr("Done")}</button>
                       </div>
                       <textarea placeholder={row.needsPoll ? "1" : row.needsMentions ? "username1\nusername2\nusername3" : "Fire post\nLove this\nLegendary..."} value={row.comments} onChange={e => updateRow(idx, { comments: e.target.value })} rows={4} className="w-full min-h-[90px] rounded-md border border-solid py-2 px-2.5 text-[11px] font-[JetBrains_Mono,monospace] outline-none resize-y" style={{ background: dark ? "rgba(255,255,255,.09)" : "#f7f5f1", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.text }} />

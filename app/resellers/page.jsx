@@ -2,7 +2,7 @@ import ResellerHQView from '@/components/reseller-hq';
 
 export const metadata = {
   title: 'Reseller Pricing | Wholesale SMM Rates in Naira',
-  description: 'Run a panel or buy in volume? Get wholesale prices on every Nitro service, paid in naira — no dollar cards, no FX. Message us on WhatsApp to get set up.',
+  description: 'Run a panel or buy in volume? Get wholesale prices on every Nitro service, paid in naira. No dollar cards, no FX. Message us on WhatsApp to get set up.',
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://nitro.ng/resellers' },
   openGraph: {

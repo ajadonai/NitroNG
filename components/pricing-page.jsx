@@ -103,7 +103,7 @@ function PricingInner({ platforms }) {
                           <b className="text-[15px] font-semibold" style={{ color: t.text }}>{s.type}</b>
                           <span className="text-[12px]" style={{ color: t.muted }}>{tierNote(s)}</span>
                         </span>
-                        <b className="m shrink-0 text-[14px] font-semibold whitespace-nowrap" style={{ color: t.text, fontVariantNumeric: 'tabular-nums' }}>{priceRange(s.minPrice, s.maxPrice, money)}</b>
+                        <b className="m shrink-0 text-[14px] font-semibold whitespace-nowrap" style={{ color: t.text, fontVariantNumeric: 'tabular-nums' }}>{priceRange(s.minPrice, s.maxPrice, money, tr(" to "))}</b>
                       </div>
                     ))}
                   </div>

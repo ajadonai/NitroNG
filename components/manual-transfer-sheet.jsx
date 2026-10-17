@@ -108,7 +108,7 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
 
             <div className="flex items-start gap-2.5 py-2.5 px-3 rounded-[11px] text-[12px] leading-relaxed" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.02)", border: `1px solid ${t.cardBorder}`, color: t.textMuted }}>
               <OffsetIcon name="info" size={14} className="shrink-0 mt-0.5" />
-              <span>{tr("Take your time — this stays here until you tell us it’s sent.")}</span>
+              <span>{tr("Take your time. This stays here until you tell us it’s sent.")}</span>
             </div>
 
             <button onClick={() => setManualStep("confirm")} className="h-11 dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-sm font-bold cursor-pointer">{tr("I’ve sent it")}</button>
@@ -129,7 +129,7 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
             <div className="flex flex-col gap-1.5">
               <label htmlFor="manual-sender" className="text-[10px] font-extrabold uppercase tracking-[.9px] text-t-text-muted">{tr("Name on the account you sent from")}</label>
               <input id="manual-sender" type="text" value={manualRef} onChange={e => setManualRef(e.target.value)} placeholder="e.g. Kehinde Adeyemi" autoFocus className="h-11 px-3.5 rounded-[11px] text-[15px] outline-none w-full text-t-text" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${manualRef.trim().length >= 3 ? t.accent : t.cardBorder}`, boxShadow: manualRef.trim().length >= 3 ? `0 0 0 1px ${t.accent} inset` : "none" }} />
-              <p className="text-[11.5px] leading-snug text-t-text-muted">{tr("Not your Nitro name — the name your bank shows on the transfer. If a friend sent it for you, put their name.")}</p>
+              <p className="text-[11.5px] leading-snug text-t-text-muted">{tr("Not your Nitro name. The name your bank shows on the transfer. If a friend sent it for you, put their name.")}</p>
             </div>
 
             <div className="rounded-[13px] overflow-hidden" style={{ border: `1px solid ${t.cardBorder}` }}>

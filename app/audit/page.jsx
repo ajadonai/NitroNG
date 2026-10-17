@@ -11,7 +11,7 @@
 
 export const metadata = {
   title: 'Free Instagram Audit',
-  description: 'Paste any public Instagram handle and get a free account audit — engagement rate, follower quality, posting cadence, and growth tips. No signup required.',
+  description: 'Paste any public Instagram handle and get a free account audit: engagement rate, follower quality, posting cadence, and growth tips. No signup required.',
   alternates: { canonical: '/audit' },
   openGraph: {
     title: 'Free Instagram Audit | The Nitro NG',

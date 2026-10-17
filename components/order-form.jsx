@@ -4,7 +4,7 @@ import { docDateLocale } from "../lib/format";
 import { useEffect, useState, useRef } from "react";
 import { useToast } from "./toast";
 import { BONUS_PRESETS, MAX_BONUS_NAIRA, bonusForNaira } from "../lib/welcome-bonus";
-import { calculateOrderPrice, formatOrderQuantity, getDripSchedule, getLinkPlaceholder, LINK_EXAMPLES, MULTIDAY_THRESHOLD, validateOrderLink } from "../lib/order-form-core";
+import { calculateOrderPrice, formatOrderQuantity, getDripSchedule, getLinkPlaceholder, LINK_EXAMPLES, MULTIDAY_THRESHOLD, validateOrderLink, expandUsername } from "../lib/order-form-core";
 import NitroLoader from "./nitro-loader";
 import { useMoney, useT } from "./locale";
 import { Emph } from "./ui-primitives";
@@ -374,7 +374,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
       {fullList && (
         <>
           <div className="mx-3.5 mt-3 rounded-lg py-2 px-3 flex items-center gap-2 flex-wrap" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)", border: `1px solid ${t.cardBorder}` }}>
-            <span className="text-[11px] leading-[1.5] flex-1 min-w-0" style={{ color: dark ? "#a09890" : "#6e6a65" }}>{tr("Sold as listed — the terms shown are the terms you get.")}</span>
+            <span className="text-[11px] leading-[1.5] flex-1 min-w-0" style={{ color: dark ? "#a09890" : "#6e6a65" }}>{tr("Sold as listed. The terms shown are the terms you get.")}</span>
             {onBackToPicks && <button type="button" onClick={onBackToPicks} className="text-[11px] font-bold cursor-pointer border-none bg-transparent font-[inherit] shrink-0 inline-flex items-center gap-1" style={{ color: t.accentInk }}>{tr("Use Nitro's pick instead")}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="dir-flip"><polyline points="9 18 15 12 9 6"/></svg></button>}
           </div>
           <FullListRate fullList={fullList} onVote={onVote} onNeedOrder={() => toast.info(tr("Order it first"), tr("Rating is for people who have actually used the service."))} dark={dark} t={t} />
@@ -496,7 +496,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
                 </div>
                 <div className="of-ir">
                   <span className="of-pre">https://</span>
-                  <input id="of-link" type="url" inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} className="of-in" />
+                  <input id="of-link" type="url" inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false} disabled={orderLoading} placeholder={linkPlaceholder} value={link} onChange={e => validateLink(e.target.value)} onBlur={() => { if (!isProfileSvc) return; const full = expandUsername(link, platform); if (full !== link) validateLink(full); }} className="of-in" />
                   {linkValid && <span className="of-tick"><OffsetIcon name="checkCircle" size={16} /></span>}
                 </div>
                 {linkError && <div className="of-note bad" role="alert"><OffsetIcon name="alert" size={13} /><span>{tr(linkError)}</span></div>}
@@ -626,7 +626,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           <div className="of-lr">
             <label htmlFor="of-qty">{tr("How many")}</label>
             {/* The range, and the problem with it, said in the box's own label. */}
-            {!isPackage && <span className="of-meta">{qtyOutOfRange ? (qtyNum < minQty ? `${tr("Minimum is")} ${formatOrderQuantity(minQty)}` : `${tr("Maximum is")} ${formatOrderQuantity(maxQty)}`) : `${formatOrderQuantity(minQty)} – ${formatOrderQuantity(maxQty)}`}</span>}
+            {!isPackage && <span className="of-meta">{qtyOutOfRange ? (qtyNum < minQty ? `${tr("Minimum is")} ${formatOrderQuantity(minQty)}` : `${tr("Maximum is")} ${formatOrderQuantity(maxQty)}`) : `${formatOrderQuantity(minQty)}${tr(" to ")}${formatOrderQuantity(maxQty)}`}</span>}
           </div>
           <div className="of-ir">
             <input id="of-qty" type="text" inputMode="numeric" autoComplete="off" aria-label={tr("Quantity")} disabled={orderLoading || isPackage} value={qty === "" ? "" : qtyNum.toLocaleString("en-NG")} onChange={e => { const d = e.target.value.replace(/\D/g, "").slice(0, 10); setQty(d === "" ? "" : d); }} className="of-in big" />
@@ -686,7 +686,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           return (<>
           {short && welcomeBonusEligible && (
             <div className="rounded-xl p-3.5" style={{ background: dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)", border: `1px solid ${dark ? "rgba(110,231,183,.18)" : "rgba(5,150,105,.12)"}` }}>
-              <div className="text-[13px] font-semibold mb-1" style={{ color: t.text }}>{tr("Almost there — add funds to place this order")}</div>
+              <div className="text-[13px] font-semibold mb-1" style={{ color: t.text }}>{tr("Almost there. Add funds to place this order")}</div>
               <div className="text-[11px] mb-2.5" style={{ color: t.textMuted }}>{tr("Your first deposit gets up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free to spend.")}</div>
               {(() => {
                 const needed = price - balance;

@@ -124,7 +124,7 @@ function Catalogues() {
 
 
 const FAQ = [
-  ['Which services can my key order?', 'All of them. Every key sees the same catalogue — there is no per-account list and nothing to be switched on. What changes once you are approved is the price, not the list. An ID we do not carry answers "Incorrect service ID"; one we used to carry answers "Service discontinued".'],
+  ['Which services can my key order?', 'All of them. Every key sees the same catalogue. There is no per-account list and nothing to be switched on. What changes once you are approved is the price, not the list. An ID we do not carry answers "Incorrect service ID"; one we used to carry answers "Service discontinued".'],
   ['Do API orders run gradual delivery?', 'No. API orders go at natural speed; you set expectations with your own customers.'],
   ['What happens to orders that cannot deliver?', 'They refund to your wallet automatically.'],
   ['How do I get wholesale?', 'Message us on WhatsApp about your business. Once approved, the same key returns wholesale rates; consistent volume earns a personal rate on top.'],
@@ -174,7 +174,7 @@ function ProspectInner() {
           <SecHead label={tr("The catalogue")} sub={tr("One list, every key, every platform")} />
           <Catalogues full={false} waLink={waLink} />
           <SecHead label={tr("How to join")} sub={tr("Three steps, no forms")} />
-          <Steps items={[['Grab your key in Settings', 'Every verified account has one. Point your panel at nitro.ng/api/v2 and order the whole catalogue at the price you already see.'], ['Message us for wholesale', 'Tell us about your business: your panel, your clients, or the volume you push. The list does not change — the same key simply starts returning lower rates.'], ['Order like you always did', 'Same order page, same wallet, same history. Only the price changes.']]} />
+          <Steps items={[['Grab your key in Settings', 'Every verified account has one. Point your panel at nitro.ng/api/v2 and order the whole catalogue at the price you already see.'], ['Message us for wholesale', 'Tell us about your business: your panel, your clients, or the volume you push. The list does not change. The same key simply starts returning lower rates.'], ['Order like you always did', 'Same order page, same wallet, same history. Only the price changes.']]} />
           <div className="rhq-honest"><span className="rhq-sec-label">{tr("The honest bit")}</span><p>{tr("Reseller pricing replaces retail perks: loyalty discounts, promo codes and Nitro Points do not stack on top. Wholesale is the deal. Full-catalogue services carry the provider's own terms, shown on every row.")}</p></div>
           <div className="rhq-closer"><div><h3>{tr("Start where you are.")}</h3><p>{tr("Your key is already in Settings. Wholesale is one message away.")}</p></div><div className="rhq-acts" style={{ marginTop: 0 }}><a href="/resellers/docs" className="rhq-btn-p white">{tr("Read the API docs")}</a><Wa /></div></div>
         </main>

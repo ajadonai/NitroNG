@@ -6,34 +6,15 @@ import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { PlatformIcon } from "./platform-icon";
 import { useMoney, useT } from "./locale";
-import { msg } from "../lib/i18n";
 import { fD, fT, docDateLocale } from "../lib/format";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
 import { WaButton } from "./wa-button";
 import { NotSureHelp } from "./new-order";
 import NitroLoader from "./nitro-loader";
-import { copyText } from '@/lib/clipboard';
 import { openCardFrame } from '@/lib/expandable-card';
 import { OffsetIcon, CurrencyCoin } from "./offset-icons";
-
-function CopyId({ value, dark, mono = true }) {
-  const tr = useT();
-  const [copied, setCopied] = useState(false);
-  if (!value) return null;
-  return (
-    <span
-      className="text-sm font-semibold cursor-pointer inline-flex items-center gap-1 transition-opacity hover:opacity-70"
-      style={{ color: copied ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#e5e0db" : "#1a1a1a"), fontFamily: mono ? "var(--font-mono, monospace)" : "inherit" }}
-      title={tr("Click to copy")}
-      onClick={e => { e.stopPropagation(); copyText(String(value)); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
-    >
-      {value}
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: copied ? 1 : 0.4 }}>
-        {copied ? <><polyline points="20 6 9 17 4 12"/></> : <><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></>}
-      </svg>
-    </span>
-  );
-}
+import { sClr, STATUS_SHOWN, TIER_LOOK } from "./order-look";
+import { CopyChip } from "./copy-chip";
 
 const DRIP_CONFIG = {
   followers:  { batchSize: 200,  intervalHours: 2 },
@@ -75,12 +56,6 @@ function Spinner({ size = 14, color = "currentColor" }) {
   return <span style={{ color, display: "inline-flex" }}><NitroLoader size={size} mono ariaHidden /></span>;
 }
 
-/* ── Status helpers (unified) ── */
-function sClr(s, dk) { return s === "Completed" ? (dk ? "#6ee7b7" : "#059669") : s === "Processing" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Pending" ? (dk ? "#fcd34d" : "#d97706") : s === "Queued" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Partial" ? (dk ? "#fdba74" : "#ea580c") : (s === "Failed" || s === "Rejected") ? (dk ? "#fca5a5" : "#dc2626") : s === "Cancelled" ? (dk ? "#a1a1aa" : "#71717a") : (dk ? "#555250" : "#8a8785"); }
-
-
-
-
 /** Today / Yesterday / "6 Aug" — the label a row sits under in the list. */
 function dayKey(iso) {
   if (!iso) return null;
@@ -95,23 +70,6 @@ function dayKey(iso) {
 
 /** The summary as rows: label left, value right. Used by the header dropdown and the sidebar. */
 
-/* Every status the Badge can be handed, registered with msg() so the report
-   demands a translation for each. Badge is given a raw value off the order
-   record and the scanner cannot follow a variable, so without this the status
-   pill would translate only for as long as someone remembered to keep the
-   dictionaries in step by hand. msg() returns its argument, so these stay
-   usable as the identity values sClr compares against. */
-const STATUS_LABEL = {
-  Pending: msg("Pending"),   Processing: msg("Processing"), Completed: msg("Completed"),
-  Partial: msg("Partial"),   Cancelled: msg("Cancelled"),   Failed: msg("Failed"),
-  Rejected: msg("Rejected"), Queued: msg("Queued"),
-};
-
-/* What the row calls a status. Processing and Pending are the record's words;
-   the customer reads where the order is, so the chip says Delivering and
-   Waiting to start. Registered with msg() for the same reason as above. */
-const STATUS_SHOWN = { ...STATUS_LABEL, Processing: msg("Delivering"), Pending: msg("Waiting to start") };
-const TIER_LOOK = { Budget: ["shield", "#b45309", "#e0a458"], Standard: ["bolt", "#1d5fa5", "#7aa2f7"], Premium: ["crown", "#6d28d9", "#a78bfa"] };
 
 /* The orders list in the same language as the order form and the receipt:
    rows keep to what tells orders apart at a glance — what, its tier, when,
@@ -133,9 +91,7 @@ const OP_CSS = `
 .op-row:hover{background:color-mix(in srgb,var(--t-accent) 5%,transparent)}
 .op-row.kid{gap:10px;padding:9px 14px 9px 22px}
 @media (max-width:767px){.op-row{gap:10px;padding:11px 12px}.op-row.kid{padding:9px 12px 9px 16px}}
-.op-pi{width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:var(--op-field);border:1px solid var(--op-line);flex-shrink:0}
-.op-row.kid .op-pi{width:30px;height:30px;border-radius:9px}
-@media (max-width:767px){.op-pi{width:36px;height:36px}}
+.op-pi{width:38px;height:38px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .op-pi.bulk{color:var(--t-accent-ink);background:rgba(196,125,142,.14);border:0;box-shadow:2px 2px 0 var(--op-print)}
 .op-tx{min-width:0;display:flex;flex-direction:column;gap:3px}
 .op-nm{display:flex;align-items:center;gap:8px;min-width:0}
@@ -165,15 +121,15 @@ const OP_CSS = `
 .op-prog-bar.wait span{width:100%;background:repeating-linear-gradient(-55deg,color-mix(in srgb,var(--op-mut) 40%,transparent) 0 6px,transparent 6px 12px)}
 .op-eta{display:flex;align-items:center;gap:5px;margin-top:8px;font-size:11.5px;color:var(--op-mut)}
 .op-eta svg{color:var(--t-accent-ink)}
-.op-msg{display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border-radius:12px;font-size:12px;line-height:1.45;color:var(--op-ink);background:color-mix(in srgb,var(--sc) 9%,var(--op-card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 25%,transparent)}
-.op-msg > svg{color:var(--sc);margin-top:1px;flex-shrink:0}
+.op-msg{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:12px;font-size:12px;line-height:1.45;color:var(--op-ink);background:color-mix(in srgb,var(--sc) 9%,var(--op-card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 25%,transparent)}
 .op-msg b{font-weight:700;color:var(--sc)}
 .op-msg a{color:inherit;text-decoration:underline;font-weight:600}
 .op-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+@media (max-width:767px){.op-facts{grid-template-columns:repeat(2,minmax(0,1fr))}.op-f.id{grid-column:1 / -1}}
 .op-f{min-width:0;padding:8px 10px;border:1.5px solid var(--op-line);border-radius:12px;background:var(--op-card)}
 .op-f i{display:flex;align-items:center;gap:5px;font-style:normal;font-size:10.5px;font-weight:600;color:var(--op-mut);white-space:nowrap}
 .op-f i svg{color:var(--t-accent-ink)}
-.op-f > div{display:flex;align-items:center;gap:5px;margin-top:3px;min-width:0;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--op-ink)}
+.op-f > div{display:flex;align-items:center;gap:5px;margin-top:3px;min-width:0;min-height:24px;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--op-ink)}
 .op-f .op-none{font-size:12px;font-weight:500;color:var(--op-mut)}
 .op-f.wide{grid-column:1 / -1}
 .op-f.wide a{display:inline-flex;align-items:center;gap:5px;min-width:0;font-size:12px;font-weight:500;color:var(--op-ink);text-decoration:none}
@@ -208,7 +164,7 @@ function RowBar({ order, dark }) {
 function OrderHead({ o, dark, open, onToggle, kid = false }) {
   return (
     <div role="button" tabIndex={0} aria-expanded={open} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={onToggle} className={`op-row${kid ? " kid" : ""}`}>
-      <span className="op-pi"><PlatformIcon platform={o.platform} dark={dark} size={kid ? 17 : 22} /></span>
+      <PlatformIcon platform={o.platform} dark={dark} size={kid ? 30 : 38} print />
       <span className="op-tx">
         <span className="op-nm"><b>{o.service}</b><TierTag tier={o.tier} dark={dark} className="wide" /></span>
         <span className="op-sub">
@@ -224,7 +180,7 @@ function OrderHead({ o, dark, open, onToggle, kid = false }) {
 /* One message per state, in one shape: an icon, a coloured lead, the words. */
 function Msg({ tone, icon, title, children, dark }) {
   const c = { ok: dark ? "#6ee7b7" : "#059669", warn: dark ? "#fbbf24" : "#d97706", run: dark ? "#a5b4fc" : "#4f46e5", bad: dark ? "#fca5a5" : "#dc2626", off: dark ? "#a1a1aa" : "#71717a" }[tone];
-  return <div className="op-msg" style={{ "--sc": c }}><OffsetIcon name={icon} size={15} /><div>{title && <><b>{title}</b>{" "}</>}{children}</div></div>;
+  return <div className="op-msg" style={{ "--sc": c }}><span className="ic-tile tc" style={{ width: 30, height: 30, "--tc": c }}><OffsetIcon name={icon} size={16} /></span><div>{title && <><b>{title}</b>{" "}</>}{children}</div></div>;
 }
 
 
@@ -301,23 +257,23 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, wa
 
       {o.status === "Completed" && (
         <Msg tone="ok" icon="checkCircle" title={tr("Your order is complete!")} dark={dark}>
-          {tr("If you notice a small dip in the next few days, don't worry — platforms routinely clean up inactive accounts and it's completely normal.")}{refillEligible(o) ? <strong> {tr("Use the Request Refill button below to top up at no extra cost.")}</strong> : o.refill ? <strong> {tr("Your refill window for this order has ended.")}</strong> : null}
+          {tr("If you notice a small dip in the next few days, don't worry. Platforms routinely clean up inactive accounts and it's completely normal.")}{refillEligible(o) ? <strong> {tr("Use the Request Refill button below to top up at no extra cost.")}</strong> : o.refill ? <strong> {tr("Your refill window for this order has ended.")}</strong> : null}
         </Msg>
       )}
       {o.status === "Partial" && (
         <Msg tone="warn" icon="pauseCircle" title={tr("Partial delivery")} dark={dark}>
-          {tr("Part of your order has been delivered and the rest has been refunded to your wallet. This usually happens when a provider runs out of capacity mid-delivery — it's not an error. You can use the refunded balance to place a new order anytime.")}
+          {tr("Part of your order has been delivered and the rest has been refunded to your wallet. This usually happens when a provider runs out of capacity mid-delivery. It's not an error. You can use the refunded balance to place a new order anytime.")}
         </Msg>
       )}
       {isQueued && (
         <Msg tone="run" icon="clockPlain" dark={dark}>
-          {tr("You have another order running on this same link. This one will start automatically once it completes — no action needed.")}
+          {tr("You have another order running on this same link. This one will start automatically once it completes. No action needed.")}
         </Msg>
       )}
       {!isQueued && o.lastError && o.status === "Pending" && !o.apiOrderId && (
         <Msg tone="warn" icon="alert" dark={dark}>
           {/duplicate/i.test(o.lastError) ? "A similar order is already active for this link. This order will start automatically once the other completes."
-            : /balance|fund/i.test(o.lastError) ? "Temporarily delayed — our team has been notified and this will be resolved shortly."
+            : /balance|fund/i.test(o.lastError) ? "Temporarily delayed. Our team has been notified and this will be resolved shortly."
             : /incorrect service|invalid service|service replaced/i.test(o.lastError) ? "This service is temporarily unavailable. You'll be refunded if it can't be fulfilled."
             : o.lastError === "wrong_service_type" ? "The link type didn't match this service. You'll be refunded if it can't be fulfilled."
             : o.lastError === "missing_comments" ? "This service needs custom comments. You'll be refunded if it can't be fulfilled."
@@ -351,7 +307,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, wa
           msg = "Looks like the link is from a different platform. Make sure you're copying from the right app.";
           guide = true;
         } else if (err === "wrong_service_type") {
-          msg = "The link type didn't match this service — for example, a followers service needs a profile link, not a post. Try again with the right link!";
+          msg = "The link type didn't match this service. For example, a followers service needs a profile link, not a post. Try again with the right link!";
           guide = true;
         } else if (err === "missing_comments") {
           msg = "This service needs custom comments but none were included. Try placing the order again with your comments.";
@@ -381,7 +337,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, wa
 
       {/* The facts as cells, then the link in full with a way to open it. */}
       <div className="op-facts">
-        <div className="op-f"><i><OffsetIcon name="receipt" size={12} />{tr("Order")}</i><div><CopyId value={o.id} dark={dark} /></div></div>
+        <div className="op-f id"><i><OffsetIcon name="receipt" size={12} />{tr("Order")}</i><div><CopyChip value={o.id} label={tr("Copy order number")} small /></div></div>
         <div className="op-f"><i><OffsetIcon name={isCancelled ? "moneyIn" : "wallet"} size={12} />{isCancelled ? tr("Refunded") : tr("Charged")}</i><div className="m" style={isCancelled ? { color: dark ? "#6ee7b7" : "#059669" } : undefined}>{money(o.charge)}</div></div>
         {isCancelled
           ? <div className="op-f"><i><OffsetIcon name="users" size={12} />{tr("Quantity")}</i><div className="m">{qty.toLocaleString()}</div></div>
@@ -393,7 +349,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, wa
             or dropped by its provider — the number itself never changes either
             way, only whether this tag shows next to it. */}
         {o.fullList && o.nitroServiceId && (
-          <div className="op-f wide"><i><OffsetIcon name="tag" size={12} />{tr("Service ID")}</i><div>{o.fullListDisabled && <span className="text-[10px] font-semibold py-[1px] px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>{tr("Retired")}</span>}<CopyId value={o.nitroServiceId} dark={dark} /></div></div>
+          <div className="op-f wide"><i><OffsetIcon name="tag" size={12} />{tr("Service ID")}</i><div>{o.fullListDisabled && <span className="text-[10px] font-semibold py-[1px] px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>{tr("Retired")}</span>}<CopyChip value={o.nitroServiceId} small /></div></div>
         )}
         {o.link && (
           <div className="op-f wide"><i><OffsetIcon name="link" size={12} />{tr("Link")}</i><div><a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} onClick={e => e.stopPropagation()} className="m"><span>{o.link}</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg></a></div></div>
@@ -877,7 +833,7 @@ export function OrdersSidebar({ orders, orderSummary, dark }) {
       <RailSec icon="clock">{tr("Recent")}</RailSec>
       <RailCard>
         {orders.length === 0 ? <RailEmpty icon="receipt">{tr("No orders yet.")}</RailEmpty> : orders.slice(0, 5).map(o => (
-          <RailRow key={o.id} tile={<PlatformIcon platform={o.platform} dark={dark} size={16} />} title={o.service} sub={`${o.created ? fD(o.created, true) : ""}${o.tier ? ` · ${o.tier}` : ""}${o.status ? ` · ${tr(o.status)}` : ""}`} right={o.charge != null ? money(o.charge) : null} />
+          <RailRow key={o.id} bare tile={<PlatformIcon platform={o.platform} dark={dark} size={30} print />} title={o.service} sub={<>{o.created ? fD(o.created, true) : ""}{o.tier && <span className="ms-2.5">{o.tier}</span>}{o.status && <span className="ms-2.5">{tr(o.status)}</span>}</>} right={o.charge != null ? money(o.charge) : null} />
         ))}
       </RailCard>
     </div>

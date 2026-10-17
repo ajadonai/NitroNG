@@ -14,7 +14,7 @@ function formatRange(start, end, months, tr) {
   if (!start && !end) return tr("All time");
   const fmt = (d) => `${months[d.getMonth()]} ${d.getDate()}`;
   if (start && end && sameDay(start, end)) return fmt(start);
-  if (start && end) return `${fmt(start)} – ${fmt(end)}`;
+  if (start && end) return `${fmt(start)}${tr(" to ")}${fmt(end)}`;
   if (start) return `${tr("From")} ${fmt(start)}`;
   return `${tr("To")} ${fmt(end)}`;
 }

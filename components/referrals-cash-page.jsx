@@ -66,7 +66,7 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
       {/* Hero */}
       <div className="rounded-2xl p-4 desktop:p-5 mb-4" style={{ background: dark ? "linear-gradient(135deg,rgba(196,125,142,.18),rgba(139,94,107,.08))" : "linear-gradient(135deg,rgba(196,125,142,.12),rgba(139,94,107,.05))", border: `1px solid ${dark ? "rgba(196,125,142,.35)" : "rgba(196,125,142,.28)"}` }}>
         <div className="text-[16px] font-bold text-t-text">{tr("Invite a friend, get paid actual cash.")}</div>
-        <div className="text-[13px] mt-1 leading-relaxed text-t-text-muted">{tr("They deposit")} {fN(250000)} {tr("or more, you earn")} {fN(data.amount)} {tr("— to your bank, not just your wallet. They still get their welcome bonus too.")}</div>
+        <div className="text-[13px] mt-1 leading-relaxed text-t-text-muted">{tr("They deposit")} {fN(250000)} {tr("or more, you earn")} {fN(data.amount)}. {tr("To your bank, not just your wallet. They still get their welcome bonus too.")}</div>
         <div className="flex gap-2 mt-3">
           <div className="m flex-1 min-w-0 py-2 px-3 rounded-[10px] text-[13px] overflow-hidden text-ellipsis whitespace-nowrap text-t-text-soft" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${t.cardBorder}` }}>{link}</div>
           <button onClick={copy} className="py-2 px-3.5 rounded-[10px] text-[13px] font-semibold cursor-pointer whitespace-nowrap shrink-0 border-none text-white" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>{copied ? tr("Copied") : tr("Copy link")}</button>
@@ -111,7 +111,7 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
                 </div>
               )}
               <button disabled={busy || !overLine || (overLine && (!bank.bankName || bank.bankAccountNo.length !== 10 || !bank.bankAccountName))} onClick={() => act({ action: "payout", ...bank }, "Cash-out requested")} className="h-[42px] rounded-xl text-[13.5px] font-semibold border-none cursor-pointer text-white disabled:cursor-default" style={{ background: overLine ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)"), color: overLine ? "#fff" : t.textMuted, opacity: busy ? .6 : 1 }}>
-                {busy ? "Working…" : overLine ? `Cash out ${fHeld(s.available)} to my bank` : `Cash out ${fHeld(s.available)} — unlocks at ${fN(data.minPayout)}`}
+                {busy ? "Working…" : overLine ? `Cash out ${fHeld(s.available)} to my bank` : `Cash out ${fHeld(s.available)} (unlocks at ${fN(data.minPayout)})`}
               </button>
             </>
           ) : (
@@ -126,7 +126,7 @@ export default function CashReferralsPage({ data, dark, t, onRefresh }) {
       <div className="rounded-2xl overflow-hidden mb-4" style={card}>
         <div className="py-2.5 px-4 flex justify-between items-baseline text-[11px] font-bold uppercase tracking-[1.2px] text-t-text-muted" style={{ borderBottom: `1px solid ${t.cardBorder}` }}><span>{tr("Your friends")}</span><span className="normal-case tracking-normal font-normal text-[11.5px]">{tr("newest first")}</span></div>
         {data.earnings.length === 0 && data.waiting.length === 0 ? (
-          <div className="p-8 text-center text-[13.5px] text-t-text-muted">{tr("No referrals yet. Share your link — the first friend who funds their account earns you")} {fN(data.amount)}.</div>
+          <div className="p-8 text-center text-[13.5px] text-t-text-muted">{tr("No referrals yet. Share your link. The first friend who funds their account earns you")} {fN(data.amount)}.</div>
         ) : (
           <>
             {data.earnings.map(e => {

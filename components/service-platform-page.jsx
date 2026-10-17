@@ -247,7 +247,7 @@ function translateCopy(copy, tr) {
     h1: line(copy.h1),
     heroDesc: line(copy.heroDesc),
     mainService: line(copy.mainService),
-    whatYouGet: (copy.whatYouGet || []).map(line),
+    whatYouGet: (copy.whatYouGet || []).map((v) => (Array.isArray(v) ? v.map(line) : line(v))),
     whySection: (copy.whySection || []).map(line),
     faq: (copy.faq || []).map((x) => ({ ...x, q: line(x.q), a: line(x.a) })),
   };
@@ -265,7 +265,7 @@ function ServicePlatformInner({ platform, services = [], copy: rawCopy = {}, nex
 
   const article = /^[aeiou]/i.test(platform) || platform === 'X' ? 'an' : 'a';
   const steps = [
-    ['1', 'Create a free account', 'Sign up in seconds — no card required. Just an email or Google account.'],
+    ['1', 'Create a free account', 'Sign up in seconds. No card required, just an email or Google account.'],
     ['2', 'Fund your wallet', 'Add funds via bank transfer, card, or crypto. Minimum ₦1,000.'],
     ['3', 'Place your order', `Choose ${article} ${platform} service, paste your link, pick a tier, and confirm. Results start within minutes.`],
   ];
@@ -281,12 +281,10 @@ function ServicePlatformInner({ platform, services = [], copy: rawCopy = {}, nex
     hasFaq && { id: 'questions', label: tr("Questions") },
   ].filter(Boolean);
 
-  // whatYouGet is a flat list of sentences; where one carries an em dash the
-  // half after it is the tile's note.
-  const tiles = (copy.whatYouGet || []).map(line => {
-    const i = line.indexOf(' — ');
-    return i === -1 ? { title: line } : { title: line.slice(0, i), note: line.slice(i + 3) };
-  });
+  // whatYouGet is a list of sentences, or [title, note] pairs where a tile
+  // carries a note. It used to be one sentence split at an em dash, which put a
+  // dash in every language's copy just to mark where the note began.
+  const tiles = (copy.whatYouGet || []).map(v => (Array.isArray(v) ? { title: v[0], note: v[1] } : { title: v }));
 
   const related = [
     ...relatedLinks.map(({ href, label }) => ({ href, label })),
@@ -316,7 +314,7 @@ function ServicePlatformInner({ platform, services = [], copy: rawCopy = {}, nex
                   <b className="text-[15px] font-semibold" style={{ color: t.text }}>{s.type}</b>
                   <span className="text-[12px]" style={{ color: t.muted }}>{serviceNote(s)}</span>
                 </span>
-                <b className="m shrink-0 text-[14px] font-semibold whitespace-nowrap" style={{ color: t.text, fontVariantNumeric: 'tabular-nums' }}>{priceRange(s.minPrice, s.maxPrice, money)}</b>
+                <b className="m shrink-0 text-[14px] font-semibold whitespace-nowrap" style={{ color: t.text, fontVariantNumeric: 'tabular-nums' }}>{priceRange(s.minPrice, s.maxPrice, money, tr(" to "))}</b>
               </div>
             ))}
           </div>

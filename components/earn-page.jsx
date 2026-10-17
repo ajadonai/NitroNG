@@ -85,7 +85,7 @@ export default function EarnPage({ dark, t }) {
               </div>
               <div className="flex-1">
                 <div className="text-[13px] font-bold" style={{ color: t.text }}>Monthly Prize Pool</div>
-                <div className="text-[11px] font-medium" style={{ color: t.textMuted }}>{monthLabel || 'This month'} {tr("— Top 5 win cash")}</div>
+                <div className="text-[11px] font-medium" style={{ color: t.textMuted }}>{monthLabel || 'This month'}: {tr("Top 5 win cash")}</div>
               </div>
               <div className="text-right">
                 <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--t-accent-ink)" }}>{tr("Total")}</div>
@@ -214,7 +214,7 @@ export default function EarnPage({ dark, t }) {
                       <div>
                         <div className="text-[13px] font-semibold" style={{ color: t.text }}>{w.name}</div>
                         <div className="text-[11px] font-medium" style={{ color: t.textMuted }}>
-                          {new Date(w.monthKey + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} — {w.score.toLocaleString()} pts
+                          {new Date(w.monthKey + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}: {w.score.toLocaleString()} pts
                         </div>
                       </div>
                     </div>
@@ -268,7 +268,7 @@ export default function EarnPage({ dark, t }) {
               </div>
               <div className="text-base font-bold mb-1" style={{ color: t.text }}>{tr("Watch & Earn")}</div>
               <div className="text-xs text-center max-w-[260px] leading-relaxed" style={{ color: t.textMuted }}>
-                {tr("Video rewards launching soon. Watch short ads and earn wallet credit — we split the revenue 50/50 with you.")}
+                {tr("Video rewards launching soon. Watch short ads and earn wallet credit. We split the revenue 50/50 with you.")}
               </div>
               <div className="mt-4 px-3 py-1.5 rounded-lg text-[11px] font-semibold" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.08)', color: "var(--t-accent-ink)", border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.12)'}` }}>
                 {tr("Coming Soon")}
