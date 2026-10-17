@@ -394,6 +394,21 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **Rewards and Tasks in the offset print** (17 Oct 2026, `v2.4.130`).
+  Mockup "Nitro Rewards and Tasks". Rewards: the status card in the tier's
+  own colour (the status pop-up's card at page size) with crowns drifting and
+  a climb bar to the next tier; the two perks as chips instead of a dotted
+  line; points as a printed gold card with solid numbers (no gradient text);
+  the tasks card lists the first three open tasks the rewards data already
+  sent; the ladder ticks passed tiers and says None for no discount; history
+  rows carry a printed plus, minus or refund tile and no dots. Tasks: what you
+  have earned leads in the Tasks blue with the in review, open and expiry
+  figures the Summary dropdown hid; the steps fit a phone; the rules are
+  chips; tabs with counts replace the filter dropdown; every task gets a
+  printed platform tile (components/task-icon.jsx, shared with Rewards), a
+  frequency tag and a gold money badge. Both loading skeletons are redrawn to
+  match, card for card. New badge variants .pbadge.gold/.ok/.rev/.no/.tag.
+
 - **The nav bars and the footer in the offset print** (17 Oct 2026,
   `v2.4.129`). Mockup "Nitro Nav Bars". The currency pill, the language pill
   (dropdown on a desktop, bottom drawer on a phone) and the sky toggle are

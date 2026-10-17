@@ -190,6 +190,8 @@ export const DELIBERATELY_ENGLISH = new Map([
   ["Twitter", "A platform name — see Instagram."],
   ["instagram.com/yourname", "A sample link in the landing page's How it works picture. It is an address, not a sentence, and it reads the same in every language."],
   ["NTR-48213", "A sample order number in the landing page's How it works picture. Order numbers are the same in every language."],
+  ["plusCircle", "An OffsetIcon name: an identifier the icon set looks up, never words a reader sees."],
+  ["minusCircle", "An OffsetIcon name, see plusCircle."],
 ]);
 
 /** Is this a sentence a customer reads, and is it ours to translate? */

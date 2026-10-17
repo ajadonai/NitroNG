@@ -1,8 +1,9 @@
 'use client';
 import { useMoney, useLocale, useT } from "./locale";
 import { Modal } from './ui-primitives';
-import { SkelFacts, SkelList } from './skeleton';
+import { Bone } from './skeleton';
 import { OffsetIcon } from "./offset-icons";
+import { TaskIcon } from "./task-icon";
 import { msg } from "../lib/i18n";
 // ─────────────────────────────────────────────────────────────────
 // Nitro Rewards UI — Nitro Status + Nitro Points + Tasks strip,
@@ -67,14 +68,8 @@ function ChipIcon({ gradient, shadow, children, size = 26, radius = 8 }) {
   );
 }
 
-const CrownGlyph = ({ s = 13, color = '#fff' }) => (
-  <OffsetIcon name="crown" size={s} color={color} />
-);
 const CoinGlyph = ({ s = 13 }) => (
   <OffsetIcon name="star" size={s} color="#fff" />
-);
-const TaskGlyph = ({ s = 13 }) => (
-  <OffsetIcon name="tasks" size={s} color="#fff" />
 );
 const Chevron = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M9 6l6 6-6 6"/></svg>
@@ -151,37 +146,194 @@ export function RewardsStrip({ rewards, onStatus, onPoints, onTasks }) {
 
 /* ── REWARDS: the page ── */
 
-const KICKER = 'text-[10px] font-bold uppercase tracking-[1.6px]';
-
-const railLine = (dark) => (dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.055)');
-const trackBg = (dark) => (dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.055)');
-
-function CardHead({ t, title, hint }) {
-  return (
-    <div className="flex items-baseline justify-between gap-2.5 py-[15px] px-5 max-md:px-4" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-      <div className="text-[13px] font-bold" style={{ color: t.text }}>{title}</div>
-      {hint && <div className="text-[11.5px]" style={{ color: t.textMuted }}>{hint}</div>}
-    </div>
-  );
+/* The page in the offset print (approved 17 Oct 2026, mockup "Nitro Rewards
+   and Tasks"). The status card is the status pop-up's tier-coloured card at
+   page size, with crowns drifting behind it and a ring breathing round the
+   crown; points are a printed gold card; the tasks card lists what is open;
+   the ladder ticks the tiers you have passed. Logical properties: this sheet
+   does not go through the RTL build plugin. */
+const PAT_CROWN = `url("data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 30l4-14 7 7 6-10 6 10 7-7 4 14z"/><path d="M62 18l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/><circle cx="76" cy="62" r="5"/><path d="M24 70l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/><path d="M52 58l3-10 5 5 4-7 4 7 5-5 3 10z"/></svg>')}")`;
+const RWP_CSS = `
+/* A grid for the same reason as .rp-body: rows fit their content, so a card
+   that hides its overflow can never be squashed by a shorter container. */
+.rwp{display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:max-content;align-content:start;gap:14px}
+.rwp-hero{--vs:color-mix(in srgb,var(--tc) 50%,#000);position:relative;overflow:hidden;isolation:isolate;border-radius:20px;color:#fff;padding:22px 24px 20px;box-shadow:3px 3px 0 var(--vs);background:radial-gradient(90% 120% at 100% 0%,rgba(255,255,255,.3),transparent 60%),linear-gradient(150deg,color-mix(in srgb,var(--tc) 55%,#000) 0%,color-mix(in srgb,var(--tc) 82%,#000) 55%,var(--tc) 100%)}
+.rwp-hero::before{content:"";position:absolute;inset:-96px 0 0 -96px;z-index:-1;background-image:${PAT_CROWN};background-size:96px 96px;opacity:.12;animation:rwpDrift 40s linear infinite}
+@keyframes rwpDrift{to{transform:translate(96px,96px)}}
+.rwp-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.rwp-glass{background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),2px 2px 0 rgba(0,0,0,.18)}
+.rwp-crown{position:relative;width:40px;height:40px;border-radius:13px;display:grid;place-items:center;flex-shrink:0}
+.rwp-crown .ic-off{opacity:.3}
+.rwp-crown::after{content:"";position:absolute;inset:-5px;border-radius:16px;border:2px solid rgba(255,255,255,.55);animation:rwpRing 2.8s ease-out infinite}
+@keyframes rwpRing{0%{opacity:.9;transform:scale(.86)}100%{opacity:0;transform:scale(1.28)}}
+.rwp-next{display:inline-flex;align-items:center;gap:7px;height:30px;padding-inline:9px 12px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;background:rgba(20,8,30,.24);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+.rwp-next i{width:9px;height:9px;border-radius:50%;background:var(--nc);box-shadow:0 0 0 2px rgba(255,255,255,.55)}
+.rwp-eb{display:block;margin-top:14px;font-size:10.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:rgba(255,255,255,.75)}
+.rwp-name{margin-top:4px;font-size:64px;font-weight:700;line-height:.9;letter-spacing:-.02em;text-shadow:0 2px 12px rgba(0,0,0,.18)}
+.rwp-perks{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.rwp-perk{display:inline-flex;align-items:center;gap:6px;height:32px;padding-inline:12px;border-radius:999px;font-size:13px;font-weight:600}
+.rwp-perk b{font-size:14px;font-weight:800}
+.rwp-track{position:relative;height:10px;margin-top:22px;border-radius:6px;background:rgba(255,255,255,.2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.rwp-track i{position:absolute;inset-block:0;inset-inline-start:0;border-radius:6px;background:#fff;box-shadow:2px 2px 0 rgba(0,0,0,.18)}
+.rwp-cl{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font-size:12.5px;color:rgba(255,255,255,.84)}
+.rwp-cl b{font-size:13.5px;font-weight:800;color:#fff}
+.rwp-card{border-radius:18px;background:var(--t-card-bg);box-shadow:inset 0 0 0 1px var(--t-card-border),2px 2px 0 #efc4cf}
+.dark .rwp-card{box-shadow:inset 0 0 0 1px var(--t-card-border),2px 2px 0 #5e3242}
+.rwp-ch{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--t-card-border)}
+.rwp-ch b{font-size:13.5px;font-weight:700;color:var(--t-text)}
+.rwp-ch small{margin-inline-start:auto;font-size:12px;color:var(--t-text-muted)}
+.rwp-ch .ic-tile,.rwp-hd .ic-tile{width:30px;height:30px}
+.rwp-lnk{margin-inline-start:auto;display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:0;font:inherit;font-size:12.5px;font-weight:650;color:var(--t-accent-ink);cursor:pointer}
+.rwp-lnk:hover{text-decoration:underline}
+/* minmax(0, …) so a column can be narrower than its longest line: a plain
+   1fr cannot go below its content, and the task titles do not wrap. */
+.rwp-row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;align-items:stretch}
+.rwp-row2.one{grid-template-columns:minmax(0,1fr)}
+.rwp-pts{padding:18px 20px;display:flex;flex-direction:column}
+.rwp-hd{display:flex;align-items:center;gap:10px}
+.rwp-k{font-size:10.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--t-text-muted)}
+.rwp-big{display:flex;align-items:baseline;gap:8px;margin-top:14px}
+.rwp-big b{font-size:46px;font-weight:800;line-height:1;letter-spacing:-.04em;color:var(--t-text)}
+.rwp-big small{font-size:13px;font-weight:700;color:var(--t-text-muted)}
+.rwp-worth{margin-top:4px;font-size:13px;color:var(--t-text-soft)}
+.rwp-gold{margin-top:16px;padding:12px 13px;border-radius:13px;background:rgba(245,207,89,.16);box-shadow:inset 0 0 0 1px rgba(184,134,42,.3)}
+.rwp-gold .tx{font-size:12.5px;color:var(--t-text-soft)}
+.rwp-gold .tx b{color:var(--t-text)}
+.rwp-gbar{position:relative;height:8px;margin-top:9px;border-radius:5px;background:rgba(184,134,42,.18)}
+.rwp-gbar i{position:absolute;inset-block:0;inset-inline-start:0;border-radius:5px;background:#f5cf59;box-shadow:1.5px 1.5px 0 #b8862a}
+.rwp-gl{display:flex;justify-content:space-between;margin-top:6px;font-size:10.5px;font-weight:700;color:var(--t-text-muted)}
+.rwp-use{margin-top:16px;height:42px;border:0;border-radius:999px;font:inherit;font-size:13.5px;font-weight:700;color:#4a2236;background:#f5cf59;box-shadow:2px 2px 0 #b8862a;cursor:pointer;transition:transform .15s}
+.rwp-use:hover{transform:translateY(-1px)}
+.rwp-use:focus-visible{outline:2px solid #c47d8e;outline-offset:3px}
+.rwp-fine{margin:12px 0 0;font-size:11.5px;line-height:1.5;color:var(--t-text-muted)}
+.rwp-tasks{display:flex;flex-direction:column}
+.rwp-tr{width:100%;display:flex;align-items:center;gap:11px;padding:11px 16px;border:0;border-top:1px solid var(--t-card-border);background:none;font:inherit;color:inherit;text-align:start;cursor:pointer;transition:background-color .15s}
+.rwp-ch + .rwp-tr{border-top:0}
+.rwp-tr:hover{background:rgba(196,125,142,.05)}
+.rwp-tr .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rwp-tr .tx b{font-size:13.5px;font-weight:600;color:var(--t-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rwp-tr .tx small{font-size:11.5px;color:var(--t-text-muted)}
+.rwp-none{padding:16px 18px;display:flex;flex-direction:column;gap:2px}
+.rwp-none b{font-size:13.5px;font-weight:600;color:var(--t-text)}
+.rwp-none small{font-size:12px;color:var(--t-text-muted)}
+.rwp-foot{display:flex;justify-content:space-between;gap:10px;margin-top:auto;padding:11px 16px;border-top:1px solid var(--t-card-border);font-size:12px;color:var(--t-text-muted)}
+.rwp-foot b{color:var(--t-text);font-weight:650}
+.rwp-lad{padding:4px 0}
+.rwp-lr{position:relative;display:grid;grid-template-columns:30px minmax(0,1fr) minmax(0,1fr) 92px 92px;align-items:center;gap:12px;padding:11px 18px}
+.rwp-lr.hd{padding-block:9px;border-bottom:1px solid var(--t-card-border);font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--t-text-muted)}
+.rwp-lr .n{text-align:end;font-size:14px;font-weight:800;color:var(--t-text)}
+.rwp-lr .n.none{font-size:12.5px;font-weight:600;color:var(--t-text-muted)}
+.rwp-lr.now{background:color-mix(in srgb,var(--rc) 12%,transparent)}
+.rwp-lr.now::before{content:"";position:absolute;inset-block:8px;inset-inline-start:0;width:3px;border-start-end-radius:3px;border-end-end-radius:3px;background:var(--rc)}
+.rwp-ld{justify-self:center;width:16px;height:16px;border-radius:50%;background:var(--rc);box-shadow:1.5px 1.5px 0 color-mix(in srgb,var(--rc) 45%,transparent)}
+.rwp-ld.past{display:grid;place-items:center;width:20px;height:20px;color:var(--rc);background:color-mix(in srgb,var(--rc) 16%,transparent);box-shadow:inset 0 0 0 1.5px var(--rc)}
+.rwp-who{display:contents}
+.rwp-lnm{display:flex;align-items:center;gap:9px;min-width:0}
+.rwp-lnm b{font-size:21px;font-weight:700;line-height:1;color:var(--rc)}
+.rwp-here{font-size:9.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;padding:4px 8px;border-radius:6px;white-space:nowrap;color:#fff;background:var(--rc);box-shadow:1.5px 1.5px 0 color-mix(in srgb,var(--rc) 50%,#000)}
+.rwp-reach{font-size:13px;color:var(--t-text-soft)}
+.rwp-nums{display:contents}
+.rwp-nl{display:none;margin-inline-end:5px;font-family:Outfit,system-ui,sans-serif;font-size:11px;font-weight:600;color:var(--t-text-muted)}
+.rwp-hr{display:flex;align-items:center;gap:12px;padding:11px 18px;border-top:1px solid var(--t-card-border)}
+.rwp-ch + .rwp-hr{border-top:0}
+.rwp-hr .ic-tile{width:32px;height:32px}
+.rwp-hr .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.rwp-hr .tx b{font-size:13.5px;font-weight:600;color:var(--t-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rwp-hr .tx small{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t-text-muted)}
+.rwp-hr .tx em{font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--kc)}
+.rwp-hr .amt{display:flex;flex-direction:column;align-items:flex-end;gap:3px;white-space:nowrap}
+.rwp-hr .amt b{font-size:14px;font-weight:800;color:var(--kc)}
+.rwp-hr .amt small{font-size:11px;color:var(--t-text-muted)}
+.rwp-empty{padding:28px 18px;text-align:center;font-size:12px;color:var(--t-text-muted)}
+/* The loading state draws the same cards with bones where the content goes;
+   the status card is one shimmering block with lighter shapes inside it. */
+.rwp-skhero{border-radius:20px;padding:22px 24px 20px;display:flex;flex-direction:column;align-items:flex-start}
+.rwp-gh{display:block;background:rgba(255,255,255,.6)}
+.dark .rwp-gh{background:rgba(255,255,255,.07)}
+.rwp-tr.sk{cursor:default}
+.rwp-tr.sk:hover{background:none}
+@media (max-width:767px){
+  .rwp-hero{padding:18px 16px 16px}
+  .rwp-name{font-size:50px}
+  .rwp-cl{flex-direction:column;gap:3px}
+  .rwp-row2{grid-template-columns:minmax(0,1fr)}
+  .rwp-ch{padding:13px 14px}
+  .rwp-tr,.rwp-hr,.rwp-foot{padding-inline:14px}
+  .rwp-foot{flex-direction:column;gap:2px}
+  .rwp-lr{grid-template-columns:26px minmax(0,1fr) auto;gap:10px;padding:11px 14px}
+  .rwp-lr.hd{display:none}
+  .rwp-who{display:block;min-width:0}
+  .rwp-reach{display:block;margin-top:3px;font-size:11.5px;color:var(--t-text-muted)}
+  .rwp-nums{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+  .rwp-lr .n{font-size:13px}
+  .rwp-nl{display:inline}
+  .rwp-skhero{padding:18px 16px 16px}
+  .rwp-who .skel-bone + .skel-bone{margin-top:6px}
 }
+@media (prefers-reduced-motion:reduce){.rwp-hero::before,.rwp-crown::after{animation:none}}
+`;
 
+// The server sends a task's proof as one of these phrases; listed here so the
+// dictionaries carry them.
+const PROOF_HINT = { 'Paste the link': msg('Paste the link'), 'Paste your handle': msg('Paste your handle'), 'Send it on WhatsApp': msg('Send it on WhatsApp'), 'Paste what you wrote': msg('Paste what you wrote'), 'Send proof': msg('Send proof') };
+const TICK = <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>;
+
+// Shaped like the page it stands in for, card for card, so nothing moves when
+// the data lands. It reuses the page's own layout classes, so it reflows the
+// same way on a phone.
 function RewardsPageSkeleton({ dark }) {
+  const gh = (w, h, r, style) => <span className="rwp-gh" style={{ width: w, height: h, borderRadius: r, ...style }} />;
   return (
-    <div className="flex flex-col gap-3.5">
-      <SkelFacts dark={dark} n={2} />
-      <div className="grid grid-cols-[1fr_1.3fr] max-md:grid-cols-1 gap-3.5">
-        <SkelList dark={dark} rows={2} header={false} avatar="square" rowH={64} />
-        <SkelList dark={dark} rows={3} header={false} avatar="square" rowH={64} />
+    <div className="rwp" aria-busy="true">
+      <style>{RWP_CSS}</style>
+      <div><Bone dark={dark} w={130} h={30} r={8} /><Bone dark={dark} w={210} h={12} style={{ marginTop: 10 }} /></div>
+      <div className={`rwp-skhero skel-bone ${dark ? 'skel-dark' : 'skel-light'}`}>
+        {gh(40, 40, 13)}
+        {gh(90, 10, 5, { marginTop: 16 })}
+        {gh(170, 50, 10, { marginTop: 8 })}
+        <span className="flex flex-wrap gap-2 mt-3.5">{gh(150, 32, 999)}{gh(128, 32, 999)}</span>
+        {gh('100%', 10, 6, { marginTop: 22 })}
+        <span className="flex justify-between gap-3 w-full mt-2.5">{gh(150, 12, 5)}{gh(110, 12, 5)}</span>
       </div>
-      <SkelList dark={dark} rows={6} title header={false} avatar={false} rowH={52} />
-      <SkelList dark={dark} rows={5} title header={false} avatar={false} rowH={58} />
+      <div className="rwp-row2">
+        <div className="rwp-card rwp-pts">
+          <div className="rwp-hd"><Bone dark={dark} w={30} h={30} r={10} /><Bone dark={dark} w={96} h={10} /></div>
+          <Bone dark={dark} w={150} h={42} r={8} style={{ marginTop: 16 }} />
+          <Bone dark={dark} w={200} h={12} style={{ marginTop: 10 }} />
+          <Bone dark={dark} w="100%" h={66} r={13} style={{ marginTop: 16 }} />
+          <Bone dark={dark} w="80%" h={10} style={{ marginTop: 14 }} />
+        </div>
+        <div className="rwp-card rwp-tasks">
+          <div className="rwp-ch"><Bone dark={dark} w={30} h={30} r={10} /><Bone dark={dark} w={150} h={12} /><span className="ms-auto"><Bone dark={dark} w={64} h={12} /></span></div>
+          {[62, 74, 86].map(w => (
+            <div key={w} className="rwp-tr sk"><Bone dark={dark} w={34} h={34} r={10} /><span className="tx"><Bone dark={dark} w={`${w}%`} h={12} /><Bone dark={dark} w={96} h={10} /></span><Bone dark={dark} w={52} h={20} r={7} /></div>
+          ))}
+          <div className="rwp-foot"><Bone dark={dark} w={120} h={10} /><Bone dark={dark} w={150} h={10} /></div>
+        </div>
+      </div>
+      <div className="rwp-card">
+        <div className="rwp-ch"><Bone dark={dark} w={110} h={12} /><span className="ms-auto"><Bone dark={dark} w={170} h={10} /></span></div>
+        <div className="rwp-lad">
+          {STATUS_TIERS.map((tier, i) => (
+            <div key={tier.key} className="rwp-lr">
+              <Bone dark={dark} w={16} h={16} r={999} style={{ justifySelf: 'center' }} />
+              <div className="rwp-who"><Bone dark={dark} w={70 + (i % 3) * 14} h={18} /><Bone dark={dark} w={120} h={11} /></div>
+              <div className="rwp-nums"><Bone dark={dark} w={44} h={13} style={{ justifySelf: 'end' }} /><Bone dark={dark} w={44} h={13} style={{ justifySelf: 'end' }} /></div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="rwp-card">
+        <div className="rwp-ch"><Bone dark={dark} w={110} h={12} /><span className="ms-auto"><Bone dark={dark} w={60} h={10} /></span></div>
+        {[58, 71, 49, 64, 77].map(w => (
+          <div key={w} className="rwp-hr"><Bone dark={dark} w={32} h={32} r={10} /><span className="tx"><Bone dark={dark} w={`${w}%`} h={12} /><Bone dark={dark} w={120} h={10} /></span><span className="amt"><Bone dark={dark} w={44} h={13} /><Bone dark={dark} w={36} h={10} /></span></div>
+        ))}
+      </div>
     </div>
   );
 }
 
-// The whole page in the tier's colour: the rule at the top runs from where you
-// are into where you are going, and the ladder repeats that in miniature.
-export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
+export function RewardsPage({ rewards, dark, setActive, onUsePoints }) {
   const tr = useT();
   const money = useMoney();
   const currency = useLocale()?.currency ?? "NGN";
@@ -190,138 +342,113 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
   const curIdx = Math.max(0, STATUS_TIERS.findIndex(ti => ti.key === status.key));
   const curTier = STATUS_TIERS[curIdx];
   const nextTier = curIdx < STATUS_TIERS.length - 1 ? STATUS_TIERS[curIdx + 1] : null;
-  const heroClr = curTier.key === 'spark' ? '#c47d8e' : curTier.color;
-  const nextClr = nextTier ? nextTier.color : heroClr;
-  const gold = dark ? '#fbbf24' : '#d97706';
-  const green = dark ? '#6ee7b7' : '#059669';
-  const amber = dark ? '#fbbf24' : '#b45309';
-  const red = dark ? '#fca5a5' : '#c62828';
-  const rail = railLine(dark);
-  const card = { background: t.cardBg, border: `1px solid ${t.cardBorder}` };
+  // The same tier colour the status pop-up paints, so the two read as one card.
+  const tone = (ti) => (ti.key === 'spark' ? '#c47d8e' : ti.color);
+  const kinds = {
+    earned: { icon: 'plusCircle', c: dark ? '#6ee7b7' : '#059669' },
+    spent: { icon: 'minusCircle', c: dark ? '#fbbf24' : '#b45309' },
+    reversed: { icon: 'refresh', c: dark ? '#fca5a5' : '#c62828' },
+  };
   const showTasks = TASKS_ENABLED && !!tasks;
+  const openList = tasks?.list || [];
   const rows = history || [];
+  const pct = nextTier ? Math.max(3, Math.min(100, status.progressPct)) : 100;
+  const ptsPct = Math.min(100, Math.round(points.balance / points.minRedeem * 100));
+  const goTasks = () => setActive?.('tasks');
 
   return (
-    <>
-      <div className="pb-3.5 max-md:pb-3">
-        <div className="serif text-[32px] max-md:text-[26px] font-semibold leading-none tracking-[-.015em]" style={{ color: t.text }}>{tr("Rewards")}</div>
-        <div className="text-[13px] mt-1.5" style={{ color: t.textMuted }}>{tr("What using Nitro gives you back.")}</div>
+    <div className="rwp">
+      <style>{RWP_CSS}</style>
+      <div>
+        <div className="serif text-[32px] max-md:text-[26px] font-semibold leading-none tracking-[-.015em] text-t-text">{tr("Rewards")}</div>
+        <div className="text-[13px] mt-1.5 text-t-text-muted">{tr("What using Nitro gives you back.")}</div>
       </div>
 
-      {/* ── Status hero ── */}
-      <div className="relative rounded-[20px] overflow-hidden mb-3.5" style={card}>
-        <div className="absolute left-0 right-0 top-0 h-[5px]" style={{ background: `linear-gradient(90deg, ${heroClr}, ${nextClr})` }} />
-        <div className="flex items-start justify-between gap-5 pt-[26px] px-[26px] pb-5 max-md:flex-col max-md:gap-3 max-md:pt-[22px] max-md:px-5 max-md:pb-[18px]" style={{ background: `linear-gradient(135deg, ${heroClr}${dark ? '2b' : '24'}, transparent 66%)` }}>
-          <div className="flex flex-col items-start min-w-0">
-            <ChipIcon gradient={`linear-gradient(135deg,${heroClr},${heroClr}cc)`} shadow={`0 3px 10px ${heroClr}55`} size={34} radius={10}><CrownGlyph s={17} /></ChipIcon>
-            <div className={`${KICKER} mt-3`} style={{ color: t.textMuted }}>{tr("Nitro Status")}</div>
-            <div className="serif text-[58px] max-md:text-[46px] font-semibold leading-[.92] tracking-[-.025em] mt-1.5" style={{ color: heroClr }}>{status.name}</div>
-            <p className="text-[14px] leading-[1.55] mt-3 mb-0 max-w-[52ch]" style={{ color: t.textMuted }}>
-              {status.discountPct > 0 && <><b className="m text-[15px] font-bold" style={{ color: t.text }}>{status.discountPct}%</b> {tr("off every order ·")} </>}
-              <b className="m text-[15px] font-bold" style={{ color: t.text }}>{status.pointEarnPct}%</b> {tr("of what you spend comes back as points")}
-            </p>
-          </div>
-          {nextTier && (
-            <span className="text-[11.5px] font-bold rounded-full py-1.5 px-3 shrink-0 whitespace-nowrap" style={{ color: nextClr, background: `${nextClr}${dark ? '2b' : '26'}` }}>{tr("Next:")} {nextTier.name}</span>
-          )}
+      {/* Status, in the tier's own colour */}
+      <div className="rwp-hero" style={{ "--tc": tone(curTier) }}>
+        <div className="rwp-top">
+          <span className="rwp-crown rwp-glass"><OffsetIcon name="crown" size={19} /></span>
+          {nextTier && <span className="rwp-next" style={{ "--nc": tone(nextTier) }}><i aria-hidden="true" />{tr("Next:")} {nextTier.name}</span>}
         </div>
-        <div className="px-[26px] pb-[22px] max-md:px-5 max-md:pb-5">
-          {nextTier && (
-            <div className="h-[9px] rounded-[5px] overflow-hidden" style={{ background: trackBg(dark) }}>
-              <div className="h-full rounded-[5px]" style={{ width: `${Math.max(3, Math.min(100, status.progressPct))}%`, background: `linear-gradient(90deg, ${heroClr}, ${nextClr})` }} />
-            </div>
-          )}
-          <div className="flex justify-between gap-3 mt-[11px] text-[12.5px] max-md:flex-col max-md:gap-[3px]" style={{ color: t.textMuted }}>
-            <span><b className="m text-[14.5px] font-bold" style={{ color: t.text }}>{fmtCompactNaira(status.eligibleSpend, money, currency)}</b> {tr("counted so far")}</span>
-            {nextTier && <span><b className="m text-[14.5px] font-bold" style={{ color: t.text }}>{fmtCompactNaira(status.remainingToNext, money, currency)}</b> to {nextTier.name}</span>}
-          </div>
+        <span className="rwp-eb">{tr("Nitro Status")}</span>
+        <div className="rwp-name serif">{status.name}</div>
+        <div className="rwp-perks">
+          {status.discountPct > 0 && <span className="rwp-perk rwp-glass"><b className="m">{status.discountPct}%</b>{tr("off every order")}</span>}
+          <span className="rwp-perk rwp-glass"><b className="m">{status.pointEarnPct}%</b>{tr("back in points")}</span>
+        </div>
+        <div className="rwp-track" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>
+        <div className="rwp-cl">
+          <span><b className="m">{fmtCompactNaira(status.eligibleSpend, money, currency)}</b> {tr("counted so far")}</span>
+          {nextTier
+            ? <span><b className="m">{fmtCompactNaira(status.remainingToNext, money, currency)}</b> {tr("to")} {nextTier.name}</span>
+            : <span>{tr("The top of the ladder")}</span>}
         </div>
       </div>
 
-      {/* ── Points (gold) and Tasks (blue) ── */}
-      <div className={`grid gap-3.5 mb-3.5 items-stretch ${showTasks ? 'grid-cols-[1fr_1.3fr] max-md:grid-cols-1' : 'grid-cols-1'}`}>
-        <div className="relative rounded-[18px] overflow-hidden flex flex-col p-[22px] max-md:p-5" style={card}>
-          <div className="absolute left-0 right-0 top-0 h-1" style={{ background: 'linear-gradient(90deg,#fbbf24,#d97706)' }} />
-          <div className="flex items-center gap-[11px]">
-            <ChipIcon gradient="linear-gradient(135deg,#fbbf24,#d97706)" shadow="0 3px 10px rgba(217,119,6,.35)" size={30} radius={9}><CoinGlyph s={15} /></ChipIcon>
-            <span className={KICKER} style={{ color: t.textMuted }}>{tr("Nitro Points")}</span>
-          </div>
-          <b className="m text-[52px] max-md:text-[44px] font-extrabold leading-none tracking-[-.045em] mt-4 mb-1" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{points.balance.toLocaleString()}</b>
-          <span className="text-[12.5px]" style={{ color: t.textMuted }}>{tr("worth")} {money(points.valueNaira, { round: "down" })} {tr("off your next order")}</span>
-          {points.redeemable ? (
-            <button onClick={onUsePoints} className="w-full h-10 mt-[18px] border-none rounded-xl text-white text-[13px] font-bold font-[inherit] cursor-pointer transition-transform duration-150 hover:-translate-y-px" style={{ background: 'linear-gradient(135deg,#fbbf24,#d97706)', boxShadow: '0 4px 14px rgba(217,119,6,.32)' }}>
-              {tr("Use them on an order")}
-            </button>
-          ) : (
-            <div className="rounded-xl py-3 px-3.5 mt-[18px]" style={{ background: dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)', border: `1px solid ${t.cardBorder}` }}>
-              <div className="text-[11.5px]" style={{ color: t.textSoft }}>{tr("Earn")} <b style={{ color: gold }}>{points.neededToRedeem.toLocaleString()} more</b> {tr("points to start spending")}</div>
-              <div className="h-1 rounded-full overflow-hidden mt-2" style={{ background: trackBg(dark) }}>
-                <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.round(points.balance / points.minRedeem * 100))}%`, background: gold }} />
-              </div>
-            </div>
-          )}
-          <p className="text-[11.5px] leading-[1.5] mt-3 mb-0" style={{ color: t.textMuted }}>{tr("Earned on every completed order. Spend from")} {points.minRedeem.toLocaleString()} {tr("points.")}</p>
+      {/* Points, in gold, and the tasks that pay */}
+      <div className={`rwp-row2${showTasks ? '' : ' one'}`}>
+        <div className="rwp-card rwp-pts">
+          <div className="rwp-hd"><span className="ic-tile tc" style={{ "--tc": "#d97706" }}><OffsetIcon name="star" size={15} /></span><span className="rwp-k">{tr("Nitro Points")}</span></div>
+          <div className="rwp-big"><b className="m">{points.balance.toLocaleString()}</b><small className="m">pts</small></div>
+          <div className="rwp-worth">{tr("Worth")} {money(points.valueNaira, { round: "down" })} {tr("off your next order")}</div>
+          {points.redeemable
+            ? <button type="button" onClick={onUsePoints} className="rwp-use">{tr("Use them on an order")}</button>
+            : <div className="rwp-gold">
+              <div className="tx"><b className="m">{points.neededToRedeem.toLocaleString()}</b> {tr("more to start spending")}</div>
+              <div className="rwp-gbar" aria-hidden="true"><i style={{ width: `${ptsPct}%` }} /></div>
+              <div className="rwp-gl m"><span>0</span><span>{points.minRedeem.toLocaleString()}</span></div>
+            </div>}
+          <p className="rwp-fine">{tr("Earned on every completed order. Spend from")} {points.minRedeem.toLocaleString()} {tr("points.")}</p>
         </div>
 
         {showTasks && (
-          <div className="relative rounded-[18px] overflow-hidden flex flex-col" style={card}>
-            <div className="absolute left-0 right-0 top-0 h-1" style={{ background: 'linear-gradient(90deg,#60a5fa,#2563eb)' }} />
-            <div className="flex items-center gap-[11px] py-4 px-[18px]" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
-              <ChipIcon gradient="linear-gradient(135deg,#60a5fa,#2563eb)" shadow="0 3px 10px rgba(37,99,235,.32)" size={30} radius={9}><TaskGlyph s={15} /></ChipIcon>
-              <span className={KICKER} style={{ color: t.textMuted }}>{tr("Earn without spending")}</span>
-              <span className="ml-auto"><CellLink t={t} onClick={() => setActive?.('tasks')}>{tr("All tasks")}</CellLink></span>
+          <div className="rwp-card rwp-tasks">
+            <div className="rwp-ch">
+              <span className="ic-tile tc" style={{ "--tc": dark ? "#60a5fa" : "#2563eb" }}><OffsetIcon name="tasks" size={15} /></span>
+              <b>{tr("Earn without spending")}</b>
+              <button type="button" className="rwp-lnk" onClick={goTasks}>{tr("All tasks")}<Chevron /></button>
             </div>
-            {/* The payload carries the first few open tasks; the count is the fallback. */}
-            <div className="flex items-center gap-3 py-[13px] px-[18px]">
-              {tasks.available > 0 ? (
-                <>
-                  <span className="flex flex-col gap-0.5 flex-1 min-w-0">
-                    <b className="text-[13.5px] font-semibold" style={{ color: t.text }}>{tasks.available} {tasks.available === 1 ? tr("task open") : tr("tasks open")}</b>
-                    <i className="not-italic text-[12px]" style={{ color: t.textMuted }}>{tr("Follow, share or review. The credit lands once we check it.")}</i>
-                  </span>
-                  <b className="m text-[13.5px] font-bold whitespace-nowrap" style={{ color: green }}>{tr("up to")} {money(tasks.topReward, { round: "down" })}</b>
-                  <button onClick={() => setActive?.('tasks')} className="h-[31px] px-3 rounded-[10px] text-[12px] font-semibold font-[inherit] cursor-pointer" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, color: t.text }}>{tr("Do it")}</button>
-                </>
-              ) : (
-                <span className="flex flex-col gap-0.5">
-                  <b className="text-[13.5px] font-semibold" style={{ color: t.text }}>{tr("No tasks open right now")}</b>
-                  <i className="not-italic text-[12px]" style={{ color: t.textMuted }}>{tr("New ones land every few weeks.")}</i>
-                </span>
-              )}
-            </div>
+            {tasks.available > 0 ? (
+              <>
+                {/* The rewards payload carries the first three open tasks. */}
+                {openList.map(tk => (
+                  <button key={tk.id} type="button" className="rwp-tr" onClick={goTasks}>
+                    <TaskIcon platform={tk.platform} dark={dark} size={34} />
+                    <span className="tx"><b>{tk.title}</b><small>{tr(PROOF_HINT[tk.hint] || tk.hint)}</small></span>
+                    {tk.waiting
+                      ? <span className="pbadge rev">{tr("In review")}</span>
+                      : <span className="pbadge gold">{money(tk.reward, { round: "down" })}</span>}
+                  </button>
+                ))}
+                <div className="rwp-foot">
+                  <span><b>{tasks.available} {tr("open")}</b>, {tr("up to")} {money(tasks.topReward, { round: "down" })}</span>
+                  <span>{tr("Credit lands once we check it")}</span>
+                </div>
+              </>
+            ) : (
+              <div className="rwp-none"><b>{tr("No tasks open right now")}</b><small>{tr("New ones land every few weeks.")}</small></div>
+            )}
           </div>
         )}
       </div>
 
-      {/* ── Status ladder ── */}
-      <div className="rounded-[18px] overflow-hidden mb-3.5" style={card}>
-        <CardHead t={t} title={tr("Status ladder")} hint={tr("spend more, pay less, earn faster")} />
-        <div className="flex items-center gap-3.5 py-2.5 px-5 max-md:hidden text-[10px] font-bold uppercase tracking-[1.1px]" style={{ borderBottom: `1px solid ${t.cardBorder}`, color: t.textMuted }}>
-          <span className="w-[26px] shrink-0" />
-          <span className="flex-1 min-w-0">{tr("Tier")}</span>
-          <span className="flex-1 min-w-0">{tr("Reach it at")}</span>
-          <span className="w-[100px] text-right shrink-0">{tr("Discount")}</span>
-          <span className="w-[100px] text-right shrink-0">{tr("Points back")}</span>
-        </div>
-        <div className="flex flex-col py-0.5">
+      {/* The ladder: passed tiers ticked, yours marked */}
+      <div className="rwp-card">
+        <div className="rwp-ch"><b>{tr("Status ladder")}</b><small>{tr("spend more, pay less, earn faster")}</small></div>
+        <div className="rwp-lad">
+          <div className="rwp-lr hd" aria-hidden="true"><span /><span>{tr("Tier")}</span><span>{tr("Reach it at")}</span><span className="text-end">{tr("Discount")}</span><span className="text-end">{tr("Points back")}</span></div>
           {STATUS_TIERS.map((tier, idx) => {
-            const isNow = idx === curIdx;
+            const now = idx === curIdx;
             return (
-              <div key={tier.key} className="flex items-center gap-3.5 py-3 px-5 max-md:px-4" style={{ opacity: idx < curIdx ? 0.42 : 1, background: isNow ? `${tier.color}${dark ? '1a' : '17'}` : 'transparent' }}>
-                <span className="relative w-[26px] shrink-0 self-stretch flex items-center justify-center">
-                  <span className="w-[13px] h-[13px] rounded-full" style={{ background: tier.color, boxShadow: `0 0 0 4px ${tier.color}2e` }} />
-                  {idx < STATUS_TIERS.length - 1 && <span className="absolute left-1/2 w-[2px] -translate-x-1/2" style={{ top: 'calc(50% + 9px)', bottom: -13, background: rail }} />}
-                </span>
-                <div className="flex-1 min-w-0 flex items-center gap-3.5 max-md:flex-col max-md:items-start max-md:gap-[3px]">
-                  <span className="flex-1 min-w-0 flex items-center gap-2.5 max-md:w-full">
-                    <b className="text-[15px]" style={{ color: tier.color, fontWeight: isNow ? 750 : 600 }}>{tier.name}</b>
-                    {isNow && <span className="text-[9.5px] font-bold uppercase tracking-[.9px] rounded-full py-[3px] px-[9px] whitespace-nowrap text-white" style={{ background: tier.color }}>{tr("You are here")}</span>}
-                  </span>
-                  <span className="flex-1 min-w-0 truncate text-[13px] max-md:text-[12px]" style={{ color: t.textMuted }}>{tier.min === 0 ? tr("Your first order") : `${money(tier.min)} ${tr("spent")}`}</span>
+              <div key={tier.key} className={`rwp-lr${now ? ' now' : ''}`} style={{ "--rc": tier.color }}>
+                {idx < curIdx ? <span className="rwp-ld past">{TICK}</span> : <span className="rwp-ld" />}
+                <div className="rwp-who">
+                  <div className="rwp-lnm"><b className="serif">{tier.name}</b>{now && <span className="rwp-here">{tr("You are here")}</span>}</div>
+                  <span className="rwp-reach">{tier.min === 0 ? tr("Your first order") : `${money(tier.min)} ${tr("spent")}`}</span>
                 </div>
-                <div className="flex items-center gap-3.5 shrink-0 max-md:flex-col max-md:items-end max-md:gap-[3px]">
-                  <span className="m w-[100px] max-md:w-auto text-right text-[14.5px] font-bold" style={{ color: t.text }}>{tier.discountPct > 0 ? `${tier.discountPct}%` : '—'}</span>
-                  <span className="m w-[100px] max-md:w-auto text-right text-[14.5px] max-md:text-[12.5px] font-bold" style={{ color: t.text }}>{tier.pointEarnPct}%</span>
+                <div className="rwp-nums">
+                  <span className={`n m${tier.discountPct > 0 ? '' : ' none'}`}><span className="rwp-nl">{tr("Discount")}</span>{tier.discountPct > 0 ? `${tier.discountPct}%` : tr("None")}</span>
+                  <span className="n m"><span className="rwp-nl">{tr("Points back")}</span>{tier.pointEarnPct}%</span>
                 </div>
               </div>
             );
@@ -329,27 +456,22 @@ export function RewardsPage({ rewards, dark, t, setActive, onUsePoints }) {
         </div>
       </div>
 
-      {/* ── Points history — the latest entries the API returns, unpaged ── */}
-      <div className="rounded-[18px] overflow-hidden" style={card}>
-        <CardHead t={t} title={tr("Points history")} hint={rows.length ? `${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}` : null} />
+      {/* History: the latest entries the API returns, unpaged */}
+      <div className="rwp-card">
+        <div className="rwp-ch"><b>{tr("Points history")}</b>{rows.length > 0 && <small>{rows.length} {rows.length === 1 ? tr("entry") : tr("entries")}</small>}</div>
         {rows.length ? rows.map((h, i) => {
           const kind = h.kind === 'spent' ? 'spent' : h.kind === 'reversed' ? 'reversed' : 'earned';
-          const clr = kind === 'earned' ? green : kind === 'spent' ? amber : red;
+          const k = kinds[kind];
           return (
-            <div key={i} className="flex items-center gap-3 py-3 px-5 max-md:px-4" style={{ borderTop: i ? `1px solid ${rail}` : 'none' }}>
-              <span className="text-[9.5px] font-bold uppercase tracking-[.9px] rounded-full py-1 w-[82px] max-md:w-[70px] text-center shrink-0" style={{ background: `${clr}${dark ? '26' : '1f'}`, color: clr }}>{kind}</span>
-              <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-                <b className="text-[13.5px] font-semibold truncate" style={{ color: t.text }}>{h.detail || h.label}</b>
-                <i className="m not-italic text-[11px] truncate" style={{ color: t.textMuted }}>{h.ref}{h.at ? ` · ${fmtHistDate(h.at)}` : ''}</i>
-              </span>
-              <b className="m text-[14px] font-bold text-right whitespace-nowrap" style={{ color: clr }}>{h.pts > 0 ? '+' : ''}{fmtPoints(h.pts)}</b>
+            <div key={i} className="rwp-hr" style={{ "--kc": k.c }}>
+              <span className="ic-tile tc" style={{ "--tc": k.c }}><OffsetIcon name={k.icon} size={15} /></span>
+              <span className="tx"><b>{h.detail ? tr(h.detail) : tr(h.label || KIND_LABEL[kind])}</b><small><em>{tr(KIND_LABEL[kind])}</em>{h.ref && <span className="m">{h.ref}</span>}</small></span>
+              <span className="amt"><b className="m">{h.pts > 0 ? '+' : ''}{fmtPoints(h.pts)}</b>{h.at && <small>{fmtHistDate(h.at)}</small>}</span>
             </div>
           );
-        }) : (
-          <div className="text-[12px] py-7 text-center" style={{ color: t.textMuted }}>{tr("Points activity will appear here after your first order.")}</div>
-        )}
+        }) : <div className="rwp-empty">{tr("Points activity will appear here after your first order.")}</div>}
       </div>
-    </>
+    </div>
   );
 }
 
