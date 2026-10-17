@@ -85,7 +85,6 @@ vi.mock('@/lib/promotions', () => ({
   applyPromotionDiscount: vi.fn(() => 0),
 }));
 vi.mock('@/lib/email', () => ({ sendEmail: vi.fn(), batchPlacementEmail: vi.fn(() => '<html>') }));
-vi.mock('@/lib/settings', () => ({ getWhatsAppChannelUrl: vi.fn() }));
 vi.mock('@/lib/clean-link', () => ({ cleanLink: link => link.trim() }));
 vi.mock('@/lib/drip-feed', async (importOriginal) => ({
   // Spread the real module so a new export cannot silently arrive as undefined:

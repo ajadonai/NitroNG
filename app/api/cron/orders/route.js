@@ -4,7 +4,7 @@ import { serviceDisplay } from '@/lib/service-display';
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { checkOrder } from '@/lib/smm';
-import { sendEmail, walletCreditEmail, batchCompletionEmail } from '@/lib/email';
+import { sendEmail, walletCreditEmail, batchCompletionEmail, REFUND_EMAILS_PAUSED } from '@/lib/email';
 import { placeWithProvider } from '@/lib/bulk-dispatch';
 import { tgRefundAlert, tgFlush } from '@/lib/telegram';
 import { createCommission, voidCommissions } from '@/lib/commissions';
@@ -754,7 +754,7 @@ async function refundOrder(order, amount = null, emailOnly = false, failReason =
     });
   }
 
-  if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
+  if (!REFUND_EMAILS_PAUSED && user?.email && user.notifEmail !== false && user.notifOrders !== false) {
     try {
       const { walletRefund: eWallet, pointsRestore: ePoints } = computeRefundSplit(order.charge, order.nitroPointsRedeemedKobo, refundAmount);
       const wN = eWallet / 100;

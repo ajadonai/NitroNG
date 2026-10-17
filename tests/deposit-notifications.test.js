@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   sendEmail: vi.fn(),
   walletCreditEmail: vi.fn(() => '<html>deposit</html>'),
   referralBonusEmail: vi.fn(() => '<html>referral</html>'),
-  getWhatsAppChannelUrl: vi.fn(),
   warn: vi.fn(),
 }));
 
@@ -38,7 +37,6 @@ vi.mock('@/lib/email', () => ({
   walletCreditEmail: mocks.walletCreditEmail,
   referralBonusEmail: mocks.referralBonusEmail,
 }));
-vi.mock('@/lib/settings', () => ({ getWhatsAppChannelUrl: mocks.getWhatsAppChannelUrl }));
 vi.mock('@/lib/logger', () => ({ log: { warn: mocks.warn } }));
 
 const { notifyDepositFinalized } = await import('@/lib/deposit-notifications');
@@ -78,7 +76,6 @@ beforeEach(() => {
   mocks.sendEmail.mockResolvedValue({ success: true });
   mocks.walletCreditEmail.mockReturnValue('<html>deposit</html>');
   mocks.referralBonusEmail.mockReturnValue('<html>referral</html>');
-  mocks.getWhatsAppChannelUrl.mockResolvedValue('https://example.test/channel');
 });
 
 describe('notifyDepositFinalized', () => {
@@ -100,8 +97,10 @@ describe('notifyDepositFinalized', () => {
     }));
     expect(mocks.tgPayment).toHaveBeenCalledWith('Test User', 500_000, 170_000, 'Flutterwave', undefined, null);
     expect(mocks.walletCreditEmail).toHaveBeenCalledWith('Test User', 5_000, null, expect.objectContaining({
-      kind: 'deposit', bonus: 1_200, newBalance: 6_700, method: 'Flutterwave',
+      kind: 'deposit', bonus: 1_200, method: 'Flutterwave',
     }));
+    // No balance figure in any email (17 Oct 2026): the deposit, never the total.
+    expect(mocks.walletCreditEmail.mock.calls[0][3]).not.toHaveProperty('newBalance');
     expect(mocks.sendEmail).toHaveBeenCalledTimes(1);
   });
 
@@ -157,7 +156,7 @@ describe('notifyDepositFinalized', () => {
   it('contains every notification failure and never changes the completed result', async () => {
     mocks.trackDeposit.mockRejectedValue(new Error('Meta unavailable'));
     mocks.tgPayment.mockImplementation(() => { throw new Error('Telegram unavailable'); });
-    mocks.getWhatsAppChannelUrl.mockRejectedValue(new Error('Settings unavailable'));
+    mocks.sendEmail.mockRejectedValue(new Error('Brevo unavailable'));
 
     const completed = result();
     const summary = await notifyDepositFinalized(completed);

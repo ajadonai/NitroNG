@@ -270,12 +270,9 @@ describe('account-deletion notices', () => {
       data: expect.not.objectContaining({ balance: expect.anything() }),
     }));
 
-    const adminNotice = mocks.sendEmail.mock.calls.find(([to]) => to === 'accounts@nitro.ng')?.join('\n') || '';
-    expect(adminNotice).toContain('2 (completed, no refund)');
-    expect(adminNotice).not.toContain('cancelled, no refund');
   });
 
-  it('keeps PII and referral codes out of the admin email and Telegram notice', async () => {
+  it('sends no internal email and keeps PII and referral codes out of the Telegram notice', async () => {
     const response = await POST(new Request('https://nitro.test/api/auth/delete-account', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -283,16 +280,9 @@ describe('account-deletion notices', () => {
     }));
 
     expect(response.status, JSON.stringify(mocks.logError.mock.calls)).toBe(200);
-    const adminCall = mocks.sendEmail.mock.calls.find(([to]) => to === 'accounts@nitro.ng');
-    expect(adminCall).toBeDefined();
-    const adminNotice = adminCall.join('\n');
-    for (const personalValue of [customer.name, customer.firstName, customer.email, customer.referralCode]) {
-      expect(adminNotice).not.toContain(personalValue);
-    }
-    expect(adminNotice).toContain(customer.id);
-    expect(adminNotice).toContain('required financial records remain linked only to the internal user ID');
-    expect(adminNotice).toContain('customer contact details are removed');
-    expect(adminNotice).toContain('After that deadline, the account cannot be restored');
+    // Stopped 17 Oct 2026: nobody opened it, and Telegram already carries it.
+    expect(mocks.sendEmail.mock.calls.find(([to]) => to === 'accounts@nitro.ng')).toBeUndefined();
+    expect(mocks.sendEmail).toHaveBeenCalledWith(customer.email, 'Your Nitro account is scheduled for deletion', expect.any(String));
 
     expect(mocks.telegramDeletion).toHaveBeenCalledWith(customer.id, 7, 987600);
     const telegramArgs = JSON.stringify(mocks.telegramDeletion.mock.calls[0]);

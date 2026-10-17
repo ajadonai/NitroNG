@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma';
 import { phoneSearchDigits } from '@/lib/phone-search';
 import { log } from "@/lib/logger";
 import { requireAdmin, logActivity, canSeeSensitive, canPerformAction, maskEmail, maskPhone } from '@/lib/admin';
-import { sendEmail, walletCreditEmail } from '@/lib/email';
+import { sendEmail, walletCreditEmail, REFUND_EMAILS_PAUSED } from '@/lib/email';
 import { checkOrder, cancelOrder, refillOrder, isProviderConfigured, getProviderName } from '@/lib/smm';
 import { voidCommissions } from '@/lib/commissions';
 import { cleanLink } from '@/lib/clean-link';
@@ -484,7 +484,7 @@ export async function POST(req) {
       }
       voidCommissions(order.id, 'admin_cancelled').catch(() => {});
 
-      if (result.refundAmount > 0) {
+      if (result.refundAmount > 0 && !REFUND_EMAILS_PAUSED) {
         try {
           const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
           if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
@@ -775,7 +775,7 @@ export async function POST(req) {
       const { refundAmount, walletRefund: rWallet, pointsRestore: rPoints } = settlement;
       try {
         const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
-        if (user?.email && user.notifEmail !== false && user.notifOrders !== false) {
+        if (!REFUND_EMAILS_PAUSED && user?.email && user.notifEmail !== false && user.notifOrders !== false) {
           const wN = rWallet / 100;
           const pN = rPoints / 100;
           const html = walletCreditEmail(user.name || 'there', wN, null, { kind: 'refund', orderRef: `#${order.orderId}`, failReason: percent === 100 ? 'Order cancelled' : 'Partial delivery', pointsRestored: pN });

@@ -27,9 +27,9 @@ export async function GET(req) {
     welcome:         () => sendWelcomeEmail(NAME, EMAIL),                                                  // 2
     reset:           () => sendPasswordResetEmail(EMAIL, NAME, 'https://nitro.ng/reset?token=test123'),    // 3
     deletion:        () => sendEmail(EMAIL, 'Your Nitro account is scheduled for deletion', accountDeletionEmail(NAME, 30)), // 4
-    'deposit':       () => sendEmail(EMAIL, '₦5,000 is in your wallet', walletCreditEmail(NAME, 5000, null, { kind: 'deposit', bonus: 1200, newBalance: 6200, method: 'Flutterwave' })), // 5 (with bonus)
-    'deposit-plain': () => sendEmail(EMAIL, '₦1,000 is in your wallet', walletCreditEmail(NAME, 1000, null, { kind: 'deposit', bonus: 0, newBalance: 1000, method: 'Flutterwave' })),    // 5 (no bonus)
-    refund:          () => sendEmail(EMAIL, '₦1,200 refunded to your Nitro wallet', walletCreditEmail(NAME, 1200, null, { kind: 'refund', orderRef: '#48213', failReason: 'Could not deliver', newBalance: 3650 })), // 6
+    'deposit':       () => sendEmail(EMAIL, '₦5,000 is in your wallet', walletCreditEmail(NAME, 5000, null, { kind: 'deposit', bonus: 1200, method: 'Flutterwave' })), // 5 (with bonus)
+    'deposit-plain': () => sendEmail(EMAIL, '₦1,000 is in your wallet', walletCreditEmail(NAME, 1000, null, { kind: 'deposit', bonus: 0, method: 'Flutterwave' })),    // 5 (no bonus)
+    refund:          () => sendEmail(EMAIL, '₦1,200 refunded to your Nitro wallet', walletCreditEmail(NAME, 1200, null, { kind: 'refund', orderRef: '#48213', failReason: 'Could not deliver' })), // 6
     credit:          () => sendEmail(EMAIL, '₦2,000 credited to your Nitro wallet', walletCreditEmail(NAME, 2000, 'a small thank-you from the team.')), // generic credit
     'batch-place':   () => sendEmail(EMAIL, 'Batch order placed', batchPlacementEmail(NAME, 'BULK-20', 18, 16, 2, 24300)),   // 7
     'guest-receipt': () => sendEmail(EMAIL, 'Order NTR-15978 placed', guestReceiptEmail({ code: 'G7K2-9XQM', orderId: 'NTR-15978', service: 'Instagram Followers', tier: 'Standard', quantity: 500, link: 'https://instagram.com/adaeze.styles', paidKobo: 1000000 })), // 24
@@ -41,8 +41,8 @@ export async function GET(req) {
     referral:        () => sendEmail(EMAIL, 'You received ₦1,000 on Nitro!', referralBonusEmail(NAME, 1000)),                 // 14
     'comeback-30':   () => sendWinback30Email(NAME, EMAIL, 500, 7),                                        // 15
     'comeback-60':   () => sendWinback60Email(NAME, EMAIL, 1000, 7),                                       // 16
-    'nudge-funds':   () => sendNudgeIdleFunds(NAME, EMAIL, 3000),                                          // 17
-    'nudge-idle':    () => sendNudgeIdleBalance(NAME, EMAIL, 7450),                                        // 18
+    'nudge-funds':   () => sendNudgeIdleFunds(NAME, EMAIL),                                          // 17
+    'nudge-idle':    () => sendNudgeIdleBalance(NAME, EMAIL),                                        // 18
     'launch-tasks':  () => sendTasksLaunchEmail(NAME, EMAIL),                                              // 25 (manual broadcast)
     'brand-welcome': () => sendBrandWelcomeEmail(NAME, EMAIL),                                             // 26 (manual broadcast)
     'pit-approved':  () => sendEmail(EMAIL, "You're in. Welcome to the Pit", pitApprovedEmail(NAME)),      // 20

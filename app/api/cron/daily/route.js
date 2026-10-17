@@ -380,12 +380,12 @@ export async function GET(req) {
         orders: { none: {} },
         transactions: { some: { type: { in: WALLET_FUNDING } } },
       },
-      select: { id: true, name: true, email: true, balance: true },
+      select: { id: true, name: true, email: true },
       take: 50,
     });
     for (const user of idleFundsBatch) {
       try {
-        await sendNudgeIdleFunds(user.name || 'there', user.email, user.balance / 100);
+        await sendNudgeIdleFunds(user.name || 'there', user.email);
         await prisma.user.update({ where: { id: user.id }, data: { nudgeIdleFundsSentAt: new Date() } });
         idleFundsSent++;
       } catch (e) {
@@ -423,12 +423,12 @@ export async function GET(req) {
           none: { createdAt: { gt: sevenDaysAgo }, deletedAt: null },
         },
       },
-      select: { id: true, name: true, email: true, balance: true },
+      select: { id: true, name: true, email: true },
       take: 50,
     });
     for (const user of idleBalBatch) {
       try {
-        await sendNudgeIdleBalance(user.name || 'there', user.email, user.balance / 100);
+        await sendNudgeIdleBalance(user.name || 'there', user.email);
         await prisma.user.update({ where: { id: user.id }, data: { nudgeIdleBalanceSentAt: new Date() } });
         idleBalSent++;
       } catch (e) {

@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { log } from "@/lib/logger";
 import { getCurrentUser, clearUserCookie } from '@/lib/auth';
-import { sendEmail, accountDeletionEmail, emailWrap, emailDataBox, emailRow } from '@/lib/email';
+import { sendEmail, accountDeletionEmail } from '@/lib/email';
 import {
   completeActiveOrdersForAccountDeletion,
   isOrderCancellationLeaseActive,
@@ -74,35 +74,14 @@ export async function POST(req) {
       return Response.json({ error: 'An order cancellation is in progress. Please try deleting your account again shortly.' }, { status: 409 });
     }
 
-    // Count user stats for admin email
+    // Count user stats for the admin Telegram notice
     const [orderCount, totalSpent] = await Promise.all([
       prisma.order.count({ where: { userId: user.id } }),
       prisma.transaction.aggregate({ where: { userId: user.id, type: 'order' }, _sum: { amount: true } }),
     ]);
 
-    // Keep the internal deletion notice useful without creating another copy
-    // of the customer's contact details outside the account record.
-    const rows = emailRow('User ID', user.id)
-      + emailRow('Balance', '₦' + (user.balance / 100).toLocaleString(), '#059669')
-      + emailRow('Total Orders', orderCount)
-      + emailRow('Active Orders', closedWork.orders + (closedWork.orders > 0 ? ' (completed, no refund)' : ''), closedWork.orders > 0 ? '#dc2626' : '#333')
-      + emailRow('Total Spent', '₦' + ((totalSpent._sum.amount || 0) / 100).toLocaleString())
-      + emailRow('Signed Up', user.createdAt.toLocaleDateString('en-NG'));
-    const adminHtml = await emailWrap({
-      label: 'Account', labelColor: '#dc2626',
-      title: 'Account Deletion Requested',
-      body: `
-        <p class="em-t" style="font-size:15px;line-height:1.7;color:#555;margin:0 0 24px;">Scheduled for permanent deletion on ${deletionDate.toLocaleDateString('en-NG', { year: 'numeric', month: 'long', day: 'numeric' })}.</p>
-        ${emailDataBox(rows, '#dc2626')}
-        <p class="em-m" style="font-size:13px;color:#9a948d;text-align:center;margin:0 0 12px;">After the deadline, required financial records remain linked only to the internal user ID; customer contact details are removed.</p>
-        <p class="em-m" style="font-size:13px;color:#9a948d;text-align:center;margin:0;">The Restore action is available in admin only before ${deletionDate.toLocaleDateString('en-NG', { year: 'numeric', month: 'long', day: 'numeric' })}. After that deadline, the account cannot be restored.</p>
-      `,
-    });
-
-    // Send to accounts@nitro.ng
-    sendEmail('accounts@nitro.ng', `Account deletion requested: ${user.id}`, adminHtml).catch(err =>
-      log.error('DeleteAccount', `Admin email failed: ${err.message}`)
-    );
+    // No internal email to accounts@nitro.ng: nobody opened one in 30 days
+    // (Brevo, 17 Oct 2026), and the Telegram notice below already tells admins.
 
     // Send confirmation to user
     const userHtml = await accountDeletionEmail(user.firstName || user.name, 30);

@@ -7,7 +7,6 @@ import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-lim
 import { getActivePromotion, applyPromotionDiscount } from '@/lib/promotions';
 import { getResellerTerms, getMarkupSettings, wholesaleOf, costKoboPer1k } from '@/lib/reseller';
 import { sendEmail, batchPlacementEmail } from '@/lib/email';
-import { getWhatsAppChannelUrl } from '@/lib/settings';
 import { cleanLink } from '@/lib/clean-link';
 import { calculateIntradayDrip, getDripConfig, validateIntradayDuration } from '@/lib/drip-feed';
 import { enqueueMetaEvent, loadStoredCapiIdentity, parseFbCookies, persistFbTouch, scheduleQueuedMetaEventDelivery } from '@/lib/meta-capi';
@@ -390,8 +389,7 @@ async function dispatchBatch(createdOrders, userId, batchId, totalCharge) {
   try {
     const u = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true, notifEmail: true, notifOrders: true } });
     if (u?.email && u.notifEmail !== false && u.notifOrders !== false) {
-      const waChannelUrl = await getWhatsAppChannelUrl();
-      const html = batchPlacementEmail(u.name, batchId, createdOrders.length, placed, createdOrders.length - placed, totalCharge / 100, { waChannelUrl });
+      const html = batchPlacementEmail(u.name, batchId, createdOrders.length, placed, createdOrders.length - placed, totalCharge / 100);
       await sendEmail(u.email, `Bulk Order — ${createdOrders.length} orders placed`, html).catch(e => log.warn('Batch email', e.message));
     }
   } catch {}
