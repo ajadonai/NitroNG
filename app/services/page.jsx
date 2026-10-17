@@ -27,7 +27,7 @@ export async function generateMetadata() {
 
 const PLATFORM_ORDER = [
   { slug: 'instagram', name: 'Instagram', group: 'social' },
-  { slug: 'tiktok', name: 'TikTok', dbPlatform: 'tiktok', group: 'social' },
+  { slug: 'tiktok', name: 'TikTok', dbPlatform: 'TikTok', group: 'social' },
   { slug: 'youtube', name: 'YouTube', group: 'social' },
   { slug: 'x', name: 'X (Twitter)', dbPlatform: 'Twitter/X', group: 'social' },
   { slug: 'facebook', name: 'Facebook', group: 'social' },

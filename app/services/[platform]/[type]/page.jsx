@@ -33,7 +33,8 @@ export async function generateMetadata({ params }) {
 
 async function getFilteredServices(dbPlatform, matchPrefix) {
   const groups = await prisma.serviceGroup.findMany({
-    where: { enabled: true, platform: dbPlatform },
+    // Case-insensitive, for the same reason as the platform page.
+    where: { enabled: true, platform: { equals: dbPlatform, mode: 'insensitive' } },
     include: {
       tiers: { where: { enabled: true }, orderBy: { sellPer1k: 'asc' } },
     },

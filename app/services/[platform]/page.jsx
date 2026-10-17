@@ -49,7 +49,7 @@ const PLATFORM_META = {
   },
   tiktok: {
     name: 'TikTok',
-    dbPlatform: 'tiktok',
+    dbPlatform: 'TikTok',
     h1: msg('Buy TikTok Followers, Views and Likes in Nigeria'),
     title: 'Buy TikTok Followers and Views in Nigeria',
     metaDesc: 'Buy TikTok followers, views, likes, shares and livestream viewers in Nigeria. Naira pricing, gradual delivery, refill covered services. Start from ₦1,000.',
@@ -596,7 +596,10 @@ function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
 async function getPlatformData(platformName, dbPlatform) {
   const groups = await prisma.serviceGroup.findMany({
-    where: { enabled: true, platform: dbPlatform || platformName },
+    // Case-insensitive: TikTok's groups were once stored as "tiktok" and later
+    // only as "TikTok", and an exact match against the old spelling 404'd every
+    // TikTok page in the sitemap (found 17 Oct 2026).
+    where: { enabled: true, platform: { equals: dbPlatform || platformName, mode: 'insensitive' } },
     include: {
       tiers: {
         where: { enabled: true },
