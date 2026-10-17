@@ -119,14 +119,15 @@ export const PLATFORM_GROUPS = [
 export const PLATFORMS = PLATFORM_GROUPS.flatMap(g => g.platforms);
 
 /**
- * Each platform's own colour, for the rail down the left of its tile.
+ * Each platform's own colour, for the mark on its tile and, when chosen, the
+ * ring around it.
  *
  * Thirty-six identical grey chips meant nobody recognised a logo — they read
  * thirty-six labels instead. Briefly quieted at rest, to spend colour only on
  * the chosen tile; that read as dull rather than calm, and seventeen logos are
- * where this page keeps most of its life. The brands stay on. The rail is the device the service cards already
- * use for Nigerian and US, so it is a pattern this page owns rather than a new
- * one.
+ * where this page keeps most of its life. The brands stay on. The mark sits in
+ * the printed square order rows and tasks already use, so it is a pattern this
+ * page owns rather than a new one.
  *
  * Every value is the brand's real colour, taken from simple-icons 16.31.0,
  * which derives them from the official logo rather than from memory. Several of
@@ -169,14 +170,14 @@ const BRAND = {
  * Two substitutions, made only where a real colour cannot do a job, and never
  * by changing what the brand is.
  *
- * ON_DARK: a black mark is invisible on the dark canvas. The rail, the glyph
- * and the label all take this instead — it is the same brand, lifted to where
+ * ON_DARK: a black mark is invisible on the dark canvas. The glyph, the
+ * square behind it and the label all take this instead — it is the same brand, lifted to where
  * the eye can find it.
  *
  * INK_ON_LIGHT: Snapchat yellow, Kick green and Clubhouse yellow are correct
  * colours that cannot carry text on a light ground — #FFFC00 on white is about
- * 1.1:1. Only the *text* takes this darker value. The rail and the glyph keep
- * the true colour, because a rail does not have to be read.
+ * 1.1:1. Only the *text* takes this darker value. The glyph and its square
+ * keep the true colour, because a mark does not have to be read.
  */
 const ON_DARK = {
   // Black marks.
@@ -203,55 +204,55 @@ const brandOf = (id, dark) => (dark && ON_DARK[id]) || BRAND[id] || null;
 const brandInk = (id, dark) => (dark ? brandOf(id, dark) : (INK_ON_LIGHT[id] || BRAND[id])) || null;
 
 /**
- * One platform tile. Three places draw these — the desktop grid, the phone's
- * five-wide window and the expanded sheet — and they differed only in height
- * and corner radius, so the rail, the brand and the selected state are defined
- * once here rather than three times in markup.
+ * One platform tile. Two places draw these — the desktop grid and the phone's
+ * grid, which is the window of five or every platform once See all is open —
+ * and they differ only in size, so the mark, the brand and the selected state
+ * are defined once here rather than in markup.
  *
  * No service count on the tile. It carried the curated number, which is right
  * on Nitro picks and wrong the moment the selector switches to the full list —
  * Instagram is 19 on one view and 934 on the other, and a badge that does not
  * move when the list behind it does is worse than no badge.
+ *
+ * Printed, like the rest of the page (17 Oct 2026). Each tile used to carry a
+ * brand rail down its left edge, fifteen at once, so the tile you were on had
+ * nothing to stand out against and dark needed its own rule to dim them. Now
+ * the mark sits in a square mixed from its own brand, the way order rows and
+ * tasks draw their icons, so every platform still reads as itself at rest. Only
+ * the chosen tile takes a ring in its brand and an offset edge, which is the
+ * print the chosen tier gets further down the page.
  */
 function PlatformTile({ p, active, dark, t, onClick, compact }) {
   const tr = useT();
   const brand = brandOf(p.id, dark) || t.accent;
   const ink = brandInk(p.id, dark) || t.accentInk;
-  // The rail thins on a phone. At five columns a 3px rail on a 62px tile stops
-  // reading as an accent and becomes a stripe across the corner of the tile.
-  const rail = compact ? 2 : 3;
-  // The rail stands down on the tiles you are not on, in dark only.
-  //
-  // On cream a brand rail reads as a tab. On #0c0814 the same rail is an
-  // ON_DARK value — deliberately brightened so a black mark like TikTok's stays
-  // visible — and fifteen of them at full strength do not sit on the page, they
-  // emit. It also flattened the hierarchy: the tile you were on carried exactly
-  // the same rail as the fourteen you were not, and only the outer glow told
-  // them apart.
-  //
-  // 38% into the card keeps the hue, so every platform still reads as itself
-  // and the icon above it stays true brand. Only the chosen tile gets a rail at
-  // full strength, which is what gives it somewhere to stand out to.
-  const restRail = dark ? `color-mix(in srgb, ${brand} 38%, #171126)` : brand;
+  const card = dark ? "#171126" : "#fffdfb";
+  const mark = compact ? 22 : 26;
   return (
-    <button onClick={onClick} title={tr(p.label)}
-      className="no-plat-tile relative rounded-[11px] border border-solid flex flex-col items-start justify-center cursor-pointer font-[inherit] w-full min-w-0 overflow-hidden transition-[transform,box-shadow,border-color,background] duration-150 hover:-translate-y-px"
+    <button onClick={onClick} title={tr(p.label)} aria-pressed={active}
+      className="no-plat-tile relative border-none flex flex-col items-start justify-center cursor-pointer font-[inherit] w-full min-w-0 overflow-hidden transition-[transform,box-shadow,background] duration-150 hover:-translate-y-px"
       style={{
-        height: compact ? 54 : 58,
-        gap: 5,
-        paddingLeft: rail + (compact ? 6 : 8),
-        paddingRight: compact ? 5 : 7,
-        borderColor: active ? brand : t.cardBorder,
-        background: active
-          ? (dark ? `color-mix(in srgb, ${brand} 17%, #171126)` : `color-mix(in srgb, ${brand} 10%, #fffdfb)`)
-          : (dark ? "#171126" : "#fffdfb"),
+        height: compact ? 56 : 62,
+        gap: compact ? 7 : 8,
+        paddingInline: compact ? 7 : 9,
+        borderRadius: compact ? 11 : 12,
+        background: active ? `color-mix(in srgb, ${brand} ${dark ? 13 : 8}%, ${card})` : card,
         boxShadow: active
-          ? `inset ${rail}px 0 0 ${brand}, 0 3px 10px color-mix(in srgb, ${brand} ${dark ? 16 : 22}%, transparent)`
-          : `inset ${rail}px 0 0 ${restRail}, 0 1px 2px rgba(20,10,14,.05)`,
+          ? `inset 0 0 0 1.5px ${brand}, 2.5px 2.5px 0 color-mix(in srgb, ${brand} 34%, transparent)`
+          : `inset 0 0 0 1px ${t.cardBorder}`,
       }}>
-      <span className="flex items-center justify-center [&_svg]:w-[16px] [&_svg]:h-[16px]" style={{ width: 16, height: 16, color: brand }}>{p.icon}</span>
-      <span className="font-medium leading-none w-full text-left overflow-hidden text-ellipsis whitespace-nowrap"
-        style={{ fontSize: compact ? 9.5 : 10, color: active ? ink : t.textMuted, fontWeight: active ? 700 : 500 }}>
+      {/* The mark is the identity: true brand on the glyph, the square mixed
+          from it, in both modes and whether chosen or not. */}
+      <span className={"flex items-center justify-center shrink-0 " + (compact ? "[&_svg]:w-[13px] [&_svg]:h-[13px]" : "[&_svg]:w-[15px] [&_svg]:h-[15px]")}
+        style={{
+          width: mark, height: mark, borderRadius: compact ? 7 : 8, color: brand,
+          background: `color-mix(in srgb, ${brand} ${active ? 16 : dark ? 15 : 11}%, ${card})`,
+          boxShadow: active ? `1.5px 1.5px 0 color-mix(in srgb, ${brand} 32%, transparent)` : "none",
+        }}>{p.icon}</span>
+      {/* 1.25, not 1: the span clips for the ellipsis, and at a line height of
+          1 that clip took the tails off the g and p in Telegram and WhatsApp. */}
+      <span className="leading-[1.25] w-full text-left overflow-hidden text-ellipsis whitespace-nowrap"
+        style={{ fontSize: compact ? 10 : 11.5, color: active ? ink : t.textSoft, fontWeight: active ? 700 : 600 }}>
         {p.label.replace(" / X", "/X")}
       </span>
     </button>
@@ -1581,15 +1582,15 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
 
       {/* The skeleton draws the page it stands in for, in the same order and at
           the same sizes: the two-list selector, the group tabs, the platform
-          tiles (58px, 54px on a phone with its "See all platforms" door), the
+          tiles (62px, 56px on a phone with its "See all platforms" door), the
           search box, then one card of service rows. It used to start at the
           tabs, draw square tiles and float four loose bars, so the page jumped
           when the real one arrived. */}
       {menuLoading && (() => {
         const sk = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
-        const tile = (h) => (
-          <div className="rounded-[11px] border border-solid flex flex-col items-start justify-center gap-[7px] pl-[11px] pr-[7px]" style={{ height: h, borderColor: t.cardBorder, background: dark ? "#171126" : "#fffdfb" }}>
-            <div className={`${sk} w-5 h-5 rounded-md`} />
+        const tile = (compact) => (
+          <div className="border border-solid flex flex-col items-start justify-center" style={{ height: compact ? 56 : 62, gap: compact ? 7 : 8, paddingInline: compact ? 7 : 9, borderRadius: compact ? 11 : 12, borderColor: t.cardBorder, background: dark ? "#171126" : "#fffdfb" }}>
+            <div className={sk} style={{ width: compact ? 22 : 26, height: compact ? 22 : 26, borderRadius: compact ? 7 : 8 }} />
             <div className={`${sk} h-2 rounded w-[70%]`} />
           </div>
         );
@@ -1612,13 +1613,13 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
               {[48, 44, 96].map((w, i) => <div key={i} className="py-[9px] px-3"><div className={`${sk} h-3.5 rounded`} style={{ width: w }} /></div>)}
             </div>
             <div className="hidden desktop:grid desktop:grid-cols-10 desktop:gap-2 desktop:mb-4">
-              {Array.from({ length: socialCount }, (_, i) => <div key={i}>{tile(58)}</div>)}
+              {Array.from({ length: socialCount }, (_, i) => <div key={i}>{tile(false)}</div>)}
             </div>
             <div className="hidden max-desktop:block mb-3.5">
               <div className="grid grid-cols-5 gap-1.5 mb-2">
-                {Array.from({ length: 5 }, (_, i) => <div key={i}>{tile(54)}</div>)}
+                {Array.from({ length: 5 }, (_, i) => <div key={i}>{tile(true)}</div>)}
               </div>
-              <div className={`${sk} h-[38px] rounded-[11px] mb-2`} />
+              <div className={`${sk} h-[40px] rounded-[11px] mb-2`} />
             </div>
             <div className="mb-3.5 rounded-[10px] border border-solid flex items-center py-[9px] px-3 desktop:py-2.5 desktop:px-3.5" style={{ borderColor: t.cardBorder, background: t.cardBg }}>
               <div className={`${sk} h-3.5 rounded w-[46%]`} />
@@ -1728,11 +1729,16 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
 
       {/* ═══ GROUP TABS ═══ */}
       <div className="flex gap-0.5 mb-3 border-b border-solid" data-tour="no-platform-tabs" style={{ borderBottomColor: t.cardBorder }}>
-        {PLATFORM_GROUPS.map(g => (
-          <button key={g.label} onClick={() => { setPlatGroup(g.label); const first = g.platforms.find(p => (platformCounts[p.id] || 0) > 0); if (first) setPlatform(first.id); }} className="py-[7px] px-3 text-[13px] cursor-pointer border-none border-b-2 -mb-px bg-transparent font-[inherit] transition-colors duration-150" style={{ color: platGroup === g.label ? t.text : t.textMuted, fontWeight: platGroup === g.label ? 600 : 500, borderBottomColor: platGroup === g.label ? t.accent : "transparent" }}>
-            {tr(g.tab)}
-          </button>
-        ))}
+        {PLATFORM_GROUPS.map(g => {
+          const on = platGroup === g.label;
+          return (
+            <button key={g.label} onClick={() => { setPlatGroup(g.label); const first = g.platforms.find(p => (platformCounts[p.id] || 0) > 0); if (first) setPlatform(first.id); }} className="relative py-[7px] px-3 text-[13px] desktop:text-[13.5px] cursor-pointer border-none bg-transparent font-[inherit] transition-colors duration-150" style={{ color: on ? t.text : t.textMuted, fontWeight: on ? 700 : 500 }}>
+              {tr(g.tab)}
+              {/* Drawn over the row's hairline, short of the tab's edges. */}
+              {on && <span aria-hidden="true" className="absolute inset-x-2.5 -bottom-px h-[2.5px] rounded-t-[3px]" style={{ background: t.accent }} />}
+            </button>
+          );
+        })}
       </div>
 
       {/* ═══ PLATFORM ICONS — desktop only ═══ */}
@@ -1746,39 +1752,34 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
         })}
       </div>
 
-      {/* ═══ MOBILE/TABLET: 5 icon window + expandable grid ═══ */}
+      {/* ═══ MOBILE/TABLET: 5 icon window, or every platform ═══
+          One grid. See all swaps the window of five for the whole group in the
+          same place, at the same size, and Show less sits under it. It used to
+          leave the window where it was and open the full grid below the
+          button, so the first five were drawn twice. */}
       <div data-tour="no-platform-grid" className="hidden max-desktop:block mb-3.5">
         <div className="grid grid-cols-5 gap-1.5 mb-2">
-          {visiblePlatforms.slice(platWindowStart, platWindowStart + 5).map(p => {
-            const isActive = platform === p.id;
-            return (
-              <PlatformTile key={p.id} p={p} active={isActive} dark={dark} t={t} compact
-                onClick={() => setPlatform(p.id)} />
-            );
-          })}
+          {(platExpanded ? visiblePlatforms : visiblePlatforms.slice(platWindowStart, platWindowStart + 5)).map((p, i) => (
+            <PlatformTile key={p.id} p={p} active={platform === p.id} dark={dark} t={t} compact
+              onClick={() => {
+                setPlatform(p.id);
+                if (!platExpanded) return;
+                // Close on the row that holds the pick, so it stays in view.
+                const rowStart = Math.floor(i / 5) * 5;
+                setPlatWindowStart(Math.min(rowStart, Math.max(0, visiblePlatforms.length - 5)));
+                setPlatExpanded(false);
+              }} />
+          ))}
         </div>
         {visiblePlatforms.length > 5 && (
           /* The door to two-thirds of the catalogue used to be a thin grey
              outline, quieter than everything around it — it read as a
-             footnote. Accent pill, and the prize stated as a number. */
-          <button onClick={() => setPlatExpanded(!platExpanded)} className="w-full h-[38px] rounded-[11px] border-[1.5px] border-solid text-[13px] font-bold cursor-pointer font-[inherit] mb-2 flex items-center justify-center gap-2 transition-transform duration-150 hover:-translate-y-px" style={{ color: t.accentInk, borderColor: t.accent, background: t.accentLight }}>
+             footnote. Printed in the accent, and the prize stated as a number. */
+          <button onClick={() => setPlatExpanded(!platExpanded)} className="w-full h-[40px] rounded-[11px] border-none text-[13px] font-bold cursor-pointer font-[inherit] mb-2 flex items-center justify-center gap-2 transition-transform duration-150 hover:-translate-y-px" style={{ color: t.accentInk, background: t.cardBg, boxShadow: `inset 0 0 0 1.5px ${t.accent}, 2px 2px 0 ${dark ? "#6b3a4a" : "#efc4cf"}` }}>
             {platExpanded ? tr("Show less") : tr("See all platforms")}
             {!platExpanded && <span className="pbadge">{visiblePlatforms.length}</span>}
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ transform: platExpanded ? "rotate(180deg)" : "none", transition: "transform .15s" }}><polyline points="6 9 12 15 18 9"/></svg>
           </button>
-        )}
-        {platExpanded && (
-          <div className="border border-solid rounded-xl p-2 mb-2" style={{ borderColor: t.cardBorder, background: dark ? "#120c1e" : "#faf9f7" }}>
-            <div className="grid grid-cols-5 gap-[5px]">
-              {visiblePlatforms.map((p, i) => {
-                const isActive = platform === p.id;
-                return (
-                  <PlatformTile key={p.id} p={p} active={isActive} dark={dark} t={t} compact
-                    onClick={() => { setPlatform(p.id); const rowStart = Math.floor(i / 5) * 5; setPlatWindowStart(Math.min(rowStart, Math.max(0, visiblePlatforms.length - 5))); setPlatExpanded(false); }} />
-                );
-              })}
-            </div>
-          </div>
         )}
       </div>
 

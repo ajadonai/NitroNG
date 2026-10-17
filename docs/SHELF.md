@@ -404,6 +404,35 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **New Order's platform tiles, the API docs, Settings and the Catalogue
+  redrawn, one copy chip, and refunds said in words** (17 Oct 2026,
+  `v2.4.137`). Platform tiles lose the brand stripe for a mark tile in the
+  brand's own colour, the chosen one ringed like the chosen tier; See all
+  opens the whole group in the row's place instead of repeating the first
+  five underneath (mockup "Platform Selector"). `/resellers/docs` redrawn in
+  the offset print with every fact checked against `/api/v2`: 60 calls a
+  minute (it said 300), order IDs are text (`NTR-…`, it showed numbers), the
+  API's real twelve errors, no Refunded status or Package type, no
+  "provider" wording, and the 60-second retry protection documented.
+  Settings: notifications and devices on the page instead of pop-ups, Delete
+  account on its own card, printed icon tiles, the referral code on the copy
+  chip and a WhatsApp door for changing email or phone. The reseller
+  Catalogue had been empty since `v2.5.77` (it asked for a curated view the
+  route stopped serving): rebuilt with the full list (search by name or
+  number, platforms with counts, rows with your rate against retail, a sheet
+  with a ready API call) and Nitro picks back as a read-only list for New
+  Order; the full list now applies the API's per-item rule, and Twitter/X
+  sorts with the main platforms. CopyChip is the standard for values quoted
+  back to us (order numbers, codes, service and reference numbers, admin
+  included); developer copies and share links keep their own controls, and
+  the guest code is the large chip, centred. Telegram: refunds say
+  Cancelled (no "found by the status check"), the status job sends the
+  service name instead of the supplier's raw category ("Other"), refills,
+  low balance, timeouts and sign-ups trimmed. Refund reasons in words from
+  `lib/refund-reasons.js`, shared by Telegram and Pulse; Pulse also counts
+  Twitter/X, spells platform names properly, badges API orders in Live,
+  counts today's refunds, and no longer calls a full cancellation partial.
+
 - **Referrals opens again** (17 Oct 2026, `v2.4.136`). Since `v2.4.104` (8
   Sep) the page crashed on load for every account while cash referrals are
   off: three amounts went through `fK(kobo, money)` without the formatter, so

@@ -1547,7 +1547,7 @@ function DashboardInner({ initialData }) {
       case "referrals":
         return <ReferralsPage user={user} dark={dark} t={t} />;
       case "settings":
-        return <SettingsPage user={userWithRewardsStatus} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} />;
+        return <SettingsPage user={userWithRewardsStatus} dark={dark} t={t} themeMode={themeMode} setThemeMode={setThemeMode} setDark={setDark} waNum={socialLinks.social_whatsapp_support?.replace(/\D/g, "")} onNavigate={setActive} />;
       case "support":
         if (socialLinks.social_whatsapp_support) { window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); setActive("overview"); return null; }
         // Support is WhatsApp, full stop. If the number is not configured we
@@ -1574,7 +1574,7 @@ function DashboardInner({ initialData }) {
       case "lab":
         return <ResellerLabPage dark={dark} t={t} onNavigate={setActive} socialLinks={socialLinks} />;
       case "catalogue":
-        return <ResellerCataloguePage dark={dark} t={t} />;
+        return <ResellerCataloguePage dark={dark} t={t} onNavigate={setActive} />;
       default:
         return (
           <div className="p-10 rounded-2xl flex flex-col items-center justify-center min-h-[300px]" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>

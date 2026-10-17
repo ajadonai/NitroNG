@@ -7,6 +7,7 @@ import { fN, fD } from "../lib/format";
 import { SegPill } from "./seg-pill";
 import { FilterDropdown } from "./date-range-picker";
 import { copyText } from '@/lib/clipboard';
+import { CopyChip } from "./copy-chip";
 import { OffsetIcon } from "./offset-icons";
 
 
@@ -672,7 +673,7 @@ export function AdminCouponsPage({ dark, t }) {
           <div className="rw-list">
             {shown.length === 0 ? <div className="rw-empty">{coupons.length ? "No code matches." : "No coupons yet. Make one to give a bonus on deposits."}</div> : shown.map(c => { const [st, cls] = stateOf(c); return (
               <div key={c.id || c.code} className="rw-cr">
-                <button type="button" className="rw-code m" title="Copy the code" onClick={() => { copyText(c.code); toast.success("Copied", c.code); }}>{c.code}</button>
+                <span className="rw-code"><CopyChip small value={c.code} label="Copy the code" /></span>
                 <span className="rw-tt"><b>{givesOf(c)}</b><i>{whenOf(c)}</i></span>
                 <span className="rw-mid m">{c.used || 0} of {c.maxUses || "∞"}</span>
                 <span className="rw-st"><i className={"rw-dot " + cls} />{st}</span>
@@ -752,7 +753,7 @@ const RW_CSS = `
 .rw-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line)}.rw-card h3{margin:0;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);font-weight:700}.rw-card>header .rw-cnt{margin:0}
 .rw-list{display:flex;flex-direction:column}.rw-empty{padding:28px 16px;text-align:center;font-size:13px;color:var(--mut)}
 .rw-cr{display:grid;grid-template-columns:130px 1fr 70px 100px auto;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--rail);font-size:13px}.rw-cr:first-child{border-top:0}
-.rw-code{font:inherit;font-weight:800;letter-spacing:.5px;font-size:13px;color:var(--ink);background:none;border:0;padding:0;text-align:left;cursor:copy}.rw-code:hover{color:var(--ac)}
+.rw-code{min-width:0;display:flex}
 .rw-tt{display:flex;flex-direction:column;min-width:0}.rw-tt b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rw-tt i{font-style:normal;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rw-mid{font-size:12px;color:var(--mut);white-space:nowrap}.rw-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.rw-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;background:var(--dim)}.rw-dot.ok{background:var(--ok)}.rw-acts{display:flex;gap:6px;justify-content:flex-end}
 .rw-form{padding:14px 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}.rw-form label{display:flex;flex-direction:column;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}.rw-form input,.rw-form select{height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--in);color:var(--ink);font:inherit;font-size:14px;outline:none;width:100%}.rw-form input:focus,.rw-form select:focus{border-color:var(--ac)}.rw-two{display:grid;grid-template-columns:1fr 100px;gap:8px}

@@ -4,7 +4,7 @@ import { Modal } from "./ui-primitives";
 import { OffsetIcon } from "./offset-icons";
 import { useToast } from "./toast";
 import { useConfirm } from "./confirm-dialog";
-import { copyText } from "@/lib/clipboard";
+import { CopyChip } from "./copy-chip";
 import { formatNaira } from "@/lib/money";
 
 /**
@@ -57,8 +57,6 @@ const SLK_CSS = `
 .slk-card{display:grid;gap:12px;padding:14px;border-radius:16px;background:var(--t-card-bg);box-shadow:inset 0 0 0 1px var(--t-card-border),2px 2px 0 #efc4cf}
 .dark .slk-card{box-shadow:inset 0 0 0 1px var(--t-card-border),2px 2px 0 #5e3242}
 .slk-hd{display:flex;align-items:flex-start;gap:12px}
-.slk-id{flex-shrink:0;padding:6px 9px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:800;color:var(--t-accent-ink);background:rgba(196,125,142,.12);box-shadow:2px 2px 0 #efc4cf}
-.dark .slk-id{background:rgba(196,125,142,.2);box-shadow:2px 2px 0 #6b3a4a}
 .slk-tt{flex:1;min-width:0}
 .slk-tt b{display:block;font-size:15px;font-weight:750;line-height:1.3;color:var(--t-text)}
 .slk-tt small{display:block;margin-top:3px;font-size:11.5px;line-height:1.4;color:var(--t-text-muted);overflow-wrap:anywhere}
@@ -89,16 +87,14 @@ const naira = (n) => (n == null ? "—" : formatNaira(n, { round: Math.abs(Numbe
 const day = (iso) => iso ? new Date(iso).toLocaleDateString("en-NG", { timeZone: "Africa/Lagos", day: "numeric", month: "short", year: "numeric" }) : "never";
 
 function ServiceCard({ s, busy, onAct, onRaw, dark }) {
-  const toast = useToast();
   const [mk, setMk] = useState(null);
   const votes = s.votes.up + s.votes.down;
   const tc = (c) => ({ "--tc": dark ? c[1] : c[0] });
   return (
     <div className="slk-card">
       <div className="slk-hd">
-        <span className="slk-id">{s.id != null ? `#${s.id}` : `p${s.providerId}`}</span>
+        <CopyChip value={s.id != null ? String(s.id) : `p${s.providerId}`} display={s.id != null ? `#${s.id}` : `p${s.providerId}`} label="Copy the service number" />
         <div className="slk-tt"><b>{s.label}</b><small title="The provider's own name for it">{s.name}</small></div>
-        <button type="button" className="nb sec sm" onClick={() => { copyText(String(s.id ?? s.providerId)); toast.success("Copied", s.id != null ? `#${s.id}` : `p${s.providerId}`); }}><OffsetIcon name="copy" size={13} />Copy</button>
       </div>
       <div className="slk-chips">
         {s.platform && <span className="pbadge tag">{s.platform}</span>}

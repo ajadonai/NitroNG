@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDates, useMoney, useT } from "./locale";
 import SharedNav, { ThemeProvider, useTheme } from "./shared-nav";
 import { PlatformIcon } from "./platform-icon";
-import { copyText } from "@/lib/clipboard";
+import { CopyChip } from "./copy-chip";
 import { msg } from "../lib/i18n";
 import { OffsetIcon } from "./offset-icons";
 
@@ -77,7 +77,6 @@ export function GuestOrderTrack({ initial, verify = false, preview = false, supp
   const { dark, t } = useTheme();
   const [view, setView] = useState(initial);
   const [polls, setPolls] = useState(0);
-  const [copied, setCopied] = useState(false);
   const [refill, setRefill] = useState({ busy: false, error: "" });
   // A signed-in customer moving this guest order into their account.
   const [claim, setClaim] = useState({ busy: false, error: "", done: false });
@@ -111,12 +110,6 @@ export function GuestOrderTrack({ initial, verify = false, preview = false, supp
   }, [moving, polls, view?.code]);
 
   const waBtn = <WaButtonLink supportWhatsApp={supportWhatsApp} code={view.code} />;
-
-  const copy = async () => {
-    try { await copyText(view.code); } catch {}
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
-  };
 
   const moveToAccount = async () => {
     setClaim({ busy: true, error: "", done: false });
@@ -224,13 +217,10 @@ export function GuestOrderTrack({ initial, verify = false, preview = false, supp
         </div>
       )}
 
-      <div className="rounded-2xl pt-3.5 px-4 pb-[13px] mb-3.5" style={{ background: dark ? "rgba(227,164,181,.09)" : "rgba(196,125,142,.09)" }}>
+      <div className="rounded-2xl pt-4 px-4 pb-[15px] mb-3.5 text-center" style={{ background: dark ? "rgba(227,164,181,.09)" : "rgba(196,125,142,.09)", border: `1.5px solid ${dark ? "rgba(227,164,181,.35)" : "rgba(196,125,142,.45)"}` }}>
         <div className="text-[11.5px] font-semibold" style={{ color: t.accentInk }}>{tr("Your guest code")}</div>
-        <div className="flex items-center justify-between gap-2.5 mt-0.5 mb-1.5">
-          <span className="font-mono font-bold tracking-[.1em] whitespace-nowrap text-[clamp(21px,6.4vw,27px)]">{view.code}</span>
-          <button type="button" onClick={copy} className="shrink-0 inline-flex items-center gap-[5px] h-8 px-3 rounded-[9px] border-0 text-white text-[12.5px] font-bold cursor-pointer" style={{ background: t.accent }} aria-live="polite">
-            {copied ? tr("Copied") : tr("Copy")}
-          </button>
+        <div className="flex items-center justify-center mt-2.5 mb-3">
+          <CopyChip value={view.code} label={tr("Copy guest code")} size="lg" />
         </div>
         <p className="text-xs leading-[1.5]" style={{ color: t.soft }}>{tr("Keep it. It opens this page and holds any credit.")}</p>
       </div>

@@ -861,6 +861,11 @@ button:hover .ic-x .ic-off, button:focus-visible .ic-x .ic-off, [role="button"]:
 .cpy:hover svg { color: var(--t-accent-ink); }
 .cpy:focus-visible { outline: 2px solid var(--t-accent); outline-offset: 2px; }
 .cpy.sm { height: 24px; padding: 0 7px; gap: 5px; font-size: 11.5px; border-radius: 7px; }
+/* The headline of a receipt: a guest code the customer has to keep, so it is
+   the biggest thing in its card and printed like the rest of the page. The
+   value is the same chip, scaled; done still turns it green. */
+.cpy.lg { height: 60px; padding: 0 20px; gap: 12px; font-size: clamp(24px, 7.4vw, 30px); font-weight: 800; letter-spacing: .1em; border-radius: 14px; border-color: rgba(196,125,142,.55); background: var(--t-card-bg); box-shadow: 3px 3px 0 #efc4cf; }
+.dark .cpy.lg { background: var(--t-card-bg); box-shadow: 3px 3px 0 #6b3a4a; }
 .cpy.done { color: #059669; border-color: rgba(5,150,105,.4); background: rgba(5,150,105,.08); }
 .cpy.done svg { color: inherit; }
 .dark .cpy { background: rgba(196,125,142,.1); }

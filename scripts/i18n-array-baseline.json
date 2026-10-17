@@ -25,15 +25,14 @@
     "components/referrals-cash-page.jsx": 7,
     "components/referrals-page.jsx": 8,
     "components/refund.jsx": 12,
-    "components/reseller-api-docs.jsx": 24,
-    "components/reseller-catalogue.jsx": 5,
+    "components/reseller-api-docs.jsx": 22,
     "components/reseller-hq.jsx": 6,
     "components/reseller-page.jsx": 14,
     "components/reviews-page.jsx": 22,
     "components/rewards.jsx": 1,
     "components/service-platform-page.jsx": 5,
     "components/service-type-page.jsx": 5,
-    "components/settings-page.jsx": 19,
+    "components/settings-page.jsx": 10,
     "components/shared-nav.jsx": 1,
     "components/terms.jsx": 16
   }

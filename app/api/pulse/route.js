@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { refundReasonText } from '@/lib/refund-reasons';
 import { log } from '@/lib/logger';
 import { watBounds } from '@/lib/format';
 import { getOrderOfferDisplay } from '@/lib/order-offer-display';
@@ -71,6 +72,7 @@ export async function GET(req) {
       partialToday, partialYesterday, partialMonth,
       welcomeBonusResult,
       monthDepositorsResult,
+      refundsTodayAgg,
     ] = await Promise.all([
       prisma.user.count({ where: { status: { not: 'Deleted' } } }),
       prisma.user.count({ where: { createdAt: { gte: todayStart }, status: { not: 'Deleted' } } }),
@@ -209,6 +211,9 @@ export async function GET(req) {
         FROM transactions
         WHERE type IN ('deposit', 'admin_credit', 'admin_gift') AND status = 'Completed' AND "createdAt" >= ${monthStart}
       `,
+      // The Refunds header counts today, as Money in does, rather than summing
+      // whichever fifteen rows happen to be listed.
+      prisma.transaction.aggregate({ where: { type: 'refund', status: 'Completed', createdAt: { gte: todayStart } }, _sum: { amount: true }, _count: true }),
     ]);
 
     const pctChange = (today, yesterday) => {
@@ -237,12 +242,14 @@ export async function GET(req) {
     const yesterdayDeposits = (yesterdayDepositsAgg._sum.amount || 0) / 100;
 
     // Platform aggregation (only real social platforms)
-    const PLATFORMS = new Set(['instagram', 'youtube', 'tiktok', 'facebook', 'twitter/x', 'telegram', 'spotify', 'twitch', 'snapchat', 'linkedin', 'threads', 'whatsapp', 'discord', 'pinterest', 'reddit']);
+    const PLATFORM_NAME = { twitter: 'Twitter/X', 'twitter/x': 'Twitter/X', tiktok: 'TikTok', youtube: 'YouTube', linkedin: 'LinkedIn', whatsapp: 'WhatsApp', soundcloud: 'SoundCloud' };
+    const PLATFORMS = new Set(['twitter', 'instagram', 'youtube', 'tiktok', 'facebook', 'twitter/x', 'telegram', 'spotify', 'twitch', 'snapchat', 'linkedin', 'threads', 'whatsapp', 'discord', 'pinterest', 'reddit']);
     const platformMap = {};
     allOrdersForPlatforms.forEach(o => {
       const cat = (o.platformAtPurchase || o.service?.category || '').toLowerCase();
       if (!PLATFORMS.has(cat)) return;
-      const name = cat === 'twitter/x' ? 'Twitter/X' : cat.charAt(0).toUpperCase() + cat.slice(1);
+      // Orders store 'twitter', which the set used to miss, so X never counted.
+      const name = PLATFORM_NAME[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
       if (!platformMap[name]) platformMap[name] = { name, orders: 0, revenue: 0 };
       platformMap[name].orders++;
       platformMap[name].revenue += effCharge(o) / 100;
@@ -363,7 +370,9 @@ export async function GET(req) {
           user: o.user?.name || o.user?.email || 'Unknown',
           charge: (o.charge || 0) / 100,
           status: o.status,
-          cancelReason: o.status === 'Cancelled' ? (o.lastError || null) : null,
+          cancelReason: o.status === 'Cancelled' ? refundReasonText(o.lastError) : null,
+          // API orders get a badge on the Live list.
+          source: o.source === 'api' ? 'api' : null,
           created: o.createdAt.toISOString(),
         };
       }),
@@ -388,7 +397,7 @@ export async function GET(req) {
             status: o.status,
             quantity: o.quantity,
             remains: o.remains || 0,
-            reason: o.lastError || null,
+            reason: refundReasonText(o.lastError),
             refundedAt: o.refundedAt.toISOString(),
           };
         });
@@ -415,6 +424,7 @@ export async function GET(req) {
       welcomeBonus: { count: welcomeBonusResult[0]?.count || 0, total: (welcomeBonusResult[0]?.total || 0) / 100 },
       monthDepositors: monthDepositorsResult[0]?.count || 0,
       monthRefunds: monthRevenueNet.refunds,
+      refundsToday: { count: refundsTodayAgg._count || 0, total: (refundsTodayAgg._sum.amount || 0) / 100 },
       monthGrossRevenue: monthRevenueNet.gross,
       monthNetRevenue: monthRevenueNet.net,
       monthNetMargin: monthRevenueNet.netMargin,

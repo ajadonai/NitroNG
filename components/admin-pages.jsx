@@ -7,7 +7,7 @@ import { useToast } from "./toast";
 import { fN } from "../lib/format";
 import { SegPill } from "./seg-pill";
 import { DateRangePicker, FilterDropdown } from "./date-range-picker";
-import { copyText } from '@/lib/clipboard';
+import { CopyChip } from "./copy-chip";
 import { OffsetIcon } from "./offset-icons";
 
 const localDate = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -242,7 +242,7 @@ export function AdminPaymentsPage({ dark, t }) {
               {reviews.map(r => (
                 <div key={r.id} className="pm-rv">
                   <span className="pm-un"><span className="pm-av">{initialsOf(r.user)}</span><span className="pm-unt"><b>{r.user}</b><i>{r.email}</i></span></span>
-                  <button type="button" className="pm-ref m" title="Copy the reference" onClick={() => { copyText(r.reference); toast.success("Copied", r.reference); }}>{r.reference}</button>
+                  <span className="pm-ref"><CopyChip small value={r.reference} label="Copy the reference" /></span>
                   <span className="pm-rv-money">
                     <span><i>Quoted</i><b className="m">{fN(r.quoted)}</b></span>
                     {r.paidKobo != null && <span><i>Arrived</i><b className={"m" + (r.paidKobo < r.quoted * 100 ? " short" : "")}>{fN(r.paidKobo / 100)}</b></span>}
@@ -292,7 +292,7 @@ export function AdminPaymentsPage({ dark, t }) {
               return (
                 <div key={tx.id} className={"pm-dr" + (isPending ? " pend" : "")}>
                   <span className="pm-un"><span className="pm-av">{initialsOf(tx.user)}</span><span className="pm-unt"><b>{tx.user}</b><i>{tx.email}</i></span></span>
-                  <button type="button" className="pm-ref m" title="Copy the reference" onClick={() => { copyText(tx.reference); toast.success("Copied", tx.reference); }}>{tx.reference}</button>
+                  <span className="pm-ref"><CopyChip small value={tx.reference} label="Copy the reference" /></span>
                   <span className="pm-mth"><b>{methodWord(tx.method)}</b>{tx.senderRef && <i>sender: {tx.senderRef.toLowerCase()}</i>}</span>
                   <span className="pm-st"><i className={`pm-dot ${cls}`} />{word}</span>
                   <span className="pm-tm">{timeOf(tx.date)}</span>
@@ -445,7 +445,7 @@ const PM_CSS = `
 .pm-dr{padding-top:9px;padding-bottom:9px;border-top:1px solid var(--rail);font-size:13px;min-width:0}.pm-dr.pend{background:var(--warnbg)}.pm-dr.sk{display:block}
 .pm-un{display:flex;align-items:center;gap:10px;min-width:0}.pm-av{width:34px;height:34px;border-radius:50%;background:var(--ac);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
 .pm-unt{display:flex;flex-direction:column;gap:1px;min-width:0}.pm-unt b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pm-unt i{font-style:normal;font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pm-ref{font:inherit;font-size:12px;color:var(--mut);background:none;border:0;padding:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:copy;min-width:0}.pm-ref:hover{color:var(--ink)}
+.pm-ref{min-width:0;display:flex;overflow:hidden}
 .pm-mth{display:flex;flex-direction:column;gap:1px;min-width:0}.pm-mth b{font-weight:600}.pm-mth i{font-style:normal;font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:capitalize}
 .pm-st{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap}.pm-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}.pm-dot.ok{background:var(--ok)}.pm-dot.warn{background:var(--warn)}.pm-dot.bad{background:var(--bad)}.pm-dot.dim{background:var(--dim)}
 .pm-tm{font-size:12px;color:var(--mut);white-space:nowrap}.pm-amt{text-align:right;font-weight:700;font-size:14px}.pm-acts{display:flex;gap:6px;justify-content:flex-end;align-items:center}.pm-dimc{font-size:12px;color:var(--mut);white-space:nowrap}

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useMoney, useT } from "./locale";
 import { formatKobo } from "@/lib/money";
-import { copyText } from "@/lib/clipboard";
+import { CopyChip } from "./copy-chip";
 import { canChargeIn } from "@/lib/currency";
 import { expandUsername } from "@/lib/order-form-core";
 import { msg } from "../lib/i18n";
@@ -71,7 +71,6 @@ const EXAMPLE = {
 const CHECK = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>;
 const GLOBE = <OffsetIcon name="globe" />;
 const CHEV = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>;
-const COPY = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>;
 const BACK = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>;
 
 function Glyph({ platform, dark }) {
@@ -134,7 +133,6 @@ export function GuestOrderCard({ dark, initialCredit = "", onSignup, className =
   const [order, setOrder] = useState(returnPreview);
   const [orderErr, setOrderErr] = useState("");
   const [polls, setPolls] = useState(0);
-  const [copied, setCopied] = useState(false);
   // "Want a receipt?" on the receipt, for a guest who skipped the email.
   const [rcpt, setRcpt] = useState("");
   const [rcptSent, setRcptSent] = useState("");
@@ -272,7 +270,7 @@ export function GuestOrderCard({ dark, initialCredit = "", onSignup, className =
   // A fresh card, as after "Place another order". The ?guest_order= that
   // brought the visitor back goes too, so a refresh does not reopen the receipt.
   function again() {
-    setStep(1); setOrder(null); setOrderCode(""); setOrderErr(""); setPolls(0); setCopied(false);
+    setStep(1); setOrder(null); setOrderCode(""); setOrderErr(""); setPolls(0);
     setRcpt(""); setRcptSent(""); setRcptMsg("");
     setLink(""); setQty(""); setLines(""); setEmail(""); setCredit(null); setCreditCode(""); setCreditMsg(""); setPayErr("");
     // Only the return link's own parameters go; anything else in the address stays.
@@ -292,12 +290,6 @@ export function GuestOrderCard({ dark, initialCredit = "", onSignup, className =
     if (res?.ok && d?.to) setRcptSent(d.to);
     else setRcptMsg(d?.error ? tr(d.error) : tr("Could not send the receipt. Try again."));
   }
-
-  const copy = async () => {
-    try { await copyText(order.code); } catch {}
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
-  };
 
   const line = problem || payErr;
   const dueShown = chargeIn === "NGN" ? naira(due) : (toDisplay(due / 100) != null ? loc.fmtNative(toDisplay(due / 100)) : naira(due));
@@ -457,8 +449,7 @@ export function GuestOrderCard({ dark, initialCredit = "", onSignup, className =
                 <div className="gco-key">
                   <span className="gco-key-l">{tr("Your guest code")}</span>
                   <div className="gco-key-v">
-                    <span className="gco-m">{order.code}</span>
-                    <button type="button" className="gco-copy" onClick={copy} aria-label={tr("Copy guest code")}>{COPY}<span aria-live="polite">{copied ? tr("Copied") : tr("Copy")}</span></button>
+                    <CopyChip value={order.code} label={tr("Copy guest code")} size="lg" />
                   </div>
                   <p>{tr("Use it to track this order or spend any credit. Keep it private.")}</p>
                 </div>
@@ -649,13 +640,9 @@ a.gco-go{display:flex;align-items:center;justify-content:center;text-decoration:
 .gco-done-main{margin-block:auto}
 .gco-lead{margin:0 0 14px;font-size:14px;color:var(--mut);line-height:1.45}
 .gco-lead b{color:var(--ink);font-weight:700}
-.gco-key{border-radius:16px;padding:14px 16px 13px;background:color-mix(in srgb,var(--acc) 9%,var(--card));border:1.5px solid color-mix(in srgb,var(--acc) 45%,transparent)}
+.gco-key{border-radius:16px;padding:16px 16px 15px;text-align:center;background:color-mix(in srgb,var(--acc) 9%,var(--card));border:1.5px solid color-mix(in srgb,var(--acc) 45%,transparent)}
 .gco-key-l{font-size:11.5px;font-weight:600;color:var(--acc-ink)}
-.gco-key-v{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 6px}
-.gco-key-v .gco-m{font-size:clamp(21px,6.4vw,27px);font-weight:700;letter-spacing:.1em;white-space:nowrap;color:var(--ink)}
-.gco-copy{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 12px;border-radius:9px;border:0;background:var(--acc);color:#fff;font-weight:700;font-size:12px;font-family:inherit;cursor:pointer}
-.gco-copy svg{width:13px;height:13px}
-.gco-copy span{min-width:46px;text-align:start}
+.gco-key-v{display:flex;align-items:center;justify-content:center;margin:10px 0 12px}
 .gco-key p{margin:0;font-size:12px;line-height:1.5;color:var(--mut)}
 .gco-acts{display:grid;gap:8px;padding-top:16px}
 .gco-ghost{display:flex;align-items:center;justify-content:center;height:44px;border-radius:12px;border:1.5px solid var(--line);background:transparent;color:var(--ink);font-weight:700;font-size:13.5px;font-family:inherit;cursor:pointer}

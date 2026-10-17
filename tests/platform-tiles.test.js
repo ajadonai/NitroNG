@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const src = fs.readFileSync(path.join(process.cwd(), 'components/new-order.jsx'), 'utf8');
 
 /**
- * The platform picker draws a rail of each platform's own colour, because
+ * The platform picker draws each platform's mark in its own colour, because
  * thirty-six identical grey chips meant nobody recognised a logo — they read
  * thirty-six labels instead.
  *
@@ -31,30 +31,31 @@ describe('every platform tile has its own colour', () => {
     // calm. Seventeen logos are where this page keeps most of its life, and the
     // crowding it was meant to fix was caused by white cards, not by colour.
     //
-    // Dark drives that colour softer at rest, which is a different thing: the
-    // rail is still mixed FROM the brand, so the hue survives and no tile turns
-    // grey. What it must never become is a neutral or nothing at all.
+    // Since 17 Oct 2026 the colour lives in the mark rather than a rail down
+    // the tile's edge: the square behind the glyph is mixed FROM the brand at
+    // rest as well as when chosen, so no tile turns grey. What it must never
+    // become is a neutral or nothing at all.
     const from = src.indexOf('function PlatformTile(');
     const tile = src.slice(from, src.indexOf('\n}', from) + 2);
-    expect(tile).toMatch(/const restRail = dark \? `color-mix\(in srgb, \$\{brand\} 38%, #171126\)` : brand;/);
-    expect(tile).toMatch(/inset \$\{rail\}px 0 0 \$\{restRail\}, 0 1px 2px/);
-    // The icon is the identity and is never dimmed, in either mode.
-    expect(tile).toMatch(/style=\{\{ width: 16, height: 16, color: brand \}\}/);
+    expect(tile).toMatch(/background: `color-mix\(in srgb, \$\{brand\} \$\{active \? 16 : dark \? 15 : 11\}%, \$\{card\}\)`/);
+    // The glyph is the identity and is never dimmed, in either mode.
+    expect(tile).toMatch(/width: mark, height: mark, borderRadius: compact \? 7 : 8, color: brand,/);
   });
 
-  it('gives the chosen tile a rail the others do not have, in dark', () => {
-    // The loud version had no hierarchy either: the tile you were on carried
-    // exactly the rail of the fourteen you were not, and only the outer glow
-    // told them apart. Full strength is now what being chosen means.
+  it('gives only the chosen tile a ring and an offset edge', () => {
+    // The rail version had no hierarchy: fifteen brand rails at once, so the
+    // tile you were on had nothing to stand out against, and dark needed its
+    // own rule to dim the rest. Now the others sit on a hairline and the chosen
+    // one is printed in its brand, the same print as the chosen tier.
     const from = src.indexOf('function PlatformTile(');
     const tile = src.slice(from, src.indexOf('\n}', from) + 2);
-    expect(tile).toMatch(/inset \$\{rail\}px 0 0 \$\{brand\}, 0 3px 10px/);
-    // Light keeps the glow it had; only dark steps down.
-    expect(tile).toMatch(/\$\{dark \? 16 : 22\}%, transparent/);
+    expect(tile).toMatch(/\? `inset 0 0 0 1\.5px \$\{brand\}, 2\.5px 2\.5px 0 color-mix\(in srgb, \$\{brand\} 34%, transparent\)`/);
+    expect(tile).toMatch(/: `inset 0 0 0 1px \$\{t\.cardBorder\}`/);
+    expect(tile, 'the stripe down the left edge is gone').not.toMatch(/const rail\b|restRail|inset \$\{rail\}px/);
   });
 
   it('lifts every black mark off the dark canvas', () => {
-    // #000000 on #171126 is not a rail, it is a gap.
+    // #000000 on #171126 is not a mark, it is a gap.
     const onDark = src.slice(src.indexOf('const ON_DARK = {'), src.indexOf('const INK_ON_LIGHT'));
     for (const id of ['tiktok', 'twitter', 'threads', 'tidal', 'playstore']) {
       expect(new RegExp(`${id}: "`).test(onDark), `${id} is black and needs a value for the dark ground`).toBe(true);
@@ -63,8 +64,8 @@ describe('every platform tile has its own colour', () => {
 
   it('darkens only the text of a brand too light to read, never the brand', () => {
     // Snapchat is #FFFC00 and stays #FFFC00 — that is what Snapchat is. The
-    // rail and the glyph show it; only the label takes a darker value, because
-    // #FFFC00 on white is about 1.1:1 and a rail does not have to be read.
+    // glyph and its square show it; only the label takes a darker value, because
+    // #FFFC00 on white is about 1.1:1 and a mark does not have to be read.
     const inkBlock = src.slice(src.indexOf('const INK_ON_LIGHT = {'), src.indexOf('/** The colour to paint'));
     for (const id of ['snapchat', 'kick', 'clubhouse']) {
       expect(new RegExp(`${id}: "`).test(inkBlock), `${id} cannot carry text on the light ground`).toBe(true);
@@ -94,11 +95,12 @@ describe('every platform tile has its own colour', () => {
     }
   });
 
-  it('draws the tile in one place, not three', () => {
+  it('draws the tile in one place', () => {
     // The desktop grid, the phone window and the expanded sheet used to carry
-    // the same markup three times and differ only in height and radius.
+    // the same markup three times and differ only in height and radius. The
+    // phone's window and its See all grid are one grid now, so two call sites.
     expect(src).toMatch(/function PlatformTile\(/);
-    expect([...src.matchAll(/<PlatformTile /g)]).toHaveLength(3);
+    expect([...src.matchAll(/<PlatformTile /g)]).toHaveLength(2);
     expect([...src.matchAll(/no-plat-tile/g)], 'the tile class should appear once, inside the component').toHaveLength(1);
   });
 
@@ -116,10 +118,12 @@ describe('every platform tile has its own colour', () => {
     expect(tile).not.toMatch(/\bcount\b/);
   });
 
-  it('thins the rail where the tile is narrow', () => {
-    // At five columns a 3px rail stops reading as an accent and becomes a
-    // stripe across the corner.
-    expect(src).toMatch(/const rail = compact \? 2 : 3;/);
+  it('opens See all in place of the phone window, so nothing is drawn twice', () => {
+    // The window of five used to stay put with the full grid opening under the
+    // button, so the first five platforms appeared twice. See all now swaps
+    // the window for the whole group, in the same grid at the same size.
+    expect(src).toMatch(/\(platExpanded \? visiblePlatforms : visiblePlatforms\.slice\(platWindowStart, platWindowStart \+ 5\)\)\.map/);
+    expect(src).not.toMatch(/\{platExpanded && \(/);
   });
 });
 
@@ -194,7 +198,7 @@ describe('every service type has its own glyph', () => {
 /**
  * The brand colours are real, which means some of them cannot be read.
  * Snapchat is #FFFC00 and that is correct; it is also 1.1:1 on white. So the
- * rail and the glyph show the true colour and only the *label* takes a
+ * glyph and its square show the true colour and only the *label* takes a
  * darkened one, and this measures the result rather than trusting an eye —
  * eight of these were missed by looking at them.
  */

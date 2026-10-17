@@ -1,13 +1,20 @@
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { getCurrentUser } from '@/lib/auth';
-import { getResellerTerms, getMarkupSettings, wholesaleOf, resellerFloorKobo } from '@/lib/reseller';
+import { getResellerTerms, getMarkupSettings, wholesaleOf, resellerFloorKobo, costKoboPer1k } from '@/lib/reseller';
+import { getServiceCatalogue } from '@/lib/service-catalog';
 import { formatResellerService, dedupeCategoryLabels } from '@/lib/reseller-format';
-import { FULL_WHERE } from '@/lib/full-catalogue';
+import { FULL_WHERE, isPerItemPackage } from '@/lib/full-catalogue';
 import { listedRecentlyWhere } from '@/lib/provider-listing';
 
 // Read-only browse for granted resellers. Ordering happens on the order page or
 // through the API; this page exists so a reseller can see what an ID means.
+//
+// Two lists. The full list is what /api/v2 sells, under the same rules, so a
+// row on this page is a number the API will take. Nitro picks (?view=picks)
+// are the curated tiers: read-only here and ordered on New Order, because the
+// API refuses tier numbers (v2.5.77). The page shipped asking for picks after
+// the route stopped serving them, and drew an empty catalogue until 17 Oct 2026.
 //
 // The full list is served a category at a time (the accordion fetches on
 // expand): 8,874 rows in one payload is over a megabyte nobody scrolls.
@@ -21,7 +28,7 @@ const PAGE_SIZE = 120;
 // biggest first (Instagram does more volume than the next five combined), then
 // everything else alphabetically. A reseller should hit the money platforms
 // without scrolling.
-const PLATFORM_PRIORITY = ['instagram', 'tiktok', 'facebook', 'telegram', 'twitter/x', 'youtube', 'spotify', 'whatsapp', 'audiomack'];
+const PLATFORM_PRIORITY = ['instagram', 'tiktok', 'facebook', 'telegram', 'twitter', 'twitter/x', 'youtube', 'spotify', 'whatsapp', 'audiomack'];
 const platformRank = (name) => {
   const i = PLATFORM_PRIORITY.indexOf(String(name || '').toLowerCase());
   return i === -1 ? PLATFORM_PRIORITY.length : i;
@@ -56,6 +63,41 @@ export async function GET(req) {
     const settings = await getMarkupSettings();
     const usdRate = Number(settings.markup_usd_rate) || 1600;
     const url = new URL(req.url);
+
+    if (url.searchParams.get('view') === 'picks') {
+      // The shared catalogue, priced for this reseller the way the New Order menu
+      // prices it: costs fetched here, never cached on the catalogue, and the
+      // tier ladder left in the order lib/tier-order gives it.
+      const catalogue = await getServiceCatalogue();
+      const maps = await prisma.resellerServiceMap.findMany({
+        where: { tierId: { not: null }, retiredAt: null },
+        select: { apiId: true, tierId: true },
+      });
+      const numberOf = new Map(maps.map(m => [m.tierId, m.apiId]));
+      const ids = [...new Set(catalogue.groups.flatMap(g => g.tiers.map(t => t.serviceId).filter(Boolean)))];
+      const costRows = ids.length
+        ? await prisma.service.findMany({ where: { id: { in: ids } }, select: { id: true, costPer1k: true } })
+        : [];
+      const costOf = new Map(costRows.map(r => [r.id, costKoboPer1k(r.costPer1k, settings)]));
+      const groups = [...catalogue.groups]
+        .sort((a, b) => byPlatform(a.platform, b.platform))
+        .map(g => ({
+          name: g.name,
+          platform: g.platform,
+          // A group of variants (poll answers) states no refill promise.
+          options: (g.tags || []).includes('options'),
+          tiers: g.tiers.map(t => ({
+            number: numberOf.get(t.id) ?? null,
+            tier: t.tier,
+            price: wholesaleOf(Math.round(t.price * 100), terms, settings, costOf.get(t.serviceId) ?? null) / 100,
+            retail: t.price,
+            min: t.min,
+            max: t.max,
+            speed: t.speed,
+          })),
+        }));
+      return Response.json({ groups });
+    }
     const category = url.searchParams.get('category');
     const q = url.searchParams.get('q')?.trim();
 
@@ -68,13 +110,17 @@ export async function GET(req) {
     // tile, so grouping the browse page any other way would have a reseller
     // reading "Vip" on the site and "instagram" in the API for one service.
     if (!category && !q) {
-      const cats = await prisma.service.groupBy({
-        by: ['platform'],
+      // Counted in code rather than grouped in SQL, so the API's per-item rule
+      // (lib/full-catalogue isPerItemPackage) applies to the counts as it does to
+      // the rows: min and max are columns, and the rule compares them.
+      const listed = await prisma.service.findMany({
         where: { ...fullWhere, ...(await stillListed()), platform: { not: null } },
-        _count: true,
+        select: { platform: true, min: true, max: true },
       });
-      cats.sort((a, b) => byPlatform(a.platform, b.platform));
-      return Response.json({ categories: cats.map(c => ({ name: c.platform, count: c._count })) });
+      const counts = new Map();
+      for (const s of listed) if (!isPerItemPackage(s)) counts.set(s.platform, (counts.get(s.platform) || 0) + 1);
+      const cats = [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => byPlatform(a.name, b.name));
+      return Response.json({ categories: cats });
     }
 
     const offset = Math.max(0, Number(url.searchParams.get('offset')) || 0);
@@ -102,6 +148,8 @@ export async function GET(req) {
     const rows = [];
     for (const s of services) {
       if (!s.resellerMap || s.resellerMap.retiredAt) continue;
+      // The API's own rule, so nothing listed here answers "Service not available".
+      if (isPerItemPackage(s)) continue;
       const costKobo = Number(s.costPer1k) * usdRate;
       const retail = Number(s.sellPer1k);
       // The widened prices cron is still working through years of stale prices.

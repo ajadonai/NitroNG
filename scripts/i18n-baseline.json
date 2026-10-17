@@ -47,6 +47,6 @@
   "components/order-look.js": 8,
   "components/orders-page.jsx": 2,
   "components/referrals-cash-page.jsx": 4,
-  "components/reseller-catalogue.jsx": 2,
+  "components/reseller-catalogue.jsx": 1,
   "components/ui-primitives.jsx": 1
 }

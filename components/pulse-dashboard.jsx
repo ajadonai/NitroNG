@@ -25,7 +25,11 @@ function ago(iso) {
   return `${Math.floor(s / 86400)}d`;
 }
 const METHODS = { flutterwave: 'Flutterwave', manual: 'Bank transfer', alatpay: 'ALATPay', monnify: 'Monnify', wallet: 'Wallet', admin_credit: 'Admin credit' };
-const method = (m) => METHODS[m] || (m ? m.charAt(0).toUpperCase() + m.slice(1) : 'Wallet');
+// Never a code on the screen. The route sends reasons already in words (lib/refund-reasons);
+// this is the last guard for anything that slips through.
+const words = (v) => { const t = String(v || '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; };
+const said = (v) => (v && /_/.test(v) ? words(v) : v);
+const method = (m) => METHODS[m] || (m ? words(m) : 'Wallet');
 const DOT = { Completed: 'ok', Processing: 'run', Dispatching: 'run', Pending: 'wait', Partial: 'warn', Cancelled: 'bad', Failed: 'bad', Rejected: 'bad', Refunded: 'bad' };
 
 function Delta({ value }) {
@@ -54,7 +58,7 @@ function DayLine({ values }) {
 }
 function Axis({ nowHour }) {
   const tr = useT();
-  return <div className="pl-ax"><span>00:00</span><span>06:00</span><span>12:00</span><span>{tr("now ·")} {String(nowHour).padStart(2, '0')}:00</span></div>;
+  return <div className="pl-ax"><span>00:00</span><span>06:00</span><span>12:00</span><span>{String(nowHour).padStart(2, '0')}:00 {tr("now")}</span></div>;
 }
 
 function Figure({ kind, label, value, delta, series, nowHour, note }) {
@@ -94,10 +98,10 @@ function LiveList({ data }) {
       <ListHead title={tr("Live")} sub={`${num(data.ordersToday)} today · ${num(data.processing)} running`} />
       <div className="pl-rows">
         {(data.recentOrders || []).map(o => (
-          <div className="pl-row" key={o.id}>
+          <div className={`pl-row${o.status === 'Cancelled' ? ' pl-two' : ''}`} key={o.id}>
             <span className="pl-t m">{ago(o.created)}</span>
-            <span className="pl-who">{o.user}</span>
-            <span className="pl-what">{o.service}{o.tier ? ` · ${o.tier}` : ''}</span>
+            <span className="pl-who">{o.user}{o.source === 'api' && <b className="pl-api m">API</b>}</span>
+            <span className="pl-what">{o.service}{o.tier ? ` · ${o.tier}` : ''}{o.status === 'Cancelled' && <em>{said(o.cancelReason) || 'Cancelled'}</em>}</span>
             <span className="pl-amt m">{naira(o.charge)}</span>
             <i className={`pl-dot pl-${DOT[o.status] || 'wait'}`} title={o.status} />
           </div>
@@ -109,10 +113,9 @@ function LiveList({ data }) {
 }
 function MoneyIn({ data }) {
   const tr = useT();
-  const todayCount = (data.recentDeposits || []).filter(d => new Date(d.created).toDateString() === new Date().toDateString()).length;
   return (
     <section className="pl-list">
-      <ListHead title={tr("Money in")} sub={`${naira(data.depositsToday)} today${todayCount ? ` · ${todayCount}+` : ''}`} />
+      <ListHead title={tr("Money in")} sub={`${naira(data.depositsToday)} today`} />
       <div className="pl-rows">
         {(data.recentDeposits || []).map(d => (
           <div className="pl-row" key={d.id}>
@@ -130,16 +133,16 @@ function MoneyIn({ data }) {
 function Refunds({ data }) {
   const tr = useT();
   const list = data.recentRefunds || [];
-  const total = list.reduce((s, r) => s + (r.refunded || 0), 0);
+  const today = data.refundsToday || { count: 0, total: 0 };
   return (
     <section className="pl-list">
-      <ListHead title={tr("Refunds")} sub={`${list.length} recent · ${naira(total)}`} />
+      <ListHead title={tr("Refunds")} sub={today.count ? `${naira(today.total)} today · ${num(today.count)}` : tr("None today")} />
       <div className="pl-rows">
         {list.map(r => (
           <div className="pl-row pl-two" key={r.id}>
             <span className="pl-t m">{ago(r.refundedAt)}</span>
             <span className="pl-who">{r.user}</span>
-            <span className="pl-what">{r.service}{r.tier ? ` · ${r.tier}` : ''}<em>{r.reason || (r.remains > 0 ? `Partial: ${num(r.remains)} of ${num(r.quantity)} left` : 'Refunded')}</em></span>
+            <span className="pl-what">{r.service}{r.tier ? ` · ${r.tier}` : ''}<em>{(r.status === 'Partial' || (r.remains > 0 && r.remains < r.quantity)) ? `Partial, ${num(r.remains)} of ${num(r.quantity)} not delivered` : (said(r.reason) || 'Cancelled')}</em></span>
             <span className="pl-amt m pl-out">−{naira(r.refunded)}</span>
           </div>
         ))}
@@ -178,16 +181,22 @@ const STATUS_CLS = { Completed: 'ok', Cancelled: 'bad', Processing: 'run', Parti
 function Bars({ data }) {
   const tr = useT();
   const plats = data.topPlatforms || []; const ptot = plats.reduce((s, p) => s + p.orders, 0) || 1;
+  // TikTok and X are both ink; two neighbours in one colour read as one platform.
+  const ALT = ['#7aa2f7', '#e0a458', '#a78bfa', '#34d399', '#f472b6'];
+  const used = new Set(); let alt = 0;
+  const colour = plats.map((p, i) => { let c = platformBrand(p.name, { index: i }); if (used.has(c)) c = ALT[alt++ % ALT.length]; used.add(c); return c; });
   const merged = {};
-  (data.byStatus || []).forEach(s => { const k = [tr("Failed"), tr("Rejected")].includes(s.status) ? tr("Cancelled") : s.status; merged[k] = (merged[k] || 0) + s.count; });
+  // Failed and Rejected count as cancelled. Compared as raw statuses through the
+  // tables above: the translated words this used never matched off English.
+  (data.byStatus || []).forEach(s => { const k = !STATUS_ORDER.includes(s.status) && DOT[s.status] === 'bad' ? STATUS_ORDER[1] : s.status; merged[k] = (merged[k] || 0) + s.count; });
   const stats = STATUS_ORDER.filter(k => merged[k]).map(k => [k, merged[k], STATUS_CLS[k] || 'wait']);
   const stot = stats.reduce((s, [, c]) => s + c, 0) || 1;
   return (
     <section className="pl-bars">
       <div className="pl-bar">
         <header><h3>{tr("Platforms")}</h3><span className="pl-cnt">{tr("this month")}</span></header>
-        <div className="pl-stack">{plats.map((p, i) => <i key={p.name} style={{ width: `${(p.orders / ptot) * 100}%`, background: platformBrand(p.name, { index: i }) }} />)}</div>
-        <div className="pl-leg">{plats.map((p, i) => <span key={p.name}><i className="pl-sw" style={{ background: platformBrand(p.name, { index: i }) }} />{p.name} <b className="m">{Math.round((p.orders / ptot) * 100)}%</b></span>)}</div>
+        <div className="pl-stack">{plats.map((p, i) => <i key={p.name} style={{ width: `${(p.orders / ptot) * 100}%`, background: colour[i] }} />)}</div>
+        <div className="pl-leg">{plats.map((p, i) => <span key={p.name}><i className="pl-sw" style={{ background: colour[i] }} />{p.name} <b className="m">{Math.round((p.orders / ptot) * 100)}%</b></span>)}</div>
       </div>
       <div className="pl-bar">
         <header><h3>{tr("Order status")}</h3><span className="pl-cnt">{tr("30 days")}</span></header>
@@ -340,7 +349,8 @@ const CSS = `
 .pl-list header,.pl-month header,.pl-bar header{display:flex;justify-content:space-between;align-items:baseline;padding:10px 14px 8px;border-bottom:1px solid var(--hair)}
 .pl-list h3,.pl-month h3,.pl-bar h3{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mu);font-weight:600}.pl-cnt{font-size:11px;color:var(--dim)}
 .pl-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--hair);font-size:12.5px;min-width:0}.pl-row:first-child{border-top:0}
-.pl-t{color:var(--dim);font-size:11px;width:28px;flex-shrink:0}.pl-who{font-weight:600;flex:0 0 auto;white-space:nowrap}
+.pl-t{color:var(--dim);font-size:11px;width:28px;flex-shrink:0}.pl-who{font-weight:600;flex:0 0 auto;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.pl-api{font-size:9.5px;font-weight:700;letter-spacing:.6px;padding:1px 5px;border-radius:4px;color:var(--run);box-shadow:inset 0 0 0 1px rgba(122,162,247,.45);line-height:1.3}
 .pl-what{flex:1;min-width:0;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pl-what em{display:block;font-style:normal;font-size:11px;color:var(--dim)}
 .pl-amt{flex-shrink:0;font-weight:600;font-size:12px}.pl-in{color:var(--ok)}.pl-out{color:var(--bad)}
 .pl-via{font-weight:600}.pl-via-flutterwave{color:var(--wait)}.pl-via-manual{color:var(--run)}.pl-via-alatpay{color:#a78bfa}.pl-via-monnify{color:#f472b6}.pl-via-admin_credit{color:var(--ac)}.pl-via-wallet{color:var(--mu)}

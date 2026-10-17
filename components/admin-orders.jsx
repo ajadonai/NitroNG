@@ -8,6 +8,7 @@ import { PlatformIcon } from "./platform-icon";
 import { fN, fD, fT } from "../lib/format";
 import { FilterDropdown } from "./date-range-picker";
 import { copyText } from '@/lib/clipboard';
+import { CopyChip } from "./copy-chip";
 import { AccountTag } from "./account-tag";
 import { WaButton } from "./wa-button";
 import { openCardFrame, openCardHeader } from '@/lib/expandable-card';
@@ -53,23 +54,10 @@ function Spinner({ size = 14, color = "currentColor" }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="animate-spin"><circle cx="12" cy="12" r="10" stroke={color} strokeWidth="3" strokeLinecap="round" opacity=".25" /><path d="M12 2a10 10 0 0 1 10 10" stroke={color} strokeWidth="3" strokeLinecap="round" /></svg>;
 }
 
-function CopyId({ value, dark, mono = true, size = "sm" }) {
-  const [copied, setCopied] = useState(false);
-  if (!value) return null;
-  const fs = size === "sm" ? "text-[13px]" : "text-sm";
-  return (
-    <span
-      className={`${fs} font-semibold cursor-pointer inline-flex items-center gap-1 transition-opacity hover:opacity-70`}
-      style={{ color: copied ? (dark ? "#4ade80" : "#16a34a") : (dark ? "#e5e0db" : "#1a1a1a"), fontFamily: mono ? "var(--font-mono, monospace)" : "inherit" }}
-      title="Click to copy"
-      onClick={e => { e.stopPropagation(); copyText(String(value)); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
-    >
-      {value}
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: copied ? 1 : 0.4 }}>
-        {copied ? <><polyline points="20 6 9 17 4 12"/></> : <><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></>}
-      </svg>
-    </span>
-  );
+// The site's copy chip, the same one Order history uses for the order number,
+// so a number reads the same in the admin as it does to the customer quoting it.
+function CopyId({ value }) {
+  return <CopyChip value={value} small />;
 }
 
 

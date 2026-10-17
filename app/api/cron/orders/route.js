@@ -1,6 +1,7 @@
 export const maxDuration = 60;
 
 import { serviceDisplay } from '@/lib/service-display';
+import { getOrderOfferDisplay } from '@/lib/order-offer-display';
 import prisma from '@/lib/prisma';
 import { log } from '@/lib/logger';
 import { checkOrder } from '@/lib/smm';
@@ -90,7 +91,7 @@ export async function GET(req) {
           anonymizedAt: null,
         },
       },
-      include: { service: { select: { provider: true, category: true } }, tier: { select: { group: { select: { type: true } } } } },
+      include: { service: { select: { provider: true, category: true, name: true } }, tier: { select: { group: { select: { type: true, name: true, platform: true } } } } },
       take: 200, // batch limit
       orderBy: { createdAt: 'asc' }, // oldest first
     });
@@ -243,7 +244,7 @@ export async function GET(req) {
               stats.refunded++;
               // One refund, one message. This used to post a "cancelled"
               // line and then the refund alert, both into the refunds topic.
-              tgRefundAlert({ orderId: order.orderId, amount: cancelledRefund, charge: order.charge, qty: order.quantity, remains: order.remains, status: 'Cancelled', reason: providerError || 'provider_cancelled', service: order.service?.category, source: 'auto' });
+              tgRefundAlert({ orderId: order.orderId, amount: cancelledRefund, charge: order.charge, qty: order.quantity, remains: order.remains, status: 'Cancelled', reason: providerError || 'provider_cancelled', service: getOrderOfferDisplay(order).serviceName, source: 'auto' });
               refundOrder(order, cancelledRefund, true, 'Order cancelled').catch(() => {});
             }
           } else if (newStatus === 'Partial' && result.remains) {
@@ -293,7 +294,7 @@ export async function GET(req) {
             stats.updated++;
             if (partialRefund > 0) {
               stats.refunded++;
-              tgRefundAlert({ orderId: order.orderId, amount: partialRefund, charge: order.charge, qty: order.quantity, remains: Number(result.remains) || 0, status: 'Partial', service: order.service?.category, source: 'auto' });
+              tgRefundAlert({ orderId: order.orderId, amount: partialRefund, charge: order.charge, qty: order.quantity, remains: Number(result.remains) || 0, status: 'Partial', service: getOrderOfferDisplay(order).serviceName, source: 'auto' });
               refundOrder(order, partialRefund, true, 'Partial delivery').catch(() => {});
             }
             const delivered = order.quantity - (Number(result.remains) || 0);
