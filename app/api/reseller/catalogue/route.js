@@ -125,6 +125,9 @@ export async function GET(req) {
         grade: fmt.grade,
         category: s.platform,
         price: wholesaleOf(retail, terms, settings, costKobo) / 100,
+        // Retail beside it, so the dashboard can show a wholesale account what it
+        // saves. The same figure the public site prints for the service.
+        retail: retail / 100,
         min: s.min,
         max: s.max,
         refill: s.refill,

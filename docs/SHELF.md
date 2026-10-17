@@ -394,6 +394,34 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **API access and the Blog in the offset print** (17 Oct 2026, `v2.4.132`).
+  Mockup "Nitro API and Blog". API access (the dashboard's Reseller HQ tab):
+  named API access until wholesale is on and Reseller HQ after, instead of a
+  Reseller HQ pill on everyone's page; the key is the hero, a dark card with
+  the key in its own slot, Show, Copy, Rotate and the base URL, rate limit
+  and rotation rule as chips; Rotate asks with the site's confirm sheet in
+  place of the browser's box; each quick start step shows its request; the
+  catalogue card counts platforms live from /api/site-info instead of a
+  typed 31; rates strike retail only where the account pays less (the
+  dashboard catalogue route now sends `retail` beside `price`; before, a
+  retail account saw every price printed twice at the same figure). The
+  public /resellers page keeps its own styles. Blog (the Guide tab): called
+  Blog as the sidebar names it; the first guide is a feature with its
+  picture whole at 15 by 8 (they were cropped square, cutting the words on
+  them); topic tabs with counts; topic grids where a guide alone in its row
+  goes full width; Still stuck is the live WhatsApp card. Guides still open
+  in a new tab. Both pages have skeletons that match. The dashes in the blog
+  itself were fixed in the database the same day (Trip's go-ahead): 55 of 95
+  posts, 2 titles, 20 summaries, 486 body lines. Ranges read "to", short
+  labels take a colon, a dash before a list a colon, before a new sentence a
+  full stop, otherwise a comma. Hyphens were never touched (1,537 before and
+  after). Where a colon or comma read stiffly, a spaced hyphen took the dash's
+  place, as Trip asked: a dash after a label that already had a colon
+  ("**What to do:** Nothing - sit back") and a pair of dashes around an aside
+  ("the workarounds - virtual dollar cards, crypto - each add cost"), 26
+  lines. Backup of every changed post:
+  Operations/blog-dashes-backup-2026-10-17.json.
+
 - **The Status and Points pop-ups no longer crush their cards on a phone**
   (17 Oct 2026, `v2.4.131`). Reported from an iPhone: the coloured card cut
   off its chips and the status table stopped at Apex. The pop-up body was a
