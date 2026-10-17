@@ -553,6 +553,9 @@ function DashboardInner({ initialData }) {
       else { localStorage.removeItem("nitro-page"); }
     } catch {}
     const sp = new URLSearchParams(window.location.search);
+    // A public page can open one tab directly: /resellers sends signed-in
+    // visitors to API access with ?page=lab. Only listed pages are honoured.
+    if (["lab"].includes(sp.get("page"))) { setActiveRaw(sp.get("page")); window.history.replaceState({}, "", "/dashboard"); }
     if (sp.get("new_user")) {
       const eid = sp.get("eid");
       window.fbq && window.fbq("track", "CompleteRegistration", { content_name: "signup", status: true }, eid ? { eventID: eid } : {});
@@ -1862,8 +1865,8 @@ function DashboardInner({ initialData }) {
                 {nairaAside(user?.balance || 0, { round: "down" }) || "wallet"}
               </div>
             </div>
-            <button type="button" aria-label={tr("Top up wallet")} onClick={() => { setActive("add-funds"); setMoreOpen(false); }} className="nitro-money-btn w-[30px] h-[30px] flex items-center justify-center shrink-0">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <button type="button" aria-label={tr("Top up wallet")} onClick={() => { setActive("add-funds"); setMoreOpen(false); }} className="nitro-money-btn w-[34px] h-[34px] flex items-center justify-center shrink-0">
+              <OffsetIcon name="topup" size={17} />
             </button>
           </div>
 

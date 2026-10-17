@@ -394,6 +394,33 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **Resellers, What's new and the full list's reading guide in the offset
+  print** (17 Oct 2026, `v2.4.134`). Mockups "Nitro Resellers and What's New"
+  and "How to Read the Full List", Trip's calls on all of them. /resellers:
+  the hero holds a real exchange with the API (an add answering with an order
+  number, a status answering with the charge in NGN), the six benefits are one
+  printed sheet with tiles in the meaning's colour, the catalogue figures are
+  live from /api/site-info (7,491 services, 30 platforms; it said 7,500+ and
+  31), each step has a picture of itself, the honest bit has a stamp, and the
+  member view's five questions come out here. Step one links signed-out
+  visitors to Create a free account and signed-in ones to Open API access,
+  through a new allow-listed `/dashboard?page=lab`. /changelog: a timeline
+  grouped by day, the newest two months open and the rest folded, a latest
+  update card, the tabs with counts, kinds as printed tiles, and the Blog's
+  live WhatsApp card; dates follow the reader's language. The full list's
+  sheet: the sample row draws with the list's own Chip, which moved to
+  components/full-list-chip.jsx so the two cannot drift (the sample had greyed
+  the grade and start time the list colours); pins hang clear of their parts
+  instead of covering the ID, the refill chip and the star; two parts it never
+  explained, whose accounts and Ordered before; a colour key that carries
+  start time; pointing at a line lights its part; Got it is the shared primary
+  (it was white on light rose). Also: the phone's More sheet tops up with the
+  printed topup icon instead of a bare plus. And the changelog itself caught
+  up (Trip's go-ahead): 20 customer-facing entries from 4 to 17 Oct, after
+  nothing since 27 Sep. Record of the rows added:
+  Operations/changelog-added-2026-10-17.json. Still open in that table: 16
+  older entries carry long dashes.
+
 - **The Wallet's top-up in the offset print** (17 Oct 2026, `v2.4.133`).
   Mockup "Nitro Wallet Top-up". A first deposit gets one gold card holding
   the bonus ladder as three tickets, and one line under the amount saying

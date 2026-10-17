@@ -175,8 +175,13 @@ describe('every service type has its own glyph', () => {
     // a glyph. Shared shapes also stop the two views drifting to two different
     // followers icons.
     const full = fs.readFileSync(path.join(process.cwd(), 'components/full-list.jsx'), 'utf8');
-    // The audience flags come from the same module, for the same reason.
-    expect(full).toMatch(/import \{ ServiceGlyph, AUDIENCE_FLAG \} from "\.\/service-glyph"/);
+    // The audience flags come from the same module, for the same reason. Since
+    // 17 Oct 2026 they reach the full list through its Chip, which moved to its
+    // own file so the reading guide draws the same badge.
+    const chip = fs.readFileSync(path.join(process.cwd(), 'components/full-list-chip.jsx'), 'utf8');
+    expect(full).toMatch(/import \{ ServiceGlyph \} from "\.\/service-glyph"/);
+    expect(full).toMatch(/import \{ Chip \} from "\.\/full-list-chip"/);
+    expect(chip).toMatch(/import \{ AUDIENCE_FLAG \} from "\.\/service-glyph"/);
     expect(src).toMatch(/import \{ ServiceGlyph, AUDIENCE_FLAG \} from "\.\/service-glyph"/);
     expect(glyphSrc).not.toMatch(/from "\.\/(new-order|full-list)"/);
     // Every type the full list produces must have a shape.

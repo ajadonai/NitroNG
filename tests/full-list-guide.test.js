@@ -26,11 +26,22 @@ describe('the full-list guide', () => {
     expect(list).toMatch(/<FullListGuide open=\{guideOpen\}/);
   });
 
-  it('teaches the six things a row actually carries', () => {
+  it('teaches the things a row actually carries', () => {
     for (const p of ['Service ID', 'Refill', 'Start time',
-      'Quality grade', 'Save', 'Buyer votes']) {
+      'Quality grade', 'Save', 'Buyer votes',
+      // Added 17 Oct 2026: the origin chip leads every row that has one, and
+      // "Ordered 2×" is on every row the reader has bought from.
+      'Whose accounts', 'Ordered before']) {
       expect(guide, p).toContain(p);
     }
+  });
+
+  it('draws its sample row with the list\'s own chip', () => {
+    // The sample once greyed out the grade and the start time, which the list
+    // colours, so it taught a row nobody sees. One Chip, imported by both.
+    expect(guide).toMatch(/import \{ Chip \} from "\.\/full-list-chip"/);
+    expect(list).toMatch(/import \{ Chip \} from "\.\/full-list-chip"/);
+    expect(list).not.toMatch(/const CHIP = \{/);
   });
 
   /**
@@ -70,9 +81,9 @@ describe('the full-list guide', () => {
     expect(guide).toContain('#4821');
     expect(guide).toContain('UHQ');
     expect(guide).toContain('₦1,450');
-    // Six numbered pins on the row, six numbered lines under it.
+    // Seven numbered pins on the row, seven numbered lines under it.
     expect(guide).toMatch(/<Pin n=\{1\} \/>/);
-    expect(guide).toMatch(/<Pin n=\{6\} \/>/);
+    expect(guide).toMatch(/<Pin n=\{7\} \/>/);
   });
 
   it('keeps every line short enough to read at a glance', () => {

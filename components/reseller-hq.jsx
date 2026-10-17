@@ -44,69 +44,147 @@ const P = {
 
 const WA_TEXT = "Hi! I'd like wholesale prices on my Nitro account. Here's what my business does:";
 
-function Styles({ dark, t }) {
-  const grad = 'linear-gradient(135deg, #c47d8e, #8b5e6b)';
-  const bgrad = 'linear-gradient(135deg, #60a5fa, #2563eb)';
-  const blue = dark ? '#60a5fa' : '#2563eb';
-  const hair = t.cardBorder;
-  const panel = t.cardBg;
-  const muted = t.textMuted;
-  const accentSoft = dark ? 'rgba(196,125,142,.16)' : 'rgba(196,125,142,.12)';
-  return (
-    <style>{`
-      .rhq-hero{position:relative;overflow:hidden;text-align:center;padding:36px 16px 30px}
-      .rhq-glow{position:absolute;width:520px;height:520px;border-radius:50%;top:-360px;right:-140px;background:radial-gradient(circle,${accentSoft} 0%,transparent 66%);pointer-events:none}
-      .rhq-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;border-radius:999px;padding:4px 11px;color:#c47d8e;background:${accentSoft}}
-      .rhq-h1{font-weight:800;letter-spacing:-.8px;line-height:1.15;font-size:clamp(26px,5vw,33px);margin:12px 0 8px;color:${t.text}}
-      .rhq-lead{font-size:14px;line-height:1.65;color:${muted};margin:0 auto 14px;max-width:52ch}.rhq-lead b{color:${t.textSoft}}
-      .rhq-checks{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;font-size:11.5px;color:${muted};margin-bottom:16px}.rhq-checks span{display:inline-flex;align-items:center;gap:5px}.rhq-checks svg{color:#059669}
-      .rhq-btn-p{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:800;padding:11px 18px;border-radius:11px;border:none;cursor:pointer;text-decoration:none;color:#fff;background:${grad};box-shadow:0 5px 16px rgba(196,125,142,.3);font-family:inherit;white-space:nowrap}
-      .rhq-btn-p.blue{background:${bgrad};box-shadow:0 5px 16px rgba(37,99,235,.28)}.rhq-btn-p.white{background:#fff;color:#8b5e6b;box-shadow:none}.rhq-btn-p svg{width:15px;height:15px}
-      .rhq-btn-g{display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:700;padding:8px 12px;border-radius:11px;border:1px solid ${hair};background:${panel};color:${t.textSoft};cursor:pointer;text-decoration:none;font-family:inherit;white-space:nowrap}
-      .rhq-sec-head{display:flex;align-items:center;gap:10px;margin:24px 0 10px}.rhq-sec-label{font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:${muted};white-space:nowrap}.rhq-sec-rule{flex:1;height:1px;background:${hair}}.rhq-sec-sub{font-size:10.5px;color:${muted};white-space:nowrap}
-      .rhq-feats{display:grid;grid-template-columns:1fr;gap:6px}.rhq-feat{display:flex;gap:12px;padding:12px 13px;border-radius:13px;background:${panel};border:1px solid ${hair};align-items:center}.rhq-feat>span:last-child{display:flex;flex-direction:column;min-width:0}.rhq-feat h4{font-size:13px;font-weight:800;margin:0;color:${t.text}}.rhq-feat p{font-size:11.5px;color:${muted};line-height:1.55;margin:3px 0 0}
-      .rhq-feat-ico{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;color:#fff;background:${bgrad}}.rhq-feat-ico.accent{background:${grad}}
-      .rhq-grid2{display:grid;grid-template-columns:1fr;gap:8px}
-      .rhq-cat{padding:14px;border-radius:16px;background:${panel};border:1px solid ${hair};display:flex;flex-direction:column}.rhq-cat-head{display:flex;gap:10px;align-items:flex-start}.rhq-cat-ico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;flex-shrink:0;background:${grad}}.rhq-cat-ico.blue{background:${bgrad}}
-      .rhq-cat-title{font-size:13.5px;font-weight:800;margin:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:${t.text}}.rhq-cat-tag{font-size:10.5px;color:${muted};margin-top:2px}.rhq-cat-desc{font-size:11.5px;color:${muted};line-height:1.55;margin:10px 0 0}
-      .rhq-cat-stats{display:flex;margin-top:12px;padding-top:10px;border-top:1px solid ${hair}}.rhq-cat-stat{flex:1;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:${muted};display:flex;flex-direction:column;gap:2px}.rhq-cat-stat b{font-size:12px;letter-spacing:0;text-transform:none;color:${t.text};font-weight:800}
-      .rhq-badge-sm{font-size:9px;font-weight:800;letter-spacing:.8px;padding:2px 7px;border-radius:999px;background:${accentSoft};color:#c47d8e}.rhq-badge-sm.big{font-size:10.5px;padding:5px 11px;align-self:center;white-space:nowrap}
-      .rhq-steps{display:grid;grid-template-columns:1fr;border:1px solid ${hair};border-radius:14px;overflow:hidden;background:${panel}}.rhq-step{padding:14px 16px;border-top:1px solid ${hair}}.rhq-step:first-child{border-top:none}.rhq-step-n{font-size:10px;font-weight:800;letter-spacing:1.4px;color:${blue}}.rhq-step h4{font-size:12.5px;font-weight:800;margin:4px 0 0;color:${t.text}}.rhq-step p{font-size:11px;color:${muted};line-height:1.6;margin:4px 0 0}
-      .rhq-honest{margin-top:24px;padding:14px 16px;border-radius:14px;background:${panel};border:1px solid ${hair}}.rhq-honest p{font-size:12px;line-height:1.6;color:${t.textSoft};margin:6px 0 0}
-      .rhq-closer{margin-top:24px;padding:20px;border-radius:16px;color:#fff;background:${grad};display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.rhq-closer h3{font-size:17px;font-weight:800;margin:0}.rhq-closer p{font-size:12px;opacity:.9;margin:4px 0 0}
-      .rhq-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-      /* The hero is centred text, so its action row has to centre too. */
-      .rhq-acts.ctr{justify-content:center;align-items:center}
-      @media (min-width:768px){.rhq-feats{grid-template-columns:1fr 1fr}.rhq-grid2{grid-template-columns:1fr 1fr}.rhq-steps{grid-template-columns:1fr 1fr 1fr}.rhq-step{border-top:none;border-left:1px solid ${hair}}.rhq-step:first-child{border-left:none}.rhq-hero{padding:44px 24px 40px}}
-    `}</style>
-  );
+// Brackets and tags drifting behind the dark cards, on both views.
+const PAT_CODE = `url("data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 12c-4 0-4 3-4 6s0 6-4 6c4 0 4 3 4 6s0 6 4 6"/><path d="M58 18l-6 6 6 6M70 18l6 6-6 6M66 14l-6 20"/><path d="M22 62h12M22 68h20"/><path d="M80 60c4 0 4 3 4 6s0 6 4 6c-4 0-4 3-4 6s0 6-4 6"/></svg>')}")`;
+
+/* ── Public: /resellers ── */
+
+/* The prospect page in the landing page's print (approved 17 Oct 2026, mockup
+   "Nitro Resellers and What's New"): the hero holds a real exchange with the
+   API, the six benefits are one printed sheet, the catalogue numbers are live,
+   each step has a picture of itself, and the member view's questions come out
+   here too. Its own sheet; logical properties, since it does not go through
+   the RTL build plugin. */
+const RS_CSS = `
+.rs-band{position:relative;overflow:hidden;padding:64px 24px}
+.rs-band.alt{background:var(--rs-alt);border-top:1px solid var(--t-card-border);border-bottom:1px solid var(--t-card-border)}
+.rs-in{position:relative;max-width:1040px;margin:0 auto}
+.rs-glow{position:absolute;border-radius:50%;filter:blur(100px);pointer-events:none}
+.rs-dots{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(rgba(196,125,142,.26) 1px,transparent 1px);background-size:26px 26px;-webkit-mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%);mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%);opacity:.5}
+.rs-eb{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--t-accent-ink)}
+.rs-eb::before{content:"";width:8px;height:8px;border-radius:2px;background:#c47d8e;box-shadow:1.5px 1.5px 0 var(--rs-print)}
+.rs-h{margin:12px 0 0;font-size:clamp(30px,3.6vw,42px);font-weight:700;letter-spacing:-1.2px;line-height:1.06;text-wrap:balance;color:var(--t-text)}
+.rs-h em{font-style:italic;font-weight:600;letter-spacing:-.3px;color:var(--rs-em)}
+.rs-h1{font-size:clamp(36px,4.6vw,54px);letter-spacing:-1.6px}
+.rs-sub{margin:16px 0 0;max-width:58ch;font-size:16px;line-height:1.65;color:var(--t-text-soft)}
+.rs-sub b{color:var(--t-text);font-weight:700}
+.rs-hero{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);gap:44px;align-items:center}
+.rs-chips{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:18px;font-size:13px;font-weight:600;color:var(--t-text-soft)}
+.rs-chips span{display:inline-flex;align-items:center;gap:7px}
+.rs-chips i{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;color:var(--t-green);background:color-mix(in srgb,var(--t-green) 12%,var(--t-card-bg));box-shadow:1.5px 1.5px 0 color-mix(in srgb,var(--t-green) 30%,transparent)}
+.rs-acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+.rs-term{position:relative;overflow:hidden;isolation:isolate;border-radius:22px;padding:18px 18px 16px;color:#f6eef2;background:radial-gradient(70% 120% at 100% 0%,rgba(196,125,142,.42),transparent 62%),linear-gradient(150deg,#1f121a 0%,#2e1b26 55%,#4a2a3a 100%);box-shadow:5px 5px 0 #120a10}
+.dark .rs-term{box-shadow:5px 5px 0 #3a2230}
+.rs-term::before,.rs-close::before{content:"";position:absolute;inset:-96px 0 0 -96px;z-index:-1;background-image:${PAT_CODE};background-size:96px 96px;opacity:.08;animation:rsDrift 44s linear infinite}
+@keyframes rsDrift{to{transform:translate(96px,96px)}}
+.rs-ttop{display:flex;align-items:center;gap:10px}
+.rs-kt{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex-shrink:0;color:#f3c5d1;background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2),2px 2px 0 rgba(0,0,0,.35)}
+.rs-kt .ic-off{opacity:.3}
+.rs-url{min-width:0;font-size:13px;font-weight:600;color:#fff}
+.rs-url small{display:block;font-family:inherit;font-size:10px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:rgba(246,238,242,.6)}
+.rs-live{margin-inline-start:auto;display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:650;color:#9ff0c9}
+.rs-live i{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 4px rgba(52,211,153,.18)}
+.rs-lines{display:grid;gap:8px;margin-top:14px}
+.rs-ln{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-radius:12px;font-size:12.5px;font-weight:500;line-height:1.55;background:rgba(0,0,0,.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);direction:ltr;text-align:left;overflow-wrap:anywhere}
+.rs-ln .d{flex-shrink:0;width:18px;font-weight:800;color:#f3a9bd}
+.rs-ln.res .d{color:#9ff0c9}
+.rs-ln .k{color:#f3a9bd}.rs-ln .v{color:#fff}.rs-ln .s{color:#9ff0c9}
+.rs-ln .ngn{padding:0 5px;border-radius:5px;font-weight:800;color:#0b2016;background:#9ff0c9}
+.rs-cur{display:inline-block;width:8px;height:16px;margin-inline-start:4px;vertical-align:-3px;background:#f3c5d1;animation:rsBlink 1.1s steps(1) infinite}
+@keyframes rsBlink{50%{opacity:0}}
+.rs-tmeta{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.rs-tmeta span{display:inline-flex;align-items:center;height:28px;padding-inline:11px;border-radius:999px;font-size:11.5px;font-weight:600;color:rgba(246,238,242,.84);background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.rs-card{border-radius:20px;background:var(--t-card-bg);box-shadow:inset 0 0 0 1px var(--t-card-border),4px 4px 0 var(--rs-print)}
+.rs-six{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:30px;overflow:hidden}
+.rs-f{display:flex;flex-direction:column;gap:10px;padding:22px 22px 24px;border-inline-start:1px solid var(--t-card-border);border-top:1px solid var(--t-card-border)}
+.rs-f:nth-child(3n+1){border-inline-start:0}
+.rs-f:nth-child(-n+3){border-top:0}
+.rs-f b{display:block;font-size:16px;font-weight:750;letter-spacing:-.01em;color:var(--t-text)}
+.rs-f p{margin:4px 0 0;font-size:13.5px;line-height:1.6;color:var(--t-text-soft)}
+.rs-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:center}
+.rs-pts{display:grid;gap:18px;margin-top:24px}
+.rs-pt{display:flex;gap:14px;align-items:flex-start}
+.rs-pt b{display:block;font-size:15.5px;font-weight:750;color:var(--t-text)}
+.rs-pt small{display:block;margin-top:3px;font-size:13.5px;line-height:1.6;color:var(--t-text-soft)}
+.rs-spec{padding:20px}
+.rs-spec-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--t-card-border)}
+.rs-spec-h b{display:block;font-size:15px;font-weight:750;color:var(--t-text)}
+.rs-spec-h small{display:block;font-size:12px;color:var(--t-text-muted)}
+.rs-big{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
+.rs-big div{padding:12px;border-radius:13px;background:var(--rs-field)}
+.rs-big b{display:block;font-size:24px;font-weight:800;line-height:1.1;letter-spacing:-.03em;color:var(--t-text)}
+.rs-big span{display:block;margin-top:4px;font-size:12px;color:var(--t-text-muted)}
+.rs-rule{display:flex;align-items:center;justify-content:space-between;gap:6px 12px;flex-wrap:wrap;padding:12px 2px;border-top:1px solid var(--t-card-border);font-size:13.5px;color:var(--t-text-soft)}
+.rs-big + .rs-rule{margin-top:14px}
+.rs-rule code{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;padding:3px 7px;border-radius:7px;white-space:nowrap;color:var(--t-text);background:var(--rs-field)}
+.rs-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:30px}
+.rs-step{display:flex;flex-direction:column;overflow:hidden;border-radius:20px;background:var(--t-card-bg);box-shadow:inset 0 0 0 1px var(--t-card-border)}
+.rs-vig{height:150px;display:grid;place-items:center;padding:16px;border-bottom:1px solid var(--t-card-border);background:radial-gradient(120% 120% at 0% 0%,rgba(196,125,142,.12),transparent 60%),var(--rs-field)}
+.rs-stx{padding:16px 18px 20px}
+.rs-sn{display:flex;align-items:center;gap:10px}
+.rs-n{width:28px;height:28px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:800;color:#fff;background:#96626f;box-shadow:1.5px 1.5px 0 #6b3a4a}
+.rs-sn b{font-size:16px;font-weight:750;letter-spacing:-.01em;color:var(--t-text)}
+.rs-stx p{margin:9px 0 0;font-size:13.5px;line-height:1.6;color:var(--t-text-soft)}
+.rs-stx a{display:inline-block;margin-top:10px;font-size:13px;font-weight:700;color:var(--t-accent-ink);text-decoration:underline;text-underline-offset:3px}
+.rs-vkey,.rs-vord{width:100%;max-width:250px;padding:12px;border-radius:14px;background:var(--t-card-bg);box-shadow:inset 0 0 0 1px var(--t-card-border),2px 2px 0 var(--rs-print)}
+.rs-vkey small{display:block;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--t-text-muted)}
+.rs-vkey div{display:flex;align-items:center;gap:8px;margin-top:6px}
+.rs-vkey code{flex:1;min-width:0;font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;padding:8px 10px;border-radius:9px;white-space:nowrap;overflow:hidden;color:var(--t-text);background:var(--rs-field)}
+.rs-vkey span{font-size:11.5px;font-weight:700;padding:6px 9px;border-radius:8px;color:#fff;background:#96626f;box-shadow:1.5px 1.5px 0 #6b3a4a}
+.rs-vwa{width:100%;max-width:260px;display:grid;gap:6px}
+.rs-bub{justify-self:end;max-width:92%;padding:9px 11px;border-radius:13px 13px 4px 13px;font-size:12px;line-height:1.45;color:#0b2016;background:#d9fdd3;box-shadow:1.5px 1.5px 0 rgba(12,84,64,.25)}
+.dark .rs-bub{color:#e9fbe5;background:#005c4b;box-shadow:1.5px 1.5px 0 rgba(0,0,0,.4)}
+.rs-vwa small{justify-self:end;font-size:10.5px;color:var(--t-text-muted)}
+.rs-vord .r1{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:700;color:var(--t-text)}
+.rs-bar{height:7px;margin-top:10px;border-radius:5px;overflow:hidden;background:var(--t-card-border)}
+.rs-bar i{display:block;width:55%;height:100%;background:#c47d8e}
+.rs-vord small{display:block;margin-top:6px;font-size:11px;color:var(--t-text-muted)}
+.rs-honest{padding:24px 26px}
+.rs-stamp{display:inline-flex;align-items:center;height:28px;padding-inline:11px;border-radius:7px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--act-amber);background:color-mix(in srgb,var(--act-amber) 10%,var(--t-card-bg));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--act-amber) 40%,transparent);transform:rotate(-2deg)}
+.rs-honest p{margin:14px 0 0;max-width:70ch;font-size:15.5px;line-height:1.7;color:var(--t-text-soft)}
+.rs-faq{margin-top:26px;overflow:hidden}
+.rs-fq{border-top:1px solid var(--t-card-border)}
+.rs-fq:first-child{border-top:0}
+.rs-fq summary{display:flex;align-items:center;gap:12px;padding:16px 20px;list-style:none;cursor:pointer;font-size:15px;font-weight:700;color:var(--t-text)}
+.rs-fq summary::-webkit-details-marker{display:none}
+.rs-fq summary span{flex:1}
+.rs-fq summary svg{flex-shrink:0;color:var(--t-text-muted);transition:transform .2s}
+.rs-fq[open] summary svg{transform:rotate(180deg);color:var(--t-accent-ink)}
+.rs-fq summary:focus-visible{outline:2px solid var(--t-accent);outline-offset:-2px}
+.rs-fq p{margin:0;padding:0 20px 16px;font-size:14px;line-height:1.65;color:var(--t-text-soft)}
+.rs-close{position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:44px;padding:30px 32px;border-radius:24px;color:#fff;background:radial-gradient(70% 120% at 100% 0%,rgba(255,220,230,.4),transparent 60%),linear-gradient(150deg,#8b4a5e 0%,#b46a80 60%,#d08ea0 100%);box-shadow:5px 5px 0 #5a2a3a}
+.rs-close::before{opacity:.1}
+.rs-close b{display:block;font-size:34px;font-weight:600;line-height:1.05}
+.rs-close span{display:block;margin-top:6px;font-size:14.5px;opacity:.92}
+.rs-close .rs-acts{margin-top:0}
+@media (max-width:1023px){.rs-hero,.rs-two{grid-template-columns:1fr;gap:28px}.rs-steps{grid-template-columns:1fr}}
+@media (max-width:767px){
+  .rs-band{padding:40px 16px}
+  .rs-six{grid-template-columns:1fr}
+  .rs-f{flex-direction:row;align-items:flex-start;gap:14px;padding:16px;border-inline-start:0;border-top:1px solid var(--t-card-border)}
+  .rs-f:nth-child(-n+3){border-top:1px solid var(--t-card-border)}
+  .rs-f:first-child{border-top:0}
+  .rs-big b{font-size:19px}
+  .rs-acts > *{width:100%}
+  .rs-close{padding:24px 20px}
+  .rs-close .rs-acts{width:100%}
+  .rs-fq summary{padding:14px 16px}
+  .rs-fq p{padding:0 16px 14px}
 }
-
-const SecHead = ({ label, sub }) => <div className="rhq-sec-head"><span className="rhq-sec-label">{label}</span><span className="rhq-sec-rule" /><span className="rhq-sec-sub">{sub}</span></div>;
-const Feat = ({ icon, title, body, tone }) => <div className="rhq-feat"><span className={`rhq-feat-ico ${tone || ''}`}>{I(icon, 15)}</span><span><h4>{title}</h4><p>{body}</p></span></div>;
-const Steps = ({ items }) => <div className="rhq-steps">{items.map(([t, b], i) => <div key={t} className="rhq-step"><span className="rhq-step-n">{String(i + 1).padStart(2, '0')}</span><h4>{t}</h4><p>{b}</p></div>)}</div>;
-
-function Catalogues() {
-  const tr = useT();
-  const Cat = ({ icon, tone, title, badge, tag, desc, stats }) => (
-    <div className="rhq-cat">
-      <div className="rhq-cat-head"><span className={`rhq-cat-ico ${tone}`}>{I(icon, 13)}</span><span><h3 className="rhq-cat-title">{title}{badge && <span className="rhq-badge-sm">{badge}</span>}</h3><div className="rhq-cat-tag">{tag}</div></span></div>
-      <p className="rhq-cat-desc">{desc}</p>
-      <div className="rhq-cat-stats">{stats.map(([l, v]) => <div key={l} className="rhq-cat-stat">{l}<b>{v}</b></div>)}</div>
-    </div>
-  );
-  return (
-    <div className="rhq-grid2">
-      <Cat icon={P.globe} tone="blue" title={tr("One catalogue")} tag="Everything our providers can reach"
-        desc={tr("Every service Nitro can place, on one list, each on its own refill and speed terms. The same list the site shows, the same IDs, the same prices your account pays.")}
-        stats={[['Services', '7,500+'], ['Platforms', '31'], ['Settles in', 'Naira']]} />
-      <Cat icon={P.layers} tone="" title={tr("One set of IDs")} tag="Stable, and yours to integrate against"
-        desc={tr("A service keeps its ID for as long as we carry it. When a provider drops one it answers “Service discontinued” rather than vanishing, so your panel can tell the difference.")}
-        stats={[['ID', 'Permanent'], ['Retired', 'Says so'], ['Order via', 'Site + API']]} />
-    </div>
-  );
-}
-
+@media (prefers-reduced-motion:reduce){.rs-term::before,.rs-close::before,.rs-cur{animation:none}}
+`;
+const RS_TICK = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7" /></svg>;
+const RS_CHEV = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>;
+// Each benefit's tile takes its meaning's colour: gold for money, blue for
+// speed, green for safety, the accent for the catalogue itself.
+const RS_FEATS = [
+  [P.naira, ["#b45309", "#fcd34d"], msg("Naira in, naira out"), msg("Opay, PalmPay, Kuda or bank transfer. No dollar cards, no FX to watch.")],
+  [P.layers, null, msg("A catalogue built for choosing"), msg("Quality grades, refill terms and speed on every row before you order.")],
+  [P.bolt, ["#2563eb", "#93c5fd"], msg("Full speed, always"), msg("API orders never enter the gradual delivery queue. They hit providers at natural speed.")],
+  [P.chart, ["#b45309", "#fcd34d"], msg("Reseller rates"), msg("Below retail on every order, and a personal rate on top once your volume is consistent.")],
+  [P.refund, ["#047c57", "#6ee7b7"], msg("Auto refunds"), msg("Anything we can't deliver refunds to your wallet automatically. Never out of pocket.")],
+  [P.clock, ["#2563eb", "#93c5fd"], msg("Live tracking"), msg("Start count, remains and status on every order, pollable so your panel can show it.")],
+];
 
 const FAQ = [
   [msg('Which services can my key order?'), msg('All of them. Every key sees the same catalogue. There is no per-account list and nothing to be switched on. What changes once you are approved is the price, not the list. An ID we do not carry answers "Incorrect service ID"; one we used to carry answers "Service discontinued".')],
@@ -116,7 +194,6 @@ const FAQ = [
   [msg('Is there a rate limit?'), msg('Sixty requests a minute per key. Normal panel traffic never touches it.')],
 ];
 
-/* ── Public: /resellers ── */
 export default function ResellerHQView() {
   return <ThemeProvider><ProspectInner /></ThemeProvider>;
 }
@@ -125,43 +202,158 @@ function ProspectInner() {
   const tr = useT();
   const { dark, t } = useTheme();
   const [waNum, setWaNum] = useState(FALLBACK_WA);
+  const [stats, setStats] = useState(null);
+  const [signedIn, setSignedIn] = useState(false);
   useEffect(() => {
     fetch('/api/settings').then(r => r.ok ? r.json() : {}).then(d => {
       const n = (d.settings?.social_whatsapp_reseller || d.settings?.social_whatsapp_support)?.replace(/\D/g, '');
       if (n) setWaNum(n);
     }).catch(() => {});
+    fetch('/api/site-info').then(r => r.ok ? r.json() : null).then(d => { if (d?.stats) setStats(d.stats); }).catch(() => {});
+    fetch('/api/auth/signed-in', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => setSignedIn(!!d?.signedIn)).catch(() => {});
   }, []);
   const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(WA_TEXT)}`;
-  const Wa = () => <WaButton href={waLink}>{tr("Message us on WhatsApp")}</WaButton>;
+  const Wa = () => <WaButton href={waLink} size="lg">{tr("Message us on WhatsApp")}</WaButton>;
+  // Live from /api/site-info, the figures the landing page and the footer read.
+  // The fallbacks are what it said on 17 Oct 2026 and only cover the render
+  // before it lands; the page typed 7,500+ and 31 until then.
+  const nFull = stats?.fullList || 7491;
+  const nPlat = stats?.fullPlatforms || 30;
+  const tone = (pair) => pair ? (dark ? pair[1] : pair[0]) : null;
+  const tile = (icon, pair, size = 40) => (
+    <span className={`ic-tile${pair ? " tc" : ""}`} style={{ width: size, height: size, borderRadius: 11, ...(pair ? { "--tc": tone(pair) } : null) }}>{I(icon, 19)}</span>
+  );
+  const vars = {
+    background: t.bg, color: t.text,
+    "--rs-alt": dark ? "#130d1e" : "#efe8e2", "--rs-field": dark ? "rgba(255,255,255,.05)" : "#f7f1ec",
+    "--rs-print": dark ? "#6b3a4a" : "#efc4cf", "--rs-em": dark ? "#e3a4b5" : "#c47d8e",
+  };
   return (
     <>
       <SharedStyles />
-      <Styles dark={dark} t={t} />
-      <div className="min-h-dvh flex flex-col" style={{ background: t.bg, color: t.text }}>
+      <style>{RS_CSS}</style>
+      <div className="min-h-dvh flex flex-col" style={vars}>
         <SharedNav />
-        <main className="flex-1 w-full max-w-[960px] mx-auto px-4 sm:px-6 pb-16">
-          <div className="rhq-hero"><div className="rhq-glow" /><span className="rhq-pill">{tr("Reseller HQ")}</span><h1 className="rhq-h1">{tr("Build your business on Nitro")}</h1><p className="rhq-lead">{tr("Every account gets an")} <b>{tr("API key")}</b> {tr("and the same catalogue at retail, today. Message us on WhatsApp and we switch your account to")} <b>wholesale</b>.</p><div className="rhq-checks"><span>{I(P.chk, 12, 2.5)}{tr("Wholesale on the whole catalogue")}</span><span>{I(P.chk, 12, 2.5)}{tr("A key for every account, in Settings")}</span><span>{I(P.chk, 12, 2.5)}{tr("Everything settles in naira")}</span></div>
-            {/* The docs were reachable only from inside the dashboard, so a
-                visitor deciding whether to build on the API had no way to read
-                it first — on the one public page whose whole job is to convince
-                them to. Same treatment the member view gives it. */}
-            <div className="rhq-acts ctr"><Wa /><a href="/resellers/docs" className="rhq-btn-p blue">{I(P.book, 13)} {tr("Read the API docs")}</a></div>
-          </div>
-          <SecHead label={tr("What you get")} sub={tr("The same shop, lower prices")} />
-          <div className="rhq-feats">
-            <Feat icon={P.naira} tone="accent" title={tr("Naira in, naira out")} body={tr("Opay, PalmPay, Kuda or bank transfer. No dollar cards, no FX to watch.")} />
-            <Feat icon={P.layers} tone="accent" title={tr("A catalogue built for choosing")} body={tr("Quality grades, refill terms and speed on every row before you order.")} />
-            <Feat icon={P.bolt} title={tr("Full speed, always")} body={tr("API orders never enter the gradual delivery queue. They hit providers at natural speed.")} />
-            <Feat icon={P.chart} title={tr("Reseller rates")} body={tr("Below retail on every order, and a personal rate on top once your volume is consistent.")} />
-            <Feat icon={P.refund} title={tr("Auto refunds")} body={tr("Anything we can't deliver refunds to your wallet automatically. Never out of pocket.")} />
-            <Feat icon={P.clock} title={tr("Live tracking")} body={tr("Start count, remains and status on every order, pollable so your panel can show it.")} />
-          </div>
-          <SecHead label={tr("The catalogue")} sub={tr("One list, every key, every platform")} />
-          <Catalogues full={false} waLink={waLink} />
-          <SecHead label={tr("How to join")} sub={tr("Three steps, no forms")} />
-          <Steps items={[['Grab your key in Settings', 'Every verified account has one. Point your panel at nitro.ng/api/v2 and order the whole catalogue at the price you already see.'], ['Message us for wholesale', 'Tell us about your business: your panel, your clients, or the volume you push. The list does not change. The same key simply starts returning lower rates.'], ['Order like you always did', 'Same order page, same wallet, same history. Only the price changes.']]} />
-          <div className="rhq-honest"><span className="rhq-sec-label">{tr("The honest bit")}</span><p>{tr("Reseller pricing replaces retail perks: loyalty discounts, promo codes and Nitro Points do not stack on top. Wholesale is the deal. Full-catalogue services carry the provider's own terms, shown on every row.")}</p></div>
-          <div className="rhq-closer"><div><h3>{tr("Start where you are.")}</h3><p>{tr("Your key is already in Settings. Wholesale is one message away.")}</p></div><div className="rhq-acts" style={{ marginTop: 0 }}><a href="/resellers/docs" className="rhq-btn-p white">{tr("Read the API docs")}</a><Wa /></div></div>
+        <main className="flex-1 w-full">
+          {/* ━━━ The pitch, and the product beside it ━━━ */}
+          <section className="rs-band">
+            <div className="rs-glow" style={{ width: 620, height: 620, top: -260, insetInlineEnd: -180, background: dark ? "rgba(196,125,142,.14)" : "rgba(249,168,117,.26)" }} />
+            <div className="rs-glow" style={{ width: 420, height: 420, bottom: -200, insetInlineStart: -140, background: dark ? "rgba(96,165,250,.08)" : "rgba(96,165,250,.14)" }} />
+            <div className="rs-in rs-hero">
+              <div>
+                <span className="rs-eb">{tr("Resellers")}</span>
+                <h1 className="rs-h rs-h1">{tr("Build your business")} <em className="serif">{tr("on Nitro.")}</em></h1>
+                <p className="rs-sub">{tr("Every account gets an")} <b>{tr("API key")}</b> {tr("and the same catalogue at retail, today. Message us on WhatsApp and we switch your account to")} <b>{tr("wholesale")}</b>.</p>
+                <div className="rs-chips">
+                  <span><i>{RS_TICK}</i>{tr("Wholesale on the whole catalogue")}</span>
+                  <span><i>{RS_TICK}</i>{tr("A key for every account, in Settings")}</span>
+                  <span><i>{RS_TICK}</i>{tr("Everything settles in naira")}</span>
+                </div>
+                <div className="rs-acts"><Wa /><a href="/resellers/docs" className="nb sec lg">{I(P.book, 16)}{tr("Read the API docs")}</a></div>
+              </div>
+              {/* A real exchange, as the docs print it: an add that answers with an
+                  order number, then a status that answers with the charge in NGN.
+                  Code, so it is not translated and always reads left to right. */}
+              <div className="rs-term" aria-label={tr("An order placed through the API, then its status")}>
+                <div className="rs-ttop">
+                  <span className="rs-kt">{I(P.key, 16)}</span>
+                  <span className="rs-url"><small>{tr("Your panel, talking to Nitro")}</small><span className="m">{"nitro.ng/api/v2"}</span></span>
+                  <span className="rs-live"><i />{tr("Live")}</span>
+                </div>
+                <div className="rs-lines m">
+                  <div className="rs-ln"><span className="d">→</span><span><span className="k">action</span>=<span className="v">add</span> <span className="k">service</span>=<span className="v">3877</span> <span className="k">quantity</span>=<span className="v">1000</span></span></div>
+                  <div className="rs-ln res"><span className="d">←</span><span>{"{"}<span className="s">{'"order"'}</span>: <span className="v">4211</span>{"}"}</span></div>
+                  <div className="rs-ln"><span className="d">→</span><span><span className="k">action</span>=<span className="v">status</span> <span className="k">order</span>=<span className="v">4211</span></span></div>
+                  <div className="rs-ln res"><span className="d">←</span><span>{"{"}<span className="s">{'"status"'}</span>: <span className="v">{'"In progress"'}</span>, <span className="s">{'"remains"'}</span>: <span className="v">{'"450"'}</span>, <span className="s">{'"charge"'}</span>: <span className="v">{'"2720.00"'}</span>, <span className="s">{'"currency"'}</span>: <span className="ngn">{'"NGN"'}</span>{"}"}<span className="rs-cur" /></span></div>
+                </div>
+                <div className="rs-tmeta"><span>{tr("60 requests a minute")}</span><span>{tr("Same IDs as the site")}</span><span>{tr("Refunds land in your wallet")}</span></div>
+              </div>
+            </div>
+          </section>
+
+          {/* ━━━ What you get ━━━ */}
+          <section className="rs-band alt">
+            <div className="rs-dots" />
+            <div className="rs-in">
+              <span className="rs-eb">{tr("What you get")}</span>
+              <h2 className="rs-h">{tr("The same shop,")} <em className="serif">{tr("lower prices.")}</em></h2>
+              <div className="rs-card rs-six">
+                {RS_FEATS.map(([icon, pair, title, body]) => (
+                  <div key={title} className="rs-f">{tile(icon, pair)}<span><b>{tr(title)}</b><p>{tr(body)}</p></span></div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ━━━ The catalogue ━━━ */}
+          <section className="rs-band">
+            <div className="rs-glow" style={{ width: 520, height: 520, top: -120, insetInlineStart: "30%", background: "rgba(196,125,142,.16)" }} />
+            <div className="rs-in rs-two">
+              <div>
+                <span className="rs-eb">{tr("The catalogue")}</span>
+                <h2 className="rs-h">{tr("One list,")} <em className="serif">{tr("every key.")}</em></h2>
+                <div className="rs-pts">
+                  <div className="rs-pt">{tile(P.globe, ["#2563eb", "#93c5fd"])}<div><b>{tr("One catalogue")}</b><small>{tr("Every service Nitro can place, on one list, each on its own refill and speed terms. The same list the site shows, the same IDs, the same prices your account pays.")}</small></div></div>
+                  <div className="rs-pt">{tile(P.layers, null)}<div><b>{tr("One set of IDs")}</b><small>{tr("A service keeps its ID for as long as we carry it. When a provider drops one it answers “Service discontinued” rather than vanishing, so your panel can tell the difference.")}</small></div></div>
+                </div>
+              </div>
+              <div className="rs-card rs-spec">
+                <div className="rs-spec-h"><div><b>{tr("The full list")}</b><small>{tr("Live from the catalogue")}</small></div><span className="pbadge">{"action=services"}</span></div>
+                <div className="rs-big">
+                  <div><b className="m">{nFull.toLocaleString()}</b><span>{tr("Services")}</span></div>
+                  <div><b className="m">{nPlat}</b><span>{tr("Platforms")}</span></div>
+                  <div><b className="m">₦</b><span>{tr("Settles in naira")}</span></div>
+                </div>
+                <div className="rs-rule"><span>{tr("A service ID")}</span><code>{tr("Permanent")}</code></div>
+                <div className="rs-rule"><span>{tr("A retired service answers")}</span><code>{'"Service discontinued"'}</code></div>
+                <div className="rs-rule"><span>{tr("An unknown ID answers")}</span><code>{'"Incorrect service ID"'}</code></div>
+                <div className="rs-rule"><span>{tr("Order through")}</span><code>{tr("Site and API")}</code></div>
+              </div>
+            </div>
+          </section>
+
+          {/* ━━━ How to join: three steps, each with a picture of itself ━━━ */}
+          <section className="rs-band alt">
+            <div className="rs-in">
+              <span className="rs-eb">{tr("How to join")}</span>
+              <h2 className="rs-h">{tr("Three steps,")} <em className="serif">{tr("no forms.")}</em></h2>
+              <div className="rs-steps">
+                <div className="rs-step">
+                  <div className="rs-vig" aria-hidden="true"><div className="rs-vkey"><small>{tr("Settings, API key")}</small><div><code>{"ntr_8f3k••••a91c"}</code><span>{tr("Copy")}</span></div></div></div>
+                  <div className="rs-stx"><div className="rs-sn"><span className="rs-n m">1</span><b>{tr("Grab your key in Settings")}</b></div><p>{tr("Every verified account has one. Point your panel at nitro.ng/api/v2 and order the whole catalogue at the price you already see.")}</p>
+                    {signedIn ? <a href="/dashboard?page=lab">{tr("Open API access")}</a> : <a href="/signup">{tr("Create a free account")}</a>}</div>
+                </div>
+                <div className="rs-step">
+                  <div className="rs-vig" aria-hidden="true"><div className="rs-vwa"><div className="rs-bub">{tr(WA_TEXT)}</div><small>{tr("Sent")} ✓✓</small></div></div>
+                  <div className="rs-stx"><div className="rs-sn"><span className="rs-n m">2</span><b>{tr("Message us for wholesale")}</b></div><p>{tr("Tell us about your business: your panel, your clients, or the volume you push. The list does not change. The same key simply starts returning lower rates.")}</p></div>
+                </div>
+                <div className="rs-step">
+                  <div className="rs-vig" aria-hidden="true"><div className="rs-vord"><div className="r1"><span>Instagram Followers</span><span className="pbadge tag">{tr("In progress")}</span></div><div className="rs-bar"><i /></div><small><span className="m">550</span> {tr("of")} <span className="m">1,000</span> {tr("delivered")}</small></div></div>
+                  <div className="rs-stx"><div className="rs-sn"><span className="rs-n m">3</span><b>{tr("Order like you always did")}</b></div><p>{tr("Same order page, same wallet, same history. Only the price changes.")}</p></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ━━━ The honest bit, the questions, and the way in ━━━ */}
+          <section className="rs-band">
+            <div className="rs-in">
+              <div className="rs-card rs-honest"><span className="rs-stamp">{tr("The honest bit")}</span><p>{tr("Reseller pricing replaces retail perks: loyalty discounts, promo codes and Nitro Points do not stack on top. Wholesale is the deal. Full-catalogue services carry the provider's own terms, shown on every row.")}</p></div>
+              <div style={{ marginTop: 44 }}><span className="rs-eb">{tr("Questions")}</span><h2 className="rs-h">{tr("Before you")} <em className="serif">{tr("message us.")}</em></h2></div>
+              <div className="rs-card rs-faq">
+                {FAQ.map(([q, a], i) => (
+                  <details key={q} className="rs-fq" open={i === 0}>
+                    <summary><span>{tr(q)}</span>{RS_CHEV}</summary>
+                    <p>{tr(a)}</p>
+                  </details>
+                ))}
+              </div>
+              <div className="rs-close">
+                <div><b className="serif">{tr("Start where you are.")}</b><span>{tr("Your key is already in Settings. Wholesale is one message away.")}</span></div>
+                <div className="rs-acts"><a href="/resellers/docs" className="nb sec lg">{I(P.book, 16)}{tr("Read the API docs")}</a><Wa /></div>
+              </div>
+            </div>
+          </section>
         </main>
         <SharedFooter />
       </div>
@@ -177,7 +369,6 @@ function ProspectInner() {
    switched on and Reseller HQ after. Its own sheet; the prospect page above
    keeps .rhq-*. Logical properties: this sheet does not go through the RTL
    build plugin. */
-const PAT_CODE = `url("data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 12c-4 0-4 3-4 6s0 6-4 6c4 0 4 3 4 6s0 6 4 6"/><path d="M58 18l-6 6 6 6M70 18l6 6-6 6M66 14l-6 20"/><path d="M22 62h12M22 68h20"/><path d="M80 60c4 0 4 3 4 6s0 6 4 6c-4 0-4 3-4 6s0 6-4 6"/></svg>')}")`;
 const RK_CSS = `
 .rk{display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:max-content;align-content:start;gap:14px}
 .rk-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
