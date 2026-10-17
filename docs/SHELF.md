@@ -394,6 +394,18 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **Translations saved one place off, put back** (17 Oct 2026, `v2.4.126`). A
+  batch of new keys for the Pit apply and commissions pages had each been given
+  the next key's translation, in all four languages, and some of those keys are
+  shared with the whole site: in French "Sign in" read "Continuer", "Continue"
+  read "Nom" and the two name fields were swapped. The run is shifted back and
+  checked for any other shifted run. Alongside it, words that read wrong in
+  context: "Order" as a verb where it is a noun, "Deposit", "from" on prices,
+  "this" left dangling before "device", "Reorder" read as "reorganise", and a
+  few French lines that still said "refill" in English. The summary bar now
+  says "Order now", the bank-transfer sheet says "sent by" before the sender's
+  name, and the quantity range is a dash instead of a translated "to".
+
 - **New Order, the order form, the receipt and History, redrawn** (17 Oct 2026,
   `v2.4.125`). The tier picker is one printed well: equal segments, a struck
   "was" price above the new one on a sale, perks for the tier hovered or

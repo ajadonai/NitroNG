@@ -1784,7 +1784,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
           </div>
           <div className="flex items-center gap-2.5 shrink-0">
             <span className="m text-lg max-md:text-base font-semibold whitespace-nowrap" style={{ color: "var(--t-accent-ink)" }}>{money(price)}</span>
-            <button onClick={() => setOrderModal(true)} className="py-2.5 px-[22px] max-md:px-[18px] dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">{tr("Order")}</button>
+            <button onClick={() => setOrderModal(true)} className="py-2.5 px-[22px] max-md:px-[18px] dash-btn-primary border-none bg-gradient-to-br from-[#c47d8e] to-[#8b5e6b] text-white text-[15px] font-semibold cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]">{tr("Order now")}</button>
           </div>
         </div>
       )}

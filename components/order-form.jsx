@@ -626,7 +626,7 @@ export function OrderForm({ selSvc, selTier, platform, qty, setQty, link, setLin
           <div className="of-lr">
             <label htmlFor="of-qty">{tr("How many")}</label>
             {/* The range, and the problem with it, said in the box's own label. */}
-            {!isPackage && <span className="of-meta">{qtyOutOfRange ? (qtyNum < minQty ? `${tr("Minimum is")} ${formatOrderQuantity(minQty)}` : `${tr("Maximum is")} ${formatOrderQuantity(maxQty)}`) : `${formatOrderQuantity(minQty)} ${tr("to")} ${formatOrderQuantity(maxQty)}`}</span>}
+            {!isPackage && <span className="of-meta">{qtyOutOfRange ? (qtyNum < minQty ? `${tr("Minimum is")} ${formatOrderQuantity(minQty)}` : `${tr("Maximum is")} ${formatOrderQuantity(maxQty)}`) : `${formatOrderQuantity(minQty)} – ${formatOrderQuantity(maxQty)}`}</span>}
           </div>
           <div className="of-ir">
             <input id="of-qty" type="text" inputMode="numeric" autoComplete="off" aria-label={tr("Quantity")} disabled={orderLoading || isPackage} value={qty === "" ? "" : qtyNum.toLocaleString("en-NG")} onChange={e => { const d = e.target.value.replace(/\D/g, "").slice(0, 10); setQty(d === "" ? "" : d); }} className="of-in big" />

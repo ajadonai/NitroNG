@@ -25,7 +25,7 @@ export function ManualTransferSheet({ manualModal, setManualModal, manualStep, s
                 <OffsetIcon name="checkCircle" size={28} />
               </div>
               <div className="text-[19px] max-[380px]:text-[17px] font-bold mt-3 text-t-text">{tr("We’re checking for it")}</div>
-              <div className="text-[13px] leading-relaxed mt-1.5 mx-auto max-w-[34ch] text-t-text-muted">{fN(manualModal.amount)}{manualRef.trim() ? <> {tr("from")} <b className="font-semibold text-t-text">{manualRef.trim()}</b></> : null}. {tr("Your wallet is credited as soon as we see it land.")}</div>
+              <div className="text-[13px] leading-relaxed mt-1.5 mx-auto max-w-[34ch] text-t-text-muted">{fN(manualModal.amount)}{manualRef.trim() ? <> {tr("sent by")} <b className="font-semibold text-t-text">{manualRef.trim()}</b></> : null}. {tr("Your wallet is credited as soon as we see it land.")}</div>
             </div>
             <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${t.cardBorder}` }}>
               {[
