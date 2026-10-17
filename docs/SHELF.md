@@ -12,6 +12,19 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
 
 ### Waiting on Trip — one word or one flip
 
+- **Web push notifications — raised 17 Oct 2026, to scope in the coming days.**
+  Phones can get notifications from a website: Android Chrome from a browser
+  tab (since 2015), iPhone only once the site is added to the Home Screen and
+  opened from there (iOS 16.4+), with the permission asked after a tap. Free
+  (Apple's and Google's push services), no app store. Half the groundwork
+  exists: `public/manifest.json` installs Nitro standalone on /dashboard, and
+  `public/sw.js` is registered from the dashboard, though it only serves the
+  offline page. Missing: a push handler in the worker, a permission ask at a
+  sensible moment (after placing an order), stored subscriptions, and sending
+  from the server on order delivered, refund issued, deposit landed, refill
+  done. Keep it to a customer's own orders and money; promos would get it
+  switched off. iPhone reach is limited to people who install it.
+
 - **Hero platform icons — mocked 16 Oct 2026, parked.** Three directions for
   the floating icons beside the hero card, next to today's, on
   claude.ai/artifact/FXpo21aD3iwMLZteWAgnRZ: A brand-coloured glass tiles, B an
