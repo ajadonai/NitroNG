@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback, useTransition, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { RailSec, RailCard, RailRow } from "./rail";
+import { OffsetIcon } from "./offset-icons";
 import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
@@ -128,28 +129,28 @@ const RewardsPage = dynamic(() => import("./rewards").then(m => m.RewardsPage), 
 /* ═══ SVG ICONS                          ═══ */
 /* ═══════════════════════════════════════════ */
 const I = {
-  lab: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m21 2-2 2m-7.6 7.6a5.5 5.5 0 11-7.8 7.8 5.5 5.5 0 017.8-7.8zm0 0L19 3l2 2-3 3"/></svg>,
+  lab: <OffsetIcon name="code" />,
   audit: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 01-1 1H9a1 1 0 01-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="10" y1="24" x2="14" y2="24"/></svg>,
   cleanup: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21l2-2m0 0l4-7 3 3-7 4z"/><path d="M14 3l1.5 3L19 7.5 15.5 9 14 12l-1.5-3L9 7.5 12.5 6z"/><path d="M19 14l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>,
-  overview: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
-  orders: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
-  "add-funds": <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M7 15h2"/></svg>,
-  guide: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>,
-  services: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-  referrals: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
-  support: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
-  settings: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
+  overview: <OffsetIcon name="home" />,
+  orders: <OffsetIcon name="receipt" />,
+  "add-funds": <OffsetIcon name="wallet" />,
+  guide: <OffsetIcon name="doc" />,
+  services: <OffsetIcon name="rocket" />,
+  referrals: <OffsetIcon name="referral" />,
+  support: <OffsetIcon name="chat" />,
+  settings: <OffsetIcon name="gear" />,
   earn: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15.5 9.5c0-1.38-1.57-2.5-3.5-2.5s-3.5 1.12-3.5 2.5S10.07 12 12 12s3.5 1.12 3.5 2.5-1.57 2.5-3.5 2.5-3.5-1.12-3.5-2.5"/></svg>,
-  tasks: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>,
-  rewards: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-1.5 10h-15L3 8z"/></svg>,
-  catalogue: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/><line x1="6" y1="8" x2="9" y2="8"/><line x1="6" y1="12" x2="9" y2="12"/></svg>,
-  resellers: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v11a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 13h6"/></svg>,
-  changelog: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>,
+  tasks: <OffsetIcon name="tasks" />,
+  rewards: <OffsetIcon name="gift" />,
+  catalogue: <OffsetIcon name="grid" />,
+  resellers: <OffsetIcon name="store" />,
+  changelog: <OffsetIcon name="spark" />,
   leaderboard: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>,
   instagram: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
   x: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
-  logout: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-  a2hs: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>,
+  logout: <OffsetIcon name="logout" />,
+  a2hs: <OffsetIcon name="phone" />,
 };
 
 // Rendered through tr(item.label) at the point of use, because these sit at
@@ -180,8 +181,19 @@ const BOTTOM_TABS = [
   { id: "orders", label: msg("History") },
   { id: "more", label: msg("More") },
 ];
-const MoreIcon = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>;
-const OrderIcon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+// The dock's own icons, "offset print" (chosen 17 Oct 2026): each outline sits
+// over its own shape, shifted down and right. Grey at rest, rose on the page you
+// are on; the shape's colour lives in globals.css (.dash-bottom-icon .off). The
+// sidebar keeps the I set, so this changes the dock and nothing else.
+const DOCK_ICONS = {
+  overview: <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path className="off" transform="translate(1.6 1.6)" d="M4.5 10.8 12 4.8l7.5 6V19a1.6 1.6 0 0 1-1.6 1.6H6.1A1.6 1.6 0 0 1 4.5 19z"/><path fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.8 12 4.8l7.5 6V19a1.6 1.6 0 0 1-1.6 1.6h-3.3v-5.1H9.4v5.1H6.1A1.6 1.6 0 0 1 4.5 19z"/></svg>,
+  "add-funds": <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect className="off" transform="translate(1.6 1.6)" x="3" y="6" width="17.6" height="13" rx="3"/><g fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="6" width="17.6" height="13" rx="3"/><path d="M14.4 10.4h6.2v4.8h-6.2a2.4 2.4 0 0 1 0-4.8z"/></g></svg>,
+  // New Order is the rocket from the Monogram set (Trip's pick), printed with
+  // the same offset as the rest: a darker copy shifted down and right.
+  services: <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><g transform="translate(1.1 1.1)" fill="rgba(60,20,35,.32)" stroke="rgba(60,20,35,.32)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path stroke="none" d="M12 2.6c3.2 2.3 4.8 5.8 4.8 9.4l-2 3.4H9.2l-2-3.4c0-3.6 1.6-7.1 4.8-9.4z"/><path fill="none" d="M7.4 12.6 4.9 15.2v2.7l3.3-1.7M16.6 12.6l2.5 2.6v2.7l-3.3-1.7"/></g><path fill="currentColor" d="M12 2.6c3.2 2.3 4.8 5.8 4.8 9.4l-2 3.4H9.2l-2-3.4c0-3.6 1.6-7.1 4.8-9.4z"/><circle cx="12" cy="9.2" r="1.6" fill="#c47d8e"/><path fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" d="M7.4 12.6 4.9 15.2v2.7l3.3-1.7M16.6 12.6l2.5 2.6v2.7l-3.3-1.7M10.5 17.3c0 1.7.6 2.9 1.5 3.8.9-.9 1.5-2.1 1.5-3.8"/></svg>,
+  orders: <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path className="off" transform="translate(1.6 1.6)" d="M6 3h11.6v17.2l-1.93-1.35-1.93 1.35-1.94-1.35-1.93 1.35-1.93-1.35L6 20.2z"/><g fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h11.6v17.2l-1.93-1.35-1.93 1.35-1.94-1.35-1.93 1.35-1.93-1.35L6 20.2z"/><path d="M9 7.8h5.6M9 11.3h5.6M9 14.8h3.1"/></g></svg>,
+  more: <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><g className="off" transform="translate(1.4 1.4)"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></g><g fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></g></svg>,
+};
 
 const WAITLIST_META = {
   audit: { icon: I.audit, title: msg("Be the first to audit your account"), desc: msg("We're building a tool that analyzes your social media — follower quality, engagement rate, growth trends, and more. Join the waitlist to get early access.") },
@@ -1932,7 +1944,7 @@ function DashboardInner({ initialData }) {
                 setActive(tab.id); setMoreOpen(false); setLeftOpen(false);
               }
             }} className={`dash-bottom-tab${(!moreOpen && active === tab.id) || (isMore && moreOpen) ? " active" : ""}${tab.primary ? " primary" : ""}`}>
-              <span className="dash-bottom-icon">{isMore ? MoreIcon : tab.primary ? OrderIcon : I[tab.id]}</span>
+              <span className="dash-bottom-icon">{DOCK_ICONS[tab.id]}</span>
               <span className="dash-bottom-label">{tr(tab.label)}</span>
             </button>
           );

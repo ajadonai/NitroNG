@@ -786,8 +786,14 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .rail-it { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px 0 12px; border-radius: 10px; color: var(--t-text-soft); font-size: 13.5px; font-weight: 500; position: relative; cursor: pointer; width: 100%; text-align: left; background: none; border: 0; font-family: inherit; --ic: var(--t-text-muted); transition: background-color .15s ease, color .15s ease; }
 .rail-it:hover { background: rgba(0,0,0,.04); color: var(--t-text); }
 .dark .rail-it:hover { background: rgba(255,255,255,.05); }
-.rail-it .rail-ii { width: 16px; height: 16px; display: inline-flex; color: var(--ic); flex-shrink: 0; }
-.rail-it .rail-ii svg { width: 16px; height: 16px; }
+.rail-it .rail-ii { width: 18px; height: 18px; display: inline-flex; color: var(--ic); flex-shrink: 0; }
+.rail-it .rail-ii svg { width: 18px; height: 18px; }
+/* Offset-print icons (components/offset-icons.jsx): the shape printed under
+   each outline. 18px rather than 16px is what lets the offset read. */
+.ic-off { fill: currentColor; opacity: .16; stroke: none; transition: fill .2s ease, opacity .2s ease; }
+.rail-it.on .ic-off, .rail-pin.on .ic-off { fill: #efc4cf; opacity: 1; }
+.dark .rail-it.on .ic-off, .dark .rail-pin.on .ic-off { fill: #6b3a4a; }
+@media (prefers-reduced-motion: reduce) { .ic-off { transition: none; } }
 .rail-it.on { background: rgba(196,125,142,.1); color: var(--t-accent); font-weight: 650; --ic: var(--t-accent); }
 .dark .rail-it.on { background: rgba(196,125,142,.14); }
 .rail-it.on::before { content: ""; position: absolute; inset-inline-start: 0; top: 8px; bottom: 8px; width: 3px; border-start-end-radius: 3px; border-end-end-radius: 3px; background: var(--t-accent); }
@@ -806,8 +812,8 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .rail-pin { display: flex; align-items: center; gap: 8px; min-width: 0; height: 36px; padding: 0 10px; border-radius: 11px; border: 1px solid var(--t-sidebar-border); background: var(--t-card-bg); color: var(--t-text-soft); font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; --ic: var(--t-text-muted); transition: transform .15s ease; text-align: left; }
 .rail-pin > span:not(.rail-ii) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .rail-pin:hover { transform: translateY(-1px); }
-.rail-pin .rail-ii { width: 16px; height: 16px; display: inline-flex; color: var(--ic); flex-shrink: 0; }
-.rail-pin .rail-ii svg { width: 16px; height: 16px; }
+.rail-pin .rail-ii { width: 18px; height: 18px; display: inline-flex; color: var(--ic); flex-shrink: 0; }
+.rail-pin .rail-ii svg { width: 18px; height: 18px; }
 .rail-pin.on { background: rgba(196,125,142,.1); border-color: var(--t-accent); color: var(--t-accent); --ic: var(--t-accent); }
 .dark .rail-pin.on { background: rgba(196,125,142,.14); }
 .rail-pb { margin-left: auto; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--t-accent); color: #fff; flex-shrink: 0; }
@@ -1600,6 +1606,12 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
   .dash-bottom-nav.light .dash-bottom-tab { color: rgba(0,0,0,.45); }
   .dash-bottom-icon { height: 22px; display: flex; align-items: center; color: inherit; transition: none !important; }
   .dash-bottom-icon svg { stroke: currentColor; transition: none !important; }
+  /* Offset-print icons (DOCK_ICONS in dashboard.jsx): the shape printed under
+     each outline. stroke:none because the svg above hands its stroke down. */
+  .dash-bottom-icon .off { fill: currentColor; opacity: .16; stroke: none; transition: fill .22s ease, opacity .22s ease; }
+  .dash-bottom-tab.active .dash-bottom-icon .off { fill: #efc4cf; opacity: 1; }
+  .dash-bottom-nav.dark .dash-bottom-tab.active .dash-bottom-icon .off { fill: #6b3a4a; }
+  @media (prefers-reduced-motion: reduce) { .dash-bottom-icon .off { transition: none; } }
   .dash-bottom-label { font-size: 10.5px; font-weight: 500; letter-spacing: 0.2px; color: inherit; white-space: nowrap; line-height: 1; transition: none !important; }
   /* The bar is a pill, so its highlight is one too — a rounded rectangle the
      full height of the tab collided with the bar's own curve at the ends, and
