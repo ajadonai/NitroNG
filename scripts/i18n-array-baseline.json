@@ -20,7 +20,7 @@
     "components/orders-page.jsx": 6,
     "components/platform-card.jsx": 8,
     "components/privacy.jsx": 17,
-    "components/pulse-dashboard.jsx": 23,
+    "components/pulse-dashboard-classic.jsx": 23,
     "components/quality-page.jsx": 23,
     "components/referrals-cash-page.jsx": 7,
     "components/referrals-page.jsx": 8,

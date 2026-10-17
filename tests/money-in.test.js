@@ -43,7 +43,9 @@ describe('money in is money that arrived', () => {
     // it feeds the today count beside that heading. So a gift stayed visible,
     // by name, in the one panel it had just been taken out of.
     expect(pulse).not.toMatch(/type: \{ in: WALLET_FUNDING \}/);
-    expect([...pulse.matchAll(/type: \{ in: MONEY_IN \}/g)]).toHaveLength(5);
+    // Six since the upgraded Pulse compares this month's deposits with last
+    // month's to the same day (17 Oct 2026).
+    expect([...pulse.matchAll(/type: \{ in: MONEY_IN \}/g)]).toHaveLength(6);
   });
 
   it('keeps the two lists from drifting into the same thing', () => {

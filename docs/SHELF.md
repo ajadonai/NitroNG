@@ -404,6 +404,23 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **Pulse upgraded** (17 Oct 2026, `v2.4.138`). Mockup "Pulse, upgraded",
+  Trip's call to go far on both questions. The wall now leads with one
+  answer: today's revenue as a running line against yesterday's to the same
+  minute, how far ahead or behind, and where the day is on pace to close.
+  Profit, orders, deposits and people compare with this time yesterday
+  instead of all of yesterday. One "Now" stream holds orders (API badged),
+  money in, refunds with their reasons and sign-ups, new rows sliding in.
+  "Still running" splits pending, processing and drip-feed and shows how long
+  they have been going and the oldest; "Needs a person" counts transfers
+  waiting for approval, refills to do by hand and the lowest supplier
+  balance (red under $10). "Selling today" ranks what customers bought, with
+  today's platform mix. The month runs against last month: a bar towards
+  last month's total with today marked, and every fact compared with last
+  month to the same day. Refresh strip kept, scaled instead of resized. The
+  screen before stays at `/pulse?view=classic`
+  (`components/pulse-dashboard-classic.jsx`) for a rollback without a deploy.
+
 - **New Order's platform tiles, the API docs, Settings and the Catalogue
   redrawn, one copy chip, and refunds said in words** (17 Oct 2026,
   `v2.4.137`). Platform tiles lose the brand stripe for a mark tile in the
@@ -470,6 +487,14 @@ schema. Ordered low to high priority.
   the services.platform index from v2.5.19), so the migrated database never
   matched schema.prisma. `20261017160000_reconcile_schema_drift` records them
   with IF NOT EXISTS, a no-op on production, which already has all three.
+  Production's index was partial, which Prisma does not count as
+  `@@index([platform])`, and the follow-up rewrote that migration after
+  production had applied it, so every deploy stopped at the checksum gate
+  until the evening. Its SQL and digest are back to what production recorded
+  and `20261017213000_services_platform_index_plain` rebuilds the index plain
+  (Trip's call; applied on deploy, checked in production). CI's schema check
+  passes; three browser journeys there are still red on their own (admin
+  overview, persistent login, manual transfer deposit).
 
 - **Resellers, What's new and the full list's reading guide in the offset
   print** (17 Oct 2026, `v2.4.134`). Mockups "Nitro Resellers and What's New"

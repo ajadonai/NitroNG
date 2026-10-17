@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import PulseDashboard from '@/components/pulse-dashboard';
+import PulseClassic from '@/components/pulse-dashboard-classic';
 import { getCurrentAdmin } from '@/lib/auth';
 import {
   canAccessInternalDashboard,
@@ -25,14 +26,16 @@ function AccessMessage({ unavailable = false }) {
   );
 }
 
-export default async function PulsePage() {
+export default async function PulsePage({ searchParams }) {
+  // ?view=classic is the screen as it was before the 17 Oct 2026 upgrade.
+  const classic = (await searchParams)?.view === 'classic';
   let access;
   try {
     access = await requireInternalDashboardAccess();
   } catch {
     return <AccessMessage unavailable />;
   }
-  if (access.ok) return <PulseDashboard />;
+  if (access.ok) return classic ? <PulseClassic /> : <PulseDashboard />;
   if (access.status === 503) return <AccessMessage unavailable />;
   if (access.status === 403) return <AccessMessage />;
   let adminSession;

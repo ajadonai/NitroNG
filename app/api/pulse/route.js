@@ -322,6 +322,83 @@ export async function GET(req) {
 
     const monthRevenueNet = await getRevenue({ from: monthStart });
 
+    // ── The upgraded screen (17 Oct 2026) ──────────────────────────────────
+    // Pace: yesterday hour by hour, and yesterday up to this time of day, so a
+    // half day is compared with a half day. Built from the 30-day arrays above,
+    // with the same partial and dead-order rules as today's figures.
+    const yCut = new Date(now.getTime() - 86400000);
+    const yesterdayHours = Array.from({ length: 24 }, () => 0);
+    const ySoFar = { revenue: 0, profit: 0, orders: 0, deposits: 0 };
+    chartOrders.forEach(o => {
+      const t = new Date(o.createdAt);
+      if (t < yesterdayStart || t >= todayStart) return;
+      const live = !DEAD_ORDER_STATES.includes(o.status);
+      if (live) yesterdayHours[toHour(t)] += effCharge(o) / 100;
+      if (t < yCut) { ySoFar.orders++; if (live) { ySoFar.revenue += effCharge(o) / 100; ySoFar.profit += (effCharge(o) - effCost(o)) / 100; } }
+    });
+    chartDeposits.forEach(tx => { const t = new Date(tx.createdAt); if (t >= yesterdayStart && t < yCut) ySoFar.deposits += (tx.amount || 0) / 100; });
+
+    const lagosNow = new Date(now.getTime() + 3600e3);
+    const lmStart = new Date(Date.UTC(lagosNow.getUTCFullYear(), lagosNow.getUTCMonth() - 1, 1) - 3600e3);
+    // The same point in last month, clamped when last month was shorter.
+    const lmCut = new Date(Math.min(lmStart.getTime() + (now - monthStart), monthStart.getTime()));
+
+    const [newUsersYesterdaySoFar, runningRows, waitingTransfers, refillsWaiting, balancesSetting, todayOrders, recentSignups, lmToDate, lmFull, lmOrders, lmDeposits, lmNewUsers] = await Promise.all([
+      prisma.user.count({ where: { createdAt: { gte: yesterdayStart, lt: yCut }, status: { not: 'Deleted' } } }),
+      prisma.order.findMany({ where: { status: { in: ['Pending', 'Dispatching', 'Processing'] }, deletedAt: null }, select: { orderId: true, status: true, createdAt: true, dripDays: true } }),
+      // A transfer the customer says they sent: what the Approve button in Telegram is for.
+      prisma.transaction.aggregate({ where: { type: 'deposit', method: 'manual', status: 'Pending', note: { contains: '[user_confirmed' } }, _count: true, _sum: { amount: true } }),
+      prisma.order.count({ where: { refillRequestedAt: { not: null }, refillHandledAt: null, deletedAt: null } }),
+      prisma.setting.findUnique({ where: { key: 'provider_balances' } }),
+      prisma.order.findMany({
+        where: { createdAt: { gte: todayStart }, deletedAt: null },
+        include: {
+          service: { select: { name: true, category: true, enabled: true } },
+          tier: { select: { tier: true, enabled: true, serviceId: true, group: { select: { name: true, platform: true, type: true, enabled: true } } } },
+        },
+      }),
+      prisma.user.findMany({ where: { createdAt: { gte: todayStart }, status: { not: 'Deleted' } }, orderBy: { createdAt: 'desc' }, take: 10, select: { id: true, name: true, email: true, createdAt: true, referredBy: true } }),
+      getRevenue({ from: lmStart, to: lmCut }),
+      getRevenue({ from: lmStart, to: monthStart }),
+      prisma.order.count({ where: { createdAt: { gte: lmStart, lt: lmCut }, deletedAt: null } }),
+      prisma.transaction.aggregate({ where: { type: { in: MONEY_IN }, status: 'Completed', createdAt: { gte: lmStart, lt: lmCut } }, _sum: { amount: true } }),
+      prisma.user.count({ where: { createdAt: { gte: lmStart, lt: lmCut }, emailVerified: true } }),
+    ]);
+
+    // Still running. Drip orders run for days on purpose, so they are counted
+    // apart and kept out of the ages, or every one would read as stuck.
+    const running = { pending: 0, processing: 0, drip: 0, ages: [0, 0, 0, 0], oldest: null };
+    for (const o of runningRows) {
+      if (o.status === 'Processing') running.processing++; else running.pending++;
+      if (o.dripDays) { running.drip++; continue; }
+      const mins = Math.max(0, Math.round((now - o.createdAt) / 60000));
+      running.ages[mins < 60 ? 0 : mins < 180 ? 1 : mins < 360 ? 2 : 3]++;
+      if (!running.oldest || mins > running.oldest.minutes) running.oldest = { id: o.orderId, minutes: mins };
+    }
+
+    // The lowest supplier balance from the daily check, without naming whose.
+    let lowestBalance = null;
+    try {
+      const b = JSON.parse(balancesSetting?.value || '{}');
+      const vals = Object.values(b).map(v => v?.balance).filter(v => typeof v === 'number');
+      if (vals.length) lowestBalance = { usd: Math.min(...vals), checkedAt: b.checkedAt || null };
+    } catch {}
+
+    // Selling today, by the name the customer bought.
+    const sold = {}, platToday = {};
+    for (const o of todayOrders) {
+      const offer = getOrderOfferDisplay(o);
+      const key = offer.serviceName;
+      if (!sold[key]) sold[key] = { name: key, platform: offer.platform, orders: 0, revenue: 0 };
+      sold[key].orders++;
+      if (!DEAD_ORDER_STATES.includes(o.status)) sold[key].revenue += effCharge(o) / 100;
+      const pk = String(offer.platform || '').toLowerCase();
+      const pn = PLATFORM_NAME[pk] || (pk ? pk.charAt(0).toUpperCase() + pk.slice(1) : 'Other');
+      platToday[pn] = (platToday[pn] || 0) + 1;
+    }
+    const sellingToday = Object.values(sold).sort((a, b) => b.orders - a.orders || b.revenue - a.revenue).slice(0, 6).map(r => ({ ...r, revenue: Math.round(r.revenue) }));
+    const platformsToday = Object.entries(platToday).map(([name, orders]) => ({ name, orders })).sort((a, b) => b.orders - a.orders);
+
     const res = withInternalDashboardNoStore(Response.json({
       totalUsers,
       newUsersToday,
@@ -429,6 +506,30 @@ export async function GET(req) {
       monthNetRevenue: monthRevenueNet.net,
       monthNetMargin: monthRevenueNet.netMargin,
       monthRefundCount: monthRefundAgg._count || 0,
+      nowMinute: lagosNow.getUTCMinutes(),
+      pace: {
+        yesterdayHours: yesterdayHours.map(v => Math.round(v)),
+        yesterdayTotal: yesterdayRevenue,
+        soFar: { revenue: Math.round(ySoFar.revenue), profit: Math.round(ySoFar.profit), orders: ySoFar.orders, deposits: Math.round(ySoFar.deposits), newUsers: newUsersYesterdaySoFar },
+      },
+      running,
+      attention: {
+        transfers: { count: waitingTransfers._count || 0, total: (waitingTransfers._sum.amount || 0) / 100 },
+        refills: refillsWaiting,
+        balance: lowestBalance,
+      },
+      sellingToday,
+      platformsToday,
+      recentSignups: recentSignups.map(u => ({ id: u.id, user: u.name || u.email || 'Unknown', referredBy: u.referredBy || null, created: u.createdAt.toISOString() })),
+      lastMonth: {
+        start: lmStart.toISOString(),
+        revenueToDate: lmToDate.net,
+        revenueFull: lmFull.net,
+        profitToDate: lmToDate.net - lmToDate.cost - lmToDate.costWasted,
+        ordersToDate: lmOrders,
+        depositsToDate: (lmDeposits._sum.amount || 0) / 100,
+        newUsersToDate: lmNewUsers,
+      },
       generatedAt: now.toISOString(),
     }));
     renewInternalDashboardGrant(access, res);
