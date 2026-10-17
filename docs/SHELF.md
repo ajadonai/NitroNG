@@ -184,17 +184,6 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   Both share the wallet strip and drip settings New Order already has, so
   neither is rebuilt. Mockup: `scratchpad/three.html`.
 
-- **Contact page revamp.** Mocked 19 Sep, not ruled on. The Instagram and X
-  handles are plain text in a bold tag with nowhere to go, and the dot between
-  them reads as one handle; they become tappable chips with their own logos, and
-  TikTok joins them. The WhatsApp button is the accent pink — the one colour on
-  that page that does not say WhatsApp — and becomes the brand green with dark
-  ink, the button the rest of the site uses. The email is a bare link pretending
-  to be a heading and becomes a button shaped like the WhatsApp one, so the two
-  channels read as two choices rather than one offer and one afterthought. Each
-  card says what it is *for* rather than how fast it is.
-  Mockup: `scratchpad/three.html`.
-
 - **Reseller tier ladder — BUILT 17 Sep, switched off.** Set
   `reseller_tiers_live` to `'true'` in Admin → Pricing → Reseller discount to go
   live. Nothing changes a price until then; verified against production, where a
@@ -214,9 +203,16 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
 
   **Still to decide before flipping** (all editable in Admin): the four
   thresholds above Starter are proposals, not measurements; the Ultra cap is
-  drawn at 22% against a 25.9% ceiling; whether the reseller pricing page mirrors
-  the retail one; and the reseller docs must read **"up to 30%"**, since the
-  dearest services charge less.
+  drawn at 22% against a 25.9% ceiling; and whether the reseller pricing page
+  mirrors the retail one.
+
+  **"Up to", done 17 Oct.** No public page or doc states a flat percentage (the
+  API docs already say rates climb "the ladder"), so nothing there turns false
+  on the flip. The one that would have was the reseller's own Reseller HQ row,
+  "your rate: −30%", with the saving estimated at that flat rate. Once live it
+  reads "Wholesale · up to −30%" (or "Normal pricing" below the first rung), and
+  the saving is the one the orders recorded (`retailCharge − charge`) in both
+  states.
 
   **Nobody is affected on day one.** Checked 17 Sep: all three reseller profiles
   are `enabled: false` and have been since August — `getResellerTerms` returns
@@ -289,82 +285,6 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
   **Open for Trip:** the bundle list (Brand Launch / Music Drop / Going Viral),
   whether bundles carry a discount (it is the incentive, and it is margin), and
   whether resellers see them (probably not — they compose their own).
-
-- **Guest checkout — redesigned 15–16 Oct 2026; its entry button is built dark,
-  set `guest_checkout_enabled` to `true` only once checkout ships.** Supersedes
-  the "guest-feel" plan below: Trip chose true guest checkout. Decided in the
-  mockup (claude.ai/artifact/1e3BcSmFM1LQN3FkbKsQA7): email optional, no
-  WhatsApp, no bonus or referral, no cap, a minimum spend (₦1,000 assumed, not
-  confirmed); every order keeps its NTR id plus an unguessable guest code that
-  opens the order page; email-less orders sit on the login-blocked
-  nitrongguest@gmail.com account (plus-addressed per payment for Flutterwave)
-  and are kept out of loyalty, leaderboard, points, bonuses, CAPI email,
-  audiences and counts; credit from failed or partial orders lives on the guest
-  code, spendable on Nitro only, never paid out; an email that already has an
-  account attaches the order without logging anyone in.
-
-  **Built dark, uncommitted (16 Oct 2026).** Brief approved:
-  `docs/v2/guest_checkout_brief.md`. Built: the backend (quote, pay, place,
-  refunds to the code's credit, sweep, the guest account and its exclusions,
-  site-wide refill alerts in the Telegram "refills" topic), the order page at
-  `/order/CODE` (noindex by meta tag), and the order card, which takes the hero
-  card's place on desktop and phone when "Order without an account" is tapped.
-  The card offers only the mockup's essentials (pinned in
-  `app/api/guest/menu/route.js`). Login and sign-up fields now use the card's
-  boxed style too. Localhost always shows it, with no flag, and
-  `/order/CODE?preview=delivering` shows the order page's states; never flip the
-  real setting to look, because local dev writes to production. Payment cannot
-  open locally (the Flutterwave key is only on Vercel).
-
-  Paying returns to the card, which turns into the receipt (localhost preview:
-  `/?guest_order=G7K2-9XQM&receipt=delivering`), and Track opens the order in a
-  pop-up. Committed locally in v2.4.116, not pushed.
-
-  Built since: the receipt email (template 24 in Email Copy.md; sent when an
-  order is placed with an email, or from "Want a receipt?" on the receipt
-  card), and in admin Orders a Guest chip, a Guest filter, search by guest
-  code or guest email, the code, receipt email and credit on the order, and a
-  card for a searched code that has no order (status, credit, why).
-
-  Claim (16 Oct): by the guest code ("Move to my account" on the order page,
-  "Add a guest code" under dashboard orders), and automatically on Google
-  sign-up, never by email alone (email sign-up does not verify). Staff access:
-  on the live site guest checkout already works for any signed-in admin while
-  the setting is off, so staff can test real payments before customers see it.
-
-  Next: push, then a staff test with real ₦1,000 orders (transfer, a refund
-  landing as credit, a claim), then flip `guest_checkout_enabled`.
-
-- **Guest-feel checkout — agreed 6 Sep 2026, and measure first.** An audit
-  flagged "no guest checkout" as a conversion barrier. Half of that is already
-  false: `/pricing` is public, server-rendered from the live catalogue, and
-  headlines "Every price in naira, before you sign up". The real wall is
-  **testing the platform** — signup → fund wallet → order is three steps before
-  any value.
-
-  Not true guest checkout, for three structural reasons: refunds and refill
-  cover resolve into the wallet (card reversals mean fees, delays and disputes);
-  anonymous one-off card payments are how carders test stolen cards, and
-  chargebacks endanger the processor relationship; and the wallet is the
-  retention flywheel. Instead **keep the account, shrink it, move it to the
-  end**: a public composer priced from the same catalogue as `/api/pricing`;
-  email + WhatsApp number only at pay time, account created implicitly
-  (passwordless, NG phone gate unchanged); **one payment sized exactly to the
-  order**, carrying an order intent so `finalizeDeposit` credits the wallet and
-  places the order in the same transaction chain; then a magic-link session and
-  a status link. The buyer experiences guest checkout while Nitro keeps the
-  wallet rail, the fraud fence, the bonus flywheel and CAPI identity.
-
-  **Measure before building.** Pull the funnel from `/pricing` and `/services`
-  visits to signup. If that leak is small this whole item drops down the list.
-
-  **Addendum — measured speed stats.** The audit's "real-time speeds" idea joins
-  this item with one hard rule: **provider speed fields are never shown** (house
-  rule — they identify the source on sight). Compute Nitro's own numbers from
-  order history instead — median time-to-start and time-to-complete per service
-  over the last ~100 orders — and show them as "starts in ~4 min · completes in
-  ~2 hrs, measured from recent orders". Needs a small nightly rollup, not live
-  queries.
 
 ### Content and long tail
 
@@ -473,6 +393,23 @@ schema. Ordered low to high priority.
   generated, is the whole build once that exists.
 
 ## Closed
+
+- **Contact page revamp** (19 Sep 2026, `v2.5.126`, commit `17fef586`). Found
+  already shipped on 17 Oct while still listed as "not ruled on". WhatsApp in
+  the brand green, email as a matching button, Instagram, X and TikTok as
+  tappable chips with their logos, and each card titled for what it is for.
+
+- **Guest checkout** (16–17 Oct 2026, `v2.4.116`, commit `9add763d`; brief
+  `docs/v2/guest_checkout_brief.md`). One order, no account: the order card in
+  the hero, bank transfer, USSD or Opay, the receipt in the card, the Track
+  pop-up, `/order/CODE`, credit on the guest code, the receipt email, admin
+  Guest chip and code search, and the claim by guest code or Google sign-up.
+  Built dark: open to signed-in admins only until `guest_checkout_enabled` is
+  "true". Taken off the Shelf by Trip on 17 Oct; what remains is the staff test
+  with real ₦1,000 orders, then the flip.
+
+- **Guest-feel checkout** (agreed 6 Sep 2026). Superseded by true guest
+  checkout above, which Trip chose instead.
 
 - **TikTok Pixel + Events API** (3 Oct 2026, `v2.4.102`, commits `e505cc1b`,
   `562eacdb`, `9b851524`, `e03d1a56`, `549d23e5`, `214ca4ff`). Browser pixel

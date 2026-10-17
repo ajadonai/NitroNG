@@ -222,7 +222,7 @@ export function ResellerHQDashboard({ dark, t, onNavigate, socialLinks }) {
         <div className="rhq-stats">
           <div className="rhq-stt"><b>{stats.orders.toLocaleString()}</b><span>{tr("Orders ·")} {stats.windowDays} days</span><i>{stats.apiOrders.toLocaleString()} {tr("through the API")}</i></div>
           <div className="rhq-stt"><b>{money(stats.spend)}</b><span>{tr("Spend")}</span><i>last {stats.windowDays} days</i></div>
-          <div className="rhq-stt"><b className="ok">{money(stats.saved, { round: "down" })}</b><span>{tr("Saved vs retail")}</span><i>{tr("your rate: −")}{stats.discount}%</i></div>
+          <div className="rhq-stt"><b className="ok">{money(stats.saved, { round: "down" })}</b><span>{tr("Saved vs retail")}</span><i>{!stats.upTo ? <>{tr("your rate: −")}{stats.discount}%</> : stats.discount > 0 ? <>{stats.tierName} · {tr("up to −")}{stats.discount}%</> : tr("Normal pricing")}</i></div>
           <div className="rhq-stt"><b>{money(stats.balance, { round: "down" })}</b><span>{tr("Wallet")}</span><i>{tr("tops up like any account")}</i></div>
         </div>
       )}
