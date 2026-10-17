@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from "react";
 import { ThemeToggle } from "./shared-nav";
-import InlineAlert from "./inline-alert";
+import { LineMsg } from "./auth-messages";
+import { NitroWordmark } from "./nitro-logo";
 import { safeInternalDashboardDestination } from '@/lib/internal-dashboard-path';
 
 const QUOTES = [
@@ -27,6 +28,10 @@ export default function AdminLogin(){
   const [remember,setRemember]=useState(false);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
+  // Which box is wrong. An empty one says "Required" inside itself; a message
+  // from the server takes the "Access attempts are logged" line. Nothing is
+  // added above the fields, so the card never changes height.
+  const [fieldErr,setFieldErr]=useState({});
   const [quoteIdx,setQuoteIdx]=useState(0);
   const [logoutMsg,setLogoutMsg]=useState(false);
   const [stats,setStats]=useState(null);
@@ -40,12 +45,14 @@ export default function AdminLogin(){
 
   const handleLogin=async()=>{
     setError("");
-    if(!email||!pw){setError("Please fill in all fields");return;}
+    const missing={email:!email,pw:!pw};
+    if(missing.email||missing.pw){setFieldErr(missing);document.getElementById(missing.email?"admin-login-email":"admin-login-password")?.focus();return;}
+    setFieldErr({});
     setLoading(true);
     try{
       const res=await fetch("/api/auth/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password:pw,remember})});
       const data=await res.json();
-      if(!res.ok){setError(data.error||"Login failed");setLoading(false);return;}
+      if(!res.ok){const msg=data.error||"Login failed";setError(msg);if(/password|credential|invalid/i.test(msg))setFieldErr({pw:true});setLoading(false);return;}
       const requested = new URLSearchParams(window.location.search).get('next');
       window.location.href = safeInternalDashboardDestination(requested, '/admin');
     }catch{setError("Something went wrong.");setLoading(false);}
@@ -58,7 +65,6 @@ export default function AdminLogin(){
     accent:"#c47d8e",accentInk:dark?"#e3a4b5":"#83535f",
     cardBg:dark?"rgba(17,22,40,0.95)":"rgba(255,255,255,0.95)",
     cardBorder:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.12)",
-    inputBg:dark?"#160f22":"#fff",inputBorder:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.18)",
     accentLight:dark?"rgba(196,125,142,.12)":"rgba(196,125,142,.08)",
     btnPrimary:"linear-gradient(135deg,#c47d8e,#8b5e6b)",
     red:dark?"#fca5a5":"#bc2121",
@@ -85,9 +91,8 @@ export default function AdminLogin(){
 
         {/* Top: Logo */}
         <div className="relative z-[1]">
-          <div className="flex items-center gap-2.5 mb-2">
-            <div className="nitro-mark w-[34px] h-[34px] bg-[linear-gradient(135deg,#c47d8e,#8b5e6b)] flex items-center justify-center"><svg width="13" height="14" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></div>
-            <span className="text-[15px] font-semibold text-white tracking-[1.5px]">NITRO</span>
+          <div className="flex items-center mb-2">
+            <div className="nitro-mark h-7 px-3 flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></div>
           </div>
           <div className="text-[10px] font-medium tracking-[2px] uppercase" style={{color:dark?"rgba(196,125,142,.5)":"rgba(255,255,255,.5)"}}>Command Center</div>
         </div>
@@ -125,9 +130,8 @@ export default function AdminLogin(){
 
         {/* Mobile: full nav */}
         <nav className="hidden max-md:!flex items-center justify-between h-[52px] shrink-0 z-10 px-5" style={{borderBottom:`1px solid ${dark?"rgba(255,255,255,.16)":"rgba(255,255,255,.19)"}`}}>
-          <a href="/" className="flex items-center gap-2.5 no-underline">
+          <a href="/" aria-label="Nitro home" className="flex items-center gap-2.5 no-underline">
             <div className="nitro-mark w-[34px] h-[34px] bg-[linear-gradient(135deg,#c47d8e,#8b5e6b)] flex items-center justify-center"><svg width="13" height="14" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></div>
-            <span className="text-[17px] font-semibold text-white tracking-[1.5px]">NITRO</span>
           </a>
           <ThemeToggleBtn/>
         </nav>
@@ -139,7 +143,7 @@ export default function AdminLogin(){
 
         {/* Card */}
         <div className="admin-center flex-1 flex items-center justify-center relative z-[1]">
-          <form onSubmit={e=>{e.preventDefault();if(!loading)handleLogin();}} noValidate className="fu w-full max-w-[400px] max-lg:max-w-[380px] max-md:max-w-[calc(100%-40px)] py-9 px-8 max-lg:py-8 max-lg:px-7 max-md:py-7 max-md:px-[22px] rounded-[20px] max-md:rounded-[18px] backdrop-blur-[20px] [&_input]:transition-[border-color] [&_input]:duration-200 [&_input:focus]:!border-accent" style={{background:t.cardBg,border:`1px solid ${t.cardBorder}`,boxShadow:dark?"0 24px 64px rgba(0,0,0,0.5)":"0 24px 64px rgba(0,0,0,.18)"}}>
+          <form onSubmit={e=>{e.preventDefault();if(!loading)handleLogin();}} noValidate className={(dark?"dark ":"")+"fu w-full max-w-[400px] max-lg:max-w-[380px] max-md:max-w-[calc(100%-40px)] py-9 px-8 max-lg:py-8 max-lg:px-7 max-md:py-7 max-md:px-[22px] rounded-[20px] max-md:rounded-[18px] backdrop-blur-[20px] [&_input]:transition-[border-color] [&_input]:duration-200 [&_input:focus]:!border-accent"} style={{background:t.cardBg,border:`1px solid ${t.cardBorder}`,boxShadow:dark?"0 24px 64px rgba(0,0,0,0.5)":"0 24px 64px rgba(0,0,0,.18)"}}>
 
             <div className="flex justify-center mb-5">
               <div className="inline-flex items-center gap-1.5 py-1 px-3.5 rounded-[20px]" style={{background:t.accentLight,border:`1px solid ${dark?"rgba(196,125,142,.24)":"rgba(196,125,142,.18)"}`}}>
@@ -151,14 +155,15 @@ export default function AdminLogin(){
             <h2 className="text-[22px] font-semibold text-center mb-1" style={{color:t.text}}>Command Center</h2>
             <p className="text-[15px] text-center mb-6 font-medium" style={{color:t.textSoft}}>Authorized operators only.</p>
 
-            <div className="min-h-9 mb-1 flex items-center">{error?<InlineAlert type="error" dark={dark} className="w-full">{error}</InlineAlert>:null}</div>
+            {/* Boxed fields with the caption inside, the same as the customer login. */}
+            <div className="auth-box mb-4">
+              <label htmlFor="admin-login-email">Email address</label>
+              <input id="admin-login-email" name="email" value={email} onChange={e=>{setEmail(e.target.value.trim().toLowerCase());setError("");setFieldErr(f=>({...f,email:false}));}} placeholder={fieldErr.email?"Required":"admin@nitro.ng"} aria-invalid={!!fieldErr.email} type="email" autoComplete="username" className={"auth-in"+(fieldErr.email?" is-bad":"")}/>
+            </div>
 
-            <label htmlFor="admin-login-email" className="block text-[11px] font-semibold mb-[5px] uppercase tracking-[1.5px]" style={{color:t.textSoft}}>Email Address</label>
-            <input id="admin-login-email" name="email" value={email} onChange={e=>{setEmail(e.target.value.trim().toLowerCase());setError("");}} placeholder="admin@nitro.ng" type="email" autoComplete="username" className="w-full py-3 px-3.5 rounded-xl text-[15px] outline-none mb-4 font-[inherit]" style={{background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text}}/>
-
-            <label htmlFor="admin-login-password" className="block text-[11px] font-semibold mb-[5px] uppercase tracking-[1.5px]" style={{color:t.textSoft}}>Password</label>
-            <div className="relative mb-4">
-              <input id="admin-login-password" name="password" value={pw} onChange={e=>{setPw(e.target.value);setError("");}} placeholder="Enter password" type={showPw?"text":"password"} autoComplete="current-password" className="w-full py-3 pr-11 pl-3.5 rounded-xl text-[15px] outline-none font-[inherit]" style={{background:t.inputBg,border:`1px solid ${t.inputBorder}`,color:t.text}}/>
+            <div className="auth-box mb-4">
+              <label htmlFor="admin-login-password">Password</label>
+              <input id="admin-login-password" name="password" value={pw} onChange={e=>{setPw(e.target.value);setError("");setFieldErr(f=>({...f,pw:false}));}} placeholder={fieldErr.pw&&!pw?"Required":"Enter password"} aria-invalid={!!fieldErr.pw} type={showPw?"text":"password"} autoComplete="current-password" className={"auth-in has-eye"+(fieldErr.pw?" is-bad":"")}/>
               <button onClick={()=>setShowPw(!showPw)} type="button" aria-label={showPw?"Hide password":"Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent p-0.5" style={{color:t.textMuted}}>
                 {showPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                 :<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
@@ -175,7 +180,7 @@ export default function AdminLogin(){
             </button>
 
             <div className="text-center pt-3" style={{borderTop:`1px solid ${t.cardBorder}`}}>
-              <p className="text-xs mb-2" style={{color:t.textMuted}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Access attempts are logged.</p>
+              <p className="text-xs mb-2 leading-5 min-h-5" style={{color:t.textMuted}}>{error?<LineMsg line={{kind:"error",text:error}}/>:<><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Access attempts are logged.</>}</p>
               <a href="/" className="text-[13px] no-underline" style={{color:t.textSoft}}>← Back to Nitro</a>
             </div>
           </form>
