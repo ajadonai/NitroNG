@@ -1614,15 +1614,17 @@ function DashboardInner({ initialData }) {
               in components/locale.jsx. A production build drops both. */}
           {SWITCHER_LIVE && <CurrencySwitcher />}
           {SWITCHER_LIVE && <LanguageSwitcher />}
-          {/* Balance pill — desktop only. Balance as a number, Top up as the action inside it.
+          {/* Balance pill — desktop only. The balance first, then Top up as the action
+              inside it, so the eye lands on the money before the button.
               The balance converts on the same rate as every price, so "can I afford
               this" has the same answer whichever unit is on screen. */}
           <button onClick={() => setActive("add-funds")} title={nairaAside(user?.balance || 0, { round: "down" }) || undefined}
             aria-label={`Balance ${money(user?.balance || 0, { round: "down" })}${nairaAside(user?.balance || 0, { round: "down" }) ? `, ${nairaAside(user?.balance || 0, { round: "down" })}` : ""}. Top up`}
-            className="dash-balance-pill max-desktop:hidden flex items-center gap-2 h-[34px] pl-1.5 pr-3 cursor-pointer text-[13px] font-semibold text-t-text border-none"
+            className="dash-balance-pill max-desktop:hidden flex items-center gap-2 h-[34px] ps-2.5 pe-1 cursor-pointer text-[13px] font-semibold text-t-text border-none"
             style={{ fontVariantNumeric: "tabular-nums" }}>
+            <OffsetIcon name="wallet" size={15} color={t.textMuted} />
+            <span className="m">{money(user?.balance || 0, { round: "down" })}</span>
             <span className="nitro-money text-[11px] font-bold py-1 px-2.5 rounded-full">{tr("Top up")}</span>
-            {money(user?.balance || 0, { round: "down" })}
           </button>
           {/* Notification bell */}
           <div ref={notifRef} className="relative">

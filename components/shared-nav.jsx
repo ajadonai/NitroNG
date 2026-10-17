@@ -181,12 +181,28 @@ export function ThemeProvider({ children, storageKey = "nitro-theme" }) {
 }
 
 // ── Shared Nav ──
-// action prop: "back" | "login" | "logout" | null
+// action prop: "back" | "login" | "logout" | null. "back" and "login" both
+// show Log in and Get started now; the names stay so no page has to change.
 export default function SharedNav({ action = "back" }) {
   const tr = useT();
   const { dark, toggleTheme, t } = useTheme();
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
+  // Someone signed in gets one Dashboard button in place of Log in and Get
+  // started. The page is cached for everybody, so the bar asks after it loads;
+  // until it hears back it shows the signed-out pair, which is what most
+  // visitors are.
+  const signInSlot = action === "back" || action === "login";
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    if (!signInSlot) return undefined;
+    let live = true;
+    fetch("/api/auth/signed-in", { cache: "no-store" })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (live && d?.signedIn) setSignedIn(true); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [signInSlot]);
 
   const handleLogout = async () => {
     let res;
@@ -206,7 +222,7 @@ export default function SharedNav({ action = "back" }) {
 
   return (<>
     <nav
-      className="flex items-center justify-between px-6 h-14 backdrop-blur-[16px] shrink-0 sticky top-0 z-50"
+      className="pub-nav flex items-center justify-between px-6 max-md:px-3.5 h-14 backdrop-blur-[16px] shrink-0 sticky top-0 z-50"
       style={{ background: dark ? "rgba(14,9,22,.9)" : "rgba(240,237,232,.9)", borderBottom: `1px solid ${t.surfaceBrd}` }}
     >
       <a href="/" className="flex items-center">
@@ -216,37 +232,32 @@ export default function SharedNav({ action = "back" }) {
       <nav aria-label={tr("Primary")} className="max-desktop:hidden flex items-center gap-1">
         {PUBLIC_LINKS.map(l => <a key={l.href} href={l.href} aria-current={pathname === l.href || (l.href !== "/" && pathname?.startsWith(l.href + "/")) ? "page" : undefined} className="pub-link text-sm font-medium py-1.5 px-3 rounded-lg no-underline" style={{ color: t.soft }}>{l.label}</a>)}
       </nav>
-      <div className="flex items-center gap-3">
-        {/* The page action comes first because it is not always there: with the
-            variable item on the inside, the constant set — currency, language,
-            theme, menu — stays anchored to the edge whether or not it appears. */}
-        {action === "back" && (
-          <a href="/" className="text-sm font-medium flex items-center gap-1" style={{ color: t.soft }}>
-            <svg className="dir-flip" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
-            {tr("Back")}
-          </a>
-        )}
-        {action === "login" && (
-          <a href="/?login=1" className="text-sm font-medium flex items-center gap-1" style={{ color: t.soft }}>
-            {tr("Log In")}
-          </a>
-        )}
+      <div className="flex items-center gap-3 max-md:gap-2.5">
+        {/* Local only until the currency switch is finished — see SWITCHER_LIVE
+            in components/locale.jsx. A production build drops both. */}
+        {SWITCHER_LIVE && <CurrencySwitcher />}
+        {SWITCHER_LIVE && <LanguageSwitcher />}
+        <ThemeToggle dark={dark} onToggle={toggleTheme} />
+        {/* The same pair the landing bar carries, in the same place: Log in on
+            every width, Get started from a desktop up. It replaced a Back link
+            (17 Oct 2026) that only ever went home, which the logo already does. */}
+        {signInSlot && (signedIn
+          ? <a href="/dashboard" className="nav-signup-btn py-[7px] px-5 max-md:px-3.5 text-sm font-semibold no-underline whitespace-nowrap">{tr("Dashboard")}</a>
+          : <>
+            <a href="/?login=1" className="nav-login-btn py-[7px] px-5 max-md:px-3.5 text-sm font-semibold no-underline whitespace-nowrap">{tr("Log in")}</a>
+            <a href="/signup" className="nav-signup-btn max-desktop:!hidden py-[7px] px-5 text-sm font-semibold no-underline whitespace-nowrap">{tr("Get started")}</a>
+          </>)}
         {action === "logout" && (
           <button onClick={handleLogout} className="text-sm font-medium flex items-center gap-1 bg-transparent" style={{ color: t.soft }}>
             <OffsetIcon name="logout" size={14} color={t.muted} />
             {tr("Log Out")}
           </button>
         )}
-        {/* Local only until the currency switch is finished — see SWITCHER_LIVE
-            in components/locale.jsx. A production build drops both. */}
-        {SWITCHER_LIVE && <CurrencySwitcher />}
-        {SWITCHER_LIVE && <LanguageSwitcher />}
-        <ThemeToggle dark={dark} onToggle={toggleTheme} />
         {/* The menu is the outermost control, where a thumb expects it. */}
         <button type="button" onClick={() => setNavOpen(true)} aria-label={tr("Open menu")} aria-expanded={navOpen} className="nav-burger desktop:hidden"><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /><span className="nb-bar" aria-hidden="true" /></button>
       </div>
     </nav>
-    <PublicNavSheet open={navOpen} onClose={() => setNavOpen(false)} dark={dark} toggleTheme={toggleTheme} />
+    <PublicNavSheet open={navOpen} onClose={() => setNavOpen(false)} dark={dark} toggleTheme={toggleTheme} signedIn={signedIn} />
   </>);
 }
 
@@ -324,7 +335,9 @@ export function SharedFooter() {
         </div>
 
         <div className="lv3-ft-base">
-          <span className="m">© {new Date().getFullYear() > 2025 ? `2025–${new Date().getFullYear()}` : "2025"} The Nitro NG · RC 9514845</span>
+          {/* No dash in the range and no dot before the RC number: the range reads
+              "to", and the number sits in its own printed tag. */}
+          <span className="m">© 2025{new Date().getFullYear() > 2025 && <>{tr(" to ")}{new Date().getFullYear()}</>} The Nitro NG<span className="lv3-ft-rc">RC 9514845</span></span>
           <span>{tr("Built in Lagos 🇳🇬")}</span>
         </div>
       </div>

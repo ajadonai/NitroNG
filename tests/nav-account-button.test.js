@@ -75,9 +75,10 @@ describe('the nav account button', () => {
     // 30 in a 34px pill leaves 2px above and below, so the avatar looked shoved
     // sideways however much room was beside it.
     //
-    // 6px is the geometry the rest of the cluster already uses — .loc-pill for
-    // currency and language, pl-1.5 pr-3 on the balance pill — so the face now
-    // starts on the same left edge as every icon beside it.
+    // 6px is the geometry .loc-pill uses for currency and language, so the face
+    // starts on the same left edge as the coin and the flag beside it. The
+    // balance pill leads with the amount since 17 Oct 2026 (ps-2.5), with Top
+    // up seated 4px from its far end (pe-1).
     //
     // The face itself was never the problem: <Avatar size={26}> sets its own
     // inline width, so it already cleared 4px top and bottom. Only the lead was
@@ -86,7 +87,7 @@ describe('the nav account button', () => {
     expect(css).toMatch(/\.dash-avatar-btn \{ width: auto; padding-block: 0; padding-inline: 6px 12px;/);
     expect(css, 'the neighbours it is matching').toMatch(/\.loc-pill \{[^}]*padding-inline: 6px 12px/s);
     const dash = readFileSync(new URL('../components/dashboard.jsx', import.meta.url), 'utf8');
-    expect(dash).toMatch(/dash-balance-pill[^"]*pl-1\.5 pr-3/);
+    expect(dash).toMatch(/dash-balance-pill[^"]*ps-2\.5 pe-1/);
     expect(dash).not.toMatch(/avatarPx/);
   });
 

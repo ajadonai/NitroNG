@@ -394,6 +394,29 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **The nav bars and the footer in the offset print** (17 Oct 2026,
+  `v2.4.129`). Mockup "Nitro Nav Bars". The currency pill, the language pill
+  (dropdown on a desktop, bottom drawer on a phone) and the sky toggle are
+  untouched: Trip wants that painted set exactly as it is. Around them, the
+  wordmark is a printed pill everywhere it appears, footer included; Log in is
+  an outline and Get started the white printed button (rose on the cream
+  bar); the menu button is a printed tile. Every other public page swaps its
+  Back link for Log in and Get started, and someone signed in sees one
+  Dashboard button there and in the phone menu instead, asked of a new
+  /api/auth/signed-in (the token check the proxy already uses, no database,
+  always 200). The current page gets a short printed tab under its name. The
+  landing links centre in the free space up to 1680px and on the page from
+  there, in a grid that cannot put them under the pills in any language,
+  which retires the translate-based centring and its Arabic opt-out. The
+  phone menu drops its dots and gift emoji and gets the printed wordmark and
+  close. The user bar's balance reads amount first, then a gold Top up; the
+  bell and account pill are printed chips, the bell lit rose when something
+  is new. Admin gets an ADMIN stamp, the bell and pending payments in one
+  tray, and its first name in the account pill. Avatars stay the printed
+  figure, no initials. The footer's social squares and status pill are
+  printed, and the copyright reads "2025 to 2026" with the RC number in its
+  own tag.
+
 - **The landing page below the hero, redrawn** (17 Oct 2026, `v2.4.128`).
   The hero and its order card are untouched. Sections are named the way the
   menu names them (Tiers, Why curated, Full list, How it works, Reviews) in

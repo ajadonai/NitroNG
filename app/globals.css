@@ -320,30 +320,14 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
    generates no [dir] rules for it — and transform-origin is flipped for RTL by
    hand, because the plugin does not rewrite it and a rule that draws away from
    the reader is worse than one that does not move. */
-/* The wide-screen nav centring, and why Arabic opts out of it.
-   
-   At 1560px+ the links are viewport-centred with `left-1/2` plus
-   `-translate-x-1/2`. Two things went wrong under [dir=rtl]. The
-   logical-properties plugin rewrites `left: 50%` into `inset-inline-start` —
-   correctly — but does not touch the translate, so the pair stopped cancelling
-   and started compounding: the block landed at -45..505 with the currency
-   pills, the sky toggle and Log in sitting at 32..532, and the links were
-   drawn straight through them.
-   
-   Mirroring the translate fixes that and centres the block properly. It does
-   not fix the second half, which is the fault the 1560 threshold was invented
-   for in the first place: viewport-centring ignores the right cluster, so the
-   number has to be tuned to that cluster's width. Arabic's is 500px against
-   English's 448 — "تسجيل الدخول" and "مرحبا" are simply wider — so 1560 is too
-   low and the links still clipped the NGN pill by 27px at 1560 and 7px at 1600.
-   
-   A second hand-tuned breakpoint would be wrong the next time a label or a font
-   changes. So Arabic keeps the links in the flex row at every width, centred in
-   the space that is actually free — which is what both languages already do
-   below 1560, and which cannot overlap because the groups stay in flow. */
-@media (min-width: 1560px) {
-  [dir="rtl"] .nav-centre { position: static; translate: none; }
-}
+/* The landing nav's links (17 Oct 2026). Up to 1680px they centre in the free
+   space between the logo and the pills, with an even gap either side. From
+   1680px the bar is a grid with minmax(max-content, 1fr) either side, which
+   centres them on the page while the pills fit their column and shifts them
+   over when a wider language does not. Neither can run them under the pills.
+   This replaced viewport-centring above 1560px with left-1/2 and a translate,
+   which needed a hand-tuned breakpoint per right-cluster width and compounded
+   under RTL because the plugin flips the inset and not the translate. */
 
 .nav-link-pill { position: relative; transition: color .22s ease !important; }
 .nav-link-pill::after {
@@ -359,33 +343,34 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 @media (prefers-reduced-motion: reduce) {
   .nav-link-pill::after { transition-duration: .01s; }
 }
-/* Nav buttons wear the sky toggle's two-tone ring — a white hug plus a dark
-   hairline outside it — so the three controls in the bar read as one set. A
-   single-colour ring cannot do this: white alone vanishes where the hero is
-   pale, and the dark hairline alone vanishes on the deep plum. */
+/* The offset print (17 Oct 2026): Log in is an outline, and Get started is the
+   white printed button the hero's Start button already is, so the two never
+   compete. On the cream bar of every other public page (.pub-nav) the outline
+   takes the ink and Get started is the rose one. */
 .nav-login-btn, .nav-signup-btn {
   border-radius: 999px !important;
   transition: background .2s ease, color .2s ease, box-shadow .24s ease,
               transform .18s cubic-bezier(.34,1.4,.5,1) !important;
 }
 .nav-login-btn {
-  background: rgba(255,255,255,.16) !important;
+  background: transparent !important;
   border: none !important;
   color: #fff !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,.18), inset 0 0 0 1.5px rgba(255,255,255,.4),
-              0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(0,0,0,.16);
+  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.55);
 }
-.nav-login-btn:hover { background: rgba(255,255,255,.26) !important; transform: translateY(-1.5px); }
-.nav-signup-btn {
-  box-shadow: 0 4px 14px rgba(0,0,0,.24), inset 0 0 0 1.5px rgba(255,255,255,.9),
-              0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(0,0,0,.16);
-}
-.nav-signup-btn:hover {
-  transform: translateY(-1.5px);
-  box-shadow: 0 8px 22px rgba(0,0,0,.3), inset 0 0 0 1.5px rgba(255,255,255,.9),
-              0 0 0 1.5px rgba(255,255,255,.7), 0 0 0 3px rgba(0,0,0,.18);
-}
+.nav-login-btn:hover { background: rgba(255,255,255,.12) !important; transform: translateY(-1.5px); }
+.nav-signup-btn { box-shadow: 2.5px 2.5px 0 rgba(60,20,35,.3); }
+.dark .nav-signup-btn { box-shadow: 2.5px 2.5px 0 rgba(0,0,0,.5); }
+.nav-signup-btn:hover { transform: translateY(-1.5px); box-shadow: 3.5px 3.5px 0 rgba(60,20,35,.3); }
+.dark .nav-signup-btn:hover { box-shadow: 3.5px 3.5px 0 rgba(0,0,0,.5); }
 .nav-login-btn:active, .nav-signup-btn:active { transform: scale(.97); }
+.pub-nav .nav-login-btn { color: var(--t-text) !important; box-shadow: inset 0 0 0 1.5px rgba(139,74,94,.3); }
+.dark .pub-nav .nav-login-btn { box-shadow: inset 0 0 0 1.5px rgba(232,180,196,.35); }
+.pub-nav .nav-login-btn:hover { background: rgba(196,125,142,.08) !important; }
+.pub-nav .nav-signup-btn { background: linear-gradient(135deg, #c47d8e, #9a5a6c) !important; color: #fff !important; box-shadow: 2.5px 2.5px 0 rgba(110,51,70,.42); }
+.pub-nav .nav-signup-btn:hover { box-shadow: 3.5px 3.5px 0 rgba(110,51,70,.42); }
+.dark .pub-nav .nav-signup-btn { box-shadow: 2.5px 2.5px 0 rgba(0,0,0,.5); }
+.dark .pub-nav .nav-signup-btn:hover { box-shadow: 3.5px 3.5px 0 rgba(0,0,0,.5); }
 /* The landing's hamburger now uses .nav-burger, shared with every other bar. */
 @media (prefers-reduced-motion: reduce) {
   .nav-login-btn, .nav-signup-btn { transition: background .2s ease, box-shadow .24s ease !important; }
@@ -583,11 +568,13 @@ button:hover .ic-x .ic-off, button:focus-visible .ic-x .ic-off, [role="button"]:
    nav's seven, which is what 1400 was protecting. It matters more here too —
    both buttons open a menu from 1200px up, so between 1200 and 1400 the
    customer nav is a face that opens a menu and does not say so. Admin, at
-   least, now says so. No name beside it: there are a handful of admins and
-   the menu underneath carries it. */
+   least, now says so. Since 17 Oct 2026 it carries the first name too, the
+   way the customer nav does. */
 @media (min-width: 1200px) {
   .dash-avatar-btn.adm { width: auto; padding-block: 0; padding-inline: 6px 12px; }
   .dash-avatar-btn.adm .dash-av-chev { display: block; width: 13px; height: 13px; flex-shrink: 0; color: var(--t-text-muted); }
+  .dash-avatar-btn.adm .dash-av-name { display: block; font-size: 13px; font-weight: 600; max-width: 116px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--t-text); }
 }
 .dash-avatar { width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; }
 /* Left sidebar */
@@ -642,7 +629,11 @@ button:hover .ic-x .ic-off, button:focus-visible .ic-x .ic-off, [role="button"]:
 /* public header links: hover and current */
 .pub-link { transition: background-color .15s, color .15s; }
 .pub-link:hover { background: rgba(196,125,142,.1); color: #c47d8e !important; }
-.pub-link[aria-current="page"] { color: #c47d8e !important; box-shadow: inset 0 -2px 0 #c47d8e; border-radius: 8px 8px 2px 2px; }
+/* The page you are on: its name in ink with a short printed tab under it. */
+.pub-link { position: relative; }
+.pub-link[aria-current="page"] { color: var(--t-text) !important; font-weight: 600; }
+.pub-link[aria-current="page"]::after { content: ""; position: absolute; inset-inline: 0; bottom: 0; margin-inline: auto; width: 18px; height: 3px; border-radius: 2px; background: #c47d8e; box-shadow: 1.5px 1.5px 0 #efc4cf; }
+.dark .pub-link[aria-current="page"]::after { box-shadow: 1.5px 1.5px 0 #5e3242; }
 
 /* Alert bar */
 .dash-alert { padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 450; line-height: 1.4; border-left-width: 3px; }
@@ -1374,50 +1365,64 @@ button:hover .ic-x .ic-off, button:focus-visible .ic-x .ic-off, [role="button"]:
 .dash-nav-item { transition: background-color .2s ease, color .2s ease, transform .2s cubic-bezier(.4,0,.2,1) !important; }
 .dash-nav-item:hover { background-color: rgba(196,125,142,.07) !important; transform: translateX(4px); }
 .dash-nav-item:active { transform: translateX(2px) scale(.98); }
-/* ── Ringed controls ────────────────────────────────────────────────────
-   Bell, avatar and the balance pill are all a 34px-tall pill so they sit on
-   one baseline; the avatar button is a true circle with symmetric padding,
-   since asymmetric padding left the avatar hugging one edge inside its ring.
-   Every control in the top bar wears the sky toggle's two-tone ring: a light
-   hug against the control plus a rose hairline just outside it. The hairline
-   is what you see on cream; the hug is what you see on plum — which is why a
-   single-colour ring cannot serve both surfaces. Bell, avatar and the balance
-   pill share it so the row reads as one set instead of three loose icons. */
+/* ── Top bar controls ────────────────────────────────────────────────────
+   Bell, avatar and the balance pill are all 34px tall so they sit on one
+   baseline beside the 34px currency and language pills; the avatar button is a
+   true circle with symmetric padding until it gains its name. */
+/* Redrawn in the offset print (17 Oct 2026): a card chip with a hairline and a
+   printed edge. The currency and language pills and the sky toggle keep their
+   painted ring; Trip wants those three exactly as they are. */
 .dash-bell, .dash-avatar-btn, .dash-balance-pill {
-  border-radius: 999px !important;
-  background: #fff !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,.07), inset 0 0 0 1.5px rgba(255,255,255,.9),
-              0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(139,74,94,.2);
-  transition: box-shadow .24s ease, background-color .2s ease,
+  background: var(--t-card-bg) !important;
+  box-shadow: inset 0 0 0 1px rgba(32,27,25,.09), 2px 2px 0 #efc4cf;
+  transition: box-shadow .2s ease, background-color .2s ease,
               transform .18s cubic-bezier(.34,1.4,.5,1) !important;
 }
+.dash-avatar-btn, .dash-balance-pill { border-radius: 999px !important; }
+.dash-bell { border-radius: 11px !important; }
 .dark .dash-bell, .dark .dash-avatar-btn, .dark .dash-balance-pill {
-  background: rgba(255,255,255,.07) !important;
-  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3),
-              0 0 0 1.5px rgba(255,255,255,.35), 0 0 0 3px rgba(232,180,196,.24);
+  background: rgba(255,255,255,.05) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.1), 2px 2px 0 #5e3242;
 }
 .dash-bell:hover, .dash-avatar-btn:hover, .dash-balance-pill:hover {
   transform: translateY(-1.5px);
-  box-shadow: 0 6px 16px rgba(0,0,0,.1), inset 0 0 0 1.5px #fff,
-              0 0 0 1.5px rgba(255,255,255,.7), 0 0 0 3px rgba(139,74,94,.3);
+  box-shadow: inset 0 0 0 1px rgba(139,74,94,.28), 3px 3px 0 #efc4cf;
 }
 .dark .dash-bell:hover, .dark .dash-avatar-btn:hover, .dark .dash-balance-pill:hover {
-  background: rgba(255,255,255,.12) !important;
-  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.42),
-              0 0 0 1.5px rgba(255,255,255,.45), 0 0 0 3px rgba(232,180,196,.36);
+  box-shadow: inset 0 0 0 1px rgba(232,180,196,.3), 3px 3px 0 #5e3242;
 }
 .dash-bell:active, .dash-avatar-btn:active, .dash-balance-pill:active { transform: scale(.97); }
+/* Something new, or the panel open: the bell's tile turns rose with its ink. */
+.dash-bell.unread, .dash-bell.open { background: rgba(196,125,142,.12) !important; }
+.dark .dash-bell.unread, .dark .dash-bell.open { background: rgba(196,125,142,.2) !important; }
+/* Top up inside the balance chip keeps its gold and takes the printed edge. */
+.dash-balance-pill .nitro-money { box-shadow: 1.5px 1.5px 0 #b8862a; }
+/* Admin: the bell and pending payments share one tray, so the status side
+   reads as one thing. Payments lights rose while something is waiting. */
+.adm-tray { display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 13px;
+  background: var(--t-card-bg); box-shadow: inset 0 0 0 1px rgba(32,27,25,.09), 2px 2px 0 #efc4cf; }
+.dark .adm-tray { background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px rgba(255,255,255,.1), 2px 2px 0 #5e3242; }
+.adm-tray-sep { width: 1px; height: 18px; background: rgba(32,27,25,.1); }
+.dark .adm-tray-sep { background: rgba(255,255,255,.12); }
+.adm-tray .dash-bell, .dark .adm-tray .dash-bell { width: 32px; height: 32px; border-radius: 10px !important; background: transparent !important; box-shadow: none; }
+.adm-tray .dash-bell:hover, .dark .adm-tray .dash-bell:hover { transform: none; box-shadow: none; background: rgba(196,125,142,.1) !important; }
+.adm-tray .dash-bell.hot { color: var(--t-accent-ink); background: rgba(196,125,142,.12) !important; }
+.dark .adm-tray .dash-bell.hot { background: rgba(196,125,142,.2) !important; }
+/* The dashboards' menu button (tablet, and admin on a phone) as a printed tile. */
+.dash-menu-btn .dash-hamburger-bars { width: 34px; height: 34px; border-radius: 11px; align-items: center; justify-content: center; gap: 3.5px;
+  background: rgba(196,125,142,.12); box-shadow: 2px 2px 0 #efc4cf; }
+.dark .dash-menu-btn .dash-hamburger-bars { background: rgba(196,125,142,.2); box-shadow: 2px 2px 0 #5e3242; }
 
-/* The wordmark is a control too, so it wears the same ring; otherwise it is
-   the one flat chip left in a bar of ringed ones. */
+/* The wordmark in the offset print (17 Oct 2026): the rose pill with a fine
+   hairline and the printed edge every tile now carries, in place of the
+   two-tone ring it wore to match the old ringed controls. The footer drops the
+   edge onto its plum (.lv3-ft .nitro-mark). */
 .nitro-mark {
   border-radius: 999px !important;
-  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.45),
-              0 0 0 1.5px rgba(255,255,255,.55), 0 0 0 3px rgba(139,74,94,.22);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.28), 2px 2px 0 rgba(110,51,70,.38);
 }
 .dark .nitro-mark {
-  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.4),
-              0 0 0 1.5px rgba(255,255,255,.5), 0 0 0 3px rgba(232,180,196,.28);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.22), 2px 2px 0 rgba(0,0,0,.5);
 }
 
 /* Split: gold is reserved for money — top up, add funds, deposits. Rose stays
@@ -1428,8 +1433,7 @@ button:hover .ic-x .ic-off, button:focus-visible .ic-x .ic-off, [role="button"]:
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.55), 0 0 0 1px rgba(180,120,20,.3);
 }
 .dash-balance-pill:hover .nitro-money {
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.7), 0 0 0 1px rgba(180,120,20,.42),
-              0 0 12px rgba(248,193,69,.45);
+  box-shadow: 1.5px 1.5px 0 #b8862a, 0 0 12px rgba(248,193,69,.45);
 }
 /* Admin primaries take the same ring on the app's rose. */
 .adm-btn-primary {
@@ -2372,22 +2376,18 @@ body:has(.dash-main) .nitro-atmo::before { content: none; }
 .dark .loc-soon { background: rgba(232,180,196,.15); }
 @media (prefers-reduced-motion: reduce) { .loc-pill, .loc-cv { transition: none; } .loc-pill:hover { transform: none; } }
 
-/* The hamburger joins the ringed set: a 34px circle wearing the same two-tone
-   ring as the currency and language pills and the sky toggle, so the bar reads
-   as one family instead of three ringed controls and a bare glyph. */
+/* The menu button in the offset print (17 Oct 2026): a printed tile, rose on
+   the cream bar and glass on the landing's rose one (.main-nav). */
 .nav-burger {
-  width: 34px; height: 34px; border-radius: 999px !important; border: none; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 12px !important; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0;
-  color: #201b19; background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,.07), inset 0 0 0 1.5px rgba(255,255,255,.9),
-              0 0 0 1.5px rgba(255,255,255,.6), 0 0 0 3px rgba(139,74,94,.2);
+  color: #8b4a5e; background: rgba(196,125,142,.12);
+  box-shadow: 2px 2px 0 #efc4cf;
   transition: box-shadow .24s ease, transform .18s cubic-bezier(.34,1.4,.5,1);
 }
-.dark .nav-burger {
-  background: rgba(255,255,255,.07);
-  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.3),
-              0 0 0 1.5px rgba(255,255,255,.35), 0 0 0 3px rgba(232,180,196,.24);
-}
+.dark .nav-burger { color: #e8b4c4; background: rgba(196,125,142,.2); box-shadow: 2px 2px 0 #5e3242; }
+.main-nav .nav-burger { color: #fff; background: rgba(255,255,255,.14); box-shadow: inset 0 0 0 1px rgba(255,255,255,.3), 2px 2px 0 rgba(60,20,35,.26); }
+.dark .main-nav .nav-burger { background: rgba(255,255,255,.07); box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), 2px 2px 0 rgba(0,0,0,.45); }
 .nav-burger:hover { transform: translateY(-1.5px); }
 .nav-burger:active { transform: scale(.97); }
 .nav-burger:focus-visible { outline: 2px solid #c47d8e; outline-offset: 3px; }
@@ -2406,7 +2406,7 @@ body:has(.dash-main) .nitro-atmo::before { content: none; }
 .nav-burger .nb-bar:nth-child(2) { top: calc(50% - 1px); }
 .nav-burger .nb-bar:nth-child(3) { top: calc(50% + 4px); }
 .nav-burger::after {
-  content: ""; position: absolute; inset: -3px; border-radius: 999px; pointer-events: none;
+  content: ""; position: absolute; inset: -3px; border-radius: 15px; pointer-events: none;
   box-shadow: 0 0 0 0 rgba(201,127,146,0); transition: box-shadow .45s ease;
 }
 .nav-burger[aria-expanded="true"] { transform: rotate(90deg); }
@@ -2502,11 +2502,15 @@ body:has(.dash-main) .nitro-atmo::before { content: none; }
 .lv3-chan-btn{flex-shrink:0;background:#25d366;color:#06220f;font-size:12.5px;font-weight:800;padding:10px 16px;border-radius:10px;white-space:nowrap}
 .lv3-ft-cols{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:48px;padding:44px 0 52px}
 .lv3-ft-brand p{font-size:13px;line-height:1.7;color:rgba(246,236,238,.5);max-width:26ch;margin:14px 0 0}
-.lv3-ft-status{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:7px 12px;border-radius:999px;background:rgba(75,226,132,.08);border:1px solid rgba(75,226,132,.22);font-size:11.5px;font-weight:700;color:#4be284;text-decoration:none}
+/* The footer's chips in the offset print (17 Oct 2026), matching the wordmark:
+   a hairline and a printed edge dropped onto the plum, no outline border. */
+.lv3-ft .nitro-mark{box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),2.5px 2.5px 0 rgba(0,0,0,.5)}
+.lv3-ft-status{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:7px 12px;border-radius:999px;background:rgba(75,226,132,.1);box-shadow:inset 0 0 0 1px rgba(75,226,132,.28),2px 2px 0 rgba(0,0,0,.4);font-size:11.5px;font-weight:700;color:#4be284;text-decoration:none}
+.lv3-ft-rc{display:inline-block;margin-inline-start:12px;padding:3px 7px 2px;border-radius:6px;font-size:10.5px;letter-spacing:.4px;color:rgba(246,236,238,.6);box-shadow:inset 0 0 0 1px rgba(246,217,222,.2),1.5px 1.5px 0 rgba(0,0,0,.45)}
 .lv3-ft-status i{width:7px;height:7px;border-radius:50%;background:#4be284;animation:lv3pulse 2.2s ease-out infinite}
 @keyframes lv3pulse{0%{box-shadow:0 0 0 0 rgba(75,226,132,.35)}80%,100%{box-shadow:0 0 0 6px rgba(75,226,132,0)}}
-.lv3-ft-soc{width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.06);border:1px solid rgba(246,217,222,.16);display:flex;align-items:center;justify-content:center;color:rgba(246,236,238,.75);text-decoration:none;transition:transform .2s,color .2s}
-.lv3-ft-soc:hover{transform:translateY(-2px);color:#fff}
+.lv3-ft-soc{width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(246,217,222,.16),2px 2px 0 rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;color:rgba(246,236,238,.75);text-decoration:none;transition:transform .2s,color .2s,box-shadow .2s}
+.lv3-ft-soc:hover{transform:translateY(-2px);color:#fff;box-shadow:inset 0 0 0 1px rgba(246,217,222,.26),3px 3px 0 rgba(0,0,0,.45)}
 .lv3-ft-h4{font-size:10.5px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:rgba(246,236,238,.4);margin:4px 0 16px}
 .lv3-ft-l{display:block;font-size:13.5px;font-weight:500;color:rgba(246,236,238,.72);text-decoration:none;padding:5px 0;transition:color .2s;cursor:pointer;background:none;border:none;text-align:left;font-family:inherit}
 .lv3-ft-l:hover{color:#fff}

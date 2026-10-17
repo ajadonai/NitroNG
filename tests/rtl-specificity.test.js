@@ -31,10 +31,14 @@ describe('the three places this has bitten', () => {
     expect(landing).not.toMatch(/className="text-left relative z-\[1\]/);
   });
 
-  it('keeps Arabic nav links out of the absolute centring', () => {
-    // The plugin flips the inset and not the translate, so the pair compounds
-    // instead of cancelling and the links land on top of the controls.
-    expect(css).toMatch(/\[dir="rtl"\] \.nav-centre \{ position: static; translate: none; \}/);
+  it('keeps the nav links out of absolute centring altogether', () => {
+    // The plugin flips the inset and not the translate, so left-1/2 with
+    // -translate-x-1/2 compounded under Arabic and the links landed on top of
+    // the controls. Since 17 Oct 2026 they sit in the free space, and from 1680px
+    // in the middle column of a grid; nothing is translated, in any language.
+    expect(landing).toMatch(/min-\[1680px\]:grid-cols-\[minmax\(max-content,1fr\)_auto_minmax\(max-content,1fr\)\]/);
+    expect(landing).not.toMatch(/nav-centre[^"]*left-1\/2/);
+    expect(landing).not.toMatch(/nav-centre[^"]*translate-x/);
   });
 
   it('flips a transform-origin by hand, since the plugin will not', () => {

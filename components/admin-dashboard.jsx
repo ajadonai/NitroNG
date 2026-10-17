@@ -788,21 +788,25 @@ function AdminDashboardInner({ initialData }) {
           </button>
           <div className="dash-logo-static gap-2">
             <div className="nitro-mark h-7 px-3 flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></div>
-            <span className="text-xs py-0.5 px-2 rounded-full font-semibold text-accent" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.08)" }}>ADMIN</span>
+            <span className="pbadge solid tracking-[1.2px]">ADMIN</span>
           </div>
         </div>
         <div className="dash-nav-right">
           <ThemeToggle dark={dark} onToggle={toggleTheme} />
-          {/* DND toggle */}
-          <button onClick={toggleDnd} className="dash-bell relative" aria-label={dnd ? 'Unmute notifications' : 'Mute notifications'} title={dnd ? 'Notifications muted' : 'Notifications on'} style={{ color: dnd ? t.red : t.textSoft }}>
-            {dnd
-              ? <OffsetIcon name="bellOff" size={20} />
-              : <OffsetIcon name="bell" size={20} />}
-          </button>
-          <button onClick={() => { setActive("payments"); setLeftOpen(false); }} className="dash-bell relative text-t-text-soft" aria-label="Pending payments">
-            <OffsetIcon name="card" size={20} />
-            {paymentCount > 0 && <div className="dash-bell-badge">{paymentCount > 9 ? "9+" : paymentCount}</div>}
-          </button>
+          {/* The bell (do not disturb) and pending payments share one tray, so the
+              status side reads as one thing; payments lights rose while one waits. */}
+          <div className="adm-tray">
+            <button onClick={toggleDnd} className="dash-bell relative" aria-label={dnd ? 'Unmute notifications' : 'Mute notifications'} title={dnd ? 'Notifications muted' : 'Notifications on'} style={{ color: dnd ? t.red : t.textSoft }}>
+              {dnd
+                ? <OffsetIcon name="bellOff" size={20} />
+                : <OffsetIcon name="bell" size={20} />}
+            </button>
+            <span className="adm-tray-sep" aria-hidden="true" />
+            <button onClick={() => { setActive("payments"); setLeftOpen(false); }} className={`dash-bell relative text-t-text-soft${paymentCount > 0 ? " hot" : ""}`} aria-label="Pending payments">
+              <OffsetIcon name="card" size={20} />
+              {paymentCount > 0 && <div className="dash-bell-badge">{paymentCount > 9 ? "9+" : paymentCount}</div>}
+            </button>
+          </div>
           <div ref={avRef} className="relative">
             <button
               onClick={() => { if (window.matchMedia("(min-width: 1200px)").matches) setAvOpen(o => !o); else { setActive("settings"); setLeftOpen(false); } }}
@@ -812,6 +816,8 @@ function AdminDashboardInner({ initialData }) {
                   looks like a big face pushed off-centre the moment anything
                   sits beside it. */}
               <Avatar size={26} />
+              {/* The first name, as the customer nav has it (17 Oct 2026). */}
+              <span className="dash-av-name">{(admin?.name || "").trim().split(/\s+/)[0]}</span>
               {/* It is a dropdown, and a bare face reads as a link to a
                   profile. Hidden below 1200px by the shared rule, which is
                   right: under that width this button does not open a menu at

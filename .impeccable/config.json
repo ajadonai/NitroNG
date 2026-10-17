@@ -23,6 +23,18 @@
         "value": "plus jakarta sans",
         "createdAt": "2026-09-07T13:50:28.927Z",
         "reason": "Nitro's shipping product font (app/globals.css, app/error.jsx, public/offline.html). Specimens in UI spec pages must match the real app or the mock is useless for judging it; fidelity beats novelty here."
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(.34, 1.4, .5, 1)",
+        "createdAt": "2026-10-17T10:16:25.771Z",
+        "reason": "Copied verbatim from the live .loc-pill in app/globals.css; Trip said the currency/language pills and theme toggle were made that way intentionally and must not change (17 Oct 2026)"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(.34, 1.46, .54, 1)",
+        "createdAt": "2026-10-17T10:16:25.812Z",
+        "reason": "Copied verbatim from the live .nitro-sky knob in app/globals.css; Trip said the theme toggle was made that way intentionally and must not change (17 Oct 2026)"
       }
     ]
   }
