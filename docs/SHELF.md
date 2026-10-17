@@ -394,6 +394,34 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **The Wallet's top-up in the offset print** (17 Oct 2026, `v2.4.133`).
+  Mockup "Nitro Wallet Top-up". A first deposit gets one gold card holding
+  the bonus ladder as three tickets, and one line under the amount saying
+  what this top-up earns with a tap to the next ticket; before, the bonus was
+  said five times (welcome box, preset cards, a green line, an upsell line,
+  the summary). The amount box shows commas as you type, says so in amber
+  under ₦1,000, and is money-sized on a phone again: globals.css holds phone
+  inputs at 16px !important against iOS zoom, so it overrides with 27px, and
+  it no longer carries `outline-none`, whose global focus ring drew the box
+  inside a box. Returning accounts keep the six quick amounts as printed
+  keys. The ways to pay are named for what you do (Pay online with a
+  Flutterwave tag, Bank transfer to Nitro, Crypto, as Trip chose), each with
+  what it takes and a time stamp in place of a dot separated tail; the one
+  picked lifts and says what happens next, and the "bank not on your app"
+  tip moved into the online card. Crypto shows "From ₦10,000" before it is
+  picked; under it the Pay button is off with one tap to raise the amount,
+  instead of the server refusing after Pay. Pay names the next step (Pay
+  ₦5,000, Get our account details, Pay ₦10,000 in crypto). The receipt always
+  ends on Total (Trip's call) and never on "—". The We accept row is gone; a
+  phone's step two keeps the amount on screen with Change in place of
+  "← Change amount". A bonus ticket or nudge now moves a foreign currency box
+  too (it set the naira and left the box on the old figure). The heading and
+  balance card are printed like the other redrawn pages. Same push: the
+  header line came back under Wallet, Rewards, Blog, Tasks and API access,
+  skeletons included; Tasks and API access lose the dashboard's old heading,
+  which had printed above their own since v2.4.130 and v2.4.132 (two titles);
+  and Wallet History has a line above and below its heading.
+
 - **API access and the Blog in the offset print** (17 Oct 2026, `v2.4.132`).
   Mockup "Nitro API and Blog". API access (the dashboard's Reseller HQ tab):
   named API access until wholesale is on and Reseller HQ after, instead of a

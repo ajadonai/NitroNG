@@ -293,7 +293,7 @@ function ResellerHQSkeleton({ dark }) {
   return (
     <div className="rk" aria-busy="true">
       <style>{RK_CSS}</style>
-      <div className="rk-head"><div><Bone dark={dark} w={150} h={30} r={8} /><Bone dark={dark} w={260} h={12} style={{ marginTop: 10 }} /></div><Bone dark={dark} w={130} h={40} r={999} /></div>
+      <div><div className="rk-head"><div><Bone dark={dark} w={150} h={30} r={8} /><Bone dark={dark} w={260} h={12} style={{ marginTop: 10 }} /></div><Bone dark={dark} w={130} h={40} r={999} /></div><div className="page-divider bg-t-card-border" /></div>
       <div className="rk-skkey">
         <div className="flex items-center gap-2.5">{gh(36, 36, 12)}{gh(110, 10, 5)}</div>
         <div className="flex flex-wrap gap-2.5 mt-4">{gh('100%', 48, 13, { flex: '1 1 260px' })}{gh(84, 40, 12)}{gh(84, 40, 12)}{gh(92, 40, 12)}</div>
@@ -366,14 +366,17 @@ export function ResellerHQDashboard({ dark, onNavigate, socialLinks }) {
   return (
     <div className="rk">
       <style>{RK_CSS}</style>
-      <div className="rk-head">
-        <div>
-          <div className="serif text-[32px] max-md:text-[26px] font-semibold leading-none tracking-[-.015em] text-t-text">{wholesale ? tr("Reseller HQ") : tr("API access")}</div>
-          <div className="text-[13px] mt-1.5 text-t-text-muted">{wholesale ? tr("Wholesale is on. Every call returns your rate.") : tr("Your key works on every service, at the prices you already see.")}</div>
+      <div>
+        <div className="rk-head">
+          <div>
+            <div className="serif text-[32px] max-md:text-[26px] font-semibold leading-none tracking-[-.015em] text-t-text">{wholesale ? tr("Reseller HQ") : tr("API access")}</div>
+            <div className="text-[13px] mt-1.5 text-t-text-muted">{wholesale ? tr("Wholesale is on. Every call returns your rate.") : tr("Your key works on every service, at the prices you already see.")}</div>
+          </div>
+          {wholesale
+            ? <span className="pbadge ok">{RK_TICK}{tr("Wholesale on")}</span>
+            : <a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="nb sec">{I(P.book, 14)}{tr("Read the docs")}</a>}
         </div>
-        {wholesale
-          ? <span className="pbadge ok">{RK_TICK}{tr("Wholesale on")}</span>
-          : <a href="/resellers/docs" target="_blank" rel="noopener noreferrer" className="nb sec">{I(P.book, 14)}{tr("Read the docs")}</a>}
+        <div className="page-divider bg-t-card-border" />
       </div>
 
       {/* The key, in its own slot */}

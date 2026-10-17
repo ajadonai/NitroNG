@@ -170,23 +170,150 @@ function txDesc(tx, tr) {
 }
 
 
-const ACCEPTED_TYPES = [
-  { label: msg("Cards"), short: msg("Cards"), icon: <OffsetIcon name="card" size={18} /> },
-  { label: msg("Bank Transfer"), short: msg("Transfer"), icon: <OffsetIcon name="bank" size={18} /> },
-  { label: msg("Crypto"), short: msg("Crypto"), icon: <OffsetIcon name="crypto" size={18} /> },
-  { label: msg("Mobile Money"), short: msg("Mobile"), icon: <OffsetIcon name="mobile" size={18} /> },
-];
-
 // Mirrors MIN_CRYPTO_KOBO in app/api/payments/crypto/route.js. The server is
 // still the authority; this exists so the floor is visible before somebody
 // picks crypto and presses pay.
 const MIN_CRYPTO_NGN = 10_000;
 
+// Each way to pay, named for what the customer does rather than the gateway's
+// name in admin, with what it takes, how long it takes, and what happens once
+// it is picked. A gateway missing from here falls back to its admin name.
 const GW_META = {
-  flutterwave: { desc: msg("Card, bank transfer"), speed: msg("Fast") },
-  crypto: { desc: msg("Bitcoin, USDT and more"), speed: msg("5 to 30 min") },
-  manual: { desc: msg("Transfer from any bank"), speed: msg("15 to 60 min") },
+  flutterwave: { name: msg("Pay online"), brand: "Flutterwave", icon: "card", desc: msg("Card, bank transfer or mobile money"), speed: msg("Fast"), fast: true, next: msg("Opens a secure checkout and credits your wallet when it clears.") },
+  manual: { name: msg("Bank transfer to Nitro"), icon: "bank", desc: msg("Send from any bank app, we confirm it"), speed: msg("15 to 60 min"), next: msg("Next you get our account number. Send the exact amount, then tell us the name on the account you sent from.") },
+  crypto: { name: msg("Crypto"), icon: "crypto", desc: msg("Bitcoin, USDT and more"), speed: msg("5 to 30 min"), next: msg("You pick your coin on the next screen. It credits once the network confirms.") },
 };
+
+const WF_TICK = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7" /></svg>;
+// Gifts, naira coins and sparks, drifting behind the first deposit card.
+const PAT_GIFT = (c) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" stroke="${c}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="16" width="20" height="15" rx="2"/><path d="M8 16h24v-5H8zM20 11v20M20 11c-3-5-8-4-7 0M20 11c3-5 8-4 7 0"/><circle cx="68" cy="22" r="9"/><path d="M64 26V18l8 8v-8M62.5 21h11M62.5 23.5h11"/><path d="M28 66l2.5 5 5 2.5-5 2.5-2.5 5-2.5-5-5-2.5 5-2.5z"/><circle cx="76" cy="74" r="6"/><circle cx="76" cy="74" r="2.5"/><path d="M50 50h8M54 46v8"/></svg>`)}")`;
+
+// The funding half of the page in the offset print (17 Oct 2026): the gold
+// first deposit card with its tickets, the amount slot, keycap quick amounts,
+// method cards that lift when picked, and the receipt.
+const WF_CSS = `
+.wf-col{display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:max-content;gap:10px}
+.wf-card{border-radius:18px;background:var(--t-card-bg);box-shadow:inset 0 0 0 1px var(--t-card-border),2px 2px 0 #efc4cf}
+.dark .wf-card{box-shadow:inset 0 0 0 1px var(--t-card-border),2px 2px 0 #5e3242}
+.wf-eb{display:flex;align-items:center;gap:7px;padding-inline:2px;font-size:10.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--t-text-muted)}
+.wf-eb svg{color:var(--t-accent-ink)}
+.wf-bal{display:flex;align-items:center;gap:12px 14px;flex-wrap:wrap;padding:16px 18px}
+.wf-bal-v{flex:1;min-width:0}
+.wf-bal-n{margin-top:7px;font-size:32px;font-weight:800;line-height:1;letter-spacing:-.015em;color:var(--t-text)}
+.wf-bal-x{flex-basis:100%;min-width:0}
+.wf-pts{display:inline-flex;align-items:center;gap:10px;min-height:44px;max-width:100%;padding-block:6px;padding-inline:8px 6px;border:0;border-radius:13px;font:inherit;text-align:start;cursor:pointer;color:#854f0b;background:#fef4e2;box-shadow:inset 0 0 0 1px #ecd2a6,2px 2px 0 #ecd2a6}
+.dark .wf-pts{color:#e0a458;background:#2a1f0f;box-shadow:inset 0 0 0 1px #4f3a1c,2px 2px 0 #120c03}
+.wf-pts .tx{display:flex;flex-direction:column;min-width:0}
+.wf-pts b{font-size:13px;font-weight:650}
+.wf-pts small{font-size:11px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wf-pts .vw{height:30px;display:inline-flex;align-items:center;flex-shrink:0;padding-inline:11px;border-radius:9px;font-size:12px;font-weight:700;background:rgba(255,255,255,.75)}
+.dark .wf-pts .vw{background:rgba(255,255,255,.07)}
+.wf-amt{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;padding:14px}
+.wf-gold{position:relative;overflow:hidden;isolation:isolate;border-radius:16px;padding:14px 14px 16px;color:#5a3510;background:linear-gradient(150deg,#fff6dc 0%,#ffe6a6 55%,#f9cd6e 100%);box-shadow:2.5px 2.5px 0 #d9a443}
+.dark .wf-gold{color:#f6d48a;background:linear-gradient(150deg,#2c200b 0%,#3b2a0e 55%,#4e3812 100%);box-shadow:2.5px 2.5px 0 #120c03}
+.wf-gold::before{content:"";position:absolute;inset:-96px 0 0 -96px;z-index:-1;background-image:${PAT_GIFT("#7a4a10")};background-size:96px 96px;opacity:.12;animation:wfDrift 44s linear infinite}
+.dark .wf-gold::before{background-image:${PAT_GIFT("#f6d48a")};opacity:.1}
+@keyframes wfDrift{to{transform:translate(96px,96px)}}
+.wf-gold-top{display:flex;align-items:center;gap:9px}
+.wf-gold-g{width:30px;height:30px;flex-shrink:0;display:grid;place-items:center;border-radius:10px;background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 1px rgba(122,74,16,.25),2px 2px 0 rgba(122,74,16,.3)}
+.dark .wf-gold-g{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(246,212,138,.25),2px 2px 0 rgba(0,0,0,.4)}
+.wf-gold-eb{font-size:10.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;opacity:.78}
+.wf-gold-h{margin:8px 0 14px;font-size:23px;font-weight:600;line-height:1.08;text-wrap:balance}
+.wf-tks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.wf-tkw{position:relative;display:flex;flex-direction:column;min-width:0;padding:0;border:0;background:none;font:inherit;text-align:start;cursor:pointer;filter:drop-shadow(2px 2px 0 rgba(122,74,16,.32));transition:transform .14s}
+.dark .wf-tkw{filter:drop-shadow(2px 2px 0 rgba(0,0,0,.55))}
+.wf-tkw:hover{transform:translateY(-1px)}
+.wf-tkw.on,.dark .wf-tkw.on{filter:drop-shadow(2.5px 2.5px 0 #6b3a4a)}
+.wf-tkw:focus-visible{outline:2px solid #6b3a4a;outline-offset:3px;border-radius:12px}
+.wf-tk{flex:1;display:flex;flex-direction:column;border-radius:12px;padding:12px 12px 11px;background:var(--t-card-bg);
+  -webkit-mask:radial-gradient(circle 6px at 0 42px,#0000 96%,#000),radial-gradient(circle 6px at 100% 42px,#0000 96%,#000);-webkit-mask-composite:source-in;
+  mask:radial-gradient(circle 6px at 0 42px,#0000 96%,#000),radial-gradient(circle 6px at 100% 42px,#0000 96%,#000);mask-composite:intersect}
+.wf-tkw.on .wf-tk{background:color-mix(in srgb,#c47d8e 9%,var(--t-card-bg));box-shadow:inset 0 0 0 2px #c47d8e}
+.wf-tk-a{font-size:15.5px;font-weight:800;line-height:20px;letter-spacing:-.01em;color:var(--t-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wf-tk hr{height:0;margin:9px -12px 8px;border:0;border-top:1.5px dashed var(--t-card-border)}
+.wf-tk-f{font-size:13px;font-weight:700;line-height:1.2;color:var(--t-green)}
+.wf-stamp{position:absolute;top:-9px;inset-inline-start:9px;z-index:2;padding:3px 7px;border-radius:6px;font-size:9.5px;font-weight:800;line-height:1.1;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;color:#fff;background:#96626f;box-shadow:1.5px 1.5px 0 #6b3a4a}
+.wf-lbl{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding-inline:2px;font-size:12.5px;font-weight:650;color:var(--t-text)}
+.wf-lbl small{font-size:11.5px;font-weight:500;color:var(--t-text-muted)}
+.wf-fld{display:flex;align-items:center;gap:8px;height:66px;padding-inline:18px 12px;border-radius:15px;cursor:text;background:#fff;box-shadow:inset 0 0 0 1.5px var(--t-card-border),inset 2px 2px 0 rgba(0,0,0,.04)}
+.dark .wf-fld{background:#160f22}
+.wf-fld.on{box-shadow:inset 0 0 0 1.5px #c47d8e,2.5px 2.5px 0 #efc4cf}
+.dark .wf-fld.on{box-shadow:inset 0 0 0 1.5px #c47d8e,2.5px 2.5px 0 #5e3242}
+.wf-fld:focus-within{box-shadow:inset 0 0 0 2px #c47d8e,2.5px 2.5px 0 #efc4cf}
+.dark .wf-fld:focus-within{box-shadow:inset 0 0 0 2px #c47d8e,2.5px 2.5px 0 #5e3242}
+.wf-fld.bad,.dark .wf-fld.bad{box-shadow:inset 0 0 0 1.5px var(--act-amber),2.5px 2.5px 0 color-mix(in srgb,var(--act-amber) 30%,transparent)}
+.wf-sym{font-size:26px;font-weight:700;color:var(--t-text-muted)}
+.wf-fld input{flex:1;min-width:0;padding:0;border:0;outline:none;box-shadow:none;background:none;font-size:32px;font-weight:800;letter-spacing:-.015em;color:var(--t-text)}
+.wf-fld input::placeholder{color:var(--t-text-muted);opacity:.4}
+.wf-clr{width:30px;height:30px;flex-shrink:0;display:grid;place-items:center;border:0;border-radius:9px;cursor:pointer;color:var(--t-text-muted);background:rgba(0,0,0,.05)}
+.dark .wf-clr{background:rgba(255,255,255,.08)}
+.wf-clr:focus-visible,.wf-pk:focus-visible,.wf-cpb:focus-visible,.wf-lnk:focus-visible,.wf-pts:focus-visible{outline:2px solid var(--t-accent);outline-offset:2px}
+.wf-lo{display:flex;align-items:center;gap:7px;padding-inline:2px;font-size:13px;font-weight:600;color:var(--act-amber)}
+.wf-bl{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding-block:9px;padding-inline:12px 10px;border-radius:13px;background:color-mix(in srgb,var(--t-green) 8%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--t-green) 22%,transparent)}
+.wf-bl .tx{flex:1;min-width:11em;font-size:13px;line-height:1.4;font-weight:600;color:var(--t-green)}
+.wf-bl.none{background:rgba(196,125,142,.08);box-shadow:inset 0 0 0 1px rgba(196,125,142,.28)}
+.wf-bl.none .tx{color:var(--t-accent-ink)}
+.wf-picks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.wf-pk{height:46px;border:0;border-radius:12px;cursor:pointer;font-size:15px;font-weight:700;color:var(--t-text-soft);background:var(--t-card-bg);box-shadow:inset 0 0 0 1px var(--t-card-border),1.5px 1.5px 0 var(--t-card-border);transition:transform .14s}
+.wf-pk:hover{transform:translateY(-1px)}
+.wf-pk.on{color:var(--t-accent-ink);background:color-mix(in srgb,#c47d8e 10%,var(--t-card-bg));box-shadow:inset 0 0 0 1.5px #c47d8e,2px 2px 0 #efc4cf}
+.dark .wf-pk.on{box-shadow:inset 0 0 0 1.5px #c47d8e,2px 2px 0 #5e3242}
+.wf-cp{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;margin:2px -14px -14px;padding:12px 14px;border-top:1px solid var(--t-card-border)}
+.wf-cpb{display:inline-flex;align-items:center;gap:9px;padding:0;border:0;background:none;font:inherit;font-size:13px;font-weight:650;cursor:pointer;color:var(--t-accent-ink)}
+.wf-cpin{flex:1;min-width:8em;height:38px;padding-inline:12px;border:0;border-radius:11px;outline:none;font-size:13.5px;font-weight:700;letter-spacing:.12em;color:var(--t-text);background:#fff;box-shadow:inset 0 0 0 1.5px #c47d8e}
+.dark .wf-cpin{background:#160f22}
+.wf-cpok{flex:1;min-width:0;display:flex;align-items:center;gap:9px;font-size:13px;color:var(--t-text-soft)}
+.wf-cpok b{font-weight:800;letter-spacing:.08em;color:var(--t-green)}
+.wf-cperr{flex-basis:100%;display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t-red)}
+.wf-m{border-radius:15px;background:var(--t-card-bg);box-shadow:inset 0 0 0 1px var(--t-card-border);transition:box-shadow .15s,background-color .15s}
+.wf-m.on{background:color-mix(in srgb,#c47d8e 7%,var(--t-card-bg));box-shadow:inset 0 0 0 1.5px #c47d8e,2.5px 2.5px 0 #efc4cf}
+.dark .wf-m.on{box-shadow:inset 0 0 0 1.5px #c47d8e,2.5px 2.5px 0 #5e3242}
+.wf-mh{width:100%;display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border:0;border-radius:15px;background:none;font:inherit;text-align:start;cursor:pointer;color:var(--t-text)}
+.wf-mh:focus-visible{outline:2px solid var(--t-accent);outline-offset:2px}
+.wf-mt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.wf-mn{display:flex;align-items:center;gap:6px 7px;flex-wrap:wrap;font-size:14.5px;font-weight:700;line-height:1.25}
+.wf-md{font-size:12.5px;line-height:1.45;color:var(--t-text-soft)}
+.wf-mark{width:22px;height:22px;margin-top:8px;flex-shrink:0;display:grid;place-items:center;border-radius:50%;color:transparent;box-shadow:inset 0 0 0 1.5px var(--t-card-border)}
+.wf-m.on .wf-mark{color:#fff;background:#96626f;box-shadow:1.5px 1.5px 0 #6b3a4a}
+.wf-more{margin-inline:64px 14px;padding:9px 0 13px;border-top:1px dashed var(--t-card-border);font-size:12px;line-height:1.5;color:var(--t-text-soft)}
+.wf-lnk{padding:0;border:0;background:none;font:inherit;font-weight:650;cursor:pointer;color:var(--t-accent-ink);text-decoration:underline;text-underline-offset:2px}
+.wf-note{padding-inline:2px;font-size:11.5px;line-height:1.5;color:var(--t-text-muted)}
+.wf-rc{padding:4px 16px 2px}
+.wf-rr{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--t-card-border);font-size:13px;color:var(--t-text-muted)}
+.wf-rr:first-child{border-top:0}
+.wf-rr b{font-size:13px;font-weight:700;color:var(--t-text)}
+.wf-rr b.ok{color:var(--t-green)}
+.wf-rt{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 0 13px;border-top:1.5px dashed var(--t-card-border)}
+.wf-rt span{font-size:13.5px;font-weight:700;color:var(--t-text)}
+.wf-rt b{font-size:22px;font-weight:800;letter-spacing:-.015em;color:var(--t-text)}
+.wf-rt em{font-style:normal;font-size:13px;font-weight:600;color:var(--t-text-muted)}
+.wf-warn{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding-block:10px;padding-inline:12px 10px;border-radius:13px;font-size:13px;font-weight:600;color:var(--act-amber);background:color-mix(in srgb,var(--act-amber) 9%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--act-amber) 28%,transparent)}
+.wf-warn span{flex:1;min-width:10em}
+.wf-adding{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.wf-adding .v{flex:1;min-width:0}
+.wf-adding b{display:block;margin-top:5px;font-size:24px;font-weight:800;line-height:1.05;letter-spacing:-.015em;color:var(--t-text)}
+.wf-adding small{display:block;margin-top:4px;font-size:12px;font-weight:600;color:var(--t-green)}
+.wf-sec{font-size:11.5px;line-height:1.45;text-align:center;color:var(--t-text-muted)}
+.wf-sec svg{display:inline-block;vertical-align:-2px;margin-inline-end:5px}
+@media (max-width:767px){
+  .wf-pts{width:100%}
+  .wf-pts .vw{margin-inline-start:auto}
+  .wf-tks{gap:8px}
+  .wf-tk{padding-inline:9px}
+  .wf-tk hr{margin-inline:-9px}
+  .wf-tk-a{font-size:14px}
+  .wf-tk-f{font-size:11.5px}
+  .wf-fld{height:60px;padding-inline:15px 10px}
+  /* globals.css holds phone inputs at 16px !important so iOS never zooms;
+     27px is above that line, so the amount can be money-sized again. */
+  .wf-fld input{font-size:27px !important}
+  .wf-sym{font-size:22px}
+  .wf-pk{height:42px;font-size:14px}
+  .wf-mh{padding:12px}
+  .wf-more{margin-inline:62px 12px}
+}
+@media (prefers-reduced-motion:reduce){.wf-gold::before{animation:none}.wf-tkw,.wf-pk{transition:none}}
+`;
 
 /* ═══════════════════════════════════════════ */
 /* ═══ ADD FUNDS PAGE                      ═══ */
@@ -384,6 +511,34 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
     setTyped(String(value));
     const naira = loc.toNaira(value);
     setAmount(naira === null ? "" : String(naira));
+  };
+  // A naira figure from a bonus ticket, a nudge or the crypto floor. The box
+  // follows it in the currency on screen, rounded up so the naira it converts
+  // back to never lands under the tier the button promised.
+  const setNaira = (naira) => {
+    setAmount(String(naira));
+    if (fxReady) { const d = loc.toDisplay?.(naira); setTyped(d ? String(Math.ceil(d * 100) / 100) : ""); }
+  };
+  // The box shows thousands separators as you type. Naira is whole; another
+  // currency may carry two decimals. The caret stays after the same digit.
+  const boxShown = (() => {
+    if (!boxValue) return "";
+    const [int, dec] = String(boxValue).split(".");
+    return Number(int || 0).toLocaleString("en-NG") + (dec !== undefined ? `.${dec}` : "");
+  })();
+  const onBoxInput = (e) => {
+    const el = e.target;
+    const before = el.value.slice(0, el.selectionStart ?? el.value.length).replace(/[^\d.]/g, "").length;
+    let raw = el.value.replace(/[^\d.]/g, "");
+    const dot = raw.indexOf(".");
+    if (dot >= 0) raw = fxReady ? raw.slice(0, dot + 1) + raw.slice(dot + 1).replace(/\./g, "").slice(0, 2) : raw.slice(0, dot);
+    raw = raw.replace(/^0+(?=\d)/, "").slice(0, 12);
+    setBox(raw);
+    requestAnimationFrame(() => {
+      let seen = 0, i = 0;
+      while (i < el.value.length && seen < before) { if (/[\d.]/.test(el.value[i])) seen++; i++; }
+      el.setSelectionRange?.(i, i);
+    });
   };
   const valid = numAmount >= 1000;
   const balance = user?.balance || 0;
@@ -600,7 +755,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         const fN2 = kobo => money(kobo / 100, { round: "down" });
         const allDone = !topup.next;
         return (
-          <div className="rounded-xl p-4 mb-4" style={{ background: dark ? 'rgba(196,125,142,.08)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.22)' : 'rgba(196,125,142,.18)'}` }}>
+          <div className="rounded-xl p-4" style={{ background: dark ? 'rgba(196,125,142,.08)' : 'rgba(196,125,142,.05)', border: `1px solid ${dark ? 'rgba(196,125,142,.22)' : 'rgba(196,125,142,.18)'}` }}>
             <div className="flex items-center gap-2.5">
               <Tile size={32}><OffsetIcon name="topup" size={17} /></Tile>
               <div className="text-[13px] font-semibold text-accent-ink">{tr("Top-up bonus")}</div>
@@ -635,80 +790,62 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           </div>
         );
       })()}
+      {/* First deposit: one gold card holds the bonus ladder as three tickets.
+          Tapping one fills the box; the line under the box says what this
+          top-up earns and what the next ticket up would. */}
       {welcomeEligible && (
-        <div className="flex items-center gap-3 rounded-xl p-3.5 mb-4" style={{ background: dark ? 'rgba(196,125,142,.1)' : 'rgba(196,125,142,.06)', border: `1px solid ${dark ? 'rgba(196,125,142,.2)' : 'rgba(196,125,142,.15)'}` }}>
-          <Tile size={32}><OffsetIcon name="gift" size={17} /></Tile>
-          <div>
-            <div className="text-[13px] font-semibold text-accent-ink">{tr("Welcome bonus")}</div>
-            <div className="text-[13px] mt-0.5 text-t-text-soft leading-[1.45]">{tr("Your first deposit earns up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free. The more you add, the bigger the bonus.")}</div>
-          </div>
-        </div>
-      )}
-      {welcomeEligible && (
-        <>
-          <div className="grid grid-cols-3 gap-2 mb-3 pt-2">
+        <div className="wf-gold">
+          <div className="wf-gold-top"><span className="wf-gold-g"><OffsetIcon name="gift" size={16} /></span><span className="wf-gold-eb">{tr("First deposit bonus")}</span></div>
+          <div className="serif wf-gold-h">{tr("Your first deposit earns up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free.")}</div>
+          <div className="wf-tks">
             {BONUS_PRESETS.map(p => {
               const sel = numAmount === p.amount;
-              const total = p.amount + p.bonus;
               return (
-                <button key={p.amount} onClick={() => setAmount(String(p.amount))} aria-pressed={sel} className="relative flex flex-col items-start gap-[2px] pt-3 pb-2.5 px-2.5 rounded-xl text-left cursor-pointer font-[inherit] min-w-0" style={{ border: `1.5px solid ${sel ? t.accent : t.cardBorder}`, background: sel ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)") : (dark ? "rgba(255,255,255,.04)" : "#fff"), boxShadow: sel ? `0 0 0 2px ${t.accent}` : "none" }}>
-                  {p.tag && <span className="absolute -top-2 left-2 text-[9.5px] font-bold uppercase tracking-[.04em] py-[2px] px-1.5 rounded-full text-white whitespace-nowrap" style={{ background: t.accent }}>{tr(p.tag)}</span>}
-                  <div className="m text-[15px] font-bold" style={{ color: t.text }}>{money(p.amount)}</div>
-                  <div className="text-[12px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(p.bonus, { round: "down" })} free</div>
-                  <div className="text-[10.5px] text-t-text-muted">{money(total, { round: "down" })} {tr("to spend")}</div>
+                <button key={p.amount} type="button" onClick={() => setNaira(p.amount)} aria-pressed={sel} className={`wf-tkw${sel ? " on" : ""}`}>
+                  {p.tag && <span className="wf-stamp">{tr(p.tag)}</span>}
+                  <span className="wf-tk"><span className="m wf-tk-a">{money(p.amount)}</span><hr /><span className="wf-tk-f">+{money(p.bonus, { round: "down" })} {tr("free")}</span></span>
                 </button>
               );
             })}
           </div>
-          <div className="flex items-center gap-3 mb-3 max-md:mb-2.5">
-            <div className="flex-1 h-px bg-t-card-border" />
-            <span className="text-[11px] font-semibold uppercase tracking-[1.2px] text-t-text-muted">{tr("or enter amount")}</span>
-            <div className="flex-1 h-px bg-t-card-border" />
-          </div>
-        </>
+        </div>
       )}
-      <div className="flex items-baseline justify-between mb-1.5"><span className="text-[12.5px] font-semibold text-t-text">{tr("Amount")}</span><span className="text-[11px] text-t-text-muted">min {money(1000)}</span></div>
-      <div className="flex items-center gap-1 py-3.5 px-[18px] max-desktop:py-3 max-desktop:px-4 max-md:py-3 max-md:px-3.5 rounded-xl mb-4 max-md:mb-3" style={{ background: dark ? "#160f22" : "#fff", border: `1px solid ${amount ? t.accent : t.cardBorder}` }}>
-        <span className="m text-[28px] max-desktop:text-[22px] max-md:text-xl font-semibold" style={{ color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.4)" }}>{boxSymbol}</span>
-        <input type="number" value={boxValue} onChange={e => setBox(e.target.value)} placeholder="0" className="m border-none text-[28px] max-desktop:text-[28px] max-md:text-2xl font-semibold w-full outline-none bg-transparent placeholder:opacity-[.12] text-t-text" />
-      </div>
+      <div className="wf-lbl"><span>{tr("Amount")}</span><small>{tr("From")} {money(1000)}</small></div>
+      <label className={`wf-fld${numAmount > 0 && !valid ? " bad" : boxValue ? " on" : ""}`}>
+        <span className="m wf-sym">{boxSymbol}</span>
+        <input type="text" inputMode={fxReady ? "decimal" : "numeric"} autoComplete="off" value={boxShown} onChange={onBoxInput} placeholder="0" aria-label={tr("Amount")} className="m" />
+        {boxValue && <button type="button" className="wf-clr" onClick={() => setBox("")} aria-label={tr("Clear the amount")}><OffsetIcon name="close" size={12} /></button>}
+      </label>
       {/* Exactly what Flutterwave will ask for — the figure the bank statement
           will show, in the currency it will show it in. */}
       {fxReady && numAmount > 0 && (
-        <div className="text-[11px] -mt-2 mb-3 text-t-text-muted">{tr("You will be charged")} {quoted ? loc.fmtNative(quoted) : formatMoney(numAmount, "NGN")}</div>
+        <div className="wf-note -mt-1.5">{tr("You will be charged")} {quoted ? loc.fmtNative(quoted) : formatMoney(numAmount, "NGN")}</div>
+      )}
+      {numAmount > 0 && !valid && (
+        <div className="wf-lo"><OffsetIcon name="alert" size={14} />{tr("Minimum deposit is")} {money(1000)}</div>
       )}
       {!welcomeEligible && (
-        <div className="grid grid-cols-3 gap-2 max-md:gap-1.5 mb-3">
+        <div className="wf-picks">
           {presets.map(p => (
-            <button key={p} onClick={() => setPreset(p)} className="m py-[13px] max-desktop:py-[11px] max-md:py-2.5 rounded-[10px] text-base max-desktop:text-[15px] max-md:text-sm font-semibold text-center cursor-pointer transition-[border-color,background-color,color,transform] duration-150 hover:translate-y-[-1px]" style={{ border: `1px solid ${numAmount === p ? t.accent : t.cardBorder}`, background: numAmount === p ? (dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)") : "transparent", color: numAmount === p ? t.accent : (dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.45)") }}>
+            <button key={p} type="button" onClick={() => setPreset(p)} aria-pressed={numAmount === p} className={`m wf-pk${numAmount === p ? " on" : ""}`}>
               {fxReady ? loc.fmtNative(p) : `₦${p >= 1000 ? `${p / 1000}K` : p}`}
             </button>
           ))}
         </div>
       )}
-      {welcomeEligible && numAmount >= 2500 && (() => {
+      {welcomeEligible && valid && (() => {
         const wb = bonusForNaira(numAmount);
-        return (
-          <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(110,231,183,.06)' : 'rgba(5,150,105,.04)', border: `1px solid ${dark ? 'rgba(110,231,183,.14)' : 'rgba(5,150,105,.1)'}` }}>
-            <Tile size={22} clr={okColor}><OffsetIcon name="checkCircle" size={13} /></Tile>
-            <span className="text-[13px] font-semibold" style={{ color: dark ? '#6ee7b7' : '#059669' }}>+{money(wb, { round: "down" })} {tr("welcome bonus will be added")}</span>
+        const nt = nextBonusTier(numAmount);
+        if (wb === 0) return (
+          <div className="wf-bl none">
+            <span className="tx">{tr("Top up")} {money(nt.min)} {tr("and get")} {money(nt.bonus, { round: "down" })} {tr("free.")}</span>
+            <button type="button" className="nb sec sm" onClick={() => setNaira(nt.min)}><OffsetIcon name="plusCircle" size={13} />{tr("Make it")} {money(nt.min)}</button>
           </div>
         );
-      })()}
-      {welcomeEligible && numAmount >= 1000 && (() => {
-        const nt = nextBonusTier(numAmount);
-        if (!nt) return null;
-        const diff = nt.min - numAmount;
-        const cur = bonusForNaira(numAmount);
         return (
-          <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(196,125,142,.06)' : 'rgba(196,125,142,.04)', border: `1px solid ${dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.1)'}` }}>
-            <Tile size={22}><OffsetIcon name="topup" size={13} /></Tile>
-            <span className="text-[13px] font-medium text-t-text-soft">
-              {cur > 0
-                ? <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent-ink font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>{tr("Add")} {money(diff)} more</button> {tr("and get")} <strong className="text-accent-ink">{money(nt.bonus, { round: "down" })} free</strong> {tr("instead of")} {money(cur, { round: "down" })}.</>
-                : <><button onClick={() => setAmount(String(nt.min))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent-ink font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>{tr("Add")} {money(diff)} more</button> {tr("to unlock your")} <strong className="text-accent-ink">{money(nt.bonus, { round: "down" })} {tr("welcome bonus")}</strong>.</>
-              }
-            </span>
+          <div className="wf-bl">
+            <span className="tx"><b className="m">+{money(wb, { round: "down" })}</b> {tr("free on this top-up.")}</span>
+            {nt && <button type="button" className="nb sec sm" onClick={() => setNaira(nt.min)}><OffsetIcon name="plusCircle" size={13} />{tr("Add")} {money(nt.min - numAmount)} {tr("and get")} {money(nt.bonus, { round: "down" })}</button>}
           </div>
         );
       })()}
@@ -717,7 +854,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         const prize = money(topup.next.prize / 100, { round: "down" });
         if (projected >= topup.next.min) {
           return (
-            <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(110,231,183,.06)' : 'rgba(5,150,105,.04)', border: `1px solid ${dark ? 'rgba(110,231,183,.14)' : 'rgba(5,150,105,.1)'}` }}>
+            <div className="flex items-center gap-2 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(110,231,183,.06)' : 'rgba(5,150,105,.04)', border: `1px solid ${dark ? 'rgba(110,231,183,.14)' : 'rgba(5,150,105,.1)'}` }}>
               <Tile size={22} clr={okColor}><OffsetIcon name="checkCircle" size={13} /></Tile>
               <span className="text-[13px] font-semibold" style={{ color: okColor }}>{tr("This deposit unlocks your")} {prize} {tr("top-up bonus")}</span>
             </div>
@@ -725,7 +862,7 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
         }
         const fullAdd = Math.ceil((topup.next.min - topup.total) / 100);
         return (
-          <div className="flex items-center gap-2 mt-1 mb-1 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(196,125,142,.06)' : 'rgba(196,125,142,.04)', border: `1px solid ${dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.1)'}` }}>
+          <div className="flex items-center gap-2 py-2 px-3 rounded-lg" style={{ background: dark ? 'rgba(196,125,142,.06)' : 'rgba(196,125,142,.04)', border: `1px solid ${dark ? 'rgba(196,125,142,.14)' : 'rgba(196,125,142,.1)'}` }}>
             <Tile size={22}><OffsetIcon name="topup" size={13} /></Tile>
             <span className="text-[13px] font-medium text-t-text-soft">
               This takes you to <strong className="m">{money(projected / 100)}</strong> of {money(topup.next.min / 100)}: <button onClick={() => setAmount(String(fullAdd))} className="font-bold border-none bg-transparent p-0 cursor-pointer text-accent-ink font-[inherit] text-[inherit] pb-px" style={{ borderBottom: `1.5px dashed ${t.accent}` }}>deposit {money(fullAdd)}</button> {tr("to unlock")} <strong className="text-accent-ink">₦{prize}</strong>.
@@ -733,71 +870,33 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
           </div>
         );
       })()}
-      <div className="min-h-0 mt-1 flex items-center">
-        {/* Crypto carries a higher floor than the rest of the wallet, so it is
-            said here rather than left for the server to reject after they have
-            already picked a method and pressed pay. */}
-        {numAmount > 0 && numAmount < MIN_CRYPTO_NGN && method === "crypto" ? (
-          <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
-            <OffsetIcon name="alert" size={14} />
-            {tr("Crypto deposits start at")} {money(MIN_CRYPTO_NGN)}
-          </div>
-        ) : numAmount > 0 && numAmount < 1000 ? (
-          <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: dark ? "#fcd34d" : "#d97706" }}>
-            <OffsetIcon name="alert" size={14} />
-            Minimum deposit is {money(1000)}
-          </div>
-        ) : null}
-      </div>
     </>
   );
 
+  // The foot of the amount card: a link, then the code slot, then the stub.
   const couponSection = (
-    !couponApplied ? (
-      <div className="mt-2">
-        {!showCoupon ? (
-          <button onClick={() => setShowCoupon(true)} className="py-2 px-3 rounded-lg border-none text-[13px] font-semibold cursor-pointer flex items-center gap-2 transition-all duration-200 hover:-translate-y-px text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.07)" }}>
-            <Tile size={24}><OffsetIcon name="percent" size={13} /></Tile>
-            {tr("Have a coupon code?")}
-          </button>
-        ) : (
-          <div className="py-2.5 px-3 rounded-lg" style={{ background: dark ? "rgba(196,125,142,.08)" : "rgba(196,125,142,.05)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}` }}>
-            <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-[1px] text-accent-ink">
-              <OffsetIcon name="percent" size={11} />
-              {tr("Coupon Code")}
-            </div>
-            <div className="flex gap-2">
-              <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} placeholder="e.g. NITRO20" className="m flex-1 py-[9px] px-3 rounded-lg text-[13px] tracking-[1.5px] outline-none text-t-text font-[JetBrains_Mono,monospace] transition-[border-color] duration-200" style={{ background: dark ? "rgba(255,255,255,.08)" : "#fff", border: `1.5px solid ${couponCode.trim() ? t.accent : (dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)")}` }} />
-              <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} className="py-[9px] px-4 dash-btn-primary text-[13px] font-semibold cursor-pointer border-none transition-all duration-200 hover:-translate-y-px" style={{ background: couponCode.trim() ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : (dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.08)"), color: couponCode.trim() ? "#fff" : t.textMuted, opacity: couponLoading ? .5 : 1 }}>{couponLoading ? "..." : tr("Apply")}</button>
-            </div>
-            {couponError && <div className="text-xs mt-1.5 flex items-center gap-1" style={{ color: dark ? "#fca5a5" : "#dc2626" }}><OffsetIcon name="alert" size={12} /> {couponError}</div>}
-          </div>
-        )}
-      </div>
-    ) : (
-      <div className="mt-2 py-2.5 px-3 rounded-lg" style={{ background: `linear-gradient(135deg, ${dark ? "rgba(110,231,183,.14)" : "rgba(5,150,105,.08)"}, ${dark ? "rgba(110,231,183,.04)" : "rgba(5,150,105,.02)"})`, border: `1px solid ${dark ? "rgba(110,231,183,.22)" : "rgba(5,150,105,.16)"}` }}>
-        <div className="flex items-center gap-2 text-[13px]" style={{ color: dark ? "#6ee7b7" : "#059669" }}>
-          <Tile size={24} clr={okColor}><OffsetIcon name="checkCircle" size={13} /></Tile>
-          <span className="font-semibold"><span className="m tracking-[1px]" style={{ fontFamily: "'JetBrains Mono',monospace" }}>{couponApplied.code}</span> · {couponApplied.type === "percent" ? `${couponApplied.value}%` : `+${money(couponApplied.value, { round: "down" })}`} bonus</span>
-          <button onClick={removeCoupon} className="ml-auto bg-transparent border-none text-[11px] font-semibold cursor-pointer py-1 px-2 rounded-md transition-all duration-200 hover:-translate-y-px" style={{ color: dark ? "#fca5a5" : "#dc2626", background: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.05)" }}>{tr("Remove")}</button>
-        </div>
-      </div>
-    )
-  );
-
-  const AcceptedRow = ({ centered }) => (
-    <div className={`flex items-center gap-1.5 flex-wrap ${centered ? "justify-center mt-4" : ""}`}>
-      <span className={`text-[13px] text-t-text-muted ${centered ? "hidden" : "hidden desktop:inline"}`}>{tr("We accept:")}</span>
-      {ACCEPTED_TYPES.map(({ label, short, icon }) => (
-        <span key={label} className="text-xs py-1 ps-1.5 pe-2.5 rounded-lg font-medium whitespace-nowrap inline-flex items-center gap-1.5" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.8)", border: `1px solid ${t.cardBorder}`, color: dark ? "rgba(255,255,255,.55)" : "rgba(0,0,0,.45)" }}>
-          <span className="inline-flex text-accent-ink">{icon}</span><span className="max-md:hidden">{tr(label)}</span><span className="hidden max-md:inline">{tr(short)}</span>
-        </span>
-      ))}
+    <div className="wf-cp">
+      {couponApplied ? (
+        <>
+          <span className="wf-cpok"><Tile size={26} clr={okColor}><OffsetIcon name="checkCircle" size={13} /></Tile><span><b className="m">{couponApplied.code}</b>, {couponApplied.type === "percent" ? `${couponApplied.value}%` : `+${money(couponApplied.value, { round: "down" })}`} {tr("bonus")}</span></span>
+          <button type="button" onClick={removeCoupon} className="nb ghost sm">{tr("Remove")}</button>
+        </>
+      ) : showCoupon ? (
+        <>
+          <input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} placeholder="e.g. NITRO20" aria-label={tr("Coupon Code")} autoFocus className="m wf-cpin" />
+          <button type="button" onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} className="nb pri">{couponLoading ? <NitroLoader size={14} mono ariaHidden /> : tr("Apply")}</button>
+          <button type="button" onClick={() => { setShowCoupon(false); setCouponError(""); }} className="nb ghost">{tr("Cancel")}</button>
+          {couponError && <div className="wf-cperr"><OffsetIcon name="alert" size={12} />{couponError}</div>}
+        </>
+      ) : (
+        <button type="button" onClick={() => setShowCoupon(true)} className="wf-cpb"><Tile size={26}><OffsetIcon name="percent" size={13} /></Tile>{tr("Have a coupon code?")}</button>
+      )}
     </div>
   );
 
-  const PayButton = ({ onClick, disabled, text, loading: busy, className: cls }) => (
-    <button onClick={onClick} disabled={disabled} className={`${valid ? "nitro-money-btn" : ""} w-full py-4 max-desktop:py-3.5 max-md:py-[13px] rounded-full text-base font-semibold border-none cursor-pointer flex items-center justify-center gap-2 ${cls || ""}`} style={valid ? undefined : { background: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.12)", color: t.textMuted }}>
+  // Gold while it can be pressed; flat and muted while it cannot.
+  const PayButton = ({ onClick, disabled, off, text, loading: busy, className: cls }) => (
+    <button type="button" onClick={onClick} disabled={disabled} className={`${off ? "" : "nitro-money-btn"} w-full py-4 max-desktop:py-3.5 max-md:py-[13px] rounded-full text-base font-semibold border-none cursor-pointer flex items-center justify-center gap-2 ${cls || ""}`} style={off ? { background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)", color: t.textMuted, cursor: "not-allowed" } : undefined}>
       {busy && <NitroLoader size={16} mono ariaHidden />}
       {text}
     </button>
@@ -847,15 +946,16 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
       )}
 
       <div className="pb-3.5 max-md:pb-2">
-        <div className="text-[22px] max-desktop:text-lg font-semibold mb-0.5 text-t-text">{tr("Wallet")}</div>
-        <div className="text-[15px] max-md:text-sm text-t-text-muted">{tr("Top up your balance to place orders")}</div>
+        <div className="serif text-[32px] max-md:text-[26px] font-semibold leading-none tracking-[-.015em] text-t-text">{tr("Wallet")}</div>
+        <div className="text-[13px] mt-1.5 text-t-text-muted">{tr("Top up your balance to place orders")}</div>
         <div className="page-divider bg-t-card-border" />
       </div>
 
-      {/* ═══ DESKTOP + TABLET: side by side ═══ */}
-      {/* ── Balance ── */}
-      <div className="rounded-[14px] p-4 mb-2" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
-        <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[1px] text-t-text-muted"><span className="inline-flex text-accent-ink"><OffsetIcon name="wallet" size={14} /></span>{tr("Balance")}</div>
+      <style>{WF_CSS}</style>
+      {/* ── Balance, with the points beside it ── */}
+      <div className="wf-card wf-bal">
+        <div className="wf-bal-v">
+          <div className="wf-eb"><OffsetIcon name="wallet" size={13} />{tr("Balance")}</div>
         {/* The balance follows the currency on screen, like every other figure.
             It was formatted with fHeld, which is naira and only naira, so the
             one number the page exists for stayed in naira when nothing else did.
@@ -865,12 +965,21 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
             balance is not an estimate of anything, it is a stored naira figure,
             and the page you top up from is the worst place to be unable to
             check what you actually hold. */}
-        <div className="m text-[30px] desktop:text-[34px] font-bold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.01em" }}>{money(balance, { round: "down" })}</div>
-        {nairaAside(balance, { round: "down" }) && (
-          <div className="m text-[12px] mt-1 text-t-text-muted">{nairaAside(balance, { round: "down" })}</div>
-        )}
-        {lastFunded && <div className="text-[11px] mt-1.5 text-t-text-muted">{tr("Last funded")} {fD(lastFunded.date, true)}</div>}
-        <div className="px-0">
+          <div className="m wf-bal-n">{money(balance, { round: "down" })}</div>
+          {nairaAside(balance, { round: "down" }) && (
+            <div className="m text-[12px] mt-1 text-t-text-muted">{nairaAside(balance, { round: "down" })}</div>
+          )}
+          {lastFunded && <div className="text-[11px] mt-1.5 text-t-text-muted">{tr("Last funded")} {fD(lastFunded.date, true)}</div>}
+        </div>
+        {rewards?.points && (() => { const p = rewards.points; return (
+          <button type="button" onClick={() => setPointsOpen(true)} className="wf-pts">
+            <Tile size={26} clr={dark ? "#e0a458" : "#d97706"}><OffsetIcon name="star" size={14} /></Tile>
+            <span className="tx"><b><span className="m">{(p.balance || 0).toLocaleString()}</span> {tr("Nitro Points")}</b><small>{p.redeemable ? `≈ ${money(p.valueNaira || 0, { round: "down" })} ready to spend on your next order` : `${(p.neededToRedeem || 0).toLocaleString()} more to spend`}</small></span>
+            <span className="vw">{tr("View")}</span>
+          </button>
+        ); })()}
+        {(user?.bonusCredit?.amount > 0 || pendingDeposits.length > 0) && (
+          <div className="wf-bal-x">
             {user?.bonusCredit?.amount > 0 && (() => {
               // No expiry is the welcome bonus, which never runs out. The line
               // states the figure and stops rather than inventing a deadline.
@@ -897,88 +1006,120 @@ export default function AddFundsPage({ user, txs, transactionsTotal, walletSumma
                 </div>
               );
             })()}
-        </div>
+          </div>
+        )}
       </div>
-      {rewards?.points && (() => { const p = rewards.points; return (
-        <div className="flex items-center gap-2.5 rounded-xl py-2.5 px-3" style={{ background: dark ? "#2d2210" : "#fef7ed", border: `1px solid ${dark ? "#5a4020" : "#e8d5b8"}`, color: dark ? "#e0a458" : "#854F0B" }}>
-          <Tile size={28} clr={dark ? "#e0a458" : "#d97706"}><OffsetIcon name="star" size={15} /></Tile>
-          <span className="flex flex-col gap-px flex-1 min-w-0"><b className="text-[13px] font-semibold"><span className="m">{(p.balance || 0).toLocaleString()}</span> {tr("Nitro Points")}</b><small className="text-[11px] opacity-80 truncate">{p.redeemable ? `≈ ${money(p.valueNaira || 0, { round: "down" })} ready to spend on your next order` : `${(p.neededToRedeem || 0).toLocaleString()} more to spend`}</small></span>
-          <button onClick={() => setPointsOpen(true)} className="bg-transparent border-none cursor-pointer text-[12px] font-semibold p-0 font-[inherit]" style={{ color: "inherit" }}>{tr("View")}</button>
-        </div>
-      ); })()}
 
       {/* ── The flow: amount, then pay. Two steps on a phone, side by side on desktop. ── */}
-      <div className="desktop:grid desktop:grid-cols-2 desktop:gap-4 desktop:items-start mt-4">
-        <div className={mobileStep === 2 ? "max-desktop:hidden" : ""}>
-          <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[1px] px-0.5 pb-1.5 text-t-text-muted"><span className="inline-flex text-accent-ink"><OffsetIcon name="topup" size={14} /></span>{tr("Add funds")}</div>
-          <div className="rounded-[14px] p-4" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+      {(() => {
+        const wb = welcomeEligible && valid ? bonusForNaira(numAmount) : 0;
+        const extra = (discount > 0 ? discount / 100 : 0) + wb;
+        const cryptoLow = method === "crypto" && valid && numAmount < MIN_CRYPTO_NGN;
+        const hasManual = gateways.some(g => g.id === "manual");
+        return (
+      <div className="desktop:grid desktop:grid-cols-2 desktop:gap-5 desktop:items-start mt-4">
+        <div className={mobileStep === 2 ? "max-desktop:hidden" : ""}><div className="wf-col">
+          <div className="wf-eb"><OffsetIcon name="topup" size={14} />{tr("Add funds")}</div>
+          <div className="wf-card wf-amt">
             {amountInput}
             {couponSection}
-            <div className="mt-3"><AcceptedRow /></div>
           </div>
-          <div className="desktop:hidden mt-3">
-            <PayButton onClick={() => { if (valid) setMobileStep(2); }} disabled={!valid} text={valid ? "Continue" : "Enter an amount"} />
-          </div>
-        </div>
+          <div className="desktop:hidden"><div className="wf-col mt-1">
+            <PayButton onClick={() => { if (valid) setMobileStep(2); }} disabled={!valid} off={!valid} text={valid ? tr("Continue") : tr("Enter an amount")} />
+            <div className="wf-sec">{tr("Next, choose how to pay")}</div>
+          </div></div>
+        </div></div>
 
-        <div className={mobileStep === 1 ? "max-desktop:hidden" : ""}>
-          <button onClick={() => setMobileStep(1)} className="desktop:hidden inline-flex items-center gap-1.5 bg-transparent border-none text-[12.5px] font-semibold cursor-pointer p-0 mb-2.5 text-accent-ink font-[inherit]">{tr("← Change amount")}</button>
-          <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[1px] px-0.5 pb-1.5 text-t-text-muted"><span className="inline-flex text-accent-ink"><OffsetIcon name="card" size={14} /></span>{tr("Pay with")}</div>
-          <div className="rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
-            {gatewaysLoading ? (
-              [1, 2, 3].map(i => (
-                <div key={i} className="flex items-center gap-3 py-3 px-3.5" style={{ borderTop: i > 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                  <div className={`skel-bone w-[34px] h-[34px] rounded-[10px] shrink-0 ${dark ? "skel-dark" : "skel-light"}`} />
-                  <div className="flex-1"><div className={`skel-bone w-[110px] h-[11px] mb-1.5 ${dark ? "skel-dark" : "skel-light"}`} /><div className={`skel-bone w-[150px] h-[9px] ${dark ? "skel-dark" : "skel-light"}`} /></div>
-                </div>
-              ))
-            ) : gateways.map((g, i) => { const sel = method === g.id; const meta = GW_META[g.id] || {}; return (
-              <button key={g.id} onClick={() => setMethod(g.id)} aria-pressed={sel} className="w-full flex items-center gap-3 py-3 px-3.5 text-left cursor-pointer border-none font-[inherit]" style={{ background: sel ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)") : "transparent", borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}>
-                <Tile size={34}><OffsetIcon name={g.id === "flutterwave" ? "card" : g.id === "crypto" ? "crypto" : "bank"} size={17} /></Tile>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13.5px] font-semibold" style={{ color: sel ? t.accent : t.text }}>{g.name}</div>
-                  <div className="text-[11.5px] text-t-text-muted">{[meta.desc, meta.speed].filter(Boolean).map(tr).join(" · ")}</div>
-                </div>
-                <span className="w-[18px] h-[18px] rounded-full shrink-0" style={{ border: `2px solid ${sel ? t.accent : t.cardBorder}`, background: sel ? t.accent : "transparent", boxShadow: sel ? `inset 0 0 0 4px ${dark ? "#1a1329" : "#fff"}` : "none" }} />
-              </button>
-            ); })}
-          </div>
+        <div className={mobileStep === 1 ? "max-desktop:hidden" : ""}><div className="wf-col">
+          {/* A phone's second step keeps the amount in view, with the way back. */}
+          <div className="desktop:hidden"><div className="wf-card wf-adding">
+            <div className="v">
+              <div className="wf-eb">{tr("Adding")}</div>
+              <b className="m">{money(valid ? numAmount : 0)}</b>
+              {extra > 0 && valid && <small>{money(numAmount + extra, { round: "down" })} {tr("lands in your wallet")}</small>}
+            </div>
+            <button type="button" onClick={() => setMobileStep(1)} className="nb sec sm"><OffsetIcon name="pen" size={13} />{tr("Change")}</button>
+          </div></div>
+          <div className="wf-eb"><OffsetIcon name="card" size={14} />{tr("Pay with")}</div>
+          {gatewaysLoading ? (
+            [1, 2, 3].map(i => (
+              <div key={i} className="wf-m flex items-center gap-3 py-[13px] px-3.5">
+                <div className={`skel-bone w-[38px] h-[38px] rounded-[10px] shrink-0 ${dark ? "skel-dark" : "skel-light"}`} />
+                <div className="flex-1"><div className={`skel-bone w-[130px] h-[12px] mb-2 ${dark ? "skel-dark" : "skel-light"}`} /><div className={`skel-bone w-[190px] max-w-full h-[10px] ${dark ? "skel-dark" : "skel-light"}`} /></div>
+                <div className={`skel-bone w-[22px] h-[22px] rounded-full shrink-0 ${dark ? "skel-dark" : "skel-light"}`} />
+              </div>
+            ))
+          ) : gateways.map(g => {
+            const sel = method === g.id;
+            const meta = GW_META[g.id] || {};
+            return (
+              <div key={g.id} className={`wf-m${sel ? " on" : ""}`}>
+                <button type="button" onClick={() => setMethod(g.id)} aria-pressed={sel} className="wf-mh">
+                  <Tile size={38}><OffsetIcon name={meta.icon || "card"} size={18} /></Tile>
+                  <span className="wf-mt">
+                    <span className="wf-mn">
+                      {meta.name ? tr(meta.name) : g.name}
+                      {meta.speed && <span className={`pbadge ${meta.fast ? "ok" : "tag"}`}>{tr(meta.speed)}</span>}
+                      {g.id === "crypto" && <span className={`pbadge ${cryptoLow ? "no" : "tag"}`}>{tr("From")} {money(MIN_CRYPTO_NGN)}</span>}
+                      {meta.brand && <span className="pbadge tag">{meta.brand}</span>}
+                    </span>
+                    {meta.desc && <span className="wf-md">{tr(meta.desc)}</span>}
+                  </span>
+                  <span className="wf-mark">{WF_TICK}</span>
+                </button>
+                {sel && meta.next && (
+                  <div className="wf-more">
+                    {tr(meta.next)}
+                    {g.id === "flutterwave" && hasManual && <> {tr("Bank not on your app?")} <button type="button" onClick={() => setMethod("manual")} className="wf-lnk">{tr("Pay by bank transfer to Nitro instead.")}</button></>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
           {/* Say why, once. A hidden method with no explanation reads as a bug;
               a hidden method with one reads as the site knowing where you are. */}
           {!gatewaysLoading && hiddenNigeriaOnly > 0 && (
             gateways.length > 0
-              ? <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">{tr("Bank transfer and mobile money are Nigerian-only for now. Card and crypto work from anywhere, and credit your wallet in naira.")}</div>
-              : <div className="text-[11.5px] leading-[1.5] mt-2 px-0.5 text-t-text-muted">{tr("No payment method is available for your country yet. Message us on WhatsApp and we will sort it out.")}</div>
+              ? <div className="wf-note">{tr("Bank transfer and mobile money are Nigerian-only for now. Card and crypto work from anywhere, and credit your wallet in naira.")}</div>
+              : <div className="wf-note">{tr("No payment method is available for your country yet. Message us on WhatsApp and we will sort it out.")}</div>
           )}
-          {method === "flutterwave" && gateways.some(g => g.id === "manual") && (
-                <div className="flex items-start gap-1.5 mt-1.5 py-1.5 px-2 text-t-text-muted">
-                  <OffsetIcon name="info" size={12} className="shrink-0 mt-px" />
-                  <span className="text-[11px] leading-snug">{tr("If our bank isn't on your app, try")} <button onClick={() => setMethod("manual")} className="underline cursor-pointer font-semibold text-accent-ink bg-transparent border-none p-0 font-[inherit] text-[inherit]">{tr("Manual Transfer")}</button> {tr("as a backup.")}</span>
-                </div>
-              )}
 
-          {(() => { const wb = welcomeEligible && valid ? bonusForNaira(numAmount) : 0; const extra = (discount > 0 ? discount / 100 : 0) + wb; return (
-            <div className="rounded-[14px] px-3.5 mt-3" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
-              {[
-                [tr("Deposit"), <b key="d" className="m text-[13px] font-semibold text-t-text">{valid ? money(numAmount) : money(0)}</b>],
-                [tr("Fee"), <b key="f" className="text-[13px] font-semibold text-t-text">{tr("Free")}</b>],
-                couponApplied && discount > 0 ? [tr("Coupon bonus"), <b key="c" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(discount / 100, { round: "down" })}</b>] : null,
-                wb > 0 ? [tr("Welcome bonus"), <b key="w" className="m text-[13px] font-semibold" style={{ color: dark ? "#6ee7b7" : "#059669" }}>+{money(wb, { round: "down" })}</b>] : null,
-              ].filter(Boolean).map(([label, val], i) => (
-                <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}><span>{label}</span>{val}</div>
-              ))}
-              <div className="flex items-center justify-between gap-3 py-3" style={{ borderTop: `1px solid ${t.cardBorder}` }}>
-                <span className="text-[13px] font-semibold text-t-text">{extra > 0 ? tr("You get") : tr("Total")}</span>
-                <b className="m text-[18px] font-bold" style={{ color: valid ? t.text : t.textMuted }}>{valid ? money(numAmount + extra, { round: "down" }) : "—"}</b>
-              </div>
+          <div className="wf-card wf-rc">
+            {[
+              [tr("Deposit"), <b key="d" className="m">{money(valid ? numAmount : 0)}</b>],
+              [tr("Fee"), <b key="f">{tr("Free")}</b>],
+              couponApplied && discount > 0 ? [tr("Coupon bonus"), <b key="c" className="m ok">+{money(discount / 100, { round: "down" })}</b>] : null,
+              wb > 0 ? [tr("Welcome bonus"), <b key="w" className="m ok">+{money(wb, { round: "down" })}</b>] : null,
+            ].filter(Boolean).map(([label, val]) => (
+              <div key={label} className="wf-rr"><span>{label}</span>{val}</div>
+            ))}
+            <div className="wf-rt">
+              <span>{tr("Total")}</span>
+              {valid ? <b className="m">{money(numAmount + extra, { round: "down" })}</b> : <em>{tr("Enter an amount")}</em>}
             </div>
-          ); })()}
-          <div className="mt-3">
-            <PayButton onClick={handlePay} disabled={!valid || loading} loading={loading} text={loading ? tr("Processing...") : valid ? `${tr("Pay")} ${money(numAmount)}` : tr("Enter an amount")} />
           </div>
-          <div className="text-center text-[11.5px] mt-2 text-t-text-muted">{tr("Payments are 100% secure. Your balance updates the moment it clears.")}</div>
-        </div>
+          {/* Crypto carries a higher floor than the rest of the wallet, so it is
+              said here, with one tap to meet it, rather than left for the server
+              to reject after they have pressed pay. */}
+          {cryptoLow && (
+            <div className="wf-warn">
+              <OffsetIcon name="alert" size={15} />
+              <span>{tr("Crypto deposits start at")} {money(MIN_CRYPTO_NGN)}</span>
+              <button type="button" onClick={() => setNaira(MIN_CRYPTO_NGN)} className="nb warn sm">{tr("Make it")} {money(MIN_CRYPTO_NGN)}</button>
+            </div>
+          )}
+          <PayButton onClick={handlePay} disabled={!valid || loading || cryptoLow} off={!valid || cryptoLow} loading={loading}
+            text={loading ? tr("Processing...")
+              : !valid ? tr("Enter an amount")
+              : cryptoLow ? `${tr("Crypto deposits start at")} ${money(MIN_CRYPTO_NGN)}`
+              : method === "manual" ? tr("Get our account details")
+              : method === "crypto" ? `${tr("Pay")} ${money(numAmount)} ${tr("in crypto")}`
+              : `${tr("Pay")} ${money(numAmount)}`} />
+          <div className="wf-sec"><OffsetIcon name="lock" size={12} />{tr("Payments are 100% secure. Your balance updates the moment it clears.")}</div>
+        </div></div>
       </div>
+        );
+      })()}
       {/* ═══ CRYPTO PAYMENT MODAL ═══ */}
       {cryptoModal && (
         <div onClick={() => { if (cryptoIsTerminal) { stopCryptoPolling(); setCryptoModal(null); } }} onKeyDown={e=>{if(e.key==='Escape'&&cryptoIsTerminal){stopCryptoPolling();setCryptoModal(null)}}} className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease] bg-black/45 overflow-y-auto">
@@ -1171,10 +1312,14 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
 
   return (
     <div className="mt-6 desktop:mt-8">
+      {/* A line either side of the heading, the same edge-to-edge line the page
+          header uses, so the history reads as its own section rather than the
+          tail of the top-up form. */}
+      <div className="page-divider bg-t-card-border" style={{ marginTop: 0 }} />
       {/* The filters ride the title's own line, and the count goes under both.
           With the count inside the title block the pair was too wide for a
           phone, so the filters wrapped onto a line of their own. */}
-      <div className="mb-3">
+      <div className="pt-3.5 mb-3.5">
         <div className="flex items-center justify-between gap-2">
           <div className="text-base desktop:text-lg font-semibold text-t-text whitespace-nowrap">{tr("Wallet History")}</div>
           <div className="flex gap-1.5 flex-wrap justify-end min-w-0">
@@ -1186,6 +1331,7 @@ function WalletHistory({ txs, initialTotal = txs?.length || 0, walletSummary, da
           </div>
         </div>
         <div className="text-[13px] text-t-text-muted">{total} {total === 1 ? tr("transaction") : tr("transactions")} {tr("· last 6 months")}</div>
+        <div className="page-divider bg-t-card-border" />
       </div>
 
       {/* Summary cards */}

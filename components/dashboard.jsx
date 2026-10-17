@@ -1772,16 +1772,6 @@ function DashboardInner({ initialData }) {
             <div className="text-sm text-t-text-muted">{tr("Remove ghost followers, non-followers, and inactive accounts")}</div>
             <div className="page-divider bg-t-card-border" />
           </div>}
-          {isLab && <div className="pb-2 desktop:pb-3.5">
-            <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">{tr("Reseller HQ")}</div>
-            <div className="text-sm desktop:text-[15px] text-t-text-muted">{tr("Your key, your prices, and the API for your panel")}</div>
-            <div className="page-divider bg-t-card-border" />
-          </div>}
-          {isTasks && <div className="pb-2 desktop:pb-3.5">
-            <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">{tr("Tasks")}</div>
-            <div className="text-sm desktop:text-[15px] text-t-text-muted">{tr("Do tasks, earn free credit")}</div>
-            <div className="page-divider bg-t-card-border" />
-          </div>}
 
           <div key={active} className="dash-page-enter" style={isSupport ? { flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" } : undefined}>
             {renderPage()}

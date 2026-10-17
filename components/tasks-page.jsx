@@ -222,6 +222,7 @@ export default function TasksPage({ dark }) {
       <div>
         <div className="serif text-[32px] max-md:text-[26px] font-semibold leading-none tracking-[-.015em] text-t-text">{tr("Tasks")}</div>
         <div className="text-[13px] mt-1.5 text-t-text-muted">{tr("Small tasks, free credit")}</div>
+        <div className="page-divider bg-t-card-border" />
       </div>
 
       {/* What you have earned, with the figures the Summary dropdown hid */}
@@ -301,7 +302,7 @@ function TasksPageSkeleton({ dark }) {
   return (
     <div className="tkp" aria-busy="true">
       <style>{TKP_CSS}</style>
-      <div><Bone dark={dark} w={110} h={30} r={8} /><Bone dark={dark} w={170} h={12} style={{ marginTop: 10 }} /></div>
+      <div><Bone dark={dark} w={110} h={30} r={8} /><Bone dark={dark} w={170} h={12} style={{ marginTop: 10 }} /><div className="page-divider bg-t-card-border" /></div>
       <div className={`tkp-skhero skel-bone ${dark ? 'skel-dark' : 'skel-light'}`}>
         <div>{gh(110, 10, 5)}{gh(130, 38, 9, { marginTop: 10 })}{gh(220, 11, 5, { marginTop: 12 })}</div>
         <div className="tkp-cells">{[0, 1, 2].map(i => <span key={i} className="tkp-gh cell" />)}</div>

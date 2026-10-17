@@ -286,7 +286,7 @@ function RewardsPageSkeleton({ dark }) {
   return (
     <div className="rwp" aria-busy="true">
       <style>{RWP_CSS}</style>
-      <div><Bone dark={dark} w={130} h={30} r={8} /><Bone dark={dark} w={210} h={12} style={{ marginTop: 10 }} /></div>
+      <div><Bone dark={dark} w={130} h={30} r={8} /><Bone dark={dark} w={210} h={12} style={{ marginTop: 10 }} /><div className="page-divider bg-t-card-border" /></div>
       <div className={`rwp-skhero skel-bone ${dark ? 'skel-dark' : 'skel-light'}`}>
         {gh(40, 40, 13)}
         {gh(90, 10, 5, { marginTop: 16 })}
@@ -362,6 +362,7 @@ export function RewardsPage({ rewards, dark, setActive, onUsePoints }) {
       <div>
         <div className="serif text-[32px] max-md:text-[26px] font-semibold leading-none tracking-[-.015em] text-t-text">{tr("Rewards")}</div>
         <div className="text-[13px] mt-1.5 text-t-text-muted">{tr("What using Nitro gives you back.")}</div>
+        <div className="page-divider bg-t-card-border" />
       </div>
 
       {/* Status, in the tier's own colour */}

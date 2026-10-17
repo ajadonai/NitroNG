@@ -111,12 +111,15 @@ export default function GuidePage({ dark }) {
     <div className="gp" style={{ "--wpat": PAT_WA }}>
       <style>{GUIDE_CSS}</style>
 
-      <div className="gp-head">
-        <div>
-          <div className="serif text-[32px] max-md:text-[26px] font-semibold leading-none tracking-[-.015em] text-t-text">{tr("Blog")}</div>
-          <div className="text-[13px] mt-1.5 text-t-text-muted">{tr("Guides to get the most out of Nitro.")}</div>
+      <div>
+        <div className="gp-head">
+          <div>
+            <div className="serif text-[32px] max-md:text-[26px] font-semibold leading-none tracking-[-.015em] text-t-text">{tr("Blog")}</div>
+            <div className="text-[13px] mt-1.5 text-t-text-muted">{tr("Guides to get the most out of Nitro.")}</div>
+          </div>
+          <a className="nb sec" href="/blog" target="_blank" rel="noopener noreferrer">{tr("Open the blog")}{ARROW}</a>
         </div>
-        <a className="nb sec" href="/blog" target="_blank" rel="noopener noreferrer">{tr("Open the blog")}{ARROW}</a>
+        <div className="page-divider bg-t-card-border" />
       </div>
 
       {loading ? <GuideSkeleton dark={dark} /> : all.length === 0 ? (
