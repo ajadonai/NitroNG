@@ -25,6 +25,11 @@ const nextConfig = {
       { source: '/index', destination: '/blog/creator-economy-index-edition-one', statusCode: 301 },
       // Platform slug aliases
       { source: '/services/twitter', destination: '/services/x', permanent: true },
+      // The affiliate programme lived at /reseller until it moved to /pit on
+      // 8 Aug 2026. The old address was left to 404, and Google kept it as the
+      // canonical, setting /pit aside as its duplicate (Search Console,
+      // 17 Oct 2026). Not /resellers: that is the wholesale page.
+      { source: '/reseller', destination: '/pit', permanent: true },
       // Merged blog posts — 301 losers into winners
       { source: '/blog/why-instagram-followers-drop-after-buying', destination: '/blog/why-smm-followers-drop-how-to-avoid-it', permanent: true },
       { source: '/blog/best-smm-panel-nigeria-2026-comparison', destination: '/blog/best-smm-panel-nigeria', permanent: true },

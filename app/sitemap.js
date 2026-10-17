@@ -21,7 +21,7 @@ export default async function sitemap() {
     { url: `${base}/services`, lastModified: '2025-07-01', changeFrequency: 'weekly', priority: 0.8 },
     { url: `${base}/quality`, lastModified: '2025-06-15', changeFrequency: 'monthly', priority: 0.8 },
     { url: `${base}/contact`, lastModified: '2025-06-15', changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${base}/pit`, lastModified: '2025-06-15', changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${base}/pit`, lastModified: '2026-10-17', changeFrequency: 'monthly', priority: 0.7 },
     { url: `${base}/resellers`, lastModified: '2026-08-24', changeFrequency: 'monthly', priority: 0.7 },
     // Public pages that were never listed. /resellers/docs sets robots index
     // true and its own canonical, so it was always meant to be found; /audit is
