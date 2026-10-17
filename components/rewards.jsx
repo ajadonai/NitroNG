@@ -579,7 +579,13 @@ const COINS = svgUrl('<svg xmlns="http://www.w3.org/2000/svg" width="96" height=
 const POP_CSS = `
 .rp-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px 13px 20px;border-bottom:1px solid var(--t-card-border)}
 .rp-h b{font-size:22px;font-weight:700;line-height:1;color:var(--t-text)}
-.rp-body{display:flex;flex-direction:column;gap:14px;padding:16px 18px 18px}
+/* A grid, not a flex column. In a flex column a child that hides its overflow
+   (the coloured card, the status table) may shrink below its own content, so
+   on a phone, where the sheet is shorter than what it holds, the column
+   squashed them and cut their chips and rows off instead of scrolling. Grid
+   has the same rule for auto rows, so the rows are sized to their content
+   outright (max-content): they cannot shrink, and the body scrolls instead. */
+.rp-body{display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:max-content;align-content:start;gap:14px;padding:16px 18px 18px}
 .rp-more{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;border:0;border-top:1px solid var(--t-card-border);background:none;font:inherit;font-size:12.5px;font-weight:650;color:var(--t-accent-ink);cursor:pointer}
 .rp-hero{position:relative;overflow:hidden;isolation:isolate;border-radius:16px;color:#fff;padding:14px 16px 16px;box-shadow:3px 3px 0 var(--vs)}
 .rp-hero::before{content:"";position:absolute;inset:-96px 0 0 -96px;z-index:-1;background-image:var(--pat,none);background-size:96px 96px;opacity:.13;animation:rpDrift 40s linear infinite}

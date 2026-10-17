@@ -394,6 +394,17 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **The Status and Points pop-ups no longer crush their cards on a phone**
+  (17 Oct 2026, `v2.4.131`). Reported from an iPhone: the coloured card cut
+  off its chips and the status table stopped at Apex. The pop-up body was a
+  flex column, and a child that hides its overflow may shrink below its own
+  content, so the sheet squeezed the card and the table instead of
+  scrolling. The body is a grid with rows sized to their content now
+  (`grid-auto-rows: max-content`), so it scrolls and nothing is cut. The new
+  Rewards and Tasks pages use the same rule, and their points and tasks row
+  uses minmax(0, …) columns so a long task title cannot push the cards off a
+  phone.
+
 - **Rewards and Tasks in the offset print** (17 Oct 2026, `v2.4.130`).
   Mockup "Nitro Rewards and Tasks". Rewards: the status card in the tier's
   own colour (the status pop-up's card at page size) with crowns drifting and
