@@ -21,6 +21,7 @@ import AnnouncementBanner from "./announcement-banner";
 import { trackViewContent } from "./capi-tracker";
 import { PublicNavSheet, SHEET_LINKS } from "./public-nav-sheet";
 import { OffsetIcon } from "./offset-icons";
+import { PlatformIcon } from "./platform-icon";
 
 // The mobile hero card. Colours come in as CSS variables from the component so it follows the theme.
 const HC_CSS = `
@@ -80,28 +81,32 @@ const LV3_CSS = `
    negative margin gives the height back to the line box so "deserves a bigger
    audience." stays exactly where it was. Both values are in em, so they hold
    through the clamp() that sizes this heading. */
-.lv3-roller{display:inline-grid;text-align:left;vertical-align:top;height:1.34em;margin-bottom:-.32em;overflow:hidden}
-.lv3-roller>span{grid-area:1/1;display:block;font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;letter-spacing:-.5px;opacity:0;transform:translateY(105%);transition:transform .55s cubic-bezier(.2,.7,.2,1),opacity .4s;white-space:nowrap}
+/* The rolling word on a printed gold marker (approved 17 Oct 2026, mockup
+   "Hero Left Side", direction A): the Top up coin's gold, tilted a touch, with
+   the offset edge every printed tile carries. It replaces the gold brackets,
+   which read like a placeholder in code. The words still slide up through it. */
+.lv3-roller{display:inline-grid;vertical-align:baseline;height:1.02em;line-height:1.02;margin:0 .06em;padding:0 .2em .04em;border-radius:.12em;background:#f5cf59;box-shadow:.06em .06em 0 #b8862a;transform:rotate(-1.5deg);overflow:hidden}
+.lv3-roller>span{grid-area:1/1;display:block;font-family:'Cormorant Garamond',serif;font-size:1.08em;line-height:1;font-style:italic;font-weight:600;letter-spacing:-.01em;color:#4a2236;opacity:0;transform:translateY(110%);transition:transform .45s cubic-bezier(.2,.8,.2,1),opacity .3s;white-space:nowrap}
 .lv3-roller>span.on{opacity:1;transform:translateY(0)}
-.lv3-roller>span.out{opacity:0;transform:translateY(-105%)}
-/* Brackets as pseudo-elements on each word rather than fixed siblings: the
-   closing one then hugs whatever word is in, with no width measuring and no
-   race with the Cormorant webfont. Every word starts at the same grid edge,
-   so the opening bracket reads as static while the closing one moves. They
-   stay out of the accessibility tree, which spares the screen reader
-   "open bracket business close bracket" every 2.6 seconds.
-   The glyphs are CSS unicode escapes — \\005B and \\005D are [ and ] — so the
-   i18n scanner does not read them as two English strings needing four
-   translations each. A bracket is punctuation, not prose. */
-.lv3-roller span::before,.lv3-roller span::after{font-family:Outfit,system-ui,sans-serif;font-style:normal;font-weight:400;letter-spacing:0;color:var(--bk);opacity:.82}
-.lv3-roller span::before{content:"\\005B";margin-right:.1em}
-.lv3-roller span::after{content:"\\005D";margin-left:.1em}
-.lv3-arc{position:relative;height:420px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:6px 0}
-.lv3-ficon{width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 12px 30px rgba(0,0,0,.18);animation:lv3float 7s ease-in-out infinite}
-.lv3-ficon-sm{width:44px;height:44px}
-@keyframes lv3float{0%,100%{margin-top:0}50%{margin-top:-10px}}
+.lv3-roller>span.out{opacity:0;transform:translateY(-110%)}
+.lv3-chip{display:inline-flex;align-items:center;gap:9px;height:32px;padding-inline:6px 14px;border-radius:999px;background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),2px 2px 0 rgba(60,20,35,.22);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#fff}
+.lv3-flag{width:22px;height:22px;border-radius:50%;overflow:hidden;display:flex;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,.55)}
+.lv3-flag i{flex:1}
+.lv3-gt{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;color:#a65d75;background:rgba(196,125,142,.16);box-shadow:inset 0 0 0 1px rgba(196,125,142,.35)}
+.lv3-ghost{display:inline-flex;align-items:center;gap:8px;height:56px;padding:0 22px;border-radius:999px;color:#fff;font-size:15px;font-weight:650;text-decoration:none;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.5);transition:background-color .15s}
+.lv3-ghost:hover{background:rgba(255,255,255,.08)}
+@media (max-width:767px){.lv3-chip{height:28px;gap:7px;font-size:10px;letter-spacing:1.6px}.lv3-flag{width:18px;height:18px}}
+/* Short desktop screens: the headline steps down a size so the trust line
+   stays clear of the stats strip. A 13 inch MacBook's browser window is about
+   830px tall, which is where the full size ran into it. */
+@media (min-width:1200px) and (max-height:880px){.lv3-fold #hero .lv3-h{font-size:clamp(40px,4.1vw,56px)}}
+@media (min-width:1200px) and (max-height:760px){.lv3-fold #hero .lv3-h{font-size:clamp(38px,3.6vw,50px)}}
 .lv3-mq{display:flex;width:max-content;animation:lv3mq 50s linear infinite}
 .lv3-mq:hover{animation-play-state:paused}
+.lv3-live{display:inline-block;width:9px;height:9px;margin-inline-end:10px;border-radius:50%;vertical-align:.12em;background:currentColor;animation:lv3live 2s ease-out infinite}
+@keyframes lv3live{0%{box-shadow:0 0 0 0 color-mix(in srgb,currentColor 55%,transparent)}70%,100%{box-shadow:0 0 0 9px transparent}}
+.lv3-pf{display:inline-flex;align-items:center;gap:8px;height:30px;margin-inline-end:10px;padding:0 13px 0 4px;border-radius:999px;background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);font-size:12.5px;font-weight:650;letter-spacing:.2px;color:rgba(255,255,255,.86);white-space:nowrap}
+.lv3-pf .ord-platform-icon{border-radius:50%}
 @keyframes lv3mq{to{transform:translateX(-50%)}}
 .lv3-fold{display:flex;flex-direction:column}
 /* The stats strip takes its column count from how many facts survived, via
@@ -114,14 +119,6 @@ const LV3_CSS = `
   .lv3-fold{height:calc(100dvh - 56px);overflow:hidden}
   .lv3-fold #hero{flex:1;min-height:0}
   .lv3-fold .lv3-strip{flex-shrink:0}
-}
-/* iPad Pro landscape and small desktops: the arc column breathes less */
-@media (min-width:1200px) and (max-width:1365px){
-  .lv3-arc{height:330px}
-  .lv3-ficon{width:44px;height:44px;border-radius:13px}
-  .lv3-ficon svg{width:18px;height:18px}
-  .lv3-ficon-sm{width:38px;height:38px}
-  .lv3-ficon-sm svg{width:13px;height:13px}
 }
 /* shorter desktop viewports: the hero interior compresses so the strip stays in frame */
 @media (min-width:1200px) and (max-height:820px){
@@ -139,7 +136,7 @@ const LV3_CSS = `
 @media (min-width:1200px) and (max-height:740px){
   .lv3-fold #hero form .auth-guest.on-signup{display:none}
 }
-@media (prefers-reduced-motion:reduce){.lv3-ring,.lv3-aur,.lv3-ficon,.lv3-mq{animation:none!important}.lv3-roller>span{transition:none}}
+@media (prefers-reduced-motion:reduce){.lv3-ring,.lv3-aur,.lv3-mq,.lv3-live{animation:none!important}.lv3-roller>span{transition:none}}
 `;
 
 const AuthModal = dynamic(() => import("./auth-modal"), { ssr: false });
@@ -262,6 +259,10 @@ function LandingInner({ initialAuthQuery, initialStats }){
   // cold load painted "0 Orders, 0 Accounts" first — and kept painting it for
   // good if the fetch never came back.
   const [siteStats,setSiteStats]=useState(initialStats||{users:null,orders:null,deliveryRate:null,processing:null});
+  // Platforms you can order on, less the three the hero line names. The
+  // server's first paint carries fullPlatforms too, so the line does not change
+  // under the reader once the client refreshes the figures.
+  const moreCount=siteStats.fullPlatforms?Math.max(siteStats.fullPlatforms-3,0):0;
   // The desktop strip's columns follow how many facts we actually have. It was
   // a fixed four, so a missing figure left a blank cell — which was already
   // possible before, because delivery and "delivering now" have always been
@@ -472,10 +473,10 @@ function LandingInner({ initialAuthQuery, initialStats }){
             <div className="lv3-grain-h"/>
           </div>
 
-          <div className={`lv3-grid grid grid-cols-[1.1fr_96px_.9fr] max-desktop:grid-cols-1 gap-x-[18px] max-desktop:gap-y-[30px] items-center pt-14 pb-12 max-desktop:pt-6 max-desktop:pb-4 max-md:pb-2 px-[60px] max-desktop:px-10 max-md:px-5 max-w-[1200px] mx-auto w-full relative z-[1] flex-1 max-desktop:text-center max-desktop:min-h-0 ${siteAlerts.length > 0 ? "max-md:pt-[50px]" : "max-md:pt-2"}`}>
+          <div className={`lv3-grid grid grid-cols-[1.1fr_.9fr] max-desktop:grid-cols-1 gap-x-[18px] max-desktop:gap-y-[30px] items-center pt-14 pb-12 max-desktop:pt-6 max-desktop:pb-4 max-md:pb-2 px-[60px] max-desktop:px-10 max-md:px-5 max-w-[1200px] mx-auto w-full relative z-[1] flex-1 max-desktop:text-center max-desktop:min-h-0 ${siteAlerts.length > 0 ? "max-md:pt-[50px]" : "max-md:pt-2"}`}>
             {/* LEFT */}
             <div className="text-start relative z-[1] max-desktop:text-center max-desktop:flex max-desktop:flex-col max-desktop:items-center">
-              <div className="fu text-[11px] font-bold tracking-[3px] uppercase mb-[22px] max-md:mb-3.5" style={{color:dark?t.accent:"rgba(255,255,255,.72)"}}>{tr("Nigeria's social growth engine")}</div>
+              <div className="fu mb-[22px] max-md:mb-3"><span className="lv3-chip"><span className="lv3-flag" aria-hidden="true"><i style={{background:"#0f8a4e"}}/><i style={{background:"#fff"}}/><i style={{background:"#0f8a4e"}}/></span>{tr("Nigeria's social growth engine")}</span></div>
               {/* The heading and the animated line are deliberately two
                   elements. The roller keeps all six words mounted at once so it
                   can cross-fade between them, and CSS hiding does not remove
@@ -486,24 +487,28 @@ function LandingInner({ initialAuthQuery, initialStats }){
                   sentence nobody sees; the line on screen is the same markup as
                   before and no longer claims to be the heading. */}
               <h1 className="sr-only">{tr("Social media growth for Nigerian creators and businesses, with Instagram, TikTok and YouTube followers, likes and views paid in naira.")}</h1>
-              <div aria-hidden="true" className="fu fd1 text-[clamp(40px,5vw,66px)] max-md:text-[clamp(34px,9vw,44px)] font-semibold leading-[1.02] -tracking-[2.2px] max-md:-tracking-[1.2px]" style={{color:t.heroText}}>
-                {tr("Your")} <span className="lv3-roller" style={{"--bk":dark?t.accent:"#ecc94b"}}>{HERO_WORDS.map((w,i)=><span key={w} className={i===word?"on":i===((word+HERO_WORDS.length-1)%HERO_WORDS.length)?"out":""} style={{color:dark?t.accent:"#fff"}}>{tr(w)}</span>)}</span><br/>{tr("deserves a bigger audience.")}
+              <div aria-hidden="true" className="fu fd1 lv3-h text-[clamp(40px,5vw,66px)] max-md:text-[clamp(34px,9vw,44px)] font-semibold leading-[1.02] -tracking-[2.2px] max-md:-tracking-[1.2px]" style={{color:t.heroText}}>
+                {tr("Your")} <span className="lv3-roller">{HERO_WORDS.map((w,i)=><span key={w} className={i===word?"on":i===((word+HERO_WORDS.length-1)%HERO_WORDS.length)?"out":""}>{tr(w)}</span>)}</span><br/>{tr("deserves a bigger audience.")}
               </div>
-              <p className="fu fd2 text-[clamp(15px,1.3vw,17.5px)] max-md:text-[14px] leading-[1.65] max-w-[520px] max-desktop:mx-auto mt-6 mb-7 max-md:mt-4 max-md:mb-4" style={{color:t.heroSoft}}>{tr("Followers, likes and views for Instagram, TikTok, YouTube and")} {siteStats.uniquePlatforms?`${siteStats.uniquePlatforms}+`:"25+"} {tr("more platforms.")} {/* "Paid in naira" is the line Google ranks this page on, so it
-                  survives untouched for anyone reading in naira — which is every
-                  crawler, since a crawler has no saved currency. Someone reading
-                  in dollars sees the same fact stated so it does not read as a
-                  contradiction beside a dollar price: the charge really is in
-                  naira, their bank converts it, and saying so here matches the
-                  "You will be charged ₦…" line they meet at the wallet. */}
-                {currency === "NGN"
-                  ? tr("Paid in naira, delivered in minutes, tested before you ever see it, and real people on WhatsApp")
-                  : tr("Delivered in minutes, tested before you ever see it, and real people on WhatsApp")} {tr("when you need them.")}</p>
+              {/* The count is every platform you can order on, less the three named
+                  in the line: uniquePlatforms is the curated total, so "27+ more"
+                  after naming three overstated it. */}
+              {/* What you get, then why to trust it: two whole sentences rather than
+                  one run on list, each translated whole so word order survives. */}
+              <p className="fu fd2 text-[clamp(16px,1.4vw,19px)] max-md:text-[15px] leading-[1.5] font-medium max-w-[520px] max-desktop:mx-auto mt-6 max-md:mt-4" style={{color:t.heroText}}>{moreCount > 0 ? <>{tr("Followers, likes and views for Instagram, TikTok, YouTube and")} {moreCount} {tr("more platforms.")}</> : tr("Followers, likes and views for Instagram, TikTok, YouTube and more.")}</p>
+              {/* "Paid in naira" is the line Google ranks this page on, so it
+                  survives for anyone reading in naira, which is every crawler,
+                  since a crawler has no saved currency. Someone reading in
+                  dollars is not told it beside a dollar price, where it would
+                  read as a contradiction. */}
+              <p className="fu fd2 text-[clamp(14.5px,1.15vw,16px)] max-md:text-[13.5px] leading-[1.6] max-w-[480px] max-desktop:mx-auto mt-2.5 mb-7 max-md:mt-2 max-md:mb-4" style={{color:t.heroSoft}}>{currency === "NGN"
+                  ? tr("Paid in naira and delivered in minutes. Every service is tested before you see it, and real people answer on WhatsApp.")
+                  : tr("Delivered in minutes. Every service is tested before you see it, and real people answer on WhatsApp.")}</p>
 
               {/* CTAs — desktop/tablet */}
-              <div className="fu fd3 flex gap-[18px] items-center flex-wrap max-desktop:!hidden">
-                <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hero-cta-btn inline-flex items-center gap-2 py-[15px] px-[26px] rounded-xl text-[15px] font-bold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_40px_rgba(0,0,0,.22)]" style={{background:dark?"linear-gradient(135deg,#c47d8e,#8b5e6b)":"#fff",color:dark?"#fff":"#1a1a1a"}}>🎁 {tr("Start with")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free credit")} <span className="dir-flip">→</span></a>
-                <a href="/pricing" onClick={e=>{e.preventDefault();document.getElementById("tiers")?.scrollIntoView({behavior:"smooth",block:"start"})}} className="text-[15px] font-semibold no-underline pb-0.5" style={{color:dark?t.text:"#fff",borderBottom:`1.5px solid ${dark?"rgba(255,255,255,.2)":"rgba(255,255,255,.5)"}`}}>{tr("See the tiers")}</a>
+              <div className="fu fd3 flex gap-3 items-center flex-wrap max-desktop:!hidden">
+                <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hero-cta-btn inline-flex items-center gap-2.5 h-14 ps-2 pe-[22px] rounded-full text-[15.5px] font-bold no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5" style={{background:"#fff",color:"#3a1828",boxShadow:"3px 3px 0 rgba(60,20,35,.3)"}}><span className="lv3-gt"><OffsetIcon name="gift" size={20} /></span>{tr("Start with")} <b className="m">{money(MAX_BONUS_NAIRA, { round: "down" })}</b> {tr("free credit")} <svg className="dir-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+                <a href="/pricing" onClick={e=>{e.preventDefault();document.getElementById("tiers")?.scrollIntoView({behavior:"smooth",block:"start"})}} className="lv3-ghost">{tr("See the tiers")}<svg className="dir-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
               </div>
 
               {/* Mobile hero card: the live format (strip, facts, gift, CTA, log in, trust) */}
@@ -543,14 +548,6 @@ function LandingInner({ initialAuthQuery, initialStats }){
                 <span className="inline-flex items-center gap-1.5" style={{color:dark?"#60a5fa":"#bae6fd"}}><OffsetIcon name="shield" size={12} />{tr("Trusted by creators across Nigeria")}</span>
                 {socialLinks.social_whatsapp_support&&<a href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 no-underline" style={{color:dark?"#25d366":"#86efac"}}><OffsetIcon name="chat" size={12} />{tr("We reply fast on WhatsApp")}</a>}
               </div>
-            </div>
-
-            {/* ARC — floating platform icons on their own column, desktop only */}
-            <div className="lv3-arc max-desktop:!hidden" aria-hidden="true">
-              <div className="lv3-ficon" style={{transform:"translateX(-10px)",animationDelay:"0s"}}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></div>
-              <div className="lv3-ficon" style={{transform:"translateX(14px)",animationDelay:"1.4s"}}><svg width="20" height="22" viewBox="0 0 448 512" fill="currentColor"><path d="M448 209.91a210.06 210.06 0 01-122.77-39.25v178.72A162.55 162.55 0 11185 188.31v89.89a74.62 74.62 0 1052.23 71.18V0h88a121 121 0 00122.77 121.33z"/></svg></div>
-              <div className="lv3-ficon" style={{transform:"translateX(-4px)",animationDelay:"2.8s"}}><svg width="24" height="17" viewBox="0 0 576 512" fill="currentColor"><path d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305zm-317.51 213.508V175.185l142.739 81.205-142.739 81.201z"/></svg></div>
-              <div className="lv3-ficon lv3-ficon-sm" style={{transform:"translateX(12px)",animationDelay:"2s"}}><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></div>
             </div>
 
             {/* RIGHT — Auth card (desktop) */}
@@ -645,13 +642,14 @@ function LandingInner({ initialAuthQuery, initialStats }){
           <div className="max-md:hidden lv3-facts" style={{"--cols":Math.max(deskFacts.length,1),background:dark?"#160f22":"#fff",borderBottom:`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`}}>
             {deskFacts.map(([v,l,g],i,arr)=>
               <div key={l} className="lv3-stat py-7 px-12 max-desktop:py-[22px] max-desktop:px-8" style={{borderRight:i<arr.length-1?`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.07)"}`:"none"}}>
-                <div className="m text-[30px] font-bold -tracking-[1px] leading-none" style={{color:g?(dark?"#34d399":"#059669"):t.text}}><CountUp value={v}/></div>
+                <div className="m text-[30px] font-bold -tracking-[1px] leading-none" style={{color:g?(dark?"#34d399":"#059669"):t.text}}>{g&&<i className="lv3-live" aria-hidden="true"/>}<CountUp value={v}/></div>
                 <div className="text-[10.5px] font-bold tracking-[2px] uppercase mt-2.5" style={{color:dark?"rgba(244,241,237,.36)":"rgba(28,27,25,.42)"}}>{l}</div>
               </div>
             )}
           </div>
-          <div className="overflow-hidden py-3.5" style={{background:dark?"#050710":"#2a1a22"}}>
-            <div className="lv3-mq">{[0,1].map(rep=><div key={rep} className="flex">{["Instagram","TikTok","YouTube","X / Twitter","WhatsApp","Spotify","Telegram","Facebook","Snapchat","Twitch","LinkedIn","Threads","Discord","Audiomack","Boomplay"].map((p,i)=><span key={p} className="text-xs font-extrabold tracking-[3px] uppercase px-[34px] whitespace-nowrap" style={{color:(i+1)%3===0?"#f2b866":"rgba(255,255,255,.78)"}}>{p}</span>)}</div>)}</div>
+          <div className="overflow-hidden py-[7px]" style={{background:dark?"#050710":"#2a1a22"}}>
+            {/* Each platform's own mark on a chip, in place of a row of words. */}
+            <div className="lv3-mq">{[0,1].map(rep=><div key={rep} className="flex" aria-hidden={rep===1||undefined}>{["Instagram","TikTok","YouTube","X","WhatsApp","Spotify","Telegram","Facebook","Snapchat","Twitch","LinkedIn","Threads","Discord","Audiomack","Boomplay"].map(p=><span key={p} className="lv3-pf"><PlatformIcon platform={p} dark size={22}/>{p}</span>)}</div>)}</div>
           </div>
         </div>
         </div>

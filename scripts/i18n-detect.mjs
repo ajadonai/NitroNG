@@ -188,6 +188,8 @@ export const DELIBERATELY_ENGLISH = new Map([
   ["Threads", "A platform name — see Instagram. The English word is also a common noun, which is exactly why it must be pinned: 'Threads' here is the app, not a plural."],
   ["Spotify", "A platform name — see Instagram."],
   ["Twitter", "A platform name — see Instagram."],
+  ["instagram.com/yourname", "A sample link in the landing page's How it works picture. It is an address, not a sentence, and it reads the same in every language."],
+  ["NTR-48213", "A sample order number in the landing page's How it works picture. Order numbers are the same in every language."],
 ]);
 
 /** Is this a sentence a customer reads, and is it ours to translate? */

@@ -2478,7 +2478,18 @@ body:has(.dash-main) .nitro-atmo::before { content: none; }
    markup for nothing, and the block is the same block.                      */
 /* ── footer: statement, channel card, columns, ghost wordmark ── */
 .lv3-ft{position:relative;overflow:hidden;color:#f6ecee}
-.lv3-ft-ghost{position:absolute;left:50%;bottom:-.34em;transform:translateX(-50%);font-size:290px;font-weight:800;letter-spacing:-.04em;line-height:1;color:transparent;-webkit-text-stroke:1px rgba(246,217,222,.09);pointer-events:none;user-select:none;white-space:nowrap}
+/* The ghost wordmark, in the offset print (17 Oct 2026): the outline, a rose
+   copy of the letters a step down and to the right of it (the printed edge
+   every tile on the site carries), and a slow light passing across. Centred
+   with flex on a full-width box rather than left:50% plus a translate, which
+   the RTL plugin half-flips (see "The [dir] specificity trap" in CLAUDE.md).
+   The bottom fades out instead of being cut off by the page edge. */
+.lv3-ft-ghost{position:absolute;left:0;right:0;bottom:-.34em;display:flex;justify-content:center;font-size:290px;font-weight:800;letter-spacing:-.04em;line-height:1;color:transparent;-webkit-text-stroke:1px rgba(246,217,222,.14);pointer-events:none;user-select:none;white-space:nowrap;-webkit-mask-image:linear-gradient(180deg,#000 30%,transparent 92%);mask-image:linear-gradient(180deg,#000 30%,transparent 92%)}
+.lv3-ft-ghost::before,.lv3-ft-ghost::after{content:attr(data-word);position:absolute;inset:0;display:flex;justify-content:center;-webkit-text-stroke:0}
+.lv3-ft-ghost::before{transform:translate(.03em,.03em);color:rgba(196,125,142,.09)}
+.lv3-ft-ghost::after{color:transparent;background:linear-gradient(100deg,transparent 42%,rgba(255,226,234,.2) 50%,transparent 58%);background-size:260% 100%;background-position:120% 0;-webkit-background-clip:text;background-clip:text;animation:lv3GhostSheen 10s ease-in-out infinite}
+@keyframes lv3GhostSheen{0%,40%{background-position:120% 0}100%{background-position:-20% 0}}
+@media (prefers-reduced-motion:reduce){.lv3-ft-ghost::after{animation:none}}
 .lv3-ft-in{position:relative;z-index:2;max-width:1200px;margin:0 auto;padding:0 60px}
 .lv3-ft-head{display:flex;align-items:center;justify-content:space-between;gap:48px;padding:56px 0 44px;border-bottom:1px solid rgba(246,217,222,.12)}
 .lv3-ft-stmt{font-size:38px;font-weight:600;letter-spacing:-.02em;line-height:1.12;max-width:15ch}

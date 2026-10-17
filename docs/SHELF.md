@@ -394,6 +394,30 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **The landing page below the hero, redrawn** (17 Oct 2026, `v2.4.128`).
+  The hero and its order card are untouched. Sections are named the way the
+  menu names them (Tiers, Why curated, Full list, How it works, Reviews) in
+  place of 01 to 05. The stats strip's "delivering right now" pulses and the
+  ticker shows each platform's mark. Tier cards print in their tier colour
+  with the refill promise in its own row, Standard raised with the one filled
+  button. The panel comparison is a test sheet whose four failures strike
+  through one after another. Each of the three steps shows the screen it
+  describes. The WhatsApp channel card is the lively green one from home, and
+  the footer's ghost NITRO keeps its outline with a printed rose layer, a slow
+  sheen and a fade at the bottom, centred without the translate the RTL
+  plugin half-flips. The footer's platform count reads the platforms you can
+  order on (fullPlatforms, 30) instead of the curated group count, which is
+  how it came to say "168+ platforms". The hero's left side took direction A
+  of "Hero Left Side": the eyebrow is a chip with a drawn flag, the rolling word
+  sits on a printed gold marker instead of brackets, the paragraph is two
+  sentences (what you get, "and 27 more platforms" counted live, then why to
+  trust it, each translated whole), the gift is a printed icon in the button,
+  and "See the tiers" is an outlined pill. Proof chips and a creator count
+  with rating were tried and dropped; the trust line and WhatsApp link stay as
+  they were. The floating platform icons are gone, and the headline steps down
+  a size under 880px and again under 760px tall, so on a 13 inch MacBook
+  (about 1500 by 830) the trust line clears the stats strip.
+
 - **Home redrawn, and the last old badges and tiles brought over** (17 Oct
   2026, `v2.4.127`). The home page leads with one money card: the balance, Top
   up and New order, with Status, Points and Tasks as three cells underneath in

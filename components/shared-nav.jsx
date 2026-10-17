@@ -258,7 +258,10 @@ export function SharedFooter() {
   const [platformCount, setPlatformCount] = useState(0);
   useEffect(() => {
     fetch("/api/settings").then(r => r.ok ? r.json() : {}).then(d => setSl(d.settings || {})).catch(() => {});
-    fetch("/api/site-info").then(r => r.ok ? r.json() : {}).then(d => setPlatformCount(d.stats?.platforms || 0)).catch(() => {});
+    // Platforms you can order on today, the same count the landing page quotes.
+    // stats.platforms is the number of curated service groups (168), not
+    // platforms, which is how this line came to say "168+ platforms".
+    fetch("/api/site-info").then(r => r.ok ? r.json() : {}).then(d => setPlatformCount(d.stats?.fullPlatforms || d.stats?.uniquePlatforms || 0)).catch(() => {});
   }, []);
 
   const xHandle = (sl.social_twitter || "TheNitroNG").replace(/^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\/?/i, "").replace(/^@/, "").replace(/\/$/, "");
@@ -278,7 +281,7 @@ export function SharedFooter() {
     <footer className="lv3-ft" style={{ background: dark ? "#050710" : "#2a1a22" }}>
       <div className="lv3-grain" />
       <div className="absolute rounded-full pointer-events-none" style={{ width: 520, height: 400, top: "-40%", left: "18%", background: "rgba(196,125,142,.14)", filter: "blur(110px)" }} />
-      <div className="lv3-ft-ghost" aria-hidden="true">NITRO</div>
+      <div className="lv3-ft-ghost" aria-hidden="true" data-word="NITRO">NITRO</div>
       <div className="lv3-ft-in">
 
         <div className="lv3-ft-cols">
@@ -287,7 +290,7 @@ export function SharedFooter() {
               style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}>
               <NitroWordmark height={13} color="#fff" />
             </span>
-            <p>{tr("We handle the numbers so you can handle the content.")} {platformCount ? `${platformCount}+` : "28+"} {tr("platforms, naira pricing, fast delivery.")}</p>
+            <p>{tr("We handle the numbers so you can handle the content.")} {platformCount ? <>{platformCount} {tr("platforms, naira pricing, fast delivery.")}</> : tr("Naira pricing, fast delivery.")}</p>
             <a className="lv3-ft-status" href="https://stats.uptimerobot.com/PvHE3u4psX" target="_blank" rel="noopener noreferrer"><i />{tr("All systems live")}</a>
             <div className="flex gap-2 mt-[18px]">
               {soc(`https://x.com/${xHandle}`, "X (Twitter)", "M18.9 1.2h3.7l-8.1 9.2 9.5 12.5h-7.4l-5.8-7.6-6.7 7.6H.4l8.6-9.8L0 1.2h7.6l5.2 6.9 6.1-6.9zm-1.3 19.5h2L6.5 3.2H4.4l13.2 17.5z")}
