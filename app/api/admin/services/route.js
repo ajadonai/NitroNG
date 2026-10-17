@@ -52,6 +52,9 @@ export async function GET() {
         orderBy: { category: 'asc' },
         include: {
           _count: { select: { orders: { where: { status: { notIn: DEAD_ORDER_STATES }, deletedAt: null } }, tiers: { where: { enabled: true } } } },
+          // The number customers quote (full list, order card, API), so admin
+          // can find a service by what a customer says. 17 Oct 2026.
+          resellerMap: { select: { apiId: true } },
         },
       }),
       prisma.setting.findUnique({ where: { key: 'markup_usd_rate' } }),
@@ -72,6 +75,7 @@ export async function GET() {
       services: services.map(s => ({
         id: s.id,
         apiId: s.apiId,
+        nitroId: s.resellerMap?.apiId ?? null,
         name: s.name,
         category: s.category,
         ...(sensitive ? { costPer1k: Math.round(Number(s.costPer1k) * usdRate) / 100 } : {}),

@@ -23,7 +23,12 @@ vi.mock('@/lib/reseller', () => ({
   // confusing way to be told a real export is missing.
   costKoboPer1k: vi.fn((cents) => Number(cents) * 1600),
 }));
-vi.mock('@/lib/full-catalogue', () => ({ platformOf: vi.fn(() => 'instagram') }));
+vi.mock('@/lib/full-catalogue', async () => {
+  // The real per-item rule, so the API is tested against what the site's full
+  // list actually applies rather than a copy of it.
+  const actual = await vi.importActual('@/lib/full-catalogue');
+  return { platformOf: vi.fn(() => 'instagram'), isPerItemPackage: actual.isPerItemPackage };
+});
 vi.mock('@/lib/reseller-format', () => ({
   formatResellerService: vi.fn((name) => ({ label: name, attrs: [], grade: null })),
   dedupeCategoryLabels: vi.fn((rows) => rows),
@@ -117,6 +122,28 @@ describe('balance and services', () => {
     ]);
     const r = await call({ key: 'k'.repeat(16), action: 'services' });
     expect(r.body.map(s => s.service)).toEqual([4102]);
+  });
+
+  /**
+   * One catalogue with the site's full list (17 Oct 2026). A reseller saw IDs
+   * 3311 and 3312 at ₦3,304,550,920 per 1,000: section headings kept as rows,
+   * min and max of 1 at a blocking price. The full list never showed them,
+   * because it drops anything sold per item; the API now drops the same rows.
+   */
+  it('leaves out the per-item rows the full list leaves out', async () => {
+    mockPrisma.service.findMany.mockResolvedValue([
+      { name: 'TikTok Views [Fast]', category: 'TikTok', platform: 'tiktok', sellPer1k: 52000n, costPer1k: 0.2, min: 500, max: 1000000, refill: false, cancel: false, resellerMap: { apiId: 4102, retiredAt: null } },
+      { name: 'A SECTION HEADING', category: 'Other', platform: 'reddit', sellPer1k: 330455092000n, costPer1k: 105555545, min: 1, max: 1, refill: false, cancel: false, resellerMap: { apiId: 3312, retiredAt: null } },
+      { name: 'Growth Package | 1.000 Followers', category: 'Instagram', platform: 'instagram', sellPer1k: 1500000n, costPer1k: 474, min: 1000, max: 1000, refill: false, cancel: false, resellerMap: { apiId: 2710, retiredAt: null } },
+    ]);
+    const r = await call({ key: 'k'.repeat(16), action: 'services' });
+    expect(r.body.map(s => s.service)).toEqual([4102]);
+  });
+
+  it('refuses to order a per-item row, as it is not on the list', async () => {
+    mockPrisma.resellerServiceMap.findUnique.mockResolvedValue({ retiredAt: null, tier: null, service: { id: 's-head', enabled: false, provider: 'mtp', providerListedAt: new Date(), costPer1k: 105555545, min: 1, max: 1 } });
+    const r = await call({ key: 'k'.repeat(16), action: 'add', service: 3312, link: 'https://example.com/x', quantity: 1 });
+    expect(r.body).toEqual({ error: 'Service not available' });
   });
 
   it('sends the Nitro tile as the category, never the provider\'s own', async () => {

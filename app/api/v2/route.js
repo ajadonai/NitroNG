@@ -17,7 +17,7 @@
 import prisma from '@/lib/prisma';
 import { getResellerTerms, getMarkupSettings, wholesaleOf, costKoboPer1k } from '@/lib/reseller';
 import { formatResellerService, dedupeCategoryLabels } from '@/lib/reseller-format';
-import { platformOf } from '@/lib/full-catalogue';
+import { platformOf, isPerItemPackage } from '@/lib/full-catalogue';
 import { standardType, describeService, extraOrderFields } from '@/lib/reseller-instructions';
 import { rateLimit, rateLimitUnavailable, tooManyRequests } from '@/lib/rate-limit';
 import { FULL_CATALOGUE_WHERE } from '@/lib/reseller-ids';
@@ -82,7 +82,7 @@ async function resolveVisible(apiId) {
     select: {
       retiredAt: true,
       tier: { select: { id: true, enabled: true, group: { select: { enabled: true } } } },
-      service: { select: { id: true, enabled: true, provider: true, providerListedAt: true, costPer1k: true } },
+      service: { select: { id: true, enabled: true, provider: true, providerListedAt: true, costPer1k: true, min: true, max: true } },
     },
   });
   if (!map) return { error: 'Incorrect service ID' };
@@ -100,6 +100,9 @@ async function resolveVisible(apiId) {
     // refusing here is what stops a reseller's panel booking a guaranteed
     // failure and waiting on a refund.
     if (!isListedRecently(s, await staleCutoffs())) return { error: 'Service not available' };
+    // A per-item package is not on the list (see listServices), so it is not
+    // orderable either: the same rule the site's full list applies.
+    if (isPerItemPackage(s)) return { error: 'Service not available' };
     return { serviceId: s.id };
   }
   return { error: 'Incorrect service ID' };
@@ -121,6 +124,13 @@ async function listServices(terms) {
   const rows = [];
   for (const s of services) {
     if (!s.resellerMap || s.resellerMap.retiredAt) continue;
+    // The full list's own rule, so the API and the site carry one catalogue.
+    // A rate here is per 1,000, which misprices anything sold per item, and the
+    // same rule catches the section headings some catalogues keep as rows (min
+    // and max of 1 at a blocking price): IDs 3311 and 3312 reached a reseller as
+    // ₦3,304,550,920 per 1,000 on 17 Oct 2026. No API order had touched any of
+    // the 633 rows it removes in the 90 days before.
+    if (isPerItemPackage(s)) continue;
     const retail = Number(s.sellPer1k);
     if (!retail || retail <= Number(s.costPer1k) * usdRate) continue;
     const fmt = formatResellerService(s.name, s.category);

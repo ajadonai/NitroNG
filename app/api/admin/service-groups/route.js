@@ -33,7 +33,7 @@ export async function GET() {
     const services = await prisma.service.findMany({
       where: { provider: { in: PROVIDER_IDS } },
       orderBy: { category: 'asc' },
-      select: { id: true, apiId: true, name: true, category: true, provider: true, costPer1k: true, sellPer1k: true, min: true, max: true, refill: true, avgTime: true },
+      select: { id: true, apiId: true, name: true, category: true, provider: true, costPer1k: true, sellPer1k: true, min: true, max: true, refill: true, avgTime: true, resellerMap: { select: { apiId: true } } },
     });
 
     const sensitive = canSeeSensitive(admin);
@@ -69,6 +69,7 @@ export async function GET() {
       services: services.map(s => ({
         id: s.id,
         apiId: s.apiId,
+        nitroId: s.resellerMap?.apiId ?? null,
         name: s.name,
         category: s.category,
         ...(sensitive ? { provider: s.provider, costPer1k: s.costPer1k } : {}),

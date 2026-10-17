@@ -136,6 +136,16 @@ database on 16 Sep 2026 — several entries had gone stale and are now in Closed
 
 ### Waiting on someone outside Nitro
 
+- **Travel eSIM — scoped 17 Oct 2026, parked until Airalo approves.** Trip has
+  applied for the Airalo Partner API. Scope and Trip's four calls are in
+  `docs/v2/esim_one_pager.md`, the working mockup in
+  `docs/v2/mockups/esim_internal.html`: naira at the day's rate rounded to
+  ₦100 and fixed at checkout, a 15 to 30 percent markup, a page under Tools
+  beside Mass order and Bulk order plus a home card and a public /esim, and
+  refunds to the wallet only for an eSIM never installed, within 30 days.
+  Travel only, never a Nigerian line. Trip: *"we arent building this yet.
+  just scoped and safe keeping."* Next, when approval lands: the brief.
+
 - **Flutterwave USD collection — the last step of foreign payments.** Tested
   live 12 Sep: GHS collects (mobile money shows), KES is built the same way, and
   a USD charge returns *"Oops! No Payment method available."* — Flutterwave
@@ -393,6 +403,37 @@ schema. Ordered low to high priority.
   generated, is the whole build once that exists.
 
 ## Closed
+
+- **Find any service by the number a customer quotes, the API's catalogue
+  matches the site's, and CI's schema check passes again** (17 Oct 2026,
+  `v2.4.135`). A reseller saw API IDs 3311 and 3312 at ₦3,304,550,920 per
+  1,000: section headings kept as rows upstream (min and max of 1 at a
+  blocking price). The site's full list always dropped them through
+  `isPerItemPackage`; the API's `services` and its order path now apply the
+  same rule, which removes 633 rows (56 headings, 577 fixed-quantity
+  packages). No API order had touched any of them in 90 days. Admin had no
+  way to find "service 301": customers quote the reseller map's apiId (full
+  list, order card, API) and admin showed the provider's number. Now the top
+  bar has a Service # lookup (also `/`, and Look up beside a Service ID on an
+  order or in Raw Services) that answers from `lib/service-lookup.js`: what
+  it is, retail, cost and margin, whether it is on the full list and the API
+  and the exact reason if not (the same rules, named), the curated tier it
+  sits under, orders, votes and saves, with Blacklist from full list, Switch
+  on or off, and markup in place. Raw Services and Menu Builder show and
+  search the customer's number (#301), with the provider's as p5603. Note:
+  tiers and full-list services share one numbering, so a low number is
+  often a curated tier (301 is Website Traffic, Premium), and the lookup
+  says so. Same day, by Trip's request, in the database: a global Facebook
+  Comments group placed before the 🇳🇬 and 🇺🇸 comment groups, Budget on
+  DaoSMM 1074 (₦8,540, fast) and Standard on 1075 (₦24,040, 150 a day, the
+  service switched on), both Custom Comments, prices from Menu Builder's own
+  calculation; record and undo steps in
+  Operations/facebook-comments-global-2026-10-17.json. And CI, red on at
+  least the last 40 pushes: three schema changes reached production without
+  a migration (users.outreachOptedOutAt from v2.2.1, outreach_contacts.method,
+  the services.platform index from v2.5.19), so the migrated database never
+  matched schema.prisma. `20261017160000_reconcile_schema_drift` records them
+  with IF NOT EXISTS, a no-op on production, which already has all three.
 
 - **Resellers, What's new and the full list's reading guide in the offset
   print** (17 Oct 2026, `v2.4.134`). Mockups "Nitro Resellers and What's New"

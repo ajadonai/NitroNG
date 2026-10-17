@@ -14,6 +14,7 @@ import { SITE } from "../lib/site";
 import { Avatar } from "./avatar";
 import { useToast } from "./toast";
 import { useSessionHeartbeat } from "../lib/use-session-heartbeat";
+import { ServiceLookup, ServiceLookupButton } from "./admin-service-lookup";
 
 const AdminOrdersPage = dynamic(() => import("./admin-orders"), { ssr: false });
 const AdminUsersPage = dynamic(() => import("./admin-users"), { ssr: false });
@@ -792,6 +793,8 @@ function AdminDashboardInner({ initialData }) {
           </div>
         </div>
         <div className="dash-nav-right">
+          {/* "Service 301" from anywhere in admin: the number customers quote. */}
+          <ServiceLookupButton />
           <ThemeToggle dark={dark} onToggle={toggleTheme} />
           {/* The bell (do not disturb) and pending payments share one tray, so the
               status side reads as one thing; payments lights rose while one waits. */}
@@ -939,6 +942,7 @@ function AdminDashboardInner({ initialData }) {
           {active === "create-order" ? <div id="create-order-sidebar" className="flex flex-col gap-4 flex-1 overflow-auto min-h-0" /> : active === "leaderboard" ? <AdminLeaderboardSidebar dark={dark} t={t} /> : <AdminRightSidebar data={data} dark={dark} t={t} active={active} admin={admin} setActive={setActive} />}
         </div>
       </div>
+      <ServiceLookup dark={dark} onNavigate={(id) => { setActive(id); setLeftOpen(false); }} />
     </div>
     </ConfirmProvider>
     </ToastProvider>

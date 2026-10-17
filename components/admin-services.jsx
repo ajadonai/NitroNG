@@ -6,6 +6,7 @@ import { FilterDropdown } from "./date-range-picker";
 import { serviceDisplay } from "../lib/service-display";
 import { copyText } from "@/lib/clipboard";
 import { formatNaira as naira } from '../lib/money';
+import { openServiceLookup, RAW_SEARCH_KEY, RAW_SEARCH_EVENT } from "./admin-service-lookup";
 
 const PROV = { mtp: "MTP", dao: "DAO", jap: "JAP" };
 
@@ -18,7 +19,13 @@ export default function AdminServicesPage({ dark, t }) {
   const toast = useToast();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  // Opened from the service lookup, the page arrives already filtered to it.
+  const [search, setSearch] = useState(() => { try { const v = sessionStorage.getItem(RAW_SEARCH_KEY); if (v) { sessionStorage.removeItem(RAW_SEARCH_KEY); return v; } } catch {} return ""; });
+  useEffect(() => {
+    const on = (e) => { setSearch(e.detail?.q || ""); try { sessionStorage.removeItem(RAW_SEARCH_KEY); } catch {} };
+    window.addEventListener(RAW_SEARCH_EVENT, on);
+    return () => window.removeEventListener(RAW_SEARCH_EVENT, on);
+  }, []);
   const [catFilter, setCatFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [providerFilter, setProviderFilter] = useState("all");
@@ -68,8 +75,13 @@ export default function AdminServicesPage({ dark, t }) {
     if (statusFilter === "blacklisted" && !s.blacklisted) return false;
     if (catFilter !== "all" && s.category !== catFilter) return false;
     if (search) {
-      const q = search.toLowerCase().replace(/^#/, "");
-      return s.name?.toLowerCase().includes(q) || s.category?.toLowerCase().includes(q) || String(s.apiId) === q;
+      // #301 is the number customers quote (full list, order card, API); p5603
+      // is the provider's own. A bare number matches either, and the row shows
+      // both, so it is clear which one hit.
+      const q = search.toLowerCase().trim().replace(/^#/, "");
+      if (/^p\d+$/.test(q)) return `p${s.apiId}` === q;
+      if (/^\d+$/.test(q)) return String(s.nitroId) === q || String(s.apiId) === q;
+      return s.name?.toLowerCase().includes(q) || s.category?.toLowerCase().includes(q);
     }
     return true;
   });
@@ -198,7 +210,7 @@ export default function AdminServicesPage({ dark, t }) {
       <div className="rs-bar">
         <div className="rs-srch">
           <span className="rs-si">{SEARCH}</span>
-          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search name, platform or #id" />
+          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search name, platform, #301 or p5603" />
           {search && <button type="button" className="rs-x" onClick={() => { setSearch(""); setPage(1); }} aria-label="Clear search">✕</button>}
         </div>
         {providers.length > 1 && (
@@ -230,7 +242,7 @@ export default function AdminServicesPage({ dark, t }) {
                   <b title={s.name}>{d.title}</b>
                   <i>
                     {sensitive && <span className={`rs-pv ${prov}`}>{PROV[prov] || prov.toUpperCase()}</span>}
-                    <button type="button" className="rs-sid m" title="Copy the id" onClick={e => { e.stopPropagation(); copyText(String(s.apiId)); toast.success("Copied", `#${s.apiId}`); }}>#{s.apiId}</button>
+                    <button type="button" className="rs-sid m" title={s.nitroId != null ? "The number customers quote. Copy it" : "No customer number yet. Copy the provider's"} onClick={e => { e.stopPropagation(); const v = s.nitroId != null ? `#${s.nitroId}` : `p${s.apiId}`; copyText(v.replace(/^#/, "")); toast.success("Copied", v); }}>{s.nitroId != null ? `#${s.nitroId}` : `p${s.apiId}`}</button>
                     {s.tiers > 0 && <span className="rs-use">In use · {s.tiers}</span>}
                     {!s.enabled && <span className="rs-offc">Off</span>}
                     {s.blacklisted && <span className="rs-blkc">Blacklisted</span>}
@@ -275,6 +287,7 @@ export default function AdminServicesPage({ dark, t }) {
                         <div className="rs-f rs-raw"><span>Provider's name</span><b>{s.name}</b></div>
                       </div>
                       <div className="rs-acts">
+                        <button type="button" className="nb sec" onClick={() => openServiceLookup(s.nitroId ?? `p${s.apiId}`)}>Look up</button>
                         <button type="button" className="nb sec" onClick={() => startEdit(s)}>Edit</button>
                         <button type="button" className="nb sec" onClick={() => toggleEnabled(s)}>{s.enabled ? "Switch off" : "Switch on"}</button>
                         <button type="button" className="nb warn" onClick={() => toggleBlacklist(s)}>{s.blacklisted ? "Restore to full list" : "Blacklist from full list"}</button>

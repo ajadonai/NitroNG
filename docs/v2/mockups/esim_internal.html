@@ -1,0 +1,387 @@
+<title>Nitro Travel eSIM</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=JetBrains+Mono:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: intro with Day/Night and the three states (Shop, Install, My eSIMs), the computer view, the phone view, where it sits in the sidebar, notes, then the calls to make. */
+:root{--bg:#f6f2f4;--panel:#fff;--ink:#211a26;--mut:#6f6573;--line:rgba(33,26,38,.1);--acc:#c47d8e;
+  --body:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--disp:'Cormorant Garamond',Georgia,serif;--mono:'JetBrains Mono',ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e0915;--panel:#171022;--ink:#efe9f3;--mut:#a59bab;--line:rgba(255,255,255,.1);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e0915;--panel:#171022;--ink:#efe9f3;--mut:#a59bab;--line:rgba(255,255,255,.1);color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);padding-block:32px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1380px;margin:0 auto}
+header.intro{max-width:820px}
+h1{font:600 50px/1.04 var(--disp);font-style:italic;margin:0 0 12px;text-wrap:balance}
+header.intro p{margin:0 0 10px;color:var(--mut);font-size:15.5px;max-width:76ch}
+.ctl{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+.seg{display:inline-flex;gap:3px;padding:4px;border-radius:999px;background:var(--panel);box-shadow:inset 0 0 0 1px var(--line)}
+.seg button{font:600 13px var(--body);color:var(--mut);background:none;border:0;height:32px;padding:0 14px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{color:var(--ink);background:rgba(196,125,142,.14);box-shadow:2px 2px 0 rgba(196,125,142,.35)}
+.seg button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+section.pg{margin-top:52px}
+h2.pg{font:600 36px/1.08 var(--disp);font-style:italic;margin:0 0 6px}
+.lead{color:var(--mut);margin:0 0 20px;max-width:82ch}
+.cap{font:700 11px var(--body);letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);margin:0 0 8px 2px}
+.scroll{overflow-x:auto;padding:4px 4px 8px;margin:-4px}
+.row2{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.notes{margin:28px 0 0;padding:0;list-style:none;display:grid;gap:8px;max-width:90ch;color:var(--mut);font-size:14.5px}
+.notes li{padding-left:18px;position:relative}
+.notes li::before{content:"";position:absolute;left:2px;top:.6em;width:7px;height:7px;border-radius:2px;background:var(--acc);box-shadow:1.5px 1.5px 0 rgba(196,125,142,.4)}
+.notes b{color:var(--ink);font-weight:650}
+.ask{margin-top:56px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px 26px;max-width:860px}
+.ask h2{font:600 30px/1.1 var(--disp);font-style:italic;margin:0 0 12px}
+.ask ol{margin:0;padding-left:20px;display:grid;gap:10px;color:var(--mut)}
+.ask b{font-weight:650;color:var(--ink)}
+
+/* ── the product ── */
+.mk{--g:#f4efea;--card:#fffdfb;--ink:#201b19;--soft:#5f5560;--mute:#8d828b;--hair:rgba(32,27,25,.08);--hair2:rgba(32,27,25,.14);--acc-ink:#83535f;--tint:rgba(196,125,142,.12);--sh:#efc4cf;--green:#047c57;--blue:#2563eb;--amber:#a55a05;--field:#f7f1ec;
+  --fill:linear-gradient(165deg,#96626f 0%,#7a4f5c 100%);--on-fill:#fff;
+  font-family:var(--body);color:var(--ink);background:var(--g);-webkit-font-smoothing:antialiased;position:relative}
+.mk.night{--g:#0f0a18;--card:#171126;--ink:#f2efe9;--soft:rgba(242,239,233,.72);--mute:rgba(242,239,233,.5);--hair:rgba(255,255,255,.09);--hair2:rgba(255,255,255,.15);--acc-ink:#e3a4b5;--tint:rgba(196,125,142,.2);--sh:#6b3a4a;--green:#6ee7b7;--blue:#93c5fd;--amber:#fcd34d;--field:rgba(255,255,255,.05);
+  --fill:linear-gradient(165deg,#e9b0bf 0%,#d492a6 100%);--on-fill:#241019}
+.mk svg{display:block}
+:where(.mk button){font:inherit;color:inherit}
+:where(.mk) :focus-visible{outline:2px solid #c47d8e;outline-offset:2px}
+.frame{border-radius:18px;border:1px solid var(--line);overflow:hidden}
+.dw{width:1000px;padding:26px 28px 32px}
+.pf{width:390px;max-width:100%;border-radius:30px;border:1px solid var(--line);overflow:hidden;padding:20px 14px 28px}
+.pt{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.hd h3{margin:0;font:600 34px/1 var(--disp);letter-spacing:-.01em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hd p{margin:7px 0 0;font-size:13.5px;color:var(--mute)}
+.hd hr{border:0;height:1px;background:var(--hair2);margin:14px -28px 0}
+.pf .hd h3{font-size:28px}
+.pf .hd hr{margin-inline:-14px}
+.card{background:var(--card);border-radius:18px;box-shadow:inset 0 0 0 1px var(--hair),2px 2px 0 var(--sh)}
+.tile{width:34px;height:34px;border-radius:10px;display:inline-grid;place-items:center;flex-shrink:0;color:var(--acc-ink);background:var(--tint);box-shadow:2px 2px 0 var(--sh)}
+.tile.tc{color:var(--tcc);background:color-mix(in srgb,var(--tcc) 13%,var(--card));box-shadow:2px 2px 0 color-mix(in srgb,var(--tcc) 32%,transparent)}
+.eb{font:700 10.5px var(--body);letter-spacing:1.5px;text-transform:uppercase;color:var(--mute)}
+.pb{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:7px;font:700 11px/1.1 var(--body);white-space:nowrap}
+.pb.tag{color:var(--soft);box-shadow:inset 0 0 0 1px var(--hair2)}
+.pb.ok{color:var(--green);background:color-mix(in srgb,var(--green) 12%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--green) 30%,transparent)}
+.pb.new{color:#4a2236;background:#f5cf59;box-shadow:1.5px 1.5px 0 #b8862a;font-family:var(--mono)}
+.pb.warn{color:var(--amber);background:color-mix(in srgb,var(--amber) 11%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--amber) 32%,transparent)}
+.nb{height:38px;padding:0 15px;border:0;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
+.nb.pri{color:var(--on-fill);background:var(--fill);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 3px 8px -2px rgba(110,51,70,.4)}
+.nb.sec{color:var(--ink);background:var(--card);box-shadow:inset 0 0 0 1px rgba(139,74,94,.3),0 1px 1.5px rgba(0,0,0,.05)}
+.nb.sm{height:30px;padding:0 11px;font-size:12px;border-radius:9px}
+.money{width:100%;height:52px;border:0;border-radius:999px;cursor:pointer;font:700 16px var(--body);color:#4a2a12;background:radial-gradient(120% 140% at 30% 20%,#ffe9a8,#f8c145 58%,#eda63a);box-shadow:0 4px 14px rgba(212,150,30,.34),inset 0 0 0 1.5px rgba(255,255,255,.65),0 0 0 1.5px rgba(255,255,255,.5),0 0 0 3px rgba(180,120,20,.28)}
+.mk.night .money{box-shadow:0 4px 14px rgba(0,0,0,.4),inset 0 0 0 1.5px rgba(255,255,255,.6),0 0 0 1.5px rgba(255,255,255,.45),0 0 0 3px rgba(248,193,69,.32)}
+.money b{font-family:var(--mono);font-weight:800}
+.cc{width:34px;height:34px;border-radius:10px;display:inline-grid;place-items:center;flex-shrink:0;font:800 11.5px var(--mono);letter-spacing:.02em;color:var(--blue);background:color-mix(in srgb,var(--blue) 12%,var(--card));box-shadow:2px 2px 0 color-mix(in srgb,var(--blue) 30%,transparent)}
+
+/* the search: a night flight, alive */
+.fly{position:relative;overflow:hidden;isolation:isolate;border-radius:22px;padding:22px 22px 20px;color:#eef3ff;background:radial-gradient(70% 120% at 100% 0%,rgba(147,197,253,.38),transparent 62%),linear-gradient(150deg,#0b1430 0%,#13224a 55%,#24386e 100%);box-shadow:4px 4px 0 #070d20}
+.mk.night .fly{box-shadow:4px 4px 0 #1d2f5c}
+.fly::before{content:"";position:absolute;inset:-96px 0 0 -96px;z-index:-1;background-image:var(--pat);background-size:96px 96px;opacity:.1;animation:drift 50s linear infinite}
+@keyframes drift{to{transform:translate(96px,96px)}}
+.fly .q{font:600 28px/1.1 var(--disp);margin:0}
+.fly .s{margin:5px 0 0;font-size:13px;color:rgba(238,243,255,.75)}
+.srch{display:flex;align-items:center;gap:10px;height:52px;margin-top:16px;padding:0 16px;border-radius:14px;background:rgba(255,255,255,.96);color:#1b2340;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.4),3px 3px 0 rgba(0,0,0,.3)}
+.srch input{flex:1;min-width:0;border:0;outline:0;background:none;font:600 15px var(--body);color:#1b2340}
+.srch input::placeholder{color:#6b7392}
+.srch kbd{font:700 11px var(--mono);padding:3px 7px;border-radius:6px;color:#6b7392;background:#eef1f8}
+.pops{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.pop{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px 0 5px;border:0;border-radius:999px;cursor:pointer;font-size:13px;font-weight:650;color:#eef3ff;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+.pop i{font:800 10px var(--mono);font-style:normal;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#0b1430;background:#cfe0ff}
+.pop.on{color:#0b1430;background:#fff;box-shadow:2px 2px 0 rgba(0,0,0,.35)}
+.pop.on i{color:#fff;background:#2563eb}
+.pf .fly{padding:18px 16px}
+.pf .fly .q{font-size:24px}
+
+/* the destination and its plans */
+.dest{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 16px}
+.dest .tx{flex:1;min-width:12em}
+.dest b{display:block;font-size:16px;font-weight:750}
+.dest small{display:block;margin-top:2px;font-size:12.5px;color:var(--soft)}
+.dest .chips{display:flex;flex-wrap:wrap;gap:6px}
+.shop{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+.pf .shop{grid-template-columns:1fr}
+.plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.pf .plans{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.plan{position:relative;display:flex;flex-direction:column;gap:2px;padding:14px 14px 13px;border:0;border-radius:16px;cursor:pointer;text-align:start;background:var(--card);box-shadow:inset 0 0 0 1px var(--hair2);transition:transform .14s}
+.plan:hover{transform:translateY(-1px)}
+.plan.on{background:color-mix(in srgb,#c47d8e 8%,var(--card));box-shadow:inset 0 0 0 2px #c47d8e,3px 3px 0 var(--sh)}
+.plan .gb{font:800 26px/1 var(--mono);letter-spacing:-.03em}
+.plan .gb small{font-size:13px;font-weight:700;margin-inline-start:3px;letter-spacing:0}
+.plan .dy{font-size:12.5px;font-weight:600;color:var(--soft);margin-top:4px}
+.plan hr{border:0;border-top:1.5px dashed var(--hair2);margin:11px -14px 9px;width:auto}
+.plan .pr{font:800 16px var(--mono);color:var(--acc-ink)}
+.plan .per{font-size:11px;color:var(--mute)}
+.plan .stamp{position:absolute;top:-9px;inset-inline-start:10px;padding:3px 7px;border-radius:6px;font:800 9.5px/1.1 var(--body);letter-spacing:.07em;text-transform:uppercase;color:#fff;background:#96626f;box-shadow:1.5px 1.5px 0 #6b3a4a}
+.mk.night .plan .stamp{color:#241019;background:#e9b0bf}
+.ex{font-size:11.5px;color:var(--mute);margin-top:8px}
+/* the receipt */
+.buy{padding:16px}
+.buy .ln{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--hair);font-size:13px;color:var(--soft)}
+.buy .ln:first-of-type{border-top:0}
+.buy .ln b{font:700 13px var(--mono);color:var(--ink)}
+.buy .tot{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0 14px;border-top:1.5px dashed var(--hair2)}
+.buy .tot span{font-size:13.5px;font-weight:700}
+.buy .tot b{font:800 22px var(--mono)}
+.buy .what{display:flex;gap:10px;align-items:center;padding-bottom:12px;margin-bottom:4px;border-bottom:1px solid var(--hair)}
+.buy .what b{display:block;font-size:14px;font-weight:750}
+.buy .what small{display:block;font-size:12px;color:var(--mute)}
+.buy .note{display:flex;gap:8px;margin-top:12px;font-size:12px;line-height:1.5;color:var(--soft)}
+.buy .note svg{flex-shrink:0;margin-top:2px;color:var(--green)}
+
+/* how it works, check your phone, travel only, questions */
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.st{padding:16px 18px 18px;border-inline-start:1px solid var(--hair);display:flex;flex-direction:column;gap:6px}
+.st:first-child{border-inline-start:0}
+.st .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font:800 12px var(--mono);color:#fff;background:#96626f;box-shadow:1.5px 1.5px 0 #6b3a4a}
+.mk.night .st .n{color:#241019;background:#e9b0bf}
+.st b{font-size:14.5px;font-weight:750;margin-top:4px}
+.st p{margin:0;font-size:12.8px;line-height:1.55;color:var(--soft)}
+.pf .steps{grid-template-columns:1fr}
+.pf .st{border-inline-start:0;border-top:1px solid var(--hair)}
+.pf .st:first-child{border-top:0}
+.duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.pf .duo{grid-template-columns:1fr}
+.chk{padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.chk .hd2{display:flex;align-items:center;gap:10px}
+.chk .hd2 b{font-size:14.5px;font-weight:750}
+.chk p{margin:0;font-size:13px;line-height:1.6;color:var(--soft)}
+.chk code{font:800 13px var(--mono);padding:2px 7px;border-radius:7px;color:var(--ink);background:var(--field)}
+.only{position:relative;padding:16px 18px}
+.only .stamp2{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:7px;font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--amber);background:color-mix(in srgb,var(--amber) 10%,var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--amber) 40%,transparent);transform:rotate(-2deg)}
+.only p{margin:10px 0 0;font-size:13px;line-height:1.6;color:var(--soft)}
+.only p b{color:var(--ink)}
+.fq{border-top:1px solid var(--hair)}
+.fq:first-of-type{border-top:0}
+.fq .qq{display:flex;align-items:center;gap:12px;padding:13px 18px;font-size:14px;font-weight:700}
+.fq .qq span{flex:1}
+.fq .qq svg{color:var(--mute)}
+.fq.open .qq svg{transform:rotate(180deg);color:var(--acc-ink)}
+.fq .aa{padding:0 18px 14px;font-size:13px;line-height:1.6;color:var(--soft)}
+.ch{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--hair)}
+.ch b{font-size:14px;font-weight:750}
+.ch small{margin-inline-start:auto;font-size:12px;color:var(--mute)}
+
+/* install sheet: over the page, house modal rules */
+.stage{position:relative;overflow:hidden}
+.dw.stage{height:900px}
+.pf.stage{height:844px}
+.behind{display:grid;gap:16px}
+.dim{position:absolute;inset:0;background:rgba(10,6,14,.55)}
+.sheet{position:absolute;display:flex;flex-direction:column;background:var(--card);box-shadow:inset 0 0 0 1px var(--hair2),5px 5px 0 rgba(10,6,14,.35)}
+.dw .sheet{left:50%;top:50%;width:560px;transform:translate(-50%,-50%);border-radius:22px}
+.pf .sheet{left:0;right:0;bottom:0;max-height:92%;border-radius:24px 24px 0 0}
+.sbody{overflow-y:auto;padding:20px 22px 8px}
+.pf .sbody{padding:14px 16px 8px}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--hair2);margin:8px auto 0}
+.sh{display:flex;align-items:flex-start;gap:12px}
+.sh .tx{flex:1;min-width:0}
+.sh h4{margin:0;font:600 27px/1.05 var(--disp)}
+.sh p{margin:5px 0 0;font-size:13px;color:var(--mute)}
+.x{width:34px;height:34px;flex-shrink:0;border:0;border-radius:11px;display:grid;place-items:center;cursor:pointer;color:var(--soft);background:var(--card);box-shadow:inset 0 0 0 1px var(--hair2),2px 2px 0 var(--sh)}
+.qrw{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center;margin-top:16px;padding:16px;border-radius:18px;background:var(--field);box-shadow:inset 0 0 0 1px var(--hair)}
+.pf .qrw{grid-template-columns:1fr;justify-items:center;text-align:center}
+.qr{width:168px;height:168px;padding:10px;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08),3px 3px 0 var(--sh)}
+.qrw .tx b{display:block;font-size:15px;font-weight:750}
+.qrw .tx p{margin:4px 0 12px;font-size:12.8px;line-height:1.55;color:var(--soft)}
+.osw{display:inline-flex;gap:3px;padding:3px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1px var(--hair2);margin-top:16px}
+.osw button{height:30px;padding:0 13px;border:0;border-radius:999px;background:none;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--soft)}
+.osw button.on{color:var(--ink);background:var(--tint);box-shadow:1.5px 1.5px 0 var(--sh)}
+.ist{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:s}
+.ist li{display:flex;gap:10px;font-size:13px;line-height:1.5;color:var(--soft);counter-increment:s}
+.ist li::before{content:counter(s);width:22px;height:22px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;font:800 11px var(--mono);color:var(--acc-ink);background:var(--tint);box-shadow:1.5px 1.5px 0 var(--sh)}
+.ist b{color:var(--ink)}
+.man{margin-top:14px;border-radius:14px;box-shadow:inset 0 0 0 1px var(--hair2);overflow:hidden}
+.man .r{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--hair)}
+.man .r:first-child{border-top:0}
+.man .r span{flex:1;min-width:0;font-size:12px;color:var(--mute)}
+.man .r code{display:block;margin-top:2px;font:700 12px var(--mono);color:var(--ink);overflow-wrap:anywhere}
+.sfoot{padding:12px 22px 18px;border-top:1px solid var(--hair);display:flex;gap:10px}
+.pf .sfoot{padding:12px 16px 16px;flex-direction:column}
+.sfoot .nb{flex:1;height:44px;font-size:14px;border-radius:12px}
+.pf .sfoot .nb{flex:none;width:100%}
+
+/* my eSIMs */
+.mine{display:grid;gap:12px}
+.es{padding:16px 18px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center}
+.pf .es{grid-template-columns:auto minmax(0,1fr);padding:14px}
+.pf .es .act{grid-column:1/-1;display:flex;gap:8px}
+.pf .es .act .nb{flex:1}
+.es .tx b{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px;font-weight:750}
+.es .tx small{display:block;margin-top:3px;font-size:12.5px;color:var(--mute)}
+.bar{height:8px;margin-top:9px;border-radius:5px;overflow:hidden;background:var(--hair2)}
+.bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#2563eb,#60a5fa)}
+.es .act{display:flex;gap:8px}
+.es.off{opacity:.72}
+@media (prefers-reduced-motion:reduce){.fly::before{animation:none}.plan{transition:none}}
+</style>
+
+<div class="wrap">
+<header class="intro">
+  <h1>Travel eSIM, the first of the tools</h1>
+  <p>Data abroad, bought in naira from the wallet before the flight, delivered as a QR code. Drawn as a dashboard page in the same print as the rest. Destinations, networks and prices here are examples; the real catalogue and rates come from the provider at build time.</p>
+  <div class="ctl">
+    <div class="seg" role="group" aria-label="Show it in"><button type="button" id="m-day" aria-pressed="true">Day</button><button type="button" id="m-night" aria-pressed="false">Night</button></div>
+    <div class="seg" role="group" aria-label="State"><button type="button" data-st="shop" aria-pressed="true">Shop</button><button type="button" data-st="install" aria-pressed="false">After paying</button><button type="button" data-st="mine" aria-pressed="false">My eSIMs</button></div>
+  </div>
+</header>
+
+<section class="pg">
+  <h2 class="pg">On a computer</h2>
+  <p class="lead">The page in the dashboard's content column. Tap a destination or a plan; the receipt follows.</p>
+  <div class="scroll"><div class="mk frame dw" data-v="desk"></div></div>
+</section>
+
+<section class="pg">
+  <h2 class="pg">On a phone</h2>
+  <p class="lead">Same page, stacked; the install sheet rises from the bottom.</p>
+  <div class="row2"><div class="mk pf" data-v="phone"></div></div>
+  <ul class="notes">
+    <li><b>Where you are going comes first.</b> A dark night-flight card with one search and the destinations Nigerians fly to most, plus regional plans for a multi-country trip. Pick one and its plans appear under it.</li>
+    <li><b>A plan is data and days, priced in naira</b>, with the price per GB under it so the bigger plans show their value. Printed tickets like the wallet's bonus tickets, one "Most picked" stamp.</li>
+    <li><b>The receipt says what you are buying in a sentence</b> and pays from the wallet with the shared gold button. Not enough in the wallet? The button becomes Top up the difference.</li>
+    <li><b>After paying, the QR is right there</b>: scan it, or on an iPhone install with one tap, with the manual codes underneath and a copy in your email. It says when the days start (when it first connects abroad), so nobody burns a plan by installing early.</li>
+    <li><b>My eSIMs shows what is left</b>: data used, days left, top up, and the ones still waiting to be installed.</li>
+    <li><b>The two honest bits are on the page</b>: check your phone takes an eSIM (dial *#06#, look for EID), and travel only. It is data abroad, not a Nigerian line, and your WhatsApp stays on your own number.</li>
+  </ul>
+</section>
+
+<div class="ask">
+  <h2>Four calls before I write the brief</h2>
+  <ol>
+    <li><b>Provider.</b> The research favoured Airalo's Partner API (largest catalogue, branded delivery email), with eSIM Go as the wholesale alternative. Go with Airalo and open the partner account?</li>
+    <li><b>Margin.</b> Resellers typically add 15 to 30 percent. Pick a starting markup; prices would show in naira at that day's rate, rounded to the nearest ₦100, and be fixed at checkout.</li>
+    <li><b>Where it lives.</b> A new Tools section in the sidebar and the phone's More sheet, Travel eSIM first, with airtime, gift cards and bills joining it later. And a public /esim page for search later, or dashboard only for now?</li>
+    <li><b>Refunds.</b> Providers refund an eSIM only if it was never installed. Refund to the wallet on that rule, within 30 days of buying?</li>
+  </ol>
+</div>
+</div>
+
+<script>
+const IC = {"checkCircle":{"o":"<circle cx=\"12\" cy=\"12\" r=\"8.5\"/>","l":"<circle cx=\"12\" cy=\"12\" r=\"8.5\"/><path d=\"M8.3 12.3l2.5 2.5 4.9-5\"/>"},"close":{"o":"<rect x=\"3.5\" y=\"3.5\" width=\"17\" height=\"17\" rx=\"5.5\"/>","l":"<path d=\"M15.3 8.7 8.7 15.3M8.7 8.7l6.6 6.6\" stroke-width=\"2.1\"/>"},"copy":{"o":"<rect x=\"8.5\" y=\"8.5\" width=\"12\" height=\"12\" rx=\"2.4\"/>","l":"<rect x=\"8.5\" y=\"8.5\" width=\"12\" height=\"12\" rx=\"2.4\"/><path d=\"M15.5 8.5V5.9a2.4 2.4 0 0 0-2.4-2.4H5.9a2.4 2.4 0 0 0-2.4 2.4v7.2a2.4 2.4 0 0 0 2.4 2.4h2.6\"/>"},"phone":{"o":"<rect x=\"6.5\" y=\"2.8\" width=\"11\" height=\"18.4\" rx=\"2.4\"/>","l":"<rect x=\"6.5\" y=\"2.8\" width=\"11\" height=\"18.4\" rx=\"2.4\"/><path d=\"M12 8.6v5.8M9.1 11.5h5.8M10.5 18h3\"/>"}};
+IC.search = { o: "", l: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>' };
+IC.chev = { o: "", l: '<path d="m6 9 6 6 6-6"/>' };
+IC.sim = { o: '<path d="M18 2H9L4 7v13a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2z"/>', l: '<path d="M18 2H9L4 7v13a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2z"/><rect x="8" y="11" width="8" height="7" rx="1"/>' };
+IC.plane = { o: "", l: '<path d="M21 15.5l-8-5V4.8a1.8 1.8 0 10-3.6 0v5.7l-8 5v2.1l8-2.4v4.4l-2.4 1.8v1.6l4.2-1.2 4.2 1.2v-1.6l-2.4-1.8v-4.4l8 2.4z"/>' };
+IC.tick = { o: "", l: '<path d="M5 12.5l4.2 4.2L19 7"/>' };
+const ic = (n, s = 16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true" style="overflow:visible"><g style="fill:currentColor;opacity:.2" transform="translate(1.5 1.5)">${IC[n].o}</g><g fill="none" stroke="currentColor" stroke-width="${IC[n].o ? 1.7 : 2.2}" stroke-linecap="round" stroke-linejoin="round">${IC[n].l}</g></svg>`;
+const pat = s => `url("data:image/svg+xml,${encodeURIComponent(s)}")`;
+document.body.style.setProperty("--pat", pat('<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 70c18-30 40-40 70-44" stroke-dasharray="3 6"/><path d="M76 20l8 6-9 4"/><circle cx="18" cy="18" r="1.6"/><circle cx="60" cy="58" r="1.2"/><circle cx="84" cy="80" r="1.6"/><path d="M40 84h10M45 79v10"/><circle cx="30" cy="44" r="5"/><path d="M25 44h10M30 39c2 3 2 7 0 10M30 39c-2 3-2 7 0 10"/></svg>'));
+
+const N = n => "₦" + n.toLocaleString("en-NG");
+const DEST = {
+  gb: { code: "GB", name: "United Kingdom", nets: "EE and Vodafone, 4G and 5G", plans: [[1, 7, 8500], [3, 30, 15000], [5, 30, 22000, "Most picked"], [10, 30, 35000], [20, 30, 52000], [50, 30, 96000]] },
+  ae: { code: "AE", name: "United Arab Emirates", nets: "Etisalat and du, 4G and 5G", plans: [[1, 7, 9500], [3, 30, 18500], [5, 30, 27000, "Most picked"], [10, 30, 44000], [20, 30, 69000], [50, 30, 128000]] },
+  us: { code: "US", name: "United States", nets: "T-Mobile and AT&T, 5G", plans: [[1, 7, 7500], [3, 30, 13500], [5, 30, 19500, "Most picked"], [10, 30, 31000], [20, 30, 47000], [50, 30, 89000]] },
+  ca: { code: "CA", name: "Canada", nets: "Rogers and Bell, 5G", plans: [[1, 7, 9000], [3, 30, 17500], [5, 30, 25500, "Most picked"], [10, 30, 41000], [20, 30, 64000], [50, 30, 119000]] },
+  gh: { code: "GH", name: "Ghana", nets: "MTN and Vodafone, 4G", plans: [[1, 7, 6500], [3, 30, 12000], [5, 30, 17500, "Most picked"], [10, 30, 29000], [20, 30, 45000], [50, 30, 86000]] },
+  sa: { code: "SA", name: "Saudi Arabia", nets: "STC and Mobily, 5G", plans: [[1, 7, 9000], [3, 30, 17000], [5, 30, 25000, "Most picked"], [10, 30, 40000], [20, 30, 62000], [50, 30, 115000]] },
+  eu: { code: "EU", name: "Europe, 39 countries", nets: "One plan across the EU, UK, Switzerland and more", plans: [[1, 7, 9500], [3, 30, 17500], [5, 30, 26000, "Most picked"], [10, 30, 42000], [20, 30, 66000], [50, 30, 124000]] },
+};
+const POPS = ["gb", "ae", "us", "ca", "gh", "sa", "eu"];
+const S = { st: "shop", dest: "gb", plan: 1, os: "ios", faq: 0, balance: 42500 };
+
+function head() {
+  return `<div class="hd"><h3>Travel eSIM <span class="pb new">NEW</span></h3><p>Data abroad, bought in naira before you fly.</p><hr></div>`;
+}
+function search(k) {
+  return `<div class="fly"><p class="q">Where are you going?</p><p class="s">Pick a country or a region. You get a QR code straight away.</p>
+    <div class="srch">${ic("search", 17)}<input aria-label="Search destinations" placeholder="Search 190+ destinations" value=""><kbd>/</kbd></div>
+    <div class="pops">${POPS.map(d => `<button type="button" class="pop${S.dest === d ? " on" : ""}" data-dest="${d}" aria-pressed="${S.dest === d}"><i>${DEST[d].code}</i>${k === "phone" && d === "eu" ? "Europe" : DEST[d].name.replace(", 39 countries", "")}</button>`).join("")}</div></div>`;
+}
+function plans() {
+  const d = DEST[S.dest];
+  return `<div class="card dest"><span class="cc">${d.code}</span><span class="tx"><b>${d.name}</b><small>${d.nets}</small></span><span class="chips"><span class="pb tag">Data only</span><span class="pb ok">${ic("tick", 11)}Top up anytime</span></span></div>
+    <div class="plans">${d.plans.map(([gb, days, pr, tag], i) => `<button type="button" class="plan${S.plan === i ? " on" : ""}" data-plan="${i}" aria-pressed="${S.plan === i}">${tag ? `<span class="stamp">${tag}</span>` : ""}<span class="gb">${gb}<small>GB</small></span><span class="dy">${days} days</span><hr><span class="pr">${N(pr)}</span><span class="per">${N(Math.round(pr / gb))} per GB</span></button>`).join("")}</div>
+    <div class="ex">Example prices. Live prices come from the provider at today's rate.</div>`;
+}
+function receipt() {
+  const d = DEST[S.dest], [gb, days, pr] = d.plans[S.plan], short = S.balance < pr;
+  return `<div class="card buy"><div class="what"><span class="cc">${d.code}</span><span><b>${gb} GB for ${days} days</b><small>${d.name}</small></span></div>
+    <div class="ln"><span>Plan</span><b>${N(pr)}</b></div><div class="ln"><span>Wallet</span><b>${N(S.balance)}</b></div>
+    <div class="tot"><span>${short ? "Short by" : "Balance after"}</span><b>${N(Math.abs(S.balance - pr))}</b></div>
+    <button type="button" class="money" data-pay>${short ? `Top up <b>${N(pr - S.balance)}</b>` : `Pay <b>${N(pr)}</b>`}</button>
+    <div class="note">${ic("tick", 13)}<span>The QR code is ready the moment you pay. Install it before you fly; the ${days} days start when it first connects in ${d.name.startsWith("Europe") ? "Europe" : d.name}.</span></div></div>`;
+}
+function below(k) {
+  const F = [["Will my Nigerian number still work?", "Yes. The eSIM adds data alongside your own SIM. Calls and texts stay on your line, and WhatsApp stays on your number, running over the eSIM's data."],
+    ["When do the days start?", "When the eSIM first connects to a network at your destination, not when you buy or install it."],
+    ["Can I top up if I run out?", "Yes, from My eSIMs. The top-up lands on the same eSIM, so there is nothing to install again."],
+    ["What if my phone does not take an eSIM?", "Do not buy one yet. An eSIM that was never installed can be refunded to your wallet."]];
+  return `<div class="card steps">
+      <div class="st"><span class="n">1</span><b>Buy in naira</b><p>Pick where you are going and how much data. It comes out of your Nitro wallet, no dollar card.</p></div>
+      <div class="st"><span class="n">2</span><b>Install before you fly</b><p>Scan the QR code at home on wifi. It sits quietly on your phone until you land.</p></div>
+      <div class="st"><span class="n">3</span><b>Land and connect</b><p>Turn on the eSIM line and data roaming for it. You are online before baggage claim.</p></div></div>
+    <div class="duo">
+      <div class="card chk"><div class="hd2"><span class="tile tc" style="--tcc:var(--blue)">${ic("phone", 16)}</span><b>Check your phone first</b></div>
+        <p>Dial <code>*#06#</code>. If you see an EID number, your phone takes an eSIM. It also needs to be unlocked. Most iPhones from the XS on, Samsung Galaxy S20 on, and Pixel 3 on do.</p></div>
+      <div class="card only"><span class="stamp2">Travel only</span><p>These eSIMs give you <b>data abroad</b>. They are not Nigerian lines, do not work in Nigeria, and come without a phone number of their own.</p></div></div>
+    <div class="card"><div class="ch"><b>Questions</b><small>Before you buy</small></div>${F.map(([q, a], i) => `<div class="fq${S.faq === i ? " open" : ""}"><div class="qq" data-faq="${i}"><span>${q}</span>${ic("chev", 14)}</div>${S.faq === i ? `<div class="aa">${a}</div>` : ""}</div>`).join("")}</div>`;
+}
+function shop(k) {
+  return head() + search(k) + `<div class="shop"><div class="pt">${plans()}</div>${receipt()}</div>` + below(k);
+}
+function qr() {
+  // An example pattern, not a real code: three finder squares and noise.
+  let r = 1234567; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+  const n = 29, cells = [];
+  const finder = (x, y) => (x >= 0 && x < 7 && y >= 0 && y < 7);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const f = finder(x, y) || finder(x - (n - 7), y) || finder(x, y - (n - 7));
+    if (f) { const fx = x < 7 ? x : x - (n - 7), fy = y < 7 ? y : y - (n - 7), ring = Math.min(fx, fy, 6 - fx, 6 - fy); if (ring !== 1) cells.push([x, y]); }
+    else if (rnd() > .52) cells.push([x, y]);
+  }
+  return `<svg class="qr" viewBox="0 0 ${n} ${n}" aria-label="Example QR code" shape-rendering="crispEdges">${cells.map(([x, y]) => `<rect x="${x}" y="${y}" width="1" height="1" fill="#111"/>`).join("")}</svg>`;
+}
+function install(k) {
+  const d = DEST[S.dest], [gb, days] = d.plans[S.plan];
+  const steps = S.os === "ios"
+    ? [`Open <b>Settings</b>, then <b>Mobile Service</b>, then <b>Add eSIM</b>.`, `Choose <b>Use QR Code</b> and scan the code above.`, `Label it <b>${d.name.split(",")[0]} data</b> and keep your own line for calls.`, `When you land, turn on this line and <b>Data Roaming</b> for it.`]
+    : [`Open <b>Settings</b>, then <b>Connections</b> or <b>Network</b>, then <b>SIM manager</b>.`, `Tap <b>Add eSIM</b>, then <b>Scan QR code</b>.`, `Keep your own SIM for calls and texts.`, `When you land, switch mobile data to this eSIM and turn on <b>Roaming</b>.`];
+  return `<div class="behind" aria-hidden="true">${shop(k)}</div><div class="dim"></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Your eSIM is ready">${k === "phone" ? `<div class="grab"></div>` : ""}
+      <div class="sbody">
+        <div class="sh"><span class="tile tc" style="--tcc:var(--green)">${ic("checkCircle", 18)}</span><div class="tx"><h4>Your ${d.name.split(",")[0]} eSIM is ready</h4><p>${gb} GB for ${days} days. We emailed a copy too.</p></div><button type="button" class="x" aria-label="Close">${ic("close", 13)}</button></div>
+        <div class="qrw">${qr()}<div class="tx"><b>Install it now, on wifi</b><p>It waits on your phone and the ${days} days start when it first connects in ${d.name.startsWith("Europe") ? "Europe" : d.name}.</p>${S.os === "ios" ? `<button type="button" class="nb pri">${ic("phone", 15)}Install on this iPhone</button>` : `<span class="pb tag">Scan from a second screen, or use the codes below</span>`}</div></div>
+        <div class="osw" role="group" aria-label="Your phone"><button type="button" class="${S.os === "ios" ? "on" : ""}" data-os="ios">iPhone</button><button type="button" class="${S.os === "and" ? "on" : ""}" data-os="and">Android</button></div>
+        <ol class="ist">${steps.map(s => `<li><span>${s}</span></li>`).join("")}</ol>
+        <div class="man"><div class="r"><span>SM-DP+ address<code>rsp.example-esim.net</code></span><button type="button" class="nb sec sm">${ic("copy", 13)}Copy</button></div><div class="r"><span>Activation code<code>LPA:1$rsp.example-esim.net$7K2Q-9XWD-44RA</code></span><button type="button" class="nb sec sm">${ic("copy", 13)}Copy</button></div></div>
+      </div>
+      <div class="sfoot"><button type="button" class="nb sec" data-st-go="mine">See my eSIMs</button><button type="button" class="nb pri" data-st-go="shop">Done</button></div>
+    </div>`;
+}
+function mine(k) {
+  const L = [
+    { code: "GB", name: "United Kingdom", plan: "3 GB for 30 days", st: ["ok", "Active"], used: 1.2, of: 3, left: "18 days left", acts: ["Top up", "Details"] },
+    { code: "AE", name: "United Arab Emirates", plan: "5 GB for 30 days", st: ["warn", "Not installed"], sub: "Bought 14 Oct. The days start when it first connects in the UAE.", acts: ["Install", "Refund"] },
+    { code: "GH", name: "Ghana", plan: "1 GB for 7 days", st: ["tag", "Expired"], sub: "Used 0.9 of 1 GB, ended 2 Oct.", acts: ["Buy again"], off: true },
+  ];
+  return head() + `<div class="card dest"><span class="tile tc" style="--tcc:var(--blue)">${ic("sim", 17)}</span><span class="tx"><b>My eSIMs</b><small>Three bought, one active. Top up any time from here.</small></span><span class="chips"><button type="button" class="nb pri sm" data-st-go="shop">${ic("plane", 13)}Buy another</button></span></div>
+    <div class="mine">${L.map(e => `<div class="card es${e.off ? " off" : ""}"><span class="cc">${e.code}</span><span class="tx"><b>${e.name}<span class="pb ${e.st[0]}">${e.st[1]}</span></b><small>${e.plan}</small>${e.used != null ? `<div class="bar"><i style="width:${Math.round(e.used / e.of * 100)}%"></i></div><small><span style="font-family:var(--mono);font-weight:700;color:var(--ink)">${e.used}</span> of ${e.of} GB used, ${e.left}</small>` : `<small>${e.sub}</small>`}</span>
+      <span class="act">${e.acts.map((a, i) => `<button type="button" class="nb ${i === 0 ? "pri" : "sec"} sm">${a}</button>`).join("")}</span></div>`).join("")}</div>` + below(k);
+}
+
+function paint() {
+  document.querySelectorAll("[data-v]").forEach(el => {
+    const k = el.dataset.v;
+    if (S.st === "install") { el.classList.add("stage"); el.innerHTML = install(k); const b = el.querySelector(".behind"); b.classList.add("pt"); }
+    else { el.classList.remove("stage"); el.innerHTML = `<div class="pt">${S.st === "mine" ? mine(k) : shop(k)}</div>`; }
+  });
+  document.querySelectorAll("[data-st]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.st === S.st)));
+}
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-dest],[data-plan],[data-faq],[data-os],[data-st],[data-st-go],[data-pay]"); if (!t) return;
+  if (t.dataset.dest) { S.dest = t.dataset.dest; S.plan = 1; }
+  if (t.dataset.plan) S.plan = +t.dataset.plan;
+  if (t.dataset.faq) S.faq = S.faq === +t.dataset.faq ? -1 : +t.dataset.faq;
+  if (t.dataset.os) S.os = t.dataset.os;
+  if (t.dataset.st) S.st = t.dataset.st;
+  if (t.dataset.stGo) S.st = t.dataset.stGo;
+  if (t.dataset.pay !== undefined) { const pr = DEST[S.dest].plans[S.plan][2]; if (S.balance >= pr) S.st = "install"; }
+  paint();
+});
+const setMode = n => { document.querySelectorAll(".mk").forEach(m => m.classList.toggle("night", n)); document.getElementById("m-day").setAttribute("aria-pressed", String(!n)); document.getElementById("m-night").setAttribute("aria-pressed", String(n)); try { localStorage.setItem("esim-mode", n ? "night" : "day"); } catch (e) {} };
+document.getElementById("m-day").onclick = () => setMode(false);
+document.getElementById("m-night").onclick = () => setMode(true);
+paint();
+let saved = null; try { saved = localStorage.getItem("esim-mode"); } catch (e) {}
+setMode(saved === "night");
+</script>

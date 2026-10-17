@@ -116,7 +116,10 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   }, [filtered]);
   const svcMatches = useMemo(() => {
     const q = svcQ.trim().toLowerCase();
-    const list = q ? services.filter(s => s.name.toLowerCase().includes(q) || String(s.apiId).includes(q)) : services;
+    // The customer's number first (#301, what a customer quotes), then the
+    // provider's own with a p (p5603), then the name.
+    const num = q.replace(/^#/, "");
+    const list = q ? services.filter(s => s.name.toLowerCase().includes(q) || (/^\d+$/.test(num) && String(s.nitroId) === num) || (/^p\d+$/.test(num) && `p${s.apiId}` === num) || (/^\d+$/.test(num) && String(s.apiId).includes(num))) : services;
     return list.slice(0, 20);
   }, [services, svcQ]);
 
@@ -164,11 +167,11 @@ export default function AdminServiceGroupsPage({ dark, t }) {
   // away input focus after each keystroke in the price and search fields.
   const SvcList = ({ onPick, priceKobo }) => (
     <div className="mb-svcs">
-      <div className="mb-srch"><span>{SEARCH}</span><input autoFocus value={svcQ} onChange={e => setSvcQ(e.target.value)} placeholder="Search services by name or #id" /></div>
+      <div className="mb-srch"><span>{SEARCH}</span><input autoFocus value={svcQ} onChange={e => setSvcQ(e.target.value)} placeholder="Search by name, #301 or p5603" /></div>
       <div className="mb-svcl">
         {svcMatches.map(s => { const c = costKobo(s); const m = priceKobo ? gmPct(priceKobo, c) : null; return (
           <button type="button" key={s.id} className="mb-svc" onClick={() => onPick(s)}>
-            <b className={`mb-prov ${s.provider}`}>{s.provider}</b><span className="mb-sid m">#{s.apiId}</span><span className="mb-sn" title={s.name}>{serviceDisplay(s.name).title}<em>{serviceDisplay(s.name).facts.join(" · ")}</em></span>
+            <b className={`mb-prov ${s.provider}`}>{s.provider}</b><span className="mb-sid m" title={`Provider #${s.apiId}`}>{s.nitroId != null ? `#${s.nitroId}` : `p${s.apiId}`}</span><span className="mb-sn" title={s.name}>{serviceDisplay(s.name).title}<em>{serviceDisplay(s.name).facts.join(" · ")}</em></span>
             <span className="mb-sm m">{c != null ? naira(c) : "—"}/1k</span>{m != null && <span className={`mb-gm ${gmCls(m)} m`}>{m}%</span>}
           </button>
         ); })}
