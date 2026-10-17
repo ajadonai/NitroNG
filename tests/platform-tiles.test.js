@@ -157,13 +157,14 @@ describe('every service type has its own glyph', () => {
     expect(targets.length).toBeGreaterThan(8);
   });
 
-  it('takes the colour the card already carries, mixed deeper than the card', () => {
-    // Nigerian green, US red, package blue, or the accent — not a new palette.
-    // But mixed from the ink, never the card's own tint: a Nigerian card is
-    // already exactly accent.bgL, so a square painted the same way vanished on
-    // three rows in five.
+  it('prints every row in the accent and leaves the audience to the chip', () => {
+    // The rows used to wash green, red or blue with the tile in the same ink;
+    // the audience is a chip after the name now, and every tile is the accent
+    // on a printed offset, so the column of tiles reads as one family.
     const card = src.slice(src.indexOf('function ServiceCard('), src.indexOf('function compactPrice'));
-    expect(card).toMatch(/<ServiceGlyph type=\{glyphKey\(svc\.type\)\} tone=\{ink\}/);
+    expect(card).toMatch(/<ServiceGlyph type=\{glyphKey\(svc\.type\)\} tone=\{t\.accentInk\}[^>]*\bprint\b/);
+    expect(card).toContain('<AudienceChip kind={aud}');
+    expect(card, 'no row wash or edge bar for an audience').not.toMatch(/inset 3px 0 0/);
     expect(glyphSrc).toMatch(/color-mix\(in srgb, \$\{tone\}/);
     expect(glyphSrc, 'the square must be mixed from the ink, never handed a card background')
       .not.toMatch(/accent\.bgL|accent\.bgD/);
@@ -174,8 +175,9 @@ describe('every service type has its own glyph', () => {
     // a glyph. Shared shapes also stop the two views drifting to two different
     // followers icons.
     const full = fs.readFileSync(path.join(process.cwd(), 'components/full-list.jsx'), 'utf8');
-    expect(full).toMatch(/import \{ ServiceGlyph \} from "\.\/service-glyph"/);
-    expect(src).toMatch(/import \{ ServiceGlyph \} from "\.\/service-glyph"/);
+    // The audience flags come from the same module, for the same reason.
+    expect(full).toMatch(/import \{ ServiceGlyph, AUDIENCE_FLAG \} from "\.\/service-glyph"/);
+    expect(src).toMatch(/import \{ ServiceGlyph, AUDIENCE_FLAG \} from "\.\/service-glyph"/);
     expect(glyphSrc).not.toMatch(/from "\.\/(new-order|full-list)"/);
     // Every type the full list produces must have a shape.
     for (const t of ['followers', 'members', 'likes', 'views', 'comments', 'shares', 'engagement']) {

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ThemeProvider, useTheme, ThemeToggle } from "./shared-nav";
 import { copyText } from '@/lib/clipboard';
 import { NitroWordmark } from "./nitro-logo";
+import { OffsetIcon } from "./offset-icons";
 
 const MARK = "M4.8 44.98 L4.8 26.8 A9.61 9.61 0 0 1 24.02 26.8 L24.02 39.15 A9.6 9.6 0 0 0 43.22 39.15 L43.22 6.82";
 const ROUTES = ["dashboard","about","blog","changelog","contact","faq","help","lagos","live","login","pricing","privacy","pulse","quality","refund","reseller","reviews","services","signup","terms"];
@@ -164,11 +165,11 @@ function NotFoundInner() {
 
           <div className="nf-rise flex gap-[18px] justify-center mt-[22px] text-[11px] flex-wrap" style={{ animationDelay: ".6s" }}>
             <a href="/services" className="inline-flex items-center gap-1.5 font-semibold no-underline" style={{ color: muted }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              <OffsetIcon name="grid" size={13} />
               {tr("Services")}
             </a>
             <a href="/pricing" className="inline-flex items-center gap-1.5 font-semibold no-underline" style={{ color: muted }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              <OffsetIcon name="tag" size={13} />
               {tr("Pricing")}
             </a>
             <a href="https://wa.me/2347071656156?text=Hi%20Nitro%2C%20I%20need%20help" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-semibold no-underline" style={{ color: dark ? "#25d366" : "#1e9e50" }}>

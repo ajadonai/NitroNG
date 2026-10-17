@@ -5,7 +5,8 @@ import { msg } from "../lib/i18n";
 import { ATTR_SHORT, attrKind, isGraded, LOCATION_KEYS, matchesLocation } from "../lib/service-attrs";
 import { NotSureHelp } from "./order-help";
 import { FullListGuide } from "./full-list-guide";
-import { ServiceGlyph } from "./service-glyph";
+import { ServiceGlyph, AUDIENCE_FLAG } from "./service-glyph";
+import { OffsetIcon, CurrencyCoin } from "./offset-icons";
 
 /* ═══════════════════════════════════════════ */
 /* ═══ FULL LIST                           ═══ */
@@ -97,8 +98,8 @@ const PRICE_BANDS = [
 // it filters by are visibly the same thing, rather than two words that happen
 // to agree.
 const MINE_ICON = {
-  ordered: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-  saved: <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>,
+  ordered: <OffsetIcon name="clock" />,
+  saved: <OffsetIcon name="star" />,
 };
 
 const MINE_ROW = [
@@ -122,8 +123,8 @@ export const VOTES_NEEDED = 3;
 // what counts as liked is how people stop trusting both.
 export const WELL_LIKED = 80;
 
-export const THUMB_UP = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/><path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>;
-export const THUMB_DOWN = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z"/><path d="M17 2h3a2 2 0 012 2v7a2 2 0 01-2 2h-3"/></svg>;
+export const THUMB_UP = <OffsetIcon name="thumbUp" />;
+export const THUMB_DOWN = <OffsetIcon name="thumbDown" />;
 
 /** "10K", "1.5M", or null when the provider means "no limit". */
 export function formatMax(max, unlimited) {
@@ -167,8 +168,9 @@ const CHIP = {
 function Chip({ kind = "neutral", dark, mono, children }) {
   const c = CHIP[kind][dark ? "dark" : "light"];
   return (
-    <span className={`inline-flex items-center rounded-[5px] px-[6px] py-[1.5px] text-[10.5px] font-semibold whitespace-nowrap${mono ? " m" : ""}`}
-      style={{ color: c.fg, background: c.bg, ...(mono ? { fontFamily: "'JetBrains Mono', monospace" } : {}) }}>
+    <span className={`inline-flex items-center gap-[5px] rounded-[5px] px-[6px] py-[1.5px] text-[10.5px] font-semibold whitespace-nowrap${mono ? " m" : ""}`}
+      style={{ color: c.fg, background: c.bg, ...(AUDIENCE_FLAG[kind] ? { paddingInlineStart: 3 } : {}), ...(mono ? { fontFamily: "'JetBrains Mono', monospace" } : {}) }}>
+      {AUDIENCE_FLAG[kind] && <span className="inline-flex rounded-[2px] overflow-hidden" style={{ boxShadow: "0 0 0 .5px rgba(0,0,0,.18)" }}>{AUDIENCE_FLAG[kind]}</span>}
       {children}
     </span>
   );
@@ -204,18 +206,6 @@ function chipKind(attr) {
 // its attributes, because only "Nigerian" and "Worldwide" are attributes —
 // USA, Indian and Turkish live in the name and nowhere else.
 const hay = (r) => `${r.label} ${(r.attrs || []).join(" ")}`;
-
-/**
- * A row's audience, as the colour it is drawn in. Nigerian green and US red are
- * the colours the curated cards give those same two audiences, so a Nigerian
- * service reads the same on both lists; everything else takes the accent.
- */
-function rowTone(row, dark, t) {
-  const text = hay(row);
-  if (matchesLocation(text, "nigerian")) return dark ? "#4ade80" : "#16a34a";
-  if (matchesLocation(text, "usa")) return dark ? "#f87171" : "#dc2626";
-  return t.accent;
-}
 
 export function approvalOf(row) {
   const total = (row.up || 0) + (row.down || 0);
@@ -283,11 +273,12 @@ function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, time
     // a modal that never appears. That was the stuck state fixed in v2.5.36 and
     // it is not coming back through a different door.
     <div {...(bulk ? {} : { role: "button", tabIndex: 0, onKeyDown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(row); } }, onClick: () => onPick(row) })}
-      className={`no-full-row flex items-center justify-between gap-3 py-2.5 px-3 md:py-3 md:px-4 transition-colors duration-150 ${bulk ? "" : "cursor-pointer"}`}
+      className={`no-full-row flex items-center justify-between gap-3 py-2.5 px-3 md:py-3 md:px-4 transition-colors duration-150 ${bulk ? "" : "cursor-pointer"}${bulk || selected ? "" : " idle"}`}
       style={{ borderTop: first ? "none" : `1px solid ${t.cardBorder}`, background: selected ? (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)") : "transparent" }}>
-      {/* The same glyph square the picks card carries, so nine hundred rows are
-          scannable by what they deliver and the two views read as one page. */}
-      <ServiceGlyph type={row.type} tone={rowTone(row, dark, t)} dark={dark} size={34} radius={10} className="max-md:!w-[31px] max-md:!h-[31px]" />
+      {/* The same printed tile the picks rows carry, in the accent on every row,
+          so nine hundred rows are scannable by what they deliver and the two
+          views read as one page. Who the accounts are is the chip's job. */}
+      <ServiceGlyph type={row.type} tone={t.accentInk} dark={dark} size={34} radius={10} print className="max-md:!w-[31px] max-md:!h-[31px]" />
       <div className="min-w-0 flex-1">
         {/* Three lines, each holding one kind of thing: what it is, which one it
             is, and what it promises. The ID used to lead the badge line behind a
@@ -311,7 +302,7 @@ function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, time
           {times > 0 && (
             <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold rounded-[5px] px-[6px] py-[1.5px] whitespace-nowrap"
               style={{ color: t.accentInk, background: t.accentLight }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <OffsetIcon name="clock" size={10} />
               {times === 1 ? tr("Ordered once") : `${tr("Ordered")} ${times}×`}
             </span>
           )}
@@ -331,13 +322,16 @@ function Row({ row, dark, t, onPick, selected, first, saved, onToggleSaved, time
           aria-label={saved ? tr("Saved") : tr("Save this service")}
           className="shrink-0 p-1.5 -m-1.5 cursor-pointer border-none bg-transparent flex items-center justify-center transition-colors duration-150"
           style={{ color: saved ? (dark ? "#e0a458" : "#b45309") : t.textMuted, opacity: saved ? 1 : .45 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <OffsetIcon name="star" size={16} className={saved ? "ic-on" : undefined} />
         </button>
       )}
       <div className="text-right shrink-0">
         <div className="m text-[14px] md:text-[15px] font-bold" style={{ color: "var(--t-accent-ink)", fontFamily: "'JetBrains Mono', monospace" }}>{money(row.price)}</div>
         <div className="text-[10px] mt-px" style={{ color: t.textMuted }}>{tr("per 1K")}</div>
       </div>
+      {/* A tap opens the order form, which a pointer gets told; a phone row has
+          no width to spare and a tap is all it does. */}
+      {!bulk && <svg className="max-md:hidden shrink-0 opacity-60 dir-flip" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>}
       {/* Bulk's one action on this row. A count rather than a plus once it is in
           the cart, the same thing a tier chip shows on the picks side — adding
           the same service twice for two different links is ordinary, so it
@@ -585,7 +579,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
           already asking for too much there. */}
       <div className="flex items-center gap-2.5 flex-wrap mb-3 py-2 pl-3 pr-3 rounded-r-[10px]"
         style={{ borderLeft: `3px solid ${t.accent}`, background: dark ? "rgba(196,125,142,.05)" : "rgba(196,125,142,.07)" }}>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ color: t.textMuted }} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <OffsetIcon name="info" size={15} className="shrink-0" style={{ color: t.textMuted }} />
         <div className="text-[11.5px] leading-[1.5] flex-1 min-w-[190px]" style={{ color: t.textMuted }}>
           <strong style={{ color: t.text }}>{tr("Our wider range.")}</strong>{" "}
           {tr("Each service brings its own refill and speed.")}{" "}
@@ -716,7 +710,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
                   refill says "we put it back", and the landing page already
                   draws that idea with exactly this mark on "Retested, and
                   delisted when it slips". Same idea, same glyph. */}
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ opacity: refillOnly ? 1 : .35 }} aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              <OffsetIcon name="refresh" size={11} className="shrink-0" style={{ opacity: refillOnly ? 1 : .35 }} />
               <span className="truncate">{tr("Refill only")}</span>
             </button>
             {/* One control over both grades. A provider writes the top one
@@ -734,7 +728,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
                     the same mark deliberately so the control and the marker it
                     filters by are visibly one thing. A second star meaning
                     something else would undo that. */}
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ opacity: qualityOn ? 1 : .35 }} aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M11 3 8 9l4 12 4-12-3-6"/><path d="M2 9h20"/></svg>
+                <OffsetIcon name="diamond" size={11} className="shrink-0" style={{ opacity: qualityOn ? 1 : .35 }} />
                 <span className="truncate">{tr("High quality")}</span>
               </button>
             )}
@@ -755,7 +749,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
                     only thing either of them says. This says "keeps going",
                     which is the actual difference: it delivers to whatever you
                     post next, indefinitely, rather than putting back what fell. */}
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ opacity: autoOn ? 1 : .35 }} aria-hidden="true"><path d="M6.5 7.5a4.5 4.5 0 100 9c2.5 0 3.5-2 5.5-4.5s3-4.5 5.5-4.5a4.5 4.5 0 110 9c-2.5 0-3.5-2-5.5-4.5S9 7.5 6.5 7.5z"/></svg>
+                <OffsetIcon name="infinity" size={11} className="shrink-0" style={{ opacity: autoOn ? 1 : .35 }} />
                 <span className="truncate">{tr("Auto")}</span>
               </button>
             )}
@@ -783,7 +777,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
                     <option key={k} value={k}>{`${LOCATION_FLAGS[k] ? LOCATION_FLAGS[k] + " " : ""}${tr(LOCATION_LABELS[k])}`}</option>
                   ))}
                 </select>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-[8px] top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: activeLocation !== "any" ? (dark ? "#7aa2f7" : "#1d5fa5") : t.textMuted }} aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                <OffsetIcon name="globe" size={12} className="absolute left-[8px] top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: activeLocation !== "any" ? (dark ? "#7aa2f7" : "#1d5fa5") : t.textMuted }} />
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute right-[7px] top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: activeLocation !== "any" ? (dark ? "#7aa2f7" : "#1d5fa5") : t.textMuted }} aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
             )}
@@ -804,7 +798,7 @@ export default function FullList({ platform, platformLabel, search, dark, t, onP
                     </option>
                   ))}
                 </select>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-[8px] top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: band ? (dark ? "#e0a458" : "#b45309") : t.textMuted }} aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                <CurrencyCoin size={12} className="absolute left-[8px] top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: band ? (dark ? "#e0a458" : "#b45309") : t.textMuted }} />
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute right-[7px] top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: band ? (dark ? "#e0a458" : "#b45309") : t.textMuted }} aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
             )}

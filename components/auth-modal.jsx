@@ -11,6 +11,7 @@ import { placeAuthError } from '../lib/auth-errors';
 import { suggestEmail } from '../lib/email-typos';
 import { useSignupChecks } from './use-signup-checks';
 import { Slot, LineMsg, emailState, phoneState, GuestButton } from './auth-messages';
+import { OffsetIcon } from "./offset-icons";
 
 function PwStrength({ pw, t }) {
   const tr = useT();
@@ -469,7 +470,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center leading-none text-white transition-opacity duration-150 hover:opacity-80"
             style={{ background: 'rgba(255,255,255,.18)' }}
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <OffsetIcon name="close" size={11} />
           </button>
         </div>}
         {/* Close button — quiet ghost circle; on the elevated phone layout the bar above carries its own close */}
@@ -483,7 +484,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
             color: dark ? '#b7b3ad' : '#6d6a66',
           }}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <OffsetIcon name="close" size={12} />
         </button>
 
         {/* Heading — on the same left edge as the fields under it, clear of the close button */}
@@ -1143,17 +1144,7 @@ function AuthModal({ dark, t, mode, setMode, onClose, prefill, via, referralCode
                 border: `2px solid ${t.green}`,
               }}
             >
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke={t.green}
-                strokeWidth="1.5"
-              >
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <polyline points="22,6 12,13 2,6" />
-              </svg>
+              <OffsetIcon name="mail" size={28} color={t.green} />
             </div>
 
             <p

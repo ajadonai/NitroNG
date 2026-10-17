@@ -5,6 +5,7 @@ import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { useToast } from './toast';
 import { copyText as copyToClipboard } from '@/lib/clipboard';
+import { OffsetIcon } from "./offset-icons";
 
 export default function ResellerApiDocsView() {
   return <ThemeProvider><ApiDocsInner /></ThemeProvider>;
@@ -155,9 +156,7 @@ function ParamTable({ rows }) {
 function Callout({ variant, children }) {
   return (
     <div className={`rad-callout ${variant}`}>
-      <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <circle cx={12} cy={12} r={10} /><line x1={12} y1={16} x2={12} y2={12} /><line x1={12} y1={8} x2={12.01} y2={8} />
-      </svg>
+      <OffsetIcon name="info" size={15} />
       <span>{children}</span>
     </div>
   );

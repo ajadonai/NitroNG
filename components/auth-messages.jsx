@@ -1,4 +1,5 @@
 'use client';
+import { OffsetIcon } from "./offset-icons";
 
 /**
  * The pieces both sign-in forms (the modal and the desktop hero card) use to
@@ -8,9 +9,9 @@
  * Styles live in app/globals.css under "AUTH MODAL ERRORS".
  */
 
-const ERR_ICON = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>;
+const ERR_ICON = <OffsetIcon name="alert" />;
 const OK_ICON = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>;
-const NET_ICON = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.2a5 5 0 0 1 7 0"/><path d="M12 19.8v.01"/><path d="M3 3l18 18"/></svg>;
+const NET_ICON = <OffsetIcon name="offline" />;
 
 /** The one-line message slot under a field. Always rendered, so a message never adds height. */
 export function Slot({ kind, children }) {
@@ -66,7 +67,7 @@ export function phoneState({ tr, fe, phone, check, touched, taken, checking, sup
   return { bad, slot };
 }
 
-const CART_ICON = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.6l2.4 12.2a1.6 1.6 0 0 0 1.6 1.3h8.6a1.6 1.6 0 0 0 1.6-1.2L21 7H6.1"/></svg>;
+const CART_ICON = <OffsetIcon name="cart" />;
 
 /**
  * "Order without an account": the whole bar is the button. Shown only while

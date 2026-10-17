@@ -1,6 +1,7 @@
 'use client';
 import { useEffect } from "react";
 import { useT } from "./locale";
+import { OffsetIcon } from "./offset-icons";
 
 /**
  * "New Order has two lists now" — shown once, to the people the change is news
@@ -88,7 +89,7 @@ export default function FullListNotice({ dark, onClose, onShowMe }) {
 
         <div className="flex items-center gap-[11px] mb-[11px]">
           <span className="w-[38px] h-[38px] rounded-[11px] flex items-center justify-center shrink-0" style={{ background: accentBg, color: accent }}>
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <OffsetIcon name="list" size={19} />
           </span>
           <h3 className="m-0 text-[17px] font-bold leading-tight tracking-[-.3px]" style={{ color: text }}>{tr("New Order has two lists now")}</h3>
         </div>

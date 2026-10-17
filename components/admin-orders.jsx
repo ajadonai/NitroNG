@@ -11,6 +11,7 @@ import { copyText } from '@/lib/clipboard';
 import { AccountTag } from "./account-tag";
 import { WaButton } from "./wa-button";
 import { openCardFrame, openCardHeader } from '@/lib/expandable-card';
+import { OffsetIcon } from "./offset-icons";
 
 const DRIP_CONFIG = {
   followers:  { batchSize: 200,  intervalHours: 2 },
@@ -135,7 +136,7 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
       {/* Header — collapsed it carries a mini bar, one segment per batch */}
       <div role="button" tabIndex={0} aria-expanded={open} onClick={() => setOpen(v => !v)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(v => !v); } }} className="flex items-center gap-2.5 py-2.5 px-3 cursor-pointer" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)" }}>
         <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.16)" : "#fff", border: `1px solid ${dark ? "rgba(196,125,142,.3)" : "rgba(196,125,142,.25)"}`, color: t.accentInk }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a7 7 0 007-7c0-4-7-13-7-13S5 11 5 15a7 7 0 007 7z"/></svg>
+          <OffsetIcon name="drip" size={14} />
         </span>
         <span className="min-w-0 shrink-0">
           <span className="block text-[12.5px] font-bold leading-tight" style={{ color: t.text }}>Drip delivery</span>
@@ -240,7 +241,7 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
       {resetTarget && (
         <Modal open onClose={() => { if (!resetLoading) setResetTarget(null); }} dark={dark} maxWidth={400}
           title={`Reset batch #${resetTarget.batch}`} subtitle="Re-dispatches the undelivered part as a fresh batch."
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>}
+          icon={<OffsetIcon name="refresh" size={16} />}
           footer={<>
             <ModalBtn kind="quiet" dark={dark} disabled={resetLoading} onClick={() => setResetTarget(null)}>Cancel</ModalBtn>
             <ModalBtn kind="primary" dark={dark} disabled={resetLoading || !resetQty || Number(resetQty) < 1 || Number(resetQty) > resetTarget.qty} onClick={async () => {
@@ -267,7 +268,7 @@ function DripSection({ dispatches, dripConfig, dark, t, orderId, onRefresh }) {
       {linkTarget && (
         <Modal open onClose={() => { if (!linkLoading) setLinkTarget(null); }} dark={dark} maxWidth={400} intent="success"
           title={`Link batch #${linkTarget.batch}`} subtitle="You found this batch on the provider dashboard — we confirm it with the provider before linking, then the status checker takes over."
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>}
+          icon={<OffsetIcon name="link" size={16} />}
           footer={<>
             <ModalBtn kind="quiet" dark={dark} disabled={linkLoading} onClick={() => setLinkTarget(null)}>Cancel</ModalBtn>
             <ModalBtn kind="success" dark={dark} disabled={linkLoading || !linkRef.trim()} onClick={async () => {
@@ -673,7 +674,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
         <div className="relative flex-1 min-w-0">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
           <input aria-label="Search orders" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search order ID, guest code, link, name, email or phone" className="w-full py-[9px] pl-9 pr-8 rounded-lg text-[13px] outline-none font-[inherit]" style={{ border: `1px solid ${t.cardBorder}`, background: dark ? '#160f22' : '#fff', color: t.text }} />
-          {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full cursor-pointer border-none p-0" style={{ background: dark ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.1)', color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+          {search && <button aria-label="Clear search" onClick={() => { setSearch(""); setPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full cursor-pointer border-none p-0" style={{ background: dark ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.1)', color: t.textMuted }}><OffsetIcon name="xCircle" size={12} /></button>}
         </div>
         <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setPage(1); }} alert={counts.needs_dispatch > 0} options={
           [
@@ -685,7 +686,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
           ]
         } />
         <button onClick={syncOrders} disabled={syncing} className="py-[7px] px-3 rounded-lg text-[12px] font-semibold cursor-pointer font-[inherit] flex items-center gap-1.5 shrink-0" style={{ border: `1px solid ${t.cardBorder}`, background: 'transparent', color: t.accentInk, opacity: syncing ? .5 : 1 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: syncing ? "spin 1s linear infinite" : "none" }}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          <OffsetIcon name="refresh" size={14} style={{ animation: syncing ? "spin 1s linear infinite" : "none" }} />
           {syncing ? "Syncing…" : "Sync"}
         </button>
       </div>
@@ -730,7 +731,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                 {/* Batch header */}
                 <div role="button" tabIndex={0} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => { setExpandedBatch(isOpen ? null : batch.batchId); setExpandedBatchOrder(null); setExpanded(null); }} className="flex items-center py-3 px-3.5 desktop:py-3.5 desktop:px-5 cursor-pointer gap-3 desktop:gap-4 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ ...(hasAttention && { borderLeft: `3px solid ${dark ? "#fbbf24" : "#d97706"}` }) }}>
                   <div className="shrink-0 flex items-center justify-center rounded-xl" style={{ width: 42, height: 42, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}` }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+                    <OffsetIcon name="cart" size={20} color={t.accent} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{batch.batchId} <span className="text-[11px] desktop:text-xs font-normal" style={{ color: t.textMuted }}>{batch.orders[0]?.user}</span></div>
@@ -797,17 +798,17 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                             {o.link && (
                               <div className="mb-2.5 py-1.5 px-2.5 rounded-lg flex items-center gap-2 min-w-0 max-w-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
                                 <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                                  <OffsetIcon name="link" size={12} />
                                 </div>
                                 <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[12px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline" style={{ color: t.textSoft }}>{o.link}</a>
-                                {!o.apiOrderId && o.status !== "Cancelled" && <button onClick={() => openEditLink(o)} className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }} title="Edit link"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>}
+                                {!o.apiOrderId && o.status !== "Cancelled" && <button onClick={() => openEditLink(o)} className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }} title="Edit link"><OffsetIcon name="pen" size={11} /></button>}
                               </div>
                             )}
 
                             {/* View comments button */}
                             {o.comments && (
                               <button onClick={(e) => { e.stopPropagation(); setViewComments(o.comments); }} className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1 px-2" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", color: t.textSoft }}>
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                                <OffsetIcon name="comment" size={12} />
                                 View comments
                               </button>
                             )}
@@ -846,7 +847,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                               const colors = { neutral: { bg: dark ? "rgba(161,161,170,.08)" : "rgba(113,113,122,.04)", brd: dark ? "rgba(161,161,170,.18)" : "rgba(113,113,122,.12)", clr: dark ? "#a1a1aa" : "#71717a" }, warn: { bg: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.04)", brd: dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.12)", clr: dark ? "#fbbf24" : "#d97706" }, error: { bg: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)", brd: dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)", clr: dark ? "#fca5a5" : "#dc2626" } }[ei.tone];
                               return (
                               <div className="mb-2.5 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: colors.bg, border: `1px solid ${colors.brd}` }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                <OffsetIcon name="alert" size={14} color={colors.clr} className="shrink-0 mt-0.5" />
                                 <div className="min-w-0">
                                   <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: colors.clr }}>{ei.label}</div>
                                   {ei.detail && <div className="text-[12px] break-all" style={{ color: colors.clr, opacity: .8 }}>{ei.detail}</div>}
@@ -862,13 +863,13 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
 
                             {/* Actions */}
                             <div className="flex items-center gap-2 flex-wrap py-1.5 px-1">
-                              {needsDispatch(o) && <button onClick={async () => { const ok = await confirm({ title: "Manual Dispatch", message: `Dispatch order ${o.id} to provider now?`, confirmLabel: "Dispatch" }); if (ok) doAction(o.id, "dispatch"); }} disabled={!!actionLoading} className="act amber">{actionLoading === o.id ? <Spinner size={12} color={dark ? "#fcd34d" : "#d97706"} /> : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>}Dispatch</button>}
-                              <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="act indigo">{actionLoading === o.id ? <Spinner size={12} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}Check</button>
-                              {!["Cancelled", "Completed", "Partial"].includes(o.status) && <button onClick={() => openCancel(o)} disabled={!!actionLoading} className="act red"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancel</button>}
-                              {o.status === "Cancelled" && o.lastError !== "user_cancelled" && !o.redispatchedAt && <button onClick={() => openRedispatch(o)} disabled={!!actionLoading} className="act amber"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Re-dispatch</button>}
-                              {o.status === "Completed" && !o.refillRequestedAt && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="act purple"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>Refill</button>}
-                              {o.refillRequestedAt && <button onClick={async () => { const ok = await confirm({ title: "Reset Refill", message: `Mark refill as delivered for ${o.id}? This lets the user request again.`, confirmLabel: "Reset" }); if (ok) doAction(o.id, "reset_refill"); }} disabled={!!actionLoading} className="act amber"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>Reset Refill</button>}
-                              {(o.status === "Completed" || o.status === "Partial") && <button onClick={() => openRefund(o)} className="act amber"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>{o.refundedTotal >= o.charge ? "Fully Refunded" : o.refundedTotal > 0 ? `Refund (${Math.round(o.refundedTotal / o.charge * 100)}%)` : "Refund"}</button>}
+                              {needsDispatch(o) && <button onClick={async () => { const ok = await confirm({ title: "Manual Dispatch", message: `Dispatch order ${o.id} to provider now?`, confirmLabel: "Dispatch" }); if (ok) doAction(o.id, "dispatch"); }} disabled={!!actionLoading} className="act amber">{actionLoading === o.id ? <Spinner size={12} color={dark ? "#fcd34d" : "#d97706"} /> : <OffsetIcon name="plane" size={12} />}Dispatch</button>}
+                              <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="act indigo">{actionLoading === o.id ? <Spinner size={12} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <OffsetIcon name="checkCircle" size={12} />}Check</button>
+                              {!["Cancelled", "Completed", "Partial"].includes(o.status) && <button onClick={() => openCancel(o)} disabled={!!actionLoading} className="act red"><OffsetIcon name="xCircle" size={12} />Cancel</button>}
+                              {o.status === "Cancelled" && o.lastError !== "user_cancelled" && !o.redispatchedAt && <button onClick={() => openRedispatch(o)} disabled={!!actionLoading} className="act amber"><OffsetIcon name="refresh" size={12} />Re-dispatch</button>}
+                              {o.status === "Completed" && !o.refillRequestedAt && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="act purple"><OffsetIcon name="refresh" size={12} />Refill</button>}
+                              {o.refillRequestedAt && <button onClick={async () => { const ok = await confirm({ title: "Reset Refill", message: `Mark refill as delivered for ${o.id}? This lets the user request again.`, confirmLabel: "Reset" }); if (ok) doAction(o.id, "reset_refill"); }} disabled={!!actionLoading} className="act amber"><OffsetIcon name="refresh" size={12} />Reset Refill</button>}
+                              {(o.status === "Completed" || o.status === "Partial") && <button onClick={() => openRefund(o)} className="act amber"><OffsetIcon name="refresh" size={12} />{o.refundedTotal >= o.charge ? "Fully Refunded" : o.refundedTotal > 0 ? `Refund (${Math.round(o.refundedTotal / o.charge * 100)}%)` : "Refund"}</button>}
                               {o.phone ? <WaButton href={`https://wa.me/${o.phone.replace(/\D/g,"")}?text=${encodeURIComponent(`Hi ${(o.user||"").split(" ")[0]||"there"}, this is Nitro Support.\n\nRegarding your order ${o.id} (${o.service} x ${o.quantity}):\n\n`)}`} weight="quiet" size="sm">WhatsApp</WaButton> : <WaButton onClick={() => toast.info("No WhatsApp", `${o.user} hasn't added their number yet`)} weight="quiet" size="sm" className="opacity-40">WhatsApp</WaButton>}
                             </div>
                           </div>
@@ -929,17 +930,17 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                   {o.link && (
                     <div className="mb-3 py-2 px-2.5 rounded-lg flex items-center gap-2 min-w-0 max-w-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
                       <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                        <OffsetIcon name="link" size={12} />
                       </div>
                       <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[12px] desktop:text-[13px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline" style={{ color: t.textSoft }}>{o.link}</a>
-                      {!o.apiOrderId && o.status !== "Cancelled" && <button onClick={() => openEditLink(o)} className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }} title="Edit link"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>}
+                      {!o.apiOrderId && o.status !== "Cancelled" && <button onClick={() => openEditLink(o)} className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)", color: t.textMuted }} title="Edit link"><OffsetIcon name="pen" size={11} /></button>}
                     </div>
                   )}
 
                   {/* View comments button */}
                   {o.comments && (
                     <button onClick={(e) => { e.stopPropagation(); setViewComments(o.comments); }} className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border-none rounded-lg py-1 px-2" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.04)", color: t.textSoft }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                      <OffsetIcon name="comment" size={12} />
                       View comments
                     </button>
                   )}
@@ -978,7 +979,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
                     const colors = { neutral: { bg: dark ? "rgba(161,161,170,.08)" : "rgba(113,113,122,.04)", brd: dark ? "rgba(161,161,170,.18)" : "rgba(113,113,122,.12)", clr: dark ? "#a1a1aa" : "#71717a" }, warn: { bg: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.04)", brd: dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.12)", clr: dark ? "#fbbf24" : "#d97706" }, error: { bg: dark ? "rgba(252,165,165,.08)" : "rgba(220,38,38,.04)", brd: dark ? "rgba(252,165,165,.18)" : "rgba(220,38,38,.12)", clr: dark ? "#fca5a5" : "#dc2626" } }[ei.tone];
                     return (
                     <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: colors.bg, border: `1px solid ${colors.brd}` }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      <OffsetIcon name="alert" size={14} color={colors.clr} className="shrink-0 mt-0.5" />
                       <div className="min-w-0">
                         <div className="text-[11px] font-semibold uppercase tracking-[0.5px] mb-0.5" style={{ color: colors.clr }}>{ei.label}</div>
                         {ei.detail && <div className="text-[12px] break-all" style={{ color: colors.clr, opacity: .8 }}>{ei.detail}</div>}
@@ -994,13 +995,13 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-wrap py-1.5 px-1">
-                    {needsDispatch(o) && <button onClick={async () => { const ok = await confirm({ title: "Manual Dispatch", message: `Dispatch order ${o.id} to provider now?`, confirmLabel: "Dispatch" }); if (ok) doAction(o.id, "dispatch"); }} disabled={!!actionLoading} className="act amber">{actionLoading === o.id ? <Spinner size={14} color={dark ? "#fcd34d" : "#d97706"} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>}Dispatch</button>}
-                    <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="act indigo">{actionLoading === o.id ? <Spinner size={14} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}Check</button>
-                    {!["Cancelled", "Completed", "Partial"].includes(o.status) && <button onClick={() => openCancel(o)} disabled={!!actionLoading} className="act red"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Cancel</button>}
-                    {o.status === "Cancelled" && o.lastError !== "user_cancelled" && !o.redispatchedAt && <button onClick={() => openRedispatch(o)} disabled={!!actionLoading} className="act amber"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Re-dispatch</button>}
-                    {o.status === "Completed" && !o.refillRequestedAt && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="act purple"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>Refill</button>}
-                    {o.refillRequestedAt && <button onClick={async () => { const ok = await confirm({ title: "Reset Refill", message: `Mark refill as delivered for ${o.id}? This lets the user request again.`, confirmLabel: "Reset" }); if (ok) doAction(o.id, "reset_refill"); }} disabled={!!actionLoading} className="act amber"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>Reset Refill</button>}
-                    {(o.status === "Completed" || o.status === "Partial") && <button onClick={() => openRefund(o)} className="act amber"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>{o.refundedTotal >= o.charge ? "Fully Refunded" : o.refundedTotal > 0 ? `Refund (${Math.round(o.refundedTotal / o.charge * 100)}%)` : "Refund"}</button>}
+                    {needsDispatch(o) && <button onClick={async () => { const ok = await confirm({ title: "Manual Dispatch", message: `Dispatch order ${o.id} to provider now?`, confirmLabel: "Dispatch" }); if (ok) doAction(o.id, "dispatch"); }} disabled={!!actionLoading} className="act amber">{actionLoading === o.id ? <Spinner size={14} color={dark ? "#fcd34d" : "#d97706"} /> : <OffsetIcon name="plane" size={14} />}Dispatch</button>}
+                    <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="act indigo">{actionLoading === o.id ? <Spinner size={14} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <OffsetIcon name="checkCircle" size={14} />}Check</button>
+                    {!["Cancelled", "Completed", "Partial"].includes(o.status) && <button onClick={() => openCancel(o)} disabled={!!actionLoading} className="act red"><OffsetIcon name="xCircle" size={14} />Cancel</button>}
+                    {o.status === "Cancelled" && o.lastError !== "user_cancelled" && !o.redispatchedAt && <button onClick={() => openRedispatch(o)} disabled={!!actionLoading} className="act amber"><OffsetIcon name="refresh" size={14} />Re-dispatch</button>}
+                    {o.status === "Completed" && !o.refillRequestedAt && <button onClick={async () => { const ok = await confirm({ title: "Refill Order", message: `Request a refill for order ${o.id}?`, confirmLabel: "Refill" }); if (ok) doAction(o.id, "refill"); }} disabled={!!actionLoading} className="act purple"><OffsetIcon name="refresh" size={14} />Refill</button>}
+                    {o.refillRequestedAt && <button onClick={async () => { const ok = await confirm({ title: "Reset Refill", message: `Mark refill as delivered for ${o.id}? This lets the user request again.`, confirmLabel: "Reset" }); if (ok) doAction(o.id, "reset_refill"); }} disabled={!!actionLoading} className="act amber"><OffsetIcon name="refresh" size={14} />Reset Refill</button>}
+                    {(o.status === "Completed" || o.status === "Partial") && <button onClick={() => openRefund(o)} className="act amber"><OffsetIcon name="refresh" size={14} />{o.refundedTotal >= o.charge ? "Fully Refunded" : o.refundedTotal > 0 ? `Refund (${Math.round(o.refundedTotal / o.charge * 100)}%)` : "Refund"}</button>}
                     {o.phone ? <WaButton href={`https://wa.me/${o.phone.replace(/\D/g,"")}?text=${encodeURIComponent(`Hi ${(o.user||"").split(" ")[0]||"there"}, this is Nitro Support.\n\nRegarding your order ${o.id} (${o.service} x ${o.quantity}):\n\n`)}`} weight="quiet" size="sm">WhatsApp</WaButton> : <WaButton onClick={() => toast.info("No WhatsApp", `${o.user} hasn't added their number yet`)} weight="quiet" size="sm" className="opacity-40">WhatsApp</WaButton>}
                   </div>
                 </div>
@@ -1010,13 +1011,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
           );
         }) : (
           <div className="py-[60px] px-5 text-center">
-            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
-              <rect x="12" y="8" width="40" height="48" rx="6" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
-              <line x1="20" y1="22" x2="44" y2="22" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" />
-              <line x1="20" y1="30" x2="38" y2="30" stroke={t.accent} strokeWidth="1.5" opacity=".15" strokeLinecap="round" />
-              <circle cx="32" cy="38" r="8" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
-              <path d="M29 38l2 2 4-4" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity=".4" />
-            </svg>
+            <OffsetIcon name="receipt" size={48} style={{ display: "block", margin: "0 auto 14px", opacity: .7 }} />
             {search || filter !== "all" ? (<>
               <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No matching orders</div>
               <div className="text-sm mb-3" style={{ color: t.textMuted }}>Try adjusting your search or filter</div>
@@ -1055,7 +1050,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
       {cancelPrompt && (
         <Modal open onClose={() => setCancelPrompt(null)} dark={dark} maxWidth={400} intent="danger"
           title={`Cancel order ${cancelPrompt.id}`} subtitle={`${cancelPrompt.user} · charged ${fN(cancelPrompt.charge)}`}
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>}
+          icon={<OffsetIcon name="xCircle" size={16} />}
           footer={<>
             <ModalBtn kind="quiet" dark={dark} onClick={() => setCancelPrompt(null)}>Back</ModalBtn>
             <ModalBtn kind="danger" dark={dark} disabled={cancelSending} onClick={doCancel}>{cancelSending ? "Cancelling…" : "Cancel order"}</ModalBtn>
@@ -1076,7 +1071,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
         return (
         <Modal open onClose={() => setRefundPrompt(null)} dark={dark} maxWidth={400} intent="warn"
           title={`Refund order ${refundPrompt.id}`} subtitle={`${refundPrompt.user} · charged ${fN(refundPrompt.charge)}`}
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>}
+          icon={<OffsetIcon name="refresh" size={16} />}
           footer={<>
             <ModalBtn kind="quiet" dark={dark} onClick={() => setRefundPrompt(null)}>Cancel</ModalBtn>
             <ModalBtn kind="success" dark={dark} disabled={refundSending || refundPctOf(refundPercent) <= 0} onClick={doRefund}>{refundSending ? "Processing…" : "Confirm refund"}</ModalBtn>
@@ -1084,7 +1079,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
 
             {alreadyRefunded > 0 && (
               <div className="text-[12px] py-2 px-3 rounded-[14px] mb-4 flex items-center gap-1.5" style={{ background: amberBg, border: `1px solid ${amberBrd}`, color: amber }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <OffsetIcon name="alert" size={12} />
                 {fN(alreadyRefunded)} already refunded · {fN(remaining)} remaining
               </div>
             )}
@@ -1118,7 +1113,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
         return (
         <Modal open onClose={() => setRedispatchPrompt(null)} dark={dark} maxWidth={400} intent="warn"
           title={`Re-dispatch ${rd.id}`} subtitle={`${rd.user} · quantity ${(rd.quantity || 0).toLocaleString()}`}
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>}
+          icon={<OffsetIcon name="swap" size={16} />}
           footer={<>
             <ModalBtn kind="quiet" dark={dark} onClick={() => setRedispatchPrompt(null)}>Cancel</ModalBtn>
             <ModalBtn kind="warn" dark={dark} disabled={redispatchSending || !redispatchLink.trim()} onClick={doRedispatch}>{redispatchSending ? "Dispatching…" : "Re-dispatch"}</ModalBtn>
@@ -1131,7 +1126,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
               <div>Creates a new order for remaining quantity</div>
               <div>Charges only if original was refunded</div>
               {hasSwap && (
-                <div className="flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>Service <span className="font-mono font-semibold">{rd.serviceApiId}</span> → <span className="font-mono font-semibold">{rd.tierServiceApiId}</span></div>
+                <div className="flex items-center gap-1.5"><OffsetIcon name="swap" size={12} className="shrink-0" />Service <span className="font-mono font-semibold">{rd.serviceApiId}</span> → <span className="font-mono font-semibold">{rd.tierServiceApiId}</span></div>
               )}
             </div>
         </Modal>
@@ -1141,7 +1136,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
       {editLinkPrompt && (
         <Modal open onClose={() => setEditLinkPrompt(null)} dark={dark} maxWidth={400}
           title={`Edit link — ${editLinkPrompt.id}`} subtitle="Tracking params are stripped automatically."
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>}
+          icon={<OffsetIcon name="link" size={16} />}
           footer={<>
             <ModalBtn kind="quiet" dark={dark} onClick={() => setEditLinkPrompt(null)}>Cancel</ModalBtn>
             <ModalBtn kind="primary" dark={dark} disabled={editLinkSending || !editLinkValue.trim()} onClick={doEditLink}>{editLinkSending ? "Saving…" : "Save link"}</ModalBtn>
@@ -1153,7 +1148,7 @@ export default function AdminOrdersPage({ dark, t, admin, initialFilter }) {
 
       {viewComments && (
         <Modal open onClose={() => setViewComments(null)} dark={dark} maxWidth={448} title="Submitted comments"
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>}>
+          icon={<OffsetIcon name="comment" size={16} />}>
           <pre className="m-0 text-[13px] leading-[1.65] whitespace-pre-wrap break-words" style={{ color: t.textSoft, fontFamily: "inherit" }}>{viewComments}</pre>
         </Modal>
       )}

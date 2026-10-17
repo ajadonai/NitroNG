@@ -36,9 +36,18 @@ describe("option-picker groups", () => {
     expect(SOURCE).toMatch(/isOptionPicker \? \(/);
   });
 
-  it("keeps the tier grid as the default path", () => {
-    expect(SOURCE).toContain('<div className="grid grid-cols-3 gap-1.5 md:gap-2">');
-    expect(SOURCE).toMatch(/const TS = \{/);
+  it("keeps the tier well as the default path", () => {
+    expect(SOURCE).toMatch(/<div className=\{`tw\$\{/);
+    expect(SOURCE).toMatch(/const TIER_CSS = `/);
+  });
+
+  // Every segment is the same box, so switching tier never resizes the row:
+  // equal columns, and the picked state is colour and an inset ring only.
+  it("keeps every tier segment the same size", () => {
+    const css = SOURCE.slice(SOURCE.indexOf("const TIER_CSS"), SOURCE.indexOf("`;", SOURCE.indexOf("const TIER_CSS")));
+    expect(css).toContain("grid-auto-columns:minmax(0,1fr)");
+    const on = css.match(/\.tw-tier\.on\{([^}]*)\}/)[1];
+    expect(on).not.toMatch(/padding|width|height|font-size|border:/);
   });
 
   // The refill line states the Budget/Standard/Premium assurance. "Option B" is
@@ -46,7 +55,11 @@ describe("option-picker groups", () => {
   // and promise lifetime refill — the exact shape of mistake that put a false
   // promise on 62 tiers once already.
   it("does not state a refill assurance for an option", () => {
-    expect(SOURCE).toMatch(/activeTier && !isOptionPicker &&/);
+    const select = SOURCE.slice(SOURCE.indexOf("<select"), SOURCE.indexOf("</select>"));
+    expect(select).not.toContain("refillLabel");
+    // The well, which only renders off the options branch, is the one place
+    // the promise is printed, and only for a name on the ladder.
+    expect(SOURCE).toContain("{onLadder ? tr(refillLabel(tier.tier)) :");
   });
 
   it("labels the control Option rather than Tier", () => {

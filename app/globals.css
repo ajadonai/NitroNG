@@ -527,6 +527,19 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 
 .dash-bell { background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; width: 34px; height: 34px; border-radius: 10px; }
 .dash-bell-badge { position: absolute; top: 2px; inset-inline-end: 2px; min-width: 15px; height: 15px; border-radius: 8px; background: #dc2626; color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 3px; font-family: 'JetBrains Mono', monospace; line-height: 1; }
+/* The bell (offset print): grey at rest; rose, and a two-swing ring, when
+   something new arrives; rose while the panel is open. The ring plays when the
+   unread class lands, so it greets a new notification rather than looping. */
+.dash-bell.unread, .dash-bell.open { color: #c47d8e; }
+.dark .dash-bell.unread, .dark .dash-bell.open { color: #e3a4b5; }
+.dash-bell.unread .ic-off, .dash-bell.open .ic-off { fill: #efc4cf; opacity: 1; }
+.dark .dash-bell.unread .ic-off, .dark .dash-bell.open .ic-off { fill: #6b3a4a; }
+.dash-bell.unread > svg { transform-origin: 50% 12%; animation: bellRing 1.6s ease .4s 2; }
+@keyframes bellRing { 0%, 40%, 100% { transform: rotate(0); } 8% { transform: rotate(-14deg); } 16% { transform: rotate(11deg); } 24% { transform: rotate(-7deg); } 32% { transform: rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) { .dash-bell.unread > svg { animation: none; } }
+/* The close X (chip): its printed square turns rose when the button is hovered. */
+button:hover .ic-x .ic-off, button:focus-visible .ic-x .ic-off, [role="button"]:hover .ic-x .ic-off { fill: #efc4cf; opacity: 1; }
+.dark button:hover .ic-x .ic-off, .dark button:focus-visible .ic-x .ic-off, .dark [role="button"]:hover .ic-x .ic-off { fill: #6b3a4a; }
 
 /* Avatar */
 .dash-avatar-btn { background: none; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; width: 34px; height: 34px; padding: 2px; border-radius: 999px; }
@@ -793,14 +806,43 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .ic-off { fill: currentColor; opacity: .16; stroke: none; transition: fill .2s ease, opacity .2s ease; }
 .rail-it.on .ic-off, .rail-pin.on .ic-off { fill: #efc4cf; opacity: 1; }
 .dark .rail-it.on .ic-off, .dark .rail-pin.on .ic-off { fill: #6b3a4a; }
+/* A toggle that is on (a saved star): the printed shape goes solid. */
+.ic-on .ic-off { fill: currentColor; opacity: .9; }
 @media (prefers-reduced-motion: reduce) { .ic-off { transition: none; } }
+/* A printed tile on the page, the same block the rails and the tour print:
+   a wash with a hard offset under it. Accent by default; --tc gives it a
+   status colour (green in, red out) so the row still says what it is. */
+.ic-tile { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; border-radius: 10px; color: var(--t-accent-ink); background: rgba(196,125,142,.12); box-shadow: 2px 2px 0 #efc4cf; }
+.dark .ic-tile { background: rgba(196,125,142,.2); box-shadow: 2px 2px 0 #6b3a4a; }
+.ic-tile.tc { color: var(--tc); background: color-mix(in srgb, var(--tc) 13%, transparent); box-shadow: 2px 2px 0 color-mix(in srgb, var(--tc) 30%, transparent); }
+.dark .ic-tile.tc { background: color-mix(in srgb, var(--tc) 16%, transparent); box-shadow: 2px 2px 0 color-mix(in srgb, var(--tc) 36%, transparent); }
+/* A closed service row on New Order, curated or full list, lights on hover:
+   the cue that a tap opens it. */
+.no-svc-card.idle:hover, .no-full-row.idle:hover { background: rgba(196,125,142,.06); }
+.dark .no-svc-card.idle:hover, .dark .no-full-row.idle:hover { background: rgba(196,125,142,.1); }
 .rail-it.on { background: rgba(196,125,142,.1); color: var(--t-accent); font-weight: 650; --ic: var(--t-accent); }
 .dark .rail-it.on { background: rgba(196,125,142,.14); }
 .rail-it.on::before { content: ""; position: absolute; inset-inline-start: 0; top: 8px; bottom: 8px; width: 3px; border-start-end-radius: 3px; border-end-end-radius: 3px; background: var(--t-accent); }
 .rail-it.tint { color: var(--ic); }
 .rail-it.soon { opacity: .5; cursor: default; }
 .rail-il { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rail-bd { margin-left: auto; font-size: 10.5px; font-weight: 700; min-width: 20px; text-align: center; padding: 2px 6px; border-radius: 999px; background: var(--t-accent); color: #fff; }
+/* The count badge, "ink tab" (Trip's pick, 17 Oct 2026): rose figures on a
+   quiet tinted tab with a printed edge, so a count reads as information, not an
+   alarm. On the active row it takes the card colour to stay distinct. */
+.rail-bd { margin-left: auto; font-size: 10.5px; font-weight: 700; min-width: 20px; text-align: center; padding: 3px 6px; border-radius: 7px; line-height: 1; color: var(--t-accent-ink); background: rgba(196,125,142,.1); box-shadow: inset 0 0 0 1px rgba(139,74,94,.28), 1.5px 1.5px 0 #efc4cf; }
+.dark .rail-bd { background: rgba(196,125,142,.14); box-shadow: inset 0 0 0 1px rgba(232,180,196,.3), 1.5px 1.5px 0 #6b3a4a; }
+.rail-it.on .rail-bd { background: var(--t-card-bg); }
+.rail-bd-new { font-size: 9.5px; letter-spacing: .5px; text-transform: uppercase; }
+/* The avatar with no photo (components/avatar.jsx): the figure from the icon
+   set, printed on a soft tile. */
+.nitro-av-tile { fill: #f6e9ec; }
+.nitro-av-print { fill: #efc4cf; }
+.nitro-av-fig { stroke: #83535f; }
+.nitro-av-ring { stroke: rgba(131,83,95,.28); }
+.dark .nitro-av-tile { fill: #24192f; }
+.dark .nitro-av-print { fill: #6b3a4a; }
+.dark .nitro-av-fig { stroke: #e3a4b5; }
+.dark .nitro-av-ring { stroke: rgba(227,164,181,.3); }
 .rail-jump { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--t-sidebar-border); background: var(--t-card-bg); margin: 2px 0 10px; }
 .rail-jump:focus-within { border-color: rgba(196,125,142,.6); }
 .rail-ji { width: 14px; height: 14px; display: inline-flex; color: var(--t-text-muted); flex-shrink: 0; }
@@ -1857,7 +1899,18 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .rr-row.click:hover { background: var(--t-accent-light); }
 .rr-tile { width: 30px; height: 30px; border-radius: 9px; background: rgba(127,127,127,.12); display: inline-flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 800; color: var(--t-text-muted); overflow: hidden; flex-shrink: 0; }
 .rr-tile.round { border-radius: 50%; background: var(--t-accent); color: #fff; }
-.rr-num { width: 30px; height: 30px; border-radius: 50%; background: var(--t-accent-light); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: var(--t-accent); flex-shrink: 0; }
+/* Offset print in the right rail (approved 17 Oct 2026): steps sit on a printed
+   square, a flag is drawn rather than an emoji, and #1 on the leaderboard and
+   the other ranks carry the same print. */
+.rr-num { width: 30px; height: 30px; border-radius: 9px; background: var(--t-accent-light); display: inline-flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; color: var(--t-accent); flex-shrink: 0; box-shadow: 2px 2px 0 #efc4cf; }
+.dark .rr-num { box-shadow: 2px 2px 0 #6b3a4a; }
+.rr-num.tile { overflow: hidden; }
+.rr-tile.print { border-radius: 9px; background: var(--t-accent-light); color: var(--t-accent); font-family: 'JetBrains Mono', monospace; box-shadow: 2px 2px 0 #efc4cf; }
+.rr-tile.round { box-shadow: 2px 2px 0 #efc4cf; }
+.dark .rr-tile.print, .dark .rr-tile.round { box-shadow: 2px 2px 0 #6b3a4a; }
+.rr-si { display: inline-flex; vertical-align: -2px; margin-inline-end: 6px; color: var(--t-accent); }
+.rr-fact > span { display: inline-flex; align-items: center; gap: 8px; }
+.rr-fi { display: inline-flex; color: var(--t-text-muted); }
 .rr-txt { display: flex; flex-direction: column; min-width: 0; }
 .rr-txt > b { font-weight: 600; color: var(--t-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rr-row:has(> .rr-num) > .rr-txt > b, .rr-row:has(> .rr-num) > .rr-txt > i, .rr-row.notile > .rr-txt > b, .rr-row.notile > .rr-txt > i { white-space: normal; }
@@ -1869,14 +1922,20 @@ button, [role="button"], a[class*="btn"], .nudge-btn { transition: transform .13
 .rr-jump:first-child { border-top: 0; }
 .rr-jump:hover { background: var(--t-accent-light); }
 .rr-jump > i { font-style: normal; color: var(--t-text-muted); font-size: 16px; }
+.rr-jump > span { flex: 1; text-align: start; }
+.rr-jump > .rr-ji { display: inline-flex; margin-inline-end: 10px; }
+.rr-jump > .rr-arrow { width: 22px; height: 22px; border-radius: 7px; display: inline-grid; place-items: center; background: var(--t-accent-light); color: var(--t-accent); box-shadow: 1.5px 1.5px 0 #efc4cf; }
+.dark .rr-jump > .rr-arrow { box-shadow: 1.5px 1.5px 0 #6b3a4a; }
 .rr-note { font-size: 12.5px; line-height: 1.5; color: var(--t-text-muted); padding: 10px 14px; background: var(--t-card-bg); border: 1px solid var(--t-card-border); border-radius: 14px; }
 .rr-link { display: inline-block; font: inherit; font-size: 12px; font-weight: 600; color: var(--t-accent); padding: 8px 2px 0; background: none; border: 0; cursor: pointer; text-align: left; text-decoration: none; }
 .rr-btn { display: flex; align-items: center; justify-content: center; width: 100%; height: 36px; margin-top: 8px; border-radius: 9px; border: 1px solid var(--t-accent); background: var(--t-accent); color: #fff; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: transform .15s; }
 .rr-btn:hover { transform: translateY(-1px); }
-.rr-empty { padding: 14px; font-size: 13px; color: var(--t-text-muted); }
+.rr-empty { padding: 14px; font-size: 13px; color: var(--t-text-muted); display: flex; align-items: center; gap: 10px; }
+.rr-ei { display: inline-flex; color: var(--t-accent); flex-shrink: 0; }
 .rr-leg { display: flex; gap: 14px; padding: 10px 14px; font-size: 12px; font-weight: 600; color: var(--t-text-muted); }
 .rr-leg > span { display: inline-flex; align-items: center; gap: 6px; }
-.rr-leg i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.rr-leg i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; box-shadow: 1.5px 1.5px 0 #efc4cf; }
+.dark .rr-leg i { box-shadow: 1.5px 1.5px 0 #6b3a4a; }
 
 /* ── Theme atmosphere: a whisper of grain everywhere, and a faint aurora on the
      pages somebody arrives on — not on the dashboard, see below.

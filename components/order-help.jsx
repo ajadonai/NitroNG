@@ -51,14 +51,16 @@ export function NotSureHelp({ waNumber, dark, context, email }) {
  * service is open. That is the moment people hesitate, and it costs no scrolling
  * to find. Standing alone in its own row now that "Which tier?" moved onto the
  * tier label, it is the thing to do on the card, not one of several actions in
- * a row — the shared button's `filled` weight, same as everywhere else that's
- * true, rather than the tinted pill this used to hand-roll.
+ * a row. The shared button's `quiet` weight since the tier well came in: a
+ * solid green block shouted over the tiers it sits under, and the WhatsApp mark
+ * and green ring still say plainly that this is a real way to get it done.
  */
 export function OrderForMeCard({ waNumber, context, email }) {
   const tr = useT();
   if (!waNumber) return null;
   return (
     <WaButton
+      weight="quiet"
       href={waHelpLink(waNumber, context, email)}
       onClick={e => { e.stopPropagation(); openInPlaceOnPhone(e); }}
     >

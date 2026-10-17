@@ -12,6 +12,7 @@ import { copyText } from '@/lib/clipboard';
 import { PlatformIcon } from "./platform-icon";
 import { SegPill } from "./seg-pill";
 import { effectiveOrderMinimum } from '@/lib/order-minimums';
+import { OffsetIcon } from "./offset-icons";
 
 const TIER_CLR_ORDER = { Budget: "#f59e0b", Standard: "#3b82f6", Premium: "#a855f7" };
 const DRIP_DAILY_CAP = { followers: 5000, likes: 10000, views: 75000, plays: 75000, comments: 1000, reviews: 100, engagement: 15000 };
@@ -752,8 +753,8 @@ export function AdminCreateOrderPage({ dark, t }) {
                           <b>{item.groupName} · {item.tier}</b>
                           <i className="m">{item.link.replace(/^https?:\/\//, "").slice(0, 30)}{item.link.length > 38 ? "…" : ""} · {item.quantity.toLocaleString()} · {fN(chargeNaira(item.sellPer1k, item.quantity))}</i>
                         </div>
-                        <button type="button" className="co-ib" onClick={() => editBatchItem(i)} aria-label="Edit item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z" /></svg></button>
-                        <button type="button" className="co-ib" onClick={() => removeBatchItem(i)} aria-label="Remove item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>
+                        <button type="button" className="co-ib" onClick={() => editBatchItem(i)} aria-label="Edit item"><OffsetIcon name="pen" size={12} /></button>
+                        <button type="button" className="co-ib" onClick={() => removeBatchItem(i)} aria-label="Remove item"><OffsetIcon name="close" size={12} /></button>
                       </div>
                     ))}
                   </div>

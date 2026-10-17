@@ -5,11 +5,12 @@ import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter, SharedStyles } from './shared-nav';
 import { SITE } from '../lib/site';
 import { WaButton, WhatsAppGlyph } from './wa-button';
+import { OffsetIcon } from "./offset-icons";
 
 const WA_FALLBACK = '2347071656156';
 
 const CHECK = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>;
-const MAIL = (size) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 6L2 7" /></svg>;
+const MAIL = (size) => <OffsetIcon name="mail" size={size} />;
 
 const SOCIAL_PATHS = {
   Instagram: "M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.2 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.2-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.2-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4C8.4 2.2 8.8 2.2 12 2.2zm0 5.8a4 4 0 100 8 4 4 0 000-8zm0 6.6a2.6 2.6 0 110-5.2 2.6 2.6 0 010 5.2zm5.1-6.8a.94.94 0 11-1.9 0 .94.94 0 011.9 0z",
@@ -158,7 +159,7 @@ function ContactInner() {
           <h1 className="serif">{tr("Talk to a person")}</h1>
           <p>{tr("WhatsApp is the fast way. Email is the written way.")}</p>
           <span className="cx-hours">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+            <OffsetIcon name="clockPlain" size={15} />
             {tr("We answer every day, quickest between 9am and 10pm Lagos time.")}
           </span>
         </header>
@@ -229,7 +230,7 @@ function ContactInner() {
             </div>
           </div>
           <span className="cx-safe">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6l8-3z" /></svg>
+            <OffsetIcon name="shield" size={14} />
             {tr("Social accounts are for general questions. Never send order, account or payment details there.")}
           </span>
         </footer>

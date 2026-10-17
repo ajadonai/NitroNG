@@ -7,6 +7,7 @@ import { fN } from "../lib/format";
 import { SegPill } from "./seg-pill";
 import { FilterDropdown } from "./date-range-picker";
 import InlineAlert from "./inline-alert";
+import { OffsetIcon } from "./offset-icons";
 
 const TABS = [
   { id: "spenders", label: "Top Spenders" },
@@ -144,8 +145,8 @@ export default function AdminLeaderboardPage({ dark, t }) {
       {/* Stats row */}
       <div className="grid grid-cols-4 max-md:grid-cols-2 gap-3 mb-5">
         {[
-          { label: "In Category", value: loading ? "—" : list.length, icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> },
-          { label: "Rewards Sent", value: rewardCount, icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V8H6a2 2 0 010-4h12v4"/><path d="M4 6v12a2 2 0 002 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg> },
+          { label: "In Category", value: loading ? "—" : list.length, icon: <OffsetIcon name="users" size={15} /> },
+          { label: "Rewards Sent", value: rewardCount, icon: <OffsetIcon name="wallet" size={15} /> },
           { label: "Auto-Reward", value: autoConfig?.enabled ? "Active" : "Off", accent: autoConfig?.enabled },
           { label: "Announcement", value: annoEnabled ? "Live" : "Off", accent: annoEnabled },
         ].map((s, i) => (
@@ -164,7 +165,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
         {/* Announcement */}
         <div className="rounded-xl overflow-hidden border mb-4" style={{ borderColor: t.cardBorder }}>
           <div className="py-2.5 px-4 flex items-center gap-2" style={accentHdr}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <OffsetIcon name="bell" size={14} color={t.accent} />
             <span className="text-xs font-semibold uppercase tracking-[1.2px]" style={{ color: t.accentInk }}>Reward Announcement</span>
             <div className="flex-1" />
             {annoEnabled && <span className="text-[10px] font-bold uppercase tracking-wider py-0.5 px-2 rounded-full" style={{ background: dark ? "rgba(110,231,183,.14)" : "rgba(16,185,129,.1)", color: dark ? "#6ee7b7" : "#059669" }}>Live</span>}
@@ -182,7 +183,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
         {/* Auto-reward */}
         <div className="rounded-xl overflow-hidden border mb-4" style={{ borderColor: t.cardBorder }}>
           <div className="py-2.5 px-4 flex items-center gap-2" style={accentHdr}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <OffsetIcon name="clockPlain" size={14} color={t.accent} />
             <span className="text-xs font-semibold uppercase tracking-[1.2px]" style={{ color: t.accentInk }}>Auto-Reward (Monthly)</span>
             <div className="flex-1" />
             <button onClick={() => { if (!autoConfig) setAutoConfig({ enabled: false, category: "spenders", slots: [{ rank: 1, amount: 5000 }, { rank: 2, amount: 3000 }, { rank: 3, amount: 1000 }] }); setAutoModal(!autoModal); }} className={smBtnCls} style={smBtn}>{autoModal ? "Close" : "Configure"}</button>
@@ -205,7 +206,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
                     <span className="text-[13px] w-10 font-semibold" style={{ color: i === 0 ? "#ffd700" : i === 1 ? "#c0c0c0" : i === 2 ? "#cd7f32" : t.textMuted }}>#{slot.rank}</span>
                     <input type="number" value={slot.amount} onChange={e => { const s = [...autoConfig.slots]; s[i] = { ...slot, amount: Number(e.target.value) }; setAutoConfig({ ...autoConfig, slots: s }); }} className={`${inpCls} w-[120px]`} style={inp} />
                     <span className="text-xs" style={{ color: t.textMuted }}>₦</span>
-                    <button onClick={() => setAutoConfig({ ...autoConfig, slots: autoConfig.slots.filter((_, j) => j !== i) })} className="bg-transparent border-none text-sm cursor-pointer transition-all duration-200 hover:-translate-y-px" style={{ color: t.red }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                    <button onClick={() => setAutoConfig({ ...autoConfig, slots: autoConfig.slots.filter((_, j) => j !== i) })} className="bg-transparent border-none text-sm cursor-pointer transition-all duration-200 hover:-translate-y-px" style={{ color: t.red }}><OffsetIcon name="close" size={12} /></button>
                   </div>
                 ))}
                 <button onClick={() => setAutoConfig({ ...autoConfig, slots: [...(autoConfig.slots || []), { rank: (autoConfig.slots?.length || 0) + 1, amount: 1000 }] })} className="text-xs bg-transparent border-none cursor-pointer font-[inherit] py-1 transition-all duration-200 hover:-translate-y-px" style={{ color: t.accentInk }}>+ Add slot</button>
@@ -241,11 +242,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
         {/* Table */}
         {loading ? <SkelList dark={dark} rows={6} bare rowH={52} /> : list.length === 0 ? (
           <div className="py-[60px] px-5 text-center">
-            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
-              <rect x="6" y="28" width="14" height="24" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
-              <rect x="25" y="12" width="14" height="40" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".3" />
-              <rect x="44" y="20" width="14" height="32" rx="3" stroke={t.accent} strokeWidth="1.5" opacity=".25" />
-            </svg>
+            <OffsetIcon name="bars" size={48} style={{ display: "block", margin: "0 auto 14px", opacity: .7 }} />
             <div className="text-base font-semibold mb-1" style={{ color: t.textSoft }}>No leaderboard data yet</div>
             <div className="text-sm" style={{ color: t.textMuted }}>Rankings will appear once users start placing orders</div>
           </div>
@@ -286,7 +283,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
         <div onClick={() => setRewardModal(null)} onKeyDown={e=>{if(e.key==='Escape')setRewardModal(null)}} className={modalOvrCls} style={modalOvr}>
           <div role="dialog" aria-modal="true" aria-label="Reward user" onClick={e => e.stopPropagation()} className={modalBoxCls} style={modalBox}>
             <div className="flex items-center gap-2 mb-1">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V8H6a2 2 0 010-4h12v4"/><path d="M4 6v12a2 2 0 002 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg>
+              <OffsetIcon name="wallet" size={18} color={t.accent} />
               <div className="text-base font-semibold" style={{ color: t.text }}>Reward User</div>
             </div>
             <div className="text-[13px] mb-4" style={{ color: t.textMuted }}>{rewardModal.name} · {rewardModal.email}</div>
@@ -301,7 +298,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
             </div>
             {rewardMsg && <InlineAlert type={rewardMsg.type} dark={dark} className="mb-3">{rewardMsg.text}</InlineAlert>}
             <div className="flex max-md:flex-col gap-2">
-              <button onClick={() => setRewardModal(null)} className="py-2.5 px-5 rounded-lg text-sm font-medium cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <button onClick={() => setRewardModal(null)} className="py-2.5 px-5 rounded-lg text-sm font-medium cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}><OffsetIcon name="close" size={14} /></button>
               <button onClick={doReward} disabled={!rewardAmount || Number(rewardAmount) <= 0 || rewardLoading} className="flex-1 py-2.5 rounded-lg border-none text-sm cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ ...gradBtn, opacity: !rewardAmount || Number(rewardAmount) <= 0 || rewardLoading ? .5 : 1 }}>{rewardLoading ? "Sending..." : `Send ${rewardAmount ? fN(Number(rewardAmount)) : "₦0"}`}</button>
             </div>
           </div>
@@ -313,7 +310,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
         <div onClick={() => { if (!massLoading) setMassModal(false); }} onKeyDown={e=>{if(e.key==='Escape'&&!massLoading)setMassModal(false)}} className={modalOvrCls} style={modalOvr}>
           <div role="dialog" aria-modal="true" aria-label="Mass reward" onClick={e => e.stopPropagation()} className={modalBoxCls} style={modalBox}>
             <div className="flex items-center gap-2 mb-1">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+              <OffsetIcon name="users" size={18} color={t.accent} />
               <div className="text-base font-semibold" style={{ color: t.text }}>Reward {selected.size} Users</div>
             </div>
             <div className="text-[13px] mb-1.5" style={{ color: t.textMuted }}>Each user receives the same amount</div>
@@ -340,7 +337,7 @@ export default function AdminLeaderboardPage({ dark, t }) {
             )}
             {massMsg && <InlineAlert type={massMsg.type} dark={dark} className="mb-3">{massMsg.text}</InlineAlert>}
             <div className="flex max-md:flex-col gap-2">
-              <button onClick={() => setMassModal(false)} disabled={massLoading} className="py-2.5 px-5 rounded-lg text-sm font-medium cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <button onClick={() => setMassModal(false)} disabled={massLoading} className="py-2.5 px-5 rounded-lg text-sm font-medium cursor-pointer font-[inherit] bg-transparent transition-all duration-200 hover:-translate-y-px flex items-center justify-center" style={{ border: `1px solid ${t.cardBorder}`, color: t.textMuted }}><OffsetIcon name="close" size={14} /></button>
               <button onClick={doMassReward} disabled={!massAmount || Number(massAmount) <= 0 || massLoading} className="flex-1 py-2.5 rounded-lg border-none text-sm cursor-pointer font-[inherit] transition-all duration-200 hover:-translate-y-px" style={{ ...gradBtn, opacity: !massAmount || Number(massAmount) <= 0 || massLoading ? .5 : 1 }}>{massLoading ? "Processing..." : `Send to ${selected.size} users`}</button>
             </div>
           </div>

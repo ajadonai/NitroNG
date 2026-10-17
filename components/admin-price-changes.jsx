@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SkelList } from "./skeleton";
 import { fN } from "../lib/format";
 import { Modal } from "./ui-primitives";
+import { OffsetIcon } from "./offset-icons";
 
 // A daily feed of what moved the menu's prices: each day is one card, newest
 // first, and inside it the runs that caused the moves — the daily sync, a
@@ -39,7 +40,7 @@ function DetailModal({ change, onClose, dark, t }) {
     <Modal open onClose={onClose} dark={dark} maxWidth={440}
       title={`${change.groupName} — ${change.tier}`}
       subtitle={`${SRC_LABEL[change.source] || change.source}${change.actor && change.actor !== "System" ? ` by ${change.actor}` : ""} · ${dayLabel(change.createdAt)}, ${timeOf(change.createdAt)}`}
-      icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}>
+      icon={<OffsetIcon name="trend" size={16} />}>
       <div>
           <Fact label="Price on the site">
             <span className="m">{naira(change.oldSell)} → {naira(change.newSell)}</span>{" "}

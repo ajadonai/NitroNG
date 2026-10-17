@@ -3,10 +3,11 @@ import { useMoney } from "./locale";
 import { useT } from "./locale";
 import { useState, useEffect, useCallback } from 'react';
 import Game2048 from './game-2048';
+import { OffsetIcon } from "./offset-icons";
 
 const TABS = [
-  { id: 'game', label: '2048', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
-  { id: 'video', label: 'Watch & Earn', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> },
+  { id: 'game', label: '2048', icon: <OffsetIcon name="grid" size={14} /> },
+  { id: 'video', label: 'Watch & Earn', icon: <OffsetIcon name="play" size={14} /> },
 ];
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -80,7 +81,7 @@ export default function EarnPage({ dark, t }) {
             {/* Header */}
             <div className="relative px-5 pt-4 pb-3 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `linear-gradient(135deg, ${t.accent}, ${dark ? '#6b3a4a' : '#8b5e6b'})`, boxShadow: '0 4px 12px rgba(196,125,142,.3)' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <OffsetIcon name="star" size={18} />
               </div>
               <div className="flex-1">
                 <div className="text-[13px] font-bold" style={{ color: t.text }}>Monthly Prize Pool</div>
@@ -119,7 +120,7 @@ export default function EarnPage({ dark, t }) {
             {/* LB Header */}
             <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)'}` }}>
               <div className="flex items-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>
+                <OffsetIcon name="bars" size={16} color={t.accent} />
                 <span className="text-[13px] font-bold" style={{ color: t.text }}>{tr("Leaderboard")}</span>
               </div>
               {lb?.userRank && (
@@ -190,7 +191,7 @@ export default function EarnPage({ dark, t }) {
             ) : (
               <div className="px-5 py-12 text-center">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ background: gradBg, border: `1px solid ${gradBorder}` }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>
+                  <OffsetIcon name="bars" size={24} color={t.accent} />
                 </div>
                 <div className="text-sm font-bold" style={{ color: t.text }}>{tr("No scores yet")}</div>
                 <div className="text-xs mt-1" style={{ color: t.textMuted }}>{tr("Play a game to claim the #1 spot!")}</div>
@@ -202,7 +203,7 @@ export default function EarnPage({ dark, t }) {
           {lb?.pastWinners?.length > 0 && (
             <div className="rounded-2xl overflow-hidden" style={{ background: dark ? 'rgba(255,255,255,.04)' : '#fff', border: `1px solid ${t.cardBorder}` }}>
               <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)'}` }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <OffsetIcon name="trophy" size={14} color={t.accent} />
                 <span className="text-[13px] font-bold" style={{ color: t.text }}>{tr("Hall of Fame")}</span>
               </div>
               <div className="px-3 py-2">
@@ -234,7 +235,7 @@ export default function EarnPage({ dark, t }) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${t.accent}, ${dark ? '#6b3a4a' : '#8b5e6b'})` }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <OffsetIcon name="play" size={14} />
                   </div>
                   <div className="text-[13px] font-bold" style={{ color: t.text }}>{tr("Watch Videos")}</div>
                 </div>
@@ -263,7 +264,7 @@ export default function EarnPage({ dark, t }) {
               <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full opacity-10 blur-2xl" style={{ background: t.accent }} />
 
               <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: `linear-gradient(135deg, ${t.accent}, ${dark ? '#6b3a4a' : '#8b5e6b'})`, boxShadow: '0 8px 24px rgba(196,125,142,.25)' }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <OffsetIcon name="play" size={28} />
               </div>
               <div className="text-base font-bold mb-1" style={{ color: t.text }}>{tr("Watch & Earn")}</div>
               <div className="text-xs text-center max-w-[260px] leading-relaxed" style={{ color: t.textMuted }}>

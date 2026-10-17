@@ -14,6 +14,7 @@ import { ThemePill } from "./shared-nav";
 import { CurrencyOptions, LanguageOptions } from "./locale-switcher";
 import { SWITCHER_LIVE, useLocale, LANGUAGES } from "./locale";
 import { CURRENCIES } from "../lib/currency";
+import { OffsetIcon, CurrencyCoin } from "./offset-icons";
 
 function SettingsModal({ open, onClose, title, subtitle, icon, dark, children }) {
   return (
@@ -51,20 +52,18 @@ function Toggle({ on, onToggle, accent }) {
 /* ═══ SETTINGS PAGE                       ═══ */
 /* ═══════════════════════════════════════════ */
 
-const I_LOCK = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>;
-const I_BELL = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>;
-const I_DEV = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>;
-const I_KEY = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m21 2-2 2m-7.6 7.6a5.5 5.5 0 11-7.8 7.8 5.5 5.5 0 017.8-7.8zm0 0L19 3l2 2-3 3"/></svg>;
-const I_GLOBE = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>;
-const I_COIN = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.6 2.6 0 00-2.5-1.5c-1.4 0-2.5.9-2.5 2s1.1 2 2.5 2 2.5.9 2.5 2-1.1 2-2.5 2a2.6 2.6 0 01-2.5-1.5"/><path d="M12 6.5v11"/></svg>;
-const I_PULSE = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>;
-const I_OUT = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>;
-const I_TRASH = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>;
+const I_LOCK = <OffsetIcon name="lock" size={16} />;
+const I_BELL = <OffsetIcon name="bell" size={16} />;
+const I_DEV = <OffsetIcon name="monitor" size={16} />;
+// API access uses the code icon, the same as the left sidebar row.
+const I_API = <OffsetIcon name="code" size={16} />;
+const I_GLOBE = <OffsetIcon name="globe" size={16} />;
+const I_COIN = <CurrencyCoin size={16} />;
+const I_PULSE = <OffsetIcon name="activity" size={16} />;
+const I_OUT = <OffsetIcon name="logout" size={16} />;
+const I_TRASH = <OffsetIcon name="trash" size={16} />;
 const I_CHEV = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>;
 const I_COPY = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>;
-const I_SUN = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>;
-const I_MOON = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>;
-const I_AUTO = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18z" fill="currentColor" stroke="none"/></svg>;
 
 /** A settings row: icon tile, title, one-line hint, and whatever sits on the right. */
 function Row({ id, icon, title, sub, right, onClick, href, danger, first, dark, t }) {
@@ -79,8 +78,8 @@ function Row({ id, icon, title, sub, right, onClick, href, danger, first, dark, 
   if (onClick) return <button id={id} onClick={onClick} className={`${cls} cursor-pointer text-left`} style={style}>{inner}</button>;
   return <div id={id} className={cls} style={style}>{inner}</div>;
 }
-function SectionHead({ children }) {
-  return <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-0.5 pb-1.5 text-t-text-muted">{children}</div>;
+function SectionHead({ children, icon }) {
+  return <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[1px] px-0.5 pb-1.5 text-t-text-muted">{icon && <span className="inline-flex text-accent-ink"><OffsetIcon name={icon} size={14} /></span>}{children}</div>;
 }
 
 export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, setDark }) {
@@ -200,9 +199,9 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
           </div>
         </div>
         <div className="rounded-[14px] px-3.5 mb-[18px]" style={card}>
-          {[["Email", user?.email || "—", false], ["Phone", user?.phone || "—", true], ["Referral code", user?.refCode || "—", true]].map(([label, val, mono], i) => (
+          {[["Email", user?.email || "—", false, "mail"], ["Phone", user?.phone || "—", true, "phone"], ["Referral code", user?.refCode || "—", true, "referral"]].map(([label, val, mono, icon], i) => (
             <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${t.cardBorder}` : "none" }}>
-              <span>{tr(label)}</span>
+              <span className="inline-flex items-center gap-2"><OffsetIcon name={icon} size={15} />{tr(label)}</span>
               <span className="flex items-center gap-1.5 min-w-0"><b className={`text-[13px] font-semibold truncate text-t-text${mono ? " m" : ""}`}>{val}</b>{label === "Referral code" && user?.refCode && <button onClick={copyCode} aria-label={tr("Copy referral code")} className="w-6 h-6 rounded-[7px] flex items-center justify-center cursor-pointer bg-transparent text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</button>}</span>
             </div>
           ))}
@@ -212,7 +211,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         </div>
         <div>
         {/* ── Account ── */}
-        <SectionHead>{tr("Account")}</SectionHead>
+        <SectionHead icon="user">{tr("Account")}</SectionHead>
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
           <Row id="set-change-password" first icon={I_LOCK} title={tr("Change password")} sub={tr("Keep your account secure")} onClick={() => setPwModalOpen(true)} dark={dark} t={t} />
           <Row id="set-notifications" icon={I_BELL} title={tr("Notifications")} sub={tr("Orders, promos, email")} onClick={() => setNotifModalOpen(true)} dark={dark} t={t} />
@@ -222,9 +221,9 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         </div>
         <div>
         {/* ── Preferences: theme, language, currency ── */}
-        <SectionHead>{tr("Preferences")}</SectionHead>
+        <SectionHead icon="gear">{tr("Preferences")}</SectionHead>
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
-          <Row id="set-theme" first icon={dark ? I_MOON : I_SUN} title={tr("Theme")} sub={themeMode === "auto" ? tr("Auto: light 6:30am to 6:30pm, dark otherwise") : tr("Choose how Nitro looks")} dark={dark} t={t}
+          <Row id="set-theme" first icon={<OffsetIcon name={themeMode === "auto" ? "contrast" : dark ? "moon" : "sun"} size={16} />} title={tr("Theme")} sub={themeMode === "auto" ? tr("Auto: light 6:30am to 6:30pm, dark otherwise") : tr("Choose how Nitro looks")} dark={dark} t={t}
             right={<ThemePill mode={themeMode} onMode={applyTheme} />} />
           {SWITCHER_LIVE && (
             <Row id="set-language" icon={I_GLOBE} title={tr("Language")}
@@ -243,11 +242,11 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
         </div>
         <div>
         {/* ── More ── */}
-        <SectionHead>{tr("More")}</SectionHead>
+        <SectionHead icon="grid">{tr("More")}</SectionHead>
         <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
           {apiKey
-            ? <Row id="set-api" first icon={I_KEY} title={tr("API access")} sub={<span className="flex flex-col gap-[3px]"><span className="flex items-center gap-2 flex-wrap"><span className="m" style={{ color: t.text }}>{`${apiKey.slice(0, 9)}••••${apiKey.slice(-4)}`}</span><span className="text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-[6px] rounded-md" style={apiWholesale ? { color: dark ? "#4ade80" : "#15803d", background: dark ? "rgba(74,222,128,.14)" : "rgba(22,163,74,.1)" } : { color: t.textMuted, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)" }}>{apiWholesale ? tr("Wholesale") : tr("Retail")}</span></span><span>POST nitro.ng/api/v2</span></span>} onClick={() => { try { copyText(apiKey); toast.success(tr("API key copied")); } catch {} }} right={<span className="flex items-center gap-2"><span className="w-6 h-6 rounded-[7px] flex items-center justify-center text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</span><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[12px] font-semibold no-underline text-accent-ink">{tr("Docs")}</a></span>} dark={dark} t={t} />
-            : <Row id="set-api" first icon={I_KEY} title={tr("API access")} sub={tr("Use Nitro from your own platform")} right={<span className="text-[10.5px] font-bold uppercase tracking-[.5px] py-[2px] px-2 rounded-md text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)" }}>{tr("Soon")}</span>} dark={dark} t={t} />}
+            ? <Row id="set-api" first icon={I_API} title={tr("API access")} sub={<span className="flex flex-col gap-[3px]"><span className="flex items-center gap-2 flex-wrap"><span className="m" style={{ color: t.text }}>{`${apiKey.slice(0, 9)}••••${apiKey.slice(-4)}`}</span><span className="text-[9.5px] font-bold uppercase tracking-[.5px] py-[1px] px-[6px] rounded-md" style={apiWholesale ? { color: dark ? "#4ade80" : "#15803d", background: dark ? "rgba(74,222,128,.14)" : "rgba(22,163,74,.1)" } : { color: t.textMuted, background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)" }}>{apiWholesale ? tr("Wholesale") : tr("Retail")}</span></span><span>POST nitro.ng/api/v2</span></span>} onClick={() => { try { copyText(apiKey); toast.success(tr("API key copied")); } catch {} }} right={<span className="flex items-center gap-2"><span className="w-6 h-6 rounded-[7px] flex items-center justify-center text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{I_COPY}</span><a href="/resellers/docs" target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[12px] font-semibold no-underline text-accent-ink">{tr("Docs")}</a></span>} dark={dark} t={t} />
+            : <Row id="set-api" first icon={I_API} title={tr("API access")} sub={tr("Use Nitro from your own platform")} right={<span className="text-[10.5px] font-bold uppercase tracking-[.5px] py-[2px] px-2 rounded-md text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.14)" : "rgba(196,125,142,.1)" }}>{tr("Soon")}</span>} dark={dark} t={t} />}
           <Row id="set-status" icon={I_PULSE} title={tr("System status")} sub={tr("Check that every Nitro service is running")} href={SITE.status} right={<span className="w-[9px] h-[9px] rounded-full" style={{ background: "#059669", boxShadow: "0 0 0 3px rgba(5,150,105,.15)" }} />} dark={dark} t={t} />
         </div>
 
@@ -295,7 +294,7 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
                   }} className="py-[9px] px-5 rounded-lg border text-[13px] font-semibold cursor-pointer bg-transparent whitespace-nowrap" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.25)", color: dark ? "#fca5a5" : "#dc2626", opacity: deleteProof ? 1 : .4 }}>{tr("Delete my account")}</button>
                   <button onClick={() => { setShowDelete(false); setDeleteProof(""); setDeleteError(""); }} className="py-2.5 px-3.5 rounded-lg bg-transparent text-sm cursor-pointer text-t-text-muted" style={{ border: `1px solid ${t.cardBorder}` }}>{tr("Cancel")}</button>
                 </div>
-                {deleteError && <div className="text-[13px] mt-2" style={{ color: dark ? "#fca5a5" : "#dc2626" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline align-middle"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {deleteError}</div>}
+                {deleteError && <div className="text-[13px] mt-2" style={{ color: dark ? "#fca5a5" : "#dc2626" }}><OffsetIcon name="alert" size={14} className="inline align-middle" /> {deleteError}</div>}
               </div>
             ) : (
               <button onClick={() => setShowDelete(true)} className="py-[9px] px-5 rounded-lg border text-[13px] font-semibold cursor-pointer bg-transparent" style={{ borderColor: dark ? "rgba(252,165,165,.28)" : "rgba(220,38,38,.25)", color: dark ? "#fca5a5" : "#dc2626" }}>{tr("Delete my account")}</button>
@@ -359,9 +358,9 @@ export default function SettingsPage({ user, dark, t, themeMode, setThemeMode, s
             <div key={s.id} className="flex items-center gap-3 py-3" style={{ borderBottom: i < arr.length - 1 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: s.current ? (dark ? "rgba(110,231,183,.06)" : "rgba(5,150,105,.04)") : (dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)") }}>
                 {s.deviceType === "mobile" ? (
-                  <svg width="14" height="16" viewBox="0 0 24 24" fill="none" stroke={s.current ? t.green : t.textMuted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                  <OffsetIcon name="phone" size={14} color={s.current ? t.green : t.textMuted} />
                 ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={s.current ? t.green : t.textMuted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                  <OffsetIcon name="monitor" size={16} color={s.current ? t.green : t.textMuted} />
                 )}
               </div>
               <div className="flex-1">
@@ -387,20 +386,20 @@ export function SettingsSidebar() {
   const jump = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
   return (
     <div className="rr">
-      <RailSec>{tr("On this page")}</RailSec>
+      <RailSec icon="list">{tr("On this page")}</RailSec>
       <RailCard>
         {[
-          ["Change password", "set-change-password"],
-          ["Notifications", "set-notifications"],
-          ["Active sessions", "set-active-sessions"],
-          ["Theme", "set-theme"],
-          ...(SWITCHER_LIVE ? [["Language", "set-language"], ["Currency", "set-currency"]] : []),
-          ["API access", "set-api"],
-          ["System status", "set-status"],
-          ["Log out", "set-account"],
-          ["Account", "set-danger-zone"],
-        ].map(([label, id]) => (
-          <RailJump key={id} label={tr(label)} onClick={() => jump(id)} />
+          ["Change password", "set-change-password", "lock"],
+          ["Notifications", "set-notifications", "bell"],
+          ["Active sessions", "set-active-sessions", "monitor"],
+          ["Theme", "set-theme", "contrast"],
+          ...(SWITCHER_LIVE ? [["Language", "set-language", "globe"], ["Currency", "set-currency", <CurrencyCoin size={15} />]] : []),
+          ["API access", "set-api", "code"],
+          ["System status", "set-status", "activity"],
+          ["Log out", "set-account", "logout"],
+          ["Account", "set-danger-zone", "trash"],
+        ].map(([label, id, icon]) => (
+          <RailJump key={id} icon={icon} label={tr(label)} onClick={() => jump(id)} />
         ))}
       </RailCard>
     </div>
@@ -408,4 +407,4 @@ export function SettingsSidebar() {
 }
 
 // Shared with the admin Settings page so both read the same.
-export { Row as SettingsRow, SectionHead as SettingsSectionHead, I_LOCK, I_BELL, I_PULSE, I_OUT, I_CHEV, I_SUN, I_MOON, I_AUTO };
+export { Row as SettingsRow, SectionHead as SettingsSectionHead, I_LOCK, I_BELL, I_PULSE, I_OUT, I_CHEV };

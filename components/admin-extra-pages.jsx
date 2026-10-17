@@ -7,6 +7,7 @@ import { fN, fD } from "../lib/format";
 import { SegPill } from "./seg-pill";
 import { FilterDropdown } from "./date-range-picker";
 import { copyText } from '@/lib/clipboard';
+import { OffsetIcon } from "./offset-icons";
 
 
 const fPts = (points) => (Number(points) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
@@ -1316,7 +1317,7 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
     return (
       <div style={{ animation: "fadeIn .2s ease" }}>
         <div className="rounded-xl p-8 text-center" style={cardStyle}>
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-3 opacity-40"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <OffsetIcon name="bars" size={36} color={t.textMuted} className="mx-auto mb-3 opacity-40" />
           <div className="text-sm font-semibold mb-1" style={{ color: t.text }}>No activity yet</div>
           <div className="text-[13px]" style={{ color: t.textMuted }}>Share this link to start tracking analytics</div>
         </div>
@@ -1439,9 +1440,9 @@ function LinkAnalyticsDetail({ link, analytics, analyticsLoading, range, setRang
           <div className="flex justify-center mb-3"><DeviceRing devices={analytics.devices} dark={dark} t={t} /></div>
           <div className="space-y-2">
             {[
-              { label: "Mobile", val: analytics.devices.mobile || 0, color: "#c47d8e", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> },
-              { label: "Desktop", val: analytics.devices.desktop || 0, color: "#60a5fa", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> },
-              { label: "Tablet", val: analytics.devices.tablet || 0, color: "#a78bfa", icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> },
+              { label: "Mobile", val: analytics.devices.mobile || 0, color: "#c47d8e", icon: <OffsetIcon name="phone" size={13} /> },
+              { label: "Desktop", val: analytics.devices.desktop || 0, color: "#60a5fa", icon: <OffsetIcon name="monitor" size={13} /> },
+              { label: "Tablet", val: analytics.devices.tablet || 0, color: "#a78bfa", icon: <OffsetIcon name="phone" size={13} /> },
             ].map(d => (
               <div key={d.label} className="flex items-center gap-2">
                 <span style={{ color: d.color }}>{d.icon}</span>

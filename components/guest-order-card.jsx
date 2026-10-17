@@ -7,6 +7,7 @@ import { canChargeIn } from "@/lib/currency";
 import { msg } from "../lib/i18n";
 import { Modal } from "./ui-primitives";
 import { GuestOrderTrack, phaseOf } from "./guest-order-page";
+import { OffsetIcon } from "./offset-icons";
 
 /* The order card: one order, no account (docs/v2/guest_checkout_brief.md).
    It takes the hero card's place when "Order without an account" is tapped,
@@ -67,7 +68,7 @@ const EXAMPLE = {
 };
 
 const CHECK = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>;
-const GLOBE = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>;
+const GLOBE = <OffsetIcon name="globe" />;
 const CHEV = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>;
 const COPY = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>;
 const BACK = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>;
@@ -430,7 +431,6 @@ export function GuestOrderCard({ dark, initialCredit = "", onSignup, className =
                 <label htmlFor="gco-qty">{tr("How many")}</label>
                 <input id="gco-qty" className="gco-m gco-num" value={qty ? num(Number(qty)) : ""} onChange={e => setQty(e.target.value.replace(/\D/g, "").slice(0, 9))}
                   placeholder={tier ? num(Math.max(tier.min, 500)) : ""} inputMode="numeric" autoComplete="off" />
-                {group && <span className="gco-unit">{unitOf(group.name)}</span>}
               </div>
             )}
             <div className="gco-f">
@@ -583,8 +583,7 @@ const GCO_CSS = `
 .gco-f label em{font-style:normal;font-weight:500;opacity:.8}
 .gco-f input,.gco-f select,.gco-f textarea{display:block;width:100%;border:0;background:transparent;padding:0;margin:0;outline:none;font-weight:600;font-size:14.5px;line-height:22px;font-family:inherit;color:var(--ink);height:22px}
 .gco-f input::placeholder,.gco-f textarea::placeholder{color:var(--mut);opacity:.7;font-weight:500}
-.gco-f .gco-num{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:15px;padding-inline-end:90px}
-.gco-unit{position:absolute;inset-inline-end:14px;bottom:9px;font-size:13px;color:var(--mut);pointer-events:none}
+.gco-f .gco-num{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:15px}
 .gco-sel{margin-bottom:12px}
 .gco-sel select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-inline-end:26px}
 .gco-sel select option{color:#1a1a1a;background:#fff}

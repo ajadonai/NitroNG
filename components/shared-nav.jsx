@@ -7,6 +7,7 @@ import { SWITCHER_LIVE, useT } from "./locale";
 import { CurrencySwitcher, LanguageSwitcher } from "./locale-switcher";
 import { usePathname } from "next/navigation";
 import { WaButton } from "./wa-button";
+import { OffsetIcon } from "./offset-icons";
 
 // ── Theme context ──
 const ThemeCtx = createContext();
@@ -232,7 +233,7 @@ export default function SharedNav({ action = "back" }) {
         )}
         {action === "logout" && (
           <button onClick={handleLogout} className="text-sm font-medium flex items-center gap-1 bg-transparent" style={{ color: t.soft }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <OffsetIcon name="logout" size={14} color={t.muted} />
             {tr("Log Out")}
           </button>
         )}

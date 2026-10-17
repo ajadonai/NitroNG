@@ -4,6 +4,7 @@ import { useConfirm } from "./confirm-dialog";
 import { useToast } from "./toast";
 import { FilterDropdown } from "./date-range-picker";
 import { SkelFacts, SkelList, SkelBar } from "./skeleton";
+import { OffsetIcon } from "./offset-icons";
 
 const CATEGORIES = ["Tutorials", "Tips & Tricks", "Announcements", "Updates", "Guides"];
 const SORTS = [{ value: "new", label: "Newest" }, { value: "old", label: "Oldest" }, { value: "views", label: "Most read" }];
@@ -127,7 +128,7 @@ export default function AdminBlogPage({ dark, t }) {
                     <label className="text-[13px] font-semibold" style={{ color: t.textMuted }}>Content <span className="font-normal">(Markdown)</span></label>
                     <details className="relative">
                       <summary className="text-[12px] cursor-pointer font-medium list-none flex items-center gap-1" style={{ color: t.accentInk }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                        <OffsetIcon name="info" size={13} />
                         Markdown guide
                       </summary>
                       <div className="absolute right-0 top-full mt-1 z-10 w-[280px] p-3.5 rounded-[10px] text-[12px] leading-[1.8] shadow-lg" style={{ background: dark ? "#141828" : "#fff", border: `1px solid ${t.cardBorder}`, color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>

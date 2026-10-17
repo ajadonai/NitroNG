@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { msg } from "../lib/i18n";
 import { useT } from "./locale";
+import { OffsetIcon } from "./offset-icons";
 
 // Nine times out of ten this is an operational notice, so it is drawn as a
 // status line, not an alert box: a dot in the type colour, the type as one
@@ -22,7 +23,7 @@ const CSS = `
 .an-msg{flex:1;min-width:0}.an-msg strong{font-weight:700}
 .an-act{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;font-weight:700;color:var(--c);white-space:nowrap;flex-shrink:0;text-decoration:none}.an-act svg{width:12px;height:12px}.an-act:hover{text-decoration:underline}
 .an-cnt{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:var(--dim);flex-shrink:0;padding-left:8px;border-left:1px solid var(--line)}
-.an-x{width:24px;height:24px;border-radius:7px;border:0;background:transparent;color:var(--dim);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin:-4px -4px -4px 0;padding:0}.an-x svg{width:11px;height:11px}.an-x:hover{background:var(--soft);color:var(--ink)}
+.an-x{width:24px;height:24px;border-radius:7px;border:0;background:transparent;color:var(--dim);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin:-4px -4px -4px 0;padding:0}.an-x svg{width:14px;height:14px}.an-x:hover{background:var(--soft);color:var(--ink)}
 .an-land{border-radius:0;border:0;border-bottom:1px solid var(--line);background:var(--cbg);padding:9px 20px;justify-content:center}
 .an-land .an-msg{flex:0 1 auto}
 @media (max-width:767px){
@@ -108,7 +109,7 @@ export default function AnnouncementBanner({ alerts, dark, mode = "dashboard", o
       )}
       {visible.length > 1 && <span className="an-cnt">{tr("1 of")} {visible.length}</span>}
       <button type="button" onClick={() => { if (!preview) dismiss(alert); }} className="an-x" aria-label={tr("Dismiss")} tabIndex={preview ? -1 : 0}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <OffsetIcon name="close" />
       </button>
     </div>
   );

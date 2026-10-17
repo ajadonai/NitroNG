@@ -5,6 +5,7 @@ import { isInternalDashboardPath } from '@/lib/internal-dashboard-path';
 import { TIKTOK_PIXEL_CODE } from '@/lib/tiktok-pixel';
 import CookieSettingsSheet from './cookie-settings';
 import { useT } from './locale';
+import { OffsetIcon } from "./offset-icons";
 
 const KEY = 'nitro-cookie-consent';
 
@@ -193,7 +194,7 @@ export default function CookieBanner() {
             }}
           >
             <div className="flex-1 flex items-center gap-2.5">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c47d8e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-70"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <OffsetIcon name="shield" size={16} className="shrink-0 opacity-70" />
               <p className="text-xs leading-normal" style={{ color: dark ? 'rgba(255,255,255,.7)' : 'rgba(28,27,25,.7)' }}>
                 {tr("We use essential cookies to keep you signed in. Non-essential cookies (analytics, advertising) are only used with your consent.")}{' '}
                 <a href="/cookie" className="font-semibold" style={{ color: dark ? '#c47d8e' : '#8b4a5e' }}>{tr("Cookie policy")}</a>

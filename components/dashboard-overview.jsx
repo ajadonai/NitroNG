@@ -14,6 +14,7 @@ import { RewardsStrip, ChannelLane, StatusModal, PointsModal } from "./rewards";
 /* Dashboard home content and its desktop right rail live together so the shell
  * only owns navigation, data refresh, and cross-page state. */
 import { NotSureHelp } from './new-order';
+import { OffsetIcon, CurrencyCoin } from "./offset-icons";
 
 
 /** A small uppercase heading above a group, optionally with an action on the right. */
@@ -42,7 +43,7 @@ function BatchRowMini({ item, first, dark, t, onClick }) {
   const tr = useT();
   return (
     <div role="button" tabIndex={0} onClick={onClick} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }} className="flex items-center gap-3 py-3 px-3.5 cursor-pointer" style={{ borderTop: first ? "none" : `1px solid ${t.cardBorder}` }}>
-      <div className="shrink-0 flex items-center justify-center rounded-xl text-accent-ink" style={{ width: 40, height: 40, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+      <div className="shrink-0 flex items-center justify-center rounded-xl text-accent-ink" style={{ width: 40, height: 40, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)" }}><OffsetIcon name="layers" size={18} /></div>
       <div className="min-w-0 flex-1"><div className="text-[13.5px] font-semibold text-t-text">{tr("Bulk order")}</div><div className="text-[11px] text-t-text-muted">{item.orders.length} {tr("orders ·")} {item.created ? fD(item.created, true) : ""}</div></div>
     </div>
   );
@@ -102,7 +103,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
           <div className="m text-[32px] desktop:text-[36px] font-extrabold leading-none mt-1 text-t-text" style={{ letterSpacing: "-.03em" }}>{money(balance, { round: "down" })}</div>
         </div>
         <div className="flex max-md:flex-col gap-1.5 shrink-0">
-          <button onClick={() => setActive("add-funds")} className="nitro-money-btn h-[34px] px-3.5 border-none text-[13px] font-semibold cursor-pointer inline-flex items-center gap-1.5 justify-center"><svg className="dir-flip" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>{tr("Top up")}</button>
+          <button onClick={() => setActive("add-funds")} className="nitro-money-btn h-[34px] px-3.5 border-none text-[13px] font-semibold cursor-pointer inline-flex items-center gap-1.5 justify-center"><OffsetIcon name="topup" size={14} />{tr("Top up")}</button>
           <button onClick={() => setActive("services")} className="h-[34px] px-3.5 rounded-[10px] text-[13px] font-semibold cursor-pointer border border-solid inline-flex items-center justify-center text-t-text" style={{ background: "transparent", borderColor: t.cardBorder }}>{tr("New order")}</button>
         </div>
       </div>
@@ -112,7 +113,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
         <button onClick={() => setActive(primaryAction.target)} className="w-full flex items-center gap-2.5 rounded-[14px] px-3 py-2.5 mb-4 cursor-pointer text-left font-[inherit] border border-solid" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", borderColor: "rgba(196,125,142,.35)" }}>
           <span className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0 text-white" style={{ background: primaryAction.gift ? "linear-gradient(135deg,#c47d8e,#8b5e6b)" : t.accent }}>
             {primaryAction.gift
-              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
+              ? <OffsetIcon name="gift" size={16} />
               : <svg className="dir-flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>}
           </span>
           <span className="flex flex-col gap-px flex-1 min-w-0"><b className="text-[13.5px] font-semibold text-t-text">{primaryAction.label}</b><small className="text-[11.5px] text-t-text-muted">{primaryAction.sub}</small></span>
@@ -126,8 +127,8 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       {/* ── Quick links: the three tiles, icons in their gradients ── */}
       <div className="grid grid-cols-3 gap-1.5 mb-[18px] -mt-2">
         {[
-          { label: tr("How it works"), onClick: () => setTutorialOpen(true), gradient: "linear-gradient(135deg,#a78bfa,#7c3aed)", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg> },
-          { label: tr("What to expect"), onClick: () => setTipsOpen(true), gradient: "linear-gradient(135deg,#38bdf8,#0284c7)", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.5l3 2"/></svg> },
+          { label: tr("How it works"), onClick: () => setTutorialOpen(true), gradient: "linear-gradient(135deg,#a78bfa,#7c3aed)", icon: <OffsetIcon name="play" size={14} color="#fff" /> },
+          { label: tr("What to expect"), onClick: () => setTipsOpen(true), gradient: "linear-gradient(135deg,#38bdf8,#0284c7)", icon: <OffsetIcon name="clockPlain" size={14} color="#fff" /> },
           { label: tr("Support"), wa: true, onClick: () => { if (socialLinks?.social_whatsapp_support) window.open(`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g, "")}?text=${encodeURIComponent("Hi Nitro, I need help")}`, "_blank"); }, gradient: "linear-gradient(135deg,#25d366,#128c7e)", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-3-.2-.3A8.2 8.2 0 1112 20.2zm4.6-6.1c-.3-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.3-.7.8-.8 1-.1.2-.3.2-.5.1a6.7 6.7 0 01-2-1.2 7.5 7.5 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5c.1-.2.2-.3.3-.5v-.5c0-.1-.6-1.4-.8-1.9-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 .6.3 1.1.4 1.5.6.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4z"/></svg> },
         ].map(q => (
           <button key={q.label} onClick={q.onClick} className="h-11 rounded-xl border border-solid inline-flex items-center gap-2 text-[12px] font-semibold cursor-pointer font-[inherit] whitespace-nowrap px-2 min-w-0" style={{ background: card.background, borderColor: q.wa ? "rgba(37,211,102,.4)" : t.cardBorder, color: q.wa ? (dark ? "#4ade80" : "#16a34a") : t.textSoft }}>
@@ -144,7 +145,7 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
       {/* ── Resellers: for anyone who is not one yet ── */}
       {!isReseller && (
         <a href="/resellers" className="flex items-center gap-2.5 rounded-[14px] p-3 mb-[18px] no-underline border border-solid max-md:flex-wrap" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)", borderColor: "rgba(196,125,142,.35)" }}>
-          <span className="w-[38px] h-[38px] rounded-[11px] flex items-center justify-center shrink-0 text-white" style={{ background: t.accent }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 01-2.8 0L2 12V2h10l8.6 8.6a2 2 0 010 2.8z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg></span>
+          <span className="w-[38px] h-[38px] rounded-[11px] flex items-center justify-center shrink-0 text-white" style={{ background: t.accent }}><OffsetIcon name="tag" size={18} /></span>
           <span className="flex flex-col gap-0.5 flex-1 min-w-0"><b className="text-[13.5px] font-semibold text-t-text">{tr("Sell Nitro at your own prices")}</b><small className="text-[11.5px] leading-snug text-t-text-muted">{tr("Resellers get wholesale rates on every service. Ask support to join.")}</small></span>
           <span className="h-8 px-3.5 rounded-[10px] text-[12px] font-semibold text-white inline-flex items-center justify-center whitespace-nowrap shrink-0 max-md:w-full max-md:mt-1" style={{ background: t.accent }}><span className="max-md:hidden">{tr("Become a reseller")}</span><span className="md:hidden">{tr("Join")}</span></span>
         </a>
@@ -193,20 +194,24 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
         <Modal open={tutorialOpen} onClose={() => setTutorialOpen(false)} dark={dark} maxWidth={420} bare>
             <div className="py-4 px-5 flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
               <div className="text-[15px] font-semibold text-t-text">{tr("How it works")}</div>
-              <button onClick={() => setTutorialOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent text-t-text-soft" style={{ borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <button onClick={() => setTutorialOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent text-t-text-soft" style={{ borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)" }}><OffsetIcon name="close" size={12} /></button>
             </div>
             <div className="py-5 px-5 flex flex-col gap-3.5 max-h-[70vh] overflow-y-auto">
               {[
-                { step: "1", title: tr("Create your account"), desc: tr("Sign up with your email — it only takes a few seconds.") },
-                { step: "2", title: tr("Add funds"), desc: tr("Top up your balance via bank transfer or card payment.") },
-                { step: "3", title: tr("Pick a platform"), desc: tr("Choose Instagram, TikTok, X, or any platform you want to grow on.") },
-                { step: "4", title: tr("Choose a service & tier"), desc: tr("Pick what you need — followers, likes, views — then select Budget (no refill), Standard (30-day refill), or Premium (lifetime refill).") },
-                { step: "5", title: tr("Paste your link"), desc: tr("Drop your profile or post link and set the quantity you want.") },
-                { step: "6", title: tr("Place your order"), desc: tr("Confirm and your order starts processing. Track delivery in real time from your dashboard.") },
-                { step: "7", title: tr("Track delivery"), desc: tr("Watch your order progress in real time from your dashboard.") },
+                { step: "1", icon: "user", title: tr("Create your account"), desc: tr("Sign up with your email — it only takes a few seconds.") },
+                { step: "2", icon: "wallet", title: tr("Add funds"), desc: tr("Top up your balance via bank transfer or card payment.") },
+                { step: "3", icon: "grid", title: tr("Pick a platform"), desc: tr("Choose Instagram, TikTok, X, or any platform you want to grow on.") },
+                { step: "4", icon: "crown", title: tr("Choose a service & tier"), desc: tr("Pick what you need — followers, likes, views — then select Budget (no refill), Standard (30-day refill), or Premium (lifetime refill).") },
+                { step: "5", icon: "link", title: tr("Paste your link"), desc: tr("Drop your profile or post link and set the quantity you want.") },
+                { step: "6", icon: "rocket", title: tr("Place your order"), desc: tr("Confirm and your order starts processing. Track delivery in real time from your dashboard.") },
+                { step: "7", icon: "clockPlain", title: tr("Track delivery"), desc: tr("Watch your order progress in real time from your dashboard.") },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)" }}>{item.step}</div>
+                  {/* Each step's own icon on a printed tile, its number in the corner. */}
+                  <div className="relative w-[30px] h-[30px] rounded-[9px] flex items-center justify-center shrink-0 text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.12)", boxShadow: `2px 2px 0 ${dark ? "#6b3a4a" : "#efc4cf"}` }}>
+                    <OffsetIcon name={item.icon} size={16} />
+                    <span className="absolute -right-1.5 -bottom-1.5 w-[15px] h-[15px] rounded-full text-[9px] font-extrabold text-white grid place-items-center" style={{ background: t.accent, boxShadow: `0 0 0 2px ${t.cardBg}` }}>{item.step}</span>
+                  </div>
                   <div className="pt-0.5">
                     <div className="text-[13px] font-semibold mb-0.5 text-t-text">{item.title}</div>
                     <div className="text-[11px] leading-[1.55] text-t-text-muted">{item.desc}</div>
@@ -222,14 +227,14 @@ export function OverviewPage({ user, orders, activeOrders, orderSummary, dark, t
         <Modal open={tipsOpen} onClose={() => setTipsOpen(false)} dark={dark} maxWidth={420} bare>
             <div className="py-4 px-5 flex items-center justify-between" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.06)", borderBottom: `1px solid ${dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.1)"}` }}>
               <div className="text-[15px] font-semibold text-t-text">{tr("What to Expect")}</div>
-              <button onClick={() => setTipsOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent text-t-text-soft" style={{ borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              <button onClick={() => setTipsOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border border-solid cursor-pointer bg-transparent text-t-text-soft" style={{ borderColor: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)" }}><OffsetIcon name="close" size={12} /></button>
             </div>
             <div className="py-5 px-5 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
               {[
-                { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, color: dark ? "#a5b4fc" : "#4f46e5", title: tr("Gradual delivery"), desc: tr("Orders are delivered over hours or days, not all at once. This keeps activity looking natural and protects your account from being flagged.") },
-                { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>, color: dark ? "#fbbf24" : "#d97706", title: tr("Normal drops happen"), desc: tr("Social platforms routinely clean up inactive or low-quality accounts. A small drop after delivery is expected — it's the platform doing its job, not a problem with your order.") },
-                { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>, color: dark ? "#6ee7b7" : "#059669", title: tr("Refill is your safety net"), desc: tr("Standard includes a 30-day refill and Premium includes lifetime refill. If a cleanup hits your count, we top you back up at no extra cost.") },
-                { icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, color: dark ? "#f9a8d4" : "#be185d", title: tr("Keep your account safe"), desc: tr("Always set your profile to public before ordering — there are no refunds for orders placed on private profiles. Start small with Budget to test, and avoid ordering on brand-new accounts with zero content.") },
+                { icon: <OffsetIcon name="clockPlain" size={16} />, color: dark ? "#a5b4fc" : "#4f46e5", title: tr("Gradual delivery"), desc: tr("Orders are delivered over hours or days, not all at once. This keeps activity looking natural and protects your account from being flagged.") },
+                { icon: <OffsetIcon name="bell" size={16} />, color: dark ? "#fbbf24" : "#d97706", title: tr("Normal drops happen"), desc: tr("Social platforms routinely clean up inactive or low-quality accounts. A small drop after delivery is expected — it's the platform doing its job, not a problem with your order.") },
+                { icon: <OffsetIcon name="refresh" size={16} />, color: dark ? "#6ee7b7" : "#059669", title: tr("Refill is your safety net"), desc: tr("Standard includes a 30-day refill and Premium includes lifetime refill. If a cleanup hits your count, we top you back up at no extra cost.") },
+                { icon: <OffsetIcon name="shield" size={16} />, color: dark ? "#f9a8d4" : "#be185d", title: tr("Keep your account safe"), desc: tr("Always set your profile to public before ordering — there are no refunds for orders placed on private profiles. Start small with Budget to test, and avoid ordering on brand-new accounts with zero content.") },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: `${item.color}14`, color: item.color }}>{item.icon}</div>
@@ -267,24 +272,24 @@ export function RightSidebar({ activeOrders, orderSummary, user, dark, setActive
   const pctOf = (o) => { const qty = o.quantity || 0; if (!qty) return 0; const delivered = o.status === tr("Completed") ? qty : o.remains != null ? Math.max(0, qty - Math.max(0, o.remains)) : 0; return Math.min(100, Math.round(delivered / qty * 100)); };
   return (
     <div className="rr">
-      <RailSec>{tr("Your stats")}</RailSec>
+      <RailSec icon="bars">{tr("Your stats")}</RailSec>
       <RailCard>
-        <RailFact label={tr("Top platform")} value={topPlatform ? topPlatform.charAt(0).toUpperCase() + topPlatform.slice(1) : "—"} mono={false} />
-        <RailFact label={tr("Average order")} value={avgQty > 0 ? avgQty.toLocaleString() : "—"} />
-        <RailFact label={tr("This week")} value={`${wkOrders} ${wkOrders === 1 ? tr("order") : tr("orders")}`} />
-        <RailFact label={tr("Member since")} value={memberDate} mono={false} />
+        <RailFact icon="grid" label={tr("Top platform")} value={topPlatform ? topPlatform.charAt(0).toUpperCase() + topPlatform.slice(1) : "—"} mono={false} />
+        <RailFact icon="bars" label={tr("Average order")} value={avgQty > 0 ? avgQty.toLocaleString() : "—"} />
+        <RailFact icon="calendar" label={tr("This week")} value={`${wkOrders} ${wkOrders === 1 ? tr("order") : tr("orders")}`} />
+        <RailFact icon="user" label={tr("Member since")} value={memberDate} mono={false} />
       </RailCard>
-      <RailSec action={activeCount > 0 ? <RailLink onClick={() => setActive("orders")}>{tr("View all")}</RailLink> : null}>{tr("Delivering now")}</RailSec>
+      <RailSec icon="clockPlain" action={activeCount > 0 ? <RailLink onClick={() => setActive("orders")}>{tr("View all")}</RailLink> : null}>{tr("Delivering now")}</RailSec>
       <RailCard>
-        {activeCount === 0 ? <RailEmpty>{tr("Nothing delivering right now.")}</RailEmpty> : activeOrders.slice(0, 5).map(o => (
+        {activeCount === 0 ? <RailEmpty icon="clockPlain">{tr("Nothing delivering right now.")}</RailEmpty> : activeOrders.slice(0, 5).map(o => (
           <RailRow key={o.id} tile={<PlatformIcon platform={o.platform} dark={dark} size={16} />} title={o.service} sub={`${o.id || ""}${o.tier ? ` · ${o.tier}` : ""}`} right={`${pctOf(o)}%`} bar={pctOf(o)} onClick={() => setActive("orders")} />
         ))}
       </RailCard>
-      <RailSec>{tr("Referral")}</RailSec>
+      <RailSec icon="referral">{tr("Referral")}</RailSec>
       <RailCard>
-        <RailFact label={tr("Your code")} value={user?.refCode || "—"} color="var(--t-accent)" />
-        <RailFact label={tr("Referrals")} value={user?.refs || 0} />
-        <RailFact label={tr("Earned")} value={money(user?.earnings || 0, { round: "down" })} />
+        <RailFact icon="link" label={tr("Your code")} value={user?.refCode || "—"} color="var(--t-accent)" />
+        <RailFact icon="users" label={tr("Referrals")} value={user?.refs || 0} />
+        <RailFact icon={<CurrencyCoin size={15} />} label={tr("Earned")} value={money(user?.earnings || 0, { round: "down" })} />
       </RailCard>
       <RailBtn onClick={() => setActive("referrals")}>{tr("Invite friends")}</RailBtn>
     </div>

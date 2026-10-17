@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "./locale";
+import { OffsetIcon } from "./offset-icons";
 
 /**
  * Shared UI primitives.
@@ -172,7 +173,7 @@ export function Modal({ open, onClose, title, subtitle, icon, intent = "accent",
                 {subtitle && <div className="text-[12.5px] mt-0.5 leading-relaxed" style={{ color: mut }}>{subtitle}</div>}
               </div>
               <button type="button" onClick={onClose} aria-label={tr("Close")} className={`w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0 cursor-pointer ${FOCUS_RING}`} style={{ background: dark ? "rgba(255,255,255,.05)" : "#faf9f7", border: `1px solid ${line}`, color: mut }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                <OffsetIcon name="close" size={13} />
               </button>
             </div>
             <div className="px-4 py-3.5 overflow-y-auto min-h-0" style={{ color: ink }}>{children}</div>

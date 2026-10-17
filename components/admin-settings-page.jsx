@@ -7,7 +7,8 @@ import { Modal } from "./ui-primitives";
 import InlineAlert from "./inline-alert";
 import { useToast } from "./toast";
 import { SITE } from "../lib/site";
-import { SettingsRow as Row, SettingsSectionHead as SectionHead, I_LOCK, I_BELL, I_PULSE, I_OUT, I_CHEV, I_SUN, I_MOON } from "./settings-page";
+import { SettingsRow as Row, SettingsSectionHead as SectionHead, I_LOCK, I_BELL, I_PULSE, I_OUT, I_CHEV } from "./settings-page";
+import { OffsetIcon } from "./offset-icons";
 
 // The shared Modal primitive carries the reference anatomy now — this wrapper
 // only keeps the page's historical call signature.
@@ -43,10 +44,10 @@ function CleanupRow({ dark, t }) {
   );
 }
 
-const I_MAIL = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>;
-const I_SHARE = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>;
-const I_GIFT = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>;
-const I_BROOM = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 3l-7 7M4 21l6-6M9 15l-3-3 6-6 3 3z"/><path d="M4 21h5l2-2-5-5-2 2z"/></svg>;
+const I_MAIL = <OffsetIcon name="mail" size={16} />;
+const I_SHARE = <OffsetIcon name="share" size={16} />;
+const I_GIFT = <OffsetIcon name="gift" size={16} />;
+const I_BROOM = <OffsetIcon name="wand" size={16} />;
 
 export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, setDark, onLogout, notifPrefs, updateNotifPref }) {
   const [social, setSocial] = useState({ social_instagram: "", social_twitter: "", social_whatsapp_support: "", social_whatsapp_reseller: "", social_whatsapp_channel: "", social_telegram_support: "", social_tiktok: "", discord_bot_url: "", discord_bot_url_premium: "" });
@@ -191,7 +192,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         </div>
 
         <div>
-          <SectionHead>Account</SectionHead>
+          <SectionHead icon="user">Account</SectionHead>
           <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
             <Row id="set-change-password" first icon={I_LOCK} title="Change password" sub="Keep your admin login secure" onClick={() => { setAdmPwMsg(null); setPwModalOpen(true); }} dark={dark} t={t} />
             <Row id="set-notifications" icon={I_BELL} title="Notifications" sub={notifOn != null ? `${notifOn} of 6 alerts on` : "Which events alert you"} onClick={() => setNotifModalOpen(true)} dark={dark} t={t} />
@@ -199,7 +200,7 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         </div>
 
         <div>
-          <SectionHead>Site</SectionHead>
+          <SectionHead icon="globe">Site</SectionHead>
           <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
             <Row id="set-emails" first icon={I_MAIL} title="Contact emails" sub={socialLoading ? <Bone dark={dark} w={160} h={9} style={{ display: "inline-block", verticalAlign: "middle" }} /> : (emails.site_email_general || "Not set")} onClick={() => { setEmailMsg(null); setEmailModalOpen(true); }} dark={dark} t={t} />
             <Row id="set-social" icon={I_SHARE} title="Social links" sub="Instagram, X, TikTok, WhatsApp, Telegram, the Discord bot" onClick={() => { setSocialMsg(null); setSocialModalOpen(true); }} dark={dark} t={t} />
@@ -208,12 +209,12 @@ export function AdminSettingsPage({ admin, dark, t, themeMode, setThemeMode, set
         </div>
 
         <div>
-          <SectionHead>Appearance</SectionHead>
+          <SectionHead icon="contrast">Appearance</SectionHead>
           <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
-            <Row id="set-theme" first icon={dark ? I_MOON : I_SUN} title="Theme" sub={themeMode === "auto" ? "Auto: light 6:30am to 6:30pm, dark otherwise" : "Choose how the admin looks"} dark={dark} t={t}
+            <Row id="set-theme" first icon={<OffsetIcon name={themeMode === "auto" ? "contrast" : dark ? "moon" : "sun"} size={16} />} title="Theme" sub={themeMode === "auto" ? "Auto: light 6:30am to 6:30pm, dark otherwise" : "Choose how the admin looks"} dark={dark} t={t}
               right={<ThemePill mode={themeMode} onMode={applyTheme} />} />
           </div>
-          <SectionHead>System</SectionHead>
+          <SectionHead icon="gear">System</SectionHead>
           <div className="rounded-[14px] overflow-hidden mb-[18px]" style={card}>
             <Row id="set-status" first icon={I_PULSE} title="System status" sub="Check that every Nitro service is running" href={SITE.status} right={<span className="w-[9px] h-[9px] rounded-full" style={{ background: "#059669", boxShadow: "0 0 0 3px rgba(5,150,105,.15)" }} />} dark={dark} t={t} />
             <CleanupRow dark={dark} t={t} />

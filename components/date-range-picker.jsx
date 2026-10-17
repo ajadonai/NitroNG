@@ -3,6 +3,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useT, useLocale } from "./locale";
 import { msg } from "../lib/i18n";
 import { monthNames, weekdayNames } from "../lib/format";
+import { OffsetIcon } from "./offset-icons";
 
 
 function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
@@ -231,15 +232,11 @@ export function DateRangePicker({ dark, t, value, onChange, presets, defaultPres
   return (
     <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
       <button onClick={() => setOpen(!open)} style={btnStyle}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: .6 }}>
-          <rect x="3" y="4" width="18" height="18" rx="2" />
-          <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
+        <OffsetIcon name="calendar" size={14} style={{ opacity: .6 }} />
         <span>{displayText}</span>
         {value ? (
-          <span onClick={handleClear} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: "50%", background: dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)", cursor: "pointer", marginLeft: 2 }}>
-            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          <span onClick={handleClear} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, cursor: "pointer", marginLeft: 2 }}>
+            <OffsetIcon name="xCircle" size={15} />
           </span>
         ) : (
           <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ opacity: .5, transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}>

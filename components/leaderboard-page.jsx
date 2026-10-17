@@ -4,6 +4,7 @@ import { useDataSaver, pollEvery } from "./use-data-saver";
 import { docDateLocale } from "../lib/format";
 import { useT } from "./locale";
 import { RailSec, RailCard, RailRow, RailLink } from "./rail";
+import { OffsetIcon } from "./offset-icons";
 
 const TABS = [
   { id: "spenders", label: "Top Spenders", shortLabel: "Spenders" },
@@ -17,7 +18,7 @@ const POD = {
   3: { bg: "#2e1e0e", bgL: "#fdecd8", border: "#5c3a1a", borderL: "#c48040", medal: "3", valDk: "#cd7f32", valLt: "#8b4513" },
 };
 
-const UserIcon = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+const UserIcon = ({ size = 16 }) => <OffsetIcon name="user" size={size} />;
 
 function ShieldBadge({ color = "#9ca3af", size = 20, tier = "Spark" }) {
   const isSpark = tier === "Spark";
@@ -125,9 +126,7 @@ export default function LeaderboardPage({ dark, t }) {
       {/* Header */}
       <div className="pb-3.5">
         <div className="flex items-center gap-3">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={dark ? "#c47d8e" : "#a3586b"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
-            <path d="M8 21V12H2v9h6z"/><path d="M22 21V8h-6v13h6z"/><path d="M15 21V4H9v17h6z"/>
-          </svg>
+          <OffsetIcon name="bars" size={28} color={dark ? "#c47d8e" : "#a3586b"} className="opacity-70" />
           <div>
             <div className="text-[22px] max-md:text-lg font-semibold mb-0.5 text-t-text">{tr("Leaderboard")}</div>
             <div className="text-[15px] max-md:text-[13px] text-t-text-muted">{tr("Top Nitro users ·")} {periodLabel}</div>
@@ -139,7 +138,7 @@ export default function LeaderboardPage({ dark, t }) {
       {/* Announcement */}
       {rewardAnnouncement && (
         <div className="rounded-[10px] py-3 px-4 mb-4 border text-sm font-medium leading-normal flex items-center gap-3 text-t-text" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", borderColor: dark ? "rgba(196,125,142,.24)" : "rgba(196,125,142,.19)" }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={dark ? "#c47d8e" : "#a3586b"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
+          <OffsetIcon name="megaphone" size={18} color={dark ? "#c47d8e" : "#a3586b"} className="shrink-0" />
           <span>{rewardAnnouncement}</span>
         </div>
       )}
@@ -175,9 +174,9 @@ export default function LeaderboardPage({ dark, t }) {
       ) : list.length === 0 ? (
         /* Empty state */
         <div className="py-[60px] px-5 text-center">
-          {tab === "spenders" && <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.1)"} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 block"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>}
-          {tab === "referrers" && <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.1)"} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 block"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>}
-          {tab === "active" && <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke={dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.1)"} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4 block"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
+          {tab === "spenders" && <OffsetIcon name="bars" size={64} color={dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.1)"} className="mx-auto mb-4 block" />}
+          {tab === "referrers" && <OffsetIcon name="users" size={64} color={dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.1)"} className="mx-auto mb-4 block" />}
+          {tab === "active" && <OffsetIcon name="activity" size={64} color={dark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.1)"} className="mx-auto mb-4 block" />}
           <div className="text-[15px] font-semibold mb-1.5 text-t-text">
             {tab === "spenders" && "No top spenders yet"}
             {tab === "referrers" && "No referrals yet"}
@@ -260,9 +259,9 @@ export function LeaderboardCard({ onViewAll }) {
   const month = new Date().toLocaleDateString(docDateLocale(), { month: "long" });
   return (
     <div className="rr">
-      <RailSec>{tr("Top spenders ·")} {month}</RailSec>
+      <RailSec icon="trophy">{tr("Top spenders ·")} {month}</RailSec>
       <RailCard>
-        {top.map((entry, i) => <RailRow key={i} tile={`#${i + 1}`} round={i === 0} title={`${entry.name}${entry.isYou ? " (you)" : ""}`} right={`${entry.orders} order${entry.orders !== 1 ? "s" : ""}`} />)}
+        {top.map((entry, i) => <RailRow key={i} tile={i === 0 ? <OffsetIcon name="trophy" size={16} /> : `${i + 1}`} round={i === 0} print={i !== 0} title={`${entry.name}${entry.isYou ? " (you)" : ""}`} right={`${entry.orders} order${entry.orders !== 1 ? "s" : ""}`} />)}
       </RailCard>
       {onViewAll && <RailLink onClick={onViewAll}>{tr("View the full leaderboard")}</RailLink>}
     </div>

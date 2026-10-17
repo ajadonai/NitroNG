@@ -2,6 +2,7 @@
 import { Modal } from "./ui-primitives";
 import { useT } from "./locale";
 import { msg } from "../lib/i18n";
+import { OffsetIcon } from "./offset-icons";
 
 // The public site's primary links for the desktop top nav, in one place so the
 // landing bar and SharedNav cannot drift apart.
@@ -72,7 +73,7 @@ export function PublicNavSheet({ open, onClose, dark, onLogin, onSignup, links =
             <button type="button" onClick={onClose} aria-label={tr("Close menu")}
               className="w-[34px] h-[34px] rounded-full flex items-center justify-center cursor-pointer border-none transition-opacity duration-150 hover:opacity-80"
               style={{ background: "rgba(255,255,255,.1)", color: "#f6ecee" }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <OffsetIcon name="close" size={12} />
             </button>
           </div>
 

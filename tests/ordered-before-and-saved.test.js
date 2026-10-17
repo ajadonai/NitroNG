@@ -207,11 +207,13 @@ describe('the saved and ordered filters are recognisable on a phone', () => {
 
   it('borrows the marks the rows already carry, rather than inventing any', () => {
     const map = src.slice(src.indexOf('const MINE_ICON = {'), src.indexOf('const MINE_ROW = ['));
-    // The star on the save control.
-    expect(map).toMatch(/polygon points="12 2 15\.09 8\.26 22 9\.27/);
-    expect(src.slice(src.indexOf('function Row('))).toMatch(/polygon points="12 2 15\.09 8\.26 22 9\.27/);
+    const row = src.slice(src.indexOf('function Row('));
+    // The star on the save control (offset print since 17 Oct 2026).
+    expect(map).toMatch(/<OffsetIcon name="star"/);
+    expect(row).toMatch(/<OffsetIcon name="star"/);
     // The clock on the ordered-before badge.
-    expect(map).toMatch(/polyline points="12 6 12 12 16 14"/);
+    expect(map).toMatch(/<OffsetIcon name="clock"/);
+    expect(row).toMatch(/<OffsetIcon name="clock"/);
   });
 
   it('puts them on both the phone row and the desktop strip', () => {

@@ -4,6 +4,7 @@ import { msg } from "../lib/i18n";
 import { MAX_BONUS_NAIRA } from "../lib/welcome-bonus";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { BONUS_PRESETS } from "../lib/welcome-bonus";
+import { OffsetIcon } from "./offset-icons";
 
 // title and desc are English KEYS, not finished copy. They sit at module scope,
 // where tr() — a hook — cannot legally be called, so msg() marks them for the
@@ -24,7 +25,7 @@ const STEPS = [
   // support 28" while the page header said 29.
   { target: "no-list-select", noScroll: true, title: msg("Start here — two lists"),
     desc: msg("Nitro picks are the ones we test every week and back with a refill. Full list is everything else we carry for this platform — cheaper and far wider, sold exactly as listed. Everything below changes with whichever one you are on."),
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> },
+    icon: <OffsetIcon name="shieldCheck" size={18} /> },
 
   // findFirst aims at the tile itself. The four selectors this used to try —
   // no-plat-icon-on, no-mob-plat-on, no-plat-icon-btn, no-mob-plat-btn — are
@@ -36,20 +37,20 @@ const STEPS = [
   // fails the build instead.
   { target: "no-platform-grid", findFirst: ".no-plat-tile", title: msg("Pick a platform"),
     desc: msg("Choose where you want to grow. Instagram, TikTok, YouTube and more, grouped under the tabs above."),
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> },
+    icon: <OffsetIcon name="grid" size={18} /> },
 
   { target: "no-service-list", findFirst: ".no-svc-card", title: msg("Choose a service"),
     desc: msg("Followers, likes, views, comments and more. Tap one to open it."),
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg> },
+    icon: <OffsetIcon name="list" size={18} /> },
 
   // The chips, not the whole card: the tiers are the thing being described.
   { target: "no-tier-select", findFirst: ".no-tier-chip", title: msg("Pick a tier"),
     desc: msg("Budget has no refill. Standard is refilled for 30 days. Premium is refilled for life. Same service, different promise."),
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>, before: "selectService" },
+    icon: <OffsetIcon name="star" size={18} />, before: "selectService" },
 
   { target: "no-link-input", title: msg("Enter your link & quantity"),
     desc: msg("Paste your profile or post URL and set how many you want. The minimum varies by service."),
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>, before: "selectTier" },
+    icon: <OffsetIcon name="link" size={18} />, before: "selectTier" },
 
   // Restored. This step existed before and I dropped it in the rebuild, which
   // left the tour going from "enter your link" straight to bulk mode without
@@ -75,11 +76,11 @@ const STEPS = [
     // points at an Order button and one description is enough. Two earlier
     // attempts wrote around the problem — first retitling the step, then
     // explaining the wrong button — instead of removing it.
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
+    icon: <OffsetIcon name="rocket" size={18} /> },
 
   { target: "no-mode-toggle", title: msg("Ordering a lot at once"),
     desc: msg("Switch to Bulk and every service gets a plus instead. Fill one cart, pay once."),
-    icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7v10M12 7v10M16 7v10"/></svg>, before: "clearOrder" },
+    icon: <OffsetIcon name="layers" size={18} />, before: "clearOrder" },
 ];
 
 // The first VISIBLE match, not the first match.
@@ -528,7 +529,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
               one thing a returning customer does not already know. */}
           <div className="flex items-center gap-3 mb-3">
             <div className="w-[38px] h-[38px] rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.07)", color: accent }}>
-              <svg className="dir-flip" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 20l-5.4 1.8 1.8-5.4L16.5 4.3a2.1 2.1 0 013 3z"/><path d="M15 6l3 3"/></svg>
+              <OffsetIcon name="pen" size={19} className="dir-flip" />
             </div>
             <div className="text-[17px] font-bold leading-tight" style={{ color: text }}>{tr("New here? Let us show you the page")}</div>
           </div>
@@ -544,7 +545,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
           </div>
           {eligible && (
             <div className="flex items-center gap-2 rounded-lg py-2 px-3 mb-3" style={{ background: greenBg, border: `1px solid ${greenBorder}` }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
+              <OffsetIcon name="gift" size={16} color={green} className="shrink-0" />
               <span className="text-[11px] font-semibold" style={{ color: green }}>{tr("Up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("free on your first deposit")}</span>
             </div>
           )}
@@ -588,14 +589,21 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
               tr() at render — STEPS holds msg()-marked English keys, because a
               hook cannot be called at module scope where the array is defined. */}
           <div className="flex items-center gap-2.5 mb-2">
-            <div className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.07)", color: accent }}>{STEPS[step].icon}</div>
-            <div className="text-[15px] font-bold leading-tight" style={{ color: text }}>{tr(stepTitle)}</div>
+            {/* The icon on a printed tile, and the step counted from the same
+                STEPS.length as the segments below, so the two cannot disagree. */}
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,0.12)" : "rgba(196,125,142,0.07)", color: accent, boxShadow: `2px 2px 0 ${dark ? "#6b3a4a" : "#efc4cf"}` }}>{STEPS[step].icon}</div>
+            <div className="min-w-0">
+              <div className="text-[10.5px] font-bold uppercase tracking-[1px]" style={{ color: sub }}>{tr("Step")} {step + 1} {tr("of")} {STEPS.length}</div>
+              <div className="text-[15px] font-bold leading-tight" style={{ color: text }}>{tr(stepTitle)}</div>
+            </div>
           </div>
           <div className="text-[12.5px] leading-[1.55] mb-4" style={{ color: sub }}>{tr(stepDesc)}</div>
 
-          {/* One progress rail rather than two counters that can disagree. */}
-          <div className="h-[3px] rounded-full overflow-hidden mb-3.5" style={{ background: dotOff }}>
-            <div className="h-full rounded-full transition-[width] duration-300" style={{ width: `${((step + 1) / STEPS.length) * 100}%`, background: accent }} />
+          {/* One segment per step, from the same count as the label above. */}
+          <div className="flex gap-1 mb-3.5" aria-hidden="true">
+            {STEPS.map((_, i) => (
+              <span key={i} className="flex-1 h-[5px] rounded-full transition-colors duration-300" style={{ background: i <= step ? accent : dotOff, boxShadow: i <= step ? `1px 1px 0 ${dark ? "#6b3a4a" : "#efc4cf"}` : "none" }} />
+            ))}
           </div>
 
           <div className="flex items-center gap-2">
@@ -628,7 +636,7 @@ export default function OrderTour({ dark, onComplete, setSelSvc, setSelTier, use
               whenever it is restored and there is nothing here to edit. */}
           <div className="flex items-center gap-3 mb-3.5">
             <div className="w-[38px] h-[38px] rounded-xl flex items-center justify-center shrink-0" style={{ background: greenBg, color: green }}>
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+              <OffsetIcon name="card" size={19} />
             </div>
             <div className="text-[17px] font-bold leading-tight" style={{ color: text }}>{tr("Add funds to place it")}</div>
           </div>

@@ -20,6 +20,7 @@ import NitroLoader from "./nitro-loader";
 import AnnouncementBanner from "./announcement-banner";
 import { trackViewContent } from "./capi-tracker";
 import { PublicNavSheet, SHEET_LINKS } from "./public-nav-sheet";
+import { OffsetIcon } from "./offset-icons";
 
 // The mobile hero card. Colours come in as CSS variables from the component so it follows the theme.
 const HC_CSS = `
@@ -523,24 +524,24 @@ function LandingInner({ initialAuthQuery, initialStats }){
                     {siteStats.processing!=null&&<div className="hc-f live"><b><CountUp value={siteStats.processing}/></b><span><i/>{tr("Delivering now")}</span></div>}
                   </div>
                   <div className="hc-gift">
-                    <span className="hc-gi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></span>
+                    <span className="hc-gi"><OffsetIcon name="gift" /></span>
                     <span><b>{tr("Up to")} {money(MAX_BONUS_NAIRA, { round: "down" })} {tr("in free promo credit")}</b><i>{tr("to give your next post a real push")}</i></span>
                   </div>
                   <a href="/signup" onClick={e=>{e.preventDefault();setModal("signup")}} className="hc-cta hero-cta-pulse no-underline">{tr("Create free account")} <span className="dir-flip">→</span></a>
                   {guestOn&&<GuestButton tr={tr} onClick={startGuestOrder} isNew className="on-card mx-4 mt-[9px] w-[calc(100%-32px)]"/>}
                   <div className="hc-login">{tr(tr("Already have an account?"))} <a href="/?login=1" onClick={e=>{e.preventDefault();setModal("login")}}>{tr("Log in")}</a></div>
                   <div className="hc-trust">
-                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>{tr("Trusted by creators")}</span>
-                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>{tr("Fast delivery")}</span>
-                    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>{tr("Human support")}</span>
+                    <span><OffsetIcon name="shield" />{tr("Trusted by creators")}</span>
+                    <span><OffsetIcon name="bolt" />{tr("Fast delivery")}</span>
+                    <span><OffsetIcon name="clockPlain" />{tr("Human support")}</span>
                   </div>
                 </div>}
               </div>
 
               {/* Trust — desktop/tablet */}
               <div className="fu fd4 flex max-md:!hidden max-desktop:justify-center items-center gap-[18px] mt-[22px] text-xs flex-wrap" style={{color:dark?"rgba(255,255,255,.4)":"rgba(255,255,255,.66)"}}>
-                <span className="inline-flex items-center gap-1.5" style={{color:dark?"#60a5fa":"#bae6fd"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>{tr("Trusted by creators across Nigeria")}</span>
-                {socialLinks.social_whatsapp_support&&<a href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 no-underline" style={{color:dark?"#25d366":"#86efac"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>{tr("We reply fast on WhatsApp")}</a>}
+                <span className="inline-flex items-center gap-1.5" style={{color:dark?"#60a5fa":"#bae6fd"}}><OffsetIcon name="shield" size={12} />{tr("Trusted by creators across Nigeria")}</span>
+                {socialLinks.social_whatsapp_support&&<a href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 no-underline" style={{color:dark?"#25d366":"#86efac"}}><OffsetIcon name="chat" size={12} />{tr("We reply fast on WhatsApp")}</a>}
               </div>
             </div>
 
@@ -607,7 +608,7 @@ function LandingInner({ initialAuthQuery, initialStats }){
                   {heroPw&&heroPw.length<6&&<div className="text-t-text-muted" style={{fontSize:11,marginBottom:4,lineHeight:1.5}}>{tr("Use 6+ characters with a mix of uppercase, numbers, and symbols for a strong password.")}</div>}
                   <div className="auth-box" style={{marginBottom:2}}><label htmlFor="hero-signup-confirm">{tr("Confirm password")}</label>
                   <input id="hero-signup-confirm" name="passwordConfirmation" autoComplete="new-password" placeholder={heroFieldErr.password2?.code==="required"?tr("Required"):tr("Re-enter password")} value={heroPw2} onChange={e=>{setHeroPw2(e.target.value.slice(0,128));heroClear("password2");}} type="password" aria-invalid={(!!heroPw2&&heroPw!==heroPw2)||!!heroFieldErr.password2} className={"auth-in"+((heroPw2&&heroPw!==heroPw2)||heroFieldErr.password2?" is-bad":heroPw2&&heroPw===heroPw2?" is-good":"")}/></div>
-                  <div style={{minHeight:14,marginBottom:4}}>{heroPw2&&heroPw===heroPw2?<span style={{fontSize:11,color:dark?"#6ee7b7":"#059669"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> {tr("Passwords match")}</span>:heroPw2&&heroPw!==heroPw2?<span style={{fontSize:11,color:dark?"#fca5a5":"#dc2626"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> {tr("Passwords don't match")}</span>:null}</div>
+                  <div style={{minHeight:14,marginBottom:4}}>{heroPw2&&heroPw===heroPw2?<span style={{fontSize:11,color:dark?"#6ee7b7":"#059669"}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle"}}><polyline points="20 6 9 17 4 12"/></svg> {tr("Passwords match")}</span>:heroPw2&&heroPw!==heroPw2?<span style={{fontSize:11,color:dark?"#fca5a5":"#dc2626"}}><OffsetIcon name="xCircle" size={12} style={{display:"inline",verticalAlign:"middle"}} /> {tr("Passwords don't match")}</span>:null}</div>
                   <div className="auth-box" style={{marginBottom:8}}><label htmlFor="hero-signup-referral">{tr("Referral code")} <span className="text-t-text-muted" style={{fontWeight:400}}>{tr("(optional)")}</span></label>
                   <input id="hero-signup-referral" name="referralCode" placeholder="e.g. NTR-7X92" value={heroRefCode} onChange={e=>setHeroRefCode(e.target.value.replace(/[^a-zA-Z0-9\-]/g,"").toUpperCase().slice(0,20))} className="auth-in"/></div>
                   <label htmlFor="hero-signup-terms" className={"auth-terms"+(heroFieldErr.terms?" is-bad":"")} style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:4,cursor:"pointer"}}><input id="hero-signup-terms" name="termsAccepted" type="checkbox" checked={heroAgree} onChange={e=>{setHeroAgree(e.target.checked);heroClear("terms");}} aria-invalid={!!heroFieldErr.terms} style={{marginTop:1,accentColor:t.accent,width:16,height:16,flexShrink:0}}/><span className="text-t-text-soft" style={{fontSize:12.5,lineHeight:1.4}}>{tr("I agree to the")} <a href="/terms" className="text-accent-ink no-underline">{tr("Terms")}</a> {tr("and")} <a href="/privacy" className="text-accent-ink no-underline">{tr("Privacy Policy")}</a></span></label>
@@ -672,9 +673,9 @@ function LandingInner({ initialAuthQuery, initialStats }){
       {/* Logout toast */}
       {/* Same proportions as the app's success toast: the tick sits in its own
           tinted badge, so the text is not pressed against the icon. */}
-      {logoutMsg&&<div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] py-4 px-6 rounded-2xl w-[min(440px,calc(100vw-32px))] flex items-center gap-3" style={{background:dark?"rgba(16,32,22,.95)":"rgba(236,253,245,.97)",border:`1px solid ${dark?"rgba(110,231,183,.35)":"rgba(5,150,105,.3)"}`,backdropFilter:"blur(20px)",boxShadow:dark?"0 12px 40px rgba(0,0,0,.5)":"0 12px 40px rgba(0,0,0,.19)",animation:"fu .4s ease"}}><span className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{background:dark?"rgba(110,231,183,.13)":"rgba(5,150,105,.13)",color:dark?"#6ee7b7":"#059669"}}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span><span className="text-sm md:text-[15px] font-semibold leading-snug text-t-text">{tr("You've been logged out successfully")}</span></div>}
+      {logoutMsg&&<div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] py-4 px-6 rounded-2xl w-[min(440px,calc(100vw-32px))] flex items-center gap-3" style={{background:dark?"rgba(16,32,22,.95)":"rgba(236,253,245,.97)",border:`1px solid ${dark?"rgba(110,231,183,.35)":"rgba(5,150,105,.3)"}`,backdropFilter:"blur(20px)",boxShadow:dark?"0 12px 40px rgba(0,0,0,.5)":"0 12px 40px rgba(0,0,0,.19)",animation:"fu .4s ease"}}><span className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{background:dark?"rgba(110,231,183,.13)":"rgba(5,150,105,.13)",color:dark?"#6ee7b7":"#059669"}}><OffsetIcon name="checkCircle" size={15} /></span><span className="text-sm md:text-[15px] font-semibold leading-snug text-t-text">{tr("You've been logged out successfully")}</span></div>}
 
-      {googleError&&<div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] py-3 px-5 rounded-[14px] max-w-[calc(100%-32px)] w-auto flex items-center gap-2.5" style={{background:dark?"rgba(17,22,40,.97)":"rgba(255,255,255,.97)",border:`1px solid ${dark?"rgba(220,38,38,.28)":"rgba(220,38,38,.24)"}`,backdropFilter:"blur(16px)",boxShadow:dark?"0 12px 40px rgba(0,0,0,.5)":"0 12px 40px rgba(0,0,0,.19)",animation:"fu .4s ease"}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark?"#fca5a5":"#dc2626"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span className="text-sm font-medium text-t-text">{tr("Google sign-in failed. Please try again or use email.")}</span></div>}
+      {googleError&&<div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] py-3 px-5 rounded-[14px] max-w-[calc(100%-32px)] w-auto flex items-center gap-2.5" style={{background:dark?"rgba(17,22,40,.97)":"rgba(255,255,255,.97)",border:`1px solid ${dark?"rgba(220,38,38,.28)":"rgba(220,38,38,.24)"}`,backdropFilter:"blur(16px)",boxShadow:dark?"0 12px 40px rgba(0,0,0,.5)":"0 12px 40px rgba(0,0,0,.19)",animation:"fu .4s ease"}}><OffsetIcon name="xCircle" size={16} color={dark?"#fca5a5":"#dc2626"} className="shrink-0" /><span className="text-sm font-medium text-t-text">{tr("Google sign-in failed. Please try again or use email.")}</span></div>}
 
       {/* Floating WhatsApp button */}
       {socialLinks.social_whatsapp_support&&<WaButton href={`https://wa.me/${socialLinks.social_whatsapp_support.replace(/\D/g,"")}`} size="round" label={tr("Chat on WhatsApp")} className="fixed bottom-6 right-6 max-md:bottom-5 max-md:right-4 z-[90]" />}
@@ -700,13 +701,13 @@ function LandingInner({ initialAuthQuery, initialStats }){
             sits level with the first line rather than with the block. */}
         <div className="flex gap-2.5 items-center">
           <div className="w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0" style={{background:blocked?(dark?"rgba(224,164,88,.12)":"rgba(217,119,6,.08)"):(dark?"rgba(196,125,142,.16)":"rgba(196,125,142,.10)")}}>{blocked
-            ?<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark?"#e0a458":"#d97706"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            :<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark?"#c47d8e":"#a3586b"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}</div>
+            ?<OffsetIcon name="alert" size={15} color={dark?"#e0a458":"#d97706"} />
+            :<OffsetIcon name="clockPlain" size={15} color={dark?"#c47d8e":"#a3586b"} />}</div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold mb-0.5" style={{color:dark?"#eae7e2":"#1c1b19"}}>{copy.t}</div>
             <div className="text-[13px] leading-[1.5]" style={{color:dark?"#a09b95":"#555250"}}>{copy.b}</div>
           </div>
-          <button onClick={()=>setSessionExpired(false)} aria-label={tr("Dismiss")} className="nitro-x self-start"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          <button onClick={()=>setSessionExpired(false)} aria-label={tr("Dismiss")} className="nitro-x self-start"><OffsetIcon name="close" size={14} /></button>
         </div>
         {!blocked&&<>
           <button onClick={()=>{setSessionExpired(false);setModal("login");}} className="w-full mt-3 py-[9px] rounded-lg text-[13px] font-semibold border-none cursor-pointer transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{background:"linear-gradient(135deg,#c47d8e,#a3586b)",color:"#fff"}}>{tr("Sign in")}</button>

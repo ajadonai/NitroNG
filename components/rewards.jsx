@@ -2,6 +2,7 @@
 import { useMoney, useLocale, useT } from "./locale";
 import { Modal } from './ui-primitives';
 import { SkelFacts, SkelList } from './skeleton';
+import { OffsetIcon } from "./offset-icons";
 // ─────────────────────────────────────────────────────────────────
 // Nitro Rewards UI — Nitro Status + Nitro Points + Tasks strip,
 // detail modals, and the Wallet compact card.
@@ -66,13 +67,13 @@ function ChipIcon({ gradient, shadow, children, size = 26, radius = 8 }) {
 }
 
 const CrownGlyph = ({ s = 13, color = '#fff' }) => (
-  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinejoin="round"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-1.5 10h-15L3 8z"/></svg>
+  <OffsetIcon name="crown" size={s} color={color} />
 );
 const CoinGlyph = ({ s = 13 }) => (
-  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8.5v7M9.5 10.5c0-1 1-1.7 2.5-1.7s2.5.6 2.5 1.6c0 2.4-5 1.6-5 4 0 1 1 1.6 2.5 1.6s2.5-.7 2.5-1.7"/></svg>
+  <OffsetIcon name="star" size={s} color="#fff" />
 );
 const TaskGlyph = ({ s = 13 }) => (
-  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>
+  <OffsetIcon name="tasks" size={s} color="#fff" />
 );
 const Chevron = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M9 6l6 6-6 6"/></svg>
@@ -387,7 +388,7 @@ function ModalShell({ open, onClose, dark, t, title, children }) {
       <div className="py-4 px-5 flex items-center justify-between shrink-0" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
         <div className="serif text-[21px] font-semibold leading-none" style={{ color: t.text }}>{title}</div>
         <button onClick={onClose} aria-label={tr("Close")} className="nitro-x">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          <OffsetIcon name="close" size={12} />
         </button>
       </div>
       <div className="py-5 px-5 overflow-y-auto min-h-0">{children}</div>

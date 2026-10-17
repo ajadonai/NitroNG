@@ -4,6 +4,7 @@ import { useT } from "./locale";
 import { ThemeProvider, useTheme } from './shared-nav';
 import SharedNav, { SharedFooter } from './shared-nav';
 import { fD } from '@/lib/markdown';
+import { OffsetIcon } from "./offset-icons";
 
 // The blog index on the reading layout the posts already use: SharedNav, the
 // rd- token set, a Cormorant hero with search, category chips, and the posts
@@ -69,7 +70,7 @@ function BlogListingInner({ initialPosts, initialCategories, initialTotalPages }
           <div className="bl-search">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder={tr("Search articles…")} aria-label={tr("Search articles")} />
-            {search && <button type="button" aria-label={tr("Clear search")} onClick={() => { setSearch(""); setPage(1); }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+            {search && <button type="button" aria-label={tr("Clear search")} onClick={() => { setSearch(""); setPage(1); }}><OffsetIcon name="xCircle" size={12} /></button>}
           </div>
         </div>
 

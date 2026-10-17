@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useT } from "./locale";
 import { NitroWordmark } from './nitro-logo';
 import { formatNaira as naira } from '../lib/money';
+import { OffsetIcon } from "./offset-icons";
 
 function timeOnSite(firstSeen) {
   const s = Math.floor((Date.now() - new Date(firstSeen).getTime()) / 1000);
@@ -105,8 +106,8 @@ const SIG_LABEL = { 'Has Funds': 'Has funds', 'New User': 'New' };
 function DeviceGlyph({ ua }) {
   const mobile = /iPhone|iPad|Android|Mobile/i.test(ua || '');
   return mobile
-    ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="5" y="2" width="14" height="20" rx="2" /><line x1="12" y1="18" x2="12" y2="18" /></svg>
-    : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>;
+    ? <OffsetIcon name="phone" size={12} />
+    : <OffsetIcon name="monitor" size={12} />;
 }
 
 function Row({ s, expanded, onToggle, isNew }) {

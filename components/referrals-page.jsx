@@ -7,6 +7,7 @@ import { useMoney } from "./locale";
 import { Avatar } from "./avatar";
 import { copyText as copyToClipboard } from '@/lib/clipboard';
 import CashReferralsPage from "./referrals-cash-page";
+import { OffsetIcon, CurrencyCoin } from "./offset-icons";
 
 /** While cash_referrals_enabled is off the API answers { enabled: false } and
  * everyone keeps seeing the classic page below. Flip the setting and this
@@ -89,7 +90,7 @@ export default function ReferralsPage({ user, dark, t }) {
       {/* Pending referral bonus banner */}
       {user?.pendingRefBonus && (
         <div className="py-3 px-4 rounded-xl mb-4 flex items-center gap-2.5" style={{ background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)", border: `1px solid ${dark ? "rgba(196,125,142,.19)" : "rgba(196,125,142,.14)"}` }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6"/><path d="M2 8h20v4H2z"/><path d="M12 20V8"/></svg>
+          <OffsetIcon name="gift" size={18} color={t.accent} />
           <div>
             <div className="text-sm font-medium text-t-text">{tr("Your referral bonus is waiting")}</div>
             <div className="text-[13px] mt-0.5 text-t-text-muted">{tr("Deposit")} {money(user.refMinDeposit)} {tr("or more to unlock your")} {fK(ref.invitee)} {tr("welcome bonus")}</div>
@@ -163,12 +164,7 @@ export default function ReferralsPage({ user, dark, t }) {
           </div>
         )) : (
           <div className="p-10 text-center">
-            <svg width="48" height="48" viewBox="0 0 64 64" fill="none" style={{ display: "block", margin: "0 auto 14px", opacity: .7 }}>
-              <circle cx="24" cy="24" r="8" stroke={t.accent} strokeWidth="1.5" opacity=".25" />
-              <circle cx="40" cy="24" r="8" stroke={t.accent} strokeWidth="1.5" opacity=".15" />
-              <path d="M24 36c-8 0-14 4-14 10v2h28v-2c0-6-6-10-14-10z" stroke={t.accent} strokeWidth="1.5" opacity=".2" />
-              <path d="M26 16l6-4 6 4" stroke={t.accent} strokeWidth="1.5" opacity=".2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <OffsetIcon name="users" size={48} style={{ display: "block", margin: "0 auto 14px", opacity: .7 }} color={t.accent} />
             <div className="text-base font-semibold mb-1 text-t-text-soft">{tr("No referrals yet")}</div>
             <div className="text-[15px] leading-normal text-t-text-muted">{tr("Invite friends and you both earn when they deposit")}</div>
           </div>
@@ -245,23 +241,23 @@ export function ReferralsSidebar({ user, dark, t }) {
   const totalRefs = user?.refs || referrals.length;
   return (
     <div className="rr">
-      <RailSec>{tr("How it works")}</RailSec>
+      <RailSec icon="book">{tr("How it works")}</RailSec>
       <RailCard>
         <RailStep n="1" title={tr("Share your link")} sub={tr("Send it to friends")} />
         <RailStep n="2" title={tr("They deposit")} sub={ref.minDeposit > 0 ? `${fK(ref.minDeposit)} or more` : "Their first deposit"} />
         <RailStep n="3" title={tr("You both earn")} sub={`You get ${fK(ref.referrer)}, they get ${fK(ref.invitee)}`} />
       </RailCard>
-      <RailSec>{tr("Rewards")}</RailSec>
+      <RailSec icon="gift">{tr("Rewards")}</RailSec>
       <RailCard>
-        <RailFact label={tr("You get")} value={fK(ref.referrer)} color={t.accent} />
-        <RailFact label={tr("They get")} value={fK(ref.invitee)} color={dark ? "#6ee7b7" : "#059669"} />
-        {ref.minDeposit > 0 && <RailFact label={tr("Minimum deposit")} value={fK(ref.minDeposit)} />}
+        <RailFact icon="gift" label={tr("You get")} value={fK(ref.referrer)} color={t.accent} />
+        <RailFact icon="gift" label={tr("They get")} value={fK(ref.invitee)} color={dark ? "#6ee7b7" : "#059669"} />
+        {ref.minDeposit > 0 && <RailFact icon="moneyIn" label={tr("Minimum deposit")} value={fK(ref.minDeposit)} />}
       </RailCard>
-      <RailSec>{tr("Your performance")}</RailSec>
+      <RailSec icon="bars">{tr("Your performance")}</RailSec>
       <RailCard>
-        <RailFact label={tr("Referrals")} value={String(totalRefs)} />
-        <RailFact label={tr("Total earned")} value={money(totalEarnings, { round: "down" })} color={t.accent} />
-        <RailFact label={tr("Sign-up rate")} value={totalRefs > 0 ? `${Math.round(activeRefs / totalRefs * 100)}%` : "0%"} />
+        <RailFact icon="users" label={tr("Referrals")} value={String(totalRefs)} />
+        <RailFact icon={<CurrencyCoin size={15} />} label={tr("Total earned")} value={money(totalEarnings, { round: "down" })} color={t.accent} />
+        <RailFact icon="activity" label={tr("Sign-up rate")} value={totalRefs > 0 ? `${Math.round(activeRefs / totalRefs * 100)}%` : "0%"} />
       </RailCard>
     </div>
   );

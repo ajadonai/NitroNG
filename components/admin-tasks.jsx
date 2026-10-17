@@ -6,6 +6,7 @@ import { SegPill } from './seg-pill';
 import { FilterDropdown } from './date-range-picker';
 import { SkelFacts, SkelBar, SkelList } from './skeleton';
 import { proofToLink } from '@/lib/proof-link';
+import { OffsetIcon } from "./offset-icons";
 const fmt = (n) => Math.abs(n).toLocaleString('en-NG');
 
 const PLATFORMS = [
@@ -85,7 +86,7 @@ const proofPlaceholder = (proofType, platform) =>
 const hasLimits = (f) => [f.minViews, f.minFollowers, f.keepDays, f.monthlyCap, f.maxPerMonth].some(v => (parseInt(v) || 0) > 0) || !!f.viralBonus || !f.allowNonDepositors;
 
 const CHEV = <svg className="tk-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>;
-const CLOSE = <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>;
+const CLOSE = <OffsetIcon name="close" size={15} />;
 
 const CARD_TITLE = { pending: 'Waiting for review', approved: 'Approved', rejected: 'Rejected', all: 'All submissions' };
 const SORT_OPTIONS = [

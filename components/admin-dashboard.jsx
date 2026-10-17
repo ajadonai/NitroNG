@@ -73,7 +73,7 @@ const ADMIN_NAV = [
   ]},
   { section: "Marketing", items: [
     { id: "promotions", label: "Promotions", icon: <OffsetIcon name="percent" /> },
-    { id: "blog", label: "Blog", icon: <OffsetIcon name="doc" /> },
+    { id: "blog", label: "Blog", icon: <OffsetIcon name="news" /> },
     { id: "alerts", label: "Announcements", icon: <OffsetIcon name="bell" /> },
     { id: "notifications", label: "Email Blasts", icon: <OffsetIcon name="mail" /> },
     { id: "rewards", label: "Rewards", icon: <OffsetIcon name="gift" /> },
@@ -782,7 +782,7 @@ function AdminDashboardInner({ initialData }) {
               <div className="h-0.5 rounded-[1px] w-[11px] bg-accent" />
               <div className="h-0.5 rounded-[1px] w-4 bg-accent" />
             </div>
-            {leftOpen && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>}
+            {leftOpen && <OffsetIcon name="close" size={16} color={t.accent} />}
             <span className="dash-logo-n"><span className="nitro-mark w-[34px] h-[34px] flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><svg width="13" height="14" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></span></span>
             <span className="dash-logo-wordmark"><span className="nitro-mark h-7 px-3 flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span></span>
           </button>
@@ -796,11 +796,11 @@ function AdminDashboardInner({ initialData }) {
           {/* DND toggle */}
           <button onClick={toggleDnd} className="dash-bell relative" aria-label={dnd ? 'Unmute notifications' : 'Mute notifications'} title={dnd ? 'Notifications muted' : 'Notifications on'} style={{ color: dnd ? t.red : t.textSoft }}>
             {dnd
-              ? <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>}
+              ? <OffsetIcon name="bellOff" size={20} />
+              : <OffsetIcon name="bell" size={20} />}
           </button>
           <button onClick={() => { setActive("payments"); setLeftOpen(false); }} className="dash-bell relative text-t-text-soft" aria-label="Pending payments">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <OffsetIcon name="card" size={20} />
             {paymentCount > 0 && <div className="dash-bell-badge">{paymentCount > 9 ? "9+" : paymentCount}</div>}
           </button>
           <div ref={avRef} className="relative">
@@ -827,12 +827,12 @@ function AdminDashboardInner({ initialData }) {
                     <div className="text-[11px] truncate text-t-text-muted">{admin?.email || admin?.role || ""}</div>
                   </div>
                   <button role="menuitem" onClick={() => { setAvOpen(false); setActive("settings"); }} className="dash-av-gear" aria-label="Settings" style={{ color: t.textMuted }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                    <OffsetIcon name="gear" size={16} />
                   </button>
                 </div>
-                <button role="menuitem" onClick={() => { setAvOpen(false); setActive("team"); }} className="dash-av-item" style={{ color: t.textSoft }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Team</button>
-                <button role="menuitem" onClick={() => { setAvOpen(false); setActive("activity"); }} className="dash-av-item" style={{ color: t.textSoft }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Logs</button>
-                <button role="menuitem" onClick={() => { setAvOpen(false); window.open("/changelog", "_blank", "noopener"); }} className="dash-av-item" style={{ color: t.textSoft }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.4 5.2L20 8l-4 3.9.9 5.6L12 14.8 7.1 17.5 8 11.9 4 8l5.6-.8z"/></svg>What&rsquo;s New</button>
+                <button role="menuitem" onClick={() => { setAvOpen(false); setActive("team"); }} className="dash-av-item" style={{ color: t.textSoft }}><OffsetIcon name="users" />Team</button>
+                <button role="menuitem" onClick={() => { setAvOpen(false); setActive("activity"); }} className="dash-av-item" style={{ color: t.textSoft }}><OffsetIcon name="terminal" />Logs</button>
+                <button role="menuitem" onClick={() => { setAvOpen(false); window.open("/changelog", "_blank", "noopener"); }} className="dash-av-item" style={{ color: t.textSoft }}><OffsetIcon name="spark" />What&rsquo;s New</button>
                 <div className="dash-av-foot" style={{ borderTop: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` }}>
                   <ThemePill mode={themeMode} onMode={applyThemeMode} />
                   <button role="menuitem" onClick={handleLogout} className="dash-av-logout" style={{ color: t.textMuted }}>Log out</button>

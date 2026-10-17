@@ -2,7 +2,7 @@ import prisma from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 
 /**
- * The caller's last five distinct links on one platform, derived from their own
+ * The caller's last twenty distinct links on one platform, derived from their own
  * order history. Nothing new is collected: most people order for the same one
  * or two accounts over and over and were retyping the link every time.
  *
@@ -49,7 +49,7 @@ export async function GET(req) {
     _count: { _all: true },
     _max: { createdAt: true },
     orderBy: { _max: { createdAt: 'desc' } },
-    take: 5,
+    take: 20,
     }),
   ]);
 

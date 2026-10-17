@@ -5,6 +5,7 @@ import SharedNav, { ThemeProvider, useTheme } from "./shared-nav";
 import { PlatformIcon } from "./platform-icon";
 import { copyText } from "@/lib/clipboard";
 import { msg } from "../lib/i18n";
+import { OffsetIcon } from "./offset-icons";
 
 /* A guest's order, opened by its guest code (docs/v2/guest_checkout_brief.md).
    The card is the track card from the mockup: the order as it stands, the
@@ -170,7 +171,7 @@ export function GuestOrderTrack({ initial, verify = false, preview = false, supp
         </H>
         {onClose && (
           <button type="button" onClick={onClose} aria-label={tr("Close")} className="w-9 h-9 shrink-0 rounded-[11px] border-0 flex items-center justify-center cursor-pointer -me-1.5" style={{ background: t.surface, color: t.text }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            <OffsetIcon name="close" size={16} />
           </button>
         )}
       </div>

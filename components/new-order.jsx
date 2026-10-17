@@ -13,12 +13,13 @@ import { msg } from "../lib/i18n";
 import { cleanLink } from "../lib/clean-link";
 import { OrderForm as ExtractedOrderForm } from "./order-form";
 import FullList from "./full-list";
-import { ServiceGlyph } from "./service-glyph";
+import { ServiceGlyph, AUDIENCE_FLAG } from "./service-glyph";
 import { NotSureHelp, OrderForMeCard } from "./order-help";
 import { TASKS_ENABLED } from './rewards';
 import { openCardFrame } from '@/lib/expandable-card';
 import { TRAFFIC_COUNTRIES, TRAFFIC_CONTINENTS } from "../lib/traffic-targets";
 import { copyText } from '@/lib/clipboard';
+import { OffsetIcon } from "./offset-icons";
 
 // ── Success-modal promo slides ──
 // 'tasks' activates automatically when TASKS_ENABLED flips in rewards.jsx.
@@ -52,7 +53,6 @@ const PROMO_SLIDES = ['wa', 'ig', ...(TASKS_ENABLED ? ['tasks'] : []), ...(RESEL
  * what is being promised. Ask Trip first.
  */
 const refillLabel = (tier) => tier === "Budget" ? msg("No refill") : tier === "Standard" ? msg("30-day refill") : msg("Lifetime refill");
-const tierClr = { Budget: { text: "#e0a458", bg: "rgba(224,164,88,.1)" }, Standard: { text: "#60a5fa", bg: "rgba(96,165,250,.1)" }, Premium: { text: "#a78bfa", bg: "rgba(167,139,250,.1)" } };
 const formatDeliverySpeed = (speed) => {
   if (!speed) return "Processing now";
   return String(speed)
@@ -253,11 +253,60 @@ function PlatformTile({ p, active, dark, t, onClick, compact }) {
 }
 
 const TS = {
-  Budget: { bg: "#fef7ed", border: "#e8d5b8", text: "#854F0B", textD: "#f0c98a", bgD: "#2d2210", borderD: "#5a4020", grad: "linear-gradient(135deg,#e0a458,#b45309)", label: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
-  Standard: { bg: "#eef4fb", border: "#b8d0e8", text: "#185FA5", textD: "#93c5fd", bgD: "#0f1e30", borderD: "#1e4070", grad: "linear-gradient(135deg,#60a5fa,#2563eb)", label: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
-  Premium: { bg: "#f5eef5", border: "#d4b8d4", text: "#534AB7", textD: "#c4b5fd", bgD: "#221535", borderD: "#3d2060", grad: "linear-gradient(135deg,#a78bfa,#7c3aed)", label: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M3 20h18"/></svg> },
+  Budget: { bg: "#fef7ed", border: "#e8d5b8", text: "#854F0B", textD: "#f0c98a", bgD: "#2d2210", borderD: "#5a4020", grad: "linear-gradient(135deg,#e0a458,#b45309)", label: <OffsetIcon name="shield" size={12} /> },
+  Standard: { bg: "#eef4fb", border: "#b8d0e8", text: "#185FA5", textD: "#93c5fd", bgD: "#0f1e30", borderD: "#1e4070", grad: "linear-gradient(135deg,#60a5fa,#2563eb)", label: <OffsetIcon name="bolt" size={12} /> },
+  Premium: { bg: "#f5eef5", border: "#d4b8d4", text: "#534AB7", textD: "#c4b5fd", bgD: "#221535", borderD: "#3d2060", grad: "linear-gradient(135deg,#a78bfa,#7c3aed)", label: <OffsetIcon name="crown" size={12} /> },
 };
+const TIER_ICON = { Budget: "shield", Standard: "bolt", Premium: "crown" };
+// What a tier gets you besides its refill, which the segment already prints.
+const TIER_PERKS = {
+  Budget: [msg("Good profiles"), msg("Normal queue")],
+  Standard: [msg("Better profiles"), msg("Priority when busy")],
+  Premium: [msg("Best profiles"), msg("Front of the queue")],
+};
+// What the price is per, read off the group's name: "Instagram Followers" →
+// "followers". The last word alone is not enough — live names end in "— Global",
+// "(1hr)", "USA" — so it is the last word that is a unit, and a name with none
+// (Website Traffic, Discord Server Boost) says "per 1,000" and nothing more.
+const UNITS = new Set(["followers", "likes", "views", "comments", "members", "plays", "reposts", "saves", "streams", "reviews", "retweets", "subscribers", "reactions", "downloads", "listeners", "bookmarks", "impressions", "reshares", "shares", "requests", "viewers", "votes"]);
+const unitOf = (name) => String(name || "").replace(/\(.*?\)/g, " ").split(/\s[—–-]\s/)[0].toLowerCase().split(/[^a-z]+/).reverse().find(w => UNITS.has(w)) || "";
 
+/* The tier well: one tray, a segment per tier, the guest checkout's picker in
+   the offset print. Every segment is the same box whatever it holds — the
+   columns are minmax(0, 1fr), a sale gives every segment its struck line at
+   once, and picking one changes colours and an inset ring only, never a size,
+   so nothing in the row moves when the choice does. Logical properties: this
+   sheet does not go through the RTL build plugin. */
+const TIER_CSS = `
+.tw{container-type:inline-size;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;padding:4px;border-radius:14px;background:var(--tw-field);border:1.5px solid var(--tw-line)}
+.tw.has-tab{margin-top:6px}
+.tw-tier{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;padding:12px 6px 10px;border:0;border-radius:10px;background:transparent;color:var(--tw-text);font:inherit;text-align:center;cursor:pointer;transition:background-color .16s,box-shadow .16s}
+.tw-tier:hover{background:color-mix(in srgb,var(--t-card-bg) 65%,transparent)}
+.tw-tier:focus-visible{outline:2px solid var(--t-accent);outline-offset:2px}
+.tw-tier.on{background:var(--t-card-bg);box-shadow:inset 0 0 0 1.5px var(--c),2.5px 2.5px 0 color-mix(in srgb,var(--c) 34%,transparent)}
+.tw-tier+.tw-tier::before{content:"";position:absolute;inset-inline-start:-2.5px;top:18%;bottom:18%;width:1px;background:var(--tw-line);transition:opacity .16s}
+.tw-tier.on::before,.tw-tier.on+.tw-tier::before{opacity:0}
+.tw-name{display:inline-flex;align-items:center;gap:5px;max-width:100%;font-size:12.5px;font-weight:700;white-space:nowrap}
+.tw-name svg{color:var(--c);flex-shrink:0}
+.tw-tier.on .tw-name{color:var(--c)}
+.tw-was{font-size:10.5px;line-height:1;color:var(--tw-mut);text-decoration:line-through;white-space:nowrap}
+.tw-price{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-weight:600;line-height:1.25;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tw-price.long{font-size:12.5px}
+.tw.sale .tw-price{color:var(--tw-sale)}
+.tw small{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:10.5px;font-weight:600;color:var(--tw-mut);white-space:nowrap}
+.tw-tier.on small{color:var(--tw-text)}
+.tw-tab{position:absolute;top:-9px;left:50%;transform:translateX(-50%);padding:3px 6px;border-radius:6px;font-size:8.5px;font-weight:800;font-style:normal;line-height:1;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;color:var(--c);background:var(--t-card-bg);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent),1.5px 1.5px 0 color-mix(in srgb,var(--c) 30%,transparent)}
+.tw-n{position:absolute;top:-9px;left:50%;transform:translateX(-50%);min-width:22px;height:17px;padding:0 6px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;line-height:1;background:var(--tw-text);color:var(--t-card-bg)}
+.tw-sale{display:inline-flex;align-items:center;gap:4px;padding-block:3px;padding-inline:4px 6px;border-radius:6px;font-size:9px;font-weight:800;line-height:1;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;color:var(--tw-sale);background:color-mix(in srgb,var(--tw-sale) 9%,var(--t-card-bg));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tw-sale) 45%,transparent),1.5px 1.5px 0 color-mix(in srgb,var(--tw-sale) 30%,transparent)}
+.tw-perks{list-style:none;margin:10px 2px 0;padding:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:12px;color:var(--tw-text)}
+.tw-perks li{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-weight:550}
+.tw-perks svg{color:var(--c)}
+.tw-perks .per{margin-inline-start:auto;font-size:11px;font-weight:500;color:var(--tw-mut)}
+@container (max-width:300px){.tw-tier{padding-inline:3px}.tw-name{gap:3px;font-size:11.5px}.tw-name svg{width:13px;height:13px}.tw-price{font-size:12.5px}.tw-price.long{font-size:11.5px}.tw small{font-size:9.5px}}
+.tw-which{display:none}
+@media (hover:none){.tw-which{display:inline-flex}}
+@media (prefers-reduced-motion:reduce){.tw-tier{transition:none}}
+`;
 
 
 function TierChips({ svc, selTier, selSvc, onPickTier, dark, t, activePromotion, orderMode, cartCounts, whichTier }) {
@@ -268,9 +317,9 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, t, activePromotion,
    *
    * It is deliberately opt-in per group, via the `options` tag set in Menu
    * Builder, and must stay that way. Every other group in the menu is a genuine
-   * Budget/Standard/Premium ladder and keeps the three tier cards: the grid
-   * carries the tier colours, icons and "Most pick" captions, all of which are
-   * meaningless for a variant. Do not make this the default picker.
+   * Budget/Standard/Premium ladder and keeps the tier well, which carries
+   * the tier colours, icons, refill promises and the "Most pick" tab, all of
+   * which are meaningless for a variant. Do not make this the default picker.
    *
    * Carried on the tiers because that is where the group's tags already arrive.
    */
@@ -279,15 +328,28 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, t, activePromotion,
   const money = useMoney();
   const promoOff = activePromotion?.active ? activePromotion.discountPercent / 100 : 0;
   const bulk = orderMode === "bulk";
+  const sale = promoOff > 0 && !isOptionPicker;
+  const tierInk = name => { const c = TX_TIERS.find(d => d.key === name)?.c; return c ? (dark ? c.dark : c.light) : t.accent; };
+  // The perks line speaks for one tier: the one picked, else the one under the
+  // pointer, and for none until there is one. A pick holds it — hovering the
+  // others does not swap it out from under the choice. Its icons take that tier's
+  // colour, which is how it says whose perks they are. What the price is per
+  // stays put either way — the prices above mean nothing without it.
+  const [peek, setPeek] = useState(null);
+  const picked = selSvc?.id === svc.id ? selTier?.tier : null;
+  const perkTier = [picked, peek].find(n => n && TIER_PERKS[n] && svc.tiers.some(x => x.tier === n));
   return (
-    <div className="mt-3" data-tour="no-tier-select">
+    <div className="mt-3" data-tour="no-tier-select" style={{ "--tw-field": dark ? "rgba(255,255,255,.035)" : "rgba(255,255,255,.6)", "--tw-line": t.cardBorder, "--tw-text": t.text, "--tw-mut": t.textMuted, "--tw-sale": dark ? "#34d399" : "#047857" }}>
+      <style>{TIER_CSS}</style>
       {/* The label doubles as the divider between the service header above it
           and the tiers below: the rule after the word does the separating, so
           this section needs no border-top of its own. "Which tier?" rides the
           end of that same rule — the question sits as close to the tier grid
-          as it can, on both a stacked phone and a wide desktop row alike. */}
+          as it can, on both a stacked phone and a wide desktop row alike. A
+          sale puts its tab on the same rule, said once for the whole row. */}
       <div className="flex items-center gap-2.5 mb-2">
         <span className="text-[10.5px] font-semibold uppercase tracking-[1px] whitespace-nowrap" style={{ color: "#8a8580" }}>{isOptionPicker ? tr("Option") : bulk ? tr("Tier · tap to add") : tr("Tier")}</span>
+        {sale && <span className="tw-sale"><OffsetIcon name="tagPct" size={11} />{activePromotion.discountPercent}{tr("% OFF")}</span>}
         <span className="flex-1 h-px" style={{ background: t.cardBorder }} />
         {!isOptionPicker && whichTier}
       </div>
@@ -320,167 +382,193 @@ function TierChips({ svc, selTier, selSvc, onPickTier, dark, t, activePromotion,
             </option>
           ))}
         </select>
-      ) : (
-      <div className="grid grid-cols-3 gap-1.5 md:gap-2">
+      ) : (<>
+      <div className={`tw${bulk || svc.tiers.some(x => x.tier === "Standard") ? " has-tab" : ""}${sale ? " sale" : ""}`} onMouseLeave={() => setPeek(null)}>
         {svc.tiers.map(tier => {
-          const s = TS[tier.tier];
           const isSel = selTier?.tier === tier.tier && selSvc?.id === svc.id;
           const displayPrice = promoOff > 0 ? Math.round(tier.price * (1 - promoOff)) : tier.price;
+          const shown = money(displayPrice);
           const inCart = bulk ? (cartCounts?.[`${svc.id}:${tier.tier}`] || 0) : 0;
+          const onLadder = !!TIER_ICON[tier.tier];
           return (
-            <button key={tier.tier} onClick={e => onPickTier(tier, e)} aria-pressed={isSel} className="no-tier-chip relative flex max-md:flex-col max-md:items-start items-center gap-2 max-md:gap-1.5 min-w-0 rounded-xl py-2 px-2 md:px-2.5 border-[1.5px] border-solid cursor-pointer font-[inherit] text-left transition-all duration-150 ease-in-out" style={{ background: dark ? s.bgD : s.bg, borderColor: isSel ? (dark ? s.textD : s.text) : (dark ? s.borderD : s.border), color: dark ? s.textD : s.text, boxShadow: isSel ? `0 0 0 2px ${dark ? s.textD : s.text}` : undefined }}>
-              <span className="w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: s.grad }}>{s.label}</span>
-              {inCart > 0 && <span className="absolute -top-[7px] -right-[6px] min-w-[20px] h-5 px-1.5 rounded-full text-[10.5px] font-bold flex items-center justify-center" style={{ background: dark ? "#f4f1ed" : "#1c1b19", color: dark ? "#0b0e1a" : "#fff", border: `2px solid ${dark ? "#1a1329" : "#fff"}` }}>×{inCart}</span>}
-              <span className="flex flex-col items-start gap-[2px] leading-none min-w-0 max-md:w-full">
-                <span className="text-[11px] md:text-[11.5px] font-semibold truncate max-w-full">{tier.tier}</span>
-                <span className="m text-[12px] md:text-[13px] font-bold whitespace-nowrap tabular-nums">{promoOff > 0 && <span className="line-through font-normal opacity-60 mr-1">{money(tier.price)}</span>}{money(displayPrice)}</span>
-                <span className="text-[9.5px] opacity-60 whitespace-nowrap">per {tier.per || "1K"}</span>
-              </span>
+            <button key={tier.tier} type="button" onClick={e => onPickTier(tier, e)} onMouseEnter={() => setPeek(tier.tier)} onFocus={() => setPeek(tier.tier)} onBlur={() => setPeek(null)} aria-pressed={isSel} className={`no-tier-chip tw-tier${isSel ? " on" : ""}`} style={{ "--c": tierInk(tier.tier) }}>
+              {/* The slot above a segment holds one thing: what is already in the
+                  cart while bulk ordering, else the "Most pick" tab. */}
+              {inCart > 0 ? <span className="tw-n">×{inCart}</span> : tier.tier === "Standard" && !bulk && <em className="tw-tab">{tr("Most pick")}</em>}
+              <span className="tw-name"><OffsetIcon name={TIER_ICON[tier.tier] || "layers"} size={15} />{tier.tier}</span>
+              {sale && <span className="tw-was m">{money(tier.price)}</span>}
+              <span className={`tw-price m${shown.length > 8 ? " long" : ""}`}>{shown}</span>
+              {/* The tier name's own promise (refillLabel). A name off the
+                  ladder makes none, and keeps the line so the boxes match. */}
+              <small>{onLadder ? tr(refillLabel(tier.tier)) : " "}</small>
             </button>
           );
         })}
       </div>
-      )}
+      <ul className="tw-perks" style={{ "--c": tierInk(perkTier) }}>
+        {perkTier && <>
+          <li><OffsetIcon name="users" size={14} />{tr(TIER_PERKS[perkTier][0])}</li>
+          <li><OffsetIcon name="queue" size={14} />{tr(TIER_PERKS[perkTier][1])}</li>
+        </>}
+        <li className="per">{tr("Price per")} 1,000{unitOf(svc.name) ? ` ${unitOf(svc.name)}` : ""}</li>
+      </ul>
+      </>)}
     </div>
   );
 }
 
-const TX_ICON = {
-  people: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>,
-  refill: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
-  queue: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>,
-};
 // Same service on every tier. What changes is how well the numbers hold,
 // whether we replace drops, and who goes first when we are busy. Nothing here
-// calls a tier basic or slow: ten Budget tiers start inside two hours.
+// calls a tier basic or slow: ten Budget tiers start inside two hours. The
+// refill row is the tier name's own promise, the same one refillLabel states.
 const TX_TIERS = [
-  { key: "Budget", cap: "Trying it out", short: ["Good", "None", "Normal"], long: ["Good profiles", "No refill", "Normal queue"],
-    c: { light: "#b45309", bg: "#fef7ed", ln: "#e8d5b8", dark: "#e0a458", bgD: "#2d2210", lnD: "#5a4020" } },
-  { key: "Standard", cap: "Most pick", rec: true, short: ["Better", "30 days", "Priority"], long: ["Better profiles", "Free for 30 days", "Priority when busy"],
-    c: { light: "#1d5fa5", bg: "#eef4fb", ln: "#b8d0e8", dark: "#7aa2f7", bgD: "#0f1e30", lnD: "#1e4070" } },
-  { key: "Premium", cap: "Main page", short: ["Best", "For life", "First"], long: ["Our best profiles", "Free for life", "Front of the queue"],
-    c: { light: "#6d28d9", bg: "#f5eef5", ln: "#d4b8d4", dark: "#a78bfa", bgD: "#221535", lnD: "#3d2060" } },
+  { key: "Budget", icon: "shield", pips: 1, refill: msg("None"), queue: msg("Normal"), bestFor: msg("Trying it out"),
+    c: { light: "#b45309", dark: "#e0a458" } },
+  { key: "Standard", icon: "bolt", pips: 2, refill: msg("30 days"), queue: msg("Priority"), bestFor: msg("Most orders"), rec: true,
+    c: { light: "#1d5fa5", dark: "#7aa2f7" } },
+  { key: "Premium", icon: "crown", pips: 3, refill: msg("For life"), queue: msg("First in line"), bestFor: msg("Your main page"),
+    c: { light: "#6d28d9", dark: "#a78bfa" } },
 ];
+/* The confirmation card, in the same language as the form it replaces: a
+   printed tick, what was ordered in one box with the tier and refill each on
+   its own icon, three facts read across, and the promo carousel as printed
+   brand cards with a progress line each. Logical properties: this sheet does
+   not go through the RTL build plugin. */
 const RCP_CSS = `
-.rcp{padding:22px 22px 20px;color:var(--ink)}
-@media (max-width:767px){.rcp{padding:14px 16px 18px}}
+.rcp{padding:18px 16px 16px;color:var(--ink)}
+@media (max-width:767px){.rcp{padding:14px 14px 16px}}
 .rcp *{box-sizing:border-box}
 .rcp-hd{display:flex;align-items:center;gap:12px}
-.rcp-ck{width:40px;height:40px;border-radius:50%;background:var(--ok);color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 18px rgba(10,125,84,.22)}.rcp-ck svg{width:20px;height:20px}
-.rcp-ht{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.rcp-ht b{font-size:19px;font-weight:800;letter-spacing:-.01em;line-height:1.1}
-@media (min-width:768px){.rcp-ht b{font-size:21px}}
-.rcp-id{font-size:12px;color:var(--mut);display:inline-flex;align-items:center;gap:5px;background:transparent;border:0;padding:0;cursor:pointer;font-weight:500;text-align:left}.rcp-id svg{width:12px;height:12px;color:var(--dim)}
-.rcp-what{display:flex;align-items:center;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
-.rcp-pi{width:30px;height:30px;border-radius:9px;background:var(--soft);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;color:var(--ink);opacity:.8;flex-shrink:0}.rcp-pi svg{width:16px;height:16px}
-.rcp-wn{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}.rcp-wn b{font-size:14.5px;font-weight:700}
-.rcp-tier{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid transparent}
-.rcp-lnk{font-size:12px;color:var(--mut);margin:6px 0 0 40px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rcp-facts{margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-@media (min-width:768px){.rcp-facts{margin-top:16px}}
-.rcp-f{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border-top:1px solid var(--rail);font-size:13px}.rcp-f:first-child{border-top:0}
-@media (min-width:768px){.rcp-f{padding:10px 14px}}
-.rcp-f span{color:var(--mut)}.rcp-f b{font-weight:600;color:var(--ink);text-align:right;min-width:0}.rcp-money{color:var(--ok)}.rcp-mut{color:var(--dim);font-weight:500}
+.rcp-ck{width:42px;height:42px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,transparent);box-shadow:2.5px 2.5px 0 color-mix(in srgb,var(--ok) 32%,transparent)}
+.rcp-ck.q{color:var(--wait);background:color-mix(in srgb,var(--wait) 13%,transparent);box-shadow:2.5px 2.5px 0 color-mix(in srgb,var(--wait) 32%,transparent)}
+.rcp-ck svg{width:22px;height:22px}
+.rcp-ht{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.rcp-ht b{font-size:18px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+.rcp-ht small{font-size:12px;color:var(--mut);line-height:1.35}
+.rcp-id{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 9px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0}
+.rcp-id svg{width:12px;height:12px;color:var(--mut)}
+.rcp-what{display:flex;align-items:center;gap:11px;margin-top:14px;padding:11px 12px;border:1.5px solid var(--line);border-radius:13px;background:var(--soft)}
+.rcp-wt{flex:1;min-width:0}
+.rcp-wt b{display:block;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcp-meta{display:flex;align-items:center;flex-wrap:wrap;gap:2px 12px;margin-top:3px;font-size:11.5px;color:var(--mut)}
+.rcp-meta span{display:inline-flex;align-items:center;gap:4px;font-weight:600}
+.rcp-meta .tn{font-weight:700;color:var(--tc)}
+.rcp-lnk{display:flex;align-items:center;gap:6px;margin-top:7px;padding-top:7px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden}
+.rcp-lnk span{overflow:hidden;text-overflow:ellipsis}
+.rcp-facts{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:6px;margin-top:8px}
+.rcp-f{min-width:0;padding:9px 11px;border:1.5px solid var(--line);border-radius:12px}
+.rcp-f i{display:flex;align-items:center;gap:5px;font-style:normal;font-size:10.5px;font-weight:600;color:var(--mut);white-space:nowrap}
+.rcp-f i svg{color:var(--t-accent-ink)}
+.rcp-f b{display:block;margin-top:3px;font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcp-f small{display:block;margin-top:2px;font-size:10.5px;font-weight:600;color:var(--wait)}
+.rcp-money{color:var(--ok)}
 .rcp-car{margin-top:12px}
-.rcp-sl{display:flex;align-items:center;gap:12px;padding:0 13px;height:66px;border-radius:14px;background:color-mix(in srgb,var(--sc) 9%,var(--card));border:1px solid color-mix(in srgb,var(--sc) 22%,transparent)}
-.rcp-si{width:40px;height:40px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 6px 16px rgba(0,0,0,.14)}.rcp-si svg{width:20px;height:20px}
-.rcp-st{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.rcp-st b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rcp-st i{font-style:normal;font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rcp-sb{color:#fff;font-size:12.5px;font-weight:800;padding:9px 14px;border-radius:999px;white-space:nowrap;text-decoration:none;flex-shrink:0;border:0;cursor:pointer;font-family:inherit;line-height:1.2}
-.rcp-dots{display:flex;justify-content:center;gap:6px;margin-top:9px}
-.rcp-dot{position:relative;width:6px;height:6px;border-radius:3px;background:var(--line);border:0;padding:0;cursor:pointer;overflow:hidden;transition:width .2s}.rcp-dot.on{width:18px}
-.rcp-fill{position:absolute;inset:0;border-radius:3px;background:var(--ac);transform-origin:left}
-.rcp-acts{display:flex;gap:10px;margin-top:16px}
-@media (min-width:768px){.rcp-acts{margin-top:18px}}
+.rcp-sl{display:flex;align-items:center;gap:11px;height:64px;padding:0 12px;border-radius:13px;border:1.5px solid color-mix(in srgb,var(--sc) 30%,var(--line));background:color-mix(in srgb,var(--sc) 6%,var(--card));box-shadow:2.5px 2.5px 0 color-mix(in srgb,var(--sc) 22%,transparent)}
+.rcp-si{width:38px;height:38px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;color:#fff;background:var(--sc);flex-shrink:0}
+.rcp-si svg{width:19px;height:19px}
+.rcp-st{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.rcp-st b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcp-st i{font-style:normal;font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcp-sb{display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 12px;border:0;border-radius:9px;font:inherit;font-size:12px;font-weight:800;line-height:1;white-space:nowrap;text-decoration:none;cursor:pointer;flex-shrink:0;color:var(--sci);background:var(--card);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--sc) 50%,transparent)}
+.rcp-sb svg{width:11px;height:11px}
+.rcp-bars{display:flex;gap:4px;margin-top:9px;padding:0 2px}
+.rcp-bar{position:relative;flex:1;height:3px;border:0;padding:0;border-radius:2px;background:var(--line);overflow:hidden;cursor:pointer}
+.rcp-bar.done{background:color-mix(in srgb,var(--ac) 45%,var(--line))}
+.rcp-fill{position:absolute;inset:0;border-radius:2px;background:var(--ac);transform-origin:left}
+[dir="rtl"] .rcp-fill{transform-origin:right}
+.rcp-acts{display:flex;gap:8px;margin-top:14px}
+.rcp-acts .nb{gap:6px}
 `;
 
+/* "Which tier?" as a compare grid: the three tiers side by side as columns,
+   one row per thing that changes, so a row is read across and the answer is
+   one glance. Rows are fixed heights shared by the label column and every
+   tier column, which keeps them level without subgrid. Logical properties:
+   this sheet does not go through the RTL build plugin. */
 const TX_CSS = `
-.tx{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:8px}
+.tx{color:var(--ink)}
 .tx *{box-sizing:border-box}
-.tx-lead{font-size:11.5px;line-height:1.45;color:var(--mut);padding:0 1px 9px;margin:0}
-.tx-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-items:stretch}
-/* One tier per row under 560px. Three columns there forced the one-word
-   values and the legend under them, so you read a column, went to the legend
-   to learn that "None" meant refill, and came back. */
-@media (max-width:559px){.tx-cols{grid-template-columns:1fr;gap:7px}}
-.tx-col{--bt:#fff;border:1px solid var(--line);border-radius:10px;background:var(--card);display:flex;flex-direction:column;min-width:0;overflow:hidden;padding:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer;transition:transform .13s ease,box-shadow .15s ease}
-.tx-col:hover{transform:translateY(-1px)}
-.tx-col.is-rec{border-color:var(--cln);box-shadow:0 0 0 1px var(--cln)}
-.tx-col.is-sel{border-color:var(--c);box-shadow:0 0 0 2px var(--c)}
-.tx-col.is-off{opacity:.45;cursor:default}.tx-col.is-off:hover{transform:none}
-.tx-id{padding:8px 6px;background:var(--cbg);border-bottom:1px solid var(--cln);text-align:center}
-.tx-hd{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0}
-.tx-chip{width:19px;height:19px;border-radius:6px;background:var(--card);border:1px solid var(--cln);color:var(--c);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
-.tx-chip svg{width:10.5px;height:10.5px}
-.tx-col.is-sel .tx-chip{background:var(--c);border-color:var(--c);color:#fff}
-.tx-hd b{font-size:12.5px;font-weight:700;color:var(--c);line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tx-cap{height:17px;display:flex;align-items:center;justify-content:center;margin-top:5px;min-width:0}
-.tx-capt{font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mut);white-space:nowrap;text-align:center}
-.tx-pill{font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#fff;background:var(--c);border-radius:999px;padding:2px 7px;line-height:1.25;white-space:nowrap}
-/* The three facts as one wrapped line rather than a stacked row each — the
-   phone version of this dialog was tall enough to need real scrolling for
-   what is meant to be a quick reference. Nothing is cut: same three phrases,
-   just no longer paying for a border and a full row height each. The pill
-   already says what the dropped "who it's for" sentence used to restate. */
-.tx-facts{display:flex;flex-wrap:wrap;align-items:center;gap:5px 11px;padding:9px 8px 10px;margin-top:auto;border-top:1px solid var(--rail)}
-.tx-fact{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap}
-.tx-fact svg{width:12px;height:12px;color:var(--mut);flex-shrink:0}
-.tx-legend{display:flex;gap:14px;flex-wrap:wrap;padding:9px 1px 0;font-size:10.5px;color:var(--mut);margin:0}
-.tx-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid var(--rail);font-size:11.5px;color:var(--mut)}
-.tx-close{height:30px;display:inline-flex;align-items:center;padding:0 13px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 12px inherit;cursor:pointer}
-.tx-legend span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
-.tx-legend svg{width:12px;height:12px}
-.tx.wide{padding:12px}
-.tx.wide .tx-lead{font-size:12.5px;padding-bottom:11px}
-.tx.wide .tx-cols{gap:9px}
-.tx.wide .tx-id{padding:10px}
-.tx.wide .tx-hd b{font-size:13.5px}
-.tx.wide .tx-cap{height:19px;margin-top:6px}
-.tx.wide .tx-capt,.tx.wide .tx-pill{font-size:9.5px}
-.tx.wide .tx-facts{font-size:11.5px;padding:10px 11px 11px}
-.tx.wide .tx-fact{font-size:11.5px}
-@media (prefers-reduced-motion:reduce){.tx-col{transition:none}.tx-col:hover{transform:none}}
+.tx-lead,.tx-foot{display:flex;align-items:flex-start;gap:8px;margin:0;font-size:12.5px;line-height:1.45;color:var(--mut)}
+.tx-foot{margin-top:12px;font-size:11.5px}
+.tx-lead svg,.tx-foot svg{color:var(--t-accent-ink);margin-top:1px;flex-shrink:0}
+.tx-grid{display:grid;grid-template-columns:62px repeat(3,minmax(0,1fr));column-gap:5px;margin-top:21px}
+.tx-lbls,.tx-col{display:flex;flex-direction:column}
+.tx-col{position:relative;padding:0;border:1.5px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font:inherit;text-align:center;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.tx-col:hover{border-color:color-mix(in srgb,var(--c) 50%,var(--line))}
+.tx-col.is-rec{border-color:color-mix(in srgb,var(--c) 55%,transparent);background:color-mix(in srgb,var(--c) 5%,var(--card))}
+.tx-col.is-sel{border-color:var(--c);box-shadow:2.5px 2.5px 0 color-mix(in srgb,var(--c) 34%,transparent)}
+.tx-col.is-off{opacity:.45;cursor:default}
+.tx-col.is-off:hover{border-color:var(--line)}
+.tx-cell{display:flex;align-items:center;justify-content:center;min-width:0;padding:0 3px;border-top:1px solid var(--line);overflow:hidden}
+.tx-lbls .tx-cell{justify-content:flex-start;padding:0;font-size:10.5px;font-weight:650;line-height:1.2;color:var(--mut)}
+.tx-cell.r-hd{height:80px;flex-direction:column;gap:3px;border-top:0}
+.tx.sale .tx-cell.r-hd{height:94px}
+.r-pip{height:36px}.r-val{height:38px}.r-best{height:52px}.r-go{height:50px;padding:0 6px}
+.tx-name{display:inline-flex;align-items:center;gap:4px;max-width:100%;font-size:12px;font-weight:750;color:var(--c);white-space:nowrap}
+.tx-was{font-size:10px;line-height:1;color:var(--mut);text-decoration:line-through}
+.tx-price{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:12.5px;font-weight:600;white-space:nowrap}
+.tx.sale .tx-price{color:var(--sale)}
+.tx-per{font-size:9.5px;color:var(--mut)}
+.tx-na{font-size:10.5px;font-weight:600;line-height:1.2;color:var(--mut)}
+.tx-pips{gap:3px}
+.tx-pips i{width:9px;height:9px;border-radius:3px;background:var(--line)}
+.tx-pips i.on{background:var(--c);box-shadow:1px 1px 0 color-mix(in srgb,var(--c) 35%,transparent)}
+.tx-val{font-size:11.5px;font-weight:650;line-height:1.2}
+.tx-val.none{font-weight:550;color:var(--mut)}
+.tx-go span{display:inline-flex;align-items:center;justify-content:center;width:100%;height:30px;border-radius:9px;font-size:11.5px;font-weight:750;color:var(--c);background:color-mix(in srgb,var(--c) 10%,var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 35%,transparent)}
+.tx-col.is-rec .tx-go span,.tx-col.is-sel .tx-go span{color:var(--on-c);background:var(--c);box-shadow:none}
+.tx-tab{position:absolute;top:-9px;left:50%;transform:translateX(-50%);z-index:1;padding:3px 6px;border-radius:6px;font-size:8px;font-weight:800;font-style:normal;line-height:1;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;color:var(--c);background:var(--card);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent),1.5px 1.5px 0 color-mix(in srgb,var(--c) 30%,transparent)}
+@media (min-width:560px){.tx-grid{grid-template-columns:96px repeat(3,minmax(0,1fr));column-gap:8px}.tx-name{font-size:13.5px}.tx-price{font-size:14px}.tx-val{font-size:12.5px}.r-best{height:44px}}
+@media (prefers-reduced-motion:reduce){.tx-col{transition:none}}
 `;
 
-function TierExplainer({ dark, t, selTier, tiers = [], onPick, onClose }) {
+function TierExplainer({ dark, t, selTier, tiers = [], promoOff = 0, onPick }) {
   const tr = useT();
-  // No width watching here any more: the dialog is one width, and the phone is
-  // stacked by the media query on .tx-cols. The values are always the full
-  // sentences, so the legend that explained one-word values is gone with them.
+  const money = useMoney();
   const vars = {
-    "--card": "var(--t-card-bg)", "--soft": dark ? "#120c1e" : "#faf9f7",
-    "--ink": t.text, "--mut": t.textMuted, "--line": t.cardBorder,
-    "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
+    "--card": "var(--t-card-bg)", "--ink": t.text, "--mut": t.textMuted, "--line": t.cardBorder,
+    "--sale": dark ? "#34d399" : "#047857",
+    // Text on a filled tier colour: white on the deep light-mode inks, the
+    // card colour on the pale dark-mode ones, which white cannot read on.
+    "--on-c": dark ? "#160f22" : "#fff",
   };
+  const ROWS = [["r-pip", tr("Profiles")], ["r-val", tr("Refill")], ["r-val", tr("When busy")], ["r-best", tr("Best for")]];
   return (
-    <section className="tx wide" style={vars} onClick={e => e.stopPropagation()}>
+    <section className={`tx${promoOff > 0 ? " sale" : ""}`} style={vars} onClick={e => e.stopPropagation()}>
       <style>{TX_CSS}</style>
-      <p className="tx-lead">{tr("All three start about as fast. What changes is how well the numbers hold, whether we replace drops, and who goes first when we are busy.")}</p>
-      <div className="tx-cols">
+      <p className="tx-lead"><OffsetIcon name="bolt" size={14} /><span>{tr("All three start about as fast. Higher tiers hold their numbers better and get looked after first.")}</span></p>
+      <div className="tx-grid">
+        <div className="tx-lbls" aria-hidden="true">
+          <span className="tx-cell r-hd" />
+          {ROWS.map(([h, label]) => <span key={label} className={`tx-cell ${h}`}>{label}</span>)}
+          <span className="tx-cell r-go" />
+        </div>
         {TX_TIERS.map(d => {
           const tier = tiers.find(x => x.tier === d.key);
           const sel = selTier?.tier === d.key;
-          const c = dark ? { c: d.c.dark, bg: d.c.bgD, ln: d.c.lnD } : { c: d.c.light, bg: d.c.bg, ln: d.c.ln };
-          const vals = d.long;
+          const shown = tier ? money(promoOff > 0 ? Math.round(tier.price * (1 - promoOff)) : tier.price) : null;
           return (
-            <button key={d.key} type="button" onClick={e => { e.stopPropagation(); if (tier && onPick) onPick(tier, e); }} aria-pressed={sel} aria-disabled={!tier}
+            <button key={d.key} type="button" onClick={e => { e.stopPropagation(); if (tier && onPick) onPick(tier, e); }}
+              aria-pressed={sel} aria-disabled={!tier} aria-label={tier ? `${tr("Pick")} ${d.key}` : `${d.key}: ${tr("Not offered")}`}
               className={`tx-col${d.rec ? " is-rec" : ""}${sel ? " is-sel" : ""}${tier ? "" : " is-off"}`}
-              style={{ "--c": c.c, "--cbg": c.bg, "--cln": c.ln }} title={tier ? `Pick ${d.key}` : `${d.key} is not offered for this service`}>
-              <div className="tx-id">
-                <div className="tx-hd"><span className="tx-chip">{TS[d.key].label}</span><b>{d.key}</b></div>
-                <div className="tx-cap">{d.rec ? <span className="tx-pill">{d.cap}</span> : <span className="tx-capt">{d.cap}</span>}</div>
-              </div>
-              <div className="tx-facts">
-                {["people", "refill", "queue"].map((ic, i) => <span className="tx-fact" key={ic}>{TX_ICON[ic]}{vals[i]}</span>)}
-              </div>
+              style={{ "--c": dark ? d.c.dark : d.c.light }}>
+              {d.rec && <em className="tx-tab">{tr("Most pick")}</em>}
+              <span className="tx-cell r-hd">
+                <span className="tx-name"><OffsetIcon name={d.icon} size={13} />{d.key}</span>
+                {tier && promoOff > 0 && <span className="tx-was m">{money(tier.price)}</span>}
+                {tier ? <span className="tx-price m">{shown}</span> : <span className="tx-na">{tr("Not offered")}</span>}
+                {tier && <span className="tx-per">{tier.per === "order" ? tr("per order") : tr("per 1K")}</span>}
+              </span>
+              <span className="tx-cell r-pip tx-pips" aria-hidden="true">{[1, 2, 3].map(i => <i key={i} className={i <= d.pips ? "on" : ""} />)}</span>
+              <span className={`tx-cell r-val tx-val${d.key === "Budget" ? " none" : ""}`}>{tr(d.refill)}</span>
+              <span className="tx-cell r-val tx-val">{tr(d.queue)}</span>
+              <span className="tx-cell r-best tx-val">{tr(d.bestFor)}</span>
+              <span className="tx-cell r-go tx-go">{tier && <span>{tr("Pick")}</span>}</span>
             </button>
           );
         })}
       </div>
-      {/* The instruction that left the lead, and a close of its own — it was
-          dismissed by the same button that opened it, three rows up. */}
-      <div className="tx-foot">
-        <span>{tr("Tap one to pick it")}</span>
-        {onClose && <button type="button" className="tx-close" onClick={e => { e.stopPropagation(); onClose(); }}>{tr("Close")}</button>}
-      </div>
+      <p className="tx-foot"><OffsetIcon name="refresh" size={14} /><span>{tr("Refill means that if the count drops, we top it back up for free.")}</span></p>
     </section>
   );
 }
@@ -501,20 +589,42 @@ const TYPE_KEY = {
 };
 const glyphKey = (type) => TYPE_KEY[type] || TYPE_KEY[String(type || "").toLowerCase()] || "followers";
 
+// The audience chip on a service row: a drawn flag and the word in an ink tab,
+// the same tab the tier well and the sidebar badges print.
+const AUDIENCE = {
+  ng: { label: msg("Nigerian"), c: ["#16a34a", "#4ade80"] },
+  us: { label: msg("American"), c: ["#dc2626", "#f87171"] },
+  pk: { label: msg("Package"), c: ["#1d4ed8", "#60a5fa"] },
+};
+function AudienceChip({ kind, dark }) {
+  const tr = useT();
+  const a = AUDIENCE[kind];
+  const c = dark ? a.c[1] : a.c[0];
+  return (
+    <span className="inline-flex items-center gap-[5px] rounded-md text-[10px] font-bold tracking-[.3px] leading-[1.3] whitespace-nowrap"
+      style={{ paddingBlock: 2, paddingInline: AUDIENCE_FLAG[kind] ? "3px 7px" : "7px", color: c, background: `color-mix(in srgb, ${c} 8%, var(--t-card-bg))`, boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${c} 35%, transparent), 1.5px 1.5px 0 color-mix(in srgb, ${c} 25%, transparent)` }}>
+      {AUDIENCE_FLAG[kind] && <span className="inline-flex rounded-[2px] overflow-hidden" style={{ boxShadow: "0 0 0 .5px rgba(0,0,0,.18)" }}>{AUDIENCE_FLAG[kind]}</span>}
+      {tr(a.label)}
+    </span>
+  );
+}
+
 function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t, orderMode, activePromotion, waNumber, userEmail, first, cartCounts }) {
   const tr = useT();
   const money = useMoney();
   const isSel = selSvc?.id === svc.id;
   const [explOpen, setExplOpen] = useState(false);
+  // Touch screens only (.tw-which): a pointer gets each tier's perks by hovering
+  // it, but a tap opens the order form, so a phone has no other way to compare.
   // A plain text link riding the tier rule rather than a bordered button —
   // it sits on a hairline now, not on its own row, so it reads as part of
   // the label rather than a third button competing with the tier grid.
   const whichTierBtn = (
     <button onClick={e => { e.stopPropagation(); setExplOpen(!explOpen); }} aria-expanded={explOpen}
       aria-label={tr("What do the tiers mean?")}
-      className="shrink-0 inline-flex items-center gap-1 border-0 bg-transparent cursor-pointer font-[inherit] text-[10.5px] font-bold p-0"
+      className="tw-which shrink-0 items-center gap-1 border-0 bg-transparent cursor-pointer font-[inherit] text-[10.5px] font-bold p-0"
       style={{ color: isSel ? t.accent : t.accentInk }}>
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <OffsetIcon name="info" size={10} />
       {explOpen ? tr("Close") : tr("Which tier?")}
     </button>
   );
@@ -524,65 +634,50 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
   const cardRef = useRef(null);
   useEffect(() => { if (!isSel) setExplOpen(false); }, [isSel]);
   const lowestPrice = Math.min(...svc.tiers.map(ti => ti.price));
-  // Set per group in Menu Builder. Carried on the tiers because that is where
-  // the group's tags already arrive.
-  const isOptionPicker = !!svc.tiers[0]?.tags?.includes("options");
-  const activeTier = isSel && selTier ? selTier : null;
-  const accent = svc.isPackage ? { light: "#1d4ed8", dark: "#60a5fa", bgL: "#eff6ff", bgD: "rgba(59,130,246,.12)", selBgL: "#dbeafe", selBgD: "#111d3a", shadow: "59,130,246" } : svc.ng ? { light: "#16a34a", dark: "#4ade80", bgL: "#e8f5ee", bgD: "rgba(30,80,60,.24)", selBgL: "#d0f0db", selBgD: "#122a1c", shadow: "22,163,74" } : svc.us ? { light: "#dc2626", dark: "#f87171", bgL: "#fdeeee", bgD: "rgba(80,30,32,.24)", selBgL: "#fadada", selBgD: "#2a1216", shadow: "220,38,38" } : null;
-  // The one colour this card speaks in: its audience where it has one, the
-  // accent where it does not. Both the glyph square and the name read from it.
-  const ink = accent ? (dark ? accent.dark : accent.light) : (isSel ? t.accent : t.accentInk);
+  // Who the service reaches, said once by a chip after the name. It used to be
+  // said three times — the flag in the name, the whole row washed green, red or
+  // blue, and a bar down its edge — and the red US rows read as errors.
+  const isNg = svc.ng || svc.name.includes("🇳🇬");
+  const isUs = !isNg && (svc.us || svc.name.includes("🇺🇸"));
+  const aud = svc.isPackage ? "pk" : isNg ? "ng" : isUs ? "us" : null;
+  const name = svc.name.replace(/\s*(🇳🇬|🇺🇸)\s*/gu, " ").trim();
   const handlePickTier = (tier, e) => { setExplOpen(false); onPickTier(tier, e); };
-  const s = activeTier ? TS[activeTier.tier] : null;
   return (
-    <div ref={cardRef} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => onPickService(svc)} className={`no-svc-card py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 cursor-pointer transition-colors duration-150 ease-in-out${isSel ? " relative z-[1]" : ""}`} style={{ borderStyle: "solid", borderColor: isSel ? (accent ? (dark ? accent.dark : accent.light) : t.accent) : t.cardBorder, borderWidth: isSel ? 1.5 : (first ? 0 : "1px 0 0 0"), ...(isSel ? { margin: "6px 8px", borderRadius: 14, boxShadow: `0 6px 20px ${accent ? `rgba(${accent.shadow},.16)` : "rgba(196,125,142,.16)"}` } : {}), ...(!isSel && accent ? { boxShadow: `inset 3px 0 0 ${dark ? accent.dark : accent.light}` } : {}), background: isSel ? (accent ? (dark ? accent.selBgD : accent.selBgL) : (dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)")) : accent ? (dark ? accent.bgD : accent.bgL) : "transparent", opacity: selSvc && !isSel ? (dark ? .45 : .6) : 1 }}>
-      <div className="flex items-center justify-between gap-2.5 md:gap-3">
-        {/* The type, as one glyph, in whatever colour the card already carries —
-            Nigerian green, US red, package blue, or the accent. It is the same
-            tinted-square device the platform tiles use, so the two rows of the
-            page read as one family.
-
-            Mixed from the ink rather than reusing the card's own tint: a
-            Nigerian card is already that exact green, so a square tinted the
-            same way was invisible on three rows in five. This lands deeper than
-            whatever it sits on, selected or not. */}
-        <ServiceGlyph type={glyphKey(svc.type)} tone={ink} dark={dark} size={36} radius={11} />
+    <div ref={cardRef} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => onPickService(svc)} className={`no-svc-card py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 cursor-pointer transition-colors duration-150 ease-in-out${isSel ? " relative z-[1]" : " idle"}`} style={{ borderStyle: "solid", borderColor: isSel ? t.accent : t.cardBorder, borderWidth: isSel ? 1.5 : (first ? 0 : "1px 0 0 0"), ...(isSel ? { margin: "6px 8px", borderRadius: 14, boxShadow: "0 6px 20px rgba(196,125,142,.16)", background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.07)" } : {}), opacity: selSvc && !isSel ? (dark ? .45 : .6) : 1 }}>
+      <div className="flex items-center justify-between gap-2.5 md:gap-3.5">
+        {/* The type, as one glyph on a printed tile — the same block the
+            sidebars and the tour print — in the accent on every row, so the
+            column of tiles reads as one family and the chip does the telling. */}
+        <ServiceGlyph type={glyphKey(svc.type)} tone={t.accentInk} dark={dark} size={38} radius={11} print />
         <div className="flex-1 min-w-0">
-          <div className="text-sm md:text-[15px] desktop:text-base font-semibold mb-1" style={{ color: accent ? (dark ? accent.dark : accent.light) : (isSel ? t.accent : t.text) }}>{svc.name}</div>
-          {svc.description && <div className="text-[11px] mb-1.5 leading-snug" style={{ color: t.textMuted }}>{svc.description}</div>}
+          {/* On a phone the chip takes its own line under the name, so a long
+              name never decides where it lands; wider, it rides beside it. */}
+          <div className="flex max-md:flex-col max-md:items-start md:items-center md:flex-wrap gap-x-2 gap-y-1 text-sm md:text-[15px] desktop:text-base font-semibold mb-1" style={{ color: isSel ? t.accent : t.text }}>
+            {name}
+            {aud && <AudienceChip kind={aud} dark={dark} />}
+          </div>
+          {svc.description && <div className="text-[11.5px] mb-1 leading-snug" style={{ color: t.textMuted }}>{svc.description}</div>}
         </div>
         {!isSel && (
-          <div className="text-right shrink-0">
-            <div className="text-[11px] desktop:text-[11px] mb-0.5" style={{ color: t.textMuted }}>from</div>
-            {activePromotion?.active && <div className="m text-[11px] font-normal line-through" style={{ color: t.textMuted, fontFamily: "'JetBrains Mono', monospace" }}>{money(lowestPrice)}</div>}
-            <div className="m text-[15px] md:text-base desktop:text-lg font-bold" style={{ color: "var(--t-accent-ink)", fontFamily: "'JetBrains Mono', monospace" }}>{money(lowestPrice * (1 - (activePromotion?.active ? activePromotion.discountPercent / 100 : 0)))}</div>
+          <div className="text-right shrink-0 flex flex-col items-end">
+            <div className="text-[11px] mb-0.5" style={{ color: t.textMuted }}>{tr("from")}</div>
+            {activePromotion?.active && <div className="m text-[11px] font-normal line-through" style={{ color: t.textMuted }}>{money(lowestPrice)}</div>}
+            <div className="m text-[15px] md:text-base desktop:text-[17px] font-bold" style={{ color: "var(--t-accent-ink)" }}>{money(lowestPrice * (1 - (activePromotion?.active ? activePromotion.discountPercent / 100 : 0)))}</div>
+            <div className="text-[10.5px] mt-px" style={{ color: t.textMuted }}>{svc.isPackage ? tr("per order") : tr("per 1K")}</div>
           </div>
         )}
+        {/* Says the row opens. A phone row is short on width and a tap is the
+            only thing to do with it, so the chevron is a pointer's cue only. */}
+        {!isSel && <svg className="max-md:hidden shrink-0 opacity-70" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>}
       </div>
       {isSel && <TierChips svc={svc} selTier={selTier} selSvc={selSvc} onPickTier={handlePickTier} dark={dark} t={t} activePromotion={activePromotion} orderMode={orderMode} cartCounts={cartCounts} whichTier={whichTierBtn} />}
       {isSel && (
         <>
-          {/* Only once a tier is chosen, and only to carry its refill promise.
-              It used to render empty but for a "Pick a tier to continue" line,
-              which said what three tappable tiers already said. A rule full
-              width of the card — not just the content column — marks it as a
-              new block rather than a continuation of the tier grid above it. */}
-          {/* The refill line states the Budget/Standard/Premium assurance. An
-              option is not a point on that ladder, so it says nothing here. */}
-          {activeTier && !isOptionPicker && (
-            <div className="mt-3 pt-3 -mx-3.5 px-3.5 md:-mx-4 md:px-4 desktop:-mx-5 desktop:px-5 flex items-center gap-2.5 border-t border-solid" style={{ borderColor: t.cardBorder }}>
-              <span className="w-[22px] h-[22px] rounded-[7px] flex items-center justify-center shrink-0" style={{ background: s ? (dark ? s.bgD : s.bg) : "transparent", border: `1px solid ${s ? (dark ? s.borderD : s.border) : t.cardBorder}`, color: s ? (dark ? s.textD : s.text) : t.textMuted }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-              </span>
-              <div className="flex-1 text-[11px]" style={{ color: dark ? "#8a8580" : "#757170" }}>
-                <strong style={{ color: dark ? "#c9c5c0" : "#4a4744" }}>{tr(refillLabel(activeTier.tier))}</strong>
-              </div>
-            </div>
-          )}
-          {/* "Which tier?" moved onto the tier label's own rule above, so this
-              is just the concierge offer now — the fallback for the card as a
-              whole, which is why it comes last rather than paired with a
-              tier-specific question. Same full-bleed rule as the refill line. */}
+          {/* The refill line that followed a pick is gone: every segment of the
+              well prints its own promise now, so the line only repeated it.
+              "Which tier?" rides the tier label's rule above, so this is just
+              the concierge offer — the fallback for the card as a whole, which
+              is why it comes last. A full-bleed rule marks it as its own block. */}
           <div className="mt-3 pt-3 -mx-3.5 px-3.5 md:-mx-4 md:px-4 desktop:-mx-5 desktop:px-5 border-t border-solid" style={{ borderColor: t.cardBorder }}>
             <OrderForMeCard waNumber={waNumber} context={svc.name} email={userEmail} />
           </div>
@@ -595,11 +690,11 @@ function ServiceCard({ svc, selSvc, selTier, onPickService, onPickTier, dark, t,
             dark={dark}
             maxWidth={640}
             title={tr("Which tier?")}
-            icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>}
+            subtitle={name}
+            icon={<OffsetIcon name="info" size={16} />}
           >
-            {/* The dialog is 640 wide whatever the card was, so the columns
-                get the full sentences; the phone still stacks them below 560. */}
             <TierExplainer dark={dark} t={t} selTier={selTier} tiers={svc.tiers}
+              promoOff={activePromotion?.active ? activePromotion.discountPercent / 100 : 0}
               onPick={(tier, e) => { handlePickTier(tier, e); setExplOpen(false); }} />
           </Modal>
         </>
@@ -710,7 +805,7 @@ function saveCart(rows) {
 /* ═══ ORDER FORM                          ═══ */
 /* ═══════════════════════════════════════════ */
 export function OrderForm(props) {
-  return <ExtractedOrderForm {...props} tierStyles={TS} />;
+  return <ExtractedOrderForm {...props} tierStyles={TS} glyph={props.selSvc ? glyphKey(props.selSvc.type) : null} unit={unitOf(props.selSvc?.name)} />;
 }
 
 /* ═══════════════════════════════════════════ */
@@ -782,11 +877,9 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
   const [orderSuccess, setOrderSuccess] = useState(null);
   const [redeemPoints, setRedeemPoints] = useState(false);
   const [trafficConfig, setTrafficConfig] = useState(null);
-  const successTierClr = orderSuccess ? (tierClr[orderSuccess.tier] || tierClr.Budget) : null;
-  const successPlatformIcon = orderSuccess ? PLATFORMS.find(p => p.id === platform || p.label.toLowerCase().includes((orderSuccess.platform || "").toLowerCase()))?.icon : null;
   const successChrome = dark
-    ? { card: "#10131f", hair: "#232a3d", text: "#eceef5", muted: "#8a90a5", money: "#4fd1a1", waTint: "#12261c", wa: "#1faa59", waHover: "#128c46" }
-    : { card: "#ffffff", hair: "#eee7de", text: "#2a2723", muted: "#98918a", money: "#0a7d54", waTint: "#eaf7ef", wa: "#1faa59", waHover: "#128c46" };
+    ? { card: "#160f22", hair: "rgba(255,255,255,.11)", text: "#f2efe9", muted: "#9a95a3", money: "#34d399", soft: "#1e1630", wait: "#fcd34d" }
+    : { card: "#ffffff", hair: "rgba(0,0,0,.09)", text: "#1c1b19", muted: "#757170", money: "#047857", soft: "#faf8f8", wait: "#b45309" };
 
   const waChannelUrl = socialLinks?.social_whatsapp_channel || 'https://whatsapp.com/channel/0029Vb8hC6rJ3jv7Ig2m3D3Q';
   const waSupportNumber = (socialLinks?.social_whatsapp_support || '2347071656156').replace(/\D/g, '');
@@ -939,7 +1032,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
           type: g.type?.toLowerCase() || "standard",
           ng: g.nigerian,
           us: g.name.includes('🇺🇸'),
-          description: g.description || (isReelViews ? 'For video/reel posts only — does not work on photo posts.' : null),
+          description: g.description || (isReelViews ? 'For reels and videos only. Does not work on photo posts.' : null),
           isPackage: pkg,
           tiers: g.tiers.map(tier => ({
             id: tier.id,
@@ -1448,31 +1541,68 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
         <MobileGuide dark={dark} t={t} />
       </div>
 
-      {menuLoading && (
-        <div className="p-0">
-          <div className="flex gap-0 mb-3.5 border-b border-solid" style={{ borderBottomColor: t.cardBorder }}>
-            {[72, 48, 88].map((w, i) => <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-[32px] rounded-md`} style={{ width: w }} />)}
+      {/* The skeleton draws the page it stands in for, in the same order and at
+          the same sizes: the two-list selector, the group tabs, the platform
+          tiles (58px, 54px on a phone with its "See all platforms" door), the
+          search box, then one card of service rows. It used to start at the
+          tabs, draw square tiles and float four loose bars, so the page jumped
+          when the real one arrived. */}
+      {menuLoading && (() => {
+        const sk = `skel-bone ${dark ? "skel-dark" : "skel-light"}`;
+        const tile = (h) => (
+          <div className="rounded-[11px] border border-solid flex flex-col items-start justify-center gap-[7px] pl-[11px] pr-[7px]" style={{ height: h, borderColor: t.cardBorder, background: dark ? "#171126" : "#fffdfb" }}>
+            <div className={`${sk} w-5 h-5 rounded-md`} />
+            <div className={`${sk} h-2 rounded w-[70%]`} />
           </div>
-          <div className="hidden desktop:grid desktop:grid-cols-10 desktop:gap-1.5 desktop:mb-4">
-            {Array.from({ length: 10 }, (_, i) => (
-              <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} aspect-square rounded-[14px]`} />
-            ))}
-          </div>
-          <div className="hidden max-desktop:grid grid-cols-5 gap-1.5 mb-3.5">
-            {Array.from({ length: 5 }, (_, i) => (
-              <div key={i} className={`skel-bone ${dark ? "skel-dark" : "skel-light"} aspect-square rounded-[12px]`} />
-            ))}
-          </div>
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="py-3.5 px-4 rounded-xl mb-2 border border-solid" style={{ borderColor: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.1)", background: dark ? "rgba(255,255,255,.07)" : "rgba(255,255,255,.6)" }}>
-              <div className="flex justify-between items-center">
-                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-4 rounded`} style={{ width: `${45 + i * 8}%` }} />
-                <div className={`skel-bone ${dark ? "skel-dark" : "skel-light"} h-5 w-[70px] rounded`} />
-              </div>
+        );
+        const socialCount = PLATFORM_GROUPS[0]?.platforms.length || 10;
+        return (
+          <div aria-hidden="true">
+            <div className="grid grid-cols-2 gap-1 p-1 mb-3.5 rounded-[13px] border border-solid" style={{ background: dark ? "rgba(0,0,0,.30)" : "rgba(88,52,62,.05)", borderColor: dark ? "rgba(255,255,255,.05)" : t.cardBorder }}>
+              {[0, 1].map(i => (
+                <div key={i} className="flex items-center gap-2 md:gap-3 py-2 px-2 md:py-2.5 md:px-3 rounded-[10px] md:rounded-[11px]" style={{ background: i === 0 ? (dark ? "#241c38" : "#fffdfb") : "transparent" }}>
+                  <div className={`${sk} shrink-0 w-[28px] h-[28px] md:w-[34px] md:h-[34px] rounded-[8px] md:rounded-[10px]`} />
+                  <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                    <div className={`${sk} h-3 rounded`} style={{ width: i ? "58%" : "70%" }} />
+                    <div className={`${sk} hidden md:block h-2 rounded w-[85%]`} />
+                  </div>
+                  <div className={`${sk} shrink-0 h-[18px] w-[30px] rounded-full`} />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+            <div className="flex gap-0.5 mb-3 border-b border-solid" style={{ borderBottomColor: t.cardBorder }}>
+              {[48, 44, 96].map((w, i) => <div key={i} className="py-[9px] px-3"><div className={`${sk} h-3.5 rounded`} style={{ width: w }} /></div>)}
+            </div>
+            <div className="hidden desktop:grid desktop:grid-cols-10 desktop:gap-2 desktop:mb-4">
+              {Array.from({ length: socialCount }, (_, i) => <div key={i}>{tile(58)}</div>)}
+            </div>
+            <div className="hidden max-desktop:block mb-3.5">
+              <div className="grid grid-cols-5 gap-1.5 mb-2">
+                {Array.from({ length: 5 }, (_, i) => <div key={i}>{tile(54)}</div>)}
+              </div>
+              <div className={`${sk} h-[38px] rounded-[11px] mb-2`} />
+            </div>
+            <div className="mb-3.5 rounded-[10px] border border-solid flex items-center py-[9px] px-3 desktop:py-2.5 desktop:px-3.5" style={{ borderColor: t.cardBorder, background: t.cardBg }}>
+              <div className={`${sk} h-3.5 rounded w-[46%]`} />
+            </div>
+            <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+              {[64, 48, 72, 56, 44].map((w, i) => (
+                <div key={i} className="py-3 px-3.5 md:py-3.5 md:px-4 desktop:py-4 desktop:px-5 flex items-center gap-2.5 md:gap-3" style={{ borderTop: i ? `1px solid ${t.cardBorder}` : "none" }}>
+                  <div className={`${sk} shrink-0 w-9 h-9 rounded-[11px]`} />
+                  <div className="flex-1 min-w-0 flex flex-col gap-2">
+                    <div className={`${sk} h-4 rounded`} style={{ width: `${w}%` }} />
+                    <div className={`${sk} h-2.5 rounded w-[78%]`} />
+                  </div>
+                  <div className="shrink-0 flex flex-col items-end gap-1.5">
+                    <div className={`${sk} h-2 w-6 rounded`} />
+                    <div className={`${sk} h-[18px] w-[64px] rounded`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
       {menuError && <div className="p-10 text-center" style={{ color: dark ? "#fca5a5" : "#dc2626" }}>{menuError}</div>}
 
       {!menuLoading && !menuError && <>
@@ -1510,10 +1640,10 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
           {[
             { key: "nitro", n: platformCounts[platform] || 0, label: msg("Nitro picks"), sub: msg("Tested every week. Refill-backed."),
               ink: t.accentInk, edge: t.accent, tintBg: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.09)", glow: "196,125,142",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg> },
+              icon: <OffsetIcon name="shieldCheck" size={16} /> },
             { key: "full", n: fullCount, label: msg("Full list"), sub: msg("The rest of our catalogue."), isNew: !fullListSeen,
               ink: dark ? "#7aa2f7" : "#1d5fa5", edge: dark ? "#7aa2f7" : "#1d5fa5", tintBg: dark ? "rgba(122,162,247,.16)" : "#eaf1fa", glow: dark ? "122,162,247" : "29,95,165",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> },
+              icon: <OffsetIcon name="list" size={16} /> },
           ].map(v => {
             const on = view === v.key;
             return (
@@ -1618,7 +1748,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
       {/* ═══ SEARCH ═══ */}
       <div className="relative mb-3.5">
         <input aria-label={tr("Search services")} placeholder={view === "full" ? `Search ${activePlat?.label || ""} services, or type an ID` : `Search ${activePlat?.label || ""} services...`} value={search} onChange={e => setSearch(e.target.value)} className="w-full py-[9px] px-3 pr-8 desktop:py-2.5 desktop:px-3.5 rounded-[10px] border border-solid text-[13px] desktop:text-sm font-[inherit] outline-none box-border focus:ring-2 focus:ring-[#c47d8e]/20 transition-[border-color,box-shadow] duration-200" style={{ borderColor: t.cardBorder, background: dark ? "rgba(255,255,255,.05)" : "#fff", color: t.text }} />
-        {search && <button aria-label={tr("Clear search")} onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+        {search && <button aria-label={tr("Clear search")} onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><OffsetIcon name="close" size={12} /></button>}
       </div>
 
       {/* ═══ SERVICE CARDS ═══ */}
@@ -1664,70 +1794,79 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
         <div className="no-modal-overlay flex fixed inset-0 z-[200] items-end justify-center desktop:items-center desktop:p-6 backdrop-blur-[4px] animate-[modalFadeIn_.2s_ease]" onClick={() => { setOrderModal(false); setOrderSuccess(null); setRedeemPoints(false); }} onKeyDown={e=>{if(e.key==='Escape'){setOrderModal(false);setOrderSuccess(null);setRedeemPoints(false);}if((e.metaKey||e.ctrlKey)&&e.key==='Enter'&&!orderSuccess&&!orderLoading){submitOrder()}}} style={{ background: "rgba(0,0,0,.45)" }}>
           <div role="dialog" aria-modal="true" aria-label={tr("Order summary")} className={`w-full overflow-y-auto border border-solid max-h-[calc(100dvh-84px)] desktop:max-h-[90vh] animate-[modalBounceIn_.3s_cubic-bezier(.34,1.56,.64,1)_both] ${orderSuccess ? "rounded-t-[26px] desktop:rounded-[26px] desktop:max-w-[460px]" : "rounded-t-[22px] desktop:rounded-[22px] desktop:max-w-[440px]"}`} onClick={e => e.stopPropagation()} style={{ background: orderSuccess ? successChrome.card : (dark ? "#140d1e" : "#fff"), borderColor: orderSuccess ? "transparent" : (dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.14)"), boxShadow: orderSuccess ? "0 30px 80px rgba(20,10,14,.35)" : (dark ? "0 20px 60px rgba(0,0,0,.4)" : "0 20px 60px rgba(0,0,0,.1)") }}>
             {orderSuccess ? (
-              <div className="rcp" style={{ "--card": successChrome.card, "--ink": successChrome.text, "--mut": successChrome.muted, "--dim": dark ? "#5c6170" : "#a19b93", "--line": successChrome.hair, "--rail": dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)", "--soft": dark ? "#120c1e" : "#faf9f7", "--ac": t.accent, "--ok": successChrome.money }}>
+              <div className="rcp" style={{ "--card": successChrome.card, "--ink": successChrome.text, "--mut": successChrome.muted, "--line": successChrome.hair, "--soft": successChrome.soft, "--ac": t.accent, "--ok": successChrome.money, "--wait": successChrome.wait }}>
                 <style>{RCP_CSS}</style>
                 <div className="rcp-hd">
-                  <span className="rcp-ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+                  <span className={`rcp-ck${orderSuccess.queued ? " q" : ""}`}><OffsetIcon name={orderSuccess.queued ? "clockPlain" : "checkCircle"} /></span>
                   <div className="rcp-ht">
                     <b>{orderSuccess.queued ? tr("Order queued") : tr("Order placed")}</b>
-                    <button type="button" className="rcp-id m" onClick={() => { copyText(String(orderSuccess.id)); toast.success(tr("Order number copied")); }} aria-label={tr("Copy order number")}>
-                      {orderSuccess.id}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    </button>
+                    <small>{orderSuccess.queued ? tr("Starts when your active order completes") : `${tr("Delivery")}: ${formatDeliverySpeed(orderSuccess.speed)}`}</small>
+                  </div>
+                  <button type="button" className="rcp-id m" onClick={() => { copyText(String(orderSuccess.id)); toast.success(tr("Order number copied")); }} aria-label={tr("Copy order number")}>
+                    {orderSuccess.id}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  </button>
+                </div>
+                {/* What was ordered, in one box: the service, then the tier and its
+                    refill each on its own icon, then the link. Refill is said here
+                    and nowhere else on the card. */}
+                <div className="rcp-what">
+                  <ServiceGlyph type={glyphKey(selSvc?.type)} tone={t.accentInk} dark={dark} size={34} radius={10} print />
+                  <div className="rcp-wt">
+                    <b>{orderSuccess.service.replace(/\s*\((?:Budget|Standard|Premium)\)\s*$/i, '').replace(/\s*(🇳🇬|🇺🇸)\s*/gu, " ").trim()}</b>
+                    {orderSuccess.tier && TIER_ICON[orderSuccess.tier] && (
+                      <div className="rcp-meta">
+                        <span className="tn" style={{ "--tc": (() => { const c = TX_TIERS.find(d => d.key === orderSuccess.tier)?.c; return c ? (dark ? c.dark : c.light) : t.accent; })() }}><OffsetIcon name={TIER_ICON[orderSuccess.tier]} size={12} />{orderSuccess.tier}</span>
+                        <span><OffsetIcon name="refresh" size={12} />{tr(refillLabel(orderSuccess.tier))}</span>
+                      </div>
+                    )}
+                    {orderSuccess.link && <div className="rcp-lnk m"><OffsetIcon name="link" size={12} /><span>{String(orderSuccess.link).replace(/^https?:\/\/(www\.)?/, "")}</span></div>}
                   </div>
                 </div>
-                <div className="rcp-what">
-                  <span className="rcp-pi">{successPlatformIcon || <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/></svg>}</span>
-                  <span className="rcp-wn">
-                    <b>{orderSuccess.service.replace(/\s*\((?:Budget|Standard|Premium)\)\s*$/i, '')}</b>
-                    {successTierClr && orderSuccess.tier && <span className="rcp-tier" style={{ background: successTierClr.bg, color: successTierClr.text, borderColor: successTierClr.border || "transparent" }}>{orderSuccess.tier}</span>}
-                  </span>
+                <div className="rcp-facts" style={{ "--n": orderSuccess.balanceAfter != null ? 3 : 2 }}>
+                  <div className="rcp-f"><i><OffsetIcon name="users" size={12} />{tr("Quantity")}</i><b className="m">{(orderSuccess.quantity || 0).toLocaleString()}</b></div>
+                  <div className="rcp-f"><i><OffsetIcon name="receipt" size={12} />{tr("Charged")}</i><b className="m rcp-money">{money(orderSuccess.charge || 0)}</b>
+                    {orderSuccess.pointsRedeemed > 0 && <small>{money(orderSuccess.pointsRedeemed, { round: "down" })} {tr("in points applied")}</small>}
+                  </div>
+                  {orderSuccess.balanceAfter != null && <div className="rcp-f"><i><OffsetIcon name="wallet" size={12} />{tr("Balance after")}</i><b className="m">{money(orderSuccess.balanceAfter, { round: "down" })}</b></div>}
                 </div>
-                {orderSuccess.link && <div className="rcp-lnk">{String(orderSuccess.link).replace(/^https?:\/\/(www\.)?/, "")}</div>}
-                <div className="rcp-facts">
-                  <div className="rcp-f"><span>{tr("Quantity")}</span><b className="m">{(orderSuccess.quantity || 0).toLocaleString()}</b></div>
-                  <div className="rcp-f"><span>{tr("Charged")}</span><b className="m rcp-money">{money(orderSuccess.charge || 0)}</b></div>
-                  {orderSuccess.balanceAfter != null && <div className="rcp-f"><span>{tr("Balance after")}</span><b className="m">{money(orderSuccess.balanceAfter, { round: "down" })}</b></div>}
-                  <div className="rcp-f"><span>{tr("Delivery")}</span><b>{orderSuccess.queued ? tr("Starts when your active order completes") : formatDeliverySpeed(orderSuccess.speed)}</b></div>
-                  {orderSuccess.tier && <div className="rcp-f"><span>{tr("Refill")}</span><b className={orderSuccess.tier === "Budget" ? "rcp-mut" : ""}>{orderSuccess.tier === "Budget" ? tr("Not on Budget") : orderSuccess.tier === "Standard" ? tr("Free for 30 days") : tr("Free for life")}</b></div>}
-                  {orderSuccess.pointsRedeemed > 0 && <div className="rcp-f"><span>{tr("Points used")}</span><b className="m" style={{ color: dark ? "#fbbf24" : "#92400e" }}>{money(orderSuccess.pointsRedeemed, { round: "down" })}</b></div>}
-                </div>
-                {/* Promo carousel: one slide at a time, every slide the same height */}
                 {orderSuccess.discordSetup && (
-                  <a href={discordBotUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 mt-3 py-2.5 px-3 rounded-xl no-underline text-[12.5px] leading-[1.4]" style={{ background: dark ? "rgba(88,101,242,.14)" : "rgba(88,101,242,.08)", color: t.text }}>
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "#5865F2" }} />
+                  <a href={discordBotUrl} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 mt-2 py-2.5 px-3 rounded-xl no-underline text-[12px] leading-[1.4]" style={{ background: dark ? "rgba(88,101,242,.14)" : "rgba(88,101,242,.1)", color: t.text }}>
+                    <OffsetIcon name="alert" size={14} color="#5865F2" className="shrink-0 mt-px" />
                     <span><Emph weight={700}>{tr("*Bot not in the server yet?* Add it now, or this order is cancelled —")}</Emph> <span style={{ color: "#5865F2", fontWeight: 700 }}>{tr("open the bot link")}</span></span>
                   </a>
                 )}
+                {/* Promo carousel: one card at a time, every card the same height,
+                    a progress line per card that fills while it shows. */}
                 <div className="rcp-car" onMouseEnter={() => setPromoPaused(true)} onMouseLeave={() => setPromoPaused(false)}
                   onTouchStart={e => { promoTouchX.current = e.touches[0].clientX; setPromoPaused(true); }}
                   onTouchEnd={e => { const sx = promoTouchX.current; promoTouchX.current = null; setPromoPaused(false); if (sx != null) { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 36) setPromoSlide(p => (p + (dx < 0 ? 1 : PROMO_SLIDES.length - 1)) % PROMO_SLIDES.length); } }}>
                   {(() => {
                     const slides = {
-                      wa: { title: tr("Updates on WhatsApp"), sub: tr("Delivery news and deals, in one channel."), cta: tr("Follow"), c: "#25d366", grad: "linear-gradient(135deg,#2bc76a,#128c46)", href: waChannelUrl, icon: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg> },
-                      ig: { title: tr("We're on Instagram"), sub: tr("See what we post before you post it."), cta: tr("Follow"), c: "#e1306c", grad: "linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", href: `https://instagram.com/${igHandle}`, icon: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg> },
-                      tasks: { title: tr("Earn while it delivers"), sub: tr("Quick tasks, real promo credit."), cta: tr("See tasks"), c: "#2563eb", grad: "linear-gradient(135deg,#60a5fa,#2563eb)", onClick: () => { setOrderSuccess(null); setOrderModal(false); onNavigate?.("tasks"); }, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> },
-                      reseller: { title: tr("Ordering for clients?"), sub: tr("Wholesale rates on the account you already have."), cta: tr("Join"), c: t.accent, grad: "linear-gradient(135deg,#d99aa8,#a05468)", href: RESELLER_SLIDE_HREF, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l1-5h16l1 5"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M5 12v8h14v-8"/><path d="M10 20v-5h4v5"/></svg> },
+                      wa: { title: tr("Updates on WhatsApp"), sub: tr("Delivery news and deals, in one channel."), cta: tr("Follow"), c: "#1faa59", href: waChannelUrl, icon: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg> },
+                      ig: { title: tr("We're on Instagram"), sub: tr("See what we post before you post it."), cta: tr("Follow"), c: "#d62f6a", href: `https://instagram.com/${igHandle}`, icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4.2" /><circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none" /></svg> },
+                      tasks: { title: tr("Earn while it delivers"), sub: tr("Quick tasks, real promo credit."), cta: tr("See tasks"), c: "#2563eb", onClick: () => { setOrderSuccess(null); setOrderModal(false); onNavigate?.("tasks"); }, icon: <OffsetIcon name="tasks" /> },
+                      reseller: { title: tr("Ordering for clients?"), sub: tr("Wholesale rates on the account you already have."), cta: tr("Join"), c: "#b0647a", href: RESELLER_SLIDE_HREF, icon: <OffsetIcon name="store" /> },
                     };
                     const sl = slides[PROMO_SLIDES[promoSlide]] || slides.wa;
                     const Cta = sl.href ? "a" : "button";
                     return (
-                      <div className="rcp-sl" style={{ "--sc": sl.c }}>
-                        <span className="rcp-si" style={{ background: sl.grad }}>{sl.icon}</span>
+                      <div className="rcp-sl" style={{ "--sc": sl.c, "--sci": dark ? `color-mix(in srgb, ${sl.c} 70%, #fff)` : sl.c }}>
+                        <span className="rcp-si">{sl.icon}</span>
                         <span className="rcp-st"><b>{sl.title}</b><i>{sl.sub}</i></span>
-                        <Cta className="rcp-sb" style={{ background: sl.c }} {...(sl.href ? { href: sl.href, target: "_blank", rel: "noopener" } : { type: "button", onClick: sl.onClick })}>{sl.cta}</Cta>
+                        <Cta className="rcp-sb" {...(sl.href ? { href: sl.href, target: "_blank", rel: "noopener" } : { type: "button", onClick: sl.onClick })}>{sl.cta}<svg className="dir-flip" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></Cta>
                       </div>
                     );
                   })()}
-                  <div className="rcp-dots">
+                  <div className="rcp-bars">
                     {PROMO_SLIDES.map((_, i) => (
-                      <button key={i} type="button" onClick={() => setPromoSlide(i)} aria-label={`Slide ${i + 1}`} className={`rcp-dot${promoSlide === i ? " on" : ""}`}>
+                      <button key={i} type="button" onClick={() => setPromoSlide(i)} aria-label={`${tr("Slide")} ${i + 1}`} aria-current={promoSlide === i} className={`rcp-bar${i < promoSlide ? " done" : ""}`}>
                         {promoSlide === i && <span key={`f${promoSlide}`} className="rcp-fill" style={{ animation: promoPaused ? "none" : "promoFill 5s linear forwards" }} />}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div className="rcp-acts">
-                  <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="nb sec">{tr("Order again")}</button>
+                  <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(true); }} className="nb sec"><OffsetIcon name="refresh" size={14} />{tr("Order again")}</button>
                   {onViewOrders && <button type="button" onClick={() => { setOrderSuccess(null); setOrderModal(false); onViewOrders(); }} className="nb pri">{tr("Track this order")}</button>}
                 </div>
               </div>
@@ -1829,7 +1968,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
             <div className="p-[18px] flex flex-col gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: dark ? "rgba(196,125,142,.16)" : "rgba(196,125,142,.1)", color: "var(--t-accent-ink)" }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                  <OffsetIcon name="globe" size={20} />
                 </div>
                 <div className="min-w-0">
                   <div className="text-base font-bold leading-[1.25]" style={{ color: t.text }}>{tr("Before this order goes out")}</div>
@@ -1923,7 +2062,7 @@ export default function NewOrderPage({ openFullList, onOpenedFullList, dark, t, 
             <div className="py-5 px-5">
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: dark ? "rgba(251,191,36,.15)" : "rgba(251,191,36,.12)" }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <OffsetIcon name="alert" size={18} />
                 </div>
                 <div className="text-base font-semibold" style={{ color: t.text }}>{tr("Duplicate order")}</div>
               </div>
@@ -1975,7 +2114,7 @@ function MobileGuide({ dark, t }) {
   return (
     <div ref={ref} className="rounded-xl overflow-hidden mb-3 border border-solid" style={{ background: dark ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.85)", borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", boxShadow: dark ? "none" : "0 2px 8px rgba(0,0,0,.08)" }}>
       <button onClick={() => setOpen(!open)} className="w-full flex justify-between items-center py-3 px-3.5 bg-transparent border-none cursor-pointer font-[inherit] transition-transform duration-200 hover:-translate-y-px" style={{ color: t.text }}>
-        <span className="text-sm font-semibold inline-flex items-center gap-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg> How Our Services Work</span>
+        <span className="text-sm font-semibold inline-flex items-center gap-1.5"><OffsetIcon name="book" size={14} /> How Our Services Work</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s" }}><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       {open && (
@@ -1983,7 +2122,7 @@ function MobileGuide({ dark, t }) {
           <div className="text-xs" style={{ color: t.textMuted }}>
             <div className="mb-[3px]">• <Emph>{tr("Set profile to *public* before ordering — no refunds for private profiles")}</Emph></div>
             <div className="mb-[3px]">• <Emph>{tr("*Start small* — test Budget first")}</Emph></div>
-            <div>{tr("• Not sure which tier? Tap the")} <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"-1px"}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> {tr("for a quick breakdown")}</div>
+            <div>{tr("• Not sure which tier? Tap the")} <OffsetIcon name="info" size={11} style={{display:"inline",verticalAlign:"-1px"}} /> {tr("for a quick breakdown")}</div>
           </div>
 
           <div style={{ height: 1, background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.07)" }} />
@@ -2013,7 +2152,7 @@ function MobileGuide({ dark, t }) {
           </div>
 
           <button onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent("nitro-order-tour")); }} className="py-[9px] px-0 w-full rounded-lg text-[13px] font-semibold cursor-pointer font-[inherit] flex items-center justify-center gap-1.5 border border-solid text-[#c47d8e] transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-[0_6px_20px_rgba(196,125,142,.31)]" style={{ borderColor: dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)", background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.06)" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <OffsetIcon name="help" size={14} />
             {tr("Need a walkthrough?")}
           </button>
         </div>
@@ -2026,7 +2165,7 @@ function MobileGuide({ dark, t }) {
 /* ═══ BULK CART BAR (collapsed)           ═══ */
 /* ═══════════════════════════════════════════ */
 
-const CartIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1.5"/><circle cx="18" cy="21" r="1.5"/><path d="M3 3h2l2.6 13.2a2 2 0 002 1.6h8.4a2 2 0 002-1.6L22 6H6"/></svg>;
+const CartIcon = () => <OffsetIcon name="cart" size={18} />;
 
 function getRowPrice(row, menuData) {
   const pricePer1k = getRowPricePer1k(row, menuData) || row.storedPricePer1k || 0;
@@ -2390,7 +2529,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                 <div className="text-[13px] font-medium flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: t.text }}>{row.name}</div>
                 <span className="text-[11px] font-medium py-0.5 px-2.5 rounded-full shrink-0" style={row.tier ? { background: dark ? TS[row.tier]?.bgD : TS[row.tier]?.bg, color: dark ? TS[row.tier]?.textD : TS[row.tier]?.text } : { background: t.accentLight, color: t.accentInk }}>{row.tier || tr("Full list")}</span>
                 {hasValidLink && <button onClick={() => updateRow(idx, { expanded: false })} className="w-[24px] h-[24px] rounded-full bg-transparent border border-solid flex items-center justify-center shrink-0 p-0 cursor-pointer transition-transform duration-200 hover:-translate-y-px" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>}
-                <button onClick={() => removeRow(idx)} disabled={loading} className="w-[24px] h-[24px] rounded-full bg-transparent border border-solid flex items-center justify-center text-[11px] shrink-0 p-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                <button onClick={() => removeRow(idx)} disabled={loading} className="w-[24px] h-[24px] rounded-full bg-transparent border border-solid flex items-center justify-center text-[11px] shrink-0 p-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" style={{ borderColor: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)", color: t.textMuted }}><OffsetIcon name="close" size={12} /></button>
               </div>
 
               {/* Link + qty */}
@@ -2411,7 +2550,7 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
                 return (
                   <div className="-mt-1 mb-2.5">
                     <button type="button" disabled={loading} onClick={() => openHandles(idx)} aria-expanded={isOpen} className="flex items-center gap-1.5 border-0 cursor-pointer p-0 disabled:opacity-50" style={{ background: "transparent", color: dark ? "#d4949f" : "#a0616e" }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+                      <OffsetIcon name="bookmark" size={10} className="shrink-0" />
                       <span className="text-[11px] font-medium">{tr("Saved handles")} ({list.length})</span>
                       <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" style={{ transform: isOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }} aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
                     </button>
@@ -2515,11 +2654,16 @@ function BulkCartExpanded({ rows, setRows, dark, t, menuData, bounds, onClose, o
 /* ═══════════════════════════════════════════ */
 /* ═══ SERVICES RIGHT SIDEBAR              ═══ */
 /* ═══════════════════════════════════════════ */
+// Drawn flags for the Service flags card, in place of emoji flags, which render
+// differently on every phone and as two letters on some.
+const FLAG_NG = <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="10" height="30" fill="#0f8a4e" /><rect x="10" width="10" height="30" fill="#fff" /><rect x="20" width="10" height="30" fill="#0f8a4e" /></svg>;
+const FLAG_US = <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" fill="#fff" />{[0, 2, 4, 6, 8, 10, 12].map(i => <rect key={i} y={i * 30 / 13} width="30" height={30 / 13} fill="#c8102e" />)}<rect width="14" height={30 / 13 * 7} fill="#1f3f8a" /></svg>;
+
 export function ServicesSidebar() {
   const tr = useT();
   return (
     <div className="rr">
-      <RailSec>{tr("Before you order")}</RailSec>
+      <RailSec icon="shieldCheck">{tr("Before you order")}</RailSec>
       <RailCard>
         <RailStep n="1" title={tr("Profile set to public")} sub={tr("No refunds for private profiles")} />
         <RailStep n="2" title={tr("Start small")} sub={tr("Test a Budget tier first")} />
@@ -2528,13 +2672,13 @@ export function ServicesSidebar() {
       {/* The flags are a legend, not a sequence, so they leave the numbered list
           and get their own heading. Running 1, 2, 🇳🇬, 🇺🇸, 🌍 down one card would
           say these are five steps to follow in order, and they are not. */}
-      <RailSec>{tr("Service flags")}</RailSec>
+      <RailSec icon="globe">{tr("Service flags")}</RailSec>
       <RailCard>
-        <RailStep n="🇳🇬" title={tr("Nigerian")} sub={tr("Real local engagement for Naija accounts")} />
-        <RailStep n="🇺🇸" title={tr("American")} sub={tr("A US audience, for reaching people over there")} />
-        <RailStep n="🌍" title={tr("No flag")} sub={tr("A worldwide mix. Not aimed at any one country")} />
+        <RailStep tile={FLAG_NG} title={tr("Nigerian")} sub={tr("Real local engagement for Naija accounts")} />
+        <RailStep tile={FLAG_US} title={tr("American")} sub={tr("A US audience, for reaching people over there")} />
+        <RailStep tile={<OffsetIcon name="globe" size={16} />} title={tr("No flag")} sub={tr("A worldwide mix. Not aimed at any one country")} />
       </RailCard>
-      <RailSec>{tr("Bulk")}</RailSec>
+      <RailSec icon="layers">{tr("Bulk")}</RailSec>
       <RailNote>{tr("Up to 50 orders in one checkout. Anything that fails is retried, then refunded.")}</RailNote>
       <RailLink onClick={() => window.dispatchEvent(new CustomEvent("nitro-order-tour"))}>{tr("Need a walkthrough?")}</RailLink>
     </div>

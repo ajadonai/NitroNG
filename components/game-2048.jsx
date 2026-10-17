@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useT } from "./locale";
 import { initGame, move, canMove, hasWon, spawnTile } from '@/lib/game-engine';
 import { useBodyScrollLock } from './ui-primitives';
+import { OffsetIcon } from "./offset-icons";
 
 const TILE_COLORS = {
   0: { bg: 'transparent', text: 'transparent', border: 'transparent' },
@@ -169,11 +170,11 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
         </div>
         <div className="flex flex-col gap-1.5 justify-center">
           <button onClick={() => setShowHelp(true)} className="w-8 h-8 rounded-lg flex items-center justify-center border-none cursor-pointer" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.03)', border: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)'}`, color: t.textMuted }} title={tr("How to play")}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <OffsetIcon name="help" size={14} />
           </button>
           {board && !gameOver && !won && (
             <button onClick={startNewGame} className="w-8 h-8 rounded-lg flex items-center justify-center border-none cursor-pointer" style={{ background: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.03)', border: `1px solid ${dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)'}`, color: t.textMuted }} title={tr("Restart")}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+              <OffsetIcon name="refresh" size={13} />
             </button>
           )}
         </div>
@@ -265,12 +266,12 @@ export default function Game2048({ dark, t, onScoreSubmitted }) {
             <div className="relative flex items-center justify-between mb-5">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${t.accent}, ${dark ? '#6b3a4a' : '#8b5e6b'})` }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" stroke="none"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                  <OffsetIcon name="grid" size={14} />
                 </div>
                 <h3 className="text-[15px] font-bold" style={{ color: t.text }}>{tr("How to Play")}</h3>
               </div>
               <button onClick={() => setShowHelp(false)} className="w-7 h-7 rounded-lg flex items-center justify-center border-none cursor-pointer" style={{ background: dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.05)', color: t.textMuted }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <OffsetIcon name="close" size={14} />
               </button>
             </div>
             <div className="relative space-y-3">

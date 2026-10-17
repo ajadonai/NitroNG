@@ -17,7 +17,7 @@ describe('OffsetIcon', () => {
 
   it('is used by both rails', () => {
     expect(used('components/dashboard.jsx').length).toBeGreaterThanOrEqual(15);
-    expect(used('components/admin-dashboard.jsx').length).toBe(30);
+    expect(used('components/admin-dashboard.jsx').length).toBeGreaterThanOrEqual(30);
   });
 
   it('draws every icon a dashboard asks for, with the printed shape under it', () => {

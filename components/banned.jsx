@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useT } from "./locale";
 import { WaButton } from "./wa-button";
+import { OffsetIcon } from "./offset-icons";
 
 export default function BannedPage() {
   const tr = useT();
@@ -51,11 +52,7 @@ export default function BannedPage() {
           <div className="relative w-[88px] h-[88px] mx-auto mb-7">
             <div className="absolute inset-0 rounded-full" style={{ border: `2px solid ${t.redBorder}`, animation: "banned-pulse 2.5s ease-in-out infinite" }} />
             <div className="w-[88px] h-[88px] rounded-full flex items-center justify-center" style={{ background: t.redSoft }}>
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={t.red} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0110 0v4"/>
-                <circle cx="12" cy="16" r="1"/>
-              </svg>
+              <OffsetIcon name="lock" size={36} color={t.red} />
             </div>
           </div>
 
@@ -70,9 +67,9 @@ export default function BannedPage() {
           <div className="rounded-2xl py-5 px-6 text-left max-w-[380px] mx-auto mb-8" style={{ background: t.redSoft, border: `1px solid ${t.redBorder}` }}>
             <div className="text-xs font-semibold mb-3.5 uppercase tracking-[1.5px]" style={{ color: t.red }}>{tr("What this means")}</div>
             {[
-              ["Dashboard and services are inaccessible", <svg key="1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.red} strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>],
-              ["Your wallet balance is frozen", <svg key="2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.red} strokeWidth="1.5" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>],
-              ["Active orders will still complete delivery", <svg key="3" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="1.5" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>],
+              ["Dashboard and services are inaccessible", <OffsetIcon name="xCircle" size={16} color={t.red} />],
+              ["Your wallet balance is frozen", <OffsetIcon name="card" size={16} color={t.red} />],
+              ["Active orders will still complete delivery", <OffsetIcon name="checkCircle" size={16} color={dark ? "#6ee7b7" : "#059669"} />],
             ].map(([text, icon], i) => (
               <div key={i} className="flex items-center gap-3 py-2" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(252,165,165,.12)" : "rgba(220,38,38,.08)"}` : "none" }}>
                 <div className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)" }}>{icon}</div>

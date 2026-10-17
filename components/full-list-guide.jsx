@@ -1,6 +1,7 @@
 'use client';
 import { useEffect } from "react";
 import { useT } from "./locale";
+import { OffsetIcon } from "./offset-icons";
 
 /**
  * How to read a full-list row.
@@ -101,7 +102,7 @@ export function FullListGuide({ open, onClose, dark, t }) {
             </p>
           </div>
           <button onClick={onClose} aria-label={tr("Close")} className="nitro-x shrink-0" style={{ color: t.textMuted }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            <OffsetIcon name="close" size={13} />
           </button>
         </div>
 
@@ -111,7 +112,7 @@ export function FullListGuide({ open, onClose, dark, t }) {
           <div className="flex items-center gap-3" aria-hidden="true">
             <span className="shrink-0 w-[34px] h-[34px] rounded-[10px] inline-flex items-center justify-center"
               style={{ background: t.accentLight, color: t.accentInk }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6M22 11h-6" /></svg>
+              <OffsetIcon name="referral" size={17} />
             </span>
 
             <span className="min-w-0 flex-1">
@@ -129,14 +130,14 @@ export function FullListGuide({ open, onClose, dark, t }) {
                 <span className="relative inline-flex" style={badge(quiet, t.textSoft)}>{tr("Instant")}<Pin n={3} /></span>
                 <span className="relative inline-flex" style={badge(quiet, t.textSoft)}>UHQ<Pin n={4} /></span>
                 <span className="relative inline-flex items-center gap-1" style={badge(goodBg, good)}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M2 20h2c.55 0 1-.45 1-1v-9c0-.55-.45-1-1-1H2v11zm19.83-7.12c.11-.25.17-.52.17-.8V11c0-1.1-.9-2-2-2h-5.5l.92-4.65c.05-.22.02-.46-.08-.66a4.8 4.8 0 0 0-.79-1.06L14 2 7.59 8.41C7.21 8.79 7 9.3 7 9.83v7.84A2.34 2.34 0 0 0 9.34 20h8.11c.7 0 1.36-.37 1.72-.97l2.66-6.15z" /></svg>
+                  <OffsetIcon name="thumbUp" size={11} />
                   86%<Pin n={5} />
                 </span>
               </span>
             </span>
 
             <span className="relative shrink-0 inline-flex" style={{ color: dark ? "#e0a458" : "#b45309", opacity: .55 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" /></svg>
+              <OffsetIcon name="star" size={16} />
               <Pin n={6} />
             </span>
 

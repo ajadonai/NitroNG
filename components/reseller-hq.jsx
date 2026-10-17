@@ -15,24 +15,29 @@ import { useToast } from './toast';
 import { copyText } from '@/lib/clipboard';
 import { useMoney, useT } from "./locale";
 import { WaButton } from "./wa-button";
+import { OffsetIcon } from "./offset-icons";
 
 const FALLBACK_WA = '2347071656156';
-const I = (d, s = 14, w = 2) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
+// A name draws from the offset-print set; the plain controls (copy, show,
+// rotate, arrow) stay as the simple strokes they are.
+const I = (d, s = 14, w = 2) => typeof d === "string"
+  ? <OffsetIcon name={d} size={s} />
+  : <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
 const P = {
   chk: <path d="M20 6 9 17l-5-5"/>,
-  key: <path d="m21 2-2 2m-7.6 7.6a5.5 5.5 0 11-7.8 7.8 5.5 5.5 0 017.8-7.8zm0 0L19 3l2 2-3 3"/>,
+  key: "key",
   copy: <><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></>,
   eye: <><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></>,
   rot: <><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v6h-6"/></>,
   arrow: <path d="M5 12h14M13 6l6 6-6 6"/>,
-  layers: <path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>,
-  globe: <><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 014 10 15 15 0 01-4 10 15 15 0 01-4-10 15 15 0 014-10z"/></>,
-  bolt: <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>,
-  chart: <path d="M18 20V10M12 20V4M6 20v-6"/>,
-  refund: <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8M3 3v5h5"/>,
-  clock: <><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></>,
-  naira: <path d="M6 20V4l12 16V4M3 10h18M3 14h18"/>,
-  book: <path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 006.5 22H20V2H6.5A2.5 2.5 0 004 4.5z"/>,
+  layers: "layers",
+  globe: "globe",
+  bolt: "bolt",
+  chart: "bars",
+  refund: "refresh",
+  clock: "clockPlain",
+  naira: "naira",
+  book: "book",
 };
 
 const WA_TEXT = "Hi! I'd like wholesale prices on my Nitro account. Here's what my business does:";
@@ -262,7 +267,7 @@ export function ResellerHQSidebar({ onNavigate }) {
   const facts = [['Base URL', 'https://nitro.ng/api/v2'], ['Actions', 'services · add · status · refill · balance · cancel'], ['Your key', 'At the top of this page, and in Settings'], ['Prices', 'Retail for every account, wholesale by approval']];
   return (
     <div className="rr">
-      <RailSec>{tr("The API")}</RailSec>
+      <RailSec icon="key">{tr("The API")}</RailSec>
       <RailCard>
         {facts.map(([k, v]) => <RailRow key={k} title={v} sub={k} />)}
       </RailCard>

@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback, useTransition, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { RailSec, RailCard, RailRow } from "./rail";
-import { OffsetIcon } from "./offset-icons";
+import { OffsetIcon, CurrencyCoin } from "./offset-icons";
 import { Bone } from "./skeleton";
 import dynamic from "next/dynamic";
 import { ThemeProvider, useTheme, ThemeToggle, ThemePill } from "./shared-nav";
@@ -130,23 +130,23 @@ const RewardsPage = dynamic(() => import("./rewards").then(m => m.RewardsPage), 
 /* ═══════════════════════════════════════════ */
 const I = {
   lab: <OffsetIcon name="code" />,
-  audit: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a7 7 0 017 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 01-1 1H9a1 1 0 01-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 017-7z"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="10" y1="24" x2="14" y2="24"/></svg>,
-  cleanup: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21l2-2m0 0l4-7 3 3-7 4z"/><path d="M14 3l1.5 3L19 7.5 15.5 9 14 12l-1.5-3L9 7.5 12.5 6z"/><path d="M19 14l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/></svg>,
+  audit: <OffsetIcon name="bulb" size={18} />,
+  cleanup: <OffsetIcon name="wand" size={18} />,
   overview: <OffsetIcon name="home" />,
   orders: <OffsetIcon name="receipt" />,
   "add-funds": <OffsetIcon name="wallet" />,
-  guide: <OffsetIcon name="doc" />,
+  guide: <OffsetIcon name="news" />,
   services: <OffsetIcon name="rocket" />,
   referrals: <OffsetIcon name="referral" />,
   support: <OffsetIcon name="chat" />,
   settings: <OffsetIcon name="gear" />,
-  earn: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M15.5 9.5c0-1.38-1.57-2.5-3.5-2.5s-3.5 1.12-3.5 2.5S10.07 12 12 12s3.5 1.12 3.5 2.5-1.57 2.5-3.5 2.5-3.5-1.12-3.5-2.5"/></svg>,
+  earn: <CurrencyCoin size={18} />,
   tasks: <OffsetIcon name="tasks" />,
   rewards: <OffsetIcon name="gift" />,
   catalogue: <OffsetIcon name="grid" />,
   resellers: <OffsetIcon name="store" />,
   changelog: <OffsetIcon name="spark" />,
-  leaderboard: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21V12H2v9h6zM22 21V8h-6v13h6zM15 21V4H9v17h6z"/></svg>,
+  leaderboard: <OffsetIcon name="bars" size={18} />,
   instagram: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
   x: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
   logout: <OffsetIcon name="logout" />,
@@ -270,11 +270,11 @@ function WaitlistPage({ feature, dark, t }) {
 }
 
 const NOTIF_ICONS = {
-  check: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
-  clock: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-  x: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
-  dollar: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
-  gift: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg>,
+  check: <OffsetIcon name="checkCircle" size={14} />,
+  clock: <OffsetIcon name="clockPlain" size={14} />,
+  x: <OffsetIcon name="xCircle" size={14} />,
+  dollar: <CurrencyCoin size={14} />,
+  gift: <OffsetIcon name="gift" size={14} />,
 };
 
 // How many rows the panel holds. It was ten, under a footer reading "Showing
@@ -408,7 +408,7 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
                   </div>
                 </div>
                 <button onClick={e => { e.stopPropagation(); dismiss(n.id); }} aria-label={tr("Dismiss")} title={tr("Dismiss")} className="nitro-x">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                  <OffsetIcon name="close" size={13} />
                 </button>
               </div>
             </Fragment>
@@ -416,7 +416,7 @@ function NotifDropdown({ items, dark, t, onClose, readIds, setReadIds, clearedId
         }) : (
           <div className="py-8 px-5 text-center">
             <div className="w-10 h-10 mx-auto mb-2.5 rounded-xl flex items-center justify-center text-accent-ink" style={{ background: dark ? "#1c1015" : "#fdf2f4" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+              <OffsetIcon name="bell" size={18} />
             </div>
             <div className="text-sm font-semibold text-t-text mb-0.5">{tr("Nothing here yet")}</div>
             <div className="text-[13px] text-t-text-muted">{tr("Order updates, wallet top-ups and rewards land here as they happen.")}</div>
@@ -1572,7 +1572,7 @@ function DashboardInner({ initialData }) {
               <div className="h-0.5 rounded-[1px] w-4 bg-accent" />
             </div>
             {leftOpen && (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <OffsetIcon name="close" size={16} color={t.accent} />
             )}
             <span className="dash-logo-n"><span className="nitro-mark w-[34px] h-[34px] flex items-center justify-center" style={{ background: t.grad }}><svg width="13" height="14" viewBox="0 0 1601 1785" fill="#fff"><path d="M1600.82 160.089V1313c-.85 53.13-10.35 104.17-27.19 151.74-48.19 136.54-156.38 244.73-292.92 292.92-50.12 17.76-103.94 27.34-160.08 27.34 0 0-79.39 0-160.01-27.34-85.1-28.88-155.38-85.49-208.28-141.55-72.59-76.84-112.13-179.09-112.13-284.74V1023.4v-3.08-12.9c.08-1.39.08-2.7.08-4.17 0-1.39 0-2.7-.08-4.09-2.08-84.64-69.97-153.06-154.53-155.84-1.85-.08-3.71-.15-5.48-.15-1.78 0-3.71.08-5.48.15-84.56 2.78-152.44 71.2-154.61 155.84-.08 1.39-.08 2.7-.08 4.09 0 1.47 0 2.78.08 4.17v534.87c0 88.42-71.67 160.09-160.09 160.09-44.17 0-84.25-17.92-113.21-46.88C17.92 1626.84 0 1586.76 0 1542.59V995.288c.927-53.132 10.426-104.178 27.261-151.672C75.45 707.003 183.643 598.81 320.179 550.621c50.119-17.685 103.946-27.338 160.089-27.338 0 0 79.388 0 160.012 27.338 85.103 28.882 155.379 85.489 208.278 141.555 72.593 76.84 112.132 179.087 112.132 284.732v307.972l-.077.92v12.89c-.077 1.39-.077 2.78-.077 4.17 0 1.39 0 2.7.077 4.17 2.085 84.64 69.967 152.99 154.527 155.84 1.86 0 3.71 0 5.49 0 1.77 0 3.7 0 5.48 0 84.56-2.85 152.44-71.2 154.6-155.84V160.089C1280.71 71.666 1352.38 0 1440.8 0c44.18 0 84.18 17.916 113.14 46.876 28.96 28.96 46.88 69.04 46.88 113.213z"/></svg></span></span>
             <span className="dash-logo-wordmark"><span className="nitro-mark h-7 px-3 flex items-center justify-center" style={{ background: "linear-gradient(135deg,#c47d8e,#8b5e6b)" }}><NitroWordmark height={12} color="#fff" /></span></span>
@@ -1599,8 +1599,8 @@ function DashboardInner({ initialData }) {
           </button>
           {/* Notification bell */}
           <div ref={notifRef} className="relative">
-            <button onClick={() => setNotifOpen(!notifOpen)} className="dash-bell" aria-label={tr("Notifications")} style={{ color: t.text }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <button onClick={() => setNotifOpen(!notifOpen)} className={`dash-bell${bellUnread > 0 ? " unread" : ""}${notifOpen ? " open" : ""}`} aria-label={tr("Notifications")} style={{ color: bellUnread > 0 || notifOpen ? undefined : t.text }}>
+              <OffsetIcon name="bell" size={20} />
               {bellUnread > 0 && <div className="dash-bell-badge">{bellUnread > 10 ? "10+" : bellUnread}</div>}
             </button>
             {notifOpen && <NotifDropdown items={notifItems} dark={dark} t={t} onClose={() => setNotifOpen(false)} readIds={readNotifIds} setReadIds={setReadNotifIds} clearedIds={clearedNotifIds} setClearedIds={setClearedNotifIds} setClearedAt={setNotifClearedAt} readAllAt={notifReadAllAt} setReadAllAt={setNotifReadAllAt} onNavigate={openFromNotification} />}
@@ -1825,13 +1825,13 @@ function DashboardInner({ initialData }) {
               <div className="text-xs leading-[1.5] mt-1 text-t-text-muted">{isIos ? tr("Keep Nitro one tap away for tracking the next one.") : tr("Put Nitro on your home screen and track the next one in one tap. No app store, no download size.")}</div>
             </div>
             <button type="button" aria-label={tr("Dismiss")} onClick={closeInstallMoment} className="nitro-x">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <OffsetIcon name="close" size={11} />
             </button>
           </div>
           {iosSteps
             ? <div className="mt-3 py-2.5 px-3 rounded-xl text-xs leading-[1.7] text-t-text" style={{ background: dark ? "rgba(201,127,146,.13)" : "rgba(201,127,146,.08)" }}>{tr("Tap")} <b>{tr("Share")}</b> <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c47d8e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline", verticalAlign: "-2px" }}><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> {tr("below, then")} <b>{tr("Add to Home Screen")}</b>.</div>
             : <button type="button" onClick={momentInstall} className="w-full flex items-center justify-center gap-2 mt-3 py-3 rounded-xl text-[13.5px] font-extrabold border-none cursor-pointer text-white" style={{ background: "linear-gradient(135deg,#c97f92,#9b5266)", boxShadow: "0 6px 18px rgba(196,125,142,.35)" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>{tr("Add to Home Screen")}
+                <OffsetIcon name="phone" size={14} />{tr("Add to Home Screen")}
               </button>}
         </div>
       </>}
@@ -1908,7 +1908,7 @@ function DashboardInner({ initialData }) {
                 <button key={item.id} type="button" onClick={go} className="flex items-center gap-[11px] w-full py-2.5 px-1 rounded-xl cursor-pointer bg-transparent border-none text-left font-[inherit]">
                   <span className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: chipBg, color: chipIc }}>{I[item.id]}</span>
                   <span className="text-[13.5px] font-semibold flex-1" style={item.out ? { color: dark ? "#fca5a5" : "#dc2626" } : undefined}>{!item.out ? <span className="text-t-text">{tr(item.label)}</span> : tr(item.label)}</span>
-                  {item.badge > 0 && <span className="text-[9.5px] font-extrabold uppercase tracking-[.5px] py-[2.5px] px-[7px] rounded-full text-accent-ink" style={{ background: dark ? "rgba(196,125,142,.15)" : "rgba(196,125,142,.14)" }}>{item.badge > 9 ? "9+" : item.badge} new</span>}
+                  {item.badge > 0 && <span className="rail-bd rail-bd-new">{item.badge > 9 ? "9+" : item.badge} new</span>}
                   {!item.out && chev}
                 </button>
               );
@@ -1979,7 +1979,7 @@ function DashboardInner({ initialData }) {
             <div className="dash-chat-hd">
               <span className="dash-chat-av"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2A10 10 0 002 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3A10 10 0 1012 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 01-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1.1 2.7c.1.2 1.9 2.9 4.6 4 1.7.7 2.3.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg></span>
               <span className="dash-chat-t"><b>{tr("We can order for you")}</b><i style={{ color: t.textMuted }}>{tr("Nitro Support on WhatsApp · replies in minutes")}</i></span>
-              <button type="button" onClick={() => setChatOpen(false)} className="dash-chat-x" aria-label={tr("Close")} style={{ color: t.textMuted }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+              <button type="button" onClick={() => setChatOpen(false)} className="dash-chat-x" aria-label={tr("Close")} style={{ color: t.textMuted }}><OffsetIcon name="close" size={16} /></button>
             </div>
             <div className="dash-chat-bub" style={{ background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)" }}>{tr("Not sure what to pick, or in a hurry? Paste your link and say what you want. We place the order on your account.")}</div>
             {active === "services" && noSelSvc && (

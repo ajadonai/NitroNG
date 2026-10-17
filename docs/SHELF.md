@@ -394,6 +394,21 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **New Order, the order form, the receipt and History, redrawn** (17 Oct 2026,
+  `v2.4.125`). The tier picker is one printed well: equal segments, a struck
+  "was" price above the new one on a sale, perks for the tier hovered or
+  picked, and "Which tier?" only on touch screens, where it opens as a compare
+  grid with prices. Service rows print their glyph on a tile and say Nigerian,
+  American or Package with a chip instead of washing the row, on Nitro picks
+  and the full list alike. The order form keeps its labels inside the boxes,
+  one quiet line each, accepted formats and saved handles (up to twenty, five
+  a page) behind small pop-overs, quick amounts in one track, and no unit in
+  the quantity box here or in the guest checkout. The receipt matches it, with
+  the carousel kept. History drops the Summary button and "Needs attention":
+  rows say what, tier, when and status, one progress bar, an opened order leads
+  with its progress, and phones get the three numbers at the top. The wallet,
+  settings, rails, tour and icons across both sides moved to the offset print.
+
 - **Contact page revamp** (19 Sep 2026, `v2.5.126`, commit `17fef586`). Found
   already shipped on 17 Oct while still listed as "not ruled on". WhatsApp in
   the brand green, email as a matching button, Instagram, X and TikTok as

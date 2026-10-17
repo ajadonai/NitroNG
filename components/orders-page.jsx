@@ -13,7 +13,8 @@ import { WaButton } from "./wa-button";
 import { NotSureHelp } from "./new-order";
 import NitroLoader from "./nitro-loader";
 import { copyText } from '@/lib/clipboard';
-import { openCardFrame, openCardHeader } from '@/lib/expandable-card';
+import { openCardFrame } from '@/lib/expandable-card';
+import { OffsetIcon, CurrencyCoin } from "./offset-icons";
 
 function CopyId({ value, dark, mono = true }) {
   const tr = useT();
@@ -76,13 +77,7 @@ function Spinner({ size = 14, color = "currentColor" }) {
 
 /* ── Status helpers (unified) ── */
 function sClr(s, dk) { return s === "Completed" ? (dk ? "#6ee7b7" : "#059669") : s === "Processing" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Pending" ? (dk ? "#fcd34d" : "#d97706") : s === "Queued" ? (dk ? "#a5b4fc" : "#4f46e5") : s === "Partial" ? (dk ? "#fdba74" : "#ea580c") : (s === "Failed" || s === "Rejected") ? (dk ? "#fca5a5" : "#dc2626") : s === "Cancelled" ? (dk ? "#a1a1aa" : "#71717a") : (dk ? "#555250" : "#8a8785"); }
-function sBg(s, dk) { return s === "Completed" ? (dk ? "#0a2416" : "#ecfdf5") : s === "Processing" ? (dk ? "#0f1629" : "#eef2ff") : s === "Pending" ? (dk ? "#1c1608" : "#fffbeb") : s === "Queued" ? (dk ? "#0f1629" : "#eef2ff") : s === "Partial" ? (dk ? "#1c1008" : "#fff7ed") : (s === "Failed" || s === "Rejected") ? (dk ? "#1f0a0a" : "#fef2f2") : s === "Cancelled" ? (dk ? "#1a1a1a" : "#f5f5f5") : (dk ? "#141414" : "#f5f5f5"); }
-function sBrd(s, dk) { return s === "Completed" ? (dk ? "#166534" : "#a7f3d0") : s === "Processing" ? (dk ? "#3730a3" : "#c7d2fe") : s === "Pending" ? (dk ? "#92400e" : "#fde68a") : s === "Queued" ? (dk ? "#3730a3" : "#c7d2fe") : s === "Partial" ? (dk ? "#9a3412" : "#fed7aa") : (s === "Failed" || s === "Rejected") ? (dk ? "#991b1b" : "#fecaca") : s === "Cancelled" ? (dk ? "#404040" : "#d4d4d4") : (dk ? "#404040" : "#d4d4d4"); }
 
-function isAttention(o) {
-  if (o.queuedBehind) return false;
-  return o.status === "Partial" || (o.lastError && o.status === "Pending" && !o.apiOrderId);
-}
 
 
 
@@ -97,9 +92,6 @@ function dayKey(iso) {
   if (same(d, y)) return "Yesterday";
   return d.toLocaleDateString(docDateLocale(), { day: "numeric", month: "short" });
 }
-function DayLabel({ label, dark }) {
-  return <div className="text-[10.5px] font-semibold uppercase tracking-[1px] px-3.5 pt-3 pb-1 text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.025)" }}>{label}</div>;
-}
 
 /** The summary as rows: label left, value right. Used by the header dropdown and the sidebar. */
 
@@ -108,53 +100,134 @@ function DayLabel({ label, dark }) {
    record and the scanner cannot follow a variable, so without this the status
    pill would translate only for as long as someone remembered to keep the
    dictionaries in step by hand. msg() returns its argument, so these stay
-   usable as the identity values sClr/sBg/sBrd compare against. */
+   usable as the identity values sClr compares against. */
 const STATUS_LABEL = {
   Pending: msg("Pending"),   Processing: msg("Processing"), Completed: msg("Completed"),
   Partial: msg("Partial"),   Cancelled: msg("Cancelled"),   Failed: msg("Failed"),
   Rejected: msg("Rejected"), Queued: msg("Queued"),
 };
 
-function Badge({ status, dark }) {
-  const tr = useT();
-  return <span className="text-[11px] font-semibold py-0.5 px-1.5 rounded-[5px] border whitespace-nowrap inline-block leading-tight" style={{ background: sBg(status, dark), color: sClr(status, dark), borderColor: sBrd(status, dark) }}>{tr(STATUS_LABEL[status] || status)}</span>;
-}
+/* What the row calls a status. Processing and Pending are the record's words;
+   the customer reads where the order is, so the chip says Delivering and
+   Waiting to start. Registered with msg() for the same reason as above. */
+const STATUS_SHOWN = { ...STATUS_LABEL, Processing: msg("Delivering"), Pending: msg("Waiting to start") };
+const TIER_LOOK = { Budget: ["shield", "#b45309", "#e0a458"], Standard: ["bolt", "#1d5fa5", "#7aa2f7"], Premium: ["crown", "#6d28d9", "#a78bfa"] };
 
-function ProgressBar({ order, dark, detailed }) {
+/* The orders list in the same language as the order form and the receipt:
+   rows keep to what tells orders apart at a glance — what, its tier, when,
+   where it stands — and an opened order leads with its progress. Logical
+   properties: this sheet does not go through the RTL build plugin. */
+const OP_CSS = `
+.op-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:8px}
+.op-stat{min-width:0;padding:8px 10px;border:1.5px solid var(--op-line);border-radius:12px;background:var(--op-card)}
+.op-stat i{display:flex;align-items:center;gap:5px;font-style:normal;font-size:10.5px;font-weight:600;color:var(--op-mut);white-space:nowrap}
+.op-stat i svg{color:var(--t-accent-ink)}
+.op-stat b{display:block;margin-top:2px;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.op-pulse{width:7px;height:7px;border-radius:50%;background:var(--op-run);box-shadow:0 0 0 3px color-mix(in srgb,var(--op-run) 22%,transparent)}
+.op-note{margin:0 2px 10px;font-size:11.5px;line-height:1.45;color:var(--op-mut)}
+.op-day{display:flex;align-items:center;gap:8px;padding:9px 16px 7px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--op-mut);border-top:1px solid var(--op-line)}
+.op-day:first-child{border-top:0}
+.op-day .op-n{margin-inline-start:auto;font-size:10.5px;font-weight:600;letter-spacing:0;text-transform:none}
+.op-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--op-line);cursor:pointer;transition:background-color .15s}
+.op-day + * > .op-row,.op-day + .op-row{border-top:0}
+.op-row:hover{background:color-mix(in srgb,var(--t-accent) 5%,transparent)}
+.op-row.kid{gap:10px;padding:9px 14px 9px 22px}
+@media (max-width:767px){.op-row{gap:10px;padding:11px 12px}.op-row.kid{padding:9px 12px 9px 16px}}
+.op-pi{width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:var(--op-field);border:1px solid var(--op-line);flex-shrink:0}
+.op-row.kid .op-pi{width:30px;height:30px;border-radius:9px}
+@media (max-width:767px){.op-pi{width:36px;height:36px}}
+.op-pi.bulk{color:var(--t-accent-ink);background:rgba(196,125,142,.14);border:0;box-shadow:2px 2px 0 var(--op-print)}
+.op-tx{min-width:0;display:flex;flex-direction:column;gap:3px}
+.op-nm{display:flex;align-items:center;gap:8px;min-width:0}
+.op-nm b{font-size:14px;font-weight:650;color:var(--op-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.op-row.kid .op-nm b{font-size:12.5px;font-weight:600}
+.op-tier.narrow{display:none}
+@media (max-width:767px){.op-tier.wide,.op-sub .op-wide{display:none}.op-tier.narrow{display:inline-flex}}
+@media (min-width:1200px){.op-stats,.op-note{display:none}}
+.op-tier{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;color:var(--tc);white-space:nowrap;flex-shrink:0}
+.op-sub{display:flex;align-items:center;gap:12px;font-size:11.5px;color:var(--op-mut);white-space:nowrap;overflow:hidden}
+.op-sub > span{display:inline-flex;align-items:center;gap:4px}
+.op-st{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:6px;font-size:10.5px;font-weight:750;white-space:nowrap;color:var(--sc);background:color-mix(in srgb,var(--sc) 10%,var(--op-card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 35%,transparent)}
+.op-dot{width:6px;height:6px;border-radius:50%;background:var(--sc);animation:opPulse 1.6s ease-in-out infinite}
+@keyframes opPulse{50%{opacity:.35}}
+.op-bar{grid-column:2 / -1;height:4px;margin-top:-4px;border-radius:2px;background:var(--op-line);overflow:hidden}
+.op-bar span{display:block;height:100%;border-radius:2px;background:var(--sc)}
+.op-bar.wait span{width:100%;background:repeating-linear-gradient(-55deg,color-mix(in srgb,var(--op-mut) 40%,transparent) 0 6px,transparent 6px 12px)}
+.op-det{display:flex;flex-direction:column;gap:8px;padding:0 14px 14px}
+@media (max-width:767px){.op-det{padding:0 12px 12px}}
+.op-prog{padding:10px 12px;border:1.5px solid var(--op-line);border-radius:12px;background:var(--op-card)}
+.op-prog-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.op-prog-top b{font-size:15px;font-weight:700;color:var(--op-ink)}
+.op-prog-top b small{font-size:12px;font-weight:500;color:var(--op-mut)}
+.op-prog-top span{font-size:12px;font-weight:700;color:var(--sc)}
+.op-prog-bar{height:6px;margin-top:7px;border-radius:3px;background:var(--op-line);overflow:hidden}
+.op-prog-bar span{display:block;height:100%;border-radius:3px;background:var(--sc);transition:width .5s}
+.op-prog-bar.wait span{width:100%;background:repeating-linear-gradient(-55deg,color-mix(in srgb,var(--op-mut) 40%,transparent) 0 6px,transparent 6px 12px)}
+.op-eta{display:flex;align-items:center;gap:5px;margin-top:8px;font-size:11.5px;color:var(--op-mut)}
+.op-eta svg{color:var(--t-accent-ink)}
+.op-msg{display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border-radius:12px;font-size:12px;line-height:1.45;color:var(--op-ink);background:color-mix(in srgb,var(--sc) 9%,var(--op-card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 25%,transparent)}
+.op-msg > svg{color:var(--sc);margin-top:1px;flex-shrink:0}
+.op-msg b{font-weight:700;color:var(--sc)}
+.op-msg a{color:inherit;text-decoration:underline;font-weight:600}
+.op-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.op-f{min-width:0;padding:8px 10px;border:1.5px solid var(--op-line);border-radius:12px;background:var(--op-card)}
+.op-f i{display:flex;align-items:center;gap:5px;font-style:normal;font-size:10.5px;font-weight:600;color:var(--op-mut);white-space:nowrap}
+.op-f i svg{color:var(--t-accent-ink)}
+.op-f > div{display:flex;align-items:center;gap:5px;margin-top:3px;min-width:0;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--op-ink)}
+.op-f .op-none{font-size:12px;font-weight:500;color:var(--op-mut)}
+.op-f.wide{grid-column:1 / -1}
+.op-f.wide a{display:inline-flex;align-items:center;gap:5px;min-width:0;font-size:12px;font-weight:500;color:var(--op-ink);text-decoration:none}
+.op-f.wide a span{overflow:hidden;text-overflow:ellipsis}
+.op-f.wide a svg{color:var(--op-mut);flex-shrink:0}
+.op-acts{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.op-kids{border-top:1px dashed var(--op-line)}
+@media (prefers-reduced-motion:reduce){.op-dot{animation:none}.op-row{transition:none}}
+`;
+
+function StatusChip({ status, dark }) {
+  const tr = useT();
+  const live = status === "Processing" || status === "Pending";
+  return <span className="op-st" style={{ "--sc": sClr(status, dark) }}>{live && <span className="op-dot" />}{tr(STATUS_SHOWN[status] || status)}</span>;
+}
+function TierTag({ tier, dark, className = "" }) {
+  const tr = useT();
+  if (!tier) return null;
+  const look = TIER_LOOK[tier];
+  return <span className={`op-tier ${className}`} style={{ "--tc": look ? (dark ? look[2] : look[1]) : "var(--t-accent-ink)" }}>{look && <OffsetIcon name={look[0]} size={11} />}{tr(tier)}</span>;
+}
+/* The row's progress line, only while an order is under way. Opening the
+   order moves the progress into the card, so the row draws none then. */
+function RowBar({ order, dark }) {
   const qty = order.quantity || 0;
-  if (!qty || order.status === "Cancelled") return null;
+  if (!qty || !["Processing", "Pending"].includes(order.status)) return null;
   const hasData = order.remains != null;
-  const isComplete = order.status === "Completed";
-  const delivered = isComplete ? qty : hasData ? Math.max(0, qty - Math.max(0, order.remains)) : 0;
-  const pct = isComplete ? 100 : hasData ? Math.min(100, Math.round((delivered / qty) * 100)) : 0;
-  const isPartial = order.status === "Partial";
-  const color = isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
-  const waiting = !hasData && !isComplete && (order.status === "Pending" || order.status === "Processing");
-  const isQueued = waiting && !!order.queuedBehind;
-  const isProcessing = !isComplete && !isPartial && !waiting && pct > 0 && pct < 100;
-  if (detailed) {
-    return (
-      <div>
-        <div className="flex items-center justify-between text-[11px] mb-1" style={{ color: dark ? "rgba(255,255,255,.6)" : "rgba(0,0,0,.45)" }}>
-          <span>{waiting ? (isQueued ? "Queued" : "Waiting to start") : `${delivered.toLocaleString()} / ${qty.toLocaleString()} delivered`}</span>
-          {!waiting && <span style={{ color }}>{pct}%</span>}
-        </div>
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
-          {waiting
-            ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
-            : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
-        </div>
-      </div>
-    );
-  }
+  if (!hasData) return <span className="op-bar wait" aria-hidden="true"><span /></span>;
+  const pct = Math.min(100, Math.round(((qty - Math.max(0, order.remains)) / qty) * 100));
+  return <span className="op-bar" aria-hidden="true" style={{ "--sc": sClr("Processing", dark) }}><span style={{ width: `${pct}%` }} /></span>;
+}
+function OrderHead({ o, dark, open, onToggle, kid = false }) {
   return (
-    <div className="w-full h-1 rounded-full overflow-hidden mt-1.5" style={{ background: dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)" }}>
-      {waiting
-        ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
-        : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
+    <div role="button" tabIndex={0} aria-expanded={open} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={onToggle} className={`op-row${kid ? " kid" : ""}`}>
+      <span className="op-pi"><PlatformIcon platform={o.platform} dark={dark} size={kid ? 17 : 22} /></span>
+      <span className="op-tx">
+        <span className="op-nm"><b>{o.service}</b><TierTag tier={o.tier} dark={dark} className="wide" /></span>
+        <span className="op-sub">
+          <TierTag tier={o.tier} dark={dark} className="narrow" />
+          {o.created && <span><OffsetIcon name="clockPlain" size={12} />{fT(o.created)}</span>}
+        </span>
+      </span>
+      <StatusChip status={o.queuedBehind ? "Queued" : o.status} dark={dark} />
+      {!open && <RowBar order={o} dark={dark} />}
     </div>
   );
 }
+/* One message per state, in one shape: an icon, a coloured lead, the words. */
+function Msg({ tone, icon, title, children, dark }) {
+  const c = { ok: dark ? "#6ee7b7" : "#059669", warn: dark ? "#fbbf24" : "#d97706", run: dark ? "#a5b4fc" : "#4f46e5", bad: dark ? "#fca5a5" : "#dc2626", off: dark ? "#a1a1aa" : "#71717a" }[tone];
+  return <div className="op-msg" style={{ "--sc": c }}><OffsetIcon name={icon} size={15} /><div>{title && <><b>{title}</b>{" "}</>}{children}</div></div>;
+}
+
+
 
 
 
@@ -185,7 +258,7 @@ function refillEligible(o) {
   return !!o.canRefill;
 }
 
-function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, compact, waNum, onViewComments, doRefill, refillLoading }) {
+function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, waNum, onViewComments, doRefill, refillLoading }) {
   const tr = useT();
   const money = useMoney();
   const qty = o.quantity || 0;
@@ -195,10 +268,9 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
   const delivered = isCancelled ? 0 : isComplete ? qty : hasData ? Math.max(0, qty - Math.max(0, o.remains)) : 0;
   const pct = isCancelled ? 0 : isComplete ? 100 : hasData ? Math.min(100, Math.round((delivered / qty) * 100)) : 0;
   const isPartial = o.status === "Partial";
-  const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : "#c47d8e";
+  const barColor = isCancelled ? (dark ? "#666" : "#999") : isComplete ? (dark ? "#6ee7b7" : "#059669") : isPartial ? (dark ? "#fbbf24" : "#d97706") : sClr("Processing", dark);
   const waiting = !isCancelled && !hasData && !isComplete && (o.status === "Pending" || o.status === "Processing");
   const isQueued = waiting && !!o.queuedBehind;
-  const py = compact ? "py-3 px-3 desktop:py-3.5 desktop:px-4" : "py-3.5 px-3.5 desktop:py-4 desktop:px-[18px]";
   const waMessage = encodeURIComponent(`Hi *Nitro*, I need help with my order:\n\n*Order:* ${o.id}\n*Service:* ${o.service}${o.tier ? ' (' + o.tier + ')' : ''}\n*Quantity:* ${qty.toLocaleString()}\n*Delivered:* ${delivered.toLocaleString()} / ${qty.toLocaleString()}\n*Status:* ${o.status}\n*Date:* ${fD(o.created, true)}`);
   const reportIssueButton = waNum ? (
     <WaButton href={`https://wa.me/${waNum}?text=${waMessage}`} weight="quiet" size="sm">
@@ -208,102 +280,53 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
 
 
   return (
-    <div className={py} style={{ background: dark ? "rgba(196,125,142,.05)" : "rgba(196,125,142,.04)", borderTop: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}`, ...((o.status === "Processing" || o.status === "Pending") ? { borderBottom: `3px solid ${dark ? "rgba(196,125,142,.25)" : "rgba(196,125,142,.2)"}`, borderLeft: `3px solid ${t.accent}` } : {}) }}>
-      {/* Link */}
-      {o.link && (
-        <div className="mb-3 py-2 px-2.5 rounded-lg flex items-center gap-2 min-w-0 max-w-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.025)", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.06)"}` }}>
-          <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)" }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-          </div>
-          <a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} className="m min-w-0 flex-1 text-[11px] desktop:text-[13px] leading-[1.45] overflow-hidden text-ellipsis whitespace-nowrap no-underline text-t-text-soft">{o.link}</a>
-        </div>
-      )}
-
-      {/* View comments button */}
-      {o.comments && (
-        <button onClick={(e) => { e.stopPropagation(); onViewComments?.(o.comments); }} className="act neutral">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-          {tr("View comments")}
-        </button>
-      )}
-
-      {/* Delivery progress */}
+    <div className="op-det">
+      {/* Progress first: how far along, the bar, and roughly how long. The one
+          bar the order has once it is open. */}
       {(() => {
+        if (isCancelled) return null;
         const estTime = estimateDelivery(o.serviceType, qty, o.remains, o.dripEndAt);
-        const isActive = !isCancelled && !isComplete && o.status !== "Partial";
-        const isProcessing = isActive && !waiting && pct > 0 && pct < 100;
+        const isActive = !isComplete && o.status !== "Partial";
         return (
-          <div className="mb-3 py-2 px-3 rounded-lg" style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", border: `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.04)"}` }}>
-            <div className="flex items-center justify-between text-[11px] mb-1.5">
-              <span className="text-t-text-muted">{isCancelled ? tr("Cancelled") : waiting ? (isQueued ? tr("Queued") : tr("Waiting to start")) : tr("Delivered")}</span>
-              {!waiting && <span className="m font-semibold" style={{ color: barColor }}>{delivered.toLocaleString()} / {qty.toLocaleString()}</span>}
+          <div className="op-prog" style={{ "--sc": barColor }}>
+            <div className="op-prog-top">
+              <b className="m">{waiting ? <span style={{ fontFamily: "inherit" }}>{isQueued ? tr("Queued") : tr("Waiting to start")}</span> : <>{delivered.toLocaleString()} <small>{tr("of")} {qty.toLocaleString()} {tr("delivered")}</small></>}</b>
+              {!waiting && <span className="m">{pct}%</span>}
             </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: dark ? "rgba(255,255,255,.14)" : "rgba(0,0,0,.08)" }}>
-              {waiting
-                ? <div className="h-full rounded-full" style={{ background: `repeating-linear-gradient(-55deg, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"}, ${dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.16)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 6px, ${dark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.04)"} 12px)`, backgroundSize: "28px 100%", animation: "progress-stripe .8s linear infinite" }} />
-                : <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: barColor, ...(isProcessing ? { animation: "progress-pulse 2.8s ease-in-out infinite" } : {}) }} />}
-            </div>
-            {isActive && estTime && (
-              <div className="flex items-center gap-1.5 mt-2.5 py-1.5 px-2.5 rounded-md w-fit" style={{ background: dark ? "rgba(196,125,142,.1)" : "rgba(196,125,142,.07)", border: `1px solid ${dark ? "rgba(196,125,142,.18)" : "rgba(196,125,142,.12)"}` }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span className="text-[11px] desktop:text-[11px] font-medium" style={{ color: dark ? "rgba(196,125,142,.85)" : "rgba(160,80,100,.75)" }}>{tr("Est.")} {estTime}</span>
-              </div>
-            )}
+            <div className={`op-prog-bar${waiting ? " wait" : ""}`}><span style={waiting ? undefined : { width: `${pct}%` }} /></div>
+            {isActive && estTime && <div className="op-eta"><OffsetIcon name="clockPlain" size={12} />{tr("Est.")} {estTime}</div>}
           </div>
         );
       })()}
 
-      {/* Completed info banner */}
       {o.status === "Completed" && (
-        <div className="mb-3 py-2.5 px-3 rounded-lg flex items-start gap-2.5" style={{ background: dark ? "rgba(34,197,94,.08)" : "rgba(34,197,94,.04)", border: `1px solid ${dark ? "rgba(34,197,94,.18)" : "rgba(34,197,94,.12)"}` }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#6ee7b7" : "#059669"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          <div>
-            <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#6ee7b7" : "#059669" }}>{tr("Your order is complete!")}</div>
-            <div className="text-[11px] leading-[1.55]" style={{ color: dark ? "#a09b95" : "#555250" }}>{tr("If you notice a small dip in the next few days, don't worry — platforms routinely clean up inactive accounts and it's completely normal.")}{refillEligible(o) ? <strong style={{ color: dark ? "#e5e0db" : "#1a1a1a" }}> {tr("Use the Request Refill button below to top up at no extra cost.")}</strong> : o.refill ? <strong style={{ color: dark ? "#e5e0db" : "#1a1a1a" }}> {tr("Your refill window for this order has ended.")}</strong> : null}</div>
-          </div>
-        </div>
+        <Msg tone="ok" icon="checkCircle" title={tr("Your order is complete!")} dark={dark}>
+          {tr("If you notice a small dip in the next few days, don't worry — platforms routinely clean up inactive accounts and it's completely normal.")}{refillEligible(o) ? <strong> {tr("Use the Request Refill button below to top up at no extra cost.")}</strong> : o.refill ? <strong> {tr("Your refill window for this order has ended.")}</strong> : null}
+        </Msg>
       )}
-
-      {/* Partial info banner */}
       {o.status === "Partial" && (
-        <div className="mb-3 py-2.5 px-3 rounded-lg flex items-start gap-2.5" style={{ background: dark ? "rgba(245,158,11,.08)" : "rgba(245,158,11,.04)", border: `1px solid ${dark ? "rgba(245,158,11,.18)" : "rgba(245,158,11,.12)"}` }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-          <div>
-            <div className="text-[13px] font-semibold mb-0.5" style={{ color: dark ? "#fbbf24" : "#d97706" }}>{tr("Partial delivery")}</div>
-            <div className="text-[11px] leading-[1.55]" style={{ color: dark ? "#a09b95" : "#555250" }}>{tr("Part of your order has been delivered and the rest has been refunded to your wallet. This usually happens when a provider runs out of capacity mid-delivery — it's not an error. You can use the refunded balance to place a new order anytime.")}</div>
-          </div>
-        </div>
+        <Msg tone="warn" icon="pauseCircle" title={tr("Partial delivery")} dark={dark}>
+          {tr("Part of your order has been delivered and the rest has been refunded to your wallet. This usually happens when a provider runs out of capacity mid-delivery — it's not an error. You can use the refunded balance to place a new order anytime.")}
+        </Msg>
       )}
-
-      {/* Queued notice */}
       {isQueued && (
-        <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(165,180,252,.08)" : "rgba(79,70,229,.04)", border: `1px solid ${dark ? "rgba(165,180,252,.18)" : "rgba(79,70,229,.12)"}` }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#a5b4fc" : "#4f46e5"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <div className="text-[11px]" style={{ color: dark ? "#a5b4fc" : "#4f46e5" }}>
-            {tr("You have another order running on this same link. This one will start automatically once it completes — no action needed.")}
-          </div>
-        </div>
+        <Msg tone="run" icon="clockPlain" dark={dark}>
+          {tr("You have another order running on this same link. This one will start automatically once it completes — no action needed.")}
+        </Msg>
       )}
-
-      {/* Issue notice */}
       {!isQueued && o.lastError && o.status === "Pending" && !o.apiOrderId && (
-        <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: dark ? "rgba(251,191,36,.08)" : "rgba(217,119,6,.05)", border: `1px solid ${dark ? "rgba(251,191,36,.18)" : "rgba(217,119,6,.14)"}` }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? "#fbbf24" : "#d97706"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <div className="text-[11px]" style={{ color: dark ? "#fbbf24" : "#d97706" }}>
-            {/duplicate/i.test(o.lastError) ? "A similar order is already active for this link. This order will start automatically once the other completes."
-              : /balance|fund/i.test(o.lastError) ? "Temporarily delayed — our team has been notified and this will be resolved shortly."
-              : /incorrect service|invalid service|service replaced/i.test(o.lastError) ? "This service is temporarily unavailable. You'll be refunded if it can't be fulfilled."
-              : o.lastError === "wrong_service_type" ? "The link type didn't match this service. You'll be refunded if it can't be fulfilled."
-              : o.lastError === "missing_comments" ? "This service needs custom comments. You'll be refunded if it can't be fulfilled."
-              : /link|url|wrong_platform|needs_post|needs_profile/i.test(o.lastError) ? "There's an issue with the link for this order. You'll be refunded if it can't be fulfilled."
-              : /quantity.*less|minim/i.test(o.lastError) ? "The quantity couldn't be processed. Please contact support if this persists."
-              : /timeout|timed.?out/i.test(o.lastError) ? "There was a temporary connection issue. Your order will be retried automatically."
-              : "Your order hit a temporary issue and will be retried automatically. Contact support if it stays pending."}
-          </div>
-        </div>
+        <Msg tone="warn" icon="alert" dark={dark}>
+          {/duplicate/i.test(o.lastError) ? "A similar order is already active for this link. This order will start automatically once the other completes."
+            : /balance|fund/i.test(o.lastError) ? "Temporarily delayed — our team has been notified and this will be resolved shortly."
+            : /incorrect service|invalid service|service replaced/i.test(o.lastError) ? "This service is temporarily unavailable. You'll be refunded if it can't be fulfilled."
+            : o.lastError === "wrong_service_type" ? "The link type didn't match this service. You'll be refunded if it can't be fulfilled."
+            : o.lastError === "missing_comments" ? "This service needs custom comments. You'll be refunded if it can't be fulfilled."
+            : /link|url|wrong_platform|needs_post|needs_profile/i.test(o.lastError) ? "There's an issue with the link for this order. You'll be refunded if it can't be fulfilled."
+            : /quantity.*less|minim/i.test(o.lastError) ? "The quantity couldn't be processed. Please contact support if this persists."
+            : /timeout|timed.?out/i.test(o.lastError) ? "There was a temporary connection issue. Your order will be retried automatically."
+            : "Your order hit a temporary issue and will be retried automatically. Contact support if it stays pending."}
+        </Msg>
       )}
-
-      {/* Cancellation reason */}
       {(o.status === "Cancelled" || o.status === "Failed" || o.status === "Rejected") && (() => {
         const err = o.lastError || "";
         let msg, guide = false, isNeutral = false;
@@ -349,68 +372,62 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
           msg = "This order didn't go through and you've been refunded. If this keeps happening, double-check your link or reach out to support.";
           guide = true;
         }
-        const bg = isNeutral ? (dark ? "rgba(161,161,170,.06)" : "rgba(113,113,122,.04)") : (dark ? "rgba(252,165,165,.06)" : "rgba(220,38,38,.04)");
-        const brd = isNeutral ? (dark ? "rgba(161,161,170,.15)" : "rgba(113,113,122,.1)") : (dark ? "rgba(252,165,165,.15)" : "rgba(220,38,38,.1)");
-        const clr = isNeutral ? (dark ? "#a1a1aa" : "#71717a") : (dark ? "#fca5a5" : "#dc2626");
         return (
-        <div className="mb-3 py-2 px-3 rounded-lg flex items-start gap-2" style={{ background: bg, border: `1px solid ${brd}` }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">{isNeutral ? <><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></> : <><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></>}</svg>
-          <div className="text-[11px]" style={{ color: clr }}>
-            {msg}{guide && <>{" "}<a href="/blog/how-to-find-the-right-link" target="_blank" style={{ color: clr, textDecoration: "underline", fontWeight: 600 }}>{tr("Learn more")}</a></>}
-          </div>
-        </div>);
+          <Msg tone={isNeutral ? "off" : "bad"} icon={isNeutral ? "checkCircle" : "xCircle"} dark={dark}>
+            {msg}{guide && <>{" "}<a href="/blog/how-to-find-the-right-link" target="_blank">{tr("Learn more")}</a></>}
+          </Msg>
+        );
       })()}
 
-      {/* Facts, as rows */}
-      <div className="rounded-xl mb-3 px-3" style={{ background: dark ? "rgba(255,255,255,.05)" : "#fff", border: `1px solid ${dark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.07)"}` }}>
-        {[
-          ["Order ID", <CopyId key="id" value={o.id} dark={dark} />],
-          // Full-list orders don't carry a tier name the way a curated order
-          // does ("Standard" under "Instagram Followers"), so quoting this
-          // exact id is the fastest way to tell WhatsApp support precisely
-          // which of the full list's ~8,000 rows was ordered.
-          // fullListDisabled already accounts for the service being blacklisted
-          // or dropped by its provider — the number itself never changes
-          // either way, only whether this tag shows next to it.
-          o.fullList && o.nitroServiceId ? [tr("Service ID"), <>{o.fullListDisabled && <span key="ret" className="text-[10px] font-semibold py-[1px] px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>{tr("Retired")}</span>}<CopyId key="nsid" value={o.nitroServiceId} dark={dark} /></>] : null,
-          isCancelled ? ["Quantity", <b key="q" className="m text-[13px] font-semibold text-t-text">{qty.toLocaleString()}</b>]
-            : (hasData && !isComplete) ? ["Delivered", <span key="d" className="m text-[13px] text-t-text-muted"><b className="font-semibold text-t-text">{delivered.toLocaleString()}</b> of {qty.toLocaleString()}</span>]
-            : ["Quantity", <b key="q" className="m text-[13px] font-semibold text-t-text">{qty.toLocaleString()}</b>],
-          [isCancelled ? "Refunded" : "Charge", <b key="c" className="m text-[13px] font-semibold" style={{ color: isCancelled ? (dark ? "#6ee7b7" : "#059669") : t.text }}>{money(o.charge)}</b>],
-          ["Start count", o.startCount != null ? <b key="s" className="m text-[13px] font-semibold text-t-text">{o.startCount.toLocaleString()}</b> : <span key="s" className="text-[12.5px] text-t-text-muted">{tr("Not yet")}</span>],
-          // The link already has its own bordered row with an icon above this
-          // block — this was a second, truncated copy of the same URL further
-          // down the same card.
-        ].filter(Boolean).map(([label, val], i) => (
-          <div key={label} className="flex items-center justify-between gap-3 py-2 text-[12.5px] text-t-text-muted" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
-            <span>{label}</span>
-            <span className="flex items-center gap-1.5 min-w-0">{val}</span>
-          </div>
-        ))}
+      {/* The facts as cells, then the link in full with a way to open it. */}
+      <div className="op-facts">
+        <div className="op-f"><i><OffsetIcon name="receipt" size={12} />{tr("Order")}</i><div><CopyId value={o.id} dark={dark} /></div></div>
+        <div className="op-f"><i><OffsetIcon name={isCancelled ? "moneyIn" : "wallet"} size={12} />{isCancelled ? tr("Refunded") : tr("Charged")}</i><div className="m" style={isCancelled ? { color: dark ? "#6ee7b7" : "#059669" } : undefined}>{money(o.charge)}</div></div>
+        {isCancelled
+          ? <div className="op-f"><i><OffsetIcon name="users" size={12} />{tr("Quantity")}</i><div className="m">{qty.toLocaleString()}</div></div>
+          : <div className="op-f"><i><OffsetIcon name="bars" size={12} />{tr("Start count")}</i>{o.startCount != null ? <div className="m">{o.startCount.toLocaleString()}</div> : <div className="op-none">{tr("Not yet")}</div>}</div>}
+        {/* Full-list orders don't carry a tier name the way a curated order
+            does, so quoting this exact id is the fastest way to tell WhatsApp
+            support precisely which of the full list's rows was ordered.
+            fullListDisabled already accounts for the service being blacklisted
+            or dropped by its provider — the number itself never changes either
+            way, only whether this tag shows next to it. */}
+        {o.fullList && o.nitroServiceId && (
+          <div className="op-f wide"><i><OffsetIcon name="tag" size={12} />{tr("Service ID")}</i><div>{o.fullListDisabled && <span className="text-[10px] font-semibold py-[1px] px-1.5 rounded text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.05)" }}>{tr("Retired")}</span>}<CopyId value={o.nitroServiceId} dark={dark} /></div></div>
+        )}
+        {o.link && (
+          <div className="op-f wide"><i><OffsetIcon name="link" size={12} />{tr("Link")}</i><div><a href={o.link} target="_blank" rel="noopener noreferrer" title={o.link} onClick={e => e.stopPropagation()} className="m"><span>{o.link}</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg></a></div></div>
+        )}
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-2 flex-wrap py-1.5 px-1">
+      {/* Actions, the one the state calls for first */}
+      <div className="op-acts">
+        {o.comments && (
+          <button onClick={(e) => { e.stopPropagation(); onViewComments?.(o.comments); }} className="act neutral">
+            <OffsetIcon name="comment" size={13} />
+            {tr("View comments")}
+          </button>
+        )}
         {(o.status === "Processing" || o.status === "Pending") && (
           <>
-            <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="act indigo">{actionLoading === o.id ? <Spinner size={14} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}{tr("Check")}</button>
-            {o.status === "Pending" && !o.apiOrderId && <button onClick={async () => { const ok = await confirm({ title: tr("Cancel Order"), message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="act red"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>{tr("Cancel")}</button>}
+            <button onClick={() => doAction(o.id, "check")} disabled={actionLoading === o.id} className="act indigo">{actionLoading === o.id ? <Spinner size={14} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <OffsetIcon name="refresh" size={14} />}{tr("Check status")}</button>
+            {o.status === "Pending" && !o.apiOrderId && <button onClick={async () => { const ok = await confirm({ title: tr("Cancel Order"), message: `Cancel order ${o.id}? Your wallet will be refunded.`, confirmLabel: "Cancel Order", danger: true }); if (ok) doAction(o.id, "cancel"); }} disabled={actionLoading === o.id} className="act red"><OffsetIcon name="xCircle" size={14} />{tr("Cancel")}</button>}
           </>
-        )}
-        {(o.status === "Completed" || o.status === "Cancelled") && !o.offerDisabled && (
-          <button onClick={async () => { const ok = await confirm({ title: tr("Reorder"), message: `${tr("Reorder")} ${o.service}? ${money(o.charge || 0)} ${tr("will be charged from your wallet.")}`, confirmLabel: tr("Place Reorder") }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="act purple">{actionLoading === o.id ? <Spinner size={14} color={t.accent} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}{tr("Reorder")}</button>
         )}
         {o.refillRequestedAt && refillEligible(o) && (
           <span className="act amber">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+            <OffsetIcon name="refresh" size={14} />
             {tr("Refill in Progress")}
           </span>
         )}
         {!o.refillRequestedAt && refillEligible(o) && (
           <button onClick={async () => { const ok = await confirm({ title: tr("Request Refill"), message: tr("If your count dropped after delivery, we'll top it back up at no extra cost. This may take a few hours."), confirmLabel: "Request Refill" }); if (ok) doRefill(o.id); }} disabled={refillLoading === o.id} className="act green">
-            {refillLoading === o.id ? <Spinner size={14} color={dark ? "#6ee7b7" : "#059669"} /> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>}
+            {refillLoading === o.id ? <Spinner size={14} color={dark ? "#6ee7b7" : "#059669"} /> : <OffsetIcon name="refresh" size={14} />}
             {tr("Request Refill")}
           </button>
+        )}
+        {(o.status === "Completed" || o.status === "Cancelled" || o.status === "Partial") && !o.offerDisabled && (
+          <button onClick={async () => { const ok = await confirm({ title: tr("Reorder"), message: `${tr("Reorder")} ${o.service}? ${money(o.charge || 0)} ${tr("will be charged from your wallet.")}`, confirmLabel: tr("Place Reorder") }); if (ok) doAction(o.id, "reorder"); }} disabled={actionLoading === o.id} className="act purple">{actionLoading === o.id ? <Spinner size={14} color={t.accent} /> : <OffsetIcon name="receiptPlus" size={14} />}{tr("Reorder")}</button>
         )}
         {reportIssueButton}
       </div>
@@ -422,10 +439,7 @@ function ExpandedOrderDetails({ o, dark, t, doAction, actionLoading, confirm, co
 /* ── Batch row ── */
 function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpandedOrder, doAction, actionLoading, doBatchAction, batchActionLoading, confirm, toast, onNavigate, waNum, onViewComments, doRefill, refillLoading }) {
   const tr = useT();
-  const hasAttentionOrders = batch.orders.some(isAttention);
   const isLoading = batchActionLoading === batch.batchId;
-  const accentColor = hasAttentionOrders ? (dark ? "#fcd34d" : "#d97706") : t.accent;
-
   const hasActive = batch.orders.some(o => o.status === "Processing" || o.status === "Pending");
   const hasCancellable = batch.orders.some(o => o.status === "Pending" && !o.apiOrderId);
   const reorderableOrders = batch.orders.filter(o => o.status === "Completed" || o.status === "Cancelled");
@@ -436,67 +450,58 @@ function BatchRow({ batch, dark, t, expanded, onToggle, expandedOrder, setExpand
     : batch.orders.some(o => ["Pending", "Processing", "In progress"].includes(o.status)) ? "Processing"
     : "Partial";
 
+  const n = batch.orders.length;
+  const done = batch.orders.filter(o => o.status === "Completed").length;
   return (
     <div>
-      {/* Collapsed header */}
-      <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => onToggle(batch.batchId)} className="flex items-center py-3 px-3.5 desktop:py-3.5 desktop:px-[18px] cursor-pointer gap-3 desktop:gap-4 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ borderBottom: `1px solid ${t.cardBorder}`, ...(hasAttentionOrders && { borderLeft: `3px solid ${dark ? "#fbbf24" : "#d97706"}` }) }}>
-        <div className="shrink-0 flex items-center justify-center rounded-xl" style={{ width: 42, height: 42, background: dark ? "rgba(196,125,142,.12)" : "rgba(196,125,142,.08)", border: `1px solid ${dark ? "rgba(196,125,142,.2)" : "rgba(196,125,142,.15)"}` }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap text-t-text">{batch.batchId}</div>
-          <div className="text-[11px] desktop:text-xs font-medium mt-0.5 text-accent-ink">{batch.orders.length} order{batch.orders.length !== 1 ? "s" : ""}</div>
-          {batch.created && <div className="text-[11px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fT(batch.created)}</div>}
-        </div>
-        <div className="text-right shrink-0 flex items-center gap-1.5">
-          {(batchSt === "Processing") && <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: sClr("Processing", dark) }} />}
-          <Badge status={batchSt} dark={dark} />
-        </div>
-        <svg className="shrink-0 ml-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", }}><polyline points="6 9 12 15 18 9"/></svg>
+      <div role="button" tabIndex={0} aria-expanded={expanded} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } }} onClick={() => onToggle(batch.batchId)} className="op-row">
+        <span className="op-pi bulk"><OffsetIcon name="cart" size={19} /></span>
+        <span className="op-tx">
+          <span className="op-nm"><b>{tr("Bulk order")} {batch.batchId}</b></span>
+          <span className="op-sub">
+            <span><OffsetIcon name="layers" size={12} />{n} {n === 1 ? tr("order") : tr("orders")}</span>
+            {batch.created && <span className="op-wide"><OffsetIcon name="clockPlain" size={12} />{fT(batch.created)}</span>}
+            <span><OffsetIcon name="checkCircle" size={12} />{done} {tr("of")} {n} {tr("done")}</span>
+          </span>
+        </span>
+        <StatusChip status={batchSt} dark={dark} />
+        {!expanded && batchSt === "Processing" && <span className="op-bar" aria-hidden="true" style={{ "--sc": sClr("Processing", dark) }}><span style={{ width: `${(done / n) * 100}%` }} /></span>}
       </div>
 
-      {/* Expanded body */}
-      {expanded && (
-        <div style={{ background: dark ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.02)", borderLeft: `3px solid ${accentColor}`, borderTop: `2px solid ${dark ? "rgba(196,125,142,.28)" : "rgba(196,125,142,.24)"}` }}>
-          {/* Batch action bar */}
-          <div className="flex items-center gap-5 py-2.5 px-4 desktop:px-5" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}` }}>
-            <span className="text-[11px] uppercase tracking-[1px] font-medium mr-auto text-t-text-muted">{tr("Bulk actions")}</span>
-            {hasActive && (
-              <button onClick={() => doBatchAction(batch.batchId, "check")} disabled={isLoading} className="act indigo" style={{ opacity: isLoading ? .5 : 1 }}>
-                {isLoading ? <Spinner size={12} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}{tr("Check all")}
-              </button>
-            )}
-            {hasCancellable && (
-              <button onClick={async () => { const ok = await confirm({ title: tr("Cancel Bulk Order"), message: `${tr("Cancel all pending orders in")} ${batch.batchId} ${tr("that haven't been sent to providers yet? Your wallet will be refunded.")}`, confirmLabel: tr("Cancel All"), danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isLoading} className="act red" style={{ opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>{tr("Cancel all")}</button>
-            )}
-            {hasReorderable && (
-              <button onClick={async () => { const ok = await confirm({ title: tr("Reorder Bulk"), message: `${tr("Reorder all completed/cancelled orders from")} ${batch.batchId}?`, confirmLabel: tr("Reorder All") }); if (ok) doBatchAction(batch.batchId, "reorder_completed"); }} disabled={isLoading} className="act purple" style={{ opacity: isLoading ? .5 : 1 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>{tr("Reorder all")}</button>
-            )}
+      {expanded && (<>
+        <div className="op-det" style={{ paddingBottom: 10 }}>
+          <div className="op-prog" style={{ "--sc": batchSt === "Completed" ? sClr("Completed", dark) : sClr("Processing", dark) }}>
+            <div className="op-prog-top"><b className="m">{done} <small>{tr("of")} {n} {tr("orders")} {tr("done")}</small></b><span className="m">{Math.round((done / n) * 100)}%</span></div>
+            <div className="op-prog-bar"><span style={{ width: `${(done / n) * 100}%` }} /></div>
           </div>
-
-          {/* Child orders */}
+        </div>
+        {/* Each order in the batch, opening on its own */}
+        <div className="op-kids">
           {batch.orders.map((o) => (
             <div key={o.id} style={expandedOrder === o.id ? openCardFrame(t, dark) : undefined}>
-              <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)} className="flex items-center py-2.5 px-3 desktop:py-3 desktop:px-4 pl-4 desktop:pl-5 cursor-pointer gap-2.5 desktop:gap-3 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ borderBottom: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.08)"}`, ...(expandedOrder === o.id ? openCardHeader(dark) : {}), ...(isAttention(o) && { borderLeft: `3px solid ${dark ? "#fbbf24" : "#d97706"}` }) }}>
-                <div className="shrink-0 flex items-center justify-center rounded-lg" style={{ width: 36, height: 36, background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.03)", border: `1px solid ${dark ? "rgba(255,255,255,.10)" : "rgba(0,0,0,.05)"}` }}>
-                  <PlatformIcon platform={o.platform} dark={dark} size={22} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] desktop:text-sm font-semibold overflow-hidden text-ellipsis whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical] text-t-text">{o.service}</div>
-                  {o.tier && <div className="text-[11px] desktop:text-[11px] font-medium mt-0.5 text-accent-ink">{o.tier}</div>}
-                  {o.created && <div className="text-[11px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fT(o.created)}</div>}
-                  {expandedOrder !== o.id && <ProgressBar order={o} dark={dark} />}
-                </div>
-                <div className="text-right shrink-0">
-                  <Badge status={o.queuedBehind ? "Queued" : o.status} dark={dark} />
-                </div>
-                <svg className="shrink-0 ml-0.5" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expandedOrder === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", }}><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-              {expandedOrder === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={onViewComments} doRefill={doRefill} refillLoading={refillLoading} compact />}
+              <OrderHead o={o} dark={dark} kid open={expandedOrder === o.id} onToggle={() => setExpandedOrder(expandedOrder === o.id ? null : o.id)} />
+              {expandedOrder === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={onViewComments} doRefill={doRefill} refillLoading={refillLoading} />}
             </div>
           ))}
         </div>
-      )}
+        {(hasActive || hasCancellable || hasReorderable) && (
+          <div className="op-det" style={{ paddingTop: 10 }}>
+            <div className="op-acts">
+              {hasActive && (
+                <button onClick={() => doBatchAction(batch.batchId, "check")} disabled={isLoading} className="act indigo" style={{ opacity: isLoading ? .5 : 1 }}>
+                  {isLoading ? <Spinner size={12} color={dark ? "#a5b4fc" : "#4f46e5"} /> : <OffsetIcon name="refresh" size={12} />}{tr("Check all")}
+                </button>
+              )}
+              {hasCancellable && (
+                <button onClick={async () => { const ok = await confirm({ title: tr("Cancel Bulk Order"), message: `${tr("Cancel all pending orders in")} ${batch.batchId} ${tr("that haven't been sent to providers yet? Your wallet will be refunded.")}`, confirmLabel: tr("Cancel All"), danger: true }); if (ok) doBatchAction(batch.batchId, "cancel"); }} disabled={isLoading} className="act red" style={{ opacity: isLoading ? .5 : 1 }}><OffsetIcon name="xCircle" size={12} />{tr("Cancel all")}</button>
+              )}
+              {hasReorderable && (
+                <button onClick={async () => { const ok = await confirm({ title: tr("Reorder Bulk"), message: `${tr("Reorder all completed/cancelled orders from")} ${batch.batchId}?`, confirmLabel: tr("Reorder All") }); if (ok) doBatchAction(batch.batchId, "reorder_completed"); }} disabled={isLoading} className="act purple" style={{ opacity: isLoading ? .5 : 1 }}><OffsetIcon name="receiptPlus" size={12} />{tr("Reorder all")}</button>
+              )}
+            </div>
+          </div>
+        )}
+      </>)}
     </div>
   );
 }
@@ -541,44 +546,6 @@ function Pagination({ total, page, setPage, perPage, setPerPage, t }) {
 /* ═══════════════════════════════════════════ */
 /* ═══ ORDERS PAGE                         ═══ */
 /* ═══════════════════════════════════════════ */
-/**
- * The rows behind the Summary dropdown on the orders list.
- *
- * This went missing in v2.4.48, the right-rail rework: the definition was
- * deleted along with one of its two call sites, and the other was left behind.
- * Opening Summary has thrown ReferenceError into the error boundary ever since
- * — August to October — because the panel only renders on click, so nothing
- * that merely loads the page could touch it. Sentry 7794872833.
- *
- * It reads its own formatters rather than taking them as arguments. The same
- * dropdown on the tasks page took `money` as a parameter and a caller forgot to
- * pass it, which threw in exactly the same way (7794355937) — a component that
- * fetches what it needs cannot be called wrong.
- */
-function SummaryRows({ orderSummary, dark, t }) {
-  const tr = useT();
-  const money = useMoney();
-  const rows = [
-    [tr("Total orders"), String(orderSummary?.total ?? 0), null],
-    [tr("Delivering now"), String(orderSummary?.active || 0), dark ? "#a5b4fc" : "#4f46e5"],
-    (orderSummary?.attention || 0) > 0
-      ? [tr("Needs attention"), String(orderSummary.attention), dark ? "#fdba74" : "#c2410c"]
-      : null,
-    [tr("Completed"), String(orderSummary?.completed || 0), dark ? "#6ee7b7" : "#059669"],
-    // `spent` arrives in naira already, the same way OrdersSidebar reads it.
-    [tr("Total spent"), money(orderSummary?.spent || 0), t.accent],
-  ].filter(Boolean);
-  return (
-    <div>
-      {rows.map(([label, val, color], i) => (
-        <div key={label} className="flex items-center justify-between gap-3 py-2.5 text-[13px] text-t-text-soft" style={{ borderTop: i > 0 ? `1px solid ${dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)"}` : "none" }}>
-          <span className="flex items-center gap-2">{label === tr("Delivering now") && Number(val) > 0 && <span className="w-[7px] h-[7px] rounded-full animate-pulse" style={{ background: "#4f46e5" }} />}{label}</span>
-          <b className="m text-[15px] font-semibold" style={{ color: color || t.text }}>{val}</b>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 /* "Ordered without an account?" A guest order, and any credit left on its
    code, moves into this account with the guest code: only the buyer holds it
@@ -628,15 +595,6 @@ function GuestCodeClaim({ t, onDone }) {
 export default function OrdersPage({ orders: initialOrders, initialTotal = initialOrders.length, orderSummary, dark, t, onNavigate, onRefresh, waNum, email, initialSearch = "", guestCodes = false }) {
   const tr = useT();
   const money = useMoney();
-  const [sumOpen, setSumOpen] = useState(false);
-  const sumRef = useRef(null);
-  useEffect(() => {
-    if (!sumOpen) return;
-    const onDown = (e) => { if (sumRef.current && !sumRef.current.contains(e.target)) setSumOpen(false); };
-    const onKey = (e) => { if (e.key === "Escape") setSumOpen(false); };
-    document.addEventListener("mousedown", onDown); document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
-  }, [sumOpen]);
   const initialTotalCount = Number.isFinite(initialTotal) ? initialTotal : initialOrders.length;
   const confirm = useConfirm();
   const [orders, setOrders] = useState(initialOrders);
@@ -801,45 +759,43 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
   const hasFilters = filter !== "all" || search.trim().length >= 2 || dateRange;
 
   return (
-    <>
+    <div className="op-page" style={{ "--op-line": t.cardBorder, "--op-ink": t.text, "--op-mut": t.textMuted, "--op-card": "var(--t-card-bg)", "--op-field": dark ? "rgba(255,255,255,.04)" : "#faf8f8", "--op-print": dark ? "#6b3a4a" : "#efc4cf", "--op-run": sClr("Processing", dark) }}>
+      <style>{OP_CSS}</style>
       {/* Header */}
       <div className="pb-2 desktop:pb-3">
-        <div className="flex justify-between items-start gap-3">
-          <div>
-            <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">{tr("Orders")}</div>
-            <div className="text-sm desktop:text-[15px] text-t-text-muted">{tr("Track delivery, refunds, and reorders")}</div>
-          </div>
-          {/* Summary, closed until asked for */}
-          <div ref={sumRef} className="relative shrink-0">
-            <button onClick={() => setSumOpen(v => !v)} aria-expanded={sumOpen} aria-controls="orders-summary" className="flex items-center gap-1.5 h-9 px-3 rounded-xl cursor-pointer text-[12.5px] font-medium text-t-text-soft" style={{ background: dark ? "rgba(255,255,255,.06)" : "#fff", border: `1px solid ${t.cardBorder}` }}>
-              {tr("Summary")}
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: sumOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }}><path d="m6 9 6 6 6-6"/></svg>
-            </button>
-            {sumOpen && (
-              <div id="orders-summary" className="absolute top-11 z-20 w-[250px] rounded-2xl px-3.5 py-1" style={{ insetInlineEnd: 0, background: dark ? "#1a1329" : "#fff", border: `1px solid ${t.cardBorder}`, boxShadow: "0 18px 44px rgba(0,0,0,.18)" }}>
-                <SummaryRows orderSummary={orderSummary} dark={dark} t={t} />
-              </div>
-            )}
-          </div>
-        </div>
+        <div className="text-lg desktop:text-[22px] font-semibold mb-0.5 text-t-text">{tr("Orders")}</div>
+        <div className="text-sm desktop:text-[15px] text-t-text-muted">{tr("Track delivery, refunds, and reorders")}</div>
         <div className="page-divider bg-t-card-border" />
       </div>
 
-      {/* Search + filters */}
-      <div className="flex items-center gap-2 desktop:gap-3 mb-2 desktop:mb-3 flex-nowrap desktop:flex-wrap min-w-0">
-        <div className="flex-1 min-w-0 desktop:min-w-[200px]">
+      {/* The three numbers, where the sidebar that shows them is not on screen.
+          They replace the Summary button, which hid them behind a tap. */}
+      <div className="op-stats">
+        <div className="op-stat"><i><span className="op-pulse" />{tr("Delivering")}</i><b className="m" style={{ color: (orderSummary?.active || 0) ? sClr("Processing", dark) : undefined }}>{orderSummary?.active || 0}</b></div>
+        <div className="op-stat"><i><OffsetIcon name="checkCircle" size={12} />{tr("Completed")}</i><b className="m">{orderSummary?.completed || 0}</b></div>
+        <div className="op-stat"><i><OffsetIcon name="wallet" size={12} />{tr("Spent")}</i><b className="m">{money(orderSummary?.spent || 0)}</b></div>
+      </div>
+      {(orderSummary?.active || 0) > 0 && <p className="op-note">{tr("Delivery takes 0 to 6 hours, up to 24 in a few cases. Speed requests are looked at after the first 6 hours.")}</p>}
+
+      {/* Search, then the status filter, then the dates */}
+      <div className="flex items-center gap-2 mb-2 desktop:mb-3 flex-nowrap min-w-0">
+        <div className="flex-1 min-w-0">
           <div className="relative">
-            <input aria-label={tr("Search orders")} placeholder={tr("Search orders…")} value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full min-w-0 py-2 desktop:py-2.5 px-3 desktop:px-3.5 pr-8 rounded-[10px] border border-t-card-border text-[13px] desktop:text-sm font-[inherit] outline-none box-border text-t-text" style={{ background: dark ? "rgba(255,255,255,.09)" : "#fff" }} />
-            {search && <button aria-label={tr("Clear search")} onClick={() => { setSearch(""); setOPage(1); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full text-xs cursor-pointer border-none text-t-text-muted" style={{ background: dark ? "rgba(255,255,255,.18)" : "rgba(0,0,0,.14)" }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>}
+            <svg className="absolute top-1/2 -translate-y-1/2 pointer-events-none text-t-text-muted" style={{ insetInlineStart: 12 }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input aria-label={tr("Search orders")} placeholder={tr("Search orders…")} value={search} onChange={e => { setSearch(e.target.value); setOPage(1); }} className="w-full min-w-0 h-10 rounded-xl text-[13px] outline-none font-[inherit] text-t-text border-[1.5px] border-solid" style={{ paddingInlineStart: 34, paddingInlineEnd: 32, background: t.cardBg, borderColor: t.cardBorder }} />
+            {search && <button aria-label={tr("Clear search")} onClick={() => { setSearch(""); setOPage(1); }} className="absolute top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full cursor-pointer border-none bg-transparent text-t-text-muted" style={{ insetInlineEnd: 6 }}><OffsetIcon name="close" size={12} /></button>}
           </div>
           {searchTooShort && <div className="text-[11px] desktop:text-xs mt-1 text-t-text-muted">{tr("Type at least 2 characters to search.")}</div>}
         </div>
-        <DateRangePicker dark={dark} t={t} value={dateRange} onChange={(v) => { setDateRange(v); setOPage(1); }} />
+        {/* "Needs attention" is gone from the filter: Partial and Cancelled are
+            their own entries, and a partly delivered order was never a problem
+            to flag. The labels are the words the rows use. */}
         <FilterDropdown dark={dark} t={t} value={filter} onChange={(v) => { setFilter(v); setOPage(1); setExpanded(null); }} options={
-          ["all", "active", "Completed", "Processing", "Pending", "Partial", "attention", "Cancelled"].map(f => ({
-            value: f, label: f === "all" ? tr("All") : f === "active" ? tr("Active") : f === "attention" ? tr("Needs attention") : tr(STATUS_LABEL[f] || f),
+          ["all", "active", "Processing", "Pending", "Completed", "Partial", "Cancelled"].map(f => ({
+            value: f, label: f === "all" ? tr("All") : f === "active" ? tr("Active") : tr(STATUS_SHOWN[f] || f),
           }))
         } />
+        <DateRangePicker dark={dark} t={t} value={dateRange} onChange={(v) => { setDateRange(v); setOPage(1); }} />
       </div>
 
       {/* Result count */}
@@ -850,49 +806,25 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
         </div>
       )}
 
-      {/* Delivery note — mobile, one line, only while something is running */}
-      {(() => { const n = orders.filter(o => o.status === "Processing" || o.status === "Pending").length; return n > 0 && (
-        <div className="desktop:hidden flex items-center gap-2 mb-2.5 px-0.5 text-[12px] text-t-text-muted">
-          <span className="w-[7px] h-[7px] rounded-full animate-pulse shrink-0" style={{ background: "#4f46e5" }} />
-          {n} order{n === 1 ? "" : "s"} delivering<span className="opacity-50">·</span>{tr("usually 0–6 hrs, up to 24")}
-        </div>
-      ); })()}
-
       {/* Order list */}
-      <div className="rounded-xl desktop:rounded-[14px] overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+      <div className="rounded-2xl overflow-hidden" style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
         {pagedGroups.length > 0 ? pagedGroups.map((item, i) => {
           const createdOf = (g) => g ? (g.type === "batch" ? g.orders[0]?.created : g.order.created) : null;
           const dk = dayKey(createdOf(item));
-          const dayLabel = dk && dk !== dayKey(createdOf(pagedGroups[i - 1])) ? <DayLabel label={dk} dark={dark} /> : null;
+          const firstOfDay = dk && dk !== dayKey(createdOf(pagedGroups[i - 1]));
+          const dayCount = firstOfDay ? pagedGroups.filter(g => dayKey(createdOf(g)) === dk).length : 0;
+          const dayLabel = firstOfDay ? <div className="op-day">{tr(dk)}<span className="op-n m">{dayCount} {dayCount === 1 ? tr("order") : tr("orders")}</span></div> : null;
           if (item.type === "batch") {
-            return <Fragment key={item.batchId}>{dayLabel}<BatchRow batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={setViewComments} doRefill={doRefill} refillLoading={refillLoading} /></Fragment>;
+            return <Fragment key={item.batchId}>{dayLabel}<div style={expandedBatch === item.batchId ? openCardFrame(t, dark) : undefined}><BatchRow batch={item} dark={dark} t={t} expanded={expandedBatch === item.batchId} onToggle={(id) => { setExpandedBatch(expandedBatch === id ? null : id); setExpandedBatchOrder(null); setExpanded(null); }} expandedOrder={expandedBatchOrder} setExpandedOrder={setExpandedBatchOrder} doAction={doAction} actionLoading={actionLoading} doBatchAction={doBatchAction} batchActionLoading={batchActionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={setViewComments} doRefill={doRefill} refillLoading={refillLoading} /></div></Fragment>;
           }
           const o = item.order;
-          const attn = isAttention(o);
           return (
-            <div key={o.id}>{dayLabel}
+            <Fragment key={o.id}>{dayLabel}
               <div style={expanded === o.id ? openCardFrame(t, dark) : undefined}>
-              <div role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.currentTarget.click()}}} onClick={() => { setExpanded(expanded === o.id ? null : o.id); setExpandedBatch(null); setExpandedBatchOrder(null); }} className="flex items-center py-3 px-3.5 desktop:py-3.5 desktop:px-[18px] cursor-pointer gap-3 desktop:gap-4 transition-[background-color] duration-150 hover:bg-[rgba(196,125,142,.06)]" style={{ borderBottom: (i < pagedGroups.length - 1 || expanded === o.id) ? `1px solid ${t.cardBorder}` : "none", ...(attn && { borderLeft: `3px solid ${dark ? "#fbbf24" : "#d97706"}` }), ...(expanded === o.id ? openCardHeader(dark) : {}) }}>
-                <div className="shrink-0 flex items-center justify-center rounded-xl" style={{ width: 42, height: 42, background: dark ? "rgba(255,255,255,.09)" : "rgba(0,0,0,.04)", border: `1px solid ${dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.06)"}` }}>
-                  <PlatformIcon platform={o.platform} dark={dark} size={26} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] desktop:text-[15px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap desktop:whitespace-nowrap max-md:whitespace-normal max-md:line-clamp-2 max-md:[display:-webkit-box] max-md:[-webkit-box-orient:vertical] text-t-text">{o.service}</div>
-                  {o.tier && <div className="text-[11px] desktop:text-xs font-medium mt-0.5 text-accent-ink">{o.tier}</div>}
-                  {o.created && <div className="text-[11px] desktop:text-[11px] mt-0.5 text-t-text-muted">{fT(o.created)}</div>}
-                  {expanded !== o.id && <ProgressBar order={o} dark={dark} />}
-                </div>
-                <div className="text-right shrink-0 flex items-center gap-1.5">
-                  {(o.status === "Processing" || o.status === "Pending") && !o.queuedBehind && <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: sClr(o.status, dark) }} />}
-                  <Badge status={o.queuedBehind ? "Queued" : o.status} dark={dark} />
-                </div>
-                <svg className="shrink-0 ml-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.textMuted} strokeWidth="2" strokeLinecap="round" style={{ transform: expanded === o.id ? "rotate(180deg)" : "rotate(0)", transition: "transform .2s", }}><polyline points="6 9 12 15 18 9"/></svg>
+                <OrderHead o={o} dark={dark} open={expanded === o.id} onToggle={() => { setExpanded(expanded === o.id ? null : o.id); setExpandedBatch(null); setExpandedBatchOrder(null); }} />
+                {expanded === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={setViewComments} doRefill={doRefill} refillLoading={refillLoading} />}
               </div>
-
-              {/* Expanded details */}
-              {expanded === o.id && <ExpandedOrderDetails o={o} dark={dark} t={t} doAction={doAction} actionLoading={actionLoading} confirm={confirm} toast={toast} onNavigate={onNavigate} waNum={waNum} onViewComments={setViewComments} doRefill={doRefill} refillLoading={refillLoading} />}
-              </div>
-            </div>
+            </Fragment>
           );
         }) : (
           <div className="py-10 px-6 text-center text-t-text-muted">
@@ -900,7 +832,7 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
               <>
                 <div className="text-base font-semibold mb-1 text-t-text-soft">{tr("No orders match your filters")}</div>
                 <div className="text-[13px] text-t-text-muted">{tr("Try adjusting your search or filters")}</div>
-                <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="mt-3 py-1.5 px-4 rounded-lg text-[13px] font-semibold cursor-pointer border bg-transparent border-t-card-border text-accent-ink">{tr("Clear all filters")}</button>
+                <button onClick={() => { setFilter("all"); setSearch(""); setDateRange(null); setOPage(1); }} className="mt-3 py-1.5 px-4 rounded-lg text-[13px] font-semibold cursor-pointer border bg-transparent border-t-card-border text-accent-ink">{tr("Clear filters")}</button>
               </>
             ) : (
               <>
@@ -917,11 +849,11 @@ export default function OrdersPage({ orders: initialOrders, initialTotal = initi
 
       {viewComments && (
         <Modal open onClose={() => setViewComments(null)} dark={dark} maxWidth={448} title={tr("Submitted comments")}
-          icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>}>
+          icon={<OffsetIcon name="comment" size={16} />}>
           <pre className="m-0 text-[13px] leading-[1.65] whitespace-pre-wrap break-words text-t-text-soft font-[inherit]">{viewComments}</pre>
         </Modal>
       )}
-    </>
+    </div>
   );
 }
 
@@ -932,21 +864,19 @@ export function OrdersSidebar({ orders, orderSummary, dark }) {
   const tr = useT();
   const money = useMoney();
   const activeCount = orderSummary?.active || 0;
-  const attentionCount = orderSummary?.attention || 0;
   return (
     <div className="rr">
-      <RailSec>{tr("Your orders")}</RailSec>
+      <RailSec icon="receipt">{tr("Your orders")}</RailSec>
       <RailCard>
-        <RailFact label={tr("Total")} value={String(orderSummary?.total ?? 0)} />
-        <RailFact label={tr("Delivering now")} value={String(activeCount)} color={activeCount ? (dark ? "#a5b4fc" : "#4f46e5") : undefined} />
-        {attentionCount > 0 && <RailFact label={tr("Needs attention")} value={String(attentionCount)} color={dark ? "#fdba74" : "#c2410c"} />}
-        <RailFact label={tr("Completed")} value={String(orderSummary?.completed || 0)} />
-        <RailFact label={tr("Spent")} value={money(orderSummary?.spent || 0)} />
+        <RailFact icon="receipt" label={tr("Total")} value={String(orderSummary?.total ?? 0)} />
+        <RailFact icon="clockPlain" label={tr("Delivering now")} value={String(activeCount)} color={activeCount ? (dark ? "#a5b4fc" : "#4f46e5") : undefined} />
+        <RailFact icon="checkCircle" label={tr("Completed")} value={String(orderSummary?.completed || 0)} />
+        <RailFact icon={<CurrencyCoin size={15} />} label={tr("Spent")} value={money(orderSummary?.spent || 0)} />
       </RailCard>
       {activeCount > 0 && <RailNote>{tr("Delivery takes 0 to 6 hours, up to 24 in a few cases. Speed requests are looked at after the first 6 hours.")}</RailNote>}
-      <RailSec>{tr("Recent")}</RailSec>
+      <RailSec icon="clock">{tr("Recent")}</RailSec>
       <RailCard>
-        {orders.length === 0 ? <RailEmpty>{tr("No orders yet.")}</RailEmpty> : orders.slice(0, 5).map(o => (
+        {orders.length === 0 ? <RailEmpty icon="receipt">{tr("No orders yet.")}</RailEmpty> : orders.slice(0, 5).map(o => (
           <RailRow key={o.id} tile={<PlatformIcon platform={o.platform} dark={dark} size={16} />} title={o.service} sub={`${o.created ? fD(o.created, true) : ""}${o.tier ? ` · ${o.tier}` : ""}${o.status ? ` · ${tr(o.status)}` : ""}`} right={o.charge != null ? money(o.charge) : null} />
         ))}
       </RailCard>

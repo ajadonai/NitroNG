@@ -231,7 +231,7 @@ export function GuideSidebar() {
   const tr = useT();
   return (
     <div className="rr">
-      <RailSec>{tr("About the blog")}</RailSec>
+      <RailSec icon="news">{tr("About the blog")}</RailSec>
       <RailNote>{tr("Step-by-step guides and tutorials to help you get the most out of Nitro. New ones are added regularly.")}</RailNote>
       <RailLink href="/blog">{tr("Visit the blog")}</RailLink>
     </div>
