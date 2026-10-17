@@ -404,6 +404,18 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **The share card in the offset print** (18 Oct 2026, `v2.4.139`). Mockup
+  "Nitro Share Card". The picture WhatsApp, X, Facebook and iMessage show for
+  a nitro.ng link was July's "Dark speed v2"; it is now drawn from the hero:
+  the rose ground, the Nigerian chip, "Your content deserves a bigger
+  audience" with the yellow word chip, and a printed order card. Platform and
+  service pages put the platform or service on the chip beside the starting
+  price; a blog post without its own picture gets the paper version with its
+  category. Platform cards had shared with no price since July: the lookup
+  asked for `prisma.tier` (the model is ServiceTier) and for TikTok as
+  "tiktok", and a catch hid both. The card fonts had no ₦, so the latin-ext
+  cuts and Cormorant italic were added to `assets/og-fonts`.
+
 - **Pulse upgraded** (17 Oct 2026, `v2.4.138`). Mockup "Pulse, upgraded",
   Trip's call to go far on both questions. The wall now leads with one
   answer: today's revenue as a running line against yesterday's to the same

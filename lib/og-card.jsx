@@ -1,21 +1,21 @@
-/* Shared OG / Twitter card — "Dark speed v2", approved 18 Jul 2026.
-   Consumed by app/opengraph-image.jsx and app/twitter-image.jsx.
-   Fonts load from assets/og-fonts (committed WOFF files). */
+/* Shared OG / Twitter card, in the offset print (approved 17 Oct 2026, mockup
+   "Nitro Share Card"). It is drawn from the hero people land on: the rose
+   ground, the Nigerian chip, the line with its yellow word chip, and printed
+   cards with a solid offset edge. Platform and service pages put the platform
+   or service on that chip beside the real starting price; a blog post without
+   its own picture gets the paper version with its category. Replaces "Dark
+   speed v2" (18 Jul 2026).
+   Consumed by app/opengraph-image.jsx, app/twitter-image.jsx, the blog and the
+   services routes. Fonts load from assets/og-fonts (committed WOFF files). */
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import { platformBrand } from './platform-brand';
 
 export const OG_SIZE = { width: 1200, height: 630 };
-export const OG_ALT = 'The Nitro NG. Look as big as you are. Growth for Nigerian creators.';
+export const OG_ALT = 'The Nitro NG. Your content deserves a bigger audience. Followers, likes and views, paid in naira.';
 
 const MARK = 'M 480 4498 L 480 2680 A 961 961 0 0 1 2402 2680 L 2402 3915 A 960 960 0 0 0 4322 3915 L 4322 682';
-/* pink lead + echo colors; red/green/yellow are placeholders pending the social template hexes */
-const SOCIAL = ['#c47d8e', '#e05252', '#34a97b', '#ecc94b'];
 const GLYPH = {
-  ig: 'M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z',
-  tt: 'M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z',
-  x: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z',
-  ytBox: 'M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z',
-  ytPlay: 'M9.545 15.568V8.432L15.818 12z',
 
   Instagram:    { vb: '0 0 24 24',  d: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z' },
   TikTok:       { vb: '0 0 448 512', d: 'M448 209.91a210.06 210.06 0 01-122.77-39.25v178.72A162.55 162.55 0 11185 188.31v89.89a74.62 74.62 0 1052.23 71.18V0h88a121 121 0 00122.77 121.33z' },
@@ -57,38 +57,106 @@ const WM = [
 
 export async function loadOgFonts() {
   const dir = join(process.cwd(), 'assets', 'og-fonts');
-  const [jak800, jak600, mono700] = await Promise.all([
+  const [jak800, jak600, mono700, serif600i, jak800ext, mono700ext] = await Promise.all([
     readFile(join(dir, 'plus-jakarta-sans-latin-800-normal.woff')),
     readFile(join(dir, 'plus-jakarta-sans-latin-600-normal.woff')),
     readFile(join(dir, 'jetbrains-mono-latin-700-normal.woff')),
+    readFile(join(dir, 'cormorant-garamond-latin-600-italic.woff')),
+    readFile(join(dir, 'plus-jakarta-sans-latin-ext-800-normal.woff')),
+    readFile(join(dir, 'jetbrains-mono-latin-ext-700-normal.woff')),
   ]);
+  // The latin cuts have no ₦. The latin-ext cuts carry the currency signs, and
+  // the renderer falls back to any loaded font for a missing character, so a
+  // price or a title with naira in it does not print a missing-glyph box.
   return [
     { name: 'Jakarta', data: jak800, weight: 800, style: 'normal' },
     { name: 'Jakarta', data: jak600, weight: 600, style: 'normal' },
     { name: 'Mono', data: mono700, weight: 700, style: 'normal' },
+    { name: 'Cormorant', data: serif600i, weight: 600, style: 'italic' },
+    { name: 'JakartaExt', data: jak800ext, weight: 800, style: 'normal' },
+    { name: 'MonoExt', data: mono700ext, weight: 700, style: 'normal' },
   ];
 }
 
-function Tube({ left, top, color }) {
+const ROSE = 'linear-gradient(135deg, #c47d8e 0%, #a3586b 40%, #8b4a5e 100%)';
+const PAPER = '#efe8e0';
+const CARD = '#fffdfb';
+const INK = '#201b19';
+const MUTED = '#665f5c';
+const ROSE_INK = '#83535f';
+const EDGE = 'rgba(60,20,35,.3)';
+const SHOWN = { 'Twitter/X': 'X' };
+
+function Wordmark({ width, color }) {
   return (
-    <svg style={{ position: 'absolute', left, top }} width="422" height="471" viewBox="0 0 4800 5352" fill="none">
-      <path d={MARK} stroke={color} strokeWidth="965" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={width} height={Math.round((width * 558) / 1817)} viewBox="0 0 1817 558" fill={color}>
+      {WM.map((d, i) => <path key={i} d={d} />)}
     </svg>
   );
 }
 
-function PlatformIcon({ name, size: sz = 80 }) {
+/** The hero's two slow rings, a solid one and a dashed one inside it. */
+function Rings({ x, y, outer, inner, solid, dashed }) {
+  const off = (outer - inner) / 2;
+  return [
+    <div key="o" style={{ position: 'absolute', left: x, top: y, width: outer, height: outer, borderRadius: outer / 2, border: `1.5px solid ${solid}`, display: 'flex' }} />,
+    <div key="i" style={{ position: 'absolute', left: x + off, top: y + off, width: inner, height: inner, borderRadius: inner / 2, border: `1.5px dashed ${dashed}`, display: 'flex' }} />,
+  ];
+}
+
+/** The hero's yellow word chip, tilted, with its printed edge. */
+function Roll({ children, size }) {
+  const e = Math.round(size * 0.07);
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', padding: `${Math.round(size * 0.02)}px ${Math.round(size * 0.2)}px ${Math.round(size * 0.07)}px`, borderRadius: Math.round(size * 0.12), background: '#f5cf59', boxShadow: `${e}px ${e}px 0 #b8862a`, transform: 'rotate(-1.5deg)', fontFamily: 'Cormorant', fontStyle: 'italic', fontWeight: 600, fontSize: Math.round(size * 1.08), lineHeight: 1, letterSpacing: 0, color: '#4a2236' }}>
+      {children}
+    </div>
+  );
+}
+
+function Rocket() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24">
+      <path transform="translate(1.3 1.3)" d="M12 2.8c3.1 2.3 4.6 5.7 4.6 9.2l-1.9 3.3H9.3L7.4 12c0-3.5 1.5-6.9 4.6-9.2z" fill="rgba(196,125,142,.38)" />
+      <path d="M12 2.8c3.1 2.3 4.6 5.7 4.6 9.2l-1.9 3.3H9.3L7.4 12c0-3.5 1.5-6.9 4.6-9.2z" fill="none" stroke="#a65d75" strokeWidth="1.8" strokeLinejoin="round" />
+      <circle cx="12" cy="9.3" r="1.6" fill="none" stroke="#a65d75" strokeWidth="1.8" />
+      <path d="M7.5 12.6 5 15.1v2.7l3.2-1.6M16.5 12.6l2.5 2.5v2.7l-3.2-1.6M10.6 17.4c0 1.6.6 2.8 1.4 3.6.8-.8 1.4-2 1.4-3.6" fill="none" stroke="#a65d75" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** The white pill the hero's buttons wear, carrying the address. */
+function SitePill() {
+  return (
+    <div style={{ position: 'absolute', left: 72, top: 528, height: 58, display: 'flex', alignItems: 'center', padding: '0 28px 0 9px', borderRadius: 29, background: '#fff', color: '#3a1828', boxShadow: `4px 4px 0 ${EDGE}`, fontFamily: 'Mono', fontSize: 24, fontWeight: 700 }}>
+      <div style={{ width: 42, height: 42, borderRadius: 21, marginRight: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(196,125,142,.16)', border: '1.5px solid rgba(196,125,142,.35)' }}>
+        <Rocket />
+      </div>
+      nitro.ng
+    </div>
+  );
+}
+
+function Glyph({ name, size, color }) {
   const g = GLYPH[name];
   if (!g) return null;
   const paths = Array.isArray(g.d) ? g.d : [g.d];
   return (
-    <svg width={sz} height={sz} viewBox={g.vb} style={{ display: 'flex' }}>
-      {paths.map((d, i) => <path key={i} d={d} fill="rgba(255,255,255,.92)" />)}
+    <svg width={size} height={size} viewBox={g.vb} style={{ display: 'flex' }}>
+      {paths.map((d, i) => <path key={i} d={d} fill={color} />)}
     </svg>
   );
 }
 
-function pickTitleSize(title, maxWidth = 758) {
+function NitroMark({ width }) {
+  return (
+    <svg width={width} height={Math.round((width * 5352) / 4800)} viewBox="0 0 4800 5352" fill="none">
+      <path d={MARK} stroke="#ffffff" strokeWidth="965" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function pickTitleSize(title, maxWidth = 740) {
   const sizes = [64, 58, 52, 46, 40];
   for (const fs of sizes) {
     const avgCh = fs * 0.55 - 1.4;
@@ -119,106 +187,132 @@ function pickTitleSize(title, maxWidth = 758) {
 
 export function BlogOgCard({ title, category }) {
   const sized = pickTitleSize(title || 'Untitled');
-  const blockH = sized.lines * sized.fontSize * 1.18;
-  const titleTop = Math.round((630 - blockH) / 2);
+  const blockH = sized.lines * sized.fontSize * 1.1;
+  const titleTop = Math.max(category ? 226 : 168, Math.round(214 + (300 - blockH) / 2));
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: '#f4f1ed', fontFamily: 'Jakarta', overflow: 'hidden' }}>
-      {/* Left panel */}
-      <div style={{ position: 'absolute', left: 0, top: 0, width: 286, height: 630, background: 'linear-gradient(150deg, #c8869a 0%, #9d5266 100%)', overflow: 'hidden', display: 'flex' }}>
-        <svg style={{ position: 'absolute', left: -80, top: 280, opacity: 0.13 }} width="446" height="498" viewBox="0 0 4800 5352" fill="none">
-          <path d={MARK} stroke="#ffffff" strokeWidth="965" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+    <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: PAPER, fontFamily: 'Jakarta', overflow: 'hidden' }}>
+      {Rings({ x: 720, y: -150, outer: 740, inner: 556, solid: 'rgba(196,125,142,.28)', dashed: 'rgba(196,125,142,.22)' })}
+      <div style={{ position: 'absolute', left: 72, top: 60, height: 56, padding: '0 24px', borderRadius: 28, display: 'flex', alignItems: 'center', background: '#c47d8e', border: '1.5px solid rgba(255,255,255,.28)', boxShadow: '3px 3px 0 rgba(110,51,70,.38)' }}>
+        <Wordmark width={122} color="#ffffff" />
       </div>
-      {/* Color edge */}
-      {SOCIAL.map((c, i) => (
-        <div key={c} style={{ position: 'absolute', left: 280, top: i * 157.5, width: 6, height: 157.5, background: c, display: 'flex' }} />
-      ))}
-      {/* Wordmark */}
-      <svg style={{ position: 'absolute', left: 60, top: 66 }} width="160" height="49" viewBox="0 0 1817 558" fill="#ffffff">
-        {WM.map((d, i) => <path key={i} d={d} />)}
-      </svg>
-      {/* Category */}
       {category && (
-        <div style={{ position: 'absolute', left: 60, top: 336, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontSize: 19, fontWeight: 800, color: 'rgba(255,255,255,.9)', letterSpacing: 3.4, textTransform: 'uppercase', display: 'flex' }}>{category}</div>
-          <div style={{ width: 64, height: 3, borderRadius: 1.5, background: 'rgba(255,255,255,.55)', marginTop: 12, display: 'flex' }} />
+        <div style={{ position: 'absolute', left: 72, top: 160, height: 38, padding: '0 16px', borderRadius: 19, display: 'flex', alignItems: 'center', background: 'rgba(196,125,142,.12)', border: '1.5px solid rgba(196,125,142,.4)', boxShadow: '2px 2px 0 #efc4cf', color: ROSE_INK, fontSize: 15, fontWeight: 800, letterSpacing: 2.6, textTransform: 'uppercase' }}>
+          {category}
         </div>
       )}
-      {/* URL */}
-      <div style={{ position: 'absolute', left: 60, top: 556, fontFamily: 'Mono', fontSize: 22, fontWeight: 700, color: 'rgba(255,255,255,.82)', display: 'flex' }}>nitro.ng</div>
-      {/* Title */}
-      <div style={{ position: 'absolute', left: 358, top: titleTop, width: 758, fontSize: sized.fontSize, fontWeight: 800, color: '#1c1b19', letterSpacing: -1.4, lineHeight: 1.18, display: 'flex' }}>
+      <div style={{ position: 'absolute', left: 72, top: titleTop, width: 740, fontSize: sized.fontSize, fontWeight: 800, color: INK, letterSpacing: -1.6, lineHeight: 1.1, display: 'flex' }}>
         {sized.text}
+      </div>
+      <div style={{ position: 'absolute', left: 72, top: 540, fontFamily: 'Mono', fontSize: 23, fontWeight: 700, color: ROSE_INK, display: 'flex' }}>nitro.ng/blog</div>
+      <div style={{ position: 'absolute', left: 880, top: 176, width: 250, height: 250, borderRadius: 58, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(140deg, #c47d8e, #8b4a5e)', border: '2px solid rgba(255,255,255,.22)', boxShadow: '12px 12px 0 rgba(110,51,70,.3)', transform: 'rotate(4deg)' }}>
+        <NitroMark width={136} />
+      </div>
+    </div>
+  );
+}
+
+/** "From ₦158 per 1,000". */
+function Price({ text, top }) {
+  return (
+    <div style={{ position: 'absolute', left: 72, top, display: 'flex', fontSize: 36, fontWeight: 800, letterSpacing: -0.8, color: '#ffffff' }}>
+      {text}
+    </div>
+  );
+}
+
+function PlatformCard({ platform, service, price }) {
+  const name = SHOWN[platform] || platform;
+  const brand = platformBrand(platform, { dark: false });
+  const glyph = GLYPH[platform] ? <Glyph name={platform} size={142} color={brand} /> : null;
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: ROSE, fontFamily: 'Jakarta', overflow: 'hidden' }}>
+      {Rings({ x: 700, y: -140, outer: 720, inner: 540, solid: 'rgba(255,255,255,.14)', dashed: 'rgba(255,255,255,.12)' })}
+      <div style={{ position: 'absolute', left: 72, top: 64, display: 'flex' }}><Wordmark width={150} color="#ffffff" /></div>
+      <div style={{ position: 'absolute', left: 72, top: 168, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', color: '#ffffff', fontSize: 80, fontWeight: 600, letterSpacing: -2.2, lineHeight: 1.04 }}>
+        <div style={{ display: 'flex' }}>{service ? name : 'Grow your'}</div>
+        <div style={{ display: 'flex', marginTop: 10 }}><Roll size={80}>{service ? service.toLowerCase() : name}</Roll></div>
+      </div>
+      {price && <Price text={price} top={388} />}
+      <div style={{ position: 'absolute', left: 72, top: price ? 446 : 400, fontSize: 26, fontWeight: 600, color: 'rgba(255,255,255,.88)', display: 'flex' }}>Tested services, paid in naira.</div>
+      <SitePill />
+      <div style={{ position: 'absolute', left: 836, top: 156, width: 276, height: 276, borderRadius: 66, display: 'flex', alignItems: 'center', justifyContent: 'center', background: glyph ? CARD : 'linear-gradient(140deg, #c47d8e, #8b4a5e)', border: '2px solid rgba(139,74,94,.22)', boxShadow: `12px 12px 0 ${EDGE}`, transform: 'rotate(-4deg)' }}>
+        {glyph || <NitroMark width={150} />}
       </div>
     </div>
   );
 }
 
 export function OgCard({ platform, service, price } = {}) {
-  if (platform) {
-    const headline = service ? `${platform} ${service}` : `${platform} Services`;
-    return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: 'linear-gradient(135deg,#0a0d18 0%,#111627 50%,#120c1e 100%)', fontFamily: 'Jakarta', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, width: 1200, height: 630, backgroundImage: 'radial-gradient(circle, rgba(255,255,255,.04) 1.6px, transparent 1.6px)', backgroundSize: '30px 30px', display: 'flex' }} />
-        <div style={{ position: 'absolute', left: 630, top: -60, width: 700, height: 700, borderRadius: 350, background: 'radial-gradient(circle, rgba(196,125,142,.14) 0%, rgba(196,125,142,0) 65%)', display: 'flex' }} />
-        <div style={{ position: 'absolute', left: -120, top: 360, width: 480, height: 480, borderRadius: 240, background: 'radial-gradient(circle, rgba(99,102,241,.09) 0%, rgba(99,102,241,0) 65%)', display: 'flex' }} />
-        <svg style={{ position: 'absolute', left: 84, top: 60 }} width="140" height="42" viewBox="0 0 1817 558" fill="#f5f3f0">
-          {WM.map((d, i) => <path key={i} d={d} />)}
-        </svg>
-        <div style={{ position: 'absolute', left: 84, top: 160, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontSize: 72, fontWeight: 800, color: '#f5f3f0', letterSpacing: -1.5, lineHeight: 1.05, display: 'flex', maxWidth: 750 }}>{headline}</div>
-          {price && <div style={{ fontSize: 36, fontWeight: 600, color: '#c47d8e', marginTop: 24, display: 'flex' }}>{price}</div>}
-          <div style={{ fontSize: 24, fontWeight: 600, color: 'rgba(245,243,240,.45)', marginTop: price ? 20 : 32, display: 'flex' }}>Naira pricing · tested services · gradual delivery</div>
-        </div>
-        {GLYPH[platform] && (
-          <div style={{ position: 'absolute', right: 100, top: 180, width: 200, height: 200, borderRadius: 40, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <PlatformIcon name={platform} size={100} />
-          </div>
-        )}
-        <div style={{ position: 'absolute', left: 84, bottom: 60, display: 'flex', alignItems: 'center', gap: 20 }}>
-          <div style={{ width: 160, height: 44, borderRadius: 12, border: '1.5px solid rgba(196,125,142,.45)', background: 'rgba(196,125,142,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Mono', fontSize: 22, fontWeight: 700, color: '#c47d8e' }}>nitro.ng</div>
-        </div>
-        <div style={{ position: 'absolute', left: 0, top: 624, display: 'flex' }}>
-          {SOCIAL.map((c) => <div key={c} style={{ width: 300, height: 6, background: c, opacity: 0.9, display: 'flex' }} />)}
-        </div>
-      </div>
-    );
-  }
+  if (platform) return <PlatformCard platform={platform} service={service} price={price} />;
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: 'linear-gradient(135deg,#0a0d18 0%,#111627 50%,#120c1e 100%)', fontFamily: 'Jakarta', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, width: 1200, height: 630, backgroundImage: 'radial-gradient(circle, rgba(255,255,255,.04) 1.6px, transparent 1.6px)', backgroundSize: '30px 30px', display: 'flex' }} />
-      <div style={{ position: 'absolute', left: 630, top: -60, width: 700, height: 700, borderRadius: 350, background: 'radial-gradient(circle, rgba(196,125,142,.14) 0%, rgba(196,125,142,0) 65%)', display: 'flex' }} />
-      <div style={{ position: 'absolute', left: -120, top: 360, width: 480, height: 480, borderRadius: 240, background: 'radial-gradient(circle, rgba(99,102,241,.09) 0%, rgba(99,102,241,0) 65%)', display: 'flex' }} />
-      <div style={{ position: 'absolute', left: 520, top: 210, width: 300, height: 5, borderRadius: 3, background: 'linear-gradient(90deg, rgba(196,125,142,0), rgba(196,125,142,.28))', display: 'flex' }} />
-      <div style={{ position: 'absolute', left: 580, top: 300, width: 260, height: 5, borderRadius: 3, background: 'linear-gradient(90deg, rgba(196,125,142,0), rgba(196,125,142,.47))', display: 'flex' }} />
-      <div style={{ position: 'absolute', left: 545, top: 392, width: 285, height: 5, borderRadius: 3, background: 'linear-gradient(90deg, rgba(196,125,142,0), rgba(196,125,142,.19))', display: 'flex' }} />
-      <div style={{ position: 'absolute', left: 806, top: -10, width: 540, height: 560, transform: 'rotate(-6deg)', display: 'flex' }}>
-        <Tube left={114} top={0} color={SOCIAL[3]} />
-        <Tube left={76} top={29} color={SOCIAL[2]} />
-        <Tube left={38} top={58} color={SOCIAL[1]} />
-        <Tube left={0} top={84} color={SOCIAL[0]} />
+    <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', background: ROSE, fontFamily: 'Jakarta', overflow: 'hidden' }}>
+      {Rings({ x: 640, y: -190, outer: 780, inner: 564, solid: 'rgba(255,255,255,.14)', dashed: 'rgba(255,255,255,.12)' })}
+      <div style={{ position: 'absolute', left: 72, top: 64, display: 'flex' }}><Wordmark width={150} color="#ffffff" /></div>
+      <div style={{ position: 'absolute', left: 72, top: 150, height: 42, display: 'flex', alignItems: 'center', padding: '0 20px 0 7px', borderRadius: 21, background: 'rgba(255,255,255,.14)', border: '1.5px solid rgba(255,255,255,.3)', boxShadow: '3px 3px 0 rgba(60,20,35,.22)', fontSize: 15, fontWeight: 800, letterSpacing: 2.6, color: '#ffffff' }}>
+        <div style={{ width: 28, height: 28, borderRadius: 14, marginRight: 11, display: 'flex', overflow: 'hidden', border: '2.5px solid rgba(255,255,255,.55)' }}>
+          <div style={{ flex: 1, background: '#0f8a4e', display: 'flex' }} />
+          <div style={{ flex: 1, background: '#ffffff', display: 'flex' }} />
+          <div style={{ flex: 1, background: '#0f8a4e', display: 'flex' }} />
+        </div>
+        NIGERIA'S SOCIAL GROWTH ENGINE
       </div>
-      <svg style={{ position: 'absolute', left: 84, top: 80 }} width="190" height="58" viewBox="0 0 1817 558" fill="#f5f3f0">
-        {WM.map((d, i) => <path key={i} d={d} />)}
-      </svg>
-      <div style={{ position: 'absolute', left: 84, top: 240, fontSize: 86, fontWeight: 800, color: '#f5f3f0', letterSpacing: -1.5, display: 'flex' }}>Look as big</div>
-      <div style={{ position: 'absolute', left: 84, top: 330, fontSize: 86, fontWeight: 800, color: '#f5f3f0', letterSpacing: -1.5, display: 'flex' }}>
-        <span>as you</span>
-        <div style={{ width: 22, display: 'flex' }} />
-        <span style={{ color: '#c47d8e' }}>are.</span>
+      <div style={{ position: 'absolute', left: 72, top: 208, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', color: '#ffffff', fontSize: 70, fontWeight: 600, letterSpacing: -2.2, lineHeight: 1.04 }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginRight: 18 }}>Your</span>
+          <Roll size={70}>content</Roll>
+        </div>
+        <div style={{ display: 'flex' }}>deserves a bigger</div>
+        <div style={{ display: 'flex' }}>audience.</div>
       </div>
-      <div style={{ position: 'absolute', left: 84, top: 443, fontSize: 27, fontWeight: 600, color: 'rgba(245,243,240,.55)', display: 'flex' }}>Growth for Nigerian creators · gradual, safe delivery</div>
-      <div style={{ position: 'absolute', left: 84, top: 514, display: 'flex', gap: 30 }}>
-        <svg width="44" height="44" viewBox="0 0 24 24"><path d={GLYPH.ig} fill="rgba(255,255,255,.92)" /></svg>
-        <svg width="44" height="44" viewBox="0 0 24 24"><path d={GLYPH.tt} fill="rgba(255,255,255,.92)" /></svg>
-        <svg width="44" height="44" viewBox="0 0 24 24"><path d={GLYPH.x} fill="rgba(255,255,255,.92)" /></svg>
-        <svg width="44" height="44" viewBox="0 0 24 24"><path d={GLYPH.ytBox} fill="rgba(255,255,255,.92)" /><path d={GLYPH.ytPlay} fill="#0a0d18" /></svg>
-      </div>
-      <div style={{ position: 'absolute', left: 388, top: 513, width: 176, height: 46, borderRadius: 12, border: '1.5px solid rgba(196,125,142,.45)', background: 'rgba(196,125,142,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Mono', fontSize: 24, fontWeight: 700, color: '#c47d8e' }}>nitro.ng</div>
-      <div style={{ position: 'absolute', left: 0, top: 624, display: 'flex' }}>
-        {SOCIAL.map((c) => <div key={c} style={{ width: 300, height: 6, background: c, opacity: 0.9, display: 'flex' }} />)}
+      <div style={{ position: 'absolute', left: 72, top: 462, fontSize: 26, fontWeight: 600, color: 'rgba(255,255,255,.88)', letterSpacing: -0.2, display: 'flex' }}>Followers, likes and views, paid in naira.</div>
+      <SitePill />
+
+      {/* A printed order card: what Nitro is, at a glance. Illustrative. */}
+      <div style={{ position: 'absolute', left: 742, top: 146, width: 396, padding: 26, borderRadius: 24, display: 'flex', flexDirection: 'column', background: CARD, color: INK, border: '1.5px solid rgba(139,74,94,.26)', boxShadow: `10px 10px 0 ${EDGE}`, transform: 'rotate(3deg)' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{ width: 60, height: 60, borderRadius: 17, marginRight: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fdf1f4', border: '1.5px solid rgba(196,125,142,.35)', boxShadow: '3px 3px 0 #efc4cf' }}>
+            {/* The stroked mark: the filled path loses its top edge at this size. */}
+            <svg width="31" height="31" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="2.2">
+              <rect x="3" y="3" width="18" height="18" rx="5" />
+              <circle cx="12" cy="12" r="4.2" />
+              <circle cx="17.3" cy="6.7" r="1.3" fill="#E1306C" stroke="none" />
+            </svg>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontSize: 23, fontWeight: 800, letterSpacing: -0.5, display: 'flex' }}>Instagram Followers</div>
+            <div style={{ display: 'flex', marginTop: 5, fontSize: 16, fontWeight: 600 }}>
+              <span style={{ color: ROSE_INK, marginRight: 10 }}>Standard</span>
+              <span style={{ color: MUTED }}>30-day refill</span>
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', marginTop: 18 }}>
+          <div style={{ height: 32, padding: '0 13px', borderRadius: 16, display: 'flex', alignItems: 'center', background: '#eef0fd', color: '#4553c4', fontSize: 15, fontWeight: 800 }}>
+            <div style={{ width: 9, height: 9, borderRadius: 5, background: '#5867dd', marginRight: 8, display: 'flex' }} />
+            Delivering
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 18, padding: '15px 16px 16px', borderRadius: 16, background: '#f6efea' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 16, color: MUTED }}>
+            <span>Delivered</span>
+            <span style={{ fontFamily: 'Mono', fontWeight: 700, fontSize: 17, color: ROSE_INK }}>870 / 1,000</span>
+          </div>
+          <div style={{ display: 'flex', height: 11, marginTop: 11, borderRadius: 6, background: '#eadad4', overflow: 'hidden' }}>
+            <div style={{ width: '87%', height: '100%', borderRadius: 6, background: '#c47d8e', display: 'flex' }} />
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18 }}>
+          <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1.6, color: MUTED }}>ORDER NO</span>
+          <div style={{ height: 40, padding: '0 13px', borderRadius: 11, display: 'flex', alignItems: 'center', background: CARD, border: '1.5px solid rgba(196,125,142,.55)', boxShadow: '2px 2px 0 #efc4cf', fontFamily: 'Mono', fontSize: 18, fontWeight: 700, color: INK }}>
+            NTR-15978
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#a65d75" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 9 }}>
+              <rect x="8.5" y="8.5" width="12" height="12" rx="2.5" />
+              <path d="M15.5 8.5V6a2.5 2.5 0 0 0-2.5-2.5H6A2.5 2.5 0 0 0 3.5 6v7A2.5 2.5 0 0 0 6 15.5h2.5" />
+            </svg>
+          </div>
+        </div>
       </div>
     </div>
   );

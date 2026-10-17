@@ -8,7 +8,7 @@ export const contentType = 'image/png';
 
 const PLATFORM_MAP = {
   instagram: { name: 'Instagram', db: 'Instagram' },
-  tiktok:    { name: 'TikTok',    db: 'tiktok' },
+  tiktok:    { name: 'TikTok',    db: 'TikTok' },
   youtube:   { name: 'YouTube',   db: 'YouTube' },
   x:         { name: 'X',         db: 'Twitter/X' },
   facebook:  { name: 'Facebook',  db: 'Facebook' },
@@ -25,10 +25,13 @@ export default async function OGImage({ params }) {
   const p = PLATFORM_MAP[platform];
   if (!p) return new Response(null, { status: 404 });
 
+  // The starting price. Until 17 Oct 2026 this asked for prisma.tier (the model
+  // is ServiceTier) and for TikTok as "tiktok", and the catch hid both, so every
+  // platform card shared with no price.
   let price = '';
   try {
-    const cheapest = await prisma.tier.findFirst({
-      where: { enabled: true, serviceGroup: { enabled: true, platform: p.db } },
+    const cheapest = await prisma.serviceTier.findFirst({
+      where: { enabled: true, group: { enabled: true, platform: p.db }, service: { enabled: true } },
       orderBy: { sellPer1k: 'asc' },
     });
     if (cheapest) {
