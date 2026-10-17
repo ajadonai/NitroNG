@@ -74,8 +74,8 @@ export default function ReferralsPage({ user, dark, t }) {
 
   const steps = [
     ["1", "Share your link", "Send your referral link to friends"],
-    ["2", "They deposit", ref.minDeposit > 0 ? `Your friend deposits ${fK(ref.minDeposit)} or more` : "Your friend makes their first deposit"],
-    ["3", "You both earn", `You get ${fK(ref.referrer)} and they get ${fK(ref.invitee, money)}`],
+    ["2", "They deposit", ref.minDeposit > 0 ? `Your friend deposits ${fK(ref.minDeposit, money)} or more` : "Your friend makes their first deposit"],
+    ["3", "You both earn", `You get ${fK(ref.referrer, money)} and they get ${fK(ref.invitee, money)}`],
   ];
 
   return (
@@ -93,7 +93,7 @@ export default function ReferralsPage({ user, dark, t }) {
           <OffsetIcon name="gift" size={18} color={t.accent} />
           <div>
             <div className="text-sm font-medium text-t-text">{tr("Your referral bonus is waiting")}</div>
-            <div className="text-[13px] mt-0.5 text-t-text-muted">{tr("Deposit")} {money(user.refMinDeposit)} {tr("or more to unlock your")} {fK(ref.invitee)} {tr("welcome bonus")}</div>
+            <div className="text-[13px] mt-0.5 text-t-text-muted">{tr("Deposit")} {money(user.refMinDeposit)} {tr("or more to unlock your")} {fK(ref.invitee, money)} {tr("welcome bonus")}</div>
           </div>
         </div>
       )}
@@ -208,20 +208,21 @@ export default function ReferralsPage({ user, dark, t }) {
  * left the usage above, so the page crashed on render. */
 function RewardBreakdown({ rs, t }) {
   const tr = useT();
+  const money = useMoney();
   return (
     <div className="p-3.5 rounded-[10px] mt-2 bg-t-card-bg" style={{ border: `1px solid ${t.cardBorder}` }}>
       <div className="flex justify-between py-2" style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
         <span className="text-sm text-t-text-muted">{tr("You earn")}</span>
-        <span className="text-sm font-semibold text-accent">{fK(rs.referrer)}</span>
+        <span className="text-sm font-semibold text-accent">{fK(rs.referrer, money)}</span>
       </div>
       <div className="flex justify-between py-2" style={{ borderBottom: rs.minDeposit > 0 ? `1px solid ${t.cardBorder}` : "none" }}>
         <span className="text-sm text-t-text-muted">{tr("They earn")}</span>
-        <span className="text-sm font-semibold text-t-green">{fK(rs.invitee)}</span>
+        <span className="text-sm font-semibold text-t-green">{fK(rs.invitee, money)}</span>
       </div>
       {rs.minDeposit > 0 && (
         <div className="flex justify-between py-2">
           <span className="text-sm text-t-text-muted">{tr("Min. deposit to activate")}</span>
-          <span className="text-sm font-semibold text-t-text">{fK(rs.minDeposit)}</span>
+          <span className="text-sm font-semibold text-t-text">{fK(rs.minDeposit, money)}</span>
         </div>
       )}
     </div>
@@ -244,14 +245,14 @@ export function ReferralsSidebar({ user, dark, t }) {
       <RailSec icon="book">{tr("How it works")}</RailSec>
       <RailCard>
         <RailStep n="1" title={tr("Share your link")} sub={tr("Send it to friends")} />
-        <RailStep n="2" title={tr("They deposit")} sub={ref.minDeposit > 0 ? `${fK(ref.minDeposit)} or more` : "Their first deposit"} />
-        <RailStep n="3" title={tr("You both earn")} sub={`You get ${fK(ref.referrer)}, they get ${fK(ref.invitee)}`} />
+        <RailStep n="2" title={tr("They deposit")} sub={ref.minDeposit > 0 ? `${fK(ref.minDeposit, money)} or more` : "Their first deposit"} />
+        <RailStep n="3" title={tr("You both earn")} sub={`You get ${fK(ref.referrer, money)}, they get ${fK(ref.invitee, money)}`} />
       </RailCard>
       <RailSec icon="gift">{tr("Rewards")}</RailSec>
       <RailCard>
-        <RailFact icon="gift" label={tr("You get")} value={fK(ref.referrer)} color={t.accent} />
-        <RailFact icon="gift" label={tr("They get")} value={fK(ref.invitee)} color={dark ? "#6ee7b7" : "#059669"} />
-        {ref.minDeposit > 0 && <RailFact icon="moneyIn" label={tr("Minimum deposit")} value={fK(ref.minDeposit)} />}
+        <RailFact icon="gift" label={tr("You get")} value={fK(ref.referrer, money)} color={t.accent} />
+        <RailFact icon="gift" label={tr("They get")} value={fK(ref.invitee, money)} color={dark ? "#6ee7b7" : "#059669"} />
+        {ref.minDeposit > 0 && <RailFact icon="moneyIn" label={tr("Minimum deposit")} value={fK(ref.minDeposit, money)} />}
       </RailCard>
       <RailSec icon="bars">{tr("Your performance")}</RailSec>
       <RailCard>

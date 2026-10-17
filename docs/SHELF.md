@@ -404,6 +404,13 @@ schema. Ordered low to high priority.
 
 ## Closed
 
+- **Referrals opens again** (17 Oct 2026, `v2.4.136`). Since `v2.4.104` (8
+  Sep) the page crashed on load for every account while cash referrals are
+  off: three amounts went through `fK(kobo, money)` without the formatter, so
+  `money is not a function` (Sentry 7797655706, "t is not a function" from the
+  More sheet's Earn tile). Every call passes it now. The redesign is a
+  separate mockup awaiting two calls.
+
 - **Find any service by the number a customer quotes, the API's catalogue
   matches the site's, and CI's schema check passes again** (17 Oct 2026,
   `v2.4.135`). A reseller saw API IDs 3311 and 3312 at ₦3,304,550,920 per
